@@ -247,7 +247,7 @@ class ForceConstants
         int reverseIndex(int poldataIndex)
         {
             GMX_RELEASE_ASSERT(poldataIndex >= 0 && poldataIndex < static_cast<int>(reverseIndex_.size()), "Incorrect poldataIndex");
-	    GMX_RELEASE_ASSERT(reverseIndex_[poldataIndex] != -1, "The reverseIndex is incorrect");
+            GMX_RELEASE_ASSERT(reverseIndex_[poldataIndex] != -1, "The reverseIndex is incorrect");
 
             return reverseIndex_[poldataIndex];
         }
@@ -278,53 +278,53 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
     }
     for (auto &mymol : mm)
     {
-        for (int i = 0; (i < mymol.ltop_->idef.il[ftype_].nr); 
-	     i += interaction_function[ftype_].nratoms+1)
+        for (int i = 0; (i < mymol.ltop_->idef.il[ftype_].nr);
+             i += interaction_function[ftype_].nratoms+1)
         {
-	    std::vector<std::string> atoms;
-            std::string params;
-            bool        found     = false;
-            int         ai        = mymol.ltop_->idef.il[ftype_].iatoms[i+1];
-            int         aj        = mymol.ltop_->idef.il[ftype_].iatoms[i+2];
+            std::vector<std::string> atoms;
+            std::string              params;
+            bool                     found     = false;
+            int                      ai        = mymol.ltop_->idef.il[ftype_].iatoms[i+1];
+            int                      aj        = mymol.ltop_->idef.il[ftype_].iatoms[i+2];
             if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ai], aai) &&
                 pd.atypeToBtype( *mymol.topology_->atoms.atomtype[aj], aaj))
             {
                 int  index = 0;
                 char buf[STRLEN];
-		auto iType = static_cast<InteractionType>(bt_);
+                auto iType = static_cast<InteractionType>(bt_);
                 switch (iType)
                 {
                     case eitBONDS:
                     {
-		        atoms   = {aai, aaj};
-		        auto fs = pd.findForces(iType);
+                        atoms   = {aai, aaj};
+                        auto fs = pd.findForces(iType);
                         auto f  = fs->findForce(atoms);
-			
+
                         if (fs->forceEnd() != f)
                         {
-			    sprintf(buf, "%s %s", aai.c_str(), aaj.c_str());
+                            sprintf(buf, "%s %s", aai.c_str(), aaj.c_str());
                             params    = f->params();
-			    index     = f - fs->forceBegin();
+                            index     = f - fs->forceBegin();
                             found     = true;
                         }
                     }
                     break;
                     case eitANGLES:
-		    case eitLINEAR_ANGLES:
+                    case eitLINEAR_ANGLES:
                     {
                         int ak  = mymol.ltop_->idef.il[ftype_].iatoms[i+3];
                         if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak))
                         {
-			    atoms   = {aai, aaj, aak};
+                            atoms   = {aai, aaj, aak};
                             auto fs = pd.findForces(iType);
-			    auto f  = fs->findForce(atoms);
+                            auto f  = fs->findForce(atoms);
 
                             if (fs->forceEnd() != f)
                             {
-			        sprintf(buf, "%s %s %s", aai.c_str(), 
-					aaj.c_str(), aak.c_str());
+                                sprintf(buf, "%s %s %s", aai.c_str(),
+                                        aaj.c_str(), aak.c_str());
                                 params = f->params();
-				index  = f - fs->forceBegin();
+                                index  = f - fs->forceBegin();
                                 found  = true;
                             }
                         }
@@ -338,33 +338,35 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                         if (pd.atypeToBtype( *mymol.topology_->atoms.atomtype[ak], aak) &&
                             pd.atypeToBtype( *mymol.topology_->atoms.atomtype[al], aal))
                         {
-			    atoms   = {aai, aaj, aak, aal};
+                            atoms   = {aai, aaj, aak, aal};
                             auto fs = pd.findForces(iType);
-			    auto f  = fs->findForce(atoms);
+                            auto f  = fs->findForce(atoms);
 
                             if (fs->forceEnd() != f)
                             {
-			        sprintf(buf, "%s %s %s %s", aai.c_str(), 
-					aaj.c_str(), aak.c_str(), aal.c_str());
+                                sprintf(buf, "%s %s %s %s", aai.c_str(),
+                                        aaj.c_str(), aak.c_str(), aal.c_str());
                                 params = f->params();
-				index  = f - fs->forceBegin();
+                                index  = f - fs->forceBegin();
                                 found  = true;
                             }
                         }
                     }
                     break;
-		    case eitPOLARIZATION:
+                    case eitPOLARIZATION:
                     case eitLJ14:
                     case eitVSITE2:
                     case eitCONSTR:
-	            case eitNR:
-                    break;
+                    case eitNR:
+                        break;
                 }
                 if (found)
                 {
                     auto c = std::find_if(bn_.begin(), bn_.end(),
                                           [buf](const BondNames &bn)
-                                          { return bn.name().compare(buf) == 0; });
+                        {
+                            return bn.name().compare(buf) == 0;
+                        });
                     if (c != bn_.end())
                     {
                         c->inc();
@@ -509,15 +511,15 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
             int  ft;
             if (bOpt[bt])
             {
-	        auto iType = static_cast<InteractionType>(bt);
-                ft = pd_.findForces(iType)->fType();
+                auto iType = static_cast<InteractionType>(bt);
+                ft       = pd_.findForces(iType)->fType();
                 bSupport = (mymol->ltop_ != nullptr);
-                for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr); 
-		     i += interaction_function[ft].nratoms+1)
+                for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr);
+                     i += interaction_function[ft].nratoms+1)
                 {
-                    int         ai, aj, ak, al;
-                    std::string aai, aaj, aak, aal;
-		    std::vector<std::string> atoms;
+                    int                      ai, aj, ak, al;
+                    std::string              aai, aaj, aak, aal;
+                    std::vector<std::string> atoms;
 
                     ai  = mymol->ltop_->idef.il[ft].iatoms[i+1];
                     aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
@@ -525,60 +527,60 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                           pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj)))
                     {
                         bSupport = false;
-			if (debug)
-			{
-			    fprintf(debug, "Cannot find bond types %s and %s in %s.\n", 
-				    aai.c_str(), aaj.c_str(), 
-				    mymol->molProp()->getMolname().c_str());
-			}
+                        if (debug)
+                        {
+                            fprintf(debug, "Cannot find bond types %s and %s in %s.\n",
+                                    aai.c_str(), aaj.c_str(),
+                                    mymol->molProp()->getMolname().c_str());
+                        }
                     }
                     switch (iType)
                     {
                         case eitBONDS:
                         {
-			    atoms = {aai, aaj};
+                            atoms = {aai, aaj};
                             auto fs = pd_.findForces(iType);
-			    auto f  = fs->findForce(atoms);
+                            auto f  = fs->findForce(atoms);
                             if (fs->forceEnd() == f)
                             {
                                 bSupport = false;
                                 if (debug)
                                 {
-                                    fprintf(debug, "Cannot find bond %s-%s in %s.\n", 
-					    aai.c_str(), aaj.c_str(), 
-					    mymol->molProp()->getMolname().c_str());
+                                    fprintf(debug, "Cannot find bond %s-%s in %s.\n",
+                                            aai.c_str(), aaj.c_str(),
+                                            mymol->molProp()->getMolname().c_str());
                                 }
                             }
                             break;
                         }
                         case eitANGLES:
-		        case eitLINEAR_ANGLES:
+                        case eitLINEAR_ANGLES:
                         {
                             ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                             if (!pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[ak], aak))
                             {
                                 bSupport = false;
-				if (debug)
-				{
-				    fprintf(debug, "Cannot find bond types %s, %s and %s in %s.\n",
-					    aai.c_str(), aaj.c_str(), aak.c_str(), 
-					    mymol->molProp()->getMolname().c_str());
-				}
+                                if (debug)
+                                {
+                                    fprintf(debug, "Cannot find bond types %s, %s and %s in %s.\n",
+                                            aai.c_str(), aaj.c_str(), aak.c_str(),
+                                            mymol->molProp()->getMolname().c_str());
+                                }
                             }
                             else
                             {
-			        atoms   = {aai, aaj, aak};
-				auto fs = pd_.findForces(iType);
-				auto f  = fs->findForce(atoms);
+                                atoms   = {aai, aaj, aak};
+                                auto fs = pd_.findForces(iType);
+                                auto f  = fs->findForce(atoms);
                                 if (fs->forceEnd() == f)
                                 {
                                     bSupport = false;
                                     if (debug)
                                     {
-				        fprintf(debug, "Cannot find %s %s-%s-%s in %s.\n", 
-						eitANGLES ? "angles" : "linear_angles",
-                                                aai.c_str(), aaj.c_str(), aak.c_str(), 
-						mymol->molProp()->getMolname().c_str());
+                                        fprintf(debug, "Cannot find %s %s-%s-%s in %s.\n",
+                                                eitANGLES ? "angles" : "linear_angles",
+                                                aai.c_str(), aaj.c_str(), aak.c_str(),
+                                                mymol->molProp()->getMolname().c_str());
                                     }
                                 }
                             }
@@ -593,37 +595,37 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                                   pd_.atypeToBtype( *mymol->topology_->atoms.atomtype[al], aal)))
                             {
                                 bSupport = false;
-				if (debug)
+                                if (debug)
                                 {
-				    fprintf(debug, "Cannot find bond types %s, %s, %s, and %s in %s\n",
-					    aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), 
-					    mymol->molProp()->getMolname().c_str());
-				}
+                                    fprintf(debug, "Cannot find bond types %s, %s, %s, and %s in %s\n",
+                                            aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(),
+                                            mymol->molProp()->getMolname().c_str());
+                                }
                             }
                             else
                             {
                                 atoms   = {aai, aaj, aak};
-				auto fs = pd_.findForces(iType);
-				auto f  = fs->findForce(atoms);
+                                auto fs = pd_.findForces(iType);
+                                auto f  = fs->findForce(atoms);
                                 if (fs->forceEnd() == f)
                                 {
                                     bSupport = false;
                                     if (debug)
                                     {
-				        fprintf(debug, "Cannot find %s dihedral %s-%s-%s-%s in %s\n", 
-						eitPROPER_DIHEDRALS ? "proper" : "improper",
-                                                aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), 
-						mymol->molProp()->getMolname().c_str());
+                                        fprintf(debug, "Cannot find %s dihedral %s-%s-%s-%s in %s\n",
+                                                eitPROPER_DIHEDRALS ? "proper" : "improper",
+                                                aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(),
+                                                mymol->molProp()->getMolname().c_str());
                                     }
                                 }
                             }
                             break;
-			   case eitPOLARIZATION:
-			   case eitLJ14:
-			   case eitVSITE2:
-			   case eitCONSTR:
-			   case eitNR:
-			     break;
+                            case eitPOLARIZATION:
+                            case eitLJ14:
+                            case eitVSITE2:
+                            case eitCONSTR:
+                            case eitNR:
+                                break;
                         }
                     }
                 }
@@ -686,15 +688,15 @@ void OptPrep::list2Opt()
             b->setParamString(buf);
             const std::vector<std::string> bondtypes =
                 gmx::splitString(b->name());
-	    
-	    auto iType = fc.interactionType();
+
+            auto iType = fc.interactionType();
             switch (iType)
             {
                 case eitBONDS:
                 {
-		    atoms    = {bondtypes[0], bondtypes[1]};
-		    auto  fs = pd_.findForces(iType);
-		    auto  f  = fs->findForce(atoms);
+                    atoms    = {bondtypes[0], bondtypes[1]};
+                    auto  fs = pd_.findForces(iType);
+                    auto  f  = fs->findForce(atoms);
                     if (fs->forceEnd() != f)
                     {
                         f->setParams(buf);
@@ -702,11 +704,11 @@ void OptPrep::list2Opt()
                 }
                 break;
                 case eitANGLES:
-		case eitLINEAR_ANGLES:
+                case eitLINEAR_ANGLES:
                 {
-		    atoms    = {bondtypes[0], bondtypes[1], bondtypes[2]};
-		    auto  fs = pd_.findForces(iType);
-		    auto  f  = fs->findForce(atoms);
+                    atoms    = {bondtypes[0], bondtypes[1], bondtypes[2]};
+                    auto  fs = pd_.findForces(iType);
+                    auto  f  = fs->findForce(atoms);
                     if (fs->forceEnd() != f)
                     {
                         f->setParams(buf);
@@ -716,9 +718,9 @@ void OptPrep::list2Opt()
                 case eitPROPER_DIHEDRALS:
                 case eitIMPROPER_DIHEDRALS:
                 {
-		    atoms    = {bondtypes[0], bondtypes[1], bondtypes[2], bondtypes[3]};
-		    auto  fs = pd_.findForces(iType);
-		    auto  f  = fs->findForce(atoms);
+                    atoms    = {bondtypes[0], bondtypes[1], bondtypes[2], bondtypes[3]};
+                    auto  fs = pd_.findForces(iType);
+                    auto  f  = fs->findForce(atoms);
                     if (fs->forceEnd() != f)
                     {
                         f->setParams(buf);
@@ -758,58 +760,60 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     for (auto fs = pd_.forcesBegin(); fs != pd_.forcesEnd(); fs++)
     {
         if (eitBONDS == fs->iType())
-	{
-	    int ftb = fs->fType();
-	    int j   = 0;
-	    for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
-		 (mymol < _mymol.end()); mymol++, j++)
-	    {
-	        for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr); 
-		     i += interaction_function[ftb].nratoms+1)
-		{
-		    int         ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
-		    int         aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
-		    std::string aai, aaj;
-		    std::vector<std::string> atoms;
-		    if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
-			pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
-		    {
-		        atoms  = {aai, aaj};
-		        auto f = fs->findForce(atoms);
-			if (fs->forceEnd() != f)
-			{
-			    int gt  = f - fs->forceBegin();
-			    int gti = ForceConstants_[eitBONDS].reverseIndex(gt);
+        {
+            int ftb = fs->fType();
+            int j   = 0;
+            for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
+                 (mymol < _mymol.end()); mymol++, j++)
+            {
+                for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr);
+                     i += interaction_function[ftb].nratoms+1)
+                {
+                    int                      ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
+                    int                      aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
+                    std::string              aai, aaj;
+                    std::vector<std::string> atoms;
+                    if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
+                        pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
+                    {
+                        atoms  = {aai, aaj};
+                        auto f = fs->findForce(atoms);
+                        if (fs->forceEnd() != f)
+                        {
+                            int gt  = f - fs->forceBegin();
+                            int gti = ForceConstants_[eitBONDS].reverseIndex(gt);
 
-			    a[gti][j]++;
-			    ntest[gti]++;
-			    if (ctest[gti].empty())
-			    {
-			        char buf[STRLEN];
-				snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
-				ctest[gti].assign(buf);
-			    }
-			}
-		    }
-		    else
-		    {
-		        gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
-				  aai.c_str(), aaj.c_str(),
-				  *mymol->topology_->atoms.atomtype[ai],
-				  *mymol->topology_->atoms.atomtype[aj],
-				  mymol->molProp()->getIupac().c_str());
-		    }
-		}
-		rhs.push_back(-mymol->Emol);
-	    }
-	}
+                            a[gti][j]++;
+                            ntest[gti]++;
+                            if (ctest[gti].empty())
+                            {
+                                char buf[STRLEN];
+                                snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
+                                ctest[gti].assign(buf);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
+                                  aai.c_str(), aaj.c_str(),
+                                  *mymol->topology_->atoms.atomtype[ai],
+                                  *mymol->topology_->atoms.atomtype[aj],
+                                  mymol->molProp()->getIupac().c_str());
+                    }
+                }
+                rhs.push_back(-mymol->Emol);
+            }
+        }
     }
     char buf[STRLEN];
     snprintf(buf, sizeof(buf), "Inconsistency in number of energies nMol %d != #rhs %d", nMol, static_cast<int>(rhs.size()));
     GMX_RELEASE_ASSERT(static_cast<int>(rhs.size()) == nMol, buf);
 
     int nzero = std::count_if(ntest.begin(), ntest.end(),
-                              [](const int n) { return n == 0; });
+                              [](const int n) {
+            return n == 0;
+        });
     fprintf(fplog, "There are %d bondtypes without support out of %d\n", nzero, nD);
     double **a2 = alloc_matrix(nD-nzero, nMol);
     int      i2 = 0;
@@ -850,8 +854,8 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
         if (ntest[i] > 0)
         {
             std::vector<std::string> atoms    = gmx::splitString(b->name());
-            auto fs = pd_.findForces(eitBONDS);
-	    auto f  = fs->findForce(atoms);
+            auto                     fs       = pd_.findForces(eitBONDS);
+            auto                     f        = fs->findForce(atoms);
             GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
             std::vector<std::string> pp = gmx::splitString(b->paramString());
             char                     buf[256];
@@ -869,8 +873,8 @@ void OptPrep::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
 {
     std::vector<unsigned int> fts;
 
-    for (auto fs = pd_.forcesBegin(); 
-	 fs != pd_.forcesEnd(); fs++)
+    for (auto fs = pd_.forcesBegin();
+         fs != pd_.forcesEnd(); fs++)
     {
         fts.push_back(fs->fType());
     }
@@ -916,8 +920,8 @@ void OptPrep::Print(FILE *fp)
     }
 }
 
-static void print_stats(FILE *fp, const char *prop, 
-			gmx_stats_t lsq, gmx_bool bHeader,
+static void print_stats(FILE *fp, const char *prop,
+                        gmx_stats_t lsq, gmx_bool bHeader,
                         char *xaxis, char *yaxis)
 {
     real a, da, b, db, chi2, rmsd, Rfit;
@@ -1103,8 +1107,8 @@ double OptPrep::objFunction(double v[])
     return rms;
 }
 
-static real guess_new_param(real x, real step, real x0, 
-			    real x1, real randomNumber,
+static real guess_new_param(real x, real step, real x0,
+                            real x1, real randomNumber,
                             gmx_bool bRandom)
 {
     if (bRandom)
@@ -1217,13 +1221,13 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
 
             if (NULL != fp)
             {
-                fprintf(fp, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n", 
-			n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
+                fprintf(fp, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n",
+                        n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
             }
             if (NULL != fplog)
             {
-                fprintf(fplog, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n", 
-			n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
+                fprintf(fplog, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n",
+                        n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
                 fflush(fplog);
             }
             TuneFc.setParam(best_);
@@ -1456,13 +1460,13 @@ int alex_tune_fc(int argc, char *argv[])
           "Optimize bond parameters" },
         { "-angles",  FALSE, etBOOL, {&bOpt[eitANGLES]},
           "Optimize angle parameters" },
-	{ "-langles",  FALSE, etBOOL, {&bOpt[eitLINEAR_ANGLES]},
+        { "-langles",  FALSE, etBOOL, {&bOpt[eitLINEAR_ANGLES]},
           "Optimize linear angle parameters" },
         { "-dihedrals",  FALSE, etBOOL, {&bOpt[eitPROPER_DIHEDRALS]},
           "Optimize proper dihedral parameters" },
         { "-impropers",  FALSE, etBOOL, {&bOpt[eitIMPROPER_DIHEDRALS]},
           "Optimize improper dihedral parameters" },
-	{ "-pairs",  FALSE, etBOOL, {&bOpt[eitLJ14]},
+        { "-pairs",  FALSE, etBOOL, {&bOpt[eitLJ14]},
           "Optimize 1-4 interaction parameters" },
         { "-beta0", FALSE, etREAL, {&beta0},
           "Reset the initial beta for Morse potentials to this value, independent of gentop.dat. If value is <= 0 gentop.dat value is used." },
@@ -1557,8 +1561,8 @@ int alex_tune_fc(int argc, char *argv[])
              iChargeGenerationAlgorithm, rDecrZeta,
              J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
              fc_bound, fc_mu, fc_quad, fc_charge,
-             fc_esp, fc_epot, fc_force, fixchi, 
-	     bOptHfac, hfac, bPolar, bFitZeta);
+             fc_esp, fc_epot, fc_force, fixchi,
+             bOptHfac, hfac, bPolar, bFitZeta);
 
     opt.Read(fp ? fp : (debug ? debug : NULL),
              opt2fn("-f", NFILE, fnm),
@@ -1566,8 +1570,8 @@ int alex_tune_fc(int argc, char *argv[])
              minimum_data, bZero,
              opt_elem, const_elem,
              lot, gms, watoms, FALSE,
-             bOpt[eitLJ14], bOpt[eitPROPER_DIHEDRALS], 
-	     bPolar, tabfn);
+             bOpt[eitLJ14], bOpt[eitPROPER_DIHEDRALS],
+             bPolar, tabfn);
 
     opt.checkSupport(fp, bOpt);
 
