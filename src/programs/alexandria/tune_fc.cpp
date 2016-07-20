@@ -844,7 +844,6 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     free_matrix(a);
     free_matrix(a2);
     int i = 0;
-    //j = 0;
     for (auto b = ForceConstants_[eitBONDS].beginBN();
          b < ForceConstants_[eitBONDS].endBN(); ++b)
     {
@@ -917,7 +916,8 @@ void OptPrep::Print(FILE *fp)
     }
 }
 
-static void print_stats(FILE *fp, const char *prop, gmx_stats_t lsq, gmx_bool bHeader,
+static void print_stats(FILE *fp, const char *prop, 
+			gmx_stats_t lsq, gmx_bool bHeader,
                         char *xaxis, char *yaxis)
 {
     real a, da, b, db, chi2, rmsd, Rfit;
@@ -1103,7 +1103,8 @@ double OptPrep::objFunction(double v[])
     return rms;
 }
 
-static real guess_new_param(real x, real step, real x0, real x1, real randomNumber,
+static real guess_new_param(real x, real step, real x0, 
+			    real x1, real randomNumber,
                             gmx_bool bRandom)
 {
     if (bRandom)
@@ -1216,11 +1217,13 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
 
             if (NULL != fp)
             {
-                fprintf(fp, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
+                fprintf(fp, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n", 
+			n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
             }
             if (NULL != fplog)
             {
-                fprintf(fplog, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n", n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
+                fprintf(fplog, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n", 
+			n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
                 fflush(fplog);
             }
             TuneFc.setParam(best_);
