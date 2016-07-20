@@ -68,20 +68,20 @@ namespace alexandria
 {
 
 static const char * eit_names[eitNR] = {
-  "BONDS", "ANGLES", "PROPER_DIHEDRALS",
-  "IMPROPER_DIHEDRALS", "LINEAR_ANGLES",
-  "LJ14", "POLARIZATION", "CONSTR", 
-  "VSITE2"
+    "BONDS", "ANGLES", "PROPER_DIHEDRALS",
+    "IMPROPER_DIHEDRALS", "LINEAR_ANGLES",
+    "LJ14", "POLARIZATION", "CONSTR",
+    "VSITE2"
 };
 
 const char *iType2string(InteractionType iType)
 
 {
-  if (iType < eitNR)
+    if (iType < eitNR)
     {
-      return eit_names[iType];
+        return eit_names[iType];
     }
-  return nullptr;
+    return nullptr;
 }
 
 InteractionType string2iType(const char *string)
@@ -92,7 +92,7 @@ InteractionType string2iType(const char *string)
     {
         if (gmx_strcasecmp(string, eit_names[i]) == 0)
         {
-	  return static_cast<InteractionType>(i);
+            return static_cast<InteractionType>(i);
         }
     }
     return eitNR;
@@ -105,11 +105,11 @@ Ptype::Ptype(const std::string &ptype,
              double             polarizability,
              double             sigPol)
     :
-      type_(ptype),
-      miller_(miller),
-      bosque_(bosque),
-      polarizability_(polarizability),
-      sigPol_(sigPol)
+    type_(ptype),
+    miller_(miller),
+    bosque_(bosque),
+    polarizability_(polarizability),
+    sigPol_(sigPol)
 {}
 
 Ffatype::Ffatype(const std::string &desc,
@@ -120,39 +120,39 @@ Ffatype::Ffatype(const std::string &desc,
                  const std::string &vdwparams,
                  const std::string &refEnthalpy)
     :
-      desc_(desc),
-      type_(type),
-      ptype_(ptype),
-      btype_(btype),
-      elem_(elem),
-      vdwparams_(vdwparams),
-      refEnthalpy_(refEnthalpy)
+    desc_(desc),
+    type_(type),
+    ptype_(ptype),
+    btype_(btype),
+    elem_(elem),
+    vdwparams_(vdwparams),
+    refEnthalpy_(refEnthalpy)
 {}
 
 ListedForce::ListedForce(const std::vector<std::string> atoms,
-			 std::string                    params, 
-			 double                         refValue,
-			 double                         sigma, 
-			 size_t                         ntrain)
+                         std::string                    params,
+                         double                         refValue,
+                         double                         sigma,
+                         size_t                         ntrain)
     :
-      atoms_(atoms),
-      params_(params),
-      refValue_(refValue),
-      sigma_(sigma),
-      ntrain_(ntrain)
+    atoms_(atoms),
+    params_(params),
+    refValue_(refValue),
+    sigma_(sigma),
+    ntrain_(ntrain)
 
 {}
 
 
-ListedForces::ListedForces(const std::string  iType,
-			   const std::string  &function,
-			   const std::string  &unit)
+ListedForces::ListedForces(const std::string   iType,
+                           const std::string  &function,
+                           const std::string  &unit)
     :
-      iType_(string2iType(iType.c_str())),
-      function_(function),
-      unit_(unit)
+    iType_(string2iType(iType.c_str())),
+    function_(function),
+    unit_(unit)
 {
-  unsigned int funcType;
+    unsigned int funcType;
 
     for (funcType = 0; (funcType < F_NRE); funcType++)
     {
@@ -165,7 +165,7 @@ ListedForces::ListedForces(const std::string  iType,
     {
         gmx_fatal(FARGS, "Force function '%s' does not exist in gromacs", function_.c_str());
     }
-    
+
     fType_ = funcType;
 }
 
@@ -174,10 +174,10 @@ ListedForceIterator ListedForces::findForce(const std::vector<std::string> &atom
 
     ListedForceIterator fb = forceBegin(), fe = forceEnd();
     return std::find_if(fb, fe, [atoms](const ListedForce &force)
-			{	
-			  std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
-			  return (atoms == force.atoms() || atoms_re == force.atoms());
-			});
+        {
+            std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
+            return (atoms == force.atoms() || atoms_re == force.atoms());
+        });
 }
 
 ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> &atoms) const
@@ -185,67 +185,67 @@ ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> 
 
     ListedForceConstIterator fb = forceBegin(), fe = forceEnd();
     return std::find_if(fb, fe, [atoms](const ListedForce &force)
-			{
-			  std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
-			  return (atoms == force.atoms() || atoms_re == force.atoms());
-			});
+        {
+            std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
+            return (atoms == force.atoms() || atoms_re == force.atoms());
+        });
 }
 
 bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
-				  const std::string              &params,
-				  double                         refValue, 
-				  double                         sigma,
-				  size_t                         ntrain)
+                                  const std::string              &params,
+                                  double                          refValue,
+                                  double                          sigma,
+                                  size_t                          ntrain)
 {
     auto force = findForce(atoms);
-  
+
     if (forceEnd() != force)
     {
-       force->setRefValue(refValue);
-       force->setSigma(sigma);
-       force->setNtrain(ntrain);
-       force->setParams(params);
+        force->setRefValue(refValue);
+        force->setSigma(sigma);
+        force->setNtrain(ntrain);
+        force->setParams(params);
 
-       return true;
+        return true;
     }
 
     return false;
 }
 
 void ListedForces::addForce(const std::vector<std::string> &atoms,
-			    const std::string              &params,
-			    double                         refValue, 
-			    double                         sigma,
-			    size_t                         ntrain)
+                            const std::string              &params,
+                            double                          refValue,
+                            double                          sigma,
+                            size_t                          ntrain)
 {
-    if (setForceParams(atoms, params, refValue, 
-		       sigma, ntrain))
+    if (setForceParams(atoms, params, refValue,
+                       sigma, ntrain))
     {
         return;
     }
 
-    ListedForce force(atoms, params, refValue, 
-		      sigma, ntrain);
+    ListedForce force(atoms, params, refValue,
+                      sigma, ntrain);
 
     force_.push_back(force);
 }
 
 bool ListedForces::searchForce(std::vector<std::string> &atoms,
-			       std::string              &params,
-			       double                   *refValue, 
-			       double                   *sigma,
-			       size_t                   *ntrain) const
+                               std::string              &params,
+                               double                   *refValue,
+                               double                   *sigma,
+                               size_t                   *ntrain) const
 {
     auto force = findForce(atoms);
-    
+
     if (forceEnd() != force)
     {
         *refValue = force->refValue();
-	*sigma    = force->sigma();
-	*ntrain   = force->ntrain();
-	params    = force->params();   
+        *sigma    = force->sigma();
+        *ntrain   = force->ntrain();
+        params    = force->params();
 
-	return true;
+        return true;
     }
 
     return false;
@@ -253,8 +253,8 @@ bool ListedForces::searchForce(std::vector<std::string> &atoms,
 
 Bosque::Bosque(const std::string &bosque, double polarizability)
     :
-      bosque_(bosque),
-      polarizability_(polarizability)
+    bosque_(bosque),
+    polarizability_(polarizability)
 {}
 
 Miller::Miller(const std::string &miller,
@@ -263,37 +263,37 @@ Miller::Miller(const std::string &miller,
                double             alphaAhp,
                const std::string &alexandria_equiv)
     :
-      miller_(miller),
-      atomnumber_(atomnumber),
-      tauAhc_(tauAhc),
-      alphaAhp_(alphaAhp),
-      alexandria_equiv_(alexandria_equiv)
+    miller_(miller),
+    atomnumber_(atomnumber),
+    tauAhc_(tauAhc),
+    alphaAhp_(alphaAhp),
+    alexandria_equiv_(alexandria_equiv)
 {}
 
 Symcharges::Symcharges(const std::string &central,
                        const std::string &attached,
                        int                numattach)
     :
-      central_(central),
-      attached_(attached),
-      numattach_(numattach)
+    central_(central),
+    attached_(attached),
+    numattach_(numattach)
 {}
 
 Epref::Epref(ChargeDistributionModel  eqdModel,
              const std::string       &epref)
     :
-      eqdModel_(eqdModel),
-      epref_(epref)
+    eqdModel_(eqdModel),
+    epref_(epref)
 {}
 
 RowZetaQ::RowZetaQ(int row, double zeta, double q)
 
     :
 
-      row_(row),
-      zeta_(zeta),
-      q_(q),
-      zetaRef_(zeta)
+    row_(row),
+    zeta_(zeta),
+    q_(q),
+    zetaRef_(zeta)
 
 
 {
@@ -310,21 +310,21 @@ RowZetaQ::RowZetaQ(int row, double zeta, double q)
     fixedQ_ = (q != 0);
 }
 
-Eemprops::Eemprops(ChargeDistributionModel eqdModel,
+Eemprops::Eemprops(ChargeDistributionModel   eqdModel,
                    const std::string        &name,
                    const std::string        &rowstr,
                    const std::string        &zetastr,
                    const std::string        &qstr,
-                   double                   J0,
-                   double                   chi0)
+                   double                    J0,
+                   double                    chi0)
     :
-      eqdModel_(eqdModel),
-      name_(name),
-      rowstr_(rowstr),
-      zetastr_(zetastr),
-      qstr_(qstr),
-      J0_(J0),
-      chi0_(chi0)
+    eqdModel_(eqdModel),
+    name_(name),
+    rowstr_(rowstr),
+    zetastr_(zetastr),
+    qstr_(qstr),
+    J0_(J0),
+    chi0_(chi0)
 {
     setRowZetaQ(rowstr, zetastr, qstr);
 }
