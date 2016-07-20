@@ -123,17 +123,38 @@ class Poldata
         bool getAtypeRefEnthalpy(const std::string &atype,
                                  double            *Href) const;
 
+	/*! \brief
+	 * Set the combination rule
+	 * 
+	 */
         void setCombinationRule(const std::string &func);
 
+
+	/*! \brief
+	 * Return the combination rule
+	 * 
+	 */
         const std::string &getCombinationRule() const { return gtCombinationRule_; }
 
         int  getCombRule() const { return gtCombRule_; }
 
         std::string  getGeometry(  std::string gtBrule);
 
+
+	/*! \brief
+	 * Return the discription corresponding to the atom type
+	 * 
+	 * \param[in] atype  Atom Type
+	 */
         std::string  getDesc(  std::string atype);
 
-        /* Get the charge from the gentop.dat file */
+
+        /*! \brief
+	 * Return the charge corresponding to the atyom type 
+	 * from the gentop.dat file 
+	 * 
+	 * \param[in] atype  Atom type
+	 */
         std::string  getCharge(  std::string atype);
 
         FfatypeIterator getAtypeBegin() { return alexandria_.begin(); }
@@ -144,6 +165,11 @@ class Poldata
 
         FfatypeConstIterator getAtypeEnd() const { return alexandria_.end(); }
 
+	/*! \brief
+	 * Return the iterator corresponding to the atom type 
+	 *
+	 * \param[in] atype  Atom Type
+	 */
         FfatypeIterator findAtype(const std::string &atype)
         {
             return std::find_if(alexandria_.begin(), alexandria_.end(),
@@ -151,6 +177,11 @@ class Poldata
                                 { return (atype.compare(f.getType()) == 0); });
         }
 
+	/*! \brief
+	 * Return the const_iterator corresponding to the atom type 
+	 *
+	 * \param[in] atype  Atom Type
+	 */
         FfatypeConstIterator findAtype(const std::string &atype) const
         {
             return std::find_if(alexandria_.begin(), alexandria_.end(),
@@ -158,6 +189,11 @@ class Poldata
                                 { return (atype.compare(f.getType()) == 0); });
         }
 
+	/*! \brief
+	 * Return the atom type corresponding to the bond type
+	 *
+	 * \param[in] btype  Bond Type
+	 */
         FfatypeIterator btypeToAtype(const std::string &btype)
         {
             return std::find_if(alexandria_.begin(), alexandria_.end(),
@@ -165,11 +201,21 @@ class Poldata
                                 { return (f.getBtype().compare(btype) == 0); });
         }
 
+	/*! \brief
+	 * Return true if a given bond type exists in Alexandria
+	 *
+	 * \param[in] btype  Bond Type
+	 */
         bool haveBtype(const std::string &btype)
         {
             return (btypeToAtype(btype) != alexandria_.end());
         }
 
+	/*! \brief
+	 * Return the atom type corresponding to the polarizability type
+	 *
+	 * \param[in] ptype  Polarizability Type
+	 */
         FfatypeIterator ptypeToAtype(const std::string &ptype)
         {
             return std::find_if(alexandria_.begin(), alexandria_.end(),
@@ -181,6 +227,11 @@ class Poldata
 
         PtypeConstIterator getPtypeEnd() const { return ptype_.end(); }
 
+	/*! \brief
+	 * Return the iterator corresponding to the polarizability type
+	 *
+	 * \param[in] ptype  Polarizability Type
+	 */
         PtypeIterator findPtype(const std::string &ptype)
         {
             return std::find_if(ptype_.begin(), ptype_.end(),
@@ -188,17 +239,31 @@ class Poldata
                                 { return (ptype.compare(p.getType()) == 0); });
         }
 
-        //! Return the poltype corresponding to atype and true if successful
+
+        /*! \brief
+	 * Return the poltype corresponding to atype and true if successful
+	 *
+	 * \param[in]  atype  Atom type
+	 * \param[out] ptype  Polarizability type.
+	 */ 
         bool atypeToPtype(const std::string &atype,
                           std::string       &ptype) const;
 
-        //! Return the bondtype corresponding to atype and true if successful
+
+	/*! \brief
+	 * Return the bond type corresponding to atom type and true if successful
+	 *
+	 * \param[in]  atype  Atom type
+	 * \param[out] btype  Polarizability type.
+	 */ 
         bool atypeToBtype(const std::string &atype,
                           std::string       &btype) const;
+
 
         /* Return 1 if OK, 0 if not found */
         bool getPtypePol(const std::string &ptype,
                          double *polarizability, double *sigPol) const;
+
         bool getAtypePol(const std::string &atype,
                          double *polarizability, double *sigPol) const;
 

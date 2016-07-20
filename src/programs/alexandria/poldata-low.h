@@ -580,7 +580,7 @@ class Epref
 {
     public:
         Epref(ChargeDistributionModel  eqdModel,
-              const std::string       &epref);
+              const std::string        &epref);
 
         ChargeDistributionModel getEqdModel() const { return eqdModel_; }
 
@@ -596,50 +596,103 @@ class Epref
 using EprefIterator      = typename std::vector<Epref>::iterator;
 using EprefConstIterator = typename std::vector<Epref>::const_iterator;
 
+
+/*! \brief
+ * Contains information needed for electrostatic interactions.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
 class RowZetaQ
 {
     public:
 
+        /*! \brief
+         * RowZetaQ constructor
+         *
+         * \param[in] row      The row in the periodic table for each of the charge components
+         * \param[in] zeta     Inverse screening length of each of the components
+         * \param[in] q        Charge of each of the components
+         */
         RowZetaQ(int row, double zeta, double q);
 
+	/*! \brief
+	 * Return the row in the periodic table 
+	 * for each of the charge components
+	 */
         int row() const { return row_; };
 
+	/*! \brief
+	 * Set the row in the periodic table 
+	 * for each of the charge components
+	 * 
+	 * \param[in] row The row in the periodic table for each of the charge components
+	 */
         void setRow(int row) { row_ = row; }
 
+	/*! \brief
+	 * Return the charge of each of the components
+	 */
         double q() const { return q_; }
 
+	/*! \brief
+	 * Set the charge of each of the components
+	 *
+	 * \param[in] q  Charge of each of the components
+	 */
         void setQ(double q)
         {
             GMX_RELEASE_ASSERT(!fixedQ_, "Trying to modify a fixed charge");
             q_ = q;
         }
 
+	/*! \brief
+	 * Return the inverse screening length of each of the components
+	 */
         double zeta() const { return zeta_; }
 
+	/*! \brief
+	 * Set the inverse screening length of each of the components
+	 *
+	 * \param[in] z  the inverse screening length of each of the components
+	 */
         void setZeta(double z) { zeta_ = z; }
 
+	/*! \brief
+	 * Return reference (starting) value for zeta
+	 */
         double zetaRef() const { return zetaRef_; }
 
+	/*! \brief
+	 * Set reference (starting) value for zeta
+	 *
+	 * \param[in] z  Reference value for zeta
+	 */
         void setZetaRef(double z) { zetaRef_ = z; }
 
+	/*! \brief
+	 * Return parameter optimization index
+	 */
         int zIndex() const { return zindex_; }
 
+	/*! \brief
+	 * Set parameter optimization index
+	 *
+	 * \param[in] zi optimization index
+	 */
         void setZindex(int zi) { zindex_ = zi; }
 
+	/*! \brief
+	 * Return true if the charge is fixed
+	 */
         bool fixedQ() const { return fixedQ_; }
 
-    private:
-        //! The row in the periodic table for each of the charge components
+    private: 
         int    row_;
-        //! Inverse screening length of each of the components
         double zeta_;
-        //! Charge of each of the components
-        double q_;
-        //! Reference (starting) value for zeta
+        double q_; 
         double zetaRef_;
-        //! Parameter optimization index
         int    zindex_;
-        //! Determines whether a charge is fixed (not to be changed)
         bool   fixedQ_;
 };
 
