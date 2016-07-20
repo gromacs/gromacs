@@ -442,7 +442,6 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
 
     for (auto &i : b->angle)
     {
-
         gmx_stats_get_average(i.lsq, &av);
         gmx_stats_get_sigma(i.lsq, &sig);
         gmx_stats_get_npoints(i.lsq, &N);
