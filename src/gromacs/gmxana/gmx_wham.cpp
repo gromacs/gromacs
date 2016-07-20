@@ -141,7 +141,7 @@ typedef struct
     t_pullcoord *pcrd;           //!< the pull coordinates
     gmx_bool     bPrintRefValue; //!< Reference value for the coordinate written in pullx.xvg
     gmx_bool     bPrintComp;     //!< Components of pull distance written to pullx.xvg ?
-    int          nCOMGrpsPullx;  //!< Number of grps of which the COM is listed in pullx.xvg (COM of grp 1 or grp 2 or both)
+    int          nCOMGrpsPullx;  //!< Number of grps of which the COM is listed in pullx.xvg (for common COM pulling: either 2 or 0)
 
     /*!\}*/
     /*!
@@ -2070,7 +2070,10 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     header->nCOMGrpsPullx = 0;
     if (ir.pull->bPrintCOM)
     {
-        header->nCOMGrpsPullx += ir.pull->ngroup;
+	/* For common COM pulling with pull-print-com = yes, the COM of two groups are written to pullx.xvg.
+	   This must be fixed for anglular coordinates.
+	*/
+        header->nCOMGrpsPullx = 2;
     }
     header->bPrintRefValue = ir.pull->bPrintRefValue;
     header->bPrintComp     = ir.pull->bPrintComp;
@@ -2232,8 +2235,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
      *    No reference columns, one column per pull coordinate
      *
      *  - in position output pullx.xvg:
-     *     * optionally, ndim columns for COM of of grp1 or grp2, depending on on mdp options
-     *       pull-print-com1 & pull-print-com2);
+     *     * optionally, ndim columns for COM of each grp1 and grp2, if pull-print-com = yes;
      *     * The displacement, always one column. Note: with pull-print-components = yes, the dx/dy/dz would
      *       be written separately into pullx file, but this is not supported and throws an error below;
      *     * optionally, the position of the reference coordinate (depending on pull-print-ref-value)
@@ -2292,10 +2294,10 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
         for (i = 0; i < header->npullcrds; i++)
         {
             printf("\tColumns for pull coordinate %d\n", i+1);
-            printf("\t\tcenter-of-mass of groups:        %d\n"
-                   "\t\tdisplacement wrt. reference:     %d\n"
+            printf("\t\treaction coordinate:             %d\n"
+                   "\t\tcenter-of-mass of groups:        %d\n"
                    "\t\treference position column:       %s\n",
-                   nColCOMCrd[i], 1, (header->bPrintRefValue ? "Yes" : "No"));
+                   1, nColCOMCrd[i], (header->bPrintRefValue ? "Yes" : "No"));
         }
         printf("\tFound %d times in %s\n", nt, fn);
         bFirst = FALSE;
@@ -2458,7 +2460,6 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
                     {
                         column += nColThisCrd[j];
                     }
-                    column += nColCOMCrd[g];
                     pos     = y[column][i];
                 }
 
