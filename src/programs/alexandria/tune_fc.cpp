@@ -1459,6 +1459,8 @@ int alex_tune_fc(int argc, char *argv[])
           "Optimize proper dihedral parameters" },
         { "-impropers",  FALSE, etBOOL, {&bOpt[eitIMPROPER_DIHEDRALS]},
           "Optimize improper dihedral parameters" },
+	{ "-pairs",  FALSE, etBOOL, {&bOpt[eitLJ14]},
+          "Optimize 1-4 interaction parameters" },
         { "-beta0", FALSE, etREAL, {&beta0},
           "Reset the initial beta for Morse potentials to this value, independent of gentop.dat. If value is <= 0 gentop.dat value is used." },
         { "-D0", FALSE, etREAL, {&D0},
@@ -1561,7 +1563,8 @@ int alex_tune_fc(int argc, char *argv[])
              minimum_data, bZero,
              opt_elem, const_elem,
              lot, gms, watoms, FALSE,
-             bOpt[eitPROPER_DIHEDRALS], bPolar, tabfn);
+             bOpt[eitLJ14], bOpt[eitPROPER_DIHEDRALS], 
+	     bPolar, tabfn);
 
     opt.checkSupport(fp, bOpt);
 

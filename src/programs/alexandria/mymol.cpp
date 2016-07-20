@@ -358,12 +358,6 @@ static void mv_plists(std::vector<PlistWrapper> &plist,
 	auto force = pd.findForces(iType);
 	p.setFtype(force->fType());
     }
-
-    /*for (auto p : plist)
-    {
-        fprintf(debug, "fType: %s, iType: %s and nParam: %u\n", 
-		interaction_function[p.getFtype()].name, iType2string(p.getItype()), p.nParam());
-		}*/
 }
 
 static void cp_plist(t_params                  *plist,
@@ -427,12 +421,12 @@ void MyMol::MakeAngles(bool bPairs,
     gen_nnb(&nnb, plist);
 
     print_nnb(&nnb, "NNB");
-    rtp.bKeepAllGeneratedDihedrals    = TRUE;
-    rtp.bRemoveDihedralIfWithImproper = TRUE;
-    rtp.bGenerateHH14Interactions     = TRUE;
+    rtp.bKeepAllGeneratedDihedrals    = bDihs;
+    rtp.bRemoveDihedralIfWithImproper = bDihs;
+    rtp.bGenerateHH14Interactions     = bPairs;
     rtp.nrexcl                        = nexcl_;
 
-    gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, NULL, FALSE);
+    gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, nullptr, FALSE);
 
     t_blocka *EXCL;
     snew(EXCL, 1);
@@ -1125,9 +1119,9 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                                   bool                    bDih,
                                   bool                    bAddShells)
 {
-    immStatus imm = immOK;
-    int       ftb;
-    t_param   b;
+    immStatus   imm = immOK;
+    int         ftb;
+    t_param     b;
     std::string btype1, btype2;
 
     if (nullptr != debug)
@@ -1207,7 +1201,8 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
     if (immOK == imm)
     {
-        /* Make Harmonic Angles and Proper Dihedrals. This needs the bonds to be F_BONDS.*/
+        /* Make Harmonic Angles, Proper Dihedrals, and 14 Pairs. 
+	   This needs the bonds to be F_BONDS.*/
         MakeAngles(bPairs, bDih);
 
 	/*for (auto p : plist_)
@@ -1216,7 +1211,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 		    interaction_function[p.getFtype()].name, iType2string(p.getItype()), p.nParam());
 		    }*/
 
-        /* Make Linear Angles, Improper Dihedrals, and vsites*/
+        /* Make Linear Angles, Improper Dihedrals, and Virtual Sites*/
         MakeSpecialInteractions(pd, bUseVsites);
 
         getForceConstants(pd);

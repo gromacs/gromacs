@@ -530,7 +530,8 @@ void MolDip::Read(FILE *fp,
                   const MolSelect &gms,
                   real watoms, 
                   gmx_bool bCheckSupport,
-                  bool bDihedral, bool bPolar,
+                  bool bPairs, bool bDihedral, 
+		  bool bPolar,
                   const char *tabfn)
 {
     int                              nwarn = 0, nmol_cpu;
@@ -600,7 +601,7 @@ void MolDip::Read(FILE *fp,
 
                 imm = mpnew.GenerateTopology(_atomprop, pd_, lot, 
                                              _iChargeDistributionModel,
-                                             false, false, bDihedral, bPolar);
+                                             false, bPairs, bDihedral, bPolar);
 
                 if (immOK == imm)
                 {

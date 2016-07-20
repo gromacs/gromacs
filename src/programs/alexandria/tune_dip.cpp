@@ -1055,7 +1055,7 @@ int alex_tune_dip(int argc, char *argv[])
             minimum_data, bZero,
             opt_elem, const_elem,
             lot, gms, watoms, TRUE,
-            false, bPol,
+            false, false, bPol,
             opt2fn_null("-tab", NFILE, fnm));
     printf("Read %d molecules\n", (int)md._mymol.size());
 

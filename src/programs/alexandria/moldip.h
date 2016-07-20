@@ -64,14 +64,12 @@ class MolDip
                   gmx_bool bPol, gmx_bool bFitZeta);
 
         void Read(FILE *fp, const char *fn, const char *pd_fn,
-                  int minimum_data,
-                  gmx_bool bZero,
+                  int minimum_data, gmx_bool bZero,
                   char *opt_elem, char *const_elem,
-                  char *lot,
-                  const MolSelect &gms,
+                  char *lot, const MolSelect &gms,
                   real watoms, gmx_bool bCheckSupport,
-                  bool bDihedral, bool bPolar,
-                  const char *tabfn);
+                  bool bPairs, bool bDihedral, 
+		  bool bPolar, const char *tabfn);
 
         void CalcDeviation();
 };
