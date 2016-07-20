@@ -63,10 +63,15 @@ enum ChargeDistributionModel {
 namespace alexandria
 {
 
+/*! \brief
+ * Convert interaction type to string
+ */
 const char *iType2string(InteractionType iType);
 
+/*! \brief
+ * Convert string to interaction type
+ */
 InteractionType string2iType(const char *string);
-
 
 /*! \brief
  * Contains all the information realted to
@@ -450,14 +455,32 @@ using ListedForcesIterator      = typename std::vector<ListedForces>::iterator;
 using ListedForcesConstIterator = typename std::vector<ListedForces>::const_iterator;
 
 
+/*! \brief
+ * Contains Bosque polarizability.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
 class Bosque
 {
     public:
 
+        /*! \brief
+         * Bosque constructor
+         *
+         * \param[in] bosque          Bosque atom type name
+         * \param[in] polarizability  Polarizability value
+         */
         Bosque(const std::string &bosque, double polarizability);
 
+	/*! \brief
+	 * Return Bosque equivalent of the polarizability type
+	 */
         const std::string &getBosque() const { return bosque_; }
 
+	/*! \brief
+	 * Return polarizability value
+	 */
         double getPolarizability() const { return polarizability_; }
 
     private:
@@ -469,35 +492,62 @@ class Bosque
 using BosqueIterator      = typename std::vector<Bosque>::iterator;
 using BosqueConstIterator = typename std::vector<Bosque>::const_iterator;
 
+
+/*! \brief
+ * Contains Miller polarizability.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
 class Miller
 {
     public:
+
+        /*! \brief
+         * Miller constructor
+         *
+         * \param[in] miller            Miller atom type name
+         * \param[in] atomnumber        Atomic number
+	 * \param[in] tauAhc            Polarizability description tau
+	 * \param[in] alphaAhp          Polarizability description alpha 
+	 * \param[in] alexandria_equiv  Alexandria type
+         */
         Miller(const std::string &miller,
                int                atomnumber,
                double             tauAhc,
                double             alphaAhp,
                const std::string &alexandria_equiv);
 
+	/*! \brief
+	 * Return Miller atom type name
+	 */
         const std::string &getMiller() const { return miller_; }
 
+	/*! \brief
+	 * Return atomic number
+	 */
         int getAtomnumber() const { return atomnumber_; }
 
+	/*! \brief 
+	 * Return polarizability description tau
+	 */
         double getTauAhc() const { return tauAhc_; }
 
+	/*! \brief 
+	 * Return polarizability description alpha
+	 */
         double getAlphaAhp() const { return alphaAhp_; }
 
+	/*! \brief 
+	 * Return Alexandria type
+	 */
         const std::string &getAlexandriaEquiv() const { return alexandria_equiv_; }
 
     private:
-        //! Atom type name
         std::string miller_;
-        //! Atomic number
         int         atomnumber_;
-        //! Polarizability description tau
         double      tauAhc_;
-        //! Polarizability description alpha
         double      alphaAhp_;
-        //! Alexandria type
         std::string alexandria_equiv_;
 };
 
