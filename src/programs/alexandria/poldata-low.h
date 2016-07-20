@@ -579,7 +579,7 @@ using SymchargesConstIterator = typename std::vector<Symcharges>::const_iterator
 class Epref
 {
     public:
-        Epref(ChargeDistributionModel  eqdModel,
+        Epref(ChargeDistributionModel   eqdModel,
               const std::string        &epref);
 
         ChargeDistributionModel getEqdModel() const { return eqdModel_; }
@@ -616,81 +616,81 @@ class RowZetaQ
          */
         RowZetaQ(int row, double zeta, double q);
 
-	/*! \brief
-	 * Return the row in the periodic table 
-	 * for each of the charge components
-	 */
+        /*! \brief
+         * Return the row in the periodic table
+         * for each of the charge components
+         */
         int row() const { return row_; };
 
-	/*! \brief
-	 * Set the row in the periodic table 
-	 * for each of the charge components
-	 * 
-	 * \param[in] row The row in the periodic table for each of the charge components
-	 */
+        /*! \brief
+         * Set the row in the periodic table
+         * for each of the charge components
+         *
+         * \param[in] row The row in the periodic table for each of the charge components
+         */
         void setRow(int row) { row_ = row; }
 
-	/*! \brief
-	 * Return the charge of each of the components
-	 */
+        /*! \brief
+         * Return the charge of each of the components
+         */
         double q() const { return q_; }
 
-	/*! \brief
-	 * Set the charge of each of the components
-	 *
-	 * \param[in] q  Charge of each of the components
-	 */
+        /*! \brief
+         * Set the charge of each of the components
+         *
+         * \param[in] q  Charge of each of the components
+         */
         void setQ(double q)
         {
             GMX_RELEASE_ASSERT(!fixedQ_, "Trying to modify a fixed charge");
             q_ = q;
         }
 
-	/*! \brief
-	 * Return the inverse screening length of each of the components
-	 */
+        /*! \brief
+         * Return the inverse screening length of each of the components
+         */
         double zeta() const { return zeta_; }
 
-	/*! \brief
-	 * Set the inverse screening length of each of the components
-	 *
-	 * \param[in] z  the inverse screening length of each of the components
-	 */
+        /*! \brief
+         * Set the inverse screening length of each of the components
+         *
+         * \param[in] z  the inverse screening length of each of the components
+         */
         void setZeta(double z) { zeta_ = z; }
 
-	/*! \brief
-	 * Return reference (starting) value for zeta
-	 */
+        /*! \brief
+         * Return reference (starting) value for zeta
+         */
         double zetaRef() const { return zetaRef_; }
 
-	/*! \brief
-	 * Set reference (starting) value for zeta
-	 *
-	 * \param[in] z  Reference value for zeta
-	 */
+        /*! \brief
+         * Set reference (starting) value for zeta
+         *
+         * \param[in] z  Reference value for zeta
+         */
         void setZetaRef(double z) { zetaRef_ = z; }
 
-	/*! \brief
-	 * Return parameter optimization index
-	 */
+        /*! \brief
+         * Return parameter optimization index
+         */
         int zIndex() const { return zindex_; }
 
-	/*! \brief
-	 * Set parameter optimization index
-	 *
-	 * \param[in] zi optimization index
-	 */
+        /*! \brief
+         * Set parameter optimization index
+         *
+         * \param[in] zi optimization index
+         */
         void setZindex(int zi) { zindex_ = zi; }
 
-	/*! \brief
-	 * Return true if the charge is fixed
-	 */
+        /*! \brief
+         * Return true if the charge is fixed
+         */
         bool fixedQ() const { return fixedQ_; }
 
-    private: 
+    private:
         int    row_;
         double zeta_;
-        double q_; 
+        double q_;
         double zetaRef_;
         int    zindex_;
         bool   fixedQ_;
