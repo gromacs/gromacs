@@ -61,8 +61,8 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "gmx_simple_comm.h"
-#include "stringutil.h"
 #include "plistwrapper.h"
+#include "stringutil.h"
 
 namespace alexandria
 {
