@@ -69,7 +69,7 @@ InteractionType string2iType(const char *string);
 
 
 /*! \brief
- * Contains all the information realted to 
+ * Contains all the information realted to
  * polarizability.
  *
  * \inpublicapi
@@ -78,15 +78,15 @@ InteractionType string2iType(const char *string);
 class Ptype
 {
     public:
-        
+
         /*! \brief
          * Ptype constructor
          *
          * \param[in] ptype           Polarizability type
          * \param[in] miller          Miller equivalent of the polarizability type
          * \param[in] bosque          Bosque equivalent of the polarizability type
-	 * \param[in] polarizability  Polarizability value
-	 * \param[in] sigPol          Uncertainty in the calulated polarizability 
+         * \param[in] polarizability  Polarizability value
+         * \param[in] sigPol          Uncertainty in the calulated polarizability
          */
         Ptype(const std::string &ptype,
               const std::string &miller,
@@ -94,45 +94,45 @@ class Ptype
               double             polarizability,
               double             sigPol);
 
-	/*! \brief
-	 * Return the polarizability type
-	 */
+        /*! \brief
+         * Return the polarizability type
+         */
         const std::string &getType() const { return type_; }
 
-	/*! \brief
-	 * Return Miller equivalent of the polarizability type
-	 */
+        /*! \brief
+         * Return Miller equivalent of the polarizability type
+         */
         const std::string &getMiller() const { return miller_; }
 
-	/*! \brief
-	 * Return Bosque equivalent of the polarizability type 
-	 */
+        /*! \brief
+         * Return Bosque equivalent of the polarizability type
+         */
         const std::string &getBosque() const { return bosque_; }
-	
-	/*! \brief
-	 * Set the polarizability value
-	 *
-	 * \param[in] polarizability  Polarizability value
-	 */
-	void setPolarizability(double polarizability) { polarizability_ = polarizability; }
 
-	/*! \brief
-	 * Return the polarizability value
-	 *
-	 */
-        double getPolarizability() const { return polarizability_; }  
+        /*! \brief
+         * Set the polarizability value
+         *
+         * \param[in] polarizability  Polarizability value
+         */
+        void setPolarizability(double polarizability) { polarizability_ = polarizability; }
 
-	/*! \brief
-	 * Set the uncertainty in the calulated polarizability
-	 *
-	 * \param[in] sigPol  uncertainty
-	 */
-	void setSigPol(double sigPol) { sigPol_ = sigPol; }
+        /*! \brief
+         * Return the polarizability value
+         *
+         */
+        double getPolarizability() const { return polarizability_; }
 
-	/*! \brief
-	 * Return the uncertainty in the calulated polarizability
-	 *
-	 */
+        /*! \brief
+         * Set the uncertainty in the calulated polarizability
+         *
+         * \param[in] sigPol  uncertainty
+         */
+        void setSigPol(double sigPol) { sigPol_ = sigPol; }
+
+        /*! \brief
+         * Return the uncertainty in the calulated polarizability
+         *
+         */
         double getSigPol() const { return sigPol_; }
 
     private:
@@ -149,7 +149,7 @@ using PtypeIterator      = typename std::vector<Ptype>::iterator;
 using PtypeConstIterator = typename std::vector<Ptype>::const_iterator;
 
 /*! \brief
- * Contains all the information realted to 
+ * Contains all the information realted to
  * alexandria force field atom types.
  *
  * \inpublicapi
@@ -158,17 +158,17 @@ using PtypeConstIterator = typename std::vector<Ptype>::const_iterator;
 class Ffatype
 {
     public:
-        
+
         /*! \brief
          * Fftype constructor
          *
          * \param[in] desc        Description
          * \param[in] type        Atom type
          * \param[in] ptype       Polarizability type
-	 * \param[in] btype       Bond type
-	 * \param[in] elem        Element name
-	 * \param[in] vdwparams   Van der Waals parameters
-	 * \param[in] refEnthalpy Reference Enthalpy of Formation
+         * \param[in] btype       Bond type
+         * \param[in] elem        Element name
+         * \param[in] vdwparams   Van der Waals parameters
+         * \param[in] refEnthalpy Reference Enthalpy of Formation
          */
         Ffatype(const std::string &desc,
                 const std::string &type,
@@ -178,44 +178,44 @@ class Ffatype
                 const std::string &vdwparams,
                 const std::string &refEnthalpy);
 
-	/*! \brief
+        /*! \brief
          * Fftype default constructor
          */
         Ffatype () {}
 
-	/*! \brief
-	 * Return the decription of atoms
-	 */
+        /*! \brief
+         * Return the decription of atoms
+         */
         const std::string &getDesc() const { return desc_; }
 
-	/*! \brief
-	 * Return the type of atoms
-	 */
+        /*! \brief
+         * Return the type of atoms
+         */
         const std::string &getType() const { return type_; }
 
-	/*! \brief
-	 * Return the polarizability type of atoms
-	 */
+        /*! \brief
+         * Return the polarizability type of atoms
+         */
         const std::string &getPtype() const { return ptype_; }
 
-	/*! \brief
-	 * Return the bond type of atoms
-	 */
+        /*! \brief
+         * Return the bond type of atoms
+         */
         const std::string &getBtype() const { return btype_; }
 
-	/*! \brief
-	 * Return the element name of atoms
-	 */
+        /*! \brief
+         * Return the element name of atoms
+         */
         const std::string &getElem() const { return elem_; }
 
-	/*! \brief
-	 * Return the Van der Waals parameters of atoms
-	 */
+        /*! \brief
+         * Return the Van der Waals parameters of atoms
+         */
         const std::string &getVdwparams() const { return vdwparams_; }
 
-	/*! \brief
-	 * Return the reference enthalpy of formation of atoms
-	 */
+        /*! \brief
+         * Return the reference enthalpy of formation of atoms
+         */
         const std::string &getRefEnthalpy() const { return refEnthalpy_; }
 
     private:
@@ -233,84 +233,84 @@ using FfatypeConstIterator = typename std::vector<Ffatype>::const_iterator;
 
 
 /*! \brief
- * Contains the listed force including 
+ * Contains the listed force including
  * bonds or angles, or dihedrals
  *
  * \inpublicapi
  * \ingroup module_alexandria
  */
-class ListedForce 
+class ListedForce
 {
 
     public:
 
-       /*! \brief
+        /*! \brief
          * ListedForce constructor
          *
          * \param[in] atoms       A vector of atom bond types invloved in the listed force
          * \param[in] params      Listed force paramters
          * \param[in] refvalue    The reference value such as the reference bond length
-	 * \param[in] sigma       Uncertainty in the calculated reference value
-	 * \param[in] ntrain      Number of molecules in the training set
+         * \param[in] sigma       Uncertainty in the calculated reference value
+         * \param[in] ntrain      Number of molecules in the training set
          */
-       ListedForce(const std::vector<std::string> atoms,
-		   std::string                    params, 
-		   double                         refValue,
-		   double                         sigma, 
-		   size_t                         ntrain);
+        ListedForce(const std::vector<std::string> atoms,
+                    std::string                    params,
+                    double                         refValue,
+                    double                         sigma,
+                    size_t                         ntrain);
 
-       /*! \brief
-	* Return the vector of atom bond types invloved in the listed force
-	*/
+        /*! \brief
+         * Return the vector of atom bond types invloved in the listed force
+         */
         const std::vector<std::string> &atoms() const { return atoms_; }
-	
-	/*! \brief
-	* Set the listed force paramters
-	*/
-	void setParams(const std::string &params) { params_ = params; }
-	
-	/*! \brief
-	* Return the listed force paramters
-	*/
-	const std::string &params() const { return params_; } 
-	
-	/*! \brief
-	* Set reference value
-	*/
-	void setRefValue(double value) { refValue_ = value; }
-	
-	/*! \brief
-	* Return reference value
-	*/
-	double refValue() const { return refValue_; }
-	
-	/*! \brief
-	* Set uncertainty in reference value
-	*/
-	void setSigma(double sigma) { sigma_ = sigma; }
 
-	/*! \brief
-	* Return uncertainty in reference value
-	*/
-	double sigma() const { return sigma_; }
-	
-	/*! \brief
-	* Set the number of molecules in the training set
-	*/
-	void setNtrain(int ntrain) { ntrain_ = ntrain; }
-	
-	/*! \brief
-	* Return the number of molecules in the training set
-	*/
-	int ntrain() const { return ntrain_; }
-    
+        /*! \brief
+         * Set the listed force paramters
+         */
+        void setParams(const std::string &params) { params_ = params; }
+
+        /*! \brief
+         * Return the listed force paramters
+         */
+        const std::string &params() const { return params_; }
+
+        /*! \brief
+         * Set reference value
+         */
+        void setRefValue(double value) { refValue_ = value; }
+
+        /*! \brief
+         * Return reference value
+         */
+        double refValue() const { return refValue_; }
+
+        /*! \brief
+         * Set uncertainty in reference value
+         */
+        void setSigma(double sigma) { sigma_ = sigma; }
+
+        /*! \brief
+         * Return uncertainty in reference value
+         */
+        double sigma() const { return sigma_; }
+
+        /*! \brief
+         * Set the number of molecules in the training set
+         */
+        void setNtrain(int ntrain) { ntrain_ = ntrain; }
+
+        /*! \brief
+         * Return the number of molecules in the training set
+         */
+        int ntrain() const { return ntrain_; }
+
     private:
 
         const std::vector<std::string> atoms_;
-	std::string                    params_;
-	double                         refValue_;
-	double                         sigma_;
-	size_t                         ntrain_;
+        std::string                    params_;
+        double                         refValue_;
+        double                         sigma_;
+        size_t                         ntrain_;
 };
 
 using ListedForceIterator      = typename std::vector<ListedForce>::iterator;
@@ -318,7 +318,7 @@ using ListedForceConstIterator = typename std::vector<ListedForce>::const_iterat
 
 
 /*! \brief
- * Contains the listed forces including 
+ * Contains the listed forces including
  * bonds and angles, and dihedrals
  *
  * \inpublicapi
@@ -328,122 +328,122 @@ class ListedForces
 {
 
     public:
-         
+
         /*! \brief
          * ListedForces constructor
          *
          * \param[in] iType       Interaction type
          * \param[in] function    The function used to calculate the force corresponding to the iType
-         * \param[in] Unit        The unit of the reference value 
+         * \param[in] Unit        The unit of the reference value
          */
-        ListedForces(const std::string     iType,
-		     const std::string     &function,
-		     const std::string     &unit);
+        ListedForces(const std::string      iType,
+                     const std::string     &function,
+                     const std::string     &unit);
 
-	/* \brief
-	 * Return the unit of the reference value 
-	 */
-	const std::string &unit() const {return unit_;} 
-	
-	/* \brief
-	 * Return the function name
-	 */
-	const std::string &function() const {return function_;}
+        /* \brief
+         * Return the unit of the reference value
+         */
+        const std::string &unit() const {return unit_; }
 
-	/* \brief
-	 * Return the function type
-	 */
-	const unsigned int &fType() const {return fType_;}
+        /* \brief
+         * Return the function name
+         */
+        const std::string &function() const {return function_; }
 
-	/* \brief
-	 * Return the interaction type 
-	 */
-	const InteractionType &iType() const {return iType_;}
-	
-	/* \brief
-	 * Find a listed force in the force_ vector
-	 * 
-	 * \param[in] atoms   A vector of atom bond types invloved in the listed force  
-	 */
-	ListedForceIterator findForce(const std::vector<std::string> &atoms);
-	
-	/* \brief
-	 * Find a listed force in the force_ vector
-	 * 
-	 * \param[in] atoms   A vector of atom bond types invloved in the listed force  
-	 */
-	ListedForceConstIterator findForce(const std::vector<std::string> &atoms) const;
-	
-	/* \brief
-	 * Set the listed force paramters
-	 * 
-	 * \param[in] atoms       A vector of atom bond types invloved in the listed force
+        /* \brief
+         * Return the function type
+         */
+        const unsigned int &fType() const {return fType_; }
+
+        /* \brief
+         * Return the interaction type
+         */
+        const InteractionType &iType() const {return iType_; }
+
+        /* \brief
+         * Find a listed force in the force_ vector
+         *
+         * \param[in] atoms   A vector of atom bond types invloved in the listed force
+         */
+        ListedForceIterator findForce(const std::vector<std::string> &atoms);
+
+        /* \brief
+         * Find a listed force in the force_ vector
+         *
+         * \param[in] atoms   A vector of atom bond types invloved in the listed force
+         */
+        ListedForceConstIterator findForce(const std::vector<std::string> &atoms) const;
+
+        /* \brief
+         * Set the listed force paramters
+         *
+         * \param[in] atoms       A vector of atom bond types invloved in the listed force
          * \param[in] params      Listed force paramters
          * \param[in] refvalue    The reference value such as the reference bond length
-	 * \param[in] sigma       Uncertainty in the calculated reference value
-	 * \param[in] ntrain      Number of molecules in the training set  
-	 */
-	bool setForceParams(const std::vector<std::string> &atoms,
-			    const std::string              &params,
-			    double                         refValue, 
-			    double                         sigma,
-			    size_t                         ntrain);
-	
-	/* \brief
-	 * Generate a ListedForce object and 
-	 * add it to the force_ vector, if it does not exist already
-	 * 
-	 * \param[in] atoms       A vector of atom bond types invloved in the listed force
-         * \param[in] params      Listed force paramters
-         * \param[in] refvalue    The reference value such as the reference bond length
-	 * \param[in] sigma       Uncertainty in the calculated reference value
-	 * \param[in] ntrain      Number of molecules in the training set  
-	 */
-	void addForce(const std::vector<std::string> &atoms,
-		      const std::string              &params,
-		      double                         refValue, 
-		      double                         sigma,
-		      size_t                         ntrain);
-	
-	/* \brief
-	 * Search a listed force in the force_ vector
-	 * 
-	 * \param[in] atoms       A vector of atom bond types invloved in the listed force
-         * \param[in] params      Listed force paramters
-         * \param[in] refvalue    The reference value such as the reference bond length
-	 * \param[in] sigma       Uncertainty in the calculated reference value
-	 * \param[in] ntrain      Number of molecules in the training set  
-	 */
-	bool searchForce(std::vector<std::string> &atoms,
-			 std::string              &params,
-			 double                   *refValue, 
-			 double                   *sigma,
-			 size_t                   *ntrain) const;
+         * \param[in] sigma       Uncertainty in the calculated reference value
+         * \param[in] ntrain      Number of molecules in the training set
+         */
+        bool setForceParams(const std::vector<std::string> &atoms,
+                            const std::string              &params,
+                            double                          refValue,
+                            double                          sigma,
+                            size_t                          ntrain);
 
-	
-	/*! \brief
-	 * Erase the force_ vector
-	 */
-	void eraseListedForce()
+        /* \brief
+         * Generate a ListedForce object and
+         * add it to the force_ vector, if it does not exist already
+         *
+         * \param[in] atoms       A vector of atom bond types invloved in the listed force
+         * \param[in] params      Listed force paramters
+         * \param[in] refvalue    The reference value such as the reference bond length
+         * \param[in] sigma       Uncertainty in the calculated reference value
+         * \param[in] ntrain      Number of molecules in the training set
+         */
+        void addForce(const std::vector<std::string> &atoms,
+                      const std::string              &params,
+                      double                          refValue,
+                      double                          sigma,
+                      size_t                          ntrain);
+
+        /* \brief
+         * Search a listed force in the force_ vector
+         *
+         * \param[in] atoms       A vector of atom bond types invloved in the listed force
+         * \param[in] params      Listed force paramters
+         * \param[in] refvalue    The reference value such as the reference bond length
+         * \param[in] sigma       Uncertainty in the calculated reference value
+         * \param[in] ntrain      Number of molecules in the training set
+         */
+        bool searchForce(std::vector<std::string> &atoms,
+                         std::string              &params,
+                         double                   *refValue,
+                         double                   *sigma,
+                         size_t                   *ntrain) const;
+
+
+        /*! \brief
+         * Erase the force_ vector
+         */
+        void eraseListedForce()
         {
             force_.clear();
         }
 
-	ListedForceIterator forceBegin() {return force_.begin();}
-	
-	ListedForceConstIterator forceBegin() const {return force_.begin();}
-	
-	ListedForceIterator forceEnd() {return force_.end();}
-	
-	ListedForceConstIterator forceEnd() const {return force_.end();}
-	
+        ListedForceIterator forceBegin() {return force_.begin(); }
+
+        ListedForceConstIterator forceBegin() const {return force_.begin(); }
+
+        ListedForceIterator forceEnd() {return force_.end(); }
+
+        ListedForceConstIterator forceEnd() const {return force_.end(); }
+
     private:
-  
+
         InteractionType          iType_;
-	const std::string        function_;
-	const std::string        unit_;
-	std::vector<ListedForce> force_;
-	unsigned int             fType_;
+        const std::string        function_;
+        const std::string        unit_;
+        std::vector<ListedForce> force_;
+        unsigned int             fType_;
 };
 
 using ListedForcesIterator      = typename std::vector<ListedForces>::iterator;
@@ -551,7 +551,7 @@ class RowZetaQ
     public:
 
         RowZetaQ(int row, double zeta, double q);
-        
+
         int row() const { return row_; };
 
         void setRow(int row) { row_ = row; }
