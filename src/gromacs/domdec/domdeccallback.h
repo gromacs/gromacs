@@ -34,21 +34,18 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::LocalAtomSetManager
+ * Declares gmx::DomDecCallBack
  *
  * \author Christian Blau <cblau@gwdg.de>
- * \inlibraryapi
  * \ingroup module_domdec
  */
-
-#ifndef GMX_LOCALATOMSETMANAGER_H
-#define GMX_LOCALATOMSETMANAGER_H
+#ifndef GMX_DOMDECCALLBACK_H
+#define GMX_DOMDECCALLBACK_H
 
 #include <memory>
+#include <vector>
 
 #include "gromacs/utility/classhelpers.h"
-
-#include "domdeccallback.h"
 
 struct gmx_ga2la_t;
 struct gmx_localtop_t;
@@ -57,43 +54,48 @@ struct t_mdatoms;
 namespace gmx
 {
 
-class LocalAtomSet;
+/*! \libinternal \brief Abstract base class for all domain decomposition callbacks.
+ *
+ * \ingroup module_domdec */
+class DomDecCallBack
+{
+    friend class DomDecCallBackContainer;
+    private:
+        /*! \brief Triggered from DomDecCallBackContainer after domain decomposition routine is finished.
+         *
+         * \param[in] ga2la global atom to local atom lookup
+         * \param[in] top_local the node-local topology
+         * \param[in] mdatoms the md atoms
+         */
+        virtual void domDecDone(const gmx_ga2la_t *ga2la, const gmx_localtop_t *top_local, const t_mdatoms *mdatoms) = 0;
+};
 
 /*! \libinternal \brief
- * Hands out handles to local atom set indices and triggers index recalculation
- * for all sets upon domain decomposition if run in parallel.
+ * Hold handles to all functions that shall be triggered during domain decomposition.
  *
  * \ingroup module_domdec
  */
-class LocalAtomSetManager : public DomDecCallBack
+class DomDecCallBackContainer
 {
     public:
-        /*! \brief Construct an atom set manager.
-         *
-         * \param[in] bParallel atom set manager needs to know if it manages sets in a parallel run
-         */
-        explicit LocalAtomSetManager(const bool bParallel);
-        ~LocalAtomSetManager();
+        /*! \brief Handle for calling a call back object during domain decomposition. */
+        typedef std::unique_ptr<DomDecCallBack> DomDecCallBackHandle;
+        DomDecCallBackContainer();
 
-        /*! \brief Add a new atom set to be managed and give back a handle.
+        /*! \brief Triggered after domain decomposition routine is finished.
          *
-         * \param[in] number_of_atoms The number of atoms in the atom set
-         * \param[in] index The indices of the atoms in the atom set
-         */
-        LocalAtomSet add(const int number_of_atoms, const int *index);
+         * \param[in] ga2la look-up to identify local atoms
+         * \param[in] top_local local topology data
+         * \param[in] mdatoms local md atom data
+         * */
+        void triggerCallBackDomDecDone(const gmx_ga2la_t *ga2la, const gmx_localtop_t *top_local, const t_mdatoms *mdatoms);
 
-        /*! \brief Trigger recalculation of local and collective indices from ga2la if run in parallel.
-         *
-         * \throws exception if not run in parallel.
+        /*! \brief The DomDecCallBackContainer handles all callback to domain decomposition during a simulation.
+         * \param[in] callbackhandle Handle to the callback.
          */
-        void setIndicesInDomainDecomposition(const gmx_ga2la_t  *ga2la);
+        void add(DomDecCallBackHandle &&callbackhandle);
 
     private:
-        /*! \brief The callback function implementation from domain decomposition.
-         *
-         * triggers setIndiciesInDomainDecomposition
-         */
-        void domDecDone(const gmx_ga2la_t *ga2la, const gmx_localtop_t *top_local, const t_mdatoms *mdatoms);
         class Impl;
         PrivateImplPointer<Impl> impl_;
 };
