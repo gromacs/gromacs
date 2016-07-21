@@ -393,7 +393,7 @@ static void init_em(FILE *fplog, const char *title,
         dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
                             &ems->s, &ems->f, mdAtoms, *top,
-                            fr, vsite, constr,
+                            fr, vsite, constr, nullptr,
                             nrnb, nullptr, FALSE);
         dd_store_state(cr->dd, &ems->s);
 
@@ -707,7 +707,7 @@ static void em_dd_partition_system(FILE *fplog, int step, const t_commrec *cr,
     dd_partition_system(fplog, step, cr, FALSE, 1,
                         nullptr, top_global, ir,
                         &ems->s, &ems->f,
-                        mdAtoms, top, fr, vsite, constr,
+                        mdAtoms, top, fr, vsite, constr, nullptr,
                         nrnb, wcycle, FALSE);
     dd_store_state(cr->dd, &ems->s);
 }
