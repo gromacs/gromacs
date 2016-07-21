@@ -88,6 +88,7 @@ namespace gmx
 {
 class Constraints;
 class MDAtoms;
+class LocalAtomSetManager;
 } // namespace
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
@@ -193,17 +194,16 @@ struct DomdecOptions
 };
 
 /*! \brief Initialized the domain decomposition, chooses the DD grid and PME ranks, return the DD struct */
-gmx_domdec_t *init_domain_decomposition(FILE                *fplog,
-                                        t_commrec           *cr,
-                                        const DomdecOptions &options,
-                                        const MdrunOptions  &mdrunOptions,
-                                        const gmx_mtop_t    *mtop,
-                                        const t_inputrec    *ir,
-                                        const matrix         box,
-                                        const rvec          *xGlobal,
-                                        gmx_ddbox_t         *ddbox,
-                                        int                 *npme_x,
-                                        int                 *npme_y);
+gmx_domdec_t *
+init_domain_decomposition(FILE                           *fplog,
+                          t_commrec                      *cr,
+                          const DomdecOptions            &options,
+                          const MdrunOptions             &mdrunOptions,
+                          const gmx_mtop_t               *mtop,
+                          const t_inputrec               *ir,
+                          const matrix                    box,
+                          gmx::ArrayRef<const gmx::RVec>  xGlobal,
+                          gmx::LocalAtomSetManager       *atomSets);
 
 /*! \brief Initialize data structures for bonded interactions */
 void dd_init_bondeds(FILE              *fplog,
