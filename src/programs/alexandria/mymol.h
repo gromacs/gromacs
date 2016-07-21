@@ -141,8 +141,8 @@ class MyMol
          *
          * \param[in] bUseVsites
          */
-        void MakeSpecialInteractions(const Poldata &pd, 
-				     bool  bUseVsites);
+        void MakeSpecialInteractions(const Poldata &pd,
+                                     bool           bUseVsites);
 
         /*! \brief
          * Add shell particles
@@ -289,7 +289,7 @@ class MyMol
                            const Poldata          &pd,
                            gmx_atomprop_t          aps);
 
-	/*! \brief
+        /*! \brief
          * Print the topology that was generated previously in GROMACS format.
          *
          * \param[in] fn        A File pointer opened previously.
@@ -299,11 +299,11 @@ class MyMol
          * \param[in] aps       Gromacs atom properties
          */
         void PrintTopology(FILE                    *fp,
-                           ChargeDistributionModel iModel,
-                           bool                    bVerbose,
-                           const Poldata          &pd,
-                           gmx_atomprop_t          aps,
-			   bool                   bITP);
+                           ChargeDistributionModel  iModel,
+                           bool                     bVerbose,
+                           const Poldata           &pd,
+                           gmx_atomprop_t           aps,
+                           bool                     bITP);
 
         /*! \brief
          *  Compute or derive global info about the molecule

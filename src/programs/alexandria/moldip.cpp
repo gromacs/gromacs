@@ -221,11 +221,11 @@ static gmx_bool const_index_count(t_index_count *ic, char *name)
     return FALSE;
 }
 
-static void dump_index_count(t_index_count *ic,
-                             FILE *fp,
-                             ChargeDistributionModel iDistributionModel, 
-                             const Poldata &pd,
-                             gmx_bool bFitZeta)
+static void dump_index_count(t_index_count          *ic,
+                             FILE                   *fp,
+                             ChargeDistributionModel iDistributionModel,
+                             const Poldata          &pd,
+                             gmx_bool                bFitZeta)
 {
     int    i, j, nZeta, nZopt;
     double zz;
@@ -294,11 +294,11 @@ static int clean_index_count(t_index_count *ic, int minimum_data, FILE *fp)
     return nremove;
 }
 
-static void update_index_count_bool(t_index_count *ic, 
-                                    const Poldata &pd,
-                                    const char *string, 
-                                    gmx_bool bSet,
-                                    gmx_bool bAllowZero, 
+static void update_index_count_bool(t_index_count          *ic,
+                                    const Poldata          &pd,
+                                    const char             *string,
+                                    gmx_bool                bSet,
+                                    gmx_bool                bAllowZero,
                                     ChargeDistributionModel iDistributionModel)
 {
     std::vector<std::string> ptr = gmx::splitString(string);
@@ -313,10 +313,10 @@ static void update_index_count_bool(t_index_count *ic,
 
 static int check_data_sufficiency(FILE *fp,
                                   std::vector<alexandria::MyMol> &mol,
-                                  int minimum_data, 
+                                  int minimum_data,
                                   const Poldata &pd,
-                                  t_index_count *ic, 
-                                  ChargeDistributionModel iDistributionModel, 
+                                  t_index_count *ic,
+                                  ChargeDistributionModel iDistributionModel,
                                   char *opt_elem, char *const_elem,
                                   t_commrec *cr, gmx_bool bPol,
                                   gmx_bool bFitZeta)
@@ -519,19 +519,19 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
     _bPol                       = bPol;
 }
 
-void MolDip::Read(FILE *fp, 
-                  const char *fn, 
+void MolDip::Read(FILE *fp,
+                  const char *fn,
                   const char *pd_fn,
                   int minimum_data,
                   gmx_bool bZero,
-                  char *opt_elem, 
+                  char *opt_elem,
                   char *const_elem,
                   char *lot,
                   const MolSelect &gms,
-                  real watoms, 
+                  real watoms,
                   gmx_bool bCheckSupport,
-                  bool bPairs, bool bDihedral, 
-		  bool bPolar,
+                  bool bPairs, bool bDihedral,
+                  bool bPolar,
                   const char *tabfn)
 {
     int                              nwarn = 0, nmol_cpu;
@@ -550,7 +550,7 @@ void MolDip::Read(FILE *fp,
     _atomprop   = gmx_atomprop_init();
 
     /* Force field data */
-    try 
+    try
     {
         alexandria::readPoldata(pd_fn, pd_, _atomprop);
     }
@@ -599,7 +599,7 @@ void MolDip::Read(FILE *fp,
                 printf("%s\n", mpi->getMolname().c_str());
                 mpnew.molProp()->Merge(mpi);
 
-                imm = mpnew.GenerateTopology(_atomprop, pd_, lot, 
+                imm = mpnew.GenerateTopology(_atomprop, pd_, lot,
                                              _iChargeDistributionModel,
                                              false, bPairs, bDihedral, bPolar);
 
@@ -621,12 +621,12 @@ void MolDip::Read(FILE *fp,
                     imm = mpnew.getExpProps(_bQM, bZero, lot, pd_);
                 }
 
-		if (NULL != debug)
-		{
+                if (NULL != debug)
+                {
 
-		    mpnew.PrintTopology(debug, _iChargeDistributionModel, false, 
-					pd_, _atomprop, true);
-		}
+                    mpnew.PrintTopology(debug, _iChargeDistributionModel, false,
+                                        pd_, _atomprop, true);
+                }
 
                 if (immOK == imm)
                 {
@@ -671,7 +671,7 @@ void MolDip::Read(FILE *fp,
                         if (NULL != debug)
                         {
                             fprintf(debug, "Added %s, ntopol = %d\n",
-                                    mpnew.molProp()->getMolname().c_str(), 
+                                    mpnew.molProp()->getMolname().c_str(),
                                     ntopol);
                         }
                     }
@@ -781,7 +781,7 @@ void MolDip::Read(FILE *fp,
         {
             nmoltot = mp.size();
         }
-        fprintf(fp, "Made topologies for %d out of %d molecules.\n", 
+        fprintf(fp, "Made topologies for %d out of %d molecules.\n",
                 ntopol,
                 (MASTER(_cr)) ? nmoltot : nmol_cpu);
 
@@ -921,15 +921,15 @@ void MolDip::CalcDeviation()
                 _ener[j] = 0;
             }
 
-            QgenEem qgen(pd_, &(mymol->topology_->atoms), 
+            QgenEem qgen(pd_, &(mymol->topology_->atoms),
                          mymol->x_, _iChargeDistributionModel,
                          _hfac,
                          mymol->molProp()->getCharge());
-            
+
             double chieq = 0;
             eQ = qgen.generateChargesSm(debug,
                                         pd_, &(mymol->topology_->atoms),
-                                        1e-4, 100, 
+                                        1e-4, 100,
                                         &chieq);
             mymol->chieq = chieq;
             if (eQ != eQGEN_OK)

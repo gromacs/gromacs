@@ -283,7 +283,7 @@ void MyMol::getForceConstants(const Poldata &pd)
     }
 }
 
-/* 
+/*
  * Make Linear Angles, Improper Dihedrals, and Virtual Sites
  */
 void MyMol::MakeSpecialInteractions(const Poldata &pd,
@@ -353,7 +353,7 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
 }
 
 
-/* 
+/*
  * Make the plist_ function types consistent with the poldata
  */
 static void mv_plists(std::vector<PlistWrapper> &plist,
@@ -391,10 +391,10 @@ static void cp_plist(t_params                  *plist,
     }
 }
 
-/* 
+/*
  * Make Harmonic Angles, Proper Dihedrals, and 14 Pairs.
  * This needs the bonds to be F_BONDS.
-*/
+ */
 void MyMol::MakeAngles(bool bPairs,
                        bool bDihs)
 {
@@ -1877,9 +1877,9 @@ void MyMol::PrintTopology(FILE                   *fp,
                           bool                    bVerbose,
                           const Poldata          &pd,
                           gmx_atomprop_t          aps,
-			  bool                   bITP)
+                          bool                    bITP)
 {
-    
+
     t_mols                   printmol;
     std::vector<std::string> commercials;
     char                     buf[256];
