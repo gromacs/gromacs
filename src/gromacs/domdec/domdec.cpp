@@ -50,6 +50,7 @@
 
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -106,6 +107,7 @@
 #include "domdec_constraints.h"
 #include "domdec_internal.h"
 #include "domdec_vsite.h"
+#include "domdeccallback.h"
 
 #define DDRANK(dd, rank)    (rank)
 #define DDMASTERRANK(dd)   (dd->masterrank)
@@ -7181,6 +7183,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     /* We currently don't know the number of threads yet, we set this later */
     dd->comm->nth = 0;
+
+    dd->domdec_callbacks = new DomDecCallBackContainer();
+    dd->domdec_callbacks->add(std::unique_ptr<DomDecCallBack>(ir->atomsets));
 
     clear_dd_cycle_counts(dd);
 

@@ -60,17 +60,18 @@ namespace gmx
 class LocalAtomSet
 {
     public:
-
         /* Only LocalAtomSetManger may create, initialize and destroy group indexs and
          * trigger index updates. */
         friend class LocalAtomSetManager;
 
-        /* \brief Provide a move constructor so we can store LocalAtomSets in a
-         * std::vector, yet PIMPL. */
+        /* \brief
+         * Provide a move constructor so we can store LocalAtomSets in a std::vector, yet PIMPL.
+         * \param[in] other other atomset to move-construct from*/
         LocalAtomSet(LocalAtomSet &&other);
 
-        /* \brief Provide a destructor so we can store LocalAtomSets in a
-         * std::vector, yet PIMPL. */
+        /* \brief
+         * Provide a destructor so we can store LocalAtomSets in a std::vector, yet PIMPL.
+         * */
         ~LocalAtomSet();
 
         /*! \brief Maps indices on node (0..num_atoms_local_) to global atom indicices.

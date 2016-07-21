@@ -67,6 +67,11 @@ struct gmx_hash_t;
 struct gmx_pme_comm_n_box_t;
 struct gmx_reverse_top_t;
 
+namespace gmx
+{
+class DomDecCallBackContainer;
+}
+
 typedef struct {
     int  j0;     /* j-zone start               */
     int  j1;     /* j-zone end                 */
@@ -200,7 +205,9 @@ struct gmx_domdec_t {
     gmx_domdec_comm_t *comm;
 
     /* The partioning count, to keep track of the state */
-    gmx_int64_t ddp_count;
+    gmx_int64_t                    ddp_count;
+
+    gmx::DomDecCallBackContainer * domdec_callbacks;
 
 
     /* gmx_pme_recv_f buffer */
