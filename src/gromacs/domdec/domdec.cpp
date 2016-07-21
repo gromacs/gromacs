@@ -51,6 +51,7 @@
 
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -9797,6 +9798,11 @@ void dd_partition_system(FILE                *fplog,
     {
         /* Update the local groups needed for ion swapping */
         dd_make_local_swap_groups(dd, ir->swap);
+    }
+
+    if (ir->atomsets != nullptr)
+    {
+        ir->atomsets->setIndicesInDomainDecomposition(dd->ga2la);
     }
 
     /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */

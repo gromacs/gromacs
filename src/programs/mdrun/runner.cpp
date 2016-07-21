@@ -57,6 +57,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/checkpoint.h"
@@ -880,6 +881,9 @@ int Mdrunner::mdrunner()
         prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, mtop, box,
                               useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
     }
+
+    /* atomsets are needed by domain decomposition */
+    inputrec->atomsets = std::unique_ptr<LocalAtomSetManager>(new gmx::LocalAtomSetManager(PAR(cr)));
 
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
