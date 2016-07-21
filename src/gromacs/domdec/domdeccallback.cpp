@@ -41,76 +41,45 @@
  */
 #include "gmxpre.h"
 
-#include "localatomsetmanager.h"
+#include "domdeccallback.h"
 
 #include <algorithm>
 #include <memory>
-
-#include "gromacs/utility/exceptions.h"
-
-#include "localatomset.h"
-#include "localatomsetdata.h"
 
 namespace gmx
 {
 
 /********************************************************************
- * LocalAtomSetManager::Impl */
+ * DomDecCallBackContainer::Impl */
 
 /*! \internal \brief
- * Private implementation class for LocalAtomSetManager.
+ * Private implementation class for DomDecCallBackContainer.
  */
-class LocalAtomSetManager::Impl
+class DomDecCallBackContainer::Impl
 {
     public:
-        ~Impl();
-        /*! \brief Impl is meaningless without knowing if run in parallel.
-         *
-         * \param[in] bParallel true if simulation is run in parallel */
-        explicit Impl(bool bParallel);
-
-        bool bParallel_;                                                             /**< set true if atoms are spread over nodes*/
-        std::vector < std::unique_ptr < internal::LocalAtomSetData>> atom_set_data_; /**< handles to the managed atom sets */
-
+        std::vector<DomDecCallBackHandle> handles_; /**< handles domain decomposition callback functions */
 };
-
-LocalAtomSetManager::Impl::Impl(bool bParallel) : bParallel_(bParallel)
-{}
-
-LocalAtomSetManager::Impl::~Impl(){};
 
 /********************************************************************
- * LocalAtomSetManager */
+ * DomDecCallBackContainer */
 
-LocalAtomSetManager::LocalAtomSetManager(bool bParallel) : impl_(new Impl(bParallel))
-{}
-
-LocalAtomSetManager::~LocalAtomSetManager(){}
+DomDecCallBackContainer::DomDecCallBackContainer() : impl_(new Impl())
+{};
 
 void
-LocalAtomSetManager::domDecDone(const gmx_ga2la_t *ga2la, const gmx_localtop_t * /*top_local*/, const t_mdatoms * /*mdatoms*/)
+DomDecCallBackContainer::add(DomDecCallBackHandle &&callbackhandle)
 {
-    setIndicesInDomainDecomposition(ga2la);
+    impl_->handles_.push_back(std::move(callbackhandle));
 };
 
-LocalAtomSet
-LocalAtomSetManager::add(const int number_of_atoms, const int *index)
-{
-    impl_->atom_set_data_.emplace_back(new internal::LocalAtomSetData(number_of_atoms, index, impl_->bParallel_));
-    return LocalAtomSet(*impl_->atom_set_data_.back());
-}
-
 void
-LocalAtomSetManager::setIndicesInDomainDecomposition(const gmx_ga2la_t  *ga2la)
+DomDecCallBackContainer::triggerCallBackDomDecDone(const gmx_ga2la_t *ga2la, const gmx_localtop_t *top_local, const t_mdatoms *mdatoms)
 {
-    if (!impl_->bParallel_)
+    for (const auto &handle : impl_->handles_)
     {
-        GMX_THROW(InternalError("Group index manager may only set indices in domain decomposition when running in parallel."));
+        handle->domDecDone(ga2la, top_local, mdatoms);
     }
-    for (const auto &atom_set : impl_->atom_set_data_)
-    {
-        atom_set->setLocalAndCollectiveIndices(ga2la);
-    }
-}
+};
 
 } // namespace gmx

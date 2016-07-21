@@ -32,72 +32,68 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief
- * Declares gmx::LocalAtomSetManager
+/*! \file
+ * \internal \brief
+ * Declares gmx::internal::LocalAtomSetData.
  *
  * \author Christian Blau <cblau@gwdg.de>
- * \inlibraryapi
  * \ingroup module_domdec
  */
+#ifndef GMX_LOCALATOMSETDATA_H
+#define GMX_LOCALATOMSETDATA_H
 
-#ifndef GMX_LOCALATOMSETMANAGER_H
-#define GMX_LOCALATOMSETMANAGER_H
-
-#include <memory>
-
-#include "gromacs/utility/classhelpers.h"
-
-#include "domdeccallback.h"
+#include <vector>
 
 struct gmx_ga2la_t;
-struct gmx_localtop_t;
-struct t_mdatoms;
 
 namespace gmx
 {
 
-class LocalAtomSet;
+namespace internal
+{
 
-/*! \libinternal \brief
- * Hands out handles to local atom set indices and triggers index recalculation
- * for all sets upon domain decomposition if run in parallel.
- *
- * \ingroup module_domdec
+/* \brief Internal class for storing and managing atom indices of an atom set.
  */
-class LocalAtomSetManager : public DomDecCallBack
+class LocalAtomSetData
 {
     public:
-        /*! \brief Construct an atom set manager.
+        /*! \brief Store the data for an atom set with an index group.
          *
-         * \param[in] bParallel atom set manager needs to know if it manages sets in a parallel run
+         * If called within a parallel simulation, initialization shall be finished
+         * during domain decomposition with setLocalAndCollectiveIndices.
+         *
+         * \param[in] number_of_atoms The total number of atoms of this atom set.
+         * \param[in] index An global integer index of the atoms in the index set.
+         * \param[in] bParallel True if simulation is run in parallel
          */
-        explicit LocalAtomSetManager(const bool bParallel);
-        ~LocalAtomSetManager();
+        explicit LocalAtomSetData(const int number_of_atoms, const int *index, bool bParallel);
 
-        /*! \brief Add a new atom set to be managed and give back a handle.
+        /*! \brief Sets the local and collective indices from a lookup in ga2la.
          *
-         * \param[in] number_of_atoms The number of atoms in the atom set
-         * \param[in] index The indices of the atoms in the atom set
+         * This makes only sense when atoms are indeed distributed over nodes,
+         * otherwise local indices equal global indices and are set in init.
+         *
+         * \param[in] ga2la lookup table that reports if an atom is local.
          */
-        LocalAtomSet add(const int number_of_atoms, const int *index);
+        void setLocalAndCollectiveIndices(const gmx_ga2la_t  *ga2la);
 
-        /*! \brief Trigger recalculation of local and collective indices from ga2la if run in parallel.
-         *
-         * \throws exception if not run in parallel.
-         */
-        void setIndicesInDomainDecomposition(const gmx_ga2la_t  *ga2la);
 
-    private:
-        /*! \brief The callback function implementation from domain decomposition.
-         *
-         * triggers setIndiciesInDomainDecomposition
+        /*! \brief Global indices of the atoms in this set. */
+        std::vector<int> global_index_;
+        /*! \brief Maps indices on node (0..num_atoms_local_) to global atom indicices. */
+        std::vector<int> collective_index_;
+        /*! \brief Local indices of the atoms.
+         * Access,e.g., the i-th local atom coordinate of this set by x[local_index_[i]].
+         * Constructed and updated every domain-decomposition step.
          */
-        void domDecDone(const gmx_ga2la_t *ga2la, const gmx_localtop_t *top_local, const t_mdatoms *mdatoms);
-        class Impl;
-        PrivateImplPointer<Impl> impl_;
+        std::vector<int> local_index_;
 };
 
+} // namespace internal
+
 } // namespace gmx
+
+
+
 
 #endif

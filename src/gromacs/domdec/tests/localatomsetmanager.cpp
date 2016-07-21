@@ -62,7 +62,7 @@ TEST(LocalAtomSetManager, CanAddEmptyLocalAtomSet)
 {
     bool                bParallel = false;
     LocalAtomSetManager manager(bParallel);
-    const LocalAtomSet &empty_group(manager.add(0, nullptr));
+    LocalAtomSet        empty_group(manager.add(0, nullptr));
     (void) empty_group;
 }
 
@@ -72,7 +72,7 @@ TEST(LocalAtomSetManager, CanAddandReadLocalAtomSetIndices)
     LocalAtomSetManager manager(bParallel);
 
     std::vector<int>    index = {5, 10};
-    const LocalAtomSet &new_group(manager.add(index.size(), index.data()));
+    LocalAtomSet        new_group(manager.add(index.size(), index.data()));
 
     std::vector<int>    read_index;
     for (const auto &i : new_group.localIndex())

@@ -43,127 +43,38 @@
 
 #include "localatomset.h"
 
-#include <algorithm>
-#include <numeric>
-
-#include "gromacs/domdec/ga2la.h"
-#include "gromacs/utility/classhelpers.h"
-
+#include "localatomsetdata.h"
 
 namespace gmx
 {
 
-/********************************************************************
- * LocalAtomSet::Impl
- */
-
-/*! \internal \brief Private implementation class for LocalAtomSet. */
-class LocalAtomSet::Impl
+LocalAtomSet::LocalAtomSet(const internal::LocalAtomSetData &data) : data_(&data)
 {
-    public:
-        ~Impl();
-        /*! \brief Global indices of the atoms in this set. */
-        std::vector<int> global_index_;
-        /*! \brief Maps indices on node (0..num_atoms_local_) to global atom indicices. */
-        std::vector<int> collective_index_;
-        /*! \brief Local indices of the atoms.
-         * Access,e.g., the i-th local atom coordinate of this set by x[local_index_[i]].
-         * Constructed and updated every domain-decomposition step.
-         */
-        std::vector<int> local_index_;
-};
-
-LocalAtomSet::Impl::~Impl(){}
-/********************************************************************
- * LocalAtomSet
- */
-LocalAtomSet::LocalAtomSet(const int number_of_atoms, const int *index, bool bParallel) :
-    impl_(new Impl())
-{
-    impl_->global_index_.assign(index, index+number_of_atoms);
-
-    /* if not running in parallel, local atom indices are global atom indices and
-     * the collective index runs from 0..number_of_atoms-1 and we are done with initialisation
-     * if run in parallel, indices will be constructed when setLocalAndCollectiveIndices is
-     * called after domain decompostion is finished.
-     */
-    if (!bParallel)
-    {
-        impl_->local_index_.assign(index, index+number_of_atoms);
-        impl_->collective_index_.resize(number_of_atoms);
-        std::iota(impl_->collective_index_.begin(), impl_->collective_index_.end(), 0);
-    }
-}
-
-LocalAtomSet::LocalAtomSet(LocalAtomSet &&other) : impl_(std::move(other.impl_))
-{
-}
-
-LocalAtomSet::~LocalAtomSet(){};
-
-void LocalAtomSet::setLocalAndCollectiveIndices(const gmx_ga2la_t *ga2la)
-{
-    /* Loop over all the atom indices of the set to check which ones are local.
-     * cf. dd_make_local_group_indices in groupcoord.cpp
-     */
-
-    int  i_local;
-    int  nalloc_loc = 0;
-    int  n_local    = 0;
-    int  n_global   = impl_->global_index_.size();
-
-    impl_->local_index_.clear();
-    impl_->collective_index_.clear();
-
-    for (int i_collective = 0; i_collective < n_global; i_collective++)
-    {
-        if (ga2la_get_home(ga2la, impl_->global_index_[i_collective], &i_local))
-        {
-            /* The atom with this index is a home atom ? */
-            if (n_local >= nalloc_loc)  /* Check whether memory suffices */
-            {
-                nalloc_loc = over_alloc_dd(n_local+1);
-                /* We never need more memory than the number of atoms in the group */
-                nalloc_loc = std::min(nalloc_loc, n_local);
-
-                impl_->local_index_.reserve(nalloc_loc);
-                impl_->collective_index_.reserve(nalloc_loc);
-            }
-            /* Save the atoms index in the local atom numbers array */
-            impl_->local_index_.push_back(i_local);
-
-            /* Keep track of where this local atom belongs in the collective index array.
-             * This is needed when reducing the local arrays to a collective/global array
-             * in communicate_group_positions */
-            impl_->collective_index_.push_back(i_collective);
-            n_local++;
-        }
-    }
 }
 
 const std::vector<int> &LocalAtomSet::globalIndex() const
 {
-    return impl_->global_index_;
+    return data_->global_index_;
 }
 
 const std::vector<int> &LocalAtomSet::localIndex() const
 {
-    return impl_->local_index_;
+    return data_->local_index_;
 }
 
 const std::vector<int> &LocalAtomSet::collectiveIndex() const
 {
-    return impl_->collective_index_;
+    return data_->collective_index_;
 }
 
-size_t LocalAtomSet::numAtomsGlobal() const
+std::size_t LocalAtomSet::numAtomsGlobal() const
 {
-    return impl_->global_index_.size();
+    return data_->global_index_.size();
 }
 
-size_t LocalAtomSet::numAtomsLocal() const
+std::size_t LocalAtomSet::numAtomsLocal() const
 {
-    return impl_->local_index_.size();
+    return data_->local_index_.size();
 }
 
 } // namespace gmx

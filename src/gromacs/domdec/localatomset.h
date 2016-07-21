@@ -42,38 +42,25 @@
 #ifndef GMX_LOCALATOMSET_H
 #define GMX_LOCALATOMSET_H
 
-#include <memory>
 #include <vector>
-
-#include "gromacs/utility/classhelpers.h"
-
-struct gmx_ga2la_t;
 
 namespace gmx
 {
 
+namespace internal
+{
+class LocalAtomSetData;
+}   // namespace internal
 /*! \libinternal \brief
  * A local atom set is a collection of local, global and collective indices of atoms.
  *
- *  Local atom sets are constructed, accessed and destroyed by LocalAtomSetManager.
+ *  Local atom sets are constructed by LocalAtomSetManager.
  */
 class LocalAtomSet
 {
     public:
 
-        /* Only LocalAtomSetManger may create, initialize and destroy group indexs and
-         * trigger index updates. */
         friend class LocalAtomSetManager;
-
-        /* \brief Provide a move constructor so we can store LocalAtomSets in a
-         * std::vector, yet PIMPL.
-         * \param[in] other Atom set to be move-constructed.
-         */
-        LocalAtomSet(LocalAtomSet &&other);
-
-        /* \brief Provide a destructor so we can store LocalAtomSets in a
-         * std::vector, yet PIMPL. */
-        ~LocalAtomSet();
 
         /*! \brief Maps indices on node (0..num_atoms_local_) to global atom indicices.
          *
@@ -98,33 +85,16 @@ class LocalAtomSet
          */
         const std::vector<int> &localIndex() const;
         /*! \brief The number of atoms from this group index on this node.*/
-        size_t numAtomsLocal() const;
+        std::size_t numAtomsLocal() const;
         /*! \brief The number of all atoms from this group index on all nodes together. */
-        size_t numAtomsGlobal() const;
+        std::size_t numAtomsGlobal() const;
     private:
-
-        /*! \brief Only LocalAtomSetManager may construct an atom set with an index group.
-         *
-         * If called within a parallel simulation, initialization shall be finished
-         * during domain decomposition with setLocalAndCollectiveIndices.
-         *
-         * \param[in] number_of_atoms The total number of atoms of this atom set.
-         * \param[in] index An global integer index of the atoms in the index set.
-         * \param[in] bParallel True if simulation is run in parallel
+        /*! \brief Contructs a new atom set by setting a reference to its internal data.
+         * \param[in] data The data for the atom set is stored in a seperate object.
          */
-        explicit LocalAtomSet(const int number_of_atoms, const int *index, bool bParallel);
+        explicit LocalAtomSet(const internal::LocalAtomSetData &data);
 
-        /*! \brief Sets the local and collective indices from a lookup in ga2la.
-         *
-         * This makes only sense when atoms are indeed distributed over nodes,
-         * otherwise local indices equal global indices and are set in init.
-         *
-         * \param[in] ga2la lookup table that reports if an atom is local.
-         */
-        void setLocalAndCollectiveIndices(const gmx_ga2la_t  *ga2la);
-
-        class Impl;
-        PrivateImplPointer<Impl> impl_;
+        const internal::LocalAtomSetData * data_;
 
 };
 
