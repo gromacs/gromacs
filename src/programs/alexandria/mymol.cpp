@@ -283,6 +283,9 @@ void MyMol::getForceConstants(const Poldata &pd)
     }
 }
 
+/* 
+ * Make Linear Angles, Improper Dihedrals, and Virtual Sites
+ */
 void MyMol::MakeSpecialInteractions(const Poldata &pd,
                                     bool           bUseVsites)
 {
@@ -349,6 +352,10 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
     bHaveVSites_ = (topology_->atoms.nr > anr);
 }
 
+
+/* 
+ * Make the plist_ function types consistent with the poldata
+ */
 static void mv_plists(std::vector<PlistWrapper> &plist,
                       const Poldata             &pd)
 {
@@ -384,6 +391,10 @@ static void cp_plist(t_params                  *plist,
     }
 }
 
+/* 
+ * Make Harmonic Angles, Proper Dihedrals, and 14 Pairs.
+ * This needs the bonds to be F_BONDS.
+*/
 void MyMol::MakeAngles(bool bPairs,
                        bool bDihs)
 {
@@ -1157,22 +1168,12 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
     if (immOK == imm)
     {
-        /* Make Harmonic Angles, Proper Dihedrals, and 14 Pairs.
-           This needs the bonds to be F_BONDS.*/
         MakeAngles(bPairs, bDih);
 
-        /*for (auto p : plist_)
-           {
-            fprintf(debug, "fType: %s, iType: %s and nParam: %u\n",
-                interaction_function[p.getFtype()].name, iType2string(p.getItype()), p.nParam());
-                }*/
-
-        /* Make Linear Angles, Improper Dihedrals, and Virtual Sites*/
         MakeSpecialInteractions(pd, bUseVsites);
 
         getForceConstants(pd);
 
-        /* Make the plist_ function types consistent with the poldata*/
         mv_plists(plist_, pd);
 
         snew(mtop_, 1);
