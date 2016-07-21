@@ -2070,7 +2070,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     header->nCOMGrpsPullx = 0;
     if (ir.pull->bPrintCOM)
     {
-        header->nCOMGrpsPullx += ir.pull->ngroup;
+        header->nCOMGrpsPullx = 2;
     }
     header->bPrintRefValue = ir.pull->bPrintRefValue;
     header->bPrintComp     = ir.pull->bPrintComp;
@@ -2292,10 +2292,10 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
         for (i = 0; i < header->npullcrds; i++)
         {
             printf("\tColumns for pull coordinate %d\n", i+1);
-            printf("\t\tcenter-of-mass of groups:        %d\n"
-                   "\t\tdisplacement wrt. reference:     %d\n"
+            printf("\t\treaction coordinate:             %d\n"
+                   "\t\tcenter-of-mass of groups:        %d\n"
                    "\t\treference position column:       %s\n",
-                   nColCOMCrd[i], 1, (header->bPrintRefValue ? "Yes" : "No"));
+                   1, nColCOMCrd[i], (header->bPrintRefValue ? "Yes" : "No"));
         }
         printf("\tFound %d times in %s\n", nt, fn);
         bFirst = FALSE;
@@ -2458,7 +2458,6 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
                     {
                         column += nColThisCrd[j];
                     }
-                    column += nColCOMCrd[g];
                     pos     = y[column][i];
                 }
 
