@@ -37,6 +37,7 @@
  * Declares gmx::LocalAtomSetManager
  *
  * \author Christian Blau <cblau@gwdg.de>
+ * \inlibraryapi
  * \ingroup module_domdec
  */
 

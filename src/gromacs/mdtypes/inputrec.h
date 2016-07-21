@@ -234,6 +234,11 @@ typedef struct t_swapcoords {
                                             * swapcoords.cpp                               */
 } t_swapcoords;
 
+namespace gmx
+{
+class LocalAtomSetManager;
+}
+
 struct t_inputrec
 {
     t_inputrec();
@@ -343,6 +348,9 @@ struct t_inputrec
     int             wall_atomtype[2];        /* The atom type for walls                      */
     real            wall_density[2];         /* Number density for walls                     */
     real            wall_ewald_zfac;         /* Scaling factor for the box for Ewald         */
+
+    /* Manage sets of atoms */
+    std::unique_ptr<gmx::LocalAtomSetManager> atomsets;
 
     /* COM pulling data */
     gmx_bool              bPull;             /* Do we do COM pulling?                        */

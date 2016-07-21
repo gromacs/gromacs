@@ -44,6 +44,7 @@
 
 #include <algorithm>
 
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/math/veccompare.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdtypes/awh-params.h"
