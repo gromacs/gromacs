@@ -87,6 +87,7 @@ class t_state;
 namespace gmx
 {
 class MDAtoms;
+class LocalAtomSetManager;
 } // namespace
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
@@ -310,24 +311,25 @@ void dd_atom_sum_real(struct gmx_domdec_t *dd, real v[]);
  * else state_local is redistributed between the nodes.
  * When f!=NULL, *f will be reallocated to the size of state_local.
  */
-void dd_partition_system(FILE                *fplog,
-                         gmx_int64_t          step,
-                         t_commrec           *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         gmx::MDAtoms        *mdatoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         struct gmx_constr   *constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle       *wcycle,
-                         gmx_bool             bVerbose);
+void dd_partition_system(FILE                     *fplog,
+                         gmx_int64_t               step,
+                         t_commrec                *cr,
+                         gmx_bool                  bMasterState,
+                         int                       nstglobalcomm,
+                         t_state                  *state_global,
+                         const gmx_mtop_t         *top_global,
+                         const t_inputrec         *ir,
+                         t_state                  *state_local,
+                         PaddedRVecVector         *f,
+                         gmx::MDAtoms             *mdatoms,
+                         gmx_localtop_t           *top_local,
+                         t_forcerec               *fr,
+                         gmx_vsite_t              *vsite,
+                         struct gmx_constr        *constr,
+                         gmx::LocalAtomSetManager *atomsets,
+                         t_nrnb                   *nrnb,
+                         gmx_wallcycle            *wcycle,
+                         gmx_bool                  bVerbose);
 
 /*! \brief Reset all the statistics and counters for total run counting */
 void reset_dd_statistics_counters(struct gmx_domdec_t *dd);

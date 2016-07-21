@@ -51,6 +51,7 @@
 
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -9188,24 +9189,25 @@ void print_dd_statistics(t_commrec *cr, const t_inputrec *ir, FILE *fplog)
     }
 }
 
-void dd_partition_system(FILE                *fplog,
-                         gmx_int64_t          step,
-                         t_commrec           *cr,
-                         gmx_bool             bMasterState,
-                         int                  nstglobalcomm,
-                         t_state             *state_global,
-                         const gmx_mtop_t    *top_global,
-                         const t_inputrec    *ir,
-                         t_state             *state_local,
-                         PaddedRVecVector    *f,
-                         gmx::MDAtoms        *mdAtoms,
-                         gmx_localtop_t      *top_local,
-                         t_forcerec          *fr,
-                         gmx_vsite_t         *vsite,
-                         gmx_constr_t         constr,
-                         t_nrnb              *nrnb,
-                         gmx_wallcycle       *wcycle,
-                         gmx_bool             bVerbose)
+void dd_partition_system(FILE                     *fplog,
+                         gmx_int64_t               step,
+                         t_commrec                *cr,
+                         gmx_bool                  bMasterState,
+                         int                       nstglobalcomm,
+                         t_state                  *state_global,
+                         const gmx_mtop_t         *top_global,
+                         const t_inputrec         *ir,
+                         t_state                  *state_local,
+                         PaddedRVecVector         *f,
+                         gmx::MDAtoms             *mdAtoms,
+                         gmx_localtop_t           *top_local,
+                         t_forcerec               *fr,
+                         gmx_vsite_t              *vsite,
+                         gmx_constr_t              constr,
+                         gmx::LocalAtomSetManager *atomSets,
+                         t_nrnb                   *nrnb,
+                         gmx_wallcycle            *wcycle,
+                         gmx_bool                  bVerbose)
 {
     gmx_domdec_t      *dd;
     gmx_domdec_comm_t *comm;
@@ -9797,6 +9799,12 @@ void dd_partition_system(FILE                *fplog,
     {
         /* Update the local groups needed for ion swapping */
         dd_make_local_swap_groups(dd, ir->swap);
+    }
+
+    if (atomSets != nullptr)
+    {
+        /* Update the local atom sets */
+        atomSets->setIndicesInDomainDecomposition(dd->ga2la);
     }
 
     /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
