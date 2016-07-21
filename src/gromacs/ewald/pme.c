@@ -1998,9 +1998,7 @@ static int solve_pme_yzx(gmx_pme_t pme, t_complex *grid,
     /* do recip sum over local cells in grid */
     /* y major, z middle, x minor or continuous */
     t_complex *p0;
-    t_complex *p0_virx;
-    t_complex *p0_viry;
-    t_complex *p0_virz;
+    t_complex *p0_virx,*p0_viry,*p0_virz;
     t_complex *p0_start;
     int     kx, ky, kz, maxkx, maxky, maxkz;
     int     nx, ny, nz, iyz0, iyz1, iyz, iy, iz, kxstart, kxend;
@@ -2186,9 +2184,6 @@ static int solve_pme_yzx(gmx_pme_t pme, t_complex *grid,
                 p0_virx->im  = .5*(1e25/AVOGADRO)* p0->im*(vfactor*mhx[kx]*mhx[kx]-1);
                 p0_viry->im  = .5*(1e25/AVOGADRO)* p0->im*(vfactor*mhy[kx]*mhy[kx]-1);
                 p0_virz->im  = .5*(1e25/AVOGADRO)* p0->im*(vfactor*mhz[kx]*mhz[kx]-1);
-
-
-
             }
 
             for (kx = kxstart; kx < kxend; kx++)
@@ -2277,7 +2272,11 @@ static int solve_pme_yzx(gmx_pme_t pme, t_complex *grid,
     return local_ndata[YY]*local_ndata[XX];
 }
 
-static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex **grid, gmx_bool bLB,
+static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex **grid, 
+			    t_complex *grid_virx,
+			    t_complex *grid_viry,
+			    t_complex *grid_virz,
+                            gmx_bool bLB,
                             real ewaldcoeff, real vol,
                             gmx_bool bEnerVir, int nthread, int thread)
 {
@@ -2295,6 +2294,7 @@ static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex **grid, gmx_bool bLB,
     real    rxx, ryx, ryy, rzx, rzy, rzz;
     real    *mhx, *mhy, *mhz, *m2, *denom, *tmp1, *tmp2;
     real    mhxk, mhyk, mhzk, m2k;
+    t_complex *p0_virx,*p0_viry,*p0_virz;
     real    mk;
     pme_work_t *work;
     real    corner_fac;
@@ -2364,7 +2364,10 @@ static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex **grid, gmx_bool bLB,
         {
             corner_fac = 0.5;
         }
-
+//SAW
+	if (bLB) {
+           exit(printf("local pressure LJ-PME not implemented yet for Lorentz-Bertherlot mixing rules\n")); 
+        }
         kxstart = local_offset[XX];
         kxend   = local_offset[XX] + local_ndata[XX];
         if (bEnerVir)
@@ -2428,7 +2431,11 @@ static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex **grid, gmx_bool bLB,
                 real       struct2;
 
                 p0 = grid[0] + iy*local_size[ZZ]*local_size[XX] + iz*local_size[XX];
-                for (kx = kxstart; kx < kxend; kx++, p0++)
+       		p0_virx = grid_virx + iy*local_size[ZZ]*local_size[XX] + iz*local_size[XX];
+       		p0_viry = grid_viry + iy*local_size[ZZ]*local_size[XX] + iz*local_size[XX];
+       		p0_virz = grid_virz + iy*local_size[ZZ]*local_size[XX] + iz*local_size[XX];
+
+                for (kx = kxstart; kx < kxend; kx++, p0++,p0_virx++,p0_viry++,p0_virz++)
                 {
                     d1      = p0->re;
                     d2      = p0->im;
@@ -2442,6 +2449,13 @@ static int solve_pme_lj_yzx(gmx_pme_t pme, t_complex **grid, gmx_bool bLB,
 
                     tmp1[kx] = eterm*struct2;
                     tmp2[kx] = vterm*struct2;
+                    real vfactor  = 2.0*factor*vterm;
+                    p0_virx->re  =  .5*(1e25/AVOGADRO)* d1 *(vfactor*mhx[kx]*mhx[kx]-eterm);
+                    p0_viry->re  =  .5*(1e25/AVOGADRO)* d1 *(vfactor*mhy[kx]*mhy[kx]-eterm);
+                    p0_virz->re  =  .5*(1e25/AVOGADRO)* d1 *(vfactor*mhz[kx]*mhz[kx]-eterm);
+                    p0_virx->im  =  .5*(1e25/AVOGADRO)* d2 *(vfactor*mhx[kx]*mhx[kx]-eterm);
+                    p0_viry->im  =  .5*(1e25/AVOGADRO)* d2 *(vfactor*mhy[kx]*mhy[kx]-eterm);
+                    p0_virz->im  =  .5*(1e25/AVOGADRO)* d2 *(vfactor*mhz[kx]*mhz[kx]-eterm);
                 }
             }
             else
@@ -5157,9 +5171,7 @@ int gmx_pme_do(gmx_pme_t pme,
                 {
                     loop_count =
                         solve_pme_yzx(pme, cfftgrid, 
-				      cfftgrid_virx, 
-				      cfftgrid_viry, 
-				      cfftgrid_virz, 
+                                      cfftgrid_virx,cfftgrid_viry,cfftgrid_virz, 
 				      ewaldcoeff_q,
                                       box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
                                       bCalcEnerVir,
@@ -5168,7 +5180,11 @@ int gmx_pme_do(gmx_pme_t pme,
                 else
                 {
                     loop_count =
-                        solve_pme_lj_yzx(pme, &cfftgrid, FALSE, ewaldcoeff_lj,
+                        solve_pme_lj_yzx(pme, &cfftgrid, 
+				         cfftgrid_virx, 
+				         cfftgrid_viry, 
+				         cfftgrid_virz, 
+					 FALSE, ewaldcoeff_lj,
                                          box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
                                          bCalcEnerVir,
                                          pme->nthread, thread);
@@ -5442,7 +5458,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     }
 
                     loop_count =
-                        solve_pme_lj_yzx(pme, &pme->cfftgrid[2], TRUE, ewaldcoeff_lj,
+                        solve_pme_lj_yzx(pme, &pme->cfftgrid[2],  NULL,NULL,NULL,TRUE, ewaldcoeff_lj,
                                          box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
                                          bCalcEnerVir,
                                          pme->nthread, thread);
