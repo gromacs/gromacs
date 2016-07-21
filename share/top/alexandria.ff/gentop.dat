@@ -1,84 +1,84 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes forcefield="GAFF" function="LJ_SR" combination_rule="arithmetic" nexclusions="2" fudgeQQ="1" fudgeLJ="1">
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h1" ptype="p_ha" btype="b_h1" vdwparams="2.471350e-01 6.568880e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h2" ptype="p_ha" btype="b_h1" vdwparams="2.293170e-01 6.568880e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h3" ptype="p_ha" btype="b_h1" vdwparams="2.114990e-01 6.568880e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h4" ptype="p_ha" btype="b_h2" vdwparams="2.510550e-01 6.276000e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h5" ptype="p_ha" btype="b_h2" vdwparams="2.421460e-01 6.276000e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="ha" ptype="p_ha" btype="b_ha" vdwparams="2.599640e-01 6.276000e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="hydrogen on aliphatic C" atype="hc" ptype="p_ha" btype="b_hc" vdwparams="2.649530e-01 6.568880e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="hydrogen on nitrogen" atype="hn" ptype="p_ha" btype="b_hp" vdwparams="1.069080e-01 6.568880e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="hydrogen on oxygen" atype="ho" ptype="p_hp" btype="b_hp" vdwparams="0.000000e+00 0.000000e+00" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="hydrogen on phosphor" atype="hp" ptype="p_hp" btype="b_hp" vdwparams="1.069080e-01 6.568880e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="hydrogen on sulphur" atype="hs" ptype="p_hp" btype="b_hp" vdwparams="1.069080e-01 6.568880e-02" ref_enthalpy="222.2325"/>
-    <atomtype elem="H" description="hydrogen on X" atype="hx" ptype="p_ha" btype="b_hp" vdwparams="1.959980e-01 6.568880e-02" ref_enthalpy="222.2325"/>
+  <atomtypes forcefield="GAFF" function="BHAM" combination_rule="KONG_MASON" nexclusions="2" fudgeQQ="1" fudgeLJ="1">
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h1" ptype="p_ha" btype="b_h1" vdwparams="2.471350e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h2" ptype="p_ha" btype="b_h1" vdwparams="2.293170e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h3" ptype="p_ha" btype="b_h1" vdwparams="2.114990e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h4" ptype="p_ha" btype="b_h2" vdwparams="2.510550e-01 6.276000e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h5" ptype="p_ha" btype="b_h2" vdwparams="2.421460e-01 6.276000e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="ha" ptype="p_ha" btype="b_ha" vdwparams="2.599640e-01 6.276000e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on aliphatic C" atype="hc" ptype="p_ha" btype="b_hc" vdwparams="2.649530e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on nitrogen" atype="hn" ptype="p_ha" btype="b_hp" vdwparams="1.069080e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on oxygen" atype="ho" ptype="p_hp" btype="b_hp" vdwparams="0.000000e+00 0.000000e+00 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on phosphor" atype="hp" ptype="p_hp" btype="b_hp" vdwparams="1.069080e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on sulphur" atype="hs" ptype="p_hp" btype="b_hp" vdwparams="1.069080e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on X" atype="hx" ptype="p_ha" btype="b_hp" vdwparams="1.959980e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
     <atomtype elem="Li" description="lithium ion" atype="Li+" ptype="p_Li+" btype="b_" vdwparams="0 0" ref_enthalpy="685.719"/>
     <atomtype elem="Be" description="beryllium ion" atype="Be2+" ptype="p_Be2+" btype="b_" vdwparams="0 0" ref_enthalpy="2976.332"/>
-    <atomtype elem="C" description="other sp C" atype="c1" ptype="p_c1" btype="b_c1" vdwparams="3.399670e-01 8.786400e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="C=O or C=S" atype="c" ptype="p_c2" btype="b_c" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="pure aromatic atom" atype="ca" ptype="p_ca" btype="b_ca" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="bridge aromatic c in byphenyl system" atype="cp" ptype="p_c2" btype="b_ca" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cc" ptype="p_c2" btype="b_cc" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cd" ptype="p_c2" btype="b_cd" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="sp C of conjugated system" atype="cg" ptype="p_c2" btype="b_cg" vdwparams="3.399670e-01 8.786400e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="ce" ptype="p_c2" btype="b_ce" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="cf" ptype="p_c2" btype="b_cf" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="sp2 carbon in a 3-membered ring" atype="cu" ptype="p_c2" btype="b_cu" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="sp2 carbon in a 4-membered ring" atype="cv" ptype="p_c2" btype="b_cv" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="guanidine carbon" atype="cz" ptype="p_c2" btype="b_cz" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="other sp2 C" atype="c2" ptype="p_c2" btype="b_c2" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="other sp3 C" atype="c3" ptype="p_c3" btype="b_c3" vdwparams="3.399670e-01 4.577300e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="3-membered ring atom" atype="cx" ptype="p_c3" btype="b_cx" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="C" description="4-membered ring atom" atype="cy" ptype="p_c3" btype="b_cy" vdwparams="3.399670e-01 3.598240e-01" ref_enthalpy="717.721"/>
-    <atomtype elem="N" description="sp2 N in amides" atype="n" ptype="p_n" btype="b_n" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp3 N" atype="n4" ptype="p_n" btype="b_n1" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp2 N" atype="n2" ptype="p_n" btype="b_n2" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated chain system" atype="ne" ptype="p_n" btype="b_n1" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp1 N" atype="n1" ptype="p_n" btype="b_n1" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="sp3 N" atype="n3" ptype="p_n" btype="b_n3" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="amine N connected to aromatic ring" atype="nh" ptype="p_n" btype="b_nh" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="aromatic N" atype="na" ptype="p_n" btype="b_na" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="aromatic N" atype="nb" ptype="p_n" btype="b_nb" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="p_n" btype="b_nc" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="p_n" btype="b_nd" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="N" description="N in nitro group" atype="no" ptype="p_n" btype="b_no" vdwparams="3.250000e-01 7.112800e-01" ref_enthalpy="477.018"/>
-    <atomtype elem="O" description="sp2 O" atype="o" ptype="p_o" btype="b_o" vdwparams="2.959920e-01 8.786400e-01" ref_enthalpy="253.5145"/>
-    <atomtype elem="O" description="sp3 O in hydroxyl group" atype="oh" ptype="p_o" btype="b_oh" vdwparams="3.066470e-01 8.803140e-01" ref_enthalpy="253.5145"/>
+    <atomtype elem="C" description="other sp C" atype="c1" ptype="p_c1" btype="b_c1" vdwparams="3.399670e-01 8.786400e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="C=O or C=S" atype="c" ptype="p_c2" btype="b_c" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="pure aromatic atom" atype="ca" ptype="p_ca" btype="b_ca" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="bridge aromatic c in byphenyl system" atype="cp" ptype="p_c2" btype="b_ca" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cc" ptype="p_c2" btype="b_cc" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cd" ptype="p_c2" btype="b_cd" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="sp C of conjugated system" atype="cg" ptype="p_c2" btype="b_cg" vdwparams="3.399670e-01 8.786400e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="ce" ptype="p_c2" btype="b_ce" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="cf" ptype="p_c2" btype="b_cf" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="sp2 carbon in a 3-membered ring" atype="cu" ptype="p_c2" btype="b_cu" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="sp2 carbon in a 4-membered ring" atype="cv" ptype="p_c2" btype="b_cv" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="guanidine carbon" atype="cz" ptype="p_c2" btype="b_cz" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="other sp2 C" atype="c2" ptype="p_c2" btype="b_c2" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="other sp3 C" atype="c3" ptype="p_c3" btype="b_c3" vdwparams="3.399670e-01 4.577300e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="3-membered ring atom" atype="cx" ptype="p_c3" btype="b_cx" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="4-membered ring atom" atype="cy" ptype="p_c3" btype="b_cy" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="N" description="sp2 N in amides" atype="n" ptype="p_n" btype="b_n" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp3 N" atype="n4" ptype="p_n" btype="b_n1" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp2 N" atype="n2" ptype="p_n" btype="b_n2" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated chain system" atype="ne" ptype="p_n" btype="b_n1" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp1 N" atype="n1" ptype="p_n" btype="b_n1" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp3 N" atype="n3" ptype="p_n" btype="b_n3" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="amine N connected to aromatic ring" atype="nh" ptype="p_n" btype="b_nh" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="aromatic N" atype="na" ptype="p_n" btype="b_na" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="aromatic N" atype="nb" ptype="p_n" btype="b_nb" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="p_n" btype="b_nc" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="p_n" btype="b_nd" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="N in nitro group" atype="no" ptype="p_n" btype="b_no" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="O" description="sp2 O" atype="o" ptype="p_o" btype="b_o" vdwparams="2.959920e-01 8.786400e-01 1.000000e+01" ref_enthalpy="253.5145"/>
+    <atomtype elem="O" description="sp3 O in hydroxyl group" atype="oh" ptype="p_o" btype="b_oh" vdwparams="3.066470e-01 8.803140e-01 1.000000e+01" ref_enthalpy="253.5145"/>
     <atomtype elem="O" description="sp3 O in hydroxyl group" atype="ow" ptype="p_ow" btype="b_oh" vdwparams="0 0" ref_enthalpy="253.5145"/>
     <atomtype elem="O" description="O in carboxylic group with a single bond without hydrogen" atype="on" ptype="p_o" btype="b_on" vdwparams="0 0" ref_enthalpy="253.5145"/>
-    <atomtype elem="O" description="sp3 O in esters and ethers" atype="os" ptype="p_o" btype="b_os" vdwparams="3.000010e-01 7.112800e-01" ref_enthalpy="253.5145"/>
-    <atomtype elem="F" description="general fluorine" atype="f" ptype="p_f" btype="b_f" vdwparams="3.118150e-01 2.552240e-01" ref_enthalpy="83.8025"/>
+    <atomtype elem="O" description="sp3 O in esters and ethers" atype="os" ptype="p_o" btype="b_os" vdwparams="3.000010e-01 7.112800e-01 1.000000e+01" ref_enthalpy="253.5145"/>
+    <atomtype elem="F" description="general fluorine" atype="f" ptype="p_f" btype="b_f" vdwparams="3.118150e-01 2.552240e-01 1.000000e+01" ref_enthalpy="83.8025"/>
     <atomtype elem="F" description="fluoride ion" atype="F" ptype="p_F-" btype="b_" vdwparams="0 0" ref_enthalpy="-255.079"/>
-    <atomtype elem="Na" description="sodium ion" atype="Na" ptype="p_Na+" btype="b_" vdwparams="0.000000e+00 0.000000e+00" ref_enthalpy="609.343"/>
-    <atomtype elem="Mg" description="magnesium ion" atype="Mg" ptype="p_Mg2+" btype="b_" vdwparams="0.000000e+00 0.000000e+00" ref_enthalpy="2341.747"/>
-    <atomtype elem="Al" description="aluminum ion" atype="Al" ptype="p_Al3+" btype="b_" vdwparams="0.000000e+00 0.000000e+00" ref_enthalpy="5474.213"/>
-    <atomtype elem="P" description="other sp2 P" atype="p2" ptype="p_p" btype="b_p2" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="other sp3 P" atype="p3" ptype="p_p" btype="b_p3" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
+    <atomtype elem="Na" description="sodium ion" atype="Na" ptype="p_Na+" btype="b_" vdwparams="0.000000e+00 0.000000e+00 1.000000e+01" ref_enthalpy="609.343"/>
+    <atomtype elem="Mg" description="magnesium ion" atype="Mg" ptype="p_Mg2+" btype="b_" vdwparams="0.000000e+00 0.000000e+00 1.000000e+01" ref_enthalpy="2341.747"/>
+    <atomtype elem="Al" description="aluminum ion" atype="Al" ptype="p_Al3+" btype="b_" vdwparams="0.000000e+00 0.000000e+00 1.000000e+01" ref_enthalpy="5474.213"/>
+    <atomtype elem="P" description="other sp2 P" atype="p2" ptype="p_p" btype="b_p2" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="other sp3 P" atype="p3" ptype="p_p" btype="b_p3" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
     <atomtype elem="P" description="hypervalent P" atype="p4" ptype="p_p" btype="b_p" vdwparams="0 0" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="hypervalent P" atype="p5" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="aromatic P" atype="pb" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="inner sp2 P of conjugated ring systems" atype="pc" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="hypervalent P" atype="p5" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="aromatic P" atype="pb" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="inner sp2 P of conjugated ring systems" atype="pc" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
     <atomtype elem="P" description="inner sp2 P of conjugated chain system" atype="pe" ptype="p_p" btype="b_p" vdwparams="0 0" ref_enthalpy="321.75"/>
     <atomtype elem="P" description="sp2 P of conjugated system" atype="px" ptype="p_p" btype="b_p" vdwparams="0 0" ref_enthalpy="321.75"/>
-    <atomtype elem="P" description="P of conjugated system" atype="py" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01" ref_enthalpy="321.75"/>
-    <atomtype elem="S" description="Sulphur" atype="s" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
+    <atomtype elem="P" description="P of conjugated system" atype="py" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
+    <atomtype elem="S" description="Sulphur" atype="s" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
     <atomtype elem="S" description="sp2 sulphur" atype="s2" ptype="p_s" btype="b_s" vdwparams="0 0" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="hypervalent S" atype="s4" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="hypervalent S" atype="s6" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="sp3 S in thiol" atype="sh" ptype="p_s" btype="b_sh" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="sp3 sulphur" atype="ss" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="conjugated S" atype="sx" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
-    <atomtype elem="S" description="conjugated S" atype="sy" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00" ref_enthalpy="281.392"/>
-    <atomtype elem="Cl" description="general chlorine" atype="cl" ptype="p_cl" btype="b_cl" vdwparams="3.470940e-01 1.108760e+00" ref_enthalpy="125.8925"/>
+    <atomtype elem="S" description="hypervalent S" atype="s4" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="hypervalent S" atype="s6" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="sp3 S in thiol" atype="sh" ptype="p_s" btype="b_sh" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="sp3 sulphur" atype="ss" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="conjugated S" atype="sx" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="conjugated S" atype="sy" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="Cl" description="general chlorine" atype="cl" ptype="p_cl" btype="b_cl" vdwparams="3.470940e-01 1.108760e+00 1.000000e+01" ref_enthalpy="125.8925"/>
     <atomtype elem="Cl" description="chloride ion" atype="Cl-" ptype="p_Cl-" btype="b_" vdwparams="0 0" ref_enthalpy="-233.954"/>
     <atomtype elem="K" description="potassium ion" atype="K+" ptype="p_K+" btype="b_" vdwparams="0 0" ref_enthalpy="514.007"/>
     <atomtype elem="Ca" description="calcium ion" atype="Ca2+" ptype="p_Ca2+" btype="b_" vdwparams="0 0" ref_enthalpy="1919.228"/>
-    <atomtype elem="Br" description="general bromine" atype="br" ptype="p_br" btype="b_br" vdwparams="3.599230e-01 1.757280e+00" ref_enthalpy="124.1145"/>
+    <atomtype elem="Br" description="general bromine" atype="br" ptype="p_br" btype="b_br" vdwparams="3.599230e-01 1.757280e+00 1.000000e+01" ref_enthalpy="124.1145"/>
     <atomtype elem="Br" description="bromide ion" atype="Br" ptype="p_Br-" btype="b_" vdwparams="0 0" ref_enthalpy="-219.008"/>
     <atomtype elem="Rb" description="rubidium ion" atype="Rb" ptype="p_Rb+" btype="b_" vdwparams="0 0" ref_enthalpy="490.129"/>
-    <atomtype elem="I" description="general iodine" atype="i" ptype="p_i" btype="b_i" vdwparams="3.830860e-01 2.092000e+00" ref_enthalpy="113.361"/>
+    <atomtype elem="I" description="general iodine" atype="i" ptype="p_i" btype="b_i" vdwparams="3.830860e-01 2.092000e+00 1.000000e+01" ref_enthalpy="113.361"/>
     <atomtype elem="I" description="iodide ion" atype="I" ptype="p_I-" btype="b_" vdwparams="0 0" ref_enthalpy="-194.591"/>
   </atomtypes>
   <poltypes polarizability_unit="Angstrom3" reference="Maaren2014a">
@@ -110,11 +110,100 @@
     <poltype ptype="i" miller="I" bosque="I" polarizability="0" sigma_pol="0"/>
     <poltype ptype="I-" miller="I-" bosque="I" polarizability="10.275" sigma_pol="0"/>
   </poltypes>
-  <gt_bonds unit="pm" interaction="BONDS" function="MORSE"/>
-  <gt_angles unit="degree" interaction="ANGLES" function="UREY_BRADLEY"/>
-  <gt_angles unit="degree" interaction="LINEAR_ANGLES" function="LINEAR_ANGLES"/>
-  <gt_dihedrals unit="degree" interaction="PROPER_DIHEDRALS" function="PDIHS"/>
-  <gt_dihedrals unit="degree" interaction="IMPROPER_DIHEDRALS" function="IDIHS"/>
+  <gt_bonds unit="pm" interaction="BONDS" function="MORSE">
+    <gt_bond atom1="b_ca" atom2="b_cg" refValue="143.04" sigma="0.5" ntrain="1" params="300  20"/>
+    <gt_bond atom1="b_c1" atom2="b_cl" refValue="163.93" sigma="0.75" ntrain="2" params="300  20"/>
+    <gt_bond atom1="b_c1" atom2="b_c3" refValue="145.88" sigma="0.8" ntrain="9" params="300  20"/>
+    <gt_bond atom1="b_c3" atom2="b_c3" refValue="153.02" sigma="0.87" ntrain="11" params="300  20"/>
+    <gt_bond atom1="b_hp" atom2="b_oh" refValue="96.42" sigma="0.74" ntrain="4" params="300  20"/>
+    <gt_bond atom1="b_c1" atom2="b_c1" refValue="119.78" sigma="0.79" ntrain="7" params="300  20"/>
+    <gt_bond atom1="b_ce" atom2="b_ce" refValue="145.25" sigma="0.5" ntrain="1" params="300  20"/>
+    <gt_bond atom1="b_c1" atom2="b_ha" refValue="106.24" sigma="0.81" ntrain="9" params="300  20"/>
+    <gt_bond atom1="b_c2" atom2="b_c2" refValue="132.52" sigma="0.5" ntrain="1" params="300  20"/>
+    <gt_bond atom1="b_ce" atom2="b_cg" refValue="142.61" sigma="0.5" ntrain="1" params="300  20"/>
+    <gt_bond atom1="b_ca" atom2="b_ca" refValue="139.17" sigma="0.86" ntrain="12" params="300  20"/>
+    <gt_bond atom1="b_cg" atom2="b_n1" refValue="115.23" sigma="0.5" ntrain="2" params="300  20"/>
+    <gt_bond atom1="b_br" atom2="b_c1" refValue="179.5" sigma="0.59" ntrain="2" params="300  20"/>
+    <gt_bond atom1="b_c2" atom2="b_ha" refValue="108.19" sigma="0.61" ntrain="10" params="300  20"/>
+    <gt_bond atom1="b_c1" atom2="b_o" refValue="116.05" sigma="0.5" ntrain="2" params="300  20"/>
+    <gt_bond atom1="b_c2" atom2="b_ce" refValue="133.32" sigma="0.64" ntrain="3" params="300  20"/>
+    <gt_bond atom1="b_c1" atom2="b_f" refValue="127.21" sigma="1.09" ntrain="2" params="300  20"/>
+    <gt_bond atom1="b_ce" atom2="b_ha" refValue="108.48" sigma="0.65" ntrain="3" params="300  20"/>
+    <gt_bond atom1="b_oh" atom2="b_oh" refValue="145.13" sigma="0.5" ntrain="1" params="300  20"/>
+    <gt_bond atom1="b_c1" atom2="b_n1" refValue="114.97" sigma="0.71" ntrain="9" params="300  20"/>
+    <gt_bond atom1="b_c1" atom2="b_p2" refValue="153.73" sigma="0.5" ntrain="1" params="300  20"/>
+    <gt_bond atom1="b_ca" atom2="b_ha" refValue="108.14" sigma="0.55" ntrain="11" params="300  20"/>
+    <gt_bond atom1="b_c3" atom2="b_hc" refValue="109.15" sigma="0.64" ntrain="57" params="300  20"/>
+  </gt_bonds>
+  <gt_angles unit="degree" interaction="ANGLES" function="UREY_BRADLEY">
+    <gt_angle atom1="b_c1" atom2="b_c3" atom3="b_c3" refValue="112.97" sigma="0.69" ntrain="3" params="40  10000"/>
+    <gt_angle atom1="b_hc" atom2="b_c3" atom3="b_hc" refValue="107.58" sigma="1.17" ntrain="48" params="40  10000"/>
+    <gt_angle atom1="b_c1" atom2="b_c3" atom3="b_hc" refValue="109.86" sigma="1.68" ntrain="22" params="40  10000"/>
+    <gt_angle atom1="b_hp" atom2="b_oh" atom3="b_oh" refValue="100.74" sigma="0.5" ntrain="2" params="40  10000"/>
+    <gt_angle atom1="b_ce" atom2="b_ce" atom3="b_ha" refValue="116.31" sigma="0.5" ntrain="2" params="40  10000"/>
+    <gt_angle atom1="b_ha" atom2="b_c2" atom3="b_ha" refValue="116.97" sigma="0.86" ntrain="5" params="40  10000"/>
+    <gt_angle atom1="b_ce" atom2="b_c2" atom3="b_ha" refValue="121.41" sigma="0.89" ntrain="6" params="40  10000"/>
+    <gt_angle atom1="b_c1" atom2="b_c3" atom3="b_c1" refValue="113.15" sigma="0.5" ntrain="1" params="40  10000"/>
+    <gt_angle atom1="b_c2" atom2="b_ce" atom3="b_ha" refValue="119.95" sigma="1.38" ntrain="3" params="40  10000"/>
+    <gt_angle atom1="b_c2" atom2="b_ce" atom3="b_ce" refValue="124.35" sigma="0.5" ntrain="2" params="40  10000"/>
+    <gt_angle atom1="b_c2" atom2="b_ce" atom3="b_cg" refValue="123.13" sigma="0.5" ntrain="1" params="40  10000"/>
+    <gt_angle atom1="b_c3" atom2="b_c3" atom3="b_c3" refValue="112.92" sigma="0.95" ntrain="5" params="40  10000"/>
+    <gt_angle atom1="b_cg" atom2="b_ce" atom3="b_ha" refValue="115.65" sigma="0.5" ntrain="1" params="40  10000"/>
+    <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_ha" refValue="121.65" sigma="0.5" ntrain="4" params="40  10000"/>
+    <gt_angle atom1="b_ca" atom2="b_ca" atom3="b_ha" refValue="120" sigma="0.76" ntrain="22" params="40  10000"/>
+    <gt_angle atom1="b_ca" atom2="b_ca" atom3="b_ca" refValue="119.99" sigma="0.65" ntrain="12" params="40  10000"/>
+    <gt_angle atom1="b_ca" atom2="b_ca" atom3="b_cg" refValue="119.97" sigma="0.5" ntrain="2" params="40  10000"/>
+    <gt_angle atom1="b_hp" atom2="b_oh" atom3="b_hp" refValue="105.06" sigma="0.5" ntrain="1" params="40  10000"/>
+    <gt_angle atom1="b_c3" atom2="b_c3" atom3="b_hc" refValue="110.35" sigma="1.37" ntrain="53" params="40  10000"/>
+  </gt_angles>
+  <gt_angles unit="degree" interaction="LINEAR_ANGLES" function="LINEAR_ANGLES">
+    <gt_angle atom1="b_f" atom2="b_c1" atom3="b_n1" refValue="180" sigma="0.5" ntrain="1" params="10000"/>
+    <gt_angle atom1="b_br" atom2="b_c1" atom3="b_c1" refValue="180" sigma="0.5" ntrain="1" params="10000"/>
+    <gt_angle atom1="b_o" atom2="b_c1" atom3="b_o" refValue="180" sigma="0.5" ntrain="1" params="10000"/>
+    <gt_angle atom1="b_c1" atom2="b_c1" atom3="b_c3" refValue="179.76" sigma="0.85" ntrain="4" params="10000"/>
+    <gt_angle atom1="b_c1" atom2="b_c1" atom3="b_ha" refValue="179.92" sigma="0.59" ntrain="7" params="10000"/>
+    <gt_angle atom1="b_br" atom2="b_c1" atom3="b_n1" refValue="180" sigma="0.5" ntrain="1" params="10000"/>
+    <gt_angle atom1="b_c1" atom2="b_c1" atom3="b_f" refValue="180" sigma="0.5" ntrain="1" params="10000"/>
+    <gt_angle atom1="b_c1" atom2="b_c1" atom3="b_cl" refValue="179.86" sigma="0.5" ntrain="1" params="10000"/>
+    <gt_angle atom1="b_ce" atom2="b_cg" atom3="b_n1" refValue="178.63" sigma="0.5" ntrain="1" params="10000"/>
+    <gt_angle atom1="b_cl" atom2="b_c1" atom3="b_n1" refValue="180" sigma="0.5" ntrain="1" params="10000"/>
+    <gt_angle atom1="b_c3" atom2="b_c1" atom3="b_n1" refValue="179.03" sigma="1.02" ntrain="5" params="10000"/>
+    <gt_angle atom1="b_ha" atom2="b_c1" atom3="b_n1" refValue="180" sigma="0.5" ntrain="1" params="10000"/>
+    <gt_angle atom1="b_ha" atom2="b_c1" atom3="b_p2" refValue="180" sigma="0.5" ntrain="1" params="10000"/>
+    <gt_angle atom1="b_ca" atom2="b_cg" atom3="b_n1" refValue="179.78" sigma="0.5" ntrain="1" params="10000"/>
+  </gt_angles>
+  <gt_dihedrals unit="degree" interaction="PROPER_DIHEDRALS" function="PDIHS">
+    <gt_dihedral atom1="b_ha" atom2="b_c2" atom3="b_ce" atom4="b_ha" refValue="0" sigma="0.5" ntrain="2" params="0  1"/>
+    <gt_dihedral atom1="b_hp" atom2="b_oh" atom3="b_oh" atom4="b_hp" refValue="113.27" sigma="0.5" ntrain="1" params="0  1"/>
+    <gt_dihedral atom1="b_c1" atom2="b_c1" atom3="b_c3" atom4="b_hc" refValue="120" sigma="103.25" ntrain="9" params="0  1"/>
+    <gt_dihedral atom1="b_hc" atom2="b_c3" atom3="b_c3" atom4="b_hc" refValue="180" sigma="102.44" ntrain="63" params="0  1"/>
+    <gt_dihedral atom1="b_c2" atom2="b_ce" atom3="b_ce" atom4="b_c2" refValue="180" sigma="0.5" ntrain="1" params="0  1"/>
+    <gt_dihedral atom1="b_cg" atom2="b_ce" atom3="b_c2" atom4="b_ha" refValue="90" sigma="90.49" ntrain="2" params="0  1"/>
+    <gt_dihedral atom1="b_c3" atom2="b_c3" atom3="b_c3" atom4="b_c3" refValue="180" sigma="0.5" ntrain="2" params="0  1"/>
+    <gt_dihedral atom1="b_hc" atom2="b_c3" atom3="b_c1" atom4="b_n1" refValue="190.27" sigma="102.44" ntrain="10" params="0  1"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_cg" atom4="b_n1" refValue="258.24" sigma="0.5" ntrain="1" params="0  1"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_ha" refValue="179.99" sigma="0.5" ntrain="9" params="0  1"/>
+    <gt_dihedral atom1="b_ha" atom2="b_ce" atom3="b_ce" atom4="b_ha" refValue="180" sigma="0.5" ntrain="1" params="0  1"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_ca" refValue="89.99" sigma="156.37" ntrain="12" params="0  1"/>
+    <gt_dihedral atom1="b_c3" atom2="b_c3" atom3="b_c3" atom4="b_hc" refValue="180" sigma="108.73" ntrain="25" params="0  1"/>
+    <gt_dihedral atom1="b_ha" atom2="b_ca" atom3="b_ca" atom4="b_ha" refValue="0" sigma="0.5" ntrain="1" params="0  1"/>
+    <gt_dihedral atom1="b_ha" atom2="b_c2" atom3="b_c2" atom4="b_ha" refValue="180" sigma="0.5" ntrain="1" params="0  1"/>
+    <gt_dihedral atom1="b_cg" atom2="b_ca" atom3="b_ca" atom4="b_ha" refValue="180" sigma="180.46" ntrain="2" params="0  1"/>
+    <gt_dihedral atom1="b_c1" atom2="b_c3" atom3="b_c3" atom4="b_c3" refValue="180" sigma="0.5" ntrain="1" params="0  1"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_cg" refValue="180" sigma="0.52" ntrain="2" params="0  1"/>
+    <gt_dihedral atom1="b_c1" atom2="b_c3" atom3="b_c3" atom4="b_hc" refValue="157.5" sigma="129.17" ntrain="8" params="0  1"/>
+  </gt_dihedrals>
+  <gt_dihedrals unit="degree" interaction="IMPROPER_DIHEDRALS" function="IDIHS">
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ha" atom4="b_ha" refValue="0" sigma="0.5" ntrain="1" params="0  1"/>
+    <gt_dihedral atom1="b_ce" atom2="b_ce" atom3="b_c2" atom4="b_ha" refValue="0" sigma="0.5" ntrain="2" params="0  1"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ha" atom4="b_ca" refValue="0" sigma="0.5" ntrain="7" params="0  1"/>
+    <gt_dihedral atom1="b_ce" atom2="b_cg" atom3="b_c2" atom4="b_ha" refValue="0" sigma="0.5" ntrain="1" params="0  1"/>
+    <gt_dihedral atom1="b_c2" atom2="b_ce" atom3="b_ha" atom4="b_ha" refValue="0" sigma="0.5" ntrain="2" params="0  1"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_ha" refValue="0" sigma="0.5" ntrain="4" params="0  1"/>
+    <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_ha" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0  1"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_cg" atom4="b_ca" refValue="0.01" sigma="0.5" ntrain="1" params="0  1"/>
+    <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_ce" atom4="b_ha" refValue="0" sigma="0.5" ntrain="1" params="0  1"/>
+  </gt_dihedrals>
   <bsatoms polarizability_unit="A3" reference="Bosque2002a">
     <bsatom elem="H" polarizability="0.17"/>
     <bsatom elem="C" polarizability="1.51"/>
