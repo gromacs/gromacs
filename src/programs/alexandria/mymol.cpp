@@ -1859,10 +1859,35 @@ void MyMol::PrintTopology(const char             *fn,
                           gmx_atomprop_t          aps)
 {
     FILE                    *fp;
-    t_mols                   printmol;
     bool                     bITP;
+
+
+    /* Write topology_ file */
+    bITP = (fn2ftp(fn) == efITP);
+    fp   = gmx_ffopen(fn, "w");
+
+    PrintTopology(fp, iChargeDistributionModel,
+                  bVerbose, pd, aps, bITP);
+
+    fclose(fp);
+}
+
+void MyMol::PrintTopology(FILE                   *fp,
+                          ChargeDistributionModel iChargeDistributionModel,
+                          bool                    bVerbose,
+                          const Poldata          &pd,
+                          gmx_atomprop_t          aps,
+			  bool                   bITP)
+{
+    
+    t_mols                   printmol;
     std::vector<std::string> commercials;
     char                     buf[256];
+
+    if (fp == NULL)
+    {
+        return;
+    }
 
     CalcQPol(pd);
 
@@ -1879,10 +1904,6 @@ void MyMol::PrintTopology(const char             *fn,
         printmol.name = strdup("Onbekend");
     }
     printmol.nr   = 1;
-
-    /* Write topology_ file */
-    bITP = (fn2ftp(fn) == efITP);
-    fp   = gmx_ffopen(fn, "w");
 
     snprintf(buf, sizeof(buf), "ref_enthalpy   = %.3f kJ/mol", ref_enthalpy_);
     commercials.push_back(buf);
@@ -1924,9 +1945,6 @@ void MyMol::PrintTopology(const char             *fn,
             printf("%s\n", i->c_str());
         }
     }
-
-    fclose(fp);
-
 }
 
 static void add_excl(t_excls *excls, int e)

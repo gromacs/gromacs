@@ -1042,7 +1042,7 @@ double OptPrep::calcDeviation()
             _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
 
             if (nullptr != debug)
-            {
+            {	  
                 morse   = mymol.enerd_->term[F_MORSE];
                 angle   = mymol.enerd_->term[F_UREY_BRADLEY];
                 coulSR  = mymol.enerd_->term[F_COUL_SR];
@@ -1580,7 +1580,7 @@ int alex_tune_fc(int argc, char *argv[])
 
 
     opt.InitOpt(fp, bOpt, factor);
-
+    
     print_moldip_mols(fp, opt._mymol, FALSE, FALSE);
 
     opt.calcDeviation();

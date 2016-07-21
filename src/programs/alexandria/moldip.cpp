@@ -621,6 +621,13 @@ void MolDip::Read(FILE *fp,
                     imm = mpnew.getExpProps(_bQM, bZero, lot, pd_);
                 }
 
+		if (NULL != debug)
+		{
+
+		    mpnew.PrintTopology(debug, _iChargeDistributionModel, false, 
+					pd_, _atomprop, true);
+		}
+
                 if (immOK == imm)
                 {
                     if (dest > 0)

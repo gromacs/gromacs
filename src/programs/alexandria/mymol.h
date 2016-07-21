@@ -289,6 +289,22 @@ class MyMol
                            const Poldata          &pd,
                            gmx_atomprop_t          aps);
 
+	/*! \brief
+         * Print the topology that was generated previously in GROMACS format.
+         *
+         * \param[in] fn        A File pointer opened previously.
+         * \param[in] iModel    The distrbution model of charge (e.x. point charge, gaussian, and slater models)
+         * \param[in] bVerbose  Verobse
+         * \param[in] pd        Data structure containing atomic properties
+         * \param[in] aps       Gromacs atom properties
+         */
+        void PrintTopology(FILE                    *fp,
+                           ChargeDistributionModel iModel,
+                           bool                    bVerbose,
+                           const Poldata          &pd,
+                           gmx_atomprop_t          aps,
+			   bool                   bITP);
+
         /*! \brief
          *  Compute or derive global info about the molecule
          *
