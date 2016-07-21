@@ -88,6 +88,7 @@ namespace gmx
 {
 class Constraints;
 class MDAtoms;
+class LocalAtomSetManager;
 } // namespace
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
@@ -210,7 +211,8 @@ init_domain_decomposition(FILE                           *fplog,
                           const gmx_mtop_t               *mtop,
                           const t_inputrec               *ir,
                           const matrix                    box,
-                          gmx::ArrayRef<const gmx::RVec>  xGlobal);
+                          gmx::ArrayRef<const gmx::RVec>  xGlobal,
+                          gmx::LocalAtomSetManager       *atomSets);
 
 /*! \brief Initialize data structures for bonded interactions */
 void dd_init_bondeds(FILE              *fplog,

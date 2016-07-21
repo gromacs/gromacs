@@ -57,6 +57,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/ewald/ewald-utils.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-gpu-program.h"
@@ -814,13 +815,15 @@ int Mdrunner::mdrunner()
                               useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes), *hwinfo->cpuInfo);
     }
 
-    /* Initalize the domain decomposition */
+    LocalAtomSetManager atomSets;
+
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
     {
         cr->dd = init_domain_decomposition(fplog, cr, domdecOptions, mdrunOptions,
                                            &mtop, inputrec,
-                                           box, positionsFromStatePointer(globalState.get()));
+                                           box, positionsFromStatePointer(globalState.get()),
+                                           &atomSets);
         // Note that local state still does not exist yet.
     }
     else
