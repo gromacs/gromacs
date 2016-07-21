@@ -72,6 +72,11 @@ struct gmx_hash_t;
 struct gmx_pme_comm_n_box_t;
 struct gmx_reverse_top_t;
 
+namespace gmx
+{
+class LocalAtomSetManager;
+}
+
 typedef struct {
     int  j0;     /* j-zone start               */
     int  j1;     /* j-zone end                 */
@@ -206,6 +211,8 @@ struct gmx_domdec_t {
     /* The partioning count, to keep track of the state */
     gmx_int64_t ddp_count;
 
+    /* The managed atom sets that are updated in domain decomposition */
+    gmx::LocalAtomSetManager * atomSets;
 
     /* gmx_pme_recv_f buffer */
     int   pme_recv_f_alloc = 0;

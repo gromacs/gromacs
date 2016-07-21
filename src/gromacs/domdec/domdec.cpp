@@ -54,6 +54,7 @@
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/ga2la.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
@@ -4392,7 +4393,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
                                         const gmx_mtop_t *mtop,
                                         const t_inputrec *ir,
                                         const matrix box,
-                                        gmx::ArrayRef<const gmx::RVec> xGlobal)
+                                        gmx::ArrayRef<const gmx::RVec> xGlobal,
+                                        gmx::LocalAtomSetManager *atomSets)
 {
     gmx_domdec_t      *dd;
 
@@ -4431,6 +4433,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
     set_over_alloc_dd(TRUE);
 
     clear_dd_cycle_counts(dd);
+
+    dd->atomSets = atomSets;
 
     return dd;
 }
@@ -6819,6 +6823,12 @@ void dd_partition_system(FILE                *fplog,
     {
         /* Update the local groups needed for ion swapping */
         dd_make_local_swap_groups(dd, ir->swap);
+    }
+
+    if (dd->atomSets != nullptr)
+    {
+        /* Update the local atom sets */
+        dd->atomSets->setIndicesInDomainDecomposition(*(dd->ga2la));
     }
 
     /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
