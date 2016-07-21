@@ -18,9 +18,9 @@ enum InteractionType
 {
     eitBONDS  = 0,
     eitANGLES = 1,
-    eitPROPER_DIHEDRALS = 2,
-    eitIMPROPER_DIHEDRALS = 3,
-    eitLINEAR_ANGLES = 4,
+    eitLINEAR_ANGLES = 2,
+    eitPROPER_DIHEDRALS = 3,
+    eitIMPROPER_DIHEDRALS = 4,
     eitLJ14 = 5,
     eitPOLARIZATION = 6,
     eitCONSTR = 7,

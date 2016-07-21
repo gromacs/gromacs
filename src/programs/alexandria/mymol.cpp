@@ -370,7 +370,6 @@ static void cp_plist(t_params                  *plist,
         PlistWrapper pw(itype, ftype);
         for (int i = 0; (i < plist->nr); i++)
         {
-            // Clean up potentially not initialized values.
             for (int j = interaction_function[ftype].nratoms; j < MAXATOMLIST; j++)
             {
                 plist->param[i].a[j] = 0;
@@ -483,49 +482,6 @@ void MyMol::MakeAngles(bool bPairs,
         {
             sfree(plist[i].param);
         }
-    }
-}
-
-static void generate_nbparam(int ftype, int comb, 
-			     double ci[], double cj[],
-                             t_iparams *ip)
-{
-    double sig, eps;
-
-    switch (ftype)
-    {
-        case F_LJ:
-            switch (comb)
-            {
-                case eCOMB_GEOMETRIC:
-                    /* Gromos rules */
-                    ip->lj.c6  = sqrt(ci[0] * cj[0]);
-                    ip->lj.c12 = sqrt(ci[1] * cj[1]);
-                    break;
-
-                case eCOMB_ARITHMETIC:
-                    /* c0 and c1 are epsilon and sigma */
-                    sig        = (ci[0]+cj[0])*0.5;
-                    eps        = sqrt(ci[1]*cj[1]);
-                    ip->lj.c6  = 4*eps*pow(sig, 6);
-                    ip->lj.c12 = 4*eps*pow(sig, 12);
-
-                    break;
-                case eCOMB_GEOM_SIG_EPS:
-                    /* c0 and c1 are epsilon and sigma */
-                    sig        = sqrt(ci[0]*cj[0]);
-                    eps        = sqrt(ci[1]*cj[1]);
-                    ip->lj.c6  = 4*eps*pow(sig, 6);
-                    ip->lj.c12 = 4*eps*pow(sig, 12);
-
-                    break;
-                default:
-                    gmx_fatal(FARGS, "No such combination rule %d", comb);
-            }
-            break;
-        default:
-            gmx_fatal(FARGS, "No such function type supported %s",
-                      interaction_function[ftype].name);
     }
 }
 

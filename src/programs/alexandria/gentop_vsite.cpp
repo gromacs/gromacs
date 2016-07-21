@@ -357,47 +357,43 @@ void GentopVsites::mergeLinear(bool bGenVsites)
     }
 }
 
-static void set_linear_angle_params(int                        a[],
+static void set_linear_angle_params(const int                  atoms[],
                                     std::vector<PlistWrapper> &plist,
                                     real                       ktheta)
 {
     t_param pp;
-    real    b0 = 0, b1 = 0;
-    auto    pw = SearchPlist(plist, eitBONDS);
+    bool    found = false;
+    auto    pw = SearchPlist(plist, eitANGLES);
 
     if (plist.end() == pw)
     {
-        fprintf(stderr, "Cannot find the bonds in set_linear_angle_params. There are %d plist entries.\n", static_cast<int>(plist.size()));
+        fprintf(stderr, "Cannot find the angles in the plist to set the linear angle params.");
         return;
     }
-    for (ParamIterator i = pw->beginParam(); (i < pw->endParam()); ++i)
+    for (auto param = pw->beginParam(); param < pw->endParam(); ++param)
     {
-        if (((i->a[0] == a[0]) && (i->a[1] == a[1])) ||
-            ((i->a[0] == a[1]) && (i->a[1] == a[0])))
+        if (((param->a[0] == atoms[0]) && (param->a[2] == atoms[2])) ||
+	    ((param->a[2] == atoms[0]) && (param->a[0] == atoms[2])))
         {
-            b0 = i->c[0];
-        }
-        else if (((i->a[0] == a[2]) && (i->a[1] == a[1])) ||
-                 ((i->a[0] == a[1]) && (i->a[1] == a[2])))
-        {
-            b1 = i->c[0];
+	    delete_params(plist, pw->getFtype(), atoms);
+	    found = true;
+	    break;
         }
     }
-    if ((b0 > 0) && (b1 > 0))
+    if (found) 
     {
         memset(&pp, 0, sizeof(pp));
-        for (int j = 0; (j < 3); j++)
+        for (int i = 0; (i < 3); i++)
         {
-            pp.a[j] = a[j];
+            pp.a[i] = atoms[i];
         }
-        pp.c[0] = (b1/(b0+b1));
-        pp.c[1] = ktheta;
+        pp.c[0] = ktheta;
         add_param_to_plist(plist, F_LINEAR_ANGLES, eitLINEAR_ANGLES, pp);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
-        fprintf(debug, "Cannot find bonds in linear angle %d-%d-%d, b0=%g b1=%g",
-                a[0], a[1], a[2], b0, b1);
+        fprintf(debug, "Cannot find bonds in linear angle %d-%d-%d\n",
+                atoms[0], atoms[1], atoms[2]);
     }
 }
 
