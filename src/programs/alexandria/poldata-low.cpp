@@ -68,7 +68,7 @@ namespace alexandria
 {
 
 static const char * eit_names[eitNR] = {
-    "BONDS", "ANGLES", "LINEAR_ANGLES", 
+    "BONDS", "ANGLES", "LINEAR_ANGLES",
     "PROPER_DIHEDRALS", "IMPROPER_DIHEDRALS",
     "LJ14", "POLARIZATION", "CONSTR", "VSITE2"
 };

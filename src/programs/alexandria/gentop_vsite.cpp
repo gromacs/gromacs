@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -185,7 +219,7 @@ static void calc_vsite2parm(t_atoms *atoms,
      * We put the first atom I at coordinate 0.
      */
     com   = (mJ*rB+mK*rC+mL*rD)/(mT);
-    I     = (mI*gmx::square(com) + mJ*gmx::square(rB-com) + 
+    I     = (mI*gmx::square(com) + mJ*gmx::square(rB-com) +
              mK*gmx::square(rC-com) + mL*gmx::square(rD-com));
     rVV   = com+I/(com*mT);
     mV    = com*mT/rVV;
@@ -363,7 +397,7 @@ static void set_linear_angle_params(const int                  atoms[],
 {
     t_param pp;
     bool    found = false;
-    auto    pw = SearchPlist(plist, eitANGLES);
+    auto    pw    = SearchPlist(plist, eitANGLES);
 
     if (plist.end() == pw)
     {
@@ -373,14 +407,14 @@ static void set_linear_angle_params(const int                  atoms[],
     for (auto param = pw->beginParam(); param < pw->endParam(); ++param)
     {
         if (((param->a[0] == atoms[0]) && (param->a[2] == atoms[2])) ||
-	    ((param->a[2] == atoms[0]) && (param->a[0] == atoms[2])))
+            ((param->a[2] == atoms[0]) && (param->a[0] == atoms[2])))
         {
-	    delete_params(plist, pw->getFtype(), atoms);
-	    found = true;
-	    break;
+            delete_params(plist, pw->getFtype(), atoms);
+            found = true;
+            break;
         }
     }
-    if (found) 
+    if (found)
     {
         memset(&pp, 0, sizeof(pp));
         for (int i = 0; (i < 3); i++)
@@ -398,17 +432,17 @@ static void set_linear_angle_params(const int                  atoms[],
 }
 
 void GentopVsites::generateSpecial(const Poldata              &pd,
-				   bool                       bUseVsites,
-                                   t_atoms                   *atoms, 
-                                   rvec                     **x,
+                                   bool                        bUseVsites,
+                                   t_atoms                    *atoms,
+                                   rvec                      **x,
                                    std::vector<PlistWrapper>  &plist,
-                                   t_symtab                  *symtab,
-                                   gpp_atomtype_t             atype, 
-                                   t_excls                  **excls)
+                                   t_symtab                   *symtab,
+                                   gpp_atomtype_t              atype,
+                                   t_excls                   **excls)
 {
-    int     j, nlin_at;
-    int     a[MAXATOMLIST], aa[2];
-    t_param pp;
+    int          j, nlin_at;
+    int          a[MAXATOMLIST], aa[2];
+    t_param      pp;
     unsigned int ftb, fta, ftl, ftp, fti;
 
     mergeLinear(bUseVsites);
@@ -459,7 +493,7 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
                 a[j] = -1;
             }
             delete_params(plist, fta, a);
-	    delete_params(plist, ftl, a);
+            delete_params(plist, ftl, a);
             delete_params(plist, ftp, a);
             delete_params(plist, fti, a);
 

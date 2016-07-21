@@ -604,7 +604,7 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
                             }
                             else
                             {
-			        atoms   = {aai, aaj, aak, aal};
+                                atoms   = {aai, aaj, aak, aal};
                                 auto fs = pd_.findForces(iType);
                                 auto f  = fs->findForce(atoms);
                                 if (fs->forceEnd() == f)
