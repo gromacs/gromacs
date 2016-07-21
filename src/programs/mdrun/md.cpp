@@ -56,6 +56,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-load-balancing.h"
@@ -444,7 +445,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
     }
     groups = &top_global->groups;
 
-    gmx_edsam *ed = nullptr;
+    LocalAtomSetManager atomSets;
+    gmx_edsam          *ed = nullptr;
     if (opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr)
     {
         /* Initialize essential dynamics sampling */
@@ -563,7 +565,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
         dd_partition_system(fplog, ir->init_step, cr, TRUE, 1,
                             state_global, top_global, ir,
                             state, &f, mdAtoms, top, fr,
-                            vsite, constr,
+                            vsite, constr, &atomSets,
                             nrnb, nullptr, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
         update_realloc(upd, state->natoms);
@@ -1105,7 +1107,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
                                     bMasterState, nstglobalcomm,
                                     state_global, top_global, ir,
                                     state, &f, mdAtoms, top, fr,
-                                    vsite, constr,
+                                    vsite, constr, &atomSets,
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
                 shouldCheckNumberOfBondedInteractions = true;
@@ -1861,7 +1863,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr,
             dd_partition_system(fplog, step, cr, TRUE, 1,
                                 state_global, top_global, ir,
                                 state, &f, mdAtoms, top, fr,
-                                vsite, constr,
+                                vsite, constr, &atomSets,
                                 nrnb, wcycle, FALSE);
             shouldCheckNumberOfBondedInteractions = true;
             update_realloc(upd, state->natoms);
