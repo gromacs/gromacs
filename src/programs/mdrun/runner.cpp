@@ -57,6 +57,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fileio/checkpoint.h"
@@ -1047,6 +1048,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Open input and output files, allocate space for ED data structure */
         ed = ed_open(mtop->natoms, &state->edsamstate, nfile, fnm, Flags, oenv, cr);
     }
+
+    /* atomsets are needed by domain decomposition */
+    inputrec->atomsets = new gmx::LocalAtomSetManager(PAR(cr));
 
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
                      inputrec->eI == eiNM))
