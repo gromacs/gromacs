@@ -44,6 +44,7 @@ gmx_add_libgromacs_sources(
     optionsection.cpp
     optionsvisitor.cpp
     timeunitmanager.cpp
+    treesupport.cpp
     )
 
 gmx_install_headers(
