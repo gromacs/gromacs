@@ -39,4 +39,6 @@ gmx_add_unit_test(OptionsUnitTests options-test
                   option.cpp
                   optionsassigner.cpp
                   repeatingsection.cpp
-                  timeunitmanager.cpp)
+                  timeunitmanager.cpp
+                  treesupport.cpp
+                  )

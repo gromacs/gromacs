@@ -1,0 +1,193 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \libinternal \file
+ * \brief
+ * Declares classes for building the data structures in keyvaluetree.h.
+ *
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_KEYVALUETREEBUILDER_H
+#define GMX_UTILITY_KEYVALUETREEBUILDER_H
+
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/variant.h"
+
+namespace gmx
+{
+
+class KeyValueTreeObjectBuilder;
+
+class KeyValueTreeBuilder
+{
+    public:
+        KeyValueTreeObjectBuilder rootObject();
+
+        KeyValueTreeObject build() { return std::move(root_); }
+
+    private:
+        template <typename T>
+        static KeyValueTreeValue createValue(const T &value)
+        {
+            return KeyValueTreeValue(Variant::create<T>(value));
+        }
+        template <typename T>
+        static KeyValueTreeValue createValue()
+        {
+            return KeyValueTreeValue(Variant::create<T>(T()));
+        }
+
+        KeyValueTreeObject root_;
+
+        friend class KeyValueTreeObjectArrayBuilder;
+        friend class KeyValueTreeObjectBuilder;
+        template <typename T>
+        friend class KeyValueTreeUniformArrayBuilder;
+};
+
+class KeyValueTreeArrayBuilderBase
+{
+    protected:
+        explicit KeyValueTreeArrayBuilderBase(KeyValueTreeArray *array)
+            : array_(array)
+        {
+        }
+
+        KeyValueTreeValue &addRawValue(KeyValueTreeValue &&value)
+        {
+            array_->values_.push_back(std::move(value));
+            return array_->values_.back();
+        }
+
+    private:
+        KeyValueTreeArray *array_;
+};
+
+template <typename T>
+class KeyValueTreeUniformArrayBuilder : public KeyValueTreeArrayBuilderBase
+{
+    public:
+        void addValue(const T &value)
+        {
+            addRawValue(KeyValueTreeBuilder::createValue<T>(value));
+        }
+
+    private:
+        explicit KeyValueTreeUniformArrayBuilder(KeyValueTreeArray *array)
+            : KeyValueTreeArrayBuilderBase(array)
+        {
+        }
+
+        friend class KeyValueTreeObjectBuilder;
+};
+
+class KeyValueTreeObjectArrayBuilder : public KeyValueTreeArrayBuilderBase
+{
+    public:
+        KeyValueTreeObjectBuilder addObject();
+
+    private:
+        explicit KeyValueTreeObjectArrayBuilder(KeyValueTreeArray *array)
+            : KeyValueTreeArrayBuilderBase(array)
+        {
+        }
+
+        friend class KeyValueTreeObjectBuilder;
+};
+
+class KeyValueTreeObjectBuilder
+{
+    public:
+        template <typename T>
+        void addValue(const std::string &key, const T &value)
+        {
+            object_->addProperty(key, KeyValueTreeBuilder::createValue<T>(value));
+        }
+        KeyValueTreeObjectBuilder addObject(const std::string &key)
+        {
+            auto iter = object_->addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeObject>());
+            return KeyValueTreeObjectBuilder(&iter->second);
+        }
+        template <typename T>
+        KeyValueTreeUniformArrayBuilder<T> addUniformArray(const std::string &key)
+        {
+            auto iter = object_->addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
+            return KeyValueTreeUniformArrayBuilder<T>(&iter->second.asArray());
+        }
+        KeyValueTreeObjectArrayBuilder addObjectArray(const std::string &key)
+        {
+            auto iter = object_->addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
+            return KeyValueTreeObjectArrayBuilder(&iter->second.asArray());
+        }
+
+    private:
+        explicit KeyValueTreeObjectBuilder(KeyValueTreeObject *object)
+            : object_(object)
+        {
+        }
+        explicit KeyValueTreeObjectBuilder(KeyValueTreeValue *value)
+            : object_(&value->asObject())
+        {
+        }
+
+        KeyValueTreeObject *object_;
+
+        friend class KeyValueTreeBuilder;
+        friend class KeyValueTreeObjectArrayBuilder;
+};
+
+/********************************************************************
+ * Inline functions that could not be declared within the classes
+ */
+
+inline KeyValueTreeObjectBuilder KeyValueTreeBuilder::rootObject()
+{
+    return KeyValueTreeObjectBuilder(&root_);
+}
+
+inline KeyValueTreeObjectBuilder KeyValueTreeObjectArrayBuilder::addObject()
+{
+    auto &value = addRawValue(KeyValueTreeBuilder::createValue<KeyValueTreeObject>());
+    return KeyValueTreeObjectBuilder(&value);
+}
+
+} // namespace gmx
+
+#endif
