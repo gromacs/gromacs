@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -115,7 +115,7 @@ void gmx_tng_prepare_low_prec_writing(tng_trajectory_t  tng,
  * (that component). box can only be NULL if x is also NULL. */
 void gmx_fwrite_tng(tng_trajectory_t tng,
                     const gmx_bool   bUseLossyCompression,
-                    int              step,
+                    gmx_int64_t      step,
                     real             elapsedPicoSeconds,
                     real             lambda,
                     const rvec      *box,

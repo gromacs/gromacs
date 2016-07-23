@@ -999,12 +999,11 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
     {
         bSane = bSane || (fr->block[b].nsub > 0);
     }
-    if (!((fr->step >= 0) && bSane))
+    if (!((fr->step >= 0) && bSane) && bRead)
     {
         fprintf(stderr, "\nWARNING: there may be something wrong with energy file %s\n",
                 gmx_fio_getname(ef->fio));
-        fprintf(stderr, "Found: step=%" GMX_PRId64 ", nre=%d, nblock=%d, time=%g.\n"
-                "Trying to skip frame expect a crash though\n",
+        fprintf(stderr, "Found: step=%" GMX_PRId64 ", nre=%d, nblock=%d, time=%g.\n",
                 fr->step, fr->nre, fr->nblock, fr->t);
     }
     if (bRead && fr->nre > fr->e_alloc)

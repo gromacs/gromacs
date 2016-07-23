@@ -237,7 +237,7 @@ static void list_trr(const char *fn)
             indent = 0;
             indent = pr_title(stdout, indent, buf);
             pr_indent(stdout, indent);
-            fprintf(stdout, "natoms=%10d  step=%10d  time=%12.7e  lambda=%10g\n",
+            fprintf(stdout, "natoms=%10d  step=%10" GMX_PRId64 "  time=%12.7e  lambda=%10g\n",
                     trrheader.natoms, trrheader.step, trrheader.t, trrheader.lambda);
             if (trrheader.box_size)
             {
@@ -277,14 +277,15 @@ static void list_trr(const char *fn)
 
 void list_xtc(const char *fn)
 {
-    t_fileio  *xd;
-    int        indent;
-    char       buf[256];
-    rvec      *x;
-    matrix     box;
-    int        nframe, natoms, step;
-    real       prec, time;
-    gmx_bool   bOK;
+    t_fileio   *xd;
+    int         indent;
+    char        buf[256];
+    rvec       *x;
+    matrix      box;
+    int         nframe, natoms;
+    gmx_int64_t step;
+    real        prec, time;
+    gmx_bool    bOK;
 
     xd = open_xtc(fn, "r");
     read_first_xtc(xd, &natoms, &step, &time, box, &x, &prec, &bOK);
@@ -296,7 +297,7 @@ void list_xtc(const char *fn)
         indent = 0;
         indent = pr_title(stdout, indent, buf);
         pr_indent(stdout, indent);
-        fprintf(stdout, "natoms=%10d  step=%10d  time=%12.7e  prec=%10g\n",
+        fprintf(stdout, "natoms=%10d  step=%10" GMX_PRId64 "  time=%12.7e  prec=%10g\n",
                 natoms, step, time, prec);
         pr_rvecs(stdout, indent, "box", box, DIM);
         pr_rvecs(stdout, indent, "x", x, natoms);
