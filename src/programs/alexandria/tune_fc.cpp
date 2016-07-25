@@ -291,6 +291,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
             {
                 int  index = 0;
                 char buf[STRLEN];
+		char buf_reverse[STRLEN];
                 auto iType = static_cast<InteractionType>(bt_);
                 switch (iType)
                 {
@@ -303,6 +304,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                         if (fs->forceEnd() != f)
                         {
                             sprintf(buf, "%s %s", aai.c_str(), aaj.c_str());
+			    sprintf(buf_reverse, "%s %s", aaj.c_str(), aai.c_str());
                             params    = f->params();
                             index     = f - fs->forceBegin();
                             found     = true;
@@ -323,6 +325,8 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                             {
                                 sprintf(buf, "%s %s %s", aai.c_str(),
                                         aaj.c_str(), aak.c_str());
+				sprintf(buf_reverse, "%s %s %s", aak.c_str(),
+                                        aaj.c_str(), aai.c_str());
                                 params = f->params();
                                 index  = f - fs->forceBegin();
                                 found  = true;
@@ -346,6 +350,8 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                             {
                                 sprintf(buf, "%s %s %s %s", aai.c_str(),
                                         aaj.c_str(), aak.c_str(), aal.c_str());
+				sprintf(buf_reverse, "%s %s %s %s", aal.c_str(),
+                                        aaj.c_str(), aak.c_str(), aai.c_str());
                                 params = f->params();
                                 index  = f - fs->forceBegin();
                                 found  = true;
@@ -363,9 +369,10 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                 if (found)
                 {
                     auto c = std::find_if(bn_.begin(), bn_.end(),
-                                          [buf](const BondNames &bn)
+                                          [buf, buf_reverse](const BondNames &bn)
                         {
-                            return bn.name().compare(buf) == 0;
+			    return (bn.name().compare(buf) == 0 ||
+				    bn.name().compare(buf_reverse) == 0);
                         });
                     if (c != bn_.end())
                     {
@@ -659,7 +666,7 @@ void OptPrep::opt2List()
     param_.clear();
     for (auto &fc : ForceConstants_)
     {
-        for (BondNamesIterator b = fc.beginBN(); b  < fc.endBN(); ++b)
+        for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
         {
             for (const auto &p : b->paramValues())
             {
@@ -675,12 +682,12 @@ void OptPrep::list2Opt()
     std::vector<std::string> atoms;
     for (auto &fc : ForceConstants_)
     {
-        for (BondNamesIterator b = fc.beginBN(); b  < fc.endBN(); ++b)
+        for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
         {
             char buf[STRLEN];
             buf[0] = '\0';
 
-            for (size_t p = 0; (p < b->nParams()); p++)
+            for (size_t p = 0; p < b->nParams(); p++)
             {
                 strncat(buf, " ", sizeof(buf)-1);
                 strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
@@ -744,11 +751,13 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
 
     int nD   = ForceConstants_[eitBONDS].nbad();
     int nMol = _mymol.size();
+
     if ((0 == nD) || (0 == nMol))
     {
         gmx_fatal(FARGS, "Number of variables is %d and number of molecules is %d",
                   nD, nMol);
     }
+
     a = alloc_matrix(nD, nMol);
     ntest.resize(nD, 0);
     ctest.resize(nD);
@@ -757,84 +766,65 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
             nD);
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
-    for (auto fs = pd_.forcesBegin(); fs != pd_.forcesEnd(); fs++)
-    {
-        if (eitBONDS == fs->iType())
-        {
-            int ftb = fs->fType();
-            int j   = 0;
-            for (std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
-                 (mymol < _mymol.end()); mymol++, j++)
-            {
-                for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr);
-                     i += interaction_function[ftb].nratoms+1)
-                {
-                    int                      ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
-                    int                      aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
-                    std::string              aai, aaj;
-                    std::vector<std::string> atoms;
-                    if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
-                        pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
-                    {
-                        atoms  = {aai, aaj};
-                        auto f = fs->findForce(atoms);
-                        if (fs->forceEnd() != f)
-                        {
-                            int gt  = f - fs->forceBegin();
-                            int gti = ForceConstants_[eitBONDS].reverseIndex(gt);
+    auto fs = pd_.findForces(eitBONDS);
+    int ftb = fs->fType();
+    int j   = 0;
 
-                            a[gti][j]++;
-                            ntest[gti]++;
-                            if (ctest[gti].empty())
-                            {
-                                char buf[STRLEN];
-                                snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
-                                ctest[gti].assign(buf);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
-                                  aai.c_str(), aaj.c_str(),
-                                  *mymol->topology_->atoms.atomtype[ai],
-                                  *mymol->topology_->atoms.atomtype[aj],
-                                  mymol->molProp()->getIupac().c_str());
-                    }
-                }
-                rhs.push_back(-mymol->Emol);
-            }
-        }
+    for (auto mymol = _mymol.begin(); mymol < _mymol.end(); mymol++, j++)
+    {
+        for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr);
+	     i += interaction_function[ftb].nratoms+1)
+	{
+	    int                      ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
+	    int                      aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
+	    std::string              aai, aaj;
+	    std::vector<std::string> atoms;
+	    if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
+		pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
+	    {
+	        atoms  = {aai, aaj};
+		auto f = fs->findForce(atoms);
+		if (fs->forceEnd() != f)
+		{
+		    int gt  = f - fs->forceBegin();
+		    int gti = ForceConstants_[eitBONDS].reverseIndex(gt);
+		    
+		    a[gti][j]++;
+		    ntest[gti]++;
+		    if (ctest[gti].empty())
+		    {
+		        char buf[STRLEN];
+			snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
+			ctest[gti].assign(buf);
+		    }
+		}
+	    }
+	    else
+	    {
+	        gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
+			  aai.c_str(), aaj.c_str(),
+			  *mymol->topology_->atoms.atomtype[ai],
+			  *mymol->topology_->atoms.atomtype[aj],
+			  mymol->molProp()->getIupac().c_str());
+	    }
+	}
+	rhs.push_back(-mymol->Emol);
     }
+    
     char buf[STRLEN];
     snprintf(buf, sizeof(buf), "Inconsistency in number of energies nMol %d != #rhs %d", nMol, static_cast<int>(rhs.size()));
     GMX_RELEASE_ASSERT(static_cast<int>(rhs.size()) == nMol, buf);
 
-    int nzero = std::count_if(ntest.begin(), ntest.end(),
-                              [](const int n) {
-            return n == 0;
-        });
-    fprintf(fplog, "There are %d bondtypes without support out of %d\n", nzero, nD);
-    double **a2 = alloc_matrix(nD-nzero, nMol);
-    int      i2 = 0;
-    for (int i = 0; i < nD; i++)
-    {
-        if (ntest[i] > 0)
-        {
-            for (int j = 0; j < nMol; j++)
-            {
-                a2[i2][j] = a[i][j];
-            }
-            ntest[i2] = ntest[i];
-            ctest[i2] = ctest[i];
-            i2++;
-        }
-    }
-    GMX_RELEASE_ASSERT(i2 == nD-nzero, "Inconsistency");
-    std::vector<double> Edissoc(i2);
-    ctest.resize(i2);
-    ntest.resize(i2);
-    multi_regression2(nMol, rhs.data(), i2, a2, Edissoc.data());
+    int nzero = std::count_if(ntest.begin(), ntest.end(), [](const int n) 
+			      {
+				  return n == 0;
+			      });
+
+    GMX_RELEASE_ASSERT(nzero == 0, "Inconsistency in the number of bonds in poldata and ForceConstants_");
+
+    std::vector<double> Edissoc(nD);
+
+    multi_regression2(nMol, rhs.data(), nD, a, Edissoc.data());
     dump_csv(ctest, _mymol, ntest, Edissoc, a, rhs.data());
 
     for (size_t i = 0; (i < ctest.size()); i++)
@@ -845,27 +835,25 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
                     ctest[i].c_str(), ntest[i], Edissoc[i]);
         }
     }
+
     free_matrix(a);
-    free_matrix(a2);
+
     int i = 0;
     for (auto b = ForceConstants_[eitBONDS].beginBN();
          b < ForceConstants_[eitBONDS].endBN(); ++b)
     {
-        if (ntest[i] > 0)
-        {
-            std::vector<std::string> atoms    = gmx::splitString(b->name());
-            auto                     fs       = pd_.findForces(eitBONDS);
-            auto                     f        = fs->findForce(atoms);
-            GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
-            std::vector<std::string> pp = gmx::splitString(b->paramString());
-            char                     buf[256];
-            // Here we use the "knowledge" that the energy is the second parameter in
-            // the Morse description. Not good!
-            snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[i], pp[1].c_str());
-            f->setParams(buf);
-            b->setParamString(buf);
-        }
-        i++;
+	std::vector<std::string> atoms    = gmx::splitString(b->name());
+	auto                     fs       = pd_.findForces(eitBONDS);
+	auto                     f        = fs->findForce(atoms);
+	GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
+	std::vector<std::string> pp = gmx::splitString(b->paramString());
+	char                     buf[256];
+	// Here we use the "knowledge" that the energy is the second parameter in
+	// the Morse description. Not good!
+	snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[i], pp[1].c_str());
+	f->setParams(buf);
+	b->setParamString(buf);
+	i++;
     }
 }
 

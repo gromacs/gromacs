@@ -396,38 +396,55 @@ static void set_linear_angle_params(const int                  atoms[],
                                     real                       ktheta)
 {
     t_param pp;
-    bool    found = false;
-    auto    pw    = SearchPlist(plist, eitANGLES);
+    real    b0 = 0;
+    real    b1 = 0;
 
-    if (plist.end() == pw)
+    auto    pangle = SearchPlist(plist, eitANGLES);
+    auto    pbond  = SearchPlist(plist, eitBONDS);
+
+    if (plist.end() == pangle || plist.end() == pbond)
     {
-        fprintf(stderr, "Cannot find the angles in the plist to set the linear angle params.");
+        fprintf(stderr, "Cannot find either the angles or the bonds in the plist to set the linear angle params.");
         return;
     }
-    for (auto param = pw->beginParam(); param < pw->endParam(); ++param)
+
+    for (auto ang = pangle->beginParam(); ang < pangle->endParam(); ++ang)
     {
-        if (((param->a[0] == atoms[0]) && (param->a[2] == atoms[2])) ||
-            ((param->a[2] == atoms[0]) && (param->a[0] == atoms[2])))
+        if (((ang->a[0] == atoms[0]) && (ang->a[2] == atoms[2])) ||
+            ((ang->a[2] == atoms[0]) && (ang->a[0] == atoms[2])))
         {
-            delete_params(plist, pw->getFtype(), atoms);
-            found = true;
-            break;
+	    for (auto b = pbond->beginParam(); b < pbond->endParam(); ++b)
+	    {
+	        if (((b->a[0] == atoms[0]) && (b->a[1] == atoms[1])) ||
+		    ((b->a[0] == atoms[1]) && (b->a[1] == atoms[0])))
+		{
+		    b0 = b->c[0];
+		}
+		else if (((b->a[0] == atoms[2]) && (b->a[1] == atoms[1])) ||
+			 ((b->a[0] == atoms[1]) && (b->a[1] == atoms[2])))
+		{
+		    b1 = b->c[0];
+		}
+	    }
         }
     }
-    if (found)
+
+    if (b0 > 0 && b1 > 0)
     {
+        delete_params(plist, pangle->getFtype(), atoms);
         memset(&pp, 0, sizeof(pp));
         for (int i = 0; (i < 3); i++)
         {
             pp.a[i] = atoms[i];
         }
         pp.c[0] = ktheta;
+	pp.c[1] = (b1/(b1+b0));
         add_param_to_plist(plist, F_LINEAR_ANGLES, eitLINEAR_ANGLES, pp);
     }
     else if (nullptr != debug)
     {
-        fprintf(debug, "Cannot find bonds in linear angle %d-%d-%d\n",
-                atoms[0], atoms[1], atoms[2]);
+        fprintf(debug, "Cannot find bonds in linear angle %d-%d-%d b0: %g and b1: %g\n",
+                atoms[0], atoms[1], atoms[2], b0, b1);
     }
 }
 
