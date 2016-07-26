@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="Input">
+    <String Name="a">1</String>
+    <String Name="b">2 3</String>
+  </Object>
+  <Object Name="Tree">
+    <Object Name="foo">
+      <Int Name="a">1</Int>
+      <Int Name="b">2</Int>
+      <Int Name="c">3</Int>
+    </Object>
+  </Object>
+</ReferenceData>
