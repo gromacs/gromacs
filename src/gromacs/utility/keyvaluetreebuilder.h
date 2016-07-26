@@ -82,6 +82,26 @@ class KeyValueTreeBuilder
         friend class KeyValueTreeUniformArrayBuilder;
 };
 
+class KeyValueTreeValueBuilder
+{
+    public:
+        template <typename T>
+        void setValue(const T &value)
+        {
+            value_ = Variant::create<T>(value);
+        }
+        void setVariantValue(Variant &&value)
+        {
+            value_ = std::move(value);
+        }
+        KeyValueTreeObjectBuilder createObject();
+
+        KeyValueTreeValue build() { return KeyValueTreeValue(std::move(value_)); }
+
+    private:
+        Variant value_;
+};
+
 class KeyValueTreeArrayBuilderBase
 {
     protected:
@@ -135,10 +155,14 @@ class KeyValueTreeObjectArrayBuilder : public KeyValueTreeArrayBuilderBase
 class KeyValueTreeObjectBuilder
 {
     public:
+        void addRawValue(const std::string &key, KeyValueTreeValue &&value)
+        {
+            object_->addProperty(key, std::move(value));
+        }
         template <typename T>
         void addValue(const std::string &key, const T &value)
         {
-            object_->addProperty(key, KeyValueTreeBuilder::createValue<T>(value));
+            addRawValue(key, KeyValueTreeBuilder::createValue<T>(value));
         }
         KeyValueTreeObjectBuilder addObject(const std::string &key)
         {
@@ -156,6 +180,20 @@ class KeyValueTreeObjectBuilder
             auto iter = object_->addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
             return KeyValueTreeObjectArrayBuilder(&iter->second.asArray());
         }
+        void mergeObject(KeyValueTreeValue &&value)
+        {
+            KeyValueTreeObject &obj = value.asObject();
+            for (auto &prop : obj.valueMap_)
+            {
+                addRawValue(prop.first, std::move(prop.second));
+            }
+        }
+
+        bool keyExists(const std::string &key) const { return object_->keyExists(key); }
+        KeyValueTreeObjectBuilder getObject(const std::string &key) const
+        {
+            return KeyValueTreeObjectBuilder(&(*object_)[key].asObject());
+        }
 
     private:
         explicit KeyValueTreeObjectBuilder(KeyValueTreeObject *object)
@@ -170,6 +208,7 @@ class KeyValueTreeObjectBuilder
         KeyValueTreeObject *object_;
 
         friend class KeyValueTreeBuilder;
+        friend class KeyValueTreeValueBuilder;
         friend class KeyValueTreeObjectArrayBuilder;
 };
 
@@ -180,6 +219,12 @@ class KeyValueTreeObjectBuilder
 inline KeyValueTreeObjectBuilder KeyValueTreeBuilder::rootObject()
 {
     return KeyValueTreeObjectBuilder(&root_);
+}
+
+inline KeyValueTreeObjectBuilder KeyValueTreeValueBuilder::createObject()
+{
+    value_ = Variant::create<KeyValueTreeObject>(KeyValueTreeObject());
+    return KeyValueTreeObjectBuilder(&value_.castRef<KeyValueTreeObject>());
 }
 
 inline KeyValueTreeObjectBuilder KeyValueTreeObjectArrayBuilder::addObject()
