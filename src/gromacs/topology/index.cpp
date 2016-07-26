@@ -85,14 +85,11 @@ void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplica
     /* fprintf(out,"%5d  %5d\n",b->nr,b->nra); */
     for (i = 0; (i < b->nr); i++)
     {
-        fprintf(out, "[ %s ]\n", gnames[i]);
+        fprintf(out, "[ %s ]", gnames[i]);
         for (k = 0, j = b->index[i]; j < b->index[i+1]; j++, k++)
         {
-            fprintf(out, "%4d ", b->a[j]+1);
-            if ((k % 15) == 14)
-            {
-                fprintf(out, "\n");
-            }
+	    const char sep = (k % 15 == 0 ? '\n' : ' ');
+	    fprintf(out, "%c%4d", sep, b->a[j]+1);
         }
         fprintf(out, "\n");
     }
@@ -103,14 +100,11 @@ void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplica
         fprintf(stderr, "Duplicating the whole system with an atom offset of %d atoms.\n", natoms);
         for (i = 0; (i < b->nr); i++)
         {
-            fprintf(out, "[ %s_copy ]\n", gnames[i]);
+            fprintf(out, "[ %s_copy ]", gnames[i]);
             for (k = 0, j = b->index[i]; j < b->index[i+1]; j++, k++)
             {
-                fprintf(out, "%4d ", b->a[j]+1 + natoms );
-                if ((k % 15) == 14)
-                {
-                    fprintf(out, "\n");
-                }
+                const char sep = (k % 15 == 0 ? '\n' : ' ');
+                fprintf(out, "%c%4d", sep, b->a[j]+1 + natoms);
             }
             fprintf(out, "\n");
         }
