@@ -2501,7 +2501,6 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 int         tp  = ltop_->idef.il[ftb].iatoms[i];
                 int         ai  = ltop_->idef.il[ftb].iatoms[i+1];
                 int         aj  = ltop_->idef.il[ftb].iatoms[i+2];
-                std::string aai, aaj;
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj))
                 {
@@ -2549,7 +2548,6 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 int         ai  = ltop_->idef.il[fta].iatoms[i+1];
                 int         aj  = ltop_->idef.il[fta].iatoms[i+2];
                 int         ak  = ltop_->idef.il[fta].iatoms[i+3];
-                std::string aai, aaj, aak;
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
@@ -2608,7 +2606,6 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 int         ai  = ltop_->idef.il[fta].iatoms[i+1];
                 int         aj  = ltop_->idef.il[fta].iatoms[i+2];
                 int         ak  = ltop_->idef.il[fta].iatoms[i+3];
-                std::string aai, aaj, aak;
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
@@ -2650,7 +2647,6 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 int         aj  = ltop_->idef.il[ftd].iatoms[i+2];
                 int         ak  = ltop_->idef.il[ftd].iatoms[i+3];
                 int         al  = ltop_->idef.il[ftd].iatoms[i+4];
-                std::string aai, aaj, aak;
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak) &&
@@ -2700,7 +2696,6 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 int         aj  = ltop_->idef.il[ftd].iatoms[i+2];
                 int         ak  = ltop_->idef.il[ftd].iatoms[i+3];
                 int         al  = ltop_->idef.il[ftd].iatoms[i+4];
-                std::string aai, aaj, aak;
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak) &&
