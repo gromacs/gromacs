@@ -79,6 +79,7 @@ class KeyValueTreeValue
 
         friend class KeyValueTreeBuilder;
         friend class KeyValueTreeObjectBuilder;
+        friend class KeyValueTreeValueBuilder;
 };
 
 class KeyValueTreeArray
@@ -139,7 +140,20 @@ class KeyValueTreeObject
 
         const std::vector<KeyValueTreeProperty> &properties() const { return values_; }
 
+        bool keyExists(const std::string &key) const
+        {
+            return valueMap_.find(key) != valueMap_.end();
+        }
+        const KeyValueTreeValue &operator[](const std::string &key) const
+        {
+            return valueMap_.at(key);
+        }
+
     private:
+        KeyValueTreeValue &operator[](const std::string &key)
+        {
+            return valueMap_.at(key);
+        }
         std::map<std::string, KeyValueTreeValue>::iterator
         addProperty(const std::string &key, KeyValueTreeValue &&value)
         {
