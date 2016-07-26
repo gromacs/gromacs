@@ -89,6 +89,7 @@ typedef struct {
 typedef struct {
     std::vector<t_bond>  bond;
     std::vector<t_angle> angle;
+    std::vector<t_angle> linangle;
     std::vector<t_dih>   dih;
     std::vector<t_dih>   imp;
 } t_bonds;
@@ -191,16 +192,16 @@ void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     }
 }
 
-void add_angle(FILE *fplog, const char *molname, t_bonds *bonds,
-               const char *a1, const char *a2, const char *a3,
-               double angle, double spacing)
+void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
+		  const char *a1, const char *a2, const char *a3,
+		  double refValue, double spacing)
 {
     GMX_RELEASE_ASSERT(strlen(a1) > 0, "atom name a1 is empty");
     GMX_RELEASE_ASSERT(strlen(a2) > 0, "atom name a2 is empty");
     GMX_RELEASE_ASSERT(strlen(a3) > 0, "atom name a3 is empty");
 
-    size_t index = std::lround(angle/spacing);
-    auto   a     = std::find_if(bonds->angle.begin(), bonds->angle.end(),
+    size_t index = std::lround(refValue/spacing);
+    auto   a     = std::find_if(angle.begin(), angle.end(),
                                 [a1, a2, a3](const t_angle &a)
     {
         int d = a.a2.compare(a2);
@@ -212,7 +213,7 @@ void add_angle(FILE *fplog, const char *molname, t_bonds *bonds,
         return false;
     });
 
-    if (a == bonds->angle.end())
+    if (a == angle.end())
     {
         t_angle aa;
         aa.a2 = a2;
@@ -228,29 +229,38 @@ void add_angle(FILE *fplog, const char *molname, t_bonds *bonds,
         }
         aa.histo.resize((int) (180/spacing) + 1, 0);
         aa.lsq = gmx_stats_init();
-        bonds->angle.push_back(aa);
-        a = bonds->angle.end()-1;
+        angle.push_back(aa);
+        a = angle.end()-1;
     }
-    gmx_stats_add_point(a->lsq, 0, angle, 0, 0);
+    gmx_stats_add_point(a->lsq, 0, refValue, 0, 0);
     a->histo[index]++;
     if (NULL != fplog)
     {
         fprintf(fplog, "%s angle-%s-%s-%s %g\n", molname,
-                a->a1.c_str(), a->a2.c_str(), a->a3.c_str(), angle);
+                a->a1.c_str(), a->a2.c_str(), a->a3.c_str(), refValue);
     }
+}
+
+void add_angle(FILE *fplog, const char *molname, t_bonds *b,
+               const char *a1, const char *a2, const char *a3,
+               double refValue, double spacing, InteractionType iType)
+{
+    lo_add_angle(fplog, molname, 
+		 (eitANGLES == iType) ? b->angle : b->linangle,
+		 a1, a2, a3, refValue, spacing);
 }
 
 static void lo_add_dih(FILE *fplog, const char *molname,
                        std::vector<t_dih> &dih,
                        const char *a1, const char *a2, const char *a3, const char *a4,
-                       double angle, double spacing, unsigned int funcType)
+                       double angle, double spacing, InteractionType iType)
 
 {
     if (angle < 0)
     {
         angle += 360;
     }
-    if (funcType == F_IDIHS)
+    if (iType == eitIMPROPER_DIHEDRALS)
     {
         while (angle > 176)
         {
@@ -310,11 +320,11 @@ static void lo_add_dih(FILE *fplog, const char *molname,
 
 static void add_dih(FILE *fplog, const char *molname, t_bonds *b,
                     const char *a1, const char *a2, const char *a3, const char *a4,
-                    double angle, double spacing, unsigned int funcType)
+                    double angle, double spacing, InteractionType iType)
 {
     lo_add_dih(fplog, molname,
-               (F_PDIHS == funcType) ? b->dih : b->imp,
-               a1, a2, a3, a4, angle, spacing, funcType);
+               (eitPROPER_DIHEDRALS == iType) ? b->dih : b->imp,
+               a1, a2, a3, a4, angle, spacing, iType);
 }
 
 static void lo_dump_histo(char *fn, char *xaxis, const gmx_output_env_t *oenv, int Nsample,
@@ -352,7 +362,9 @@ static void lo_dump_histo(char *fn, char *xaxis, const gmx_output_env_t *oenv, i
     }
 }
 
-void dump_histo(t_bonds *b, double bspacing, double aspacing, const gmx_output_env_t *oenv)
+void dump_histo(t_bonds *b, double bspacing, 
+		double aspacing, 
+		const gmx_output_env_t *oenv)
 {
     int  N;
     char buf[256];
@@ -373,6 +385,16 @@ void dump_histo(t_bonds *b, double bspacing, double aspacing, const gmx_output_e
             snprintf(buf, sizeof(buf), "angle-%s-%s-%s.xvg",
                      i.a1.c_str(), i.a2.c_str(), i.a3.c_str());
             lo_dump_histo(buf, (char *)"Angle (deg.)", oenv, N,
+                          i.histo.size(), i.histo.data(), aspacing);
+        }
+    }
+    for (const auto &i : b->linangle)
+    {
+        if ((gmx_stats_get_npoints(i.lsq, &N) == 0) && (i.histo.size() > 0))
+        {
+            snprintf(buf, sizeof(buf), "linangle-%s-%s-%s.xvg",
+                     i.a1.c_str(), i.a2.c_str(), i.a3.c_str());
+            lo_dump_histo(buf, (char *)"Linear Angle (deg.)", oenv, N,
                           i.histo.size(), i.histo.data(), aspacing);
         }
     }
@@ -447,26 +469,28 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         gmx_stats_get_npoints(i.lsq, &N);
         round_numbers(&av, &sig);
         atoms = {i.a1, i.a2, i.a3};
-        if ((av > 175) || (av < 5))
-        {
-            sprintf(pbuf, "%g",  klin);
-            linear_angle->addForce(atoms, pbuf, av, sig, N);
-
-            fprintf(fp, "linear_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
-                    i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
-                    (sig > 3) ? " WARNING" : "");
-        }
-        else
-        {
-            sprintf(pbuf, "%g  %g", kt, kub);
-            angle->addForce(atoms, pbuf, av, sig, N);
-
-            fprintf(fp, "harmonic_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
-                    i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
-                    (sig > 3) ? " WARNING" : "");
-        }
+	sprintf(pbuf, "%g  %g", kt, kub);
+	angle->addForce(atoms, pbuf, av, sig, N);
+	
+	fprintf(fp, "harmonic_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
+		i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
+		(sig > 3) ? " WARNING" : "");
     }
 
+    for (auto &i : b->linangle)
+    {
+        gmx_stats_get_average(i.lsq, &av);
+        gmx_stats_get_sigma(i.lsq, &sig);
+        gmx_stats_get_npoints(i.lsq, &N);
+        round_numbers(&av, &sig);
+        atoms = {i.a1, i.a2, i.a3};
+	sprintf(pbuf, "%g",  klin);
+	linear_angle->addForce(atoms, pbuf, av, sig, N);
+	
+	fprintf(fp, "linear_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
+		i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), av, sig, N,
+		(sig > 3) ? " WARNING" : "");
+    }
 
     for (auto &i : b->dih)
     {
@@ -700,31 +724,45 @@ int alex_bastat(int argc, char *argv[])
                         }
                     }
                 }
-                else if (eitANGLES == fs->iType() ||
-                         eitLINEAR_ANGLES == fs->iType())
+                else if (eitANGLES == fs->iType())
                 {
                     unsigned int funcType = fs->fType();
 
                     for (int j = 0; (j < mmi.ltop_->idef.il[funcType].nr);
                          j += interaction_function[funcType].nratoms+1)
                     {
+		        gmx_bool     linear   = false;
+			double       refValue = 0;
+
                         int ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
                         int aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                         int ak = mmi.ltop_->idef.il[funcType].iatoms[j+3];
                         rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
                         rvec_sub(mmi.x_[ak], mmi.x_[aj], dx2);
-                        double      ang = RAD2DEG*gmx_angle(dx, dx2);
+
+			refValue = RAD2DEG*gmx_angle(dx, dx2);
+
+			if ( (refValue > 175) || (refValue < 5))
+			{
+			    real b0  = 1000*norm(dx);
+			    real b1  = 1000*norm(dx2);
+			    refValue = (b1/(b0+b1));
+			    linear   = true;
+			}
+
                         std::string cai, caj, cak;
                         if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ak], cak))
                         {
                             add_angle(fp, mmi.molProp()->getMolname().c_str(), bonds,
-                                      cai.c_str(), caj.c_str(), cak.c_str(), ang, aspacing);
+                                      cai.c_str(), caj.c_str(), cak.c_str(), 
+				      refValue, aspacing, (linear) ? eitLINEAR_ANGLES : eitANGLES);
+
                             if (NULL != debug)
                             {
                                 fprintf(debug, "Molname: %s  btype1: %s  btype2: %s  btype3: %s  angle: %0.2f\n",
-                                        mmi.molProp()->getMolname().c_str(), cai.c_str(), caj.c_str(), cak.c_str(), ang);
+                                        mmi.molProp()->getMolname().c_str(), cai.c_str(), caj.c_str(), cak.c_str(), refValue);
                             }
                         }
                         else
@@ -758,7 +796,7 @@ int alex_bastat(int argc, char *argv[])
                         {
                             add_dih(fp, mmi.molProp()->getMolname().c_str(), bonds,
                                     cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(),
-                                    ang, dspacing, funcType);
+                                    ang, dspacing, fs->iType());
                         }
                         else
                         {
@@ -772,10 +810,9 @@ int alex_bastat(int argc, char *argv[])
                     fprintf(stderr, "Alexandria does not support the interaction type of %s\n",
                             iType2string(fs->iType()));
                 }
-            }
-
-            clear_mat(box);
-            set_pbc(&pbc, epbcNONE, box);
+		clear_mat(box);
+		set_pbc(&pbc, epbcNONE, box);
+	    }
         }
     }
     sort_bonds(bonds);

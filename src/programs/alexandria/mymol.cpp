@@ -1743,16 +1743,7 @@ static void write_top2(FILE *out, char *molname,
                 print_bondeds2(out, d_bonds, fs->fType(),
                                fs->fType(), plist_);
             }
-        }
-
-        print_bondeds2(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
-        print_bondeds2(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
-        print_bondeds2(out, d_pairs, F_LJ14, F_LJ14, plist_);
-        print_excl(out, at->nr, excls);
-
-        for (auto fs = pd.forcesBegin(); fs != pd.forcesEnd(); fs++)
-        {
-            if (eitANGLES == fs->iType() ||
+	    else if (eitANGLES == fs->iType() ||
                 eitLINEAR_ANGLES == fs->iType())
             {
                 print_bondeds2(out, d_angles, fs->fType(),
@@ -1766,6 +1757,10 @@ static void write_top2(FILE *out, char *molname,
             }
         }
 
+        print_bondeds2(out, d_constraints, F_CONSTR, F_CONSTR, plist_);
+        print_bondeds2(out, d_constraints, F_CONSTRNC, F_CONSTRNC, plist_);
+        print_bondeds2(out, d_pairs, F_LJ14, F_LJ14, plist_);
+        print_excl(out, at->nr, excls);
         print_bondeds2(out, d_cmap, F_CMAP, F_CMAP, plist_);
         print_bondeds2(out, d_polarization, F_POLARIZATION, F_POLARIZATION, plist_);
         print_bondeds2(out, d_thole_polarization, F_THOLE_POL, F_THOLE_POL, plist_);
@@ -2072,6 +2067,35 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
         }
     }
 }
+
+static real calc_r13(const Poldata   &pd,   const std::string aai, 
+		     const std::string aaj, const std::string aak, 
+		     const real angle)
+{
+    std::string params;
+    size_t      ntrain;
+    double      sigma;
+    real        rij = 0, rjk = 0;
+    real        r12 = 0, r23 = 0;
+    real        r13 = 0;
+
+    std::vector<std::string> aij = {aai, aaj};
+    std::vector<std::string> ajk = {aaj, aak};
+
+    auto fs = pd.findForces(eitBONDS);
+    auto lu = string2unit(fs->unit().c_str());
+
+    pd.searchForce(aij, params, &rij, &sigma, &ntrain);
+    pd.searchForce(ajk, params, &rjk, &sigma, &ntrain);
+
+    r12 = convert2gmx(rij, lu);
+    r23 = convert2gmx(rjk, lu);
+
+    r13 = std::sqrt((r12*r12) + (r23*r23) - (2*r12*r23*std::cos(angle)));
+
+    return r13;
+}
+
 
 void MyMol::addShells(const Poldata          &pd,
                       ChargeDistributionModel iModel)
@@ -2531,19 +2555,37 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
                 {
                     double                   sigma;
+		    real                     r13;
                     size_t                   ntrain;
                     std::vector<std::string> atoms = {aai, aaj, aak};
                     if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
                     {
-                        mtop_->ffparams.iparams[tp].harmonic.rA     =
-                            mtop_->ffparams.iparams[tp].harmonic.rB = value;
+		        
+		        r13 = calc_r13(pd, aai, aaj, aak, value);
+
+                        mtop_->ffparams.iparams[tp].u_b.thetaA = 
+			  mtop_->ffparams.iparams[tp].u_b.thetaB = value;
+
+			mtop_->ffparams.iparams[tp].u_b.r13A = 
+			  mtop_->ffparams.iparams[tp].u_b.r13B = r13;
+
                         auto ptr = gmx::splitString(params);
+			int n = 0;
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
                             if (pi->length() > 0)
                             {
-                                mtop_->ffparams.iparams[tp].harmonic.krA     =
-                                    mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
+			        if (n == 0)
+				{
+				    mtop_->ffparams.iparams[tp].u_b.kthetaA = 
+				      mtop_->ffparams.iparams[tp].u_b.kthetaB = atof(pi->c_str());
+				}
+				else
+			        {
+				    mtop_->ffparams.iparams[tp].u_b.kUBA = 
+				      mtop_->ffparams.iparams[tp].u_b.kUBB = atof(pi->c_str());
+				}
+				n++;
                             }
                         }
                     }
