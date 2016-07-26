@@ -89,7 +89,7 @@ void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplica
         for (k = 0, j = b->index[i]; j < b->index[i+1]; j++, k++)
         {
             fprintf(out, "%4d ", b->a[j]+1);
-            if ((k % 15) == 14)
+            if ((k % 15) == 14 && j < b->index[i+1] - 1)
             {
                 fprintf(out, "\n");
             }
