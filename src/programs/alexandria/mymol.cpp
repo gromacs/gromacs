@@ -1743,8 +1743,8 @@ static void write_top2(FILE *out, char *molname,
                 print_bondeds2(out, d_bonds, fs->fType(),
                                fs->fType(), plist_);
             }
-	    else if (eitANGLES == fs->iType() ||
-                eitLINEAR_ANGLES == fs->iType())
+            else if (eitANGLES == fs->iType() ||
+                     eitLINEAR_ANGLES == fs->iType())
             {
                 print_bondeds2(out, d_angles, fs->fType(),
                                fs->fType(), plist_);
@@ -2068,22 +2068,22 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
     }
 }
 
-static real calc_r13(const Poldata   &pd,   const std::string aai, 
-		     const std::string aaj, const std::string aak, 
-		     const real angle)
+static real calc_r13(const Poldata   &pd,   const std::string aai,
+                     const std::string aaj, const std::string aak,
+                     const real angle)
 {
-    std::string params;
-    size_t      ntrain;
-    double      sigma;
-    real        rij = 0, rjk = 0;
-    real        r12 = 0, r23 = 0;
-    real        r13 = 0;
+    std::string              params;
+    size_t                   ntrain;
+    double                   sigma;
+    real                     rij = 0, rjk = 0;
+    real                     r12 = 0, r23 = 0;
+    real                     r13 = 0;
 
     std::vector<std::string> aij = {aai, aaj};
     std::vector<std::string> ajk = {aaj, aak};
 
-    auto fs = pd.findForces(eitBONDS);
-    auto lu = string2unit(fs->unit().c_str());
+    auto                     fs = pd.findForces(eitBONDS);
+    auto                     lu = string2unit(fs->unit().c_str());
 
     pd.searchForce(aij, params, &rij, &sigma, &ntrain);
     pd.searchForce(ajk, params, &rjk, &sigma, &ntrain);
@@ -2540,7 +2540,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         }
         break;
         case eitANGLES:
-	{
+        {
             auto fs  = pd.findForces(iType);
             int  fta = fs->fType();
             for (int i = 0; (i < ltop_->idef.il[fta].nr); i += interaction_function[fta].nratoms+1)
@@ -2555,37 +2555,37 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
                 {
                     double                   sigma;
-		    real                     r13;
+                    real                     r13;
                     size_t                   ntrain;
                     std::vector<std::string> atoms = {aai, aaj, aak};
                     if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
                     {
-		        
-		        r13 = calc_r13(pd, aai, aaj, aak, value);
 
-                        mtop_->ffparams.iparams[tp].u_b.thetaA = 
-			  mtop_->ffparams.iparams[tp].u_b.thetaB = value;
+                        r13 = calc_r13(pd, aai, aaj, aak, value);
 
-			mtop_->ffparams.iparams[tp].u_b.r13A = 
-			  mtop_->ffparams.iparams[tp].u_b.r13B = r13;
+                        mtop_->ffparams.iparams[tp].u_b.thetaA     =
+                            mtop_->ffparams.iparams[tp].u_b.thetaB = value;
+
+                        mtop_->ffparams.iparams[tp].u_b.r13A     =
+                            mtop_->ffparams.iparams[tp].u_b.r13B = r13;
 
                         auto ptr = gmx::splitString(params);
-			int n = 0;
+                        int  n   = 0;
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
                             if (pi->length() > 0)
                             {
-			        if (n == 0)
-				{
-				    mtop_->ffparams.iparams[tp].u_b.kthetaA = 
-				      mtop_->ffparams.iparams[tp].u_b.kthetaB = atof(pi->c_str());
-				}
-				else
-			        {
-				    mtop_->ffparams.iparams[tp].u_b.kUBA = 
-				      mtop_->ffparams.iparams[tp].u_b.kUBB = atof(pi->c_str());
-				}
-				n++;
+                                if (n == 0)
+                                {
+                                    mtop_->ffparams.iparams[tp].u_b.kthetaA     =
+                                        mtop_->ffparams.iparams[tp].u_b.kthetaB = atof(pi->c_str());
+                                }
+                                else
+                                {
+                                    mtop_->ffparams.iparams[tp].u_b.kUBA     =
+                                        mtop_->ffparams.iparams[tp].u_b.kUBB = atof(pi->c_str());
+                                }
+                                n++;
                             }
                         }
                     }
@@ -2597,7 +2597,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 }
             }
         }
-	break;
+        break;
         case eitLINEAR_ANGLES:
         {
             auto fs  = pd.findForces(iType);
@@ -2640,7 +2640,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         }
         break;
         case eitPROPER_DIHEDRALS:
-	{
+        {
             auto fs  = pd.findForces(iType);
             int  ftd = fs->fType();
             for (int i = 0; (i < ltop_->idef.il[ftd].nr); i += interaction_function[ftd].nratoms+1)
@@ -2661,34 +2661,34 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     std::vector<std::string> atoms = {aai, aaj, aak, aal};
                     if ((pd.searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
                     {
-		        mtop_->ffparams.iparams[tp].pdihs.phiA = value;
+                        mtop_->ffparams.iparams[tp].pdihs.phiA = value;
                         std::vector<std::string> ptr = gmx::splitString(params);
-			int n = 0;
+                        int n = 0;
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
-			{
-			    if (pi->length() > 0)
-			    {
-				if (n == 0)
-				{
-				    mtop_->ffparams.iparams[tp].pdihs.cpA     =
-				      mtop_->ffparams.iparams[tp].pdihs.cpB = atof(pi->c_str());
-				}
-				else
-				{
-				    mtop_->ffparams.iparams[tp].pdihs.mult = atof(pi->c_str());
-				}
-				n++;
-			    }
-			}
-		    }
-		}
-		else
-		{
-		    gmx_fatal(FARGS, "There are no parameters for proper dihedral %s-%s-%s-%s in the force field",
-			      aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
-		}
-	    } 
-	}
+                        {
+                            if (pi->length() > 0)
+                            {
+                                if (n == 0)
+                                {
+                                    mtop_->ffparams.iparams[tp].pdihs.cpA     =
+                                        mtop_->ffparams.iparams[tp].pdihs.cpB = atof(pi->c_str());
+                                }
+                                else
+                                {
+                                    mtop_->ffparams.iparams[tp].pdihs.mult = atof(pi->c_str());
+                                }
+                                n++;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "There are no parameters for proper dihedral %s-%s-%s-%s in the force field",
+                              aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+                }
+            }
+        }
         case eitIMPROPER_DIHEDRALS:
         {
             auto fs  = pd.findForces(iType);
@@ -2711,29 +2711,29 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     std::vector<std::string> atoms = {aai, aaj, aak, aal};
                     if ((pd.searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
                     {
-		        mtop_->ffparams.iparams[tp].harmonic.rA     =
-                                mtop_->ffparams.iparams[tp].harmonic.rB = value;
+                        mtop_->ffparams.iparams[tp].harmonic.rA     =
+                            mtop_->ffparams.iparams[tp].harmonic.rB = value;
 
-		        std::vector<std::string> ptr = gmx::splitString(params);
-			int n = 0;
+                        std::vector<std::string> ptr = gmx::splitString(params);
+                        int n = 0;
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
-			{
-			    if (pi->length() > 0)
-			    {
-			        if (n == 0)
-				{
-				    mtop_->ffparams.iparams[tp].harmonic.krA     =
-				      mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
-				}
-				n++;
-			    }
-			}
-		    }
-		}
-		else
-		{
+                        {
+                            if (pi->length() > 0)
+                            {
+                                if (n == 0)
+                                {
+                                    mtop_->ffparams.iparams[tp].harmonic.krA     =
+                                        mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
+                                }
+                                n++;
+                            }
+                        }
+                    }
+                }
+                else
+                {
                     gmx_fatal(FARGS, "There are no parameters for imporper proper dihedral %s-%s-%s-%s in the force field",
-			      aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+                              aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
                 }
             }
         }
