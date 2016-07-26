@@ -343,6 +343,7 @@ static inline const char *boolToString(bool value)
  * separator.
  */
 std::vector<std::string> splitString(const std::string &str);
+std::vector<std::string> splitDelimitedString(const std::string &str, char delim);
 
 /*! \brief
  * Replace all occurrences of a string with another string.
