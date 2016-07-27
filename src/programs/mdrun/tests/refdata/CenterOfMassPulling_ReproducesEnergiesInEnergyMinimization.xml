@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="PotentialEnergyFrame0">61.79356</Real>
+  <Real Name="PotentialEnergyFrame1">60.308598</Real>
+  <Real Name="PotentialEnergyFrame2">58.380856</Real>
+  <Real Name="PotentialEnergyFrame3">55.156654</Real>
+  <Real Name="PotentialEnergyFrame4">51.395638</Real>
+  <Real Name="PotentialEnergyFrame5">47.057037</Real>
+  <Real Name="PotentialEnergyFrame6">45.466537</Real>
+  <Real Name="PotentialEnergyFrame7">42.988922</Real>
+  <Real Name="PotentialEnergyFrame8">40.171413</Real>
+  <Real Name="PotentialEnergyFrame9">33.473137</Real>
+  <Real Name="PotentialEnergyFrame10">25.960825</Real>
+  <Real Name="PotentialEnergyFrame11">17.481152</Real>
+  <Real Name="PotentialEnergyFrame12">7.1608944</Real>
+  <Real Name="PotentialEnergyFrame13">4.9499497</Real>
+  <Real Name="PotentialEnergyFrame14">0.9953146</Real>
+  <Real Name="PotentialEnergyFrame15">-3.6167316</Real>
+  <Real Name="PotentialEnergyFrame16">-5.9388952</Real>
+  <Real Name="PotentialEnergyFrame17">-8.1254711</Real>
+  <Real Name="PotentialEnergyFrame18">-16.867439</Real>
+  <Real Name="PotentialEnergyFrame19">-21.660343</Real>
+  <Real Name="PotentialEnergyFrame20">-22.653116</Real>
+  <Real Name="PotentialEnergyFrame21">-23.33939</Real>
+  <Real Name="PotentialEnergyFrame22">-23.411802</Real>
+  <Real Name="PotentialEnergyFrame23">-23.432011</Real>
+</ReferenceData>
