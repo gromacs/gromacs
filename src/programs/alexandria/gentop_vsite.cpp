@@ -393,7 +393,7 @@ void GentopVsites::mergeLinear(bool bGenVsites)
 
 static void set_linear_angle_params(const int                  atoms[],
                                     std::vector<PlistWrapper> &plist,
-                                    real                       ktheta)
+                                    real                       klin)
 {
     t_param pp;
     real    b0 = 0;
@@ -437,7 +437,7 @@ static void set_linear_angle_params(const int                  atoms[],
         {
             pp.a[i] = atoms[i];
         }
-        pp.c[0] = ktheta;
+        pp.c[0] = klin;
 	pp.c[1] = (b1/(b1+b0));
         add_param_to_plist(plist, F_LINEAR_ANGLES, eitLINEAR_ANGLES, pp);
     }

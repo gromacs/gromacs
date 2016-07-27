@@ -362,8 +362,8 @@ static void mv_plists(std::vector<PlistWrapper> &plist,
     for (auto &p : plist)
     {
         auto iType = p.interactionType();
-        auto force = pd.findForces(iType);
-        p.setFtype(force->fType());
+        auto fs    = pd.findForces(iType);
+        p.setFtype(fs->fType());
     }
 }
 
@@ -493,6 +493,22 @@ void MyMol::MakeAngles(bool bPairs,
         {
             sfree(plist[i].param);
         }
+    }
+}
+
+static void init_urey_bradely_param(std::vector<PlistWrapper> &plist)
+{
+    for (auto &pw : plist)
+    {
+        if (F_UREY_BRADLEY == pw.getFtype())
+	{
+	    for (auto p = pw.beginParam(); p < pw.endParam(); ++p)
+	    {
+	        p->c[0] = GMX_REAL_MAX;
+		p->c[1] = GMX_REAL_MAX;
+	    }
+	    break;
+	}
     }
 }
 
@@ -658,7 +674,7 @@ static void plist_to_mtop(const Poldata             &pd,
         {
             std::vector<real> c;
             c.resize(MAXFORCEPARAM, 0);
-            int               l = 0;
+            int  l = 0;
             if (ftype == F_LJ14)
             {
                 int ati = mtop_->moltype[0].atoms.atom[j->a[0]].type;
@@ -1175,6 +1191,8 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         getForceConstants(pd);
 
         mv_plists(plist_, pd);
+
+	init_urey_bradely_param(plist_);
 
         snew(mtop_, 1);
     }
