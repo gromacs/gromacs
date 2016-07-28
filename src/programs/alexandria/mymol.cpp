@@ -1483,6 +1483,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
 
 immStatus MyMol::GenerateGromacs(t_commrec *cr, const char *tabfn)
 {
+    GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == NULL. You forgot to call GenerateTopology");
     int nalloc = 2 * topology_->atoms.nr;
 
     if (nullptr == f_)
