@@ -413,19 +413,19 @@ static void set_linear_angle_params(const int                  atoms[],
         if (((ang->a[0] == atoms[0]) && (ang->a[2] == atoms[2])) ||
             ((ang->a[2] == atoms[0]) && (ang->a[0] == atoms[2])))
         {
-	    for (auto b = pbond->beginParam(); b < pbond->endParam(); ++b)
-	    {
-	        if (((b->a[0] == atoms[0]) && (b->a[1] == atoms[1])) ||
-		    ((b->a[0] == atoms[1]) && (b->a[1] == atoms[0])))
-		{
-		    b0 = b->c[0];
-		}
-		else if (((b->a[0] == atoms[2]) && (b->a[1] == atoms[1])) ||
-			 ((b->a[0] == atoms[1]) && (b->a[1] == atoms[2])))
-		{
-		    b1 = b->c[0];
-		}
-	    }
+            for (auto b = pbond->beginParam(); b < pbond->endParam(); ++b)
+            {
+                if (((b->a[0] == atoms[0]) && (b->a[1] == atoms[1])) ||
+                    ((b->a[0] == atoms[1]) && (b->a[1] == atoms[0])))
+                {
+                    b0 = b->c[0];
+                }
+                else if (((b->a[0] == atoms[2]) && (b->a[1] == atoms[1])) ||
+                         ((b->a[0] == atoms[1]) && (b->a[1] == atoms[2])))
+                {
+                    b1 = b->c[0];
+                }
+            }
         }
     }
 
@@ -438,7 +438,7 @@ static void set_linear_angle_params(const int                  atoms[],
             pp.a[i] = atoms[i];
         }
         pp.c[0] = klin;
-	pp.c[1] = (b1/(b1+b0));
+        pp.c[1] = (b1/(b1+b0));
         add_param_to_plist(plist, F_LINEAR_ANGLES, eitLINEAR_ANGLES, pp);
     }
     else if (nullptr != debug)
