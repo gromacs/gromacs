@@ -110,12 +110,18 @@ FUNCTION(GMX_FIND_FLAG_FOR_SOURCE RESULT_VARIABLE SOURCE LANGUAGE TOOLCHAIN_FLAG
 ENDFUNCTION()
 
 # Helper routine to find a flag (from a list) that will compile a specific source (in both C and C++).
-# SOURCE                   Source code to test
-# TOOLCHAIN_C_FLAGS        Flags needed by the C toolchain.
-# TOOLCHAIN_CXX_FLAGS      Flags needed by the C++ toolchain.
-# C_FLAGS_VARIABLE         Variable into which to write the C compiler flag needed to compile the source
-# CXX_FLAGS_VARIABLE       Variable into which to write the C++ compiler flag needed to compile the source
-# Args 6 through N         Multiple strings with compiler flags to test
+# SOURCE                        Source code to test
+# TOOLCHAIN_C_FLAGS_VARIABLE    As input, names a variable that contains flags needed
+#                               by the C toolchain, to which any necessary C compiler
+#                               flag needed to compile the source will be appended.
+# TOOLCHAIN_CXX_FLAGS_VARIABLE  As input, names a variable that contains flags needed
+#                               by the C++ toolchain, to which any necessary C++ compiler
+#                               flag needed to compile the source will be appended.
+# C_FLAGS_VARIABLE              Names a variable that will be set true if a way
+#                               to compile the source as C was found
+# CXX_FLAGS_VARIABLE            Names a variable that will be set true if a way
+#                               to compile the source as C++ was found
+# Args 6 through N              Multiple strings with compiler flags to test
 #
 # If a compile flag is found, but the project in check_c/cxx_source_compiles
 # fails to build, sets SUGGEST_BINUTILS_UPDATE in parent scope to suggest
