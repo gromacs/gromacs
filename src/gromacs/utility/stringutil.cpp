@@ -197,6 +197,25 @@ std::vector<std::string> splitString(const std::string &str)
     return result;
 }
 
+std::vector<std::string> splitDelimitedString(const std::string &str, char delim)
+{
+    std::vector<std::string> result;
+    size_t                   currPos = 0;
+    const size_t             len     = str.length();
+    if (len > 0)
+    {
+        size_t nextDelim;
+        do
+        {
+            nextDelim = str.find(delim, currPos);
+            result.push_back(str.substr(currPos, nextDelim - currPos));
+            currPos = nextDelim < len ? nextDelim + 1 : len;
+        }
+        while (currPos < len || nextDelim < len);
+    }
+    return result;
+}
+
 namespace
 {
 

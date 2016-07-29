@@ -343,6 +343,19 @@ static inline const char *boolToString(bool value)
  * separator.
  */
 std::vector<std::string> splitString(const std::string &str);
+/*! \brief
+ * Splits a string to tokens separated by a given delimiter.
+ *
+ * \param[in] str   String to process.
+ * \param[in] delim Delimiter to use for splitting.
+ * \returns   \p str split into tokens at delimiter.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * Unlike splitString(), consencutive delimiters will generate empty tokens, as
+ * will leading or trailing delimiters.
+ * Empty input will return an empty vector.
+ */
+std::vector<std::string> splitDelimitedString(const std::string &str, char delim);
 
 /*! \brief
  * Replace all occurrences of a string with another string.
