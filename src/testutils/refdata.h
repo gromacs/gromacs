@@ -56,6 +56,9 @@ namespace gmx
 {
 
 class IOptionsContainer;
+class KeyValueTreeObject;
+class KeyValueTreeValue;
+class Variant;
 
 namespace test
 {
@@ -367,6 +370,12 @@ class TestReferenceChecker
         void checkVector(const double value[3], const char *id);
         //! Check a single floating-point value from a string.
         void checkRealFromString(const std::string &value, const char *id);
+        //! Checks a variant value that contains a supported simple type.
+        void checkVariant(const Variant &value, const char *id);
+        //! Checks a key-value tree rooted at a object.
+        void checkKeyValueTreeObject(const KeyValueTreeObject &tree, const char *id);
+        //! Checks a generic key-value tree value.
+        void checkKeyValueTreeValue(const KeyValueTreeValue &value, const char *id);
 
         /*! \name Overloaded versions of simple checker methods
          *
@@ -431,6 +440,11 @@ class TestReferenceChecker
         void checkValue(const double value[3], const char *id)
         {
             checkVector(value, id);
+        }
+        //! Check a generic key-value tree value.
+        void checkValue(const KeyValueTreeValue &value, const char *id)
+        {
+            checkKeyValueTreeValue(value, id);
         }
         /*!\}*/
 
