@@ -56,9 +56,11 @@
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/variant.h"
 
 #include "testutils/refdata-checkers.h"
 #include "testutils/refdata-impl.h"
@@ -394,6 +396,8 @@ class TestReferenceChecker::Impl
         static const char * const    cIdAttrName;
         //! String constant for naming compounds for vectors.
         static const char * const    cVectorType;
+        //! String constant for naming compounds for key-value tree objects.
+        static const char * const    cObjectType;
         //! String constant for naming compounds for sequences.
         static const char * const    cSequenceType;
         //! String constant for value identifier for sequence length.
@@ -553,6 +557,7 @@ const char *const TestReferenceChecker::Impl::cUInt64NodeName     = "UInt64";
 const char *const TestReferenceChecker::Impl::cRealNodeName       = "Real";
 const char *const TestReferenceChecker::Impl::cIdAttrName         = "Name";
 const char *const TestReferenceChecker::Impl::cVectorType         = "Vector";
+const char *const TestReferenceChecker::Impl::cObjectType         = "Object";
 const char *const TestReferenceChecker::Impl::cSequenceType       = "Sequence";
 const char *const TestReferenceChecker::Impl::cSequenceLengthName = "Length";
 
@@ -955,6 +960,64 @@ void TestReferenceChecker::checkVector(const double value[3], const char *id)
     compound.checkReal(value[0], "X");
     compound.checkReal(value[1], "Y");
     compound.checkReal(value[2], "Z");
+}
+
+
+void TestReferenceChecker::checkVariant(const Variant &variant, const char *id)
+{
+    if (variant.isType<bool>())
+    {
+        checkBoolean(variant.cast<bool>(), id);
+    }
+    else if (variant.isType<int>())
+    {
+        checkInteger(variant.cast<int>(), id);
+    }
+    else if (variant.isType<float>())
+    {
+        checkFloat(variant.cast<float>(), id);
+    }
+    else if (variant.isType<double>())
+    {
+        checkDouble(variant.cast<double>(), id);
+    }
+    else if (variant.isType<std::string>())
+    {
+        checkString(variant.cast<std::string>(), id);
+    }
+    else
+    {
+        GMX_THROW(TestException("Unsupported variant type"));
+    }
+}
+
+
+void TestReferenceChecker::checkKeyValueTreeObject(const KeyValueTreeObject &tree, const char *id)
+{
+    TestReferenceChecker compound(checkCompound(Impl::cObjectType, id));
+    for (const auto &prop : tree.properties())
+    {
+        compound.checkKeyValueTreeValue(prop.value(), prop.key().c_str());
+    }
+    compound.checkUnusedEntries();
+}
+
+
+void TestReferenceChecker::checkKeyValueTreeValue(const KeyValueTreeValue &value, const char *id)
+{
+    if (value.isObject())
+    {
+        checkKeyValueTreeObject(value.asObject(), id);
+    }
+    else if (value.isArray())
+    {
+        const auto &values = value.asArray().values();
+        checkSequence(values.begin(), values.end(), id);
+    }
+    else
+    {
+        checkVariant(value.asVariant(), id);
+    }
 }
 
 
