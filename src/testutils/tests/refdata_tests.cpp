@@ -43,10 +43,15 @@
 
 #include "testutils/refdata.h"
 
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
+
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/variant.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testexceptions.h"
@@ -335,6 +340,134 @@ TEST(ReferenceDataTest, HandlesUncheckedDataInCompound)
         EXPECT_NONFATAL_FAILURE(compound.checkUnusedEntries(), "");
         checker.checkInteger(1, "int");
         checker.checkUnusedEntries();
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesVariants)
+{
+    using gmx::Variant;
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkVariant(Variant::create<bool>(true), "bool");
+        checker.checkVariant(Variant::create<int>(1), "int");
+        checker.checkVariant(Variant::create<double>(3.5), "real");
+        checker.checkVariant(Variant::create<std::string>("foo"), "str");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkVariant(Variant::create<bool>(true), "bool");
+        checker.checkVariant(Variant::create<int>(1), "int");
+        checker.checkVariant(Variant::create<double>(3.5), "real");
+        checker.checkVariant(Variant::create<std::string>("foo"), "str");
+    }
+}
+
+//! Helper for building a KeyValueTree for testing.
+gmx::KeyValueTreeObject buildKeyValueTree(bool full)
+{
+    gmx::KeyValueTreeBuilder builder;
+    auto                     root = builder.rootObject();
+    auto                     obj  = root.addObject("o");
+    obj.addValue<int>("i", 1);
+    if (full)
+    {
+        obj.addValue<std::string>("s", "x");
+    }
+    auto arr  = root.addUniformArray<int>("a");
+    arr.addValue(2);
+    arr.addValue(3);
+    root.addValue<std::string>("s", "y");
+    return builder.build();
+}
+
+
+TEST(ReferenceDataTest, HandlesKeyValueTree)
+{
+    gmx::KeyValueTreeObject tree = buildKeyValueTree(true);
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkKeyValueTreeObject(tree, "tree");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkKeyValueTreeObject(tree, "tree");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesKeyValueTreeExtraKey)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkKeyValueTreeObject(buildKeyValueTree(false), "tree");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkKeyValueTreeObject(buildKeyValueTree(true), "tree"), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesKeyValueTreeMissingKey)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkKeyValueTreeObject(buildKeyValueTree(true), "tree");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkKeyValueTreeObject(buildKeyValueTree(false), "tree"), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesVariantsWithIncorrectValue)
+{
+    using gmx::Variant;
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkVariant(Variant::create<bool>(true), "bool");
+        checker.checkVariant(Variant::create<int>(1), "int");
+        checker.checkVariant(Variant::create<double>(3.5), "real");
+        checker.checkVariant(Variant::create<std::string>("foo"), "str");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<bool>(false), "bool"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<int>(2), "int"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<double>(2.5), "real"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<std::string>("bar"), "str"), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesVariantsWithIncorrectType)
+{
+    using gmx::Variant;
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkVariant(Variant::create<bool>(true), "bool");
+        checker.checkVariant(Variant::create<int>(1), "int");
+        checker.checkVariant(Variant::create<double>(3.5), "real");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<int>(1), "bool"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<bool>(true), "int"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<int>(2), "real"), "");
     }
 }
 
