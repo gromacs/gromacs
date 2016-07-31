@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -193,16 +193,18 @@ gmx_uint64_t relativeToleranceToUlp(FloatType tolerance)
  * FloatingPointDifference
  */
 
-FloatingPointDifference::FloatingPointDifference(float value1, float value2)
+FloatingPointDifference::FloatingPointDifference(float ref, float value)
+    : termMagnitude_(std::abs(ref))
 {
-    initDifference(value1, value2,
+    initDifference(ref, value,
                    &absoluteDifference_, &ulpDifference_, &bSignDifference_);
     bDouble_ = false;
 }
 
-FloatingPointDifference::FloatingPointDifference(double value1, double value2)
+FloatingPointDifference::FloatingPointDifference(double ref, double value)
+    : termMagnitude_(std::abs(ref))
 {
-    initDifference(value1, value2,
+    initDifference(ref, value,
                    &absoluteDifference_, &ulpDifference_, &bSignDifference_);
     bDouble_ = true;
 }
@@ -214,11 +216,29 @@ bool FloatingPointDifference::isNaN() const
 
 std::string FloatingPointDifference::toString() const
 {
-    const double eps = isDouble() ? GMX_DOUBLE_EPS : GMX_FLOAT_EPS;
-    return formatString("%g (%" GMX_PRIu64 " %s-prec. ULPs, rel. %.3g)%s",
+    std::string relDiffStr;
+
+    if (termMagnitude_ > 0)
+    {
+        // If the reference value is finite we calculate the proper quotient
+        relDiffStr = formatString("%.3g", std::abs(absoluteDifference_/termMagnitude_ - 1.0));
+    }
+    else if (absoluteDifference_ == 0.0)
+    {
+        // If the numbers are identical the quotient is strictly NaN here, but
+        // there no reason to worry when we have a perfect match.
+        relDiffStr = formatString("%.3g", 0.0);
+    }
+    else
+    {
+        // If the reference value is zero and numbers are non-identical, relative difference is infinite.
+        relDiffStr = formatString("Inf");
+    }
+
+    return formatString("%g (%" GMX_PRIu64 " %s-prec. ULPs, rel. %s)%s",
                         absoluteDifference_, ulpDifference_,
                         isDouble() ? "double" : "single",
-                        ulpDifference_ * eps,
+                        relDiffStr.c_str(),
                         bSignDifference_ ? ", signs differ" : "");
 }
 
@@ -246,12 +266,23 @@ bool FloatingPointTolerance::isWithin(
         return true;
     }
 
+    // By using smaller-than-or-equal below, we allow the test to pass if
+    // the numbers are identical, even if the term magnitude is 0, which seems
+    // a reasonable thing to do...
+    const double relativeTolerance
+        = difference.isDouble() ? doubleRelativeTolerance_ : singleRelativeTolerance_;
+    if (difference.asAbsolute() <= relativeTolerance * difference.termMagnitude())
+    {
+        return true;
+    }
+
     const gmx_uint64_t ulpTolerance
         = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
     if (ulpTolerance < GMX_UINT64_MAX && difference.asUlps() <= ulpTolerance)
     {
         return true;
     }
+
     return false;
 }
 
@@ -293,10 +324,10 @@ std::string FloatingPointTolerance::toString(const FloatingPointDifference &diff
 FloatingPointTolerance
 relativeToleranceAsFloatingPoint(double magnitude, double tolerance)
 {
-    const double absoluteTolerance = magnitude * tolerance;
+    const double absoluteTolerance = std::abs(magnitude) * tolerance;
     return FloatingPointTolerance(absoluteTolerance, absoluteTolerance,
-                                  relativeToleranceToUlp<float>(tolerance),
-                                  relativeToleranceToUlp<double>(tolerance),
+                                  tolerance, tolerance,
+                                  GMX_UINT64_MAX, GMX_UINT64_MAX,
                                   false);
 }
 //! \endcond
