@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -194,6 +194,7 @@ gmx_uint64_t relativeToleranceToUlp(FloatType tolerance)
  */
 
 FloatingPointDifference::FloatingPointDifference(float value1, float value2)
+    : termMagnitude_(std::abs(value2))
 {
     initDifference(value1, value2,
                    &absoluteDifference_, &ulpDifference_, &bSignDifference_);
@@ -201,6 +202,7 @@ FloatingPointDifference::FloatingPointDifference(float value1, float value2)
 }
 
 FloatingPointDifference::FloatingPointDifference(double value1, double value2)
+    : termMagnitude_(std::abs(value2))
 {
     initDifference(value1, value2,
                    &absoluteDifference_, &ulpDifference_, &bSignDifference_);
@@ -246,12 +248,20 @@ bool FloatingPointTolerance::isWithin(
         return true;
     }
 
+    const double relativeTolerance
+        = difference.isDouble() ? doubleRelativeTolerance_ : singleRelativeTolerance_;
+    if (difference.asAbsolute() < relativeTolerance * difference.termMagnitude())
+    {
+        return true;
+    }
+
     const gmx_uint64_t ulpTolerance
         = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
     if (ulpTolerance < GMX_UINT64_MAX && difference.asUlps() <= ulpTolerance)
     {
         return true;
     }
+
     return false;
 }
 
@@ -293,10 +303,10 @@ std::string FloatingPointTolerance::toString(const FloatingPointDifference &diff
 FloatingPointTolerance
 relativeToleranceAsFloatingPoint(double magnitude, double tolerance)
 {
-    const double absoluteTolerance = magnitude * tolerance;
+    const double absoluteTolerance = std::abs(magnitude) * tolerance;
     return FloatingPointTolerance(absoluteTolerance, absoluteTolerance,
-                                  relativeToleranceToUlp<float>(tolerance),
-                                  relativeToleranceToUlp<double>(tolerance),
+                                  tolerance, tolerance,
+                                  GMX_UINT64_MAX, GMX_UINT64_MAX,
                                   false);
 }
 //! \endcond

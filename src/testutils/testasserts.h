@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -244,7 +244,13 @@ class FloatingPointDifference
         //! Formats the difference as a string for assertion failure messages.
         std::string toString() const;
 
+        //! Returns the magnitude of the original second term of the difference.
+        double termMagnitude() const { return termMagnitude_; }
+
     private:
+
+        //! Save the magnitude of the term (value2) for floating-point (i.e., not ULP) relative tolerance checks
+        double       termMagnitude_;
         //! Stores the absolute difference, or NaN if one or both values were NaN.
         double       absoluteDifference_;
         gmx_uint64_t ulpDifference_;
@@ -270,6 +276,9 @@ class FloatingPointDifference
  *    the given tolerance for the check to pass.
  *    Setting the absolute tolerance to zero disables the absolute tolerance
  *    check.
+ *  - _relative tolerance_: the absolute difference between the numbers must
+ *    be smaller than the tolerance multiplied by the first number. Setting
+ *    the relative tolerance to zero disables this check.
  *  - _ULP tolerance_: ULP (units of least precision) difference between the
  *    values must be smaller than the given tolerance for the check to pass.
  *    Setting the ULP tolerance to zero requires exact match.
@@ -279,13 +288,13 @@ class FloatingPointDifference
  *    check (note that this also applies to `0.0` and `-0.0`: a value with a
  *    different sign than the zero will fail the check).
  *
- * Either an absolute or a ULP tolerance must always be specified.
- * If both are specified, then the check passes if either of the tolerances is
- * satisfied.
+ * Either an absolute, relative, or ULP tolerance must always be specified.
+ * If several of them are specified, then the check passes if either of the
+ * tolerances is satisfied.
  *
- * Any combination of absolute and ULP tolerance can be combined with the sign
- * check.  In this case, the sign check must succeed for the check to pass,
- * even if other tolerances are satisfied.
+ * Any combination of absolute, relative, and ULP tolerance can be combined with
+ * the sign check.  In this case, the sign check must succeed for the check to
+ * pass, even if other tolerances are satisfied.
  *
  * The tolerances can be specified separately for single and double precision
  * comparison.  Different initialization functions have different semantics on
@@ -312,6 +321,10 @@ class FloatingPointTolerance
          *     Allowed absolute difference in a single-precision number.
          * \param[in]  doubleAbsoluteTolerance
          *     Allowed absolute difference in a double-precision number.
+         * \param[in]  singleRelativeTolerance
+         *     Allowed relative difference in a single-precision number.
+         * \param[in]  doubleRelativeTolerance
+         *     Allowed relative difference in a double-precision number.
          * \param[in]  singleUlpTolerance
          *     Allowed ULP difference in a single-precision number.
          * \param[in]  doubleUlpTolerance
@@ -321,11 +334,15 @@ class FloatingPointTolerance
          */
         FloatingPointTolerance(float        singleAbsoluteTolerance,
                                double       doubleAbsoluteTolerance,
+                               float        singleRelativeTolerance,
+                               double       doubleRelativeTolerance,
                                gmx_uint64_t singleUlpTolerance,
                                gmx_uint64_t doubleUlpTolerance,
                                bool         bSignMustMatch)
             : singleAbsoluteTolerance_(singleAbsoluteTolerance),
               doubleAbsoluteTolerance_(doubleAbsoluteTolerance),
+              singleRelativeTolerance_(singleRelativeTolerance),
+              doubleRelativeTolerance_(doubleRelativeTolerance),
               singleUlpTolerance_(singleUlpTolerance),
               doubleUlpTolerance_(doubleUlpTolerance),
               bSignMustMatch_(bSignMustMatch)
@@ -345,6 +362,8 @@ class FloatingPointTolerance
     private:
         float        singleAbsoluteTolerance_;
         double       doubleAbsoluteTolerance_;
+        float        singleRelativeTolerance_;
+        double       doubleRelativeTolerance_;
         gmx_uint64_t singleUlpTolerance_;
         gmx_uint64_t doubleUlpTolerance_;
         bool         bSignMustMatch_;
@@ -361,7 +380,7 @@ class FloatingPointTolerance
 static inline FloatingPointTolerance
 ulpTolerance(gmx_uint64_t ulpDiff)
 {
-    return FloatingPointTolerance(0.0, 0.0, ulpDiff, ulpDiff, false);
+    return FloatingPointTolerance(0.0, 0.0, 0.0, 0.0, ulpDiff, ulpDiff, false);
 }
 
 /*! \brief
@@ -412,6 +431,7 @@ relativeToleranceAsPrecisionDependentUlp(double       magnitude,
 {
     return FloatingPointTolerance(magnitude*singleUlpDiff*GMX_FLOAT_EPS,
                                   magnitude*doubleUlpDiff*GMX_DOUBLE_EPS,
+                                  0.0, 0.0,
                                   singleUlpDiff, doubleUlpDiff, false);
 }
 
@@ -423,7 +443,7 @@ relativeToleranceAsPrecisionDependentUlp(double       magnitude,
 static inline FloatingPointTolerance
 absoluteTolerance(double tolerance)
 {
-    return FloatingPointTolerance(tolerance, tolerance,
+    return FloatingPointTolerance(tolerance, tolerance, 0.0, 0.0,
                                   GMX_UINT64_MAX, GMX_UINT64_MAX, false);
 }
 
