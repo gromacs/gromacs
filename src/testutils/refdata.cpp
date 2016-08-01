@@ -203,6 +203,67 @@ class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
         }
 };
 
+//! Formats a path to a reference data entry with a non-null id.
+std::string formatEntryPath(const std::string &prefix, const std::string &id)
+{
+    return prefix + "/" + id;
+}
+
+//! Formats a path to a reference data entry with a null id.
+std::string formatSequenceEntryPath(const std::string &prefix, int seqIndex)
+{
+    return formatString("%s/[%d]", prefix.c_str(), seqIndex+1);
+}
+
+//! Finds all entries that have not been checked under a given root.
+void gatherUnusedEntries(const ReferenceDataEntry &root,
+                         const std::string        &rootPath,
+                         std::vector<std::string> *unusedPaths)
+{
+    if (!root.hasBeenChecked())
+    {
+        unusedPaths->push_back(rootPath);
+        return;
+    }
+    int seqIndex = 0;
+    for (const auto &child : root.children())
+    {
+        std::string path;
+        if (child->id().empty())
+        {
+            path = formatSequenceEntryPath(rootPath, seqIndex);
+            ++seqIndex;
+        }
+        else
+        {
+            path = formatEntryPath(rootPath, child->id());
+        }
+        gatherUnusedEntries(*child, path, unusedPaths);
+    }
+}
+
+//! Produces a GTest assertion of any entries under given root have not been checked.
+void checkUnusedEntries(const ReferenceDataEntry &root, const std::string &rootPath)
+{
+    std::vector<std::string> unusedPaths;
+    gatherUnusedEntries(root, rootPath, &unusedPaths);
+    if (!unusedPaths.empty())
+    {
+        std::string paths;
+        if (unusedPaths.size() > 5)
+        {
+            paths = joinStrings(unusedPaths.begin(), unusedPaths.begin() + 5, "\n  ");
+            paths = "  " + paths + "\n  ...";
+        }
+        else
+        {
+            paths = joinStrings(unusedPaths.begin(), unusedPaths.end(), "\n  ");
+            paths = "  " + paths;
+        }
+        ADD_FAILURE() << "Reference data items not used in test:" << std::endl << paths;
+    }
+}
+
 }       // namespace
 
 void initReferenceData(IOptionsContainer *options)
@@ -276,18 +337,29 @@ TestReferenceDataImpl::TestReferenceDataImpl(
 
 void TestReferenceDataImpl::onTestEnd(bool testPassed)
 {
-    // TODO: Only write the file with update-changed if there were actual changes.
-    if (testPassed && bInUse_ && outputRootEntry_)
+    if (!bInUse_)
     {
-        std::string dirname = Path::getParentPath(fullFilename_);
-        if (!Directory::exists(dirname))
+        return;
+    }
+    // TODO: Only write the file with update-changed if there were actual changes.
+    if (outputRootEntry_)
+    {
+        if (testPassed)
         {
-            if (Directory::create(dirname) != 0)
+            std::string dirname = Path::getParentPath(fullFilename_);
+            if (!Directory::exists(dirname))
             {
-                GMX_THROW(TestException("Creation of reference data directory failed: " + dirname));
+                if (Directory::create(dirname) != 0)
+                {
+                    GMX_THROW(TestException("Creation of reference data directory failed: " + dirname));
+                }
             }
+            writeReferenceDataFile(fullFilename_, *outputRootEntry_);
         }
-        writeReferenceDataFile(fullFilename_, *outputRootEntry_);
+    }
+    else if (compareRootEntry_)
+    {
+        checkUnusedEntries(*compareRootEntry_, "");
     }
 }
 
@@ -468,7 +540,7 @@ class TestReferenceChecker::Impl
         /*! \brief
          * Current number of unnamed elements in a sequence.
          *
-         * It is the index of the next added unnamed element.
+         * It is the index of the current unnamed element.
          */
         int                     seqIndex_;
 };
@@ -488,7 +560,7 @@ const char *const TestReferenceChecker::Impl::cSequenceLengthName = "Length";
 TestReferenceChecker::Impl::Impl(bool initialized)
     : initialized_(initialized), defaultTolerance_(defaultRealTolerance()),
       compareRootEntry_(NULL), outputRootEntry_(NULL),
-      updateMismatchingEntries_(false), bSelfTestMode_(false), seqIndex_(0)
+      updateMismatchingEntries_(false), bSelfTestMode_(false), seqIndex_(-1)
 {
 }
 
@@ -498,11 +570,11 @@ TestReferenceChecker::Impl::Impl(const std::string &path,
                                  ReferenceDataEntry *outputRootEntry,
                                  bool updateMismatchingEntries, bool bSelfTestMode,
                                  const FloatingPointTolerance &defaultTolerance)
-    : initialized_(true), defaultTolerance_(defaultTolerance), path_(path + "/"),
+    : initialized_(true), defaultTolerance_(defaultTolerance), path_(path),
       compareRootEntry_(compareRootEntry), outputRootEntry_(outputRootEntry),
       lastFoundEntry_(compareRootEntry->children().end()),
       updateMismatchingEntries_(updateMismatchingEntries),
-      bSelfTestMode_(bSelfTestMode), seqIndex_(0)
+      bSelfTestMode_(bSelfTestMode), seqIndex_(-1)
 {
 }
 
@@ -510,15 +582,16 @@ TestReferenceChecker::Impl::Impl(const std::string &path,
 std::string
 TestReferenceChecker::Impl::appendPath(const char *id) const
 {
-    std::string printId = (id != NULL) ? id : formatString("[%d]", seqIndex_);
-    return path_ + printId;
+    return id != nullptr
+           ? formatEntryPath(path_, id)
+           : formatSequenceEntryPath(path_, seqIndex_);
 }
 
 
 ReferenceDataEntry *TestReferenceChecker::Impl::findEntry(const char *id)
 {
     ReferenceDataEntry::ChildIterator entry = compareRootEntry_->findChild(id, lastFoundEntry_);
-    seqIndex_ = (id == NULL) ? seqIndex_+1 : 0;
+    seqIndex_ = (id == nullptr) ? seqIndex_+1 : -1;
     if (compareRootEntry_->isValidChild(entry))
     {
         lastFoundEntry_ = entry;
@@ -556,6 +629,7 @@ TestReferenceChecker::Impl::processItem(const char *type, const char *id,
         return ::testing::AssertionFailure()
                << "Reference data item " << fullId << " not found";
     }
+    entry->setChecked();
     ::testing::AssertionResult result(checkEntry(*entry, fullId, type, checker));
     if (outputRootEntry_ != NULL && entry->correspondingOutputEntry() == NULL)
     {
@@ -616,6 +690,7 @@ TestReferenceChecker TestReferenceData::rootChecker()
     {
         return TestReferenceChecker(new TestReferenceChecker::Impl(true));
     }
+    impl_->compareRootEntry_->setChecked();
     return TestReferenceChecker(
             new TestReferenceChecker::Impl("", impl_->compareRootEntry_.get(),
                                            impl_->outputRootEntry_.get(),
@@ -672,6 +747,17 @@ void TestReferenceChecker::setDefaultTolerance(
 }
 
 
+void TestReferenceChecker::checkUnusedEntries()
+{
+    if (impl_->compareRootEntry_)
+    {
+        gmx::test::checkUnusedEntries(*impl_->compareRootEntry_, impl_->path_);
+        // Mark them checked so that they are reported only once.
+        impl_->compareRootEntry_->setCheckedIncludingChildren();
+    }
+}
+
+
 bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
 {
     if (impl_->shouldIgnore() || impl_->outputRootEntry_ != NULL)
@@ -712,6 +798,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
         ADD_FAILURE() << "Reference data item " << fullId << " not found";
         return TestReferenceChecker(new Impl(true));
     }
+    entry->setChecked();
     if (impl_->updateMismatchingEntries_)
     {
         entry->makeCompound(type);

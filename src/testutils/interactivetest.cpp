@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -122,18 +122,13 @@ class InteractiveTestHelper::Impl
 
         void checkOutput()
         {
-            const std::string id = formatString("Output%d", static_cast<int>(currentLine_));
-            if (checker_.checkPresent(bHasOutput_, id.c_str()))
+            if (bHasOutput_)
             {
+                const std::string id = formatString("Output%d", static_cast<int>(currentLine_));
                 StringTestBase::checkText(&checker_, currentOutput_, id.c_str());
+                bHasOutput_ = false;
             }
-            bHasOutput_ = false;
             currentOutput_.clear();
-        }
-        void checkPendingInput()
-        {
-            const std::string id = formatString("Input%d", static_cast<int>(currentLine_+1));
-            checker_.checkPresent(false, id.c_str());
         }
 
         TestReferenceChecker             checker_;
@@ -180,7 +175,7 @@ TextOutputStream &InteractiveTestHelper::outputStream()
 void InteractiveTestHelper::checkSession()
 {
     impl_->checkOutput();
-    impl_->checkPendingInput();
+    impl_->checker_.checkUnusedEntries();
 }
 
 } // namespace test
