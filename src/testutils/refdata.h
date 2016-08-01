@@ -275,6 +275,22 @@ class TestReferenceChecker
         void setDefaultTolerance(const FloatingPointTolerance &tolerance);
 
         /*! \brief
+         * Checks that all reference values have been compared against.
+         *
+         * All values under the compound represented by this checker are
+         * checked, and a non-fatal Google Test assertion is produced if some
+         * values have not been used.
+         *
+         * If not called explicitly, the same check will be done for all
+         * reference data values when the test ends.
+         *
+         * This method also marks the values used, so that subsequent checks
+         * (including the check at the end of the test) will not produce
+         * another assertion about the same values.
+         */
+        void checkUnusedEntries();
+
+        /*! \brief
          * Checks whether a data item is present.
          *
          * \param[in] bPresent  Whether to check for presence or absence.
