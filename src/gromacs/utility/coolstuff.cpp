@@ -733,6 +733,9 @@ std::string getCoolQuote()
         { "According to my computations we're overdue for a transformation.", "Jackson Browne" },
         { "Therefore, things must be learned only to be unlearned again or, more likely, to be corrected.", "Richard Feynman" },
         { "You wouldn't walk into a chemistry lab and mix two clear liquids together just because they look pretty much the same, would you?", "Justin Lemkul" },
+        { "They don't have half hours in the north", "Carl Caleman" },
+        { "Safety lights are for dudes", "Ghostbusters 2016" },
+        { "It's 2040 now. Our President is a plant.",  "Ghostbusters 2016" },
     };
 
     if (beCool())
