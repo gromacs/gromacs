@@ -454,6 +454,11 @@ compilation of OpenCL kernels, but they are also used in device selection.
         override |Gromacs| default behavior, or if you want to test
         your own kernels.
 
+``GMX_OCL_DISABLE_COMPATIBILITY_CHECK``
+        Disables the hardware compatibility check. Useful for developers
+        and allows testing the OpenCL kernels on non-supported platforms
+        (like Intel iGPUs) without source code modification.
+
 Analysis and Core Functions
 ---------------------------
 ``GMX_QM_ACCURACY``
