@@ -124,6 +124,11 @@ runningOnCompatibleOSForAmd()
  */
 static int is_gmx_supported_gpu_id(struct gmx_device_info_t *ocl_gpu_device)
 {
+    if ((getenv("GMX_OCL_OVERRIDE_COMPATIBILITY_CHECK")) != NULL)
+    {
+        return egpuCompatible;
+    }
+
     /* Only AMD and NVIDIA GPUs are supported for now */
     switch (ocl_gpu_device->vendor_e)
     {
