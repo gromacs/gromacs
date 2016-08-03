@@ -193,7 +193,7 @@ set(GMX_VERSION_PATCH 0)
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.
-set(GMX_VERSION_SUFFIX "-rc1")
+set(GMX_VERSION_SUFFIX "")
 
 # Conventionally with libtool, any ABI change must change the major
 # version number, the minor version number should change if it's just
@@ -229,7 +229,7 @@ set(REGRESSIONTEST_BRANCH "refs/heads/release-2016")
 # each release. It's hard to test because it is only used for
 # REGRESSIONTEST_DOWNLOAD, which doesn't work until that tarball has
 # been placed on the server.
-set(REGRESSIONTEST_MD5SUM "857a7a1c46ad37b91504bbab39172061" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
+set(REGRESSIONTEST_MD5SUM "5f49cfc4f04a34f117340cf9b3e5f8a2" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
