@@ -193,7 +193,7 @@ set(GMX_VERSION_PATCH 0)
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.
-set(GMX_VERSION_SUFFIX "-rc1")
+set(GMX_VERSION_SUFFIX "")
 
 # Conventionally with libtool, any ABI change must change the major
 # version number, the minor version number should change if it's just
