@@ -35,6 +35,7 @@ docs/doxygen/examples/*.c               filter=uncrustify_only
 docs/manual/UseLATEX.cmake              !filter
 scripts/GMXRC.*                         !filter
 scripts/make_gromos_rtp.py              !filter
+share/template/README.cmakein           !filter
 share/template/template.cpp             filter=copyright
 src/contrib/*                           -filter -gmx-doxygen
 src/gromacs/gmxlib/nonbonded/preprocessor/gmxpreprocess.py !filter
