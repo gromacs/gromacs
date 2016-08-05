@@ -859,14 +859,12 @@ static void
 spinUpCore() noexcept
 {
 #if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_CONF) && defined(_SC_NPROCESSORS_ONLN)
-    // steady_clock is better than system_clock, but unsupported in gcc-4.6.4.
-    // For release-2017 we can retire gcc-4.6 support and move to steady_clock.
     float dummy           = 0.1;
     int   countConfigured = sysconf(_SC_NPROCESSORS_CONF);    // noexcept
-    auto  start           = std::chrono::system_clock::now(); // noexcept
+    auto  start           = std::chrono::steady_clock::now(); // noexcept
 
     while (sysconf(_SC_NPROCESSORS_ONLN) < countConfigured &&
-           std::chrono::system_clock::now() - start < std::chrono::seconds(2))
+           std::chrono::steady_clock::now() - start < std::chrono::seconds(2))
     {
         for (int i = 1; i < 10000; i++)
         {
