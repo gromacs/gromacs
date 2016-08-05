@@ -27,7 +27,9 @@ include(CheckIncludeFile)
 check_include_file(inttypes.h   HAVE_INTTYPES_H)
 
 include(BuildTNG.cmake)
-tng_get_source_list(TNG_SOURCES TNG_COMPILE_DEFS)
+# TODO propagate changes involving TNG_INCLUDE_DIRS to TNG repo
+tng_get_source_list(TNG_SOURCES TNG_COMPILE_DEFS TNG_INCLUDE_DIRS)
+include_directories(BEFORE "${TNG_INCLUDE_DIRS}")
 
 tng_set_source_properties(WITH_ZLIB ${ZLIB_FOUND})
 

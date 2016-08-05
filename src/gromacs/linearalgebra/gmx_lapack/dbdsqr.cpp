@@ -48,7 +48,7 @@ F77_FUNC(dbdsqr,DBDSQR)(const char *uplo,
     double unfl, sinl, cosr, smin, smax, sinr;
     double oldcs;
     int oldll;
-    double shift, sigmn, oldsn;
+    double shift, sigmn, oldsn = 0.;
     int maxit;
     double sminl;
     double sigmx;

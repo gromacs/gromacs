@@ -22,9 +22,9 @@ test_big_endian(TNG_INTEGER_BIG_ENDIAN)
 include(CheckIncludeFile)
 check_include_file(inttypes.h TNG_HAVE_INTTYPES_H)
 
-macro(TNG_GET_SOURCE_LIST TNG_SOURCELIST TNG_COMPILEDEFS)
-    include_directories(BEFORE ${TNG_ROOT_SOURCE_DIR}/include)
-    include_directories(BEFORE ${TNG_ROOT_BINARY_DIR}/include)
+# TODO propagate changes involving TNG_INCLUDE_DIRS to TNG repo
+macro(TNG_GET_SOURCE_LIST TNG_SOURCELIST TNG_COMPILEDEFS TNG_INCLUDE_DIRS)
+    set(${TNG_INCLUDE_DIRS} ${TNG_ROOT_SOURCE_DIR}/include ${TNG_ROOT_BINARY_DIR}/include)
     set(_tng_compression_sources bwlzh.c bwt.c coder.c dict.c fixpoint.c huffman.c huffmem.c lz77.c merge_sort.c mtf.c rle.c tng_compress.c vals16.c warnmalloc.c widemuldiv.c xtc2.c xtc3.c)
     set(_tng_io_sources tng_io.c md5.c)
     set(${TNG_SOURCELIST})
