@@ -309,39 +309,15 @@ TEST_P(SettleTest, SatisfiesConstraints)
     }
 }
 
-using ::testing::Bool;
 // Scan the full Cartesian product of numbers of SETTLE interactions
 // (4 and 17 are chosen to test cases that do and do not match
 // hardware SIMD widths), and whether or not we use PBC, velocities or
-// calculate the virial contribution. It would be nicer to generate
-// these combinations with ::testing::Combine, but gcc 4.6 can't cope
-// with the template meta-programming required to generate the tuples.
+// calculate the virial contribution.
 INSTANTIATE_TEST_CASE_P(WithParameters, SettleTest,
-                            ::testing::Values(SettleTestParameters(1,  true,  true,  true),
-                                              SettleTestParameters(4,  true,  true,  true),
-                                              SettleTestParameters(17, true,  true,  true),
-                                              SettleTestParameters(1,  false, true,  true),
-                                              SettleTestParameters(4,  false, true,  true),
-                                              SettleTestParameters(17, false, true,  true),
-                                              SettleTestParameters(1,  true,  false, true),
-                                              SettleTestParameters(4,  true,  false, true),
-                                              SettleTestParameters(17, true,  false, true),
-                                              SettleTestParameters(1,  false, false, true),
-                                              SettleTestParameters(4,  false, false, true),
-                                              SettleTestParameters(17, false, false, true),
-                                              SettleTestParameters(1,  true,  true,  false),
-                                              SettleTestParameters(4,  true,  true,  false),
-                                              SettleTestParameters(17, true,  true,  false),
-                                              SettleTestParameters(1,  false, true,  false),
-                                              SettleTestParameters(4,  false, true,  false),
-                                              SettleTestParameters(17, false, true,  false),
-                                              SettleTestParameters(1,  true,  false, false),
-                                              SettleTestParameters(4,  true,  false, false),
-                                              SettleTestParameters(17, true,  false, false),
-                                              SettleTestParameters(1,  false, false, false),
-                                              SettleTestParameters(4,  false, false, false),
-                                              SettleTestParameters(17, false, false, false)));
-
+                            ::testing::Combine(::testing::Values(1, 4, 7),
+                                                   ::testing::Bool(),
+                                                   ::testing::Bool(),
+                                                   ::testing::Bool()));
 
 } // namespace
 } // namespace

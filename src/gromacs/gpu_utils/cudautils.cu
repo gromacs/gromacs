@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,18 +85,6 @@ int cu_copy_D2H_async(void * h_dest, void * d_src, size_t bytes, cudaStream_t s 
     return cu_copy_D2H_generic(h_dest, d_src, bytes, true, s);
 }
 
-int cu_copy_D2H_alloc(void ** h_dest, void * d_src, size_t bytes)
-{
-    if (h_dest == NULL || d_src == NULL || bytes == 0)
-    {
-        return -1;
-    }
-
-    smalloc(*h_dest, bytes);
-
-    return cu_copy_D2H(*h_dest, d_src, bytes);
-}
-
 /*! Launches synchronous or asynchronous device to host memory copy.
  *
  *  The copy is launched in stream s or if not specified, in stream 0.
@@ -136,21 +124,6 @@ int cu_copy_H2D(void * d_dest, void * h_src, size_t bytes)
 int cu_copy_H2D_async(void * d_dest, void * h_src, size_t bytes, cudaStream_t s = 0)
 {
     return cu_copy_H2D_generic(d_dest, h_src, bytes, true, s);
-}
-
-int cu_copy_H2D_alloc(void ** d_dest, void * h_src, size_t bytes)
-{
-    cudaError_t stat;
-
-    if (d_dest == NULL || h_src == NULL || bytes == 0)
-    {
-        return -1;
-    }
-
-    stat = cudaMalloc(d_dest, bytes);
-    CU_RET_ERR(stat, "cudaMalloc failed in cu_copy_H2D_alloc");
-
-    return cu_copy_H2D(*d_dest, h_src, bytes);
 }
 
 float cu_event_elapsed(cudaEvent_t start, cudaEvent_t end)
