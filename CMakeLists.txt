@@ -32,11 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-cmake_minimum_required(VERSION 2.8.8)
-# When we require cmake >= 2.8.12, it will provide
-# CMAKE_MINIMUM_REQUIRED_VERSION automatically, but in the meantime we
-# need to set a variable, and it must have a different name.
-set(GMX_CMAKE_MINIMUM_REQUIRED_VERSION "2.8.8")
+cmake_minimum_required(VERSION 3.4.3)
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -198,11 +194,12 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
 # Decide on GPU settings based on user-settings and GPU/CUDA detection.
-# GCC 4.6 requires CUDA 5.0 and VS2015 requires CUDA 8.0
+# GCC 4.8 requires CUDA 6.0 and VS2015 requires CUDA 8.0, but for
+# now we bite the bullet and even require CUDA 6.5 since that is what we test
 if(MSVC)
     set(REQUIRED_CUDA_VERSION 8.0)
 else()
-    set(REQUIRED_CUDA_VERSION 5.0)
+    set(REQUIRED_CUDA_VERSION 6.5)
 endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 
@@ -336,17 +333,6 @@ set(EXTRA_CXX_FLAGS "")
 # Run through a number of tests for buggy compilers and other issues
 include(gmxTestCompilerProblems)
 gmx_test_compiler_problems()
-# GMX_SIMD will not be set automatically until the second
-# pass (which is not strictly guaranteed to occur), so putting this
-# check here among logically-related tests is inefficient, but the
-# potential loss is likely zero.
-if(GMX_SIMD STREQUAL "AVX_256"
-        AND CMAKE_COMPILER_IS_GNUCC
-        AND (C_COMPILER_VERSION VERSION_EQUAL "4.6.1"
-            OR CXX_COMPILER_VERSION VERSION_EQUAL "4.6.1"))
-    message(FATAL_ERROR "gcc 4.6.1 has buggy support for AVX, and GROMACS mdrun will not work. If you want simulation performance, use a more recent compiler. Otherwise, use GMX_SIMD=SSE4.1")
-    # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=49002
-endif()
 
 # Implement double-precision option. This is complicated because we
 # need installed headers to use the precision mode of the build that
