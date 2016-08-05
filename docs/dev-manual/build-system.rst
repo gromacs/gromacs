@@ -4,7 +4,7 @@ Build system overview
 =====================
 
 The |Gromacs| build system uses CMake (version
-|GMX_CMAKE_MINIMUM_REQUIRED_VERSION| or newer is required) to generate the
+|CMAKE_MINIMUM_REQUIRED_VERSION| or newer is required) to generate the
 actual build system for the build tool choosen by the user.  See CMake
 documentation for general introduction to CMake and how to use it.  This
 documentation focuses on how the |Gromacs| build system is organized and

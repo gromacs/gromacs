@@ -15,7 +15,7 @@ These instructions pertain to building |Gromacs|
 Quick and dirty installation
 ----------------------------
 1. Get the latest version of your C and C++ compilers.
-2. Check that you have CMake version |GMX_CMAKE_MINIMUM_REQUIRED_VERSION| or later.
+2. Check that you have CMake version |CMAKE_MINIMUM_REQUIRED_VERSION| or later.
 3. Get and unpack the latest version of the |Gromacs| tarball.
 4. Make a separate build directory and change to it. 
 5. Run ``cmake`` with the path to the source as an argument
@@ -91,10 +91,11 @@ compiler. We recommend gcc, because it is free, widely available and
 frequently provides the best performance.
 
 You should strive to use the most recent version of your
-compiler. Minimum supported compiler versions are
-* GNU (gcc) 4.6
-* Intel (icc) 14
-* LLVM (clang) 3.4
+compiler. Since we require full C++11 support the minimum supported
+compiler versions are
+* GNU (gcc) 4.8.1
+* Intel (icc) 14.0
+* LLVM (clang) 3.3
 * Microsoft (MSVC) 2015
 Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
@@ -111,7 +112,7 @@ other compilers, read on.
 
 On Linux, both the Intel and clang compiler use the libstdc++ which
 comes with gcc as the default C++ library. For |Gromacs|, we require
-the compiler to support libstc++ version 4.6.1 or higher. To select a
+the compiler to support libstc++ version 4.8.1 or higher. To select a
 particular libstdc++ library, use:
 
 * For Intel: ``-DGMX_STDLIB_CXX_FLAGS=-gcc-name=/path/to/gcc/binary``
@@ -209,7 +210,7 @@ CMake
 -----
 
 |Gromacs| builds with the CMake build system, requiring at least
-version |GMX_CMAKE_MINIMUM_REQUIRED_VERSION|. You can check whether
+version |CMAKE_MINIMUM_REQUIRED_VERSION|. You can check whether
 CMake is installed, and what version it is, with ``cmake
 --version``. If you need to install CMake, then first check whether
 your platform's package management system provides a suitable version,
@@ -1126,9 +1127,9 @@ much everywhere, it is important that we tell you where we really know
 it works because we have tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code repository
-is currently tested on x86 with gcc versions ranging from 4.6 through
-5.2, and versions 16 of the Intel compiler as well as Clang
-version 3.4 through 3.8. For this, we use a variety of GNU/Linux
+is currently tested on x86 with a number of gcc versions ranging from 4.8.1
+through 6.1, versions 16 of the Intel compiler, and Clang
+versions 3.4 through 3.8. For this, we use a variety of GNU/Linux
 flavors and versions as well as recent versions of Windows. Under
 Windows, we test both MSVC 2015 and version 16 of the Intel compiler.
 For details, you can
