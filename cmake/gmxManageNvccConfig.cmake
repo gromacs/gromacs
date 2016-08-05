@@ -36,7 +36,7 @@
 # pain as much as possible:
 # - use the CUDA_HOST_COMPILER if defined by the user, otherwise
 # - auto-detect compatible nvcc host compiler and set nvcc -ccbin (if not MPI wrapper)
-# - set icc compatibility mode to gcc 4.6
+# - set icc compatibility mode to gcc 4.8.1
 # - (advanced) variables set:
 #   * CUDA_HOST_COMPILER            - the host compiler for nvcc (only with cmake <2.8.10)
 #   * CUDA_HOST_COMPILER_OPTIONS    - the full host-compiler related option list passed to nvcc
@@ -87,25 +87,7 @@ endfunction()
 
 # set up host compiler and its options
 if(CUDA_HOST_COMPILER_CHANGED)
-    # FindCUDA in CMake 2.8.10 sets the host compiler internally
-    if (CMAKE_VERSION VERSION_LESS "2.8.10")
-        set(CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER}
-            CACHE PATH "Host compiler for nvcc")
-    endif()
-
-    # On *nix force icc in gcc 4.6 compatibility mode. This is needed
-    # as even with icc used as host compiler, when icc's gcc compatibility
-    # mode is higher than the max gcc version officially supported by CUDA,
-    # nvcc will freak out.
     set(CUDA_HOST_COMPILER_OPTIONS "")
-    if (UNIX AND
-            ((CMAKE_C_COMPILER_ID MATCHES "Intel" AND
-              (CUDA_HOST_COMPILER_AUTOSET OR CMAKE_C_COMPILER STREQUAL CUDA_HOST_COMPILER)) OR
-            (CMAKE_CXX_COMPILER_ID MATCHES "Intel" AND CMAKE_CXX_COMPILER STREQUAL CUDA_HOST_COMPILER))
-        )
-        message(STATUS "Setting Intel Compiler compatibity mode to gcc 4.6 for nvcc host compilation")
-        list(APPEND CUDA_HOST_COMPILER_OPTIONS "-Xcompiler;-gcc-version=460")
-    endif()
 
     if(APPLE AND CMAKE_C_COMPILER_ID MATCHES "GNU")
         # Some versions of gcc-4.8 and gcc-4.9 produce errors (in particular on OS X)
@@ -191,52 +173,11 @@ list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
 list(APPEND GMX_CUDA_NVCC_FLAGS "-use_fast_math")
 
 # assemble the CUDA host compiler flags
-# with CMake <2.8.10 the host compiler needs to be set on the nvcc command line
-if (CMAKE_VERSION VERSION_LESS "2.8.10")
-    list(APPEND GMX_CUDA_NVCC_FLAGS "-ccbin=${CUDA_HOST_COMPILER}")
-endif()
 list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
 
 # The flags are set as local variables which shadow the cache variables. The cache variables
 # (can be set by the user) are appended. This is done in a macro to set the flags when all
 # host compiler flags are already set.
 macro(GMX_SET_CUDA_NVCC_FLAGS)
-    if(CUDA_PROPAGATE_HOST_FLAGS)
-        set(CUDA_PROPAGATE_HOST_FLAGS OFF)
-
-        # When CUDA 6.5 is required we should use C++11 also for CUDA and also propagate
-        # the C++11 flag to CUDA. Then we can use the solution implemented in FindCUDA
-        # (starting with 3.3 - can be backported). For now we need to remove the C++11
-        # flag which means we need to manually propagate all other flags.
-        string(REGEX REPLACE "[-]+std=c\\+\\+0x" "" _CMAKE_CXX_FLAGS_SANITIZED "${CMAKE_CXX_FLAGS}")
-
-        # The IBM xlc compiler chokes if we use both altivec and Cuda. Solve
-        # this by not propagating the flag in this case.
-        if(CMAKE_CXX_COMPILER_ID MATCHES "XL")
-            string(REGEX REPLACE "-qaltivec" "" _CMAKE_CXX_FLAGS_SANITIZED "${_CMAKE_CXX_FLAGS_SANITIZED}")
-        endif()
-
-        # CUDA versions prior to 7.5 come with a header (math_functions.h) which uses the _MSC_VER macro
-        # unconditionally, so we strip -Wundef from the propagatest flags for earlier CUDA versions.
-        if (CUDA_VERSION VERSION_LESS "7.5")
-            string(REGEX REPLACE "-Wundef" "" _CMAKE_CXX_FLAGS_SANITIZED "${_CMAKE_CXX_FLAGS_SANITIZED}")
-        endif()
-
-        string(REPLACE " " "," _flags "${_CMAKE_CXX_FLAGS_SANITIZED}")
-        set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS};${CUDA_NVCC_FLAGS};-Xcompiler;${_flags}")
-
-        # Create list of all possible configurations. For multi-configuration this is CMAKE_CONFIGURATION_TYPES
-        # and for single configuration CMAKE_BUILD_TYPE. Not sure why to add the default ones, but FindCUDA
-        # claims one should.
-        set(CUDA_configuration_types ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE} Debug MinSizeRel Release RelWithDebInfo)
-        list(REMOVE_DUPLICATES CUDA_configuration_types)
-
-        foreach(_config ${CUDA_configuration_types})
-            string(TOUPPER ${_config} _config_upper)
-            string(REPLACE " " "," _flags "${CMAKE_CXX_FLAGS_${_config_upper}}")
-            set(CUDA_NVCC_FLAGS_${_config_upper} "${CUDA_NVCC_FLAGS_${_config_upper}};-Xcompiler;${_flags}")
-        endforeach()
-    else()
-        set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS};${CUDA_NVCC_FLAGS}")
-    endif()
+    set(CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_FLAGS};${CUDA_NVCC_FLAGS}")
 endmacro()

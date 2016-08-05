@@ -45,11 +45,11 @@ function(GMX_TEST_CXX11 CXX11_CXX_FLAG_NAME STDLIB_CXX_FLAG_NAME STDLIB_LIBRARIE
     # First check that the compiler is OK, and find the appropriate flag.
 
     if(WIN32 AND NOT MINGW)
-        set(CXX11_CXX_FLAG "/Qstd=c++0x")
+        set(CXX11_CXX_FLAG "/Qstd=c++11")
     elseif(CYGWIN)
-        set(CXX11_CXX_FLAG "-std=gnu++0x") #required for strdup
+        set(CXX11_CXX_FLAG "-std=gnu++11") #required for strdup
     else()
-        set(CXX11_CXX_FLAG "-std=c++0x")
+        set(CXX11_CXX_FLAG "-std=c++11")
     endif()
     CHECK_CXX_COMPILER_FLAG("${CXX11_CXX_FLAG}" CXXFLAG_STD_CXX0X)
     if(NOT CXXFLAG_STD_CXX0X)
@@ -106,7 +106,26 @@ int main() {
   int array[5] = { 1, 2, 3, 4, 5 };
   for (int& x : array)
     x *= 2;
+  // Test alignas
+  alignas(4*sizeof(int)) int y;
 }" CXX11_SUPPORTED)
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1")
+            message(FATAL_ERROR "GROMACS requires version 4.8.1 or later of the GNU C++ compiler for complete C++11 support")
+        endif()
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
+            message(FATAL_ERROR "GROMACS requires version 3.3 or later of the Clang C++ compiler for complete C++11 support")
+        endif()
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15.0")
+            message(FATAL_ERROR "GROMACS requires version 15.0 or later of the Intel C++ compiler for complete C++11 support")
+        endif()
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19.0.23026")
+            message(FATAL_ERROR "GROMACS requires version 2015 (19.0.23026) or later of the MSVC C++ compiler for complete C++11 support")
+        endif()
+    endif()
     if(CXX11_SUPPORTED)
         set(${CXX11_CXX_FLAG_NAME} ${CXX11_CXX_FLAG} PARENT_SCOPE)
     else()
@@ -128,8 +147,8 @@ int main() {
   intPointer p(new int(10));
   std::map<int, std::unique_ptr<int>> m;
   m.insert(std::make_pair(5, std::move(p)));
-  auto start = std::chrono::system_clock::now();
-  if (std::chrono::system_clock::now() - start < std::chrono::seconds(2))
+  auto start = std::chrono::steady_clock::now();
+  if (std::chrono::steady_clock::now() - start < std::chrono::seconds(2))
   {
       std::thread t;
   }
