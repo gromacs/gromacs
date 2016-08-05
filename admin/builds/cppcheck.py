@@ -32,6 +32,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+build_options = ['cmake-3.4.3']
+
 def do_build(context):
     # TODO: Make the XMLs go directly to the desired folder.
     # xml_dir = context.workspace.get_log_dir(category='cppcheck')
