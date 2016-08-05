@@ -74,9 +74,6 @@
 /** Define if we are building for Cygwin */
 #cmakedefine01 GMX_CYGWIN
 
-/* GCC bug in AVX maskload/maskstore arguments - worked around internally */
-#cmakedefine01 GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG
-
 /* SSE2 was selected for SIMD instruction set level */
 #cmakedefine01 GMX_SIMD_X86_SSE2
 
