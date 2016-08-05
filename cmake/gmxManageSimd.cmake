@@ -32,8 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# include avx test source, used if the AVX flags are set below
-include(gmxTestAVXMaskload)
 include(gmxFindFlagsForSource)
 
 # Macro that manages setting the respective C and C++ toolchain
@@ -245,8 +243,6 @@ elseif(GMX_SIMD STREQUAL "AVX_128_FMA")
     set(GMX_SIMD_X86_${GMX_SIMD} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX SIMD GROMACS SIMD (with fused-multiply add)")
 
-    gmx_test_avx_gcc_maskload_bug(GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG "${SIMD_C_FLAGS}")
-
 elseif(GMX_SIMD STREQUAL "AVX_256")
 
     prepare_x86_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
@@ -267,8 +263,6 @@ elseif(GMX_SIMD STREQUAL "AVX_256")
     set(GMX_SIMD_X86_${GMX_SIMD} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX SIMD instructions")
 
-    gmx_test_avx_gcc_maskload_bug(GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG "${SIMD_C_FLAGS}")
-
 elseif(GMX_SIMD STREQUAL "AVX2_256")
 
     prepare_x86_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
@@ -288,8 +282,6 @@ elseif(GMX_SIMD STREQUAL "AVX2_256")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
     set(GMX_SIMD_X86_${GMX_SIMD} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions")
-
-    # No need to test for Maskload bug - it was fixed before gcc added AVX2 support
 
 elseif(GMX_SIMD STREQUAL "MIC")
 
