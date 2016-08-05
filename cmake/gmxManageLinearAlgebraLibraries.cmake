@@ -89,7 +89,7 @@ macro(manage_linear_algebra_library name function_in_library)
             set(CMAKE_REQUIRED_FLAGS "${FFT_LINKER_FLAGS}")
             # This may also not work correctly if the user changes
             # MKL_LIBRARIES after the first run. However,
-            # MKL_LIBRARIES is only needed for icc version < 11, or
+            # MKL_LIBRARIES is only needed
             # for trying to use MKL with a non-Intel compiler, and we
             # can live with that for now.
             check_function_exists(${function_in_library} _${name}_mkl_works)
@@ -110,8 +110,7 @@ macro(manage_linear_algebra_library name function_in_library)
         if (NOT _library_was_found)
             set(${name}_FIND_QUIETLY ${_find_quietly})
             # Note that this finds all kinds of system libraries,
-            # including Apple's Accelerate Framework (and perhaps MKL for
-            # icc < 11).
+            # including Apple's Accelerate Framework
             find_package(${name})
             if (${name}_FOUND)
                 set(_libraries_to_link ${${name}_LIBRARIES})
