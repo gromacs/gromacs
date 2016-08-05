@@ -45,11 +45,11 @@ function(GMX_TEST_CXX11 CXX11_CXX_FLAG_NAME STDLIB_CXX_FLAG_NAME STDLIB_LIBRARIE
     # First check that the compiler is OK, and find the appropriate flag.
 
     if(WIN32 AND NOT MINGW)
-        set(CXX11_CXX_FLAG "/Qstd=c++0x")
+        set(CXX11_CXX_FLAG "/Qstd=c++11")
     elseif(CYGWIN)
-        set(CXX11_CXX_FLAG "-std=gnu++0x") #required for strdup
+        set(CXX11_CXX_FLAG "-std=gnu++11") #required for strdup
     else()
-        set(CXX11_CXX_FLAG "-std=c++0x")
+        set(CXX11_CXX_FLAG "-std=c++11")
     endif()
     CHECK_CXX_COMPILER_FLAG("${CXX11_CXX_FLAG}" CXXFLAG_STD_CXX0X)
     if(NOT CXXFLAG_STD_CXX0X)

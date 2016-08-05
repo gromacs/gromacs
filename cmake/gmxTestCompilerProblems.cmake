@@ -44,37 +44,45 @@ macro(gmx_test_compiler_problems)
         message(WARNING "The versions of the C and C++ compilers do not match (${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}, respectively). Mixing different C/C++ compilers can cause problems.")
     endif()
 
-    # clang 3.0 is buggy for some unknown reason detected during adding
-    # the SSE2 group kernels for GROMACS 4.6. If we ever work out what
-    # that is, we should replace these tests with a compiler feature test,
-    # update GROMACS Redmine task #1039 and perhaps report a clang bug.
-    #
-    # In the meantime, until we require CMake 2.8.10 we cannot rely on it to detect
-    # the compiler version for us. So we need a manual check for clang 3.0.
-    include(gmxDetectClang30)
-    gmx_detect_clang_3_0(COMPILER_IS_CLANG_3_0)
-    if(COMPILER_IS_CLANG_3_0)
-        message(FATAL_ERROR "Your compiler is clang version 3.0, which is known to be buggy for GROMACS. Use a different compiler.")
-    endif()
+    # Since we are gradually moving entirely to C++, we only test the versions of the C++ compilers below
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
-    if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
+        # Gromacs-2017 will require g++-4.8.1
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1")
+            message(FATAL_ERROR "GROMACS requires version 4.8.1 or later of the GNU C++ compiler for complete C++11 support")
+        endif()
+
+        # GCC bug 49001, 54412 on Windows (just warn, since it might be fixed in later versions)
+        if((CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9.0" OR CMAKE_SIZEOF_VOID_P EQUAL 8)
+           AND (WIN32 OR CYGWIN)
+           AND (GMX_SIMD MATCHES "AVX") AND NOT (GMX_SIMD STREQUAL AVX_128_FMA))
+            message(WARNING "GCC on Windows (GCC older than 4.9 in 32-bit mode, or any version in 64-bit mode) with 256-bit AVX will probably crashes. You might want to choose a different GMX_SIMD or a different compiler.")
+        endif()
+
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3")
+            message(FATAL_ERROR "GROMACS requires version 3.3 or later of the Clang C++ compiler for complete C++11 support")
+        endif()
+
+        if(WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.5.0")
+            message(WARNING "Using Clang on Windows requires Clang 3.5.0")
+        endif()
+
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15.0")
+            message(FATAL_ERROR "GROMACS requires version 15.0 or later of the Intel C++ compiler for complete C++11 support")
+        endif()
+
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19.0.23026")
+            message(FATAL_ERROR "GROMACS requires version 2015 (19.0.23026) or later of the MSVC C++ compiler for complete C++11 support")
+        endif()
+
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "PGI")
         message(WARNING "Currently tested PGI compiler versions (up to 15.7) generate binaries that do not pass all regression test, and the generated binaries are significantly slower than with GCC, ICC or Clang. For now we do not recommend PGI beyond development testing - make sure to run the regressiontests.")
-    endif()
-
-    if(CMAKE_COMPILER_IS_GNUCC AND
-            (CMAKE_C_COMPILER_VERSION VERSION_LESS "4.9.0" OR CMAKE_SIZEOF_VOID_P EQUAL 8)
-            AND (WIN32 OR CYGWIN)
-            AND GMX_SIMD MATCHES "AVX" AND NOT GMX_SIMD STREQUAL AVX_128_FMA)
-        message(WARNING "GCC on Windows (GCC older than 4.9 or any version when compiling for 64bit) with AVX (other than AVX_128_FMA) crashes. Choose a different GMX_SIMD or a different compiler.") # GCC bug 49001, 54412.
-    endif()
-
-    if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND WIN32)
-        if(CMAKE_VERSION VERSION_LESS 3.0.0)
-            message(WARNING "Clang on Windows requires cmake 3.0.0")
-        endif()
-        if(CMAKE_C_COMPILER_VERSION VERSION_LESS 3.5.0)
-            message(WARNING "Clang on Windows requires clang 3.5.0")
-        endif()
     endif()
 
 endmacro(gmx_test_compiler_problems)
