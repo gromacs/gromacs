@@ -255,18 +255,14 @@ typedef uint64_t gmx_uint64_t;
    \endcode
  */
 
-#if (defined(__GNUC__) && !defined(__clang__)) || defined(__ibmxl__) || defined(__xlC__) || defined(__PATHCC__)
-// Gcc-4.6.4 does not support alignas, but both gcc, pathscale and xlc
-// support the standard GNU alignment attributes. PGI also sets __GNUC__ now,
-// and mostly supports it. clang 3.2 does not support the GCC alignment attribute.
-#    define GMX_ALIGNED(type, alignment) __attribute__ ((aligned(alignment*sizeof(type)))) type
+#if (defined __INTEL_COMPILER && __INTEL_COMPILER < 1500) || (defined __ICL && __ICL < 1500)
+#  define GMX_ALIGNED(type, alignment) __attribute__ ((aligned(alignment*sizeof(type)))) type
 #else
-// If nothing else works we rely on C++11. This will for instance work for MSVC2015 and later.
+// We rely on C++11. This will for instance work for MSVC2015 and later.
 // If you get an error here, find out what attribute to use to get your compiler to align
 // data properly and add it as a case.
-#    define GMX_ALIGNED(type, alignment) alignas(alignment*alignof(type)) type
+#  define GMX_ALIGNED(type, alignment) alignas(alignment*sizeof(type)) type
 #endif
-
 
 /*! \brief
  * Macro to explicitly ignore an unused value.
