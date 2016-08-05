@@ -134,7 +134,11 @@ macro (gmx_c_flags)
             # Problematic with CUDA
             # GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EFFCXX "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra -Wno-missing-field-initializers -Wpointer-arith" GMXC_CXXFLAGS)
-            GMX_TEST_CXXFLAG(CXXFLAGS_WARN_UNDEF "-Wundef" GMXC_CXXFLAGS)
+            # CUDA versions prior to 7.5 come with a header (math_functions.h) which uses the _MSC_VER macro
+            # unconditionally, so we don't use -Wundef for earlier CUDA versions.
+            if(NOT(GMX_GPU AND CUDA_VERSION VERSION_LESS "7.5"))
+                GMX_TEST_CXXFLAG(CXXFLAGS_WARN_UNDEF "-Wundef" GMXC_CXXFLAGS)
+            endif()
             GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
         endif()
         # new in gcc 4.5
@@ -189,6 +193,12 @@ macro (gmx_c_flags)
                 GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-wd3180" GMXC_CXXFLAGS)
             endif()
             if (GMX_COMPILER_WARNINGS)
+                if (GMX_GPU)
+# Suppress warnings from CUDA headers
+# 7:   unrecognized token
+# 82:  storage class is not first
+                    GMX_TEST_CXXFLAG(CXXFLAGS_WARN_OLD_GPU "-wd7 -wd82" GMXC_CXXFLAGS)
+                endif()
 #All but the following warnings are identical for the C-compiler (see above)
 # 383: value copied to temporary, reference to temporary used
 # 444: destructor for base class ".." is not virtual

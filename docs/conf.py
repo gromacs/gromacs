@@ -161,6 +161,8 @@ rst_epilog += """
 .. _LAM-MPI: http://www.lam-mpi.org
 .. _OpenMP: http://en.wikipedia.org/wiki/OpenMP
 .. _CMake installation page: http://www.cmake.org/install/
+.. _Ubuntu toolchain ppa page: https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test
+.. _EPEL page: https://fedoraproject.org/wiki/EPEL
 .. _running CMake: http://www.cmake.org/runningcmake/
 .. _CMake environment variables: http://cmake.org/Wiki/CMake_Useful_Variables#Environment_Variables
 .. _FFTW: http://www.fftw.org
