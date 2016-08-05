@@ -32,11 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-cmake_minimum_required(VERSION 2.8.8)
-# When we require cmake >= 2.8.12, it will provide
-# CMAKE_MINIMUM_REQUIRED_VERSION automatically, but in the meantime we
-# need to set a variable, and it must have a different name.
-set(GMX_CMAKE_MINIMUM_REQUIRED_VERSION "2.8.8")
+cmake_minimum_required(VERSION 3.4.3)
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -196,12 +192,16 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
 option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
-# Decide on GPU settings based on user-settings and GPU/CUDA detection.
-# GCC 4.6 requires CUDA 5.0 and VS2015 requires CUDA 8.0
+# Decide on GPU settings based on user-settings and GPU/CUDA
+# detection.  GCC 4.8 requires CUDA 6.0 (but we choose 6.5 for the
+# preliminary C++11 support), icc 15 requires CUDA 7.0, and VS2015
+# requires CUDA 8.0
 if(MSVC)
     set(REQUIRED_CUDA_VERSION 8.0)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+    set(REQUIRED_CUDA_VERSION 7.0)
 else()
-    set(REQUIRED_CUDA_VERSION 5.0)
+    set(REQUIRED_CUDA_VERSION 6.5)
 endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 
@@ -335,17 +335,6 @@ set(EXTRA_CXX_FLAGS "")
 # Run through a number of tests for buggy compilers and other issues
 include(gmxTestCompilerProblems)
 gmx_test_compiler_problems()
-# GMX_SIMD will not be set automatically until the second
-# pass (which is not strictly guaranteed to occur), so putting this
-# check here among logically-related tests is inefficient, but the
-# potential loss is likely zero.
-if(GMX_SIMD STREQUAL "AVX_256"
-        AND CMAKE_COMPILER_IS_GNUCC
-        AND (C_COMPILER_VERSION VERSION_EQUAL "4.6.1"
-            OR CXX_COMPILER_VERSION VERSION_EQUAL "4.6.1"))
-    message(FATAL_ERROR "gcc 4.6.1 has buggy support for AVX, and GROMACS mdrun will not work. If you want simulation performance, use a more recent compiler. Otherwise, use GMX_SIMD=SSE4.1")
-    # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=49002
-endif()
 
 # Implement double-precision option. This is complicated because we
 # need installed headers to use the precision mode of the build that
@@ -572,8 +561,6 @@ include(gmxManageLmfit)
 if(GMX_GPU)
     # now that we have detected the dependencies, do the second configure pass
     gmx_gpu_setup()
-else()
-    mark_as_advanced(CUDA_HOST_COMPILER)
 endif()
 
 if(CYGWIN)
@@ -826,17 +813,12 @@ include(gmxManageSuffixes)
 ################################################################
 # Shared library load path settings
 ################################################################
-# CMake supports RPATH on OS X only from 2.8.12 upwards.
-# CMAKE_SYSTEM_VERSION > 8.0 matches OS X 10.5 and above, where RPATH support
-# was added.
-
 if(NOT GMX_BUILD_SHARED_EXE)
     # No rpath
     set(CMAKE_SKIP_RPATH TRUE)
     set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS) # remove -Wl,-Bdynamic
     set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
-elseif((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
-   ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
+else()
     # The build folder always has bin/ and lib/; if we are also going to
     # install to lib/, then the installation RPATH works also in the build
     # tree.  This makes installation slightly faster (no need to rewrite the
@@ -846,23 +828,13 @@ elseif((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
     endif()
     # Set the RPATH as relative to the executable location to make the
     # binaries relocatable.
-    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Assume OS X >=10.5
         set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
     else()
         set(CMAKE_INSTALL_RPATH "@executable_path/../${GMX_LIB_INSTALL_DIR}")
     endif()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_MACOSX_RPATH 1)
-else()
-    # We are on Darwin/OSX, and CMake cannot handle RPATHs automatically.
-    if(CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0)
-        # Set the RPATH options manually.
-        set(CMAKE_INSTALL_NAME_DIR "@rpath")
-        set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} "-Wl,-rpath,@executable_path/../${GMX_LIB_INSTALL_DIR}")
-    else()
-        # Use the old INSTALL_NAME_DIR mechanism if RPATH is not supported.
-        set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
-    endif()
 endif()
 
 #COPYING file: Only necessary for binary distributions.
