@@ -96,8 +96,9 @@ namespace gmx
  *  produce errors. Even for newer compilers, libstdc++ and libc++ appear to
  *  use different algorithms to generate it, which means their values differ
  *  in contrast to the uniform and normal distributions where they are
- *  identical. To avoid both the gcc-4.6 bug and make it easier to use GROMACS
- *   unit tests that depend on random numbers we have our own implementation.
+ *  identical. To avoid both compiler bugs and make it easier to use
+ *  GROMACS unit tests that depend on random numbers, we have our
+ *  own implementation.
  *
  *  Be warned that the gamma distribution works like the standard
  *  normal distribution and keeps drawing values from the random engine
