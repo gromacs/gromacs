@@ -150,10 +150,6 @@ const char *trajectoryFileNames[] = {
     "spc2-traj.g96"
 };
 
-#ifdef __INTEL_COMPILER
-#pragma warning( disable : 177 )
-#endif
-
 INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
                         GmxTraj,
                             ::testing::ValuesIn(gmx::ArrayRef<const char*>(trajectoryFileNames)));

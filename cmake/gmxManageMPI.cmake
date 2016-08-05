@@ -165,15 +165,6 @@ if(GMX_MPI)
       endif()
     endif()
     unset(MPINAME_BIN CACHE)
-
-    # Using find_file() runs the CMake standard module
-    # GetPrerequisites.cmake, which adds the file_cmd
-    # variable to the top-level CMake namespace. This is
-    # fixed in CMake 2.8.10. Meanwhile, clean up for it.
-    if(CMAKE_VERSION VERSION_LESS "2.8.10")
-        mark_as_advanced(file_cmd)
-    endif()
-
   else()
       message(FATAL_ERROR
         "MPI support requested, but no MPI compiler found. Either set the "
