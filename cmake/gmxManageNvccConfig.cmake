@@ -87,12 +87,6 @@ endfunction()
 
 # set up host compiler and its options
 if(CUDA_HOST_COMPILER_CHANGED)
-    # FindCUDA in CMake 2.8.10 sets the host compiler internally
-    if (CMAKE_VERSION VERSION_LESS "2.8.10")
-        set(CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER}
-            CACHE PATH "Host compiler for nvcc")
-    endif()
-
     # On *nix force icc in gcc 4.6 compatibility mode. This is needed
     # as even with icc used as host compiler, when icc's gcc compatibility
     # mode is higher than the max gcc version officially supported by CUDA,
@@ -191,10 +185,6 @@ list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
 list(APPEND GMX_CUDA_NVCC_FLAGS "-use_fast_math")
 
 # assemble the CUDA host compiler flags
-# with CMake <2.8.10 the host compiler needs to be set on the nvcc command line
-if (CMAKE_VERSION VERSION_LESS "2.8.10")
-    list(APPEND GMX_CUDA_NVCC_FLAGS "-ccbin=${CUDA_HOST_COMPILER}")
-endif()
 list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
 
 # The flags are set as local variables which shadow the cache variables. The cache variables

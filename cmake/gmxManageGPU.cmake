@@ -57,18 +57,8 @@ if ((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
     gmx_detect_gpu()
 endif()
 
-# CMake 3.0-3.1 has a bug in the following case, which breaks
-# configuration on at least BlueGene/Q. Fixed in 3.1.1
-if ((NOT CMAKE_VERSION VERSION_LESS "3.0.0") AND
-    (CMAKE_VERSION VERSION_LESS "3.1.1") AND
-        (CMAKE_CROSSCOMPILING AND NOT CMAKE_SYSTEM_PROCESSOR))
-    message(STATUS "Cannot search for CUDA because the CMake find package has a bug. Set a valid CMAKE_SYSTEM_PROCESSOR if you need to detect CUDA")
-else()
-    set(CAN_RUN_CUDA_FIND_PACKAGE 1)
-endif()
-
 # We need to call find_package even when we've already done the detection/setup
-if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
+if(GMX_GPU OR GMX_GPU_AUTO)
     if(NOT GMX_GPU AND NOT GMX_DETECT_GPU_AVAILABLE)
         # Stay quiet when detection has occured and found no GPU.
         # Noise is acceptable when there is a GPU or the user required one.
@@ -92,7 +82,7 @@ if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
     # reasonably future-proof, since newer versions of CMake appear to handle
     # the rpath automatically based on the provided library path, meaning
     # the explicit rpath specification is no longer needed.
-    if(APPLE AND (CMAKE_VERSION VERSION_GREATER 2.8.11))
+    if(APPLE)
         foreach(elem ${CUDA_LIBRARIES})
             if(elem MATCHES "-Wl,.*")
                 list(REMOVE_ITEM CUDA_LIBRARIES ${elem})
