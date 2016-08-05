@@ -1,4 +1,4 @@
-gcc-4.6 gpu cuda-5.0 mpi openmp x11 cmake-2.8.8
+gcc-4.8 gpu cuda-6.5 mpi openmp x11 cmake-2.8.8
 gcc-4.8 gpu cuda-7.5 openmp release
 gcc-4.9 tsan fftpack simd=avx2_256
 gcc-6.1 double
