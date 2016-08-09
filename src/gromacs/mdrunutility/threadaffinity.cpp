@@ -515,11 +515,20 @@ gmx_check_thread_affinity_set(FILE            *fplog,
         bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
     }
 
-#if GMX_LIB_MPI
-    gmx_bool  bAllSet_All;
+#if GMX_MPI
+    int isInitialized;
+    MPI_Initialized(&isInitialized);
+    /* Before OpenMP initialization, thread-MPI is not yet initialized.
+     * With thread-MPI bAllSet will be the same on all MPI-ranks, but the
+     * MPI_Allreduce then functions as a barrier before setting affinities.
+     */
+    if (isInitialized)
+    {
+        gmx_bool  bAllSet_All;
 
-    MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
-    bAllSet = bAllSet_All;
+        MPI_Allreduce(&bAllSet, &bAllSet_All, 1, MPI_INT, MPI_LAND, MPI_COMM_WORLD);
+        bAllSet = bAllSet_All;
+    }
 #endif
 
     if (!bAllSet)
