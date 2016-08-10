@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,12 +61,13 @@ typedef struct t_disresdata {
     real  exp_min_t_tau;   /* Factor for slowly switching on the force         */
     int   nres;            /* The number of distance restraints                */
     int   npair;           /* The number of distance restraint pairs           */
+    int   type_min;        /* The minimum iparam type index for restraints     */
     real  sumviol;         /* The sum of violations                            */
-    real *rt;              /* The calculated instantaneous distance (npr)      */
-    real *rm3tav;          /* The calculated time averaged distance (npr)      */
-    real *Rtl_6;           /* The calculated instantaneous r^-6 (nr)           */
-    real *Rt_6;            /* The calculated inst. ens. averaged r^-6 (nr)     */
-    real *Rtav_6;          /* The calculated time and ens. averaged r^-6 (nr)  */
+    real *rt;              /* The instantaneous distance (npair)               */
+    real *rm3tav;          /* The time averaged distance (npair)               */
+    real *Rtl_6;           /* The instantaneous r^-6 (nres)                    */
+    real *Rt_6;            /* The instantaneous ensemble averaged r^-6 (nres)  */
+    real *Rtav_6;          /* The time and ensemble averaged r^-6 (nres)       */
     int   nsystems;        /* The number of systems for ensemble averaging     */
 } t_disresdata;
 

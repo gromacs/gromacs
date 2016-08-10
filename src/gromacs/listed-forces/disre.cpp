@@ -63,6 +63,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -76,6 +77,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
     gmx_mtop_ilistloop_t iloop;
     t_ilist             *il;
     char                *ptr;
+    int                  type_min, type_max;
 
     dd = &(fcd->disres);
 
@@ -89,12 +91,6 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
     if (fplog)
     {
         fprintf(fplog, "Initializing the distance restraints\n");
-    }
-
-
-    if (ir->eDisre == edrEnsemble)
-    {
-        gmx_fatal(FARGS, "Sorry, distance restraints with ensemble averaging over multiple molecules in one system are not functional in this version of GROMACS");
     }
 
     dd->dr_weighting = ir->eDisreWeighting;
@@ -121,22 +117,48 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
 
     dd->nres  = 0;
     dd->npair = 0;
+    type_min  = INT_MAX;
+    type_max  = 0;
     iloop     = gmx_mtop_ilistloop_init(mtop);
     while (gmx_mtop_ilistloop_next(iloop, &il, &nmol))
     {
+        if (nmol > 1 && ir->eDisre != edrEnsemble)
+        {
+            gmx_fatal(FARGS, "NMR distance restraints with multiple copies of the same molecule are currently only supported with ensemble averaging. If you just want to restrain distances between atom pairs using a flat-bottomed potential, use a restraint potential (bonds type 10) instead.");
+        }
+
         np = 0;
         for (fa = 0; fa < il[F_DISRES].nr; fa += 3)
         {
+            int type;
+
+            type  = il[F_DISRES].iatoms[fa];
+
             np++;
-            npair = mtop->ffparams.iparams[il[F_DISRES].iatoms[fa]].disres.npair;
+            npair = mtop->ffparams.iparams[type].disres.npair;
             if (np == npair)
             {
-                dd->nres  += (ir->eDisre == edrEnsemble ? 1 : nmol)*npair;
+                dd->nres  += (ir->eDisre == edrEnsemble ? 1 : nmol);
                 dd->npair += nmol*npair;
                 np         = 0;
+
+                type_min   = std::min(type_min, type);
+                type_max   = std::max(type_max, type);
             }
         }
     }
+
+    /* For communicating and/or reducing (sums of) r^-6 for pairs over threads
+     * we use multiple arrays in t_disresdata. We need to have unique indices
+     * for each restraint that work over threads and MPI ranks. To this end
+     * we use the type index. These should all be in one block and there should
+     * be dd->nres types, but we check for this here.
+     * This setup currently does not allow for multiple copies of the same
+     * molecule without ensemble averaging, this is check for above.
+     */
+    GMX_RELEASE_ASSERT(type_max - type_min + 1 == dd->nres, "All distance restraint parameter entries in the topology should be consecutive");
+
+    dd->type_min = type_min;
 
     if (cr && PAR(cr))
     {
@@ -152,11 +174,6 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
             fprintf(fplog, "%s\n", notestr);
         }
 
-        if (dd->dr_tau != 0 || ir->eDisre == edrEnsemble ||
-            dd->nres != dd->npair)
-        {
-            gmx_fatal(FARGS, "Time or ensemble averaged or multiple pair distance restraints do not work (yet) with domain decomposition, use a single MPI rank%s", cr->ms ? " per simulation" : "");
-        }
         if (ir->nstdisreout != 0)
         {
             if (fplog)
@@ -271,8 +288,7 @@ void calc_disres_R_6(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                      t_fcdata *fcd, history_t *hist)
 {
     int             ai, aj;
-    int             fa, res, pair;
-    int             type, npair, np;
+    int             fa, pair;
     rvec            dx;
     real           *rt, *rm3tav, *Rtl_6, *Rt_6, *Rtav_6;
     real            rt_1, rt_3, rt2;
@@ -307,18 +323,18 @@ void calc_disres_R_6(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
 
     /* 'loop' over all atom pairs (pair_nr=fa/3) involved in restraints, *
      * the total number of atoms pairs is nfa/3                          */
-    res = 0;
     fa  = 0;
     while (fa < nfa)
     {
-        type  = forceatoms[fa];
-        npair = ip[type].disres.npair;
+        int type    = forceatoms[fa];
+        int npair   = ip[type].disres.npair;
 
+        int res     = type - dd->type_min;
         Rtav_6[res] = 0.0;
         Rt_6[res]   = 0.0;
 
         /* Loop over the atom pairs of 'this' restraint */
-        np = 0;
+        int np      = 0;
         while (fa < nfa && np < npair)
         {
             pair = fa/3;
@@ -365,9 +381,9 @@ void calc_disres_R_6(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             Rt_6[res]   *= invn;
             Rtav_6[res] *= invn;
         }
-
-        res++;
     }
+
+    dd->sumviol = 0;
 }
 
 real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
@@ -380,8 +396,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
     const real      seven_three = 7.0/3.0;
 
     int             ai, aj;
-    int             fa, res, npair, p, pair, ki = CENTRAL, m;
-    int             type;
+    int             fa, p, pair, ki = CENTRAL, m;
     rvec            dx;
     real            weight_rt_1;
     real            smooth_fc, Rt, Rtav, rt2, *Rtl_6, *Rt_6, *Rtav_6;
@@ -417,17 +432,18 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
 
     /* 'loop' over all atom pairs (pair_nr=fa/3) involved in restraints, *
      * the total number of atoms pairs is nfa/3                          */
-    res  = 0;
     fa   = 0;
     while (fa < nfa)
     {
-        type  = forceatoms[fa];
+        int type  = forceatoms[fa];
         /* Take action depending on restraint, calculate scalar force */
-        npair = ip[type].disres.npair;
-        up1   = ip[type].disres.up1;
-        up2   = ip[type].disres.up2;
-        low   = ip[type].disres.low;
-        k0    = smooth_fc*ip[type].disres.kfac;
+        int npair = ip[type].disres.npair;
+        up1       = ip[type].disres.up1;
+        up2       = ip[type].disres.up2;
+        low       = ip[type].disres.low;
+        k0        = smooth_fc*ip[type].disres.kfac;
+
+        int res   = type - dd->type_min;
 
         /* save some flops when there is only one pair */
         if (ip[type].disres.type != 2)
@@ -596,10 +612,10 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             /* No violation so force and potential contributions */
             fa += 3*npair;
         }
-        res++;
     }
 
-    dd->sumviol = violtot;
+#pragma omp atomic
+    dd->sumviol += violtot;
 
     /* Return energy */
     return vtot;
