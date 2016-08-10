@@ -61,6 +61,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -391,7 +392,7 @@ ftype_is_bonded_potential(int ftype)
         (ftype < F_GB12 || ftype > F_GB14);
 }
 
-void calc_listed(const struct gmx_multisim_t *ms,
+void calc_listed(const struct t_commrec      *cr,
                  struct gmx_wallcycle        *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
@@ -442,8 +443,8 @@ void calc_listed(const struct gmx_multisim_t *ms,
 
     if ((idef->il[F_POSRES].nr > 0) ||
         (idef->il[F_FBPOSRES].nr > 0) ||
-        (idef->il[F_ORIRES].nr > 0) ||
-        (idef->il[F_DISRES].nr > 0))
+        fcd->orires.nr > 0 ||
+        fcd->disres.nres > 0)
     {
         /* TODO Use of restraints triggers further function calls
            inside the loop over calc_one_bond(), but those are too
@@ -463,26 +464,21 @@ void calc_listed(const struct gmx_multisim_t *ms,
         }
 
         /* Do pre force calculation stuff which might require communication */
-        if (idef->il[F_ORIRES].nr > 0)
+        if (fcd->orires.nr > 0)
         {
             enerd->term[F_ORIRESDEV] =
-                calc_orires_dev(ms, idef->il[F_ORIRES].nr,
+                calc_orires_dev(cr->ms, idef->il[F_ORIRES].nr,
                                 idef->il[F_ORIRES].iatoms,
                                 idef->iparams, md, x,
                                 pbc_null, fcd, hist);
         }
-        if (idef->il[F_DISRES].nr)
+        if (fcd->disres.nres > 0)
         {
-            calc_disres_R_6(idef->il[F_DISRES].nr,
+            calc_disres_R_6(cr,
+                            idef->il[F_DISRES].nr,
                             idef->il[F_DISRES].iatoms,
-                            idef->iparams, x, pbc_null,
+                            x, pbc_null,
                             fcd, hist);
-#if GMX_MPI
-            if (fcd->disres.nsystems > 1)
-            {
-                gmx_sum_sim(2*fcd->disres.nres, fcd->disres.Rt_6, ms);
-            }
-#endif
         }
 
         wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
@@ -635,7 +631,7 @@ void
 do_force_listed(struct gmx_wallcycle        *wcycle,
                 matrix                       box,
                 const t_lambda              *fepvals,
-                const struct gmx_multisim_t *ms,
+                const struct t_commrec      *cr,
                 const t_idef                *idef,
                 const rvec                   x[],
                 history_t                   *hist,
@@ -664,7 +660,7 @@ do_force_listed(struct gmx_wallcycle        *wcycle,
         /* Not enough flops to bother counting */
         set_pbc(&pbc_full, fr->ePBC, box);
     }
-    calc_listed(ms, wcycle, idef, x, hist, f, fr, pbc, &pbc_full,
+    calc_listed(cr, wcycle, idef, x, hist, f, fr, pbc, &pbc_full,
                 graph, enerd, nrnb, lambda, md, fcd,
                 global_atom_index, flags);
 
