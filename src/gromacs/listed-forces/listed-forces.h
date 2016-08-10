@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,8 +71,8 @@
 
 struct gmx_enerdata_t;
 struct gmx_grppairener_t;
-struct gmx_multisim_t;
 struct history_t;
+struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
 struct t_idef;
@@ -99,7 +99,7 @@ ftype_is_bonded_potential(int ftype);
  *
  * Note that pbc_full is used only for position restraints, and is
  * not initialized if there are none. */
-void calc_listed(const struct gmx_multisim_t *ms,
+void calc_listed(const t_commrec *cr,
                  struct gmx_wallcycle *wcycle,
                  const t_idef *idef,
                  const rvec x[], history_t *hist,
@@ -130,7 +130,7 @@ void
 do_force_listed(struct gmx_wallcycle           *wcycle,
                 matrix                          box,
                 const t_lambda                 *fepvals,
-                const struct gmx_multisim_t    *ms,
+                const t_commrec                *cr,
                 const t_idef                   *idef,
                 const rvec                      x[],
                 history_t                      *hist,
