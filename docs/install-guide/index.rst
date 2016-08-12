@@ -1021,23 +1021,16 @@ cut-off scheme. There are no plans to provide accelerated kernels for
 the group cut-off scheme, but the default plain C kernels will work
 (slowly).
 
-Only static linking with bgclang is supported by |Gromacs|. Dynamic
-linking would be supported by the architecture and |Gromacs|, but has no
-advantages other than disk space, and is generally discouraged on
-BlueGene for performance reasons.
+Only the bgclang compiler is supported, because it is the only
+availble C++11 compiler. Only static linking is supported.
 
 Computation on BlueGene floating-point units is always done in
 double-precision. However, mixed-precision builds of |Gromacs| are still
-normal and encouraged since they use cache more efficiently. The
-BlueGene hardware automatically converts values stored in single
-precision in memory to double precision in registers for computation,
-converts the results back to single precision correctly, and does so
-for no additional cost. As with other platforms, doing the whole
-computation in double precision normally shows no improvement in
-accuracy and costs twice as much time moving memory around.
+normal and encouraged since they use cache more efficiently.
 
 You need to arrange for FFTW to be installed correctly, following the
-above instructions.
+above instructions. You may prefer to configure FFTW with
+``--disable-fortran`` to avoid complications.
 
 MPI wrapper compilers should be used for compiling and linking. The
 MPI wrapper compilers can make it awkward to
@@ -1066,12 +1059,13 @@ nodes. Otherwise, |Gromacs| default configuration
 behaviour applies.
 
 It is possible to configure and make the remaining |Gromacs| tools with
-the compute-node toolchain, but as none of those tools are MPI-aware
-and could then only run on the compute nodes, this would not normally
-be useful. Instead, these should be planned to run on the login node,
-and a separate |Gromacs| installation performed for that using the login
+the compute-node toolchain, but as none of those tools are MPI-aware,
+this would not normally
+be useful. Instead, users should plan to run these on the login node,
+and perform a separate |Gromacs| installation for that, using the login
 node's toolchain - not the above platform file, or any other
-compute-node toolchain.
+compute-node toolchain. This may require requesting an up-to-date
+gcc or clang toolchain for the front end.
 
 Note that only the MPI build is available for the compute-node
 toolchains. The |Gromacs| thread-MPI or no-MPI builds are not useful at
