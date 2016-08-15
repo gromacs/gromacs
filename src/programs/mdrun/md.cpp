@@ -1223,7 +1223,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         /* compute the conserved quantity */
         if (EI_VV(ir->eI))
         {
-            saved_conserved_quantity = compute_conserved_from_auxiliary(ir, state, &MassQ);
+            saved_conserved_quantity = NPT_energy(ir, state, &MassQ);
             if (ir->eI == eiVV)
             {
                 last_ekin = enerd->term[F_EKIN];
@@ -1585,7 +1585,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         }
         else
         {
-            enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + compute_conserved_from_auxiliary(ir, state, &MassQ);
+            enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + NPT_energy(ir, state, &MassQ);
         }
         /* #########  END PREPARING EDR OUTPUT  ###########  */
 
