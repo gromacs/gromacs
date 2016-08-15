@@ -34,12 +34,21 @@
 
 add_executable(template template.cpp)
 target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
+
+set(DOCUMENTATION_HTTP_URL_BASE
+    http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc)
+if (SOURCE_IS_SOURCE_DISTRIBUTION)
+    set(DOCUMENTATION_HTTP_URL_BASE
+        http://manual.gromacs.org/documentation/${GMX_VERSION_STRING})
+endif()
+configure_file(README.cmakein README @ONLY)
+
 install(FILES CMakeLists.txt.template
         DESTINATION ${DATA_INSTALL_DIR}/template
         RENAME CMakeLists.txt
         COMPONENT development)
 
-install(FILES README template.cpp Makefile.pkg
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/README template.cpp Makefile.pkg
         DESTINATION ${DATA_INSTALL_DIR}/template
         COMPONENT development)
 

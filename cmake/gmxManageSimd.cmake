@@ -142,6 +142,8 @@ elseif(GMX_SIMD STREQUAL "SSE2")
         gmx_give_fatal_error_when_simd_support_not_found("SSE2" "disable SIMD support (slow)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
+    set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
+    set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
     set(GMX_SIMD_X86_${GMX_SIMD} 1)
     set(SIMD_STATUS_MESSAGE "Enabling SSE2 SIMD instructions")
 
