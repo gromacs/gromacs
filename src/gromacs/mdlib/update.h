@@ -193,7 +193,7 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
 
 int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *Mass, gmx_bool bTrotter);
 
-real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ);
+real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ);
 /* computes all the pressure/tempertature control energy terms to get a conserved energy */
 
 void NBaroT_trotter(t_grpopts *opts, real dt,
@@ -203,9 +203,6 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
                      gmx_ekindata_t *ekind, real dt,
                      double therm_integral[]);
 /* Compute temperature scaling. For V-rescale it is done in update. */
-
-real vrescale_energy(t_grpopts *opts, double therm_integral[]);
-/* Returns the V-rescale contribution to the conserved energy */
 
 void rescale_velocities(gmx_ekindata_t *ekind, t_mdatoms *mdatoms,
                         int start, int end, rvec v[]);

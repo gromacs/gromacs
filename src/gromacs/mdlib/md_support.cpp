@@ -212,27 +212,6 @@ void copy_coupling_state(t_state *statea, t_state *stateb,
     }
 }
 
-real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state, t_extmass *MassQ)
-{
-    real quantity = 0;
-    switch (ir->etc)
-    {
-        case etcNO:
-            break;
-        case etcBERENDSEN:
-            break;
-        case etcNOSEHOOVER:
-            quantity = NPT_energy(ir, state, MassQ);
-            break;
-        case etcVRESCALE:
-            quantity = vrescale_energy(&(ir->opts), state->therm_integral);
-            break;
-        default:
-            break;
-    }
-    return quantity;
-}
-
 /* TODO Specialize this routine into init-time and loop-time versions?
    e.g. bReadEkin is only true when restoring from checkpoint */
 void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
