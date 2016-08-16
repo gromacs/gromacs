@@ -1193,6 +1193,13 @@ the range of 0.8 $<= \lambda <=$ 1.25, to avoid scaling by very large
 numbers which may crash the simulation. In normal use, 
 $\lambda$ will always be much closer to 1.0.
 
+The thermostat modifies the kinetic energy at each scaling step by:
+\beq
+\Delta E_k = (\lambda - 1)^2 E_k
+\eeq
+The sum of these changes over the run needs to subtracted from the total energy
+to obtain the conserved energy quantity.
+
 \subsubsection{Velocity-rescaling temperature coupling\pawsindexquiet{velocity-rescaling}{temperature coupling}}
 The velocity-rescaling thermostat~\cite{Bussi2007a} is essentially a Berendsen
 thermostat (see above) with an additional stochastic term that ensures
@@ -1526,8 +1533,12 @@ The equations of motion for the particles are also changed, just as
 for the Nos{\'e}-Hoover coupling. In most cases you would combine the 
 Parrinello-Rahman barostat with the Nos{\'e}-Hoover
 thermostat, but to keep it simple we only show the Parrinello-Rahman 
-modification here:
-
+modification here. The modified Hamiltonian, which will be conserved, is:
+\beq
+E_\mathrm{pot} + E_\mathrm{kin} +  \sum_i P_{ii} V +
+\sum_{i,j} \frac{1}{2} W_{ij}  \left( \frac{\de b_{ij}}{\de t} \right)^2
+\eeq
+The equations of motion for the atoms, obtained from the Hamiltonian are:
 \bea \frac {\de^2\ve{r}_i}{\de t^2} & = & \frac{\ve{F}_i}{m_i} -
 \ve{M} \frac{\de \ve{r}_i}{\de t} , \\ \ve{M} & = & \ve{b}^{-1} \left[
   \ve{b} \frac{\de \ve{b}'}{\de t} + \frac{\de \ve{b}}{\de t} \ve{b}'
