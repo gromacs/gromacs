@@ -2107,7 +2107,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
             if (getenv("GMX_ALLOW_CPT_MISMATCH") == nullptr)
             {
-                gmx_fatal(FARGS, "You seem to have switched ensemble, integrator, T and/or P-coupling algorithm between the cpt and tpr file. The recommended way of doing this is passing the cpt file to grompp (with option -t) instead of to mdrun. If you know what you are doing, you can override this error by setting the env.var. GMX_ALLOW_CPT_MISMATCH");
+                gmx_fatal(FARGS, "You seem to have switched ensemble, integrator, T and/or P-coupling algorithm between the cpt and tpr file, or switched GROMACS version. The recommended way of doing this is passing the cpt file to grompp (with option -t) instead of to mdrun. If you know what you are doing, you can override this error by setting the env.var. GMX_ALLOW_CPT_MISMATCH");
             }
             else
             {
