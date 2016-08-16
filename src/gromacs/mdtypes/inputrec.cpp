@@ -1395,3 +1395,10 @@ gmx_bool inputrecNphTrotter(const t_inputrec *ir)
     return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
              (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
 }
+
+bool integratorHasConservedEnergyQuantity(const t_inputrec *ir)
+{
+    // TODO: Add Berendsen pressure coupling conserved quantity
+    return (EI_MD(ir->eI) && ((ir->etc != etcNO && !ETC_ANDERSEN(ir->etc)) ||
+                              (ir->epc != epcNO && ir->epc != epcBERENDSEN)));
+}
