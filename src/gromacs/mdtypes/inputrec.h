@@ -556,4 +556,9 @@ gmx_bool inputrecNvtTrotter(const t_inputrec *ir);
 
 gmx_bool inputrecNphTrotter(const t_inputrec *ir);
 
+/* Returns true for MD integator with T and/or P-coupling that supports
+ * calculating the conserved energy quantity.
+ */
+bool integratorHasConservedEnergyQuantity(const t_inputrec *ir);
+
 #endif /* GMX_MDTYPES_INPUTREC_H */
