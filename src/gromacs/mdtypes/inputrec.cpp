@@ -1395,3 +1395,27 @@ gmx_bool inputrecNphTrotter(const t_inputrec *ir)
     return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
              (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
 }
+
+bool integratorHasConservedEnergyQuantity(const t_inputrec *ir)
+{
+    if (EI_MD(ir->eI))
+    {
+        // Energy minimization or stochastic integrator: no conservation
+        return false;
+    }
+    else if (ir->etc == etcNO && ir->epc == epcNO)
+    {
+        // The total energy is conserved, no additional conserved quanitity
+        return false;
+    }
+    else
+    {
+        // Shear stress with Parrinello-Rahman is not supported (tedious)
+        bool shearWithPR =
+            ((ir->epc == epcPARRINELLORAHMAN || ir->epc == epcMTTK) &&
+             (ir->ref_p[YY][XX] != 0 || ir->ref_p[ZZ][XX] != 0 || ir->ref_p[ZZ][YY] != 0));
+
+        // TODO: Add Berendsen pressure coupling conserved quantity
+        return !ETC_ANDERSEN(ir->etc) && ir->epc != epcBERENDSEN && !shearWithPR;
+    }
+}
