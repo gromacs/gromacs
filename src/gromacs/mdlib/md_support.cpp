@@ -703,7 +703,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         state->flags |= (1<<estNH_VXI);
     }
 
-    if (ir->etc == etcVRESCALE)
+    if (ir->etc == etcVRESCALE || ir->etc == etcBERENDSEN)
     {
         state->flags |= (1<<estTC_INT);
     }
