@@ -87,10 +87,10 @@ log: ${log}")
     set(REGRESSIONTEST_DOWNLOAD OFF CACHE BOOL "Tests already downloaded. Set to yes to download again" FORCE)
 endif()
 
-if(REGRESSIONTEST_PATH AND (GMX_BLUEGENE OR CMAKE_CROSSCOMPILING OR CMAKE_CONFIGURATION_TYPES OR GMX_BUILD_MDRUN_ONLY))
-    # TODO: It would be nicer to do these before potentially downloading the tests.
-    # Bluegene requires us to compile both front-end and back-end binaries
-    # (single build is insufficient)
+if(REGRESSIONTEST_PATH AND (CMAKE_CROSSCOMPILING OR CMAKE_CONFIGURATION_TYPES OR GMX_BUILD_MDRUN_ONLY))
+    # TODO: It would be nicer to do these checks before potentially downloading the tests.
+    # Cross-compiling toolchains require us to compile both front-end and
+    # back-end binaries to run gmxtest.pl.
     # Testing an mdrun-only builds require supporting binaries from a full build
     message(WARNING
         "With cross-compiling, multi-configuration generators (e.g. Visual Studio), or with mdrun-only builds, running regressiontests from build system is not supported. Please run gmxtest.pl directly.")

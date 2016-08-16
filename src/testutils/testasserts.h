@@ -592,27 +592,6 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
 
 //! \}
 
-/*! \name Assertions for NULL comparison
- *
- * These macros should be used instead of `(EXPECT|ASSERT)_EQ(NULL, ...)`,
- * because Google Test doesn't support the NULL comparison with xlC++ 12.1 on
- * BG/Q.
- */
-//! \{
-
-/*! \brief
- * Asserts that a pointer is null.
- *
- * Works exactly like EXPECT_EQ comparing with a null pointer. */
-#define EXPECT_NULL(val) EXPECT_EQ((void *) NULL, val)
-/*! \brief
- * Asserts that a pointer is null.
- *
- * Works exactly like ASSERT_EQ comparing with a null pointer. */
-#define ASSERT_NULL(val) ASSERT_EQ((void *) NULL, val)
-
-//! \}
-
 //! \cond internal
 /*! \internal \brief
  * Helper method for `(EXPECT|ASSERT)_PLAIN`.

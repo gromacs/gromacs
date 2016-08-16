@@ -41,6 +41,7 @@
 #include "config.h"
 
 // Assert is buggy on xlc with high optimization, so we skip it for QPX
+// TODO Add back the asserts for bgclang
 #include <cstddef>
 
 #ifdef __clang__
