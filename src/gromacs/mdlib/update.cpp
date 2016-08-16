@@ -1247,7 +1247,7 @@ void update_tcouple(gmx_int64_t       step,
             case etcNO:
                 break;
             case etcBERENDSEN:
-                berendsen_tcoupl(inputrec, ekind, dttc);
+                berendsen_tcoupl(inputrec, ekind, dttc, state->therm_integral);
                 break;
             case etcNOSEHOOVER:
                 nosehoover_tcoupl(&(inputrec->opts), ekind, dttc,
@@ -1329,8 +1329,8 @@ void update_pcouple_before_coordinates(FILE             *fplog,
 void update_pcouple_after_coordinates(FILE             *fplog,
                                       gmx_int64_t       step,
                                       const t_inputrec *inputrec,
+                                      const t_state    *state,
                                       const matrix      pressure,
-                                      t_state          *state,
                                       matrix            pcoupl_mu)
 {
     if (inputrec->epc == epcBERENDSEN &&
