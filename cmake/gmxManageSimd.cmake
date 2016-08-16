@@ -386,7 +386,7 @@ elseif(GMX_SIMD STREQUAL "IBM_QPX")
         set(SIMD_STATUS_MESSAGE "Enabling IBM QPX SIMD instructions")
 
     else()
-        gmx_give_fatal_error_when_simd_support_not_found("IBM QPX" "or 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-CXX' to set up the tool chain" "${SUGGEST_BINUTILS_UPDATE}")
+        gmx_give_fatal_error_when_simd_support_not_found("IBM QPX" "or 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-bgclang-CXX' to set up the tool chain" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
 elseif(GMX_SIMD STREQUAL "IBM_VMX")
