@@ -1293,7 +1293,7 @@ void update_tcouple(gmx_int64_t       step,
             case etcNO:
                 break;
             case etcBERENDSEN:
-                berendsen_tcoupl(inputrec, ekind, dttc);
+                berendsen_tcoupl(inputrec, ekind, dttc, state->therm_integral);
                 break;
             case etcNOSEHOOVER:
                 nosehoover_tcoupl(&(inputrec->opts), ekind, dttc,

@@ -1574,24 +1574,30 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             bSumEkinhOld = TRUE;
         }
 
-        /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
+        if (bCalcEner)
+        {
+            /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
 
-        /* use the directly determined last velocity, not actually the averaged half steps */
-        if (bTrotter && ir->eI == eiVV)
-        {
-            enerd->term[F_EKIN] = last_ekin;
-        }
-        enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
+            /* use the directly determined last velocity, not actually the averaged half steps */
+            if (bTrotter && ir->eI == eiVV)
+            {
+                enerd->term[F_EKIN] = last_ekin;
+            }
+            enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
 
-        if (EI_VV(ir->eI))
-        {
-            enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + saved_conserved_quantity;
+            if (integratorHasConservedEnergyQuantity(ir))
+            {
+                if (EI_VV(ir->eI))
+                {
+                    enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + saved_conserved_quantity;
+                }
+                else
+                {
+                    enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + NPT_energy(ir, state, &MassQ);
+                }
+            }
+            /* #########  END PREPARING EDR OUTPUT  ###########  */
         }
-        else
-        {
-            enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + NPT_energy(ir, state, &MassQ);
-        }
-        /* #########  END PREPARING EDR OUTPUT  ###########  */
 
         /* Output stuff */
         if (MASTER(cr))
