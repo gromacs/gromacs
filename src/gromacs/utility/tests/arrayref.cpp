@@ -42,8 +42,6 @@
 
 #include "gromacs/utility/arrayref.h"
 
-#include "config.h"
-
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -217,16 +215,10 @@ struct Helper
  *
  * There, we take a non-const struct-field array of static length and
  * make an ArrayRef to it using the template constructor that is
- * supposed to infer the length from the static size. But on xlc on
- * BlueGene/Q, if the base type is not char (or unsigned char), the
- * generated code ends up with an ArrayRef of zero size, so everything
- * breaks. Presumably the default code path accidentally works for
- * char.
- *
- * Fortunately, all current uses of that constructor have a base type
- * of char, so there's no big problem. Using a pointer-based
- * constructor does work, if there's ever a problem (and that is
- * tested above). */
+ * supposed to infer the length from the static size. This has
+ * been a problem (for a compiler that we no longer support),
+ * so we test it.
+ */
 
 TYPED_TEST(ArrayRefTest, ConstructFromStructFieldWithTemplateConstructorWorks)
 {
@@ -238,12 +230,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromStructFieldWithTemplateConstructorWorks)
         h.a[i] = a[i];
     }
     typename TestFixture::ArrayRefType arrayRef(h.a);
-#if GMX_TARGET_BGQ && defined(__xlC__)
-    if (sizeof(typename TestFixture::ValueType) == sizeof(char))
-#endif
-    {
-        this->runTests(h.a, h.size, h.a, arrayRef);
-    }
+    this->runTests(h.a, h.size, h.a, arrayRef);
 }
 
 #else   // GTEST_HAS_TYPED_TEST

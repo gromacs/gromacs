@@ -54,10 +54,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
-/* Probably the test for (nr) > 0 in the next macro is only needed
- * on BlueGene(/L), where IBM's MPI_Bcast will segfault after
- * dereferencing a null pointer, even when no data is to be transferred. */
-#define  nblock_bc(cr, nr, d) { if ((nr) > 0) {gmx_bcast((nr)*sizeof((d)[0]), (d), (cr)); }}
+#define  nblock_bc(cr, nr, d) { gmx_bcast((nr)*sizeof((d)[0]), (d), (cr)); }
 #define    snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}
 /* Dirty macro with bAlloc not as an argument */
 #define nblock_abc(cr, nr, d) { if (bAlloc) {snew((d), (nr)); } nblock_bc(cr, (nr), (d)); }

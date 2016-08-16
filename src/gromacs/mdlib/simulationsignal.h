@@ -78,9 +78,6 @@ class ArrayRef;
  * signals can be sent together with other data). This means that the
  * only meaningful values are positive, negative or zero.
  *
- * Note that xlc on BG/Q requires sig to be of size char (see unit tests
- * of ArrayRef for details).
- *
  * isLocal permits (for example) replica-exchange to require that any
  * checkpointing is synchronized across all simulations, by setting
  * isLocal to false, so that the trigger for action is set only when
