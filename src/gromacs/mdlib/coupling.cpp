@@ -342,6 +342,25 @@ real calc_temp(real ekin, real nrdf)
     }
 }
 
+/*! \brief Sets 1/mass for Parrinello-Rahman in wInv; NOTE: PRESFAC is not included, so not in GROMACS units! */
+static void calcParrinelloRahmanInvMass(const t_inputrec *ir, const matrix box,
+                                        tensor wInv)
+{
+    real maxBoxLength;
+
+    /* TODO: See if we can make the mass independent of the box size */
+    maxBoxLength = std::max(box[XX][XX], box[YY][YY]);
+    maxBoxLength = std::max(maxBoxLength, box[ZZ][ZZ]);
+
+    for (int d = 0; d < DIM; d++)
+    {
+        for (int n = 0; n < DIM; n++)
+        {
+            wInv[d][n] = (4*M_PI*M_PI*ir->compress[d][n])/(3*ir->tau_p*ir->tau_p*maxBoxLength);
+        }
+    }
+}
+
 void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
                              t_inputrec *ir, real dt, tensor pres,
                              tensor box, tensor box_rel, tensor boxv,
@@ -372,13 +391,9 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
      *   b = vol/W inv(box') * (P-ref_P)     (=h')
      */
 
-    int    d, n;
-    tensor winv;
     real   vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-    real   atot, arel, change, maxchange, xy_pressure;
+    real   atot, arel, change;
     tensor invbox, pdiff, t1, t2;
-
-    real   maxl;
 
     gmx::invertBoxMatrix(box, invbox);
 
@@ -388,16 +403,8 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
          * The pressure and compressibility always occur as a product,
          * therefore the pressure unit drops out.
          */
-        maxl = std::max(box[XX][XX], box[YY][YY]);
-        maxl = std::max(maxl, box[ZZ][ZZ]);
-        for (d = 0; d < DIM; d++)
-        {
-            for (n = 0; n < DIM; n++)
-            {
-                winv[d][n] =
-                    (4*M_PI*M_PI*ir->compress[d][n])/(3*ir->tau_p*ir->tau_p*maxl);
-            }
-        }
+        tensor winv;
+        calcParrinelloRahmanInvMass(ir, box, winv);
 
         m_sub(pres, ir->ref_p, pdiff);
 
@@ -407,8 +414,8 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
              * pressure correction here? On the other hand we don't scale the
              * box momentarily, but change accelerations, so it might not be crucial.
              */
-            xy_pressure = 0.5*(pres[XX][XX]+pres[YY][YY]);
-            for (d = 0; d < ZZ; d++)
+            real xy_pressure = 0.5*(pres[XX][XX]+pres[YY][YY]);
+            for (int d = 0; d < ZZ; d++)
             {
                 pdiff[d][d] = (xy_pressure-(pres[ZZ][ZZ]-ir->ref_p[d][d]/box[d][d]));
             }
@@ -418,9 +425,9 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
         /* Move the off-diagonal elements of the 'force' to one side to ensure
          * that we obey the box constraints.
          */
-        for (d = 0; d < DIM; d++)
+        for (int d = 0; d < DIM; d++)
         {
-            for (n = 0; n < d; n++)
+            for (int n = 0; n < d; n++)
             {
                 t1[d][n] += t1[n][d];
                 t1[n][d]  = 0;
@@ -430,9 +437,9 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
         switch (ir->epct)
         {
             case epctANISOTROPIC:
-                for (d = 0; d < DIM; d++)
+                for (int d = 0; d < DIM; d++)
                 {
-                    for (n = 0; n <= d; n++)
+                    for (int n = 0; n <= d; n++)
                     {
                         t1[d][n] *= winv[d][n]*vol;
                     }
@@ -446,9 +453,9 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
                 arel = atot/(3*vol);
                 /* set all RELATIVE box accelerations equal, and maintain total V
                  * change speed */
-                for (d = 0; d < DIM; d++)
+                for (int d = 0; d < DIM; d++)
                 {
-                    for (n = 0; n <= d; n++)
+                    for (int n = 0; n <= d; n++)
                     {
                         t1[d][n] = winv[0][0]*vol*arel*box[d][n];
                     }
@@ -463,16 +470,16 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
                 arel = atot/(2*box[XX][XX]*box[YY][YY]);
                 /* set RELATIVE XY box accelerations equal, and maintain total V
                  * change speed. Dont change the third box vector accelerations */
-                for (d = 0; d < ZZ; d++)
+                for (int d = 0; d < ZZ; d++)
                 {
-                    for (n = 0; n <= d; n++)
+                    for (int n = 0; n <= d; n++)
                     {
                         t1[d][n] = winv[d][n]*vol*arel*box[d][n];
                     }
                 }
-                for (n = 0; n < DIM; n++)
+                for (int n = 0; n < DIM; n++)
                 {
-                    t1[ZZ][n] *= winv[d][n]*vol;
+                    t1[ZZ][n] *= winv[ZZ][n]*vol;
                 }
                 break;
             default:
@@ -481,10 +488,10 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
                 break;
         }
 
-        maxchange = 0;
-        for (d = 0; d < DIM; d++)
+        real maxchange = 0;
+        for (int d = 0; d < DIM; d++)
         {
-            for (n = 0; n <= d; n++)
+            for (int n = 0; n <= d; n++)
             {
                 boxv[d][n] += dt*t1[d][n];
 
@@ -528,9 +535,9 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
     mtmul(t2, invbox, M);
 
     /* Determine the scaling matrix mu for the coordinates */
-    for (d = 0; d < DIM; d++)
+    for (int d = 0; d < DIM; d++)
     {
-        for (n = 0; n <= d; n++)
+        for (int n = 0; n <= d; n++)
         {
             t1[d][n] = box[d][n] + dt*boxv[d][n];
         }
@@ -712,35 +719,39 @@ void berendsen_pscale(t_inputrec *ir, matrix mu,
     inc_nrnb(nrnb, eNR_PCOUPL, nr_atoms);
 }
 
-void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt)
+void berendsen_tcoupl(const t_inputrec *ir, const gmx_ekindata_t *ekind, real dt,
+                      double *therm_integral)
 {
-    t_grpopts *opts;
-    int        i;
-    real       T, reft = 0, lll;
+    const t_grpopts *opts = &ir->opts;
 
-    opts = &ir->opts;
-
-    for (i = 0; (i < opts->ngtc); i++)
+    for (int i = 0; (i < opts->ngtc); i++)
     {
+        real Ek, T;
+
         if (ir->eI == eiVV)
         {
-            T = ekind->tcstat[i].T;
+            Ek = trace(ekind->tcstat[i].ekinf);
+            T  = ekind->tcstat[i].T;
         }
         else
         {
-            T = ekind->tcstat[i].Th;
+            Ek = trace(ekind->tcstat[i].ekinh);
+            T  = ekind->tcstat[i].Th;
         }
 
         if ((opts->tau_t[i] > 0) && (T > 0.0))
         {
-            reft                    = std::max<real>(0, opts->ref_t[i]);
-            lll                     = std::sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
+            real reft               = std::max<real>(0, opts->ref_t[i]);
+            real lll                = std::sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
             ekind->tcstat[i].lambda = std::max<real>(std::min<real>(lll, 1.25), 0.8);
         }
         else
         {
             ekind->tcstat[i].lambda = 1.0;
         }
+
+        /* Keep track of the amount of energy we are adding to the system */
+        therm_integral[i] -= (gmx::square(ekind->tcstat[i].lambda) - 1)*Ek;
 
         if (debug)
         {
@@ -1374,6 +1385,25 @@ real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *Mas
         switch (ir->epc)
         {
             case epcPARRINELLORAHMAN:
+            {
+                /* contribution from the pressure momenta */
+                tensor invMass;
+                calcParrinelloRahmanInvMass(ir, state->box, invMass);
+                for (int d = 0; d < DIM; d++)
+                {
+                    for (int n = 0; n <= d; n++)
+                    {
+                        if (invMass[d][n] > 0)
+                        {
+                            energyNPT += 0.5*gmx::square(state->boxv[d][n])/(invMass[d][n]*PRESFAC);
+                        }
+                    }
+                }
+
+                /* contribution from the PV term */
+                energyNPT += vol*trace(ir->ref_p)/(DIM*PRESFAC);
+                break;
+            }
             case epcMTTK:
                 /* contribution from the pressure momenta */
                 energyNPT += 0.5*gmx::square(state->veta)/MassQ->Winv;
@@ -1389,7 +1419,6 @@ real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *Mas
                 break;
             case epcBERENDSEN:
                 // TODO: Implement
-                break;
             default:
                 GMX_RELEASE_ASSERT(false, "Conserved energy quantity for pressure coupliing needs to be implemented");
         }
@@ -1408,10 +1437,9 @@ real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *Mas
             break;
         case etcANDERSEN:
         case etcANDERSENMASSIVE:
-            // TODO: Implement
-            break;
+            // Andersen is not supported here
         default:
-            GMX_RELEASE_ASSERT(false, "Conserved energy quantity for temperature coupliing needs to be implemented");   
+            GMX_RELEASE_ASSERT(false, "Conserved energy quantity for temperature coupling needs to be implemented");   
     }
 
     return energyNPT;

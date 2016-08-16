@@ -277,8 +277,9 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         }
         else if (i == F_ECONSERVED)
         {
-            md->bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
-                            (ir->epc == epcNO || ir->epc == epcMTTK));
+            md->bEner[i] = (EI_MD(ir->eI) &&
+                            ((ir->etc != etcNO && !ETC_ANDERSEN(ir->etc)) ||
+                             ir->epc != epcNO));
         }
         else
         {
