@@ -662,12 +662,12 @@ real hyper_polarize(int nbonds,
         int  type  = forceatoms[i++];
         int  ai    = forceatoms[i++];
         int  aj    = forceatoms[i++];
-        real ksh   = gmx::square(md->chargeA[aj])*ONE_4PI_EPS0/forceparams[type].hyper_polarize.alpha; /* 7*/
-        real k3    = forceparams[type].hyper_polarize.k3;
-        real k4    = forceparams[type].hyper_polarize.k4;
+        real k2    = gmx::square(md->chargeA[aj])*ONE_4PI_EPS0/forceparams[type].hyper_polarize.alpha; /* 7*/
+        real k3    = k2*forceparams[type].hyper_polarize.k3;
+        real k4    = k2*forceparams[type].hyper_polarize.k4;
         if (debug)
         {
-            fprintf(debug, "POL: local ai = %d aj = %d ksh = %.3f\n", ai, aj, ksh);
+            fprintf(debug, "POL: local ai = %d aj = %d k2 = %.3f\n", ai, aj, k2);
         }
 
         int  ki   = pbc_rvec_sub(pbc, x[ai], x[aj], dx);                         /*   3      */
@@ -681,8 +681,8 @@ real hyper_polarize(int nbonds,
         real dr_1   = gmx::invsqrt(dr2);                                         /*  10		*/
         real dr     = dr2*dr_1;
         real dr3    = dr2*dr;
-        real vbond  = 0.5*ksh*dr2 + k3*dr3 + k4*dr2*dr2;
-        real fbond  = -(ksh*dr + 3*k3*dr2 + 4*k4*dr3)*dr_1;
+        real vbond  = 0.5*k2*dr2 + k3*dr3 + k4*dr2*dr2;
+        real fbond  = -(k2*dr + 3*k3*dr2 + 4*k4*dr3)*dr_1;
         vtot  += vbond;             /* 1*/
 
         if (g)
