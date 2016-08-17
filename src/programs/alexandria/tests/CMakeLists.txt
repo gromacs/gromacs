@@ -35,7 +35,7 @@
 set(testname "AlexandriaTests")
 set(exename "alexandria-test")
 
-gmx_build_unit_test(
+gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
@@ -47,10 +47,3 @@ gmx_build_unit_test(
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:alexandria_objlib>
     )
-gmx_register_integration_test(
-    ${testname}
-    ${exename}
-    )
-
-
-

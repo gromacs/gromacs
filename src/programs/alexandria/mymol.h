@@ -44,6 +44,7 @@
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 
 #include "gauss_io.h"
@@ -245,6 +246,7 @@ class MyMol
          * \param[in] tabfn
          */
         immStatus GenerateCharges(const Poldata             &pd,
+                                  const gmx::MDLogger       &fplog,
                                   gmx_atomprop_t             ap,
                                   ChargeDistributionModel    iModel,
                                   ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
@@ -357,8 +359,9 @@ class MyMol
          */
         immStatus GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge);
 
-        immStatus GenerateGromacs(t_commrec  *cr,
-                                  const char *tabfn);
+        immStatus GenerateGromacs(const gmx::MDLogger &mdlog,
+                                  t_commrec           *cr,
+                                  const char          *tabfn);
 
         /*! \brief
          * Generate cube

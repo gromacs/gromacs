@@ -49,6 +49,7 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -63,6 +64,7 @@
 #include "gauss_io.h"
 #include "gentop_core.h"
 #include "gentop_vsite.h"
+#include "getmdlogger.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
 #include "mymol.h"
@@ -427,16 +429,19 @@ int alex_gentop(int argc, char *argv[])
 
     imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel,
                                  bGenVSites, bPairs, bDihedral, bPolar);
+    t_commrec     *cr    = init_commrec();
+    gmx::MDLogger  mdlog = getMdLogger(cr, stdout);
 
     if (immOK == imm)
     {
-        t_commrec  *cr    = init_commrec();
         const char *tabfn = opt2fn_null("-table", NFILE, fnm);
         if (NULL == tabfn && bPolar && iChargeDistributionModel != eqdAXp)
         {
             gmx_fatal(FARGS, "Cannot generate charges in a polarizable system with the %s charge model without a potential table. Please supply a table file.", getEemtypeName(iChargeDistributionModel));
         }
-        imm = mymol.GenerateCharges(pd, aps,
+        imm = mymol.GenerateCharges(pd,
+                                    mdlog,
+                                    aps,
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,
                                     watoms,

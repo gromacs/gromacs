@@ -38,6 +38,8 @@
  */
 #include "gmxpre.h"
 
+#include "moldip.h"
+
 #include <cmath>
 
 #include "gromacs/gmxlib/network.h"
@@ -55,14 +57,12 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "stringutil.h"
-
 // Alexandria stuff
-#include "moldip.h"
-
+#include "getmdlogger.h"
 #include "gmx_simple_comm.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"
+#include "stringutil.h"
 
 #define STRLEN 256
 
@@ -605,7 +605,10 @@ void MolDip::Read(FILE *fp,
 
                 if (immOK == imm)
                 {
-                    imm = mpnew.GenerateCharges(pd_, _atomprop,
+                    gmx::MDLogger mdlog = getMdLogger(_cr, stdout);
+                    imm = mpnew.GenerateCharges(pd_,
+                                                mdlog,
+                                                _atomprop,
                                                 _iChargeDistributionModel,
                                                 _iChargeGenerationAlgorithm,
                                                 watoms, _hfac,
@@ -727,7 +730,8 @@ void MolDip::Read(FILE *fp,
 
             if (immOK == imm)
             {
-                imm = mpnew.GenerateCharges(pd_, _atomprop, _iChargeDistributionModel,
+                gmx::MDLogger mdlog = getMdLogger(_cr, stdout);
+                imm = mpnew.GenerateCharges(pd_, mdlog, _atomprop, _iChargeDistributionModel,
                                             _iChargeGenerationAlgorithm,
                                             watoms, _hfac,
                                             lot, TRUE, NULL, _cr, tabfn);

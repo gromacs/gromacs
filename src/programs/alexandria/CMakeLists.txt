@@ -87,6 +87,7 @@ set(ALEXANDRIA_SOURCES
         gauss_io.cpp
         gen_table.cpp
         gentop.cpp
+        getmdlogger.cpp
         merge_mp.cpp
         moldip.cpp
         molprop_check.cpp

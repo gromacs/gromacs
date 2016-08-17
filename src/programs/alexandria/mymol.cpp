@@ -1337,6 +1337,7 @@ std::vector<double> MyMol::computePolarizability(double efield,
 }
 
 immStatus MyMol::GenerateCharges(const Poldata             &pd,
+                                 const gmx::MDLogger       &fplog,
                                  gmx_atomprop_t             ap,
                                  ChargeDistributionModel    iChargeDistributionModel,
                                  ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
@@ -1354,8 +1355,8 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     int       maxiter   = 1000;
 
     // This might be moved to a better place
-    gmx_omp_nthreads_init(stdout, cr, 1, 1, 0, false, false);
-    GenerateGromacs(cr, tabfn);
+    gmx_omp_nthreads_init(fplog, cr, 1, 1, 0, FALSE, FALSE);
+    GenerateGromacs(fplog, cr, tabfn);
     double EspRms_ = 0;
     if (eqgESP == iChargeGenerationAlgorithm)
     {
@@ -1481,7 +1482,9 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     return imm;
 }
 
-immStatus MyMol::GenerateGromacs(t_commrec *cr, const char *tabfn)
+immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
+                                 t_commrec           *cr, 
+                                 const char          *tabfn)
 {
     GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == NULL. You forgot to call GenerateTopology");
     int nalloc = 2 * topology_->atoms.nr;
@@ -1500,7 +1503,7 @@ immStatus MyMol::GenerateGromacs(t_commrec *cr, const char *tabfn)
         //inputrec_->vdwtype   = evdwUSER;
         inputrec_->coulombtype = eelUSER;
     }
-    init_forcerec(nullptr, fr_, nullptr, inputrec_, mtop_, cr,
+    init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, nullptr, nullptr, TRUE, -1);
     snew(state_, 1);
     init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
