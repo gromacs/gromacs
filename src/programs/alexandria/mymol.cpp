@@ -1483,7 +1483,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
 }
 
 immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
-                                 t_commrec           *cr, 
+                                 t_commrec           *cr,
                                  const char          *tabfn)
 {
     GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == NULL. You forgot to call GenerateTopology");

@@ -54,6 +54,6 @@ gmx::MDLogger getMdLogger(const t_commrec *cr,
     }
     gmx::LoggerOwner logOwner(builder.build());
     gmx::MDLogger    mdlog(logOwner.logger());
-    
+
     return mdlog;
 }

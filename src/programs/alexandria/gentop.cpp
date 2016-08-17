@@ -198,7 +198,7 @@ int alex_gentop(int argc, char *argv[])
           "Use this method and level of theory when selecting coordinates and charges" },
         { "-dih",    FALSE, etBOOL, {&bDihedral},
           "Add dihedrals to the topology" },
-	{ "-ub",    FALSE, etBOOL, {&b13},
+        { "-ub",    FALSE, etBOOL, {&b13},
           "Add urey-bradely to the topology" },
         { "-H14",    FALSE, etBOOL, {&bH14},
           "HIDDENUse 3rd neighbour interactions for hydrogen atoms" },
