@@ -100,7 +100,7 @@ TEST(GammaDistributionTest, Reset)
 
     valB = distB(rng);
 
-    EXPECT_EQ(valA, valB);
+    EXPECT_REAL_EQ_TOL(valA, valB, gmx::test::ulpTolerance(0));
 }
 
 TEST(GammaDistributionTest, AltParam)
@@ -116,7 +116,7 @@ TEST(GammaDistributionTest, AltParam)
     rngB.restart();
     distA.reset();
     distB.reset();
-    EXPECT_EQ(distA(rngA), distB(rngB, paramA));
+    EXPECT_REAL_EQ_TOL(distA(rngA), distB(rngB, paramA), gmx::test::ulpTolerance(0));
 }
 
 }      // namespace anonymous

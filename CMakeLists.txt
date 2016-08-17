@@ -52,6 +52,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # the build tree (whether the build is from a source package or from a git
 # repository).  Also declares a few functions that will be used for generating
 # version info files later.
+include(gmxBuildTreeInfo)
 include(gmxVersionInfo)
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND UNIX)
@@ -132,6 +133,12 @@ endif()
 include(gmxDetectTargetArchitecture)
 gmx_detect_target_architecture()
 
+# Permit the user to specify a particular standard library, e.g. compiling
+# with "-stdlib=libc++" and linking with "-lc++abi -lc++" to get clang's libcxx.
+set(GMX_STDLIB_CXX_FLAGS "" CACHE STRING "Compiler flag for a C++ standard library flavour")
+set(GMX_STDLIB_LIBRARIES "" CACHE STRING "Linker libraries for a particular C++ standard library")
+mark_as_advanced(GMX_STDLIB_CXX_FLAGS)
+mark_as_advanced(GMX_STDLIB_LIBRARIES)
 
 ########################################################################
 # Detect CXX11 support and flags
@@ -152,15 +159,13 @@ include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
 # This must come early, since some of our configuration flag tests
-# depend on being able to compile C++11 source files
+# depend on being able to compile C++11 source files.
 include(gmxTestCXX11)
-gmx_test_cxx11(GMX_CXX11_SUPPORTED GMX_CXX11_FLAGS)
-if(NOT GMX_CXX11_SUPPORTED)
-message(FATAL_ERROR "This version of GROMACS requires C++11. Please use a newer compiler or use the GROMACS 5.1.x release. Note it might be sufficient to instruct the compiler to use a newer STL version. See the installation guide for details.")
-endif()
+gmx_test_cxx11(GMX_CXX11_FLAGS GMX_STDLIB_CXX_FLAGS GMX_STDLIB_LIBRARIES)
 
-# Make sure all tests are run in C++11 mode
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_CXX11_FLAGS}")
+# Make sure all C++ code will be compiled in C++11 mode, with the
+# expected standard library.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_CXX11_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
 
 ########################################################################
 # User input options                                                   #
@@ -407,6 +412,7 @@ endif()
 
 include(CheckLibraryExists)
 find_library(HAVE_LIBM m)
+mark_as_advanced(HAVE_LIBM)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
 
@@ -548,6 +554,17 @@ if(GMX_HWLOC)
     endif()
 endif()
 
+option(GMX_EXTERNAL_TINYXML2 "Use external TinyXML-2 instead of compiling the version bundled with GROMACS." OFF)
+mark_as_advanced(GMX_EXTERNAL_TINYXML2)
+if(GMX_EXTERNAL_TINYXML2)
+    # Find an external TinyXML-2 library.
+    find_package(TinyXML-2 3.0.0)
+    set(HAVE_TINYXML2 ${TinyXML2_FOUND})
+    if(NOT HAVE_TINYXML2)
+        message(FATAL_ERROR "External TinyXML-2 could not be found, please adjust your search paths")
+    endif()
+endif()
+
 option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
 mark_as_advanced(GMX_EXTRAE)
 
@@ -589,8 +606,17 @@ if (TMPI_ATOMICS_DISABLED)
    add_definitions(-DTMPI_ATOMICS_DISABLED)
 endif()
 
-# now that we have detected the dependencies, do the second GPU configure pass
-gmx_gpu_setup()
+# Note this relies on zlib detection having already run
+include(gmxManageTNG)
+
+include(gmxManageLmfit)
+
+if(GMX_GPU)
+    # now that we have detected the dependencies, do the second configure pass
+    gmx_gpu_setup()
+else()
+    mark_as_advanced(CUDA_HOST_COMPILER)
+endif()
 
 if(CYGWIN)
     set(GMX_CYGWIN 1)
@@ -679,6 +705,9 @@ endif()
 # for SIMD math operations.
 include(gmxManageSimd)
 gmx_manage_simd()
+
+include(gmxManageCycleCounters)
+gmx_manage_cycle_counters()
 
 # Process QM/MM Settings
 if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")

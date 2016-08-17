@@ -76,6 +76,7 @@
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -373,6 +374,11 @@ void printBinaryInformation(FILE                            *fp,
     {
         fprintf(fp, "%sData prefix:  %s%s%s\n", prefix, installPrefix.path,
                 installPrefix.bSourceLayout ? " (source tree)" : "", suffix);
+    }
+    const std::string workingDir = Path::getWorkingDirectory();
+    if (!workingDir.empty())
+    {
+        fprintf(fp, "%sWorking dir:  %s%s\n", prefix, workingDir.c_str(), suffix);
     }
     const char *const commandLine = programContext.commandLine();
     if (!gmx::isNullOrEmpty(commandLine))

@@ -6,6 +6,7 @@ Development-time tools
 
    doxygen
    jenkins
+   releng/index
    gmxtree
    uncrustify
    testutils
@@ -38,6 +39,8 @@ Jenkins
   :doc:`jenkins` documents how Jenkins interacts with the build system,
   providing information on how to replicate the builds Jenkins does (e.g., to
   diagnose issues).
+  :doc:`releng/index` provides more information on the technical implementation
+  of the builds.
 
 Redmine
   Bugs and issues, as well as some random features and discussions,
@@ -71,6 +74,8 @@ cppcheck
   ``tests/CppCheck.cmake``) to run the tool.  This target is used also by Jenkins.
 
 clang static analyzer
+
+coverage
 
 .. _dev-formatting-tools:
 

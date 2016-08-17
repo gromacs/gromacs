@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2006 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -208,7 +208,12 @@ typedef long
  *  the difference between two gmx_cycles_t values returned from this
  *  routine.
  */
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
+#if (GMX_CYCLECOUNTERS == 0)
+static __inline__ gmx_cycles_t gmx_cycles_read(void)
+{
+    return 0;
+}
+#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
     (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC))
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
@@ -367,10 +372,13 @@ static inline gmx_cycles_t gmx_cycles_read(void)
     ( defined(__powerpc__) || defined(__ppc__) ) )
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
-    /* PowerPC using gcc inline assembly (and xlC>=7.0 with -qasm=gcc) */
+    /* PowerPC using gcc inline assembly (and xlC>=7.0 with -qasm=gcc, and clang) */
     unsigned long low, high1, high2;
     do
     {
+        // clang 3.7 incorrectly warns that mftb* are
+        // deprecated. That's not correct - see
+        // https://llvm.org/bugs/show_bug.cgi?id=23680.
         __asm__ __volatile__ ("mftbu %0" : "=r" (high1) : );
         __asm__ __volatile__ ("mftb %0" : "=r" (low) : );
         __asm__ __volatile__ ("mftbu %0" : "=r" (high2) : );
@@ -438,7 +446,12 @@ static gmx_cycles_t gmx_cycles_read(void)
  *       one when later linking to the library it might happen that the
  *       library supports cyclecounters but not the headers, or vice versa.
  */
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
+#if (GMX_CYCLECOUNTERS == 0)
+static __inline__ int gmx_cycles_have_counter(void)
+{
+    return 0;
+}
+#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
     (defined(__i386__) || defined(__x86_64__)))
 static __inline__ int gmx_cycles_have_counter(void)
 {

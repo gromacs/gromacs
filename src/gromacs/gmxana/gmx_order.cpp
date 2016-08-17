@@ -957,11 +957,11 @@ int gmx_order(int argc, char *argv[])
     t_filenm          fnm[] = {                       /* files for g_order    */
         { efTRX, "-f", NULL,  ffREAD },               /* trajectory file              */
         { efNDX, "-n", NULL,  ffREAD },               /* index file           */
-        { efNDX, "-nr", NULL,  ffREAD },              /* index for radial axis calculation	  */
+        { efNDX, "-nr", NULL,  ffOPTRD },             /* index for radial axis calculation */
         { efTPR, NULL, NULL,  ffREAD },               /* topology file                */
         { efXVG, "-o", "order", ffWRITE },            /* xvgr output file     */
         { efXVG, "-od", "deuter", ffWRITE },          /* xvgr output file           */
-        { efPDB, "-ob", NULL, ffWRITE },              /* write Scd as B factors to PDB if permolecule           */
+        { efPDB, "-ob", NULL, ffOPTWR },              /* write Scd as B factors to PDB if permolecule           */
         { efXVG, "-os", "sliced", ffWRITE },          /* xvgr output file           */
         { efXVG, "-Sg", "sg-ang", ffOPTWR },          /* xvgr output file           */
         { efXVG, "-Sk", "sk-dist", ffOPTWR },         /* xvgr output file           */

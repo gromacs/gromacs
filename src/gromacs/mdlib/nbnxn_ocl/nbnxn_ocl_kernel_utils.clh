@@ -151,7 +151,7 @@ typedef struct {
 __constant unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
-static __INLINE__ __device__
+__INLINE__ __device__
 void convert_sigma_epsilon_to_c6_c12(const float  sigma,
                                      const float  epsilon,
                                      float       *c6,

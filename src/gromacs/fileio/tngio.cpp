@@ -711,7 +711,7 @@ void gmx_tng_prepare_low_prec_writing(tng_trajectory_t  tng,
 
 void gmx_fwrite_tng(tng_trajectory_t tng,
                     const gmx_bool   bUseLossyCompression,
-                    int              step,
+                    gmx_int64_t      step,
                     real             elapsedPicoSeconds,
                     real             lambda,
                     const rvec      *box,

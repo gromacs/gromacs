@@ -41,10 +41,6 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/trajectory/energy.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct gmx_groups_t;
 struct t_fileio;
 struct t_inputrec;
@@ -216,10 +212,8 @@ t_enxblock *find_block_id_enxframe(t_enxframe *ef, int id, t_enxblock *prev);
    subbblocks. */
 void add_subblocks_enxblock(t_enxblock *eb, int n);
 
-
-
-#ifdef __cplusplus
-}
-#endif
+void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol,
+              const char *lastener);
+/* Compare two binary energy files */
 
 #endif

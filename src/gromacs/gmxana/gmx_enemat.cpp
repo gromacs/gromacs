@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -223,6 +223,7 @@ int gmx_enemat(int argc, char *argv[])
     for (i = 0; (i < ngroups); i++)
     {
         fprintf(stderr, "\rgroup %d", i);
+        fflush(stderr);
         for (j = i; (j < ngroups); j++)
         {
             for (m = 0; (m < egNR); m++)
@@ -232,6 +233,7 @@ int gmx_enemat(int argc, char *argv[])
                     sprintf(groupname, "%s:%s-%s", egrp_nm[m], groups[i], groups[j]);
 #ifdef DEBUG
                     fprintf(stderr, "\r%-15s %5d", groupname, n);
+                    fflush(stderr);
 #endif
                     for (k = prevk; (k < prevk+nre); k++)
                     {
@@ -280,6 +282,7 @@ int gmx_enemat(int argc, char *argv[])
             if (bCont)
             {
                 fprintf(stderr, "\rRead frame: %d, Time: %.3f", teller, fr->t);
+                fflush(stderr);
 
                 if ((nenergy % 1000) == 0)
                 {

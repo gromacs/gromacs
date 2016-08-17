@@ -52,7 +52,7 @@
 
 #include <algorithm>
 
-#include "external/lmfit/lmcurve.h"
+#include <lmstruct.h>
 
 #include "gromacs/correlationfunctions/integrate.h"
 #include "gromacs/fileio/xvgr.h"
@@ -63,6 +63,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "gmx_lmcurve.h"
 
 /*! \brief Number of parameters for each fitting function */
 static const int nfp_ffn[effnNR] = { 0, 1, 2, 3, 5, 7, 9, 2, 4, 3, 6 };
@@ -483,8 +485,8 @@ static gmx_bool lmfit_exp(int          nfit,
     do
     {
         ochisq = chisq;
-        lmcurve(nparam, parm, nfit, x, y, dy,
-                lmcurves[eFitFn], &control, status);
+        gmx_lmcurve(nparam, parm, nfit, x, y, dy,
+                    lmcurves[eFitFn], &control, status);
         chisq = gmx::square(status->fnorm);
         if (bVerbose)
         {

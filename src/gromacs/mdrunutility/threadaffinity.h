@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,21 +44,40 @@
 
 #include <cstdio>
 
-#include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basedefinitions.h"
 
+struct gmx_hw_opt_t;
 struct t_commrec;
+
+namespace gmx
+{
+
+class HardwareTopology;
+class MDLogger;
+
+class IThreadAffinityAccess
+{
+    public:
+        virtual bool isThreadAffinitySupported() const        = 0;
+        virtual bool setCurrentThreadAffinityToCore(int core) = 0;
+
+    protected:
+        virtual ~IThreadAffinityAccess();
+};
+
+} // namespace gmx
 
 /*! \brief
  * Sets the thread affinity using the requested setting stored in hw_opt.
- *
- * The hardware topology is requested from hwinfo, when present.
  */
 void
-gmx_set_thread_affinity(FILE                *fplog,
-                        const t_commrec     *cr,
-                        const gmx_hw_opt_t  *hw_opt,
-                        const gmx_hw_info_t *hwinfo);
+gmx_set_thread_affinity(FILE                        *fplog,
+                        const gmx::MDLogger         &mdlog,
+                        const t_commrec             *cr,
+                        const gmx_hw_opt_t          *hw_opt,
+                        const gmx::HardwareTopology &hwTop,
+                        int                          nthread_local,
+                        gmx::IThreadAffinityAccess  *affinityAccess);
 
 /*! \brief
  * Checks the process affinity mask and if it is found to be non-zero,
@@ -75,7 +94,7 @@ gmx_set_thread_affinity(FILE                *fplog,
  * variables for setting the affinity are set.
  */
 void
-gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
+gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog, const t_commrec *cr,
                               gmx_hw_opt_t *hw_opt, int ncpus,
                               gmx_bool bAfterOpenmpInit);
 

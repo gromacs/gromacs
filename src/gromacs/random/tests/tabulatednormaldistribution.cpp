@@ -132,7 +132,7 @@ TEST(TabulatedNormalDistributionTest, Reset)
 
     valB = distB(rng);
 
-    EXPECT_EQ(valA, valB);
+    EXPECT_REAL_EQ_TOL(valA, valB, gmx::test::ulpTolerance(0));
 }
 
 TEST(TabulatedNormalDistributionTest, AltParam)
@@ -148,7 +148,31 @@ TEST(TabulatedNormalDistributionTest, AltParam)
     rngB.restart();
     distA.reset();
     distB.reset();
-    EXPECT_EQ(distA(rngA), distB(rngB, paramA));
+    EXPECT_REAL_EQ_TOL(distA(rngA), distB(rngB, paramA), gmx::test::ulpTolerance(0));
+}
+
+TEST(TabulatedNormalDistributionTableTest, HasValidProperties)
+{
+    std::vector<real> table = TabulatedNormalDistribution<real>::makeTable();
+
+    EXPECT_EQ(table.size() % 2, 0) << "Table must have even number of entries";
+
+    size_t halfSize     = table.size() / 2;
+    double sumOfSquares = 0.0;
+    // accept errors of a few ULP since the exact value of the summation
+    // below will depend on whether the compiler issues FMA instructions
+    auto   tolerance    = gmx::test::ulpTolerance(10);
+    for (size_t i = 0, iFromEnd = table.size()-1; i < halfSize; ++i, --iFromEnd)
+    {
+        EXPECT_REAL_EQ_TOL(table.at(i), -table.at(iFromEnd), tolerance)
+        << "Table is not an odd-valued function for entries " << i << " and " << iFromEnd;
+        // Add up the squares of the table values in order of ascending
+        // magnitude (to minimize accumulation of round-off error).
+        sumOfSquares += table.at(i) * table.at(i) + table.at(iFromEnd) * table.at(iFromEnd);
+    }
+
+    double variance = sumOfSquares / table.size();
+    EXPECT_REAL_EQ_TOL(1.0, variance, tolerance) << "Table should have unit variance";
 }
 
 }      // namespace anonymous

@@ -74,6 +74,13 @@ if(GMX_GPU OR GMX_GPU_AUTO AND CAN_RUN_CUDA_FIND_PACKAGE)
         # Noise is acceptable when there is a GPU or the user required one.
         set(FIND_CUDA_QUIETLY QUIET)
     endif()
+
+    # Cmake tries to use the static cuda runtime by default,
+    # but this leads to unusable GPU builds on OS X.
+    if(APPLE)
+        set(CUDA_USE_STATIC_CUDA_RUNTIME OFF CACHE STRING "Use the static version of the CUDA runtime library if available")
+    endif()
+
     find_package(CUDA ${REQUIRED_CUDA_VERSION} ${FIND_CUDA_QUIETLY})
 
     # Cmake 2.8.12 (and CMake 3.0) introduced a new bug where the cuda
@@ -175,7 +182,11 @@ endif()
 # We need to mark these advanced outside the conditional, otherwise, if the
 # user turns GMX_GPU=OFF after a failed cmake pass, these variables will be
 # left behind in the cache.
-mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD)
+mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD # cmake 2.8.9 still spews these, check again when requirements change
+                 CUDA_SEPARABLE_COMPILATION      # not present at least with cmake 3.2, remove when required
+                 CUDA_USE_STATIC_CUDA_RUNTIME    # since cmake 3.3
+                 CUDA_dl_LIBRARY CUDA_rt_LIBRARY # - || -
+                 )
 if(NOT GMX_GPU)
     mark_as_advanced(CUDA_TOOLKIT_ROOT_DIR)
 endif()
@@ -221,6 +232,10 @@ include(CMakeDependentOption)
 include(gmxOptionUtilities)
 macro(gmx_gpu_setup)
     if(GMX_GPU)
+        if(NOT CUDA_NVCC_EXECUTABLE)
+            message(FATAL_ERROR "nvcc is required for a CUDA build, please set CUDA_TOOLKIT_ROOT_DIR appropriately")
+        endif()
+
         # set up nvcc options
         include(gmxManageNvccConfig)
 

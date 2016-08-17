@@ -63,10 +63,14 @@ struct t_inputrec;
 
 namespace gmx
 {
+
+class MDLogger;
+
 /*! \brief Integrator algorithm implementation.
  *
  * \param[in] fplog               Log file for output
  * \param[in] cr                  Communication record
+ * \param[in] mdlog               Log writer for important output
  * \param[in] nfile               Number of files
  * \param[in] fnm                 Filename structure array
  * \param[in] oenv                Output information
@@ -87,13 +91,14 @@ namespace gmx
  * \param[in] repl_ex_nst         How often we do replica exchange (in steps)
  * \param[in] repl_ex_nex         How many replicas we have
  * \param[in] repl_ex_seed        The seed for Monte Carlo swaps
+ * \param[in] membed              Membrane embedding data structure
  * \param[in] cpt_period          How often to checkpoint the simulation
  * \param[in] max_hours           Maximume length of the simulation (wall time)
  * \param[in] imdport             Interactive MD port (socket)
  * \param[in] Flags               Flags to control mdrun
  * \param[in] walltime_accounting More timing information
  */
-typedef double integrator_t (FILE *fplog, t_commrec *cr,
+typedef double integrator_t (FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                              int nfile, const t_filenm fnm[],
                              const gmx_output_env_t *oenv, gmx_bool bVerbose,
                              int nstglobalcomm,
@@ -107,6 +112,7 @@ typedef double integrator_t (FILE *fplog, t_commrec *cr,
                              gmx_edsam_t ed,
                              t_forcerec *fr,
                              int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
+                             gmx_membed_t gmx_unused * membed,
                              real cpt_period, real max_hours,
                              int imdport,
                              unsigned long Flags,

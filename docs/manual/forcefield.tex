@@ -162,7 +162,7 @@ V_c(\rij) = f \frac{q_i q_j}{\epsr \rij}
 \label{eqn:vcoul}
 \eeq
 See also \figref{coul}, where $f = \frac{1}{4\pi \varepsilon_0} =
-138.935\,485$ (see \chref{defunits})
+\electricConvFactorValue$ (see \chref{defunits})
 
 \begin{figure}
 \centerline{\includegraphics[width=8cm]{plots/vcrf}}
@@ -444,7 +444,7 @@ distance. The functional form is:
 See also \figref{morse}, and the corresponding force is:
 \beq
 \begin{array}{rcl}
-\displaystyle {\bf F}_{morse} ({\bf r}_{ij})&=&2 D_{ij} \beta_{ij} r_{ij} \exp(-\beta_{ij}(r_{ij}-b_{ij})) * \\
+\displaystyle {\bf F}_{morse} ({\bf r}_{ij})&=&2 D_{ij} \beta_{ij} \exp(-\beta_{ij}(r_{ij}-b_{ij})) * \\
 \displaystyle \: & \: &[1 - \exp(-\beta_{ij}(r_{ij}-b_{ij}))] \frac{\displaystyle {\bf r}_{ij}}{\displaystyle r_{ij}},
 \end{array}
 \eeq
@@ -854,7 +854,7 @@ or four~\cite{Jorgensen2005a} cosine terms of a Fourier series.
 In {\gromacs} the four term function is implemented:
 \beq
 V_{F} (\phi_{ijkl}) ~=~ \frac{1}{2} \left[C_1(1+\cos(\phi)) + C_2(
-1-\cos(2\phi)) + C_3(1+\cos(3\phi)) + C_4(1+\cos(4\phi))\right],
+1-\cos(2\phi)) + C_3(1+\cos(3\phi)) + C_4(1-\cos(4\phi))\right],
 \eeq
 %\ifthenelse{\equal{\gmxlite}{1}}{}{
 Internally, {\gromacs}
@@ -973,13 +973,13 @@ and one that does not (type 9).
 For details see \tabref{topfile2}.
 The table files are supplied to the {\tt mdrun} program.
 After the table file name an underscore, the letter ``b'' for bonds,
-``a'' for angles or ``d'' for dihedrals and the table number are appended.
-For example, for a bond with $n=0$ (and using the default table file name)
-the table is read from the file {\tt table_b0.xvg}.  Multiple tables can be
-supplied simply by using different values of $n$, and are applied to the appropriate
+``a'' for angles or ``d'' for dihedrals and the table number must be appended.
+For example, a tabulated bond with $n=0$ can be read from the file {\tt table_b0.xvg}.
+Multiple tables can be
+supplied simply by adding files with different values of $n$, and are applied to the appropriate
 bonds, as specified in the topology (\tabref{topfile2}).
-The format for the table files is three columns with $x$, $f(x)$, $-f'(x)$,
-where $x$ should be uniformly-spaced. Requirements for entries in the topology
+The format for the table files is three fixed-format columns of any suitable width. These columns must contain $x$, $f(x)$, $-f'(x)$,
+and the values of $x$ should be uniformly spaced. Requirements for entries in the topology
 are given in~\tabref{topfile2}. 
 The setup of the tables is as follows:
 \\{\bf bonds}:
@@ -1755,7 +1755,7 @@ of which the charge varies with $\LAM$ is:
 V_c &=& \frac{f}{\epsrf \rij}\left[\LL q_i^A q_j^A + \LAM\, q_i^B q_j^B\right] \\
 \dvdl{V_c}&=& \frac{f}{\epsrf \rij}\left[- q_i^A q_j^A + q_i^B q_j^B\right]
 \eea
-where $f = \frac{1}{4\pi \varepsilon_0} = 138.935\,485$ (see \chref{defunits}).
+where $f = \frac{1}{4\pi \varepsilon_0} = \electricConvFactorValue$ (see \chref{defunits}).
 
 \subsubsection{Coulomb interaction with \normindex{reaction field}}
 The Coulomb interaction including a reaction field, between two particles 
@@ -2882,6 +2882,8 @@ of the blocks. {\bf Note} that all {\gromacs} programs can read compressed
 When selecting the CHARMM force field in {\tt \normindex{pdb2gmx}} the default option is to use \normindex{CMAP} (for torsional correction map). To exclude CMAP, use {\tt -nocmap}. The basic form of the CMAP term implemented in {\gromacs} is a function of the $\phi$ and $\psi$ backbone torsion angles. This term is defined in the {\tt .rtp} file by a {\tt [ cmap ]} statement at the end of each residue supporting CMAP. The following five atom names define the two torsional angles. Atoms 1-4 define $\phi$, and atoms 2-5 define $\psi$. The corresponding atom types are then matched to the correct CMAP type in the {\tt cmap.itp} file that contains the correction maps.
 
 A port of the CHARMM36 force field for use with GROMACS is also available at \url{http://mackerell.umaryland.edu/charmm_ff.shtml#gromacs}.
+
+For branched polymers or other topologies not supported by {\tt \normindex{pdb2gmx}}, it is possible to use TopoTools~\cite{kohlmeyer2016} to generate a {\gromacs} top file.
 
 \subsection{Coarse-grained force fields}
 \index{force-field, coarse-grained}

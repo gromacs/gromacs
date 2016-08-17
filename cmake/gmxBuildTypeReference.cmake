@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,7 @@
 set( CMAKE_CXX_FLAGS_REFERENCE "-O0 -g" CACHE STRING "C++ flags for regressiontests reference runs." FORCE)
 set( CMAKE_C_FLAGS_REFERENCE "-O0 -g" CACHE STRING "C flags for regressiontests reference runs." FORCE)
 set( CMAKE_EXE_LINKER_FLAGS_REFERENCE "" CACHE STRING "Linker flags for regressiontests reference runs.")
-mark_as_advanced( CMAKE_CXX_FLAGS_REFERENCE CMAKE_C_FLAGS_REFERENCE)
+mark_as_advanced( CMAKE_CXX_FLAGS_REFERENCE CMAKE_C_FLAGS_REFERENCE CMAKE_EXE_LINKER_FLAGS_REFERENCE)
 
 # turn off all fancy options for the regressiontests reference build
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Reference")
@@ -48,8 +48,8 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Reference")
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
     set(GMX_THREAD_MPI OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
 
-    if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR NOT "${CMAKE_C_COMPILER_VERSION}" MATCHES "4.7")
+    if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR NOT "${CMAKE_C_COMPILER_VERSION}" MATCHES "4.8")
         message(WARNING "Reference values for regressiontests should use GROMACS compiled with "
-            "gcc 4.7, but your configuration is using ${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION}.")
+            "gcc 4.8, but your configuration is using ${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION}.")
     endif()
 endif()

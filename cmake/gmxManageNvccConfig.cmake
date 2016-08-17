@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,215, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -51,8 +51,7 @@ if (CUDA_HOST_COMPILER_CHANGED AND CUDA_HOST_COMPILER_AUTOSET)
     unset(CUDA_HOST_COMPILER_AUTOSET CACHE)
 endif()
 
-# Explicitly set the host compiler for nvcc if the current compiler is
-# supported and it's not an MPI compiler wrapper, otherwise warn the user.
+# Set the host compiler for nvcc if this is not set by CMake (v<=2.8.9)
 #
 # Note that even though nvcc compiles host code as C++, we use the
 # CMAKE_C_COMPILER as host compiler. We do this because CUDA versions
@@ -62,48 +61,34 @@ endif()
 # Also note that with MSVC nvcc sets the -compiler-bindir option behind the
 # scenes; to avoid conflicts we don't set -ccbin automatically.
 #
-# This will be executed only with cmake <v2.8.10 as later versions set the
-# host compiler in FindCUDA.
+# TODO: remove this when CMAke >=v2.8.10 is required.
 if (NOT DEFINED CUDA_HOST_COMPILER AND NOT MSVC)
-    if (NOT CMAKE_COMPILER_IS_GNUCC AND
-        NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND UNIX AND NOT APPLE))
-        message(WARNING "
-        Will not set the nvcc host compiler because the current C compiler is not
-        compatible with nvcc:
-        ${CMAKE_C_COMPILER} (ID: ${CMAKE_C_COMPILER_ID})
-        Compatible compilers are: gcc on Linux and Mac OS X, the Intel Compiler on 64-bit
-        Linux and MSVC on Windows. Note that with newer CUDA releases this might change,
-        for up-to-date compatibility information check the NVIDIA documentation.
-        If nothing specified, nvcc will automatically pick the platform-default compiler;
-        Note that mixing compilers can cause errors.
-        To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
-        setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
-        ")
-    else()
-        # do not use MPI compiler wrappers, as these are prone to brake nvcc
-        if (GMX_MPI AND NOT "${MPI_C_FOUND}") # FindMPI-based detection
-            message(WARNING "
-        Will not set the nvcc host compiler because the current C compiler is an MPI
-        compiler wrapper: ${CMAKE_C_COMPILER}
-        MPI compiler wrappers are prone to not work with nvcc. You might get lucky,
-        but the safest is to use the C compiler that the MPI compiler wrapper uses
-        (if this is compatible).
-        To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
-        setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
-        ")
-        else()
-            set(CUDA_HOST_COMPILER "${CMAKE_C_COMPILER}")
-            set(CUDA_HOST_COMPILER_AUTOSET TRUE CACHE INTERNAL
-                "True if CUDA_HOST_COMPILER is automatically set")
-        endif()
-    endif()
+    set(CUDA_HOST_COMPILER "${CMAKE_C_COMPILER}")
+    set(CUDA_HOST_COMPILER_AUTOSET TRUE CACHE INTERNAL
+        "True if CUDA_HOST_COMPILER is automatically set")
 endif()
+
+# glibc 2.23 changed string.h in a way that breaks CUDA compilation in
+# many projects, but which has a trivial workaround. It would be nicer
+# to compile with nvcc and see that the workaround is necessary and
+# effective, but it is unclear how to do that. Also, grepping in the
+# glibc source shows that _FORCE_INLINES is only used in this string.h
+# feature and performance of memcpy variants is unimportant for CUDA
+# code in GROMACS. So this workaround is good enough to keep problems
+# away from users installing GROMACS. See Redmine 1942.
+function(work_around_glibc_2_23)
+    try_compile(IS_GLIBC_2_23_OR_HIGHER ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/cmake/TestGlibcVersion.cpp)
+    if(IS_GLIBC_2_23_OR_HIGHER)
+        message(STATUS "Adding work-around for issue compiling CUDA code with glibc 2.23 string.h")
+        list(APPEND CUDA_HOST_COMPILER_OPTIONS "-D_FORCE_INLINES")
+        set(CUDA_HOST_COMPILER_OPTIONS ${CUDA_HOST_COMPILER_OPTIONS} PARENT_SCOPE)
+    endif()
+endfunction()
 
 # set up host compiler and its options
 if(CUDA_HOST_COMPILER_CHANGED)
     # FindCUDA in CMake 2.8.10 sets the host compiler internally
     if (CMAKE_VERSION VERSION_LESS "2.8.10")
-        message(STATUS "Setting the nvcc host compiler to: ${CUDA_HOST_COMPILER}")
         set(CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER}
             CACHE PATH "Host compiler for nvcc")
     endif()
@@ -127,6 +112,8 @@ if(CUDA_HOST_COMPILER_CHANGED)
         # if we do not use -D__STRICT_ANSI__. It is harmless, so we might as well add it for all versions.
         list(APPEND CUDA_HOST_COMPILER_OPTIONS "-D__STRICT_ANSI__")
     endif()
+
+    work_around_glibc_2_23()
 
     set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}"
         CACHE STRING "Options for nvcc host compiler (do not edit!).")
@@ -157,6 +144,9 @@ else()
     #     => compile sm_20, sm_30, sm_35, sm_37 sm_50, SASS, and compute_50 PTX
     # - with CUDA >=7.0         CC 5.2 is supported (5.3, Tegra X1 we don't generate code for)
     #     => compile sm_20, sm_30, sm_35, sm_37, sm_50, & sm_52 SASS, and compute_52 PTX
+    # - with CUDA >=8.0         CC 6.0-6.2 is supported (but we know nothing about CC 6.2, so we won't generate code or it)
+    #     => compile sm_20, sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61 SASS, and compute_60 and compute_61 PTX
+    #
     #
     #   Note that CUDA 6.5.19 second patch release supports cc 5.2 too, but
     #   CUDA_VERSION does not contain patch version and having PTX 5.0 JIT-ed is
@@ -174,6 +164,10 @@ else()
     if(NOT CUDA_VERSION VERSION_LESS "7.0") # >= 7.0
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_52,code=sm_52")
     endif()
+    if(NOT CUDA_VERSION VERSION_LESS "8.0") # >= 8.0
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=sm_60")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=sm_61")
+    endif()
 
     # Next add flags that trigger PTX code generation for the newest supported virtual arch
     # that's useful to JIT to future architectures
@@ -181,8 +175,11 @@ else()
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=compute_35")
     elseif(CUDA_VERSION VERSION_LESS "7.0")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=compute_50")
-    else() # version >= 7.0
+    elseif(CUDA_VERSION VERSION_LESS "8.0")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_52,code=compute_52")
+    else() # version >= 8.0
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=compute_60")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=compute_61")
     endif()
 endif()
 

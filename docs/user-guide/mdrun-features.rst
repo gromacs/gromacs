@@ -62,7 +62,7 @@ including ``-deffnm``.
    You must create a set of ``n`` directories for the ``n`` simulations,
    place all the relevant input files in those directories (e.g. named
    ``topol.tpr``), and run with
-   ``mpirun -np x gmx mdrun_mpi -s topol -multidir <names-of-directories>``.
+   ``mpirun -np x gmx_mpi mdrun -s topol -multidir <names-of-directories>``.
    If the order of the simulations
    within the multi-simulation is significant, then you are responsible
    for ordering their names when you provide them to ``-multidir``. Be
@@ -83,7 +83,7 @@ Examples running multi-simulations
 
 ::
 
-    mpirun -np 32 gmx mdrun_mpi -multi
+    mpirun -np 32 gmx_mpi mdrun -multi
 
 Starts a multi-simulation on 32 ranks with as many simulations ``n`` as
 there are files named ``topol*.tpr`` for integers ``0`` to ``n-1``. Other
@@ -91,14 +91,14 @@ input and output files are suffixed similarly.
 
 ::
 
-    mpirun -np 32 gmx mdrun_mpi -multidir a b c d
+    mpirun -np 32 gmx_mpi mdrun -multidir a b c d
 
 Starts a multi-simulation on 32 ranks with 4 simulations. The input
 and output files are found in directories ``a``, ``b``, ``c``, and ``d``.
 
 ::
 
-    mpirun -np 32 gmx mdrun_mpi -multidir a b c d -gpu_id 0000000011111111
+    mpirun -np 32 gmx_mpi mdrun -multidir a b c d -gpu_id 0000000011111111
 
 Starts the same multi-simulation as before. On a machine with two
 physical nodes and two GPUs per node, there will be 16 MPI ranks per

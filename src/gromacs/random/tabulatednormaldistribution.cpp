@@ -48,7 +48,7 @@ namespace gmx
 // the table in all files using it, unless the user has requested a different
 // precision or resolution.
 template<>
-const std::vector<real> TabulatedNormalDistribution<real, 14>::c_table_ = TabulatedNormalDistribution<real, 14>::makeTable();
+const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_ = TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::makeTable();
 #else
 // Avoid compiler warnings about no public symbols
 void TabulatedNormalDistributionDummy(){}

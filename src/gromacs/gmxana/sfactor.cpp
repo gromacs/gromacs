@@ -192,6 +192,7 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
     for (i = 0; i < maxkx; i++)
     {
         fprintf (stderr, "\rdone %3.1f%%     ", (100.0*(i+1))/maxkx);
+        fflush(stderr);
         kx = i * k_factor[XX];
         for (j = 0; j < maxky; j++)
         {

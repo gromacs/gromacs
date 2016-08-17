@@ -134,10 +134,11 @@ int gmx_mdrun(int argc, char *argv[])
         "functions is read using the [TT]-tablep[tt] option.[PAR]",
         "When tabulated bonded functions are present in the topology,",
         "interaction functions are read using the [TT]-tableb[tt] option.",
-        "For each different tabulated interaction type the table file name is",
-        "modified in a different way: before the file extension an underscore is",
-        "appended, then a 'b' for bonds, an 'a' for angles or a 'd' for dihedrals",
-        "and finally the table number of the interaction type.[PAR]",
+        "For each different tabulated interaction type used, a table file name must",
+        "be given. For the topology to work, a file name given here must match a",
+        "character sequence before the file extension. That sequence is: an underscore,",
+        "then a 'b' for bonds, an 'a' for angles or a 'd' for dihedrals,",
+        "and finally the matching table number index used in the topology.[PAR]",
         "The options [TT]-px[tt] and [TT]-pf[tt] are used for writing pull COM",
         "coordinates and forces when pulling is selected",
         "in the [REF].mdp[ref] file.[PAR]",
@@ -204,10 +205,11 @@ int gmx_mdrun(int argc, char *argv[])
         "terminated only when the time limit set by [TT]-maxh[tt] is reached (if any)"
         "or upon receiving a signal."
         "[PAR]",
-        "When [TT]mdrun[tt] receives a TERM signal, it will set nsteps to the current",
-        "step plus one. When [TT]mdrun[tt] receives an INT signal (e.g. when ctrl+C is",
-        "pressed), it will stop after the next neighbor search step ",
-        "(with nstlist=0 at the next step).",
+        "When [TT]mdrun[tt] receives a TERM signal, it will stop as soon as",
+        "checkpoint file can be written, i.e. after the next global communication step.",
+        "When [TT]mdrun[tt] receives an INT signal (e.g. when ctrl+C is",
+        "pressed), it will stop at the next neighbor search step or at the",
+        "second global communication step, whichever happens later.",
         "In both cases all the usual output will be written to file.",
         "When running with MPI, a signal to one of the [TT]mdrun[tt] ranks",
         "is sufficient, this signal should not be sent to mpirun or",
@@ -238,7 +240,7 @@ int gmx_mdrun(int argc, char *argv[])
         { efXVG, "-field",  "field",    ffOPTWR },
         { efXVG, "-table",  "table",    ffOPTRD },
         { efXVG, "-tablep", "tablep",   ffOPTRD },
-        { efXVG, "-tableb", "table",    ffOPTRD },
+        { efXVG, "-tableb", "table",    ffOPTRDMULT },
         { efTRX, "-rerun",  "rerun",    ffOPTRD },
         { efXVG, "-tpi",    "tpi",      ffOPTWR },
         { efXVG, "-tpid",   "tpidist",  ffOPTWR },
@@ -479,16 +481,30 @@ int gmx_mdrun(int argc, char *argv[])
     if (nmultisim >= 1)
     {
 #if !GMX_THREAD_MPI
-        gmx_bool bParFn = (multidir == NULL);
-        init_multisystem(cr, nmultisim, multidir, NFILE, fnm, bParFn);
+        init_multisystem(cr, nmultisim, multidir, NFILE, fnm);
 #else
         gmx_fatal(FARGS, "mdrun -multi or -multidir are not supported with the thread-MPI library. "
                   "Please compile GROMACS with a proper external MPI library.");
 #endif
     }
 
-    handleRestart(cr, bTryToAppendFiles, NFILE, fnm,
-                  &bDoAppendFiles, &bStartFromCpt);
+    if (!opt2bSet("-cpi", NFILE, fnm))
+    {
+        // If we are not starting from a checkpoint we never allow files to be appended
+        // to, since that has caused a ton of strange behaviour and bugs in the past.
+        if (opt2parg_bSet("-append", asize(pa), pa))
+        {
+            // If the user explicitly used the -append option, explain that it is not possible.
+            gmx_fatal(FARGS, "GROMACS can only append to files when restarting from a checkpoint.");
+        }
+        else
+        {
+            // If the user did not say anything explicit, just disable appending.
+            bTryToAppendFiles = FALSE;
+        }
+    }
+
+    handleRestart(cr, bTryToAppendFiles, NFILE, fnm, &bDoAppendFiles, &bStartFromCpt);
 
     Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
@@ -497,7 +513,7 @@ int gmx_mdrun(int argc, char *argv[])
     Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
     Flags = Flags | (bRerunVSite   ? MD_RERUN_VSITE  : 0);
     Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
-    Flags = Flags | (bDoAppendFiles ? MD_APPENDFILES  : 0);
+    Flags = Flags | (bDoAppendFiles  ? MD_APPENDFILES  : 0);
     Flags = Flags | (opt2parg_bSet("-append", asize(pa), pa) ? MD_APPENDFILESSET : 0);
     Flags = Flags | (bKeepAndNumCPT ? MD_KEEPANDNUMCPT : 0);
     Flags = Flags | (bStartFromCpt ? MD_STARTFROMCPT : 0);

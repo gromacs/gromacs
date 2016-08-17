@@ -181,6 +181,10 @@ Performance and Run Control
         when set, disables GPU detection even if :ref:`gmx mdrun` was compiled
         with GPU support.
 
+``GMX_GPU_APPLICATION_CLOCKS``
+        setting this variable to a value of "0", "ON", or "DISABLE" (case insensitive)
+        allows disabling the CUDA GPU allication clock support.
+
 ``GMX_DISRE_ENSEMBLE_SIZE``
         the number of systems for distance restraint ensemble
         averaging. Takes an integer value.
@@ -332,6 +336,13 @@ Performance and Run Control
         resolution of buffer size in Verlet cutoff scheme.  The default value is
         0.001, but can be overridden with this environment variable.
 
+``HWLOC_XMLFILE``
+        Not strictly a |Gromacs| environment variable, but on large machines
+        the hwloc detection can take a few seconds if you have lots of MPI processes.
+        If you run the hwloc command `lstopo out.xml` and set this environment
+        variable to point to the location of this file, the hwloc library will use
+        the cached information instead, which can be faster.
+
 ``MPIRUN``
         the ``mpirun`` command used by :ref:`gmx tune_pme`.
 
@@ -360,6 +371,11 @@ compilation of OpenCL kernels, but they are also used in device selection.
         kernels from previous runs. Currently, caching is always
         disabled, until we solve concurrency issues.
 
+``GMX_OCL_GENCACHE``
+        Enable OpenCL binary caching. Only intended to be used for
+        development and (expert) testing as neither concurrency
+        nor cache invalidation is implemented safely!
+
 ``GMX_OCL_NOFASTGEN``
         If set, generate and compile all algorithm flavors, otherwise
         only the flavor required for the simulation is generated and
@@ -371,17 +387,9 @@ compilation of OpenCL kernels, but they are also used in device selection.
         the same will happen with the OpenCL version soon)
 
 ``GMX_OCL_DUMP_LOG``
-        If defined, the OpenCL build log is always written to file.
-        The file is saved in the current directory with the name
-        ``OpenCL_kernel_file_name.build_status`` where
-        ``OpenCL_kernel_file_name`` is the name of the file containing the
-        OpenCL source code (usually ``nbnxn_ocl_kernels.cl``) and
-        build_status can be either SUCCEEDED or FAILED. If this
-        environment variable is not defined, the default behavior is
-        the following:
-
-           - Debug build: build log is always written to file
-	   - Release build: build log is written to file only in case of errors.
+        If defined, the OpenCL build log is always written to the
+        mdrun log file. Otherwise, the build log is written to the
+        log file only when an error occurs.
 
 ``GMX_OCL_VERBOSE``
         If defined, it enables verbose mode for OpenCL kernel build.

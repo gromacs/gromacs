@@ -270,7 +270,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr,
                     bFinished = (fgets2(line, STRLEN, fp) == NULL);
                 }
                 while (!bFinished && (line[0] == '#'));
-                sscanf(line, "%15d%15lf", &(fr->step), &db1);
+                sscanf(line, "%15" GMX_SCNd64 "%15lf", &(fr->step), &db1);
                 fr->time = db1;
             }
             else
@@ -360,7 +360,7 @@ void write_g96_conf(FILE *out, const t_trxframe *fr,
     if (fr->bStep || fr->bTime)
     {
         /* Officially the time format is %15.9, which is not enough for 10 ns */
-        fprintf(out, "TIMESTEP\n%15d%15.6f\nEND\n", fr->step, fr->time);
+        fprintf(out, "TIMESTEP\n%15" GMX_PRId64 "%15.6f\nEND\n", fr->step, fr->time);
     }
     if (fr->bX)
     {

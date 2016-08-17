@@ -54,6 +54,7 @@
 #       Table of historical values
 #         GROMACS     5.0    0
 #         GROMACS     5.1    1
+#         GROMACS     2016   2
 #   LIBRARY_SOVERSION_MINOR so minor version for the built libraries.
 #       Should be increased for each release that changes only the implementation.
 #       In GROMACS, the typical policy is to increase it for each patch version
@@ -92,14 +93,6 @@
 # The latter two are used to generate gromacs/version.h to allow software
 # written against the GROMACS API to provide some #ifdef'ed code to support
 # multiple GROMACS versions.
-#
-# The following variables are defined without manual intervention:
-#   SOURCE_IS_SOURCE_DISTRIBUTION  The source tree is from a source tarball.
-#   SOURCE_IS_GIT_REPOSITORY       The source tree is a git repository.
-# Note that both can be false if the tree has been extracted, e.g., as a
-# tarball directly from git.
-# Additionally, the following variable is defined:
-#   BUILD_IS_INSOURCE              The build is happening in-source.
 #
 # This script also declares machinery to generate and obtain version
 # information from a git repository.  This is enabled by default if the source
@@ -190,29 +183,11 @@
 # are used internally by this machinery, as well as VersionInfo.cmake.cmakein.
 
 #####################################################################
-# Basic nature of the source tree
-
-set(SOURCE_IS_GIT_REPOSITORY OFF)
-set(SOURCE_IS_SOURCE_DISTRIBUTION OFF)
-if (EXISTS "${PROJECT_SOURCE_DIR}/.git")
-    set(SOURCE_IS_GIT_REPOSITORY ON)
-endif()
-# This file is excluded from CPack source packages, but part of the repository,
-# so it should get included everywhere else.
-if (NOT EXISTS "${PROJECT_SOURCE_DIR}/admin/.isreposource")
-    set(SOURCE_IS_SOURCE_DISTRIBUTION ON)
-endif()
-set(BUILD_IS_INSOURCE OFF)
-if ("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
-    set(BUILD_IS_INSOURCE ON)
-endif()
-
-#####################################################################
 # Manually maintained version info
 
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
-set(GMX_VERSION_MAJOR 2016)
+set(GMX_VERSION_MAJOR 2017)
 set(GMX_VERSION_PATCH 0)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
@@ -229,7 +204,7 @@ set(GMX_VERSION_SUFFIX "")
 # here. The important thing is to minimize the chance of third-party
 # code being able to dynamically link with a version of libgromacs
 # that might not work.
-set(LIBRARY_SOVERSION_MAJOR 2)
+set(LIBRARY_SOVERSION_MAJOR 3)
 set(LIBRARY_SOVERSION_MINOR 0)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 
@@ -249,12 +224,12 @@ if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND NOT GMX_BUILD_TARBALL)
 endif()
 
 set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
-set(REGRESSIONTEST_BRANCH "refs/heads/master")
+set(REGRESSIONTEST_BRANCH "refs/heads/release-2016")
 # TODO Find some way of ensuring that this is bumped appropriately for
 # each release. It's hard to test because it is only used for
 # REGRESSIONTEST_DOWNLOAD, which doesn't work until that tarball has
 # been placed on the server.
-set(REGRESSIONTEST_MD5SUM "3f663536649db883a5616f25f95ac927" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
+set(REGRESSIONTEST_MD5SUM "857a7a1c46ad37b91504bbab39172061" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")

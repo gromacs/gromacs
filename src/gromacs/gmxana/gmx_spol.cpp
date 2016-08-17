@@ -48,6 +48,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -222,7 +223,9 @@ int gmx_spol(int argc, char *argv[])
     }
 
     snew(top, 1);
-    snew(ir, 1);
+    // TODO: Only ePBC is used, not the full inputrec.
+    gmx::MDModules mdModules;
+    ir = mdModules.inputrec();
     read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
                  ir, box, &natoms, NULL, NULL, top);
 

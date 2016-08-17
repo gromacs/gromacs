@@ -720,6 +720,7 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
     /* Any result except MPI_UNEQUAL allows us to call MPI_Finalize */
     bFinalize = (result != MPI_UNEQUAL);
 #else
+    GMX_UNUSED_VALUE(comm);
     bFinalize = TRUE;
 #endif
 

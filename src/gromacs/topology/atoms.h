@@ -42,10 +42,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct t_symtab;
 
 /* The particle type */
@@ -164,8 +160,6 @@ void pr_atoms(FILE *fp, int indent, const char *title, const t_atoms *atoms,
 void pr_atomtypes(FILE *fp, int indent, const char *title,
                   const t_atomtypes *atomtypes, gmx_bool bShowNumbers);
 
-#ifdef __cplusplus
-}
-#endif
+void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real abstol);
 
 #endif

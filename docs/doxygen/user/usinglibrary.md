@@ -169,6 +169,9 @@ Under the hood, this uses imported CMake targets to represent `libgromacs`.</dd>
 compile the \Gromacs headers.</dd>
 <dt>`GROMACS_IS_DOUBLE`</dt>
 <dd>Whether the found \Gromacs was compiled in double precision.</dd>
+<dt>`GROMACS_CXX_FLAGS`</dt>
+<dd>Required compiler flags, e.g. for compiling in C++11 mode,
+or selecting the standard library flavour.</dd>
 </dl>
 
 Declared macros/functions that can be used for checking for correctness of some

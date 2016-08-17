@@ -129,6 +129,8 @@ void print_time(FILE                     *out,
         fprintf(out, "\r");
     }
     fprintf(out, "step %s", gmx_step_str(step, buf));
+    fflush(out);
+
     if ((step >= ir->nstlist))
     {
         double seconds_since_epoch = gmx_gettime();
@@ -213,7 +215,10 @@ static void sum_forces(int start, int end, rvec f[], rvec flr[])
         pr_rvecs(debug, 0, "fsr", f+start, end-start);
         pr_rvecs(debug, 0, "flr", flr+start, end-start);
     }
-    for (i = start; (i < end); i++)
+    // cppcheck-suppress unreadVariable
+    int gmx_unused nt = gmx_omp_nthreads_get(emntDefault);
+#pragma omp parallel for num_threads(nt) schedule(static)
+    for (i = start; i < end; i++)
     {
         rvec_inc(f[i], flr[i]);
     }
@@ -733,6 +738,51 @@ gmx_bool use_GPU(const nonbonded_verlet_t *nbv)
     return nbv != NULL && nbv->bUseGPU;
 }
 
+static gmx_inline void clear_rvecs_omp(int n, rvec v[])
+{
+    int nth = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, n);
+
+    /* Note that we would like to avoid this conditional by putting it
+     * into the omp pragma instead, but then we still take the full
+     * omp parallel for overhead (at least with gcc5).
+     */
+    if (nth == 1)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            clear_rvec(v[i]);
+        }
+    }
+    else
+    {
+#pragma omp parallel for num_threads(nth) schedule(static)
+        for (int i = 0; i < n; i++)
+        {
+            clear_rvec(v[i]);
+        }
+    }
+}
+
+/*! \brief  This routine checks if the potential energy is finite.
+ *
+ * Note that passing this check does not guarantee finite forces,
+ * since those use slightly different arithmetics. But in most cases
+ * there is just a narrow coordinate range where forces are not finite
+ * and energies are finite.
+ *
+ * \param[in] enerd  The energy data; the non-bonded group energies need to be added in here before calling this routine
+ */
+static void checkPotentialEnergyValidity(const gmx_enerdata_t *enerd)
+{
+    if (!std::isfinite(enerd->term[F_EPOT]))
+    {
+        gmx_fatal(FARGS, "The total potential energy is %g, which is not finite. The LJ and electrostatic contributions to the energy are %g and %g, respectively. A non-finite potential energy can be caused by overlapping interactions in bonded interactions or very large or NaN coordinate values. Usually this is caused by a badly or non-equilibrated initial configuration or incorrect interactions or parameters in the topology.",
+                  enerd->term[F_EPOT],
+                  enerd->term[F_LJ],
+                  enerd->term[F_COUL_SR]);
+    }
+}
+
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          t_inputrec *inputrec,
                          gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -1041,12 +1091,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             wallcycle_start(wcycle, ewcMOVEX);
             dd_move_x(cr->dd, box, x);
-
-            /* When we don't need the total dipole we sum it in global_stat */
-            if (bStateChanged && inputrecNeedMutot(inputrec))
-            {
-                gmx_sumd(2*DIM, mu, cr);
-            }
             wallcycle_stop(wcycle, ewcMOVEX);
 
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1145,14 +1189,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             if (flags & GMX_FORCE_VIRIAL)
             {
                 fr->f_novirsum = fr->f_novirsum_alloc;
-                if (fr->bDomDec)
-                {
-                    clear_rvecs(fr->f_novirsum_n, fr->f_novirsum);
-                }
-                else
-                {
-                    clear_rvecs(homenr, fr->f_novirsum+start);
-                }
             }
             else
             {
@@ -1164,8 +1200,22 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             }
         }
 
+        if (fr->bF_NoVirSum)
+        {
+            if (flags & GMX_FORCE_VIRIAL)
+            {
+                if (fr->bDomDec)
+                {
+                    clear_rvecs_omp(fr->f_novirsum_n, fr->f_novirsum);
+                }
+                else
+                {
+                    clear_rvecs_omp(homenr, fr->f_novirsum+start);
+                }
+            }
+        }
         /* Clear the short- and long-range forces */
-        clear_rvecs(fr->natoms_force_constr, f);
+        clear_rvecs_omp(fr->natoms_force_constr, f);
 
         clear_rvec(fr->vir_diag_posres);
     }
@@ -1487,8 +1537,16 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                             flags);
     }
 
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(enerd->grpp), enerd->term);
+    if (flags & GMX_FORCE_ENERGY)
+    {
+        /* Sum the potential energy terms from group contributions */
+        sum_epot(&(enerd->grpp), enerd->term);
+
+        if (!EI_TPI(inputrec->eI))
+        {
+            checkPotentialEnergyValidity(enerd);
+        }
+    }
 }
 
 void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
@@ -1871,8 +1929,17 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                             flags);
     }
 
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(enerd->grpp), enerd->term);
+    if (flags & GMX_FORCE_ENERGY)
+    {
+        /* Sum the potential energy terms from group contributions */
+        sum_epot(&(enerd->grpp), enerd->term);
+
+        if (!EI_TPI(inputrec->eI))
+        {
+            checkPotentialEnergyValidity(enerd);
+        }
+    }
+
 }
 
 void do_force(FILE *fplog, t_commrec *cr,
@@ -2502,7 +2569,7 @@ void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[])
 }
 
 // TODO This can be cleaned up a lot, and move back to runner.cpp
-void finish_run(FILE *fplog, t_commrec *cr,
+void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
@@ -2579,7 +2646,7 @@ void finish_run(FILE *fplog, t_commrec *cr,
     {
         struct gmx_wallclock_gpu_t* gputimes = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : NULL;
 
-        wallcycle_print(fplog, cr->nnodes, cr->npmenodes, nthreads_pp, nthreads_pme,
+        wallcycle_print(fplog, mdlog, cr->nnodes, cr->npmenodes, nthreads_pp, nthreads_pme,
                         elapsed_time_over_all_ranks,
                         wcycle, cycle_sum, gputimes);
 

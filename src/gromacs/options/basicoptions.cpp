@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "basicoptionstorage.h"
@@ -197,23 +198,7 @@ std::string IntegerOptionStorage::formatSingleValue(const int &value) const
 
 void IntegerOptionStorage::convertValue(const std::string &value)
 {
-    const char *ptr = value.c_str();
-    char       *endptr;
-    errno = 0;
-    long int    ival = std::strtol(ptr, &endptr, 10);
-    if (errno == ERANGE
-        || ival < std::numeric_limits<int>::min()
-        || ival > std::numeric_limits<int>::max())
-    {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; it causes an integer overflow"));
-    }
-    if (*ptr == '\0' || *endptr != '\0')
-    {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; expected an integer"));
-    }
-    addValue(ival);
+    addValue(fromString<int>(value));
 }
 
 void IntegerOptionStorage::processSetValues(ValueList *values)
@@ -255,21 +240,7 @@ std::string Int64OptionStorage::formatSingleValue(const gmx_int64_t &value) cons
 
 void Int64OptionStorage::convertValue(const std::string &value)
 {
-    const char       *ptr = value.c_str();
-    char             *endptr;
-    errno = 0;
-    const gmx_int64_t ival = str_to_int64_t(ptr, &endptr);
-    if (errno == ERANGE)
-    {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; it causes an integer overflow"));
-    }
-    if (*ptr == '\0' || *endptr != '\0')
-    {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; expected an integer"));
-    }
-    addValue(ival);
+    addValue(fromString<gmx_int64_t>(value));
 }
 
 /********************************************************************
@@ -313,21 +284,7 @@ std::string DoubleOptionStorage::formatSingleValue(const double &value) const
 
 void DoubleOptionStorage::convertValue(const std::string &value)
 {
-    const char *ptr = value.c_str();
-    char       *endptr;
-    errno = 0;
-    double      dval = std::strtod(ptr, &endptr);
-    if (errno == ERANGE)
-    {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; it causes an overflow/underflow"));
-    }
-    if (*ptr == '\0' || *endptr != '\0')
-    {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; expected a number"));
-    }
-    addValue(dval * factor_);
+    addValue(fromString<double>(value) * factor_);
 }
 
 void DoubleOptionStorage::processSetValues(ValueList *values)
@@ -415,23 +372,9 @@ std::string FloatOptionStorage::formatSingleValue(const float &value) const
 
 void FloatOptionStorage::convertValue(const std::string &value)
 {
-    const char *ptr = value.c_str();
-    char       *endptr;
-    errno = 0;
-    double      dval = std::strtod(ptr, &endptr);
-    if (errno == ERANGE
-        || dval * factor_ < -std::numeric_limits<float>::max()
-        || dval * factor_ >  std::numeric_limits<float>::max())
-    {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; it causes an overflow/underflow"));
-    }
-    if (*ptr == '\0' || *endptr != '\0')
-    {
-        GMX_THROW(InvalidInputError("Invalid value: '" + value
-                                    + "'; expected a number"));
-    }
-    addValue(dval * factor_);
+    // TODO: Consider testing for overflow when scaling with factor_ (also for
+    // the double precision case).
+    addValue(fromString<float>(value) * factor_);
 }
 
 void FloatOptionStorage::processSetValues(ValueList *values)

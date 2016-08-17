@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@
 #include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -76,23 +77,27 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
     t_state       state;
-    t_inputrec    ir;
+    t_inputrec   *ir = nullptr;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
     gmx_groups_t *groups;
     t_topology    top;
 
     read_tpxheader(fn, &tpx, TRUE);
-
+    gmx::MDModules mdModules;
+    if (tpx.bIr)
+    {
+        ir = mdModules.inputrec();
+    }
     read_tpx_state(fn,
-                   tpx.bIr  ? &ir : NULL,
+                   ir,
                    &state,
                    tpx.bTop ? &mtop : NULL);
 
     if (mdpfn && tpx.bIr)
     {
         gp = gmx_fio_fopen(mdpfn, "w");
-        pr_inputrec(gp, 0, NULL, &(ir), TRUE);
+        pr_inputrec(gp, 0, NULL, ir, TRUE);
         gmx_fio_fclose(gp);
     }
 
@@ -107,7 +112,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
         {
             indent = 0;
             pr_title(stdout, indent, fn);
-            pr_inputrec(stdout, 0, "inputrec", tpx.bIr ? &(ir) : NULL, FALSE);
+            pr_inputrec(stdout, 0, "inputrec", ir, FALSE);
 
             pr_tpxheader(stdout, indent, "header", &(tpx));
 
@@ -232,7 +237,7 @@ static void list_trr(const char *fn)
             indent = 0;
             indent = pr_title(stdout, indent, buf);
             pr_indent(stdout, indent);
-            fprintf(stdout, "natoms=%10d  step=%10d  time=%12.7e  lambda=%10g\n",
+            fprintf(stdout, "natoms=%10d  step=%10" GMX_PRId64 "  time=%12.7e  lambda=%10g\n",
                     trrheader.natoms, trrheader.step, trrheader.t, trrheader.lambda);
             if (trrheader.box_size)
             {
@@ -272,14 +277,15 @@ static void list_trr(const char *fn)
 
 void list_xtc(const char *fn)
 {
-    t_fileio  *xd;
-    int        indent;
-    char       buf[256];
-    rvec      *x;
-    matrix     box;
-    int        nframe, natoms, step;
-    real       prec, time;
-    gmx_bool   bOK;
+    t_fileio   *xd;
+    int         indent;
+    char        buf[256];
+    rvec       *x;
+    matrix      box;
+    int         nframe, natoms;
+    gmx_int64_t step;
+    real        prec, time;
+    gmx_bool    bOK;
 
     xd = open_xtc(fn, "r");
     read_first_xtc(xd, &natoms, &step, &time, box, &x, &prec, &bOK);
@@ -291,7 +297,7 @@ void list_xtc(const char *fn)
         indent = 0;
         indent = pr_title(stdout, indent, buf);
         pr_indent(stdout, indent);
-        fprintf(stdout, "natoms=%10d  step=%10d  time=%12.7e  prec=%10g\n",
+        fprintf(stdout, "natoms=%10d  step=%10" GMX_PRId64 "  time=%12.7e  prec=%10g\n",
                 natoms, step, time, prec);
         pr_rvecs(stdout, indent, "box", box, DIM);
         pr_rvecs(stdout, indent, "x", x, natoms);

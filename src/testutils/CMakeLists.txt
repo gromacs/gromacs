@@ -38,6 +38,7 @@ set(TESTUTILS_SOURCES
     integrationtests.cpp
     interactivetest.cpp
     mpi-printer.cpp
+    mpitest.cpp
     refdata.cpp
     refdata-xml.cpp
     stringtest.cpp
@@ -48,14 +49,24 @@ set(TESTUTILS_SOURCES
     testoptions.cpp
     textblockmatchers.cpp
     xvgtest.cpp
-    ../external/tinyxml2/tinyxml2.cpp
     )
+
+if(NOT HAVE_TINYXML2)
+    list(APPEND TESTUTILS_SOURCES ../external/tinyxml2/tinyxml2.cpp)
+endif()
 
 add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
 set(TESTUTILS_LIBS testutils)
 set_property(TARGET testutils APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
 set_property(TARGET testutils APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
 target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES})
+
+if(HAVE_TINYXML2)
+    include_directories(SYSTEM ${TinyXML2_INCLUDE_DIR})
+    target_link_libraries(testutils ${TinyXML2_LIBRARIES})
+else()
+    include_directories(BEFORE SYSTEM "../external/tinyxml2")
+endif()
 
 set(TESTUTILS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(TESTUTILS_DIR ${TESTUTILS_DIR} PARENT_SCOPE)

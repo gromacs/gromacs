@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,10 +44,6 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/symtab.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 enum {
     egcTC,    egcENER,   egcACC, egcFREEZE,
@@ -154,8 +150,8 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
              gmx_bool bShowNumbers);
 void pr_top(FILE *fp, int indent, const char *title, const t_topology *top, gmx_bool bShowNumbers);
 
-#ifdef __cplusplus
-}
-#endif
+void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol);
+void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
+                int natoms0, int natoms1);
 
 #endif

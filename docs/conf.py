@@ -46,11 +46,14 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
+import datetime
 import os
+import sys
 
 execfile('conf-vars.py')
 sys.path.append(gmx_sphinx_extension_path)
+if releng_path and os.path.isdir(releng_path):
+    sys.path.append(releng_path)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -60,14 +63,16 @@ sys.path.append(gmx_sphinx_extension_path)
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '1.3'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
     'sphinx.ext.graphviz',
-    'sphinx.ext.pngmath',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.imgmath',
     'sphinx.ext.ifconfig',
     'gmxsphinx'
 ]
@@ -86,7 +91,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'GROMACS'
-copyright = u'2015, GROMACS development team'
+copyright = str(datetime.datetime.now().year) + u', GROMACS development team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -175,7 +180,7 @@ rst_epilog += """
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = 'classic'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

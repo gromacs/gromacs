@@ -168,6 +168,10 @@ static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
             }
 
             pairs->param[i].c[j]      = scaling*nbs->param[i].c[j];
+            /* NOTE: this should be cleat to the compiler, but some gcc 5.2 versions
+             *  issue false positive warnings for the pairs->param.c[] indexing below.
+             */
+            assert(2*nrfp <= MAXFORCEPARAM);
             pairs->param[i].c[nrfp+j] = scaling*nbs->param[i].c[j];
         }
     }
@@ -1178,16 +1182,9 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
      * these interactions should be handled by the QM subroutines and
      * not by the gromacs routines
      */
-    int
-        i, j, l, k = 0, jmax, qm_max = 0, qm_nr = 0, nratoms = 0, link_nr = 0, link_max = 0;
-    int
-       *qm_arr = NULL, *link_arr = NULL, a1, a2, a3, a4, ftype = 0;
-    t_blocka
-        qmexcl;
-    t_block2
-        qmexcl2;
-    gmx_bool
-       *bQMMM, *blink, bexcl;
+    int       qm_max = 0, qm_nr = 0, link_nr = 0, link_max = 0;
+    int      *qm_arr = NULL, *link_arr = NULL;
+    gmx_bool *bQMMM, *blink;
 
     /* First we search and select the QM atoms in an qm_arr array that
      * we use to create the exclusions.
@@ -1198,13 +1195,12 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
      * for that we also need to do this an ugly work-about just in case
      * the QM group contains the entire system...
      */
-    jmax = ir->opts.ngQM;
 
     /* we first search for all the QM atoms and put them in an array
      */
-    for (j = 0; j < jmax; j++)
+    for (int j = 0; j < ir->opts.ngQM; j++)
     {
-        for (i = 0; i < molt->atoms.nr; i++)
+        for (int i = 0; i < molt->atoms.nr; i++)
         {
             if (qm_nr >= qm_max)
             {
@@ -1223,11 +1219,11 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
      * to TRUE.
      */
     snew(bQMMM, molt->atoms.nr);
-    for (i = 0; i < molt->atoms.nr; i++)
+    for (int i = 0; i < molt->atoms.nr; i++)
     {
         bQMMM[i] = FALSE;
     }
-    for (i = 0; i < qm_nr; i++)
+    for (int i = 0; i < qm_nr; i++)
     {
         bQMMM[qm_arr[i]] = TRUE;
     }
@@ -1242,76 +1238,89 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
      * are computed, the top->idef.il[N].iatom[] array (see idef.h) can
      * be rewritten at this poitn without any problem. 25-9-2002 */
 
-    /* first check weter we already have CONNBONDS: */
+    /* first check whether we already have CONNBONDS.
+     * Note that if we don't, we don't add a param entry and set ftype=0,
+     * which is ok, since CONNBONDS does not use parameters.
+     */
+    int ftype_connbond = 0;
+    int ind_connbond   = 0;
     if (molt->ilist[F_CONNBONDS].nr != 0)
     {
         fprintf(stderr, "nr. of CONNBONDS present already: %d\n",
                 molt->ilist[F_CONNBONDS].nr/3);
-        ftype = molt->ilist[F_CONNBONDS].iatoms[0];
-        k     = molt->ilist[F_CONNBONDS].nr;
+        ftype_connbond = molt->ilist[F_CONNBONDS].iatoms[0];
+        ind_connbond   = molt->ilist[F_CONNBONDS].nr;
     }
     /* now we delete all bonded interactions, except the ones describing
      * a chemical bond. These are converted to CONNBONDS
      */
-    for (i = 0; i < F_LJ; i++)
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (i == F_CONNBONDS)
+        if (!(interaction_function[ftype].flags & IF_BOND) ||
+            ftype == F_CONNBONDS)
         {
             continue;
         }
-        nratoms = interaction_function[i].nratoms;
-        j       = 0;
-        while (j < molt->ilist[i].nr)
+        int nratoms = interaction_function[ftype].nratoms;
+        int j       = 0;
+        while (j < molt->ilist[ftype].nr)
         {
-            switch (nratoms)
+            bool bexcl;
+
+            if (nratoms == 2)
             {
-                case 2:
-                    a1    = molt->ilist[i].iatoms[j+1];
-                    a2    = molt->ilist[i].iatoms[j+2];
-                    bexcl = (bQMMM[a1] && bQMMM[a2]);
-                    /* a bonded beteen two QM atoms will be copied to the
-                     * CONNBONDS list, for reasons mentioned above
-                     */
-                    if (bexcl && i < F_ANGLES)
+                /* Remove an interaction between two atoms when both are
+                 * in the QM region. Note that we don't have to worry about
+                 * link atoms here, as they won't have 2-atom interactions.
+                 */
+                int a1 = molt->ilist[ftype].iatoms[1 + j + 0];
+                int a2 = molt->ilist[ftype].iatoms[1 + j + 1];
+                bexcl  = (bQMMM[a1] && bQMMM[a2]);
+                /* A chemical bond between two QM atoms will be copied to
+                 * the F_CONNBONDS list, for reasons mentioned above.
+                 */
+                if (bexcl && IS_CHEMBOND(ftype))
+                {
+                    srenew(molt->ilist[F_CONNBONDS].iatoms, ind_connbond + 3);
+                    molt->ilist[F_CONNBONDS].nr                     += 3;
+                    molt->ilist[F_CONNBONDS].iatoms[ind_connbond++]  = ftype_connbond;
+                    molt->ilist[F_CONNBONDS].iatoms[ind_connbond++]  = a1;
+                    molt->ilist[F_CONNBONDS].iatoms[ind_connbond++]  = a2;
+                }
+            }
+            else
+            {
+                /* MM interactions have to be excluded if they are included
+                 * in the QM already. Because we use a link atom (H atom)
+                 * when the QM/MM boundary runs through a chemical bond, this
+                 * means that as long as one atom is MM, we still exclude,
+                 * as the interaction is included in the QM via:
+                 * QMatom1-QMatom2-QMatom-3-Linkatom.
+                 */
+                int numQmAtoms = 0;
+                for (int jj = j + 1; jj < j + 1 + nratoms; jj++)
+                {
+                    if (bQMMM[molt->ilist[ftype].iatoms[jj]])
                     {
-                        srenew(molt->ilist[F_CONNBONDS].iatoms, k+3);
-                        molt->ilist[F_CONNBONDS].nr         += 3;
-                        molt->ilist[F_CONNBONDS].iatoms[k++] = ftype;
-                        molt->ilist[F_CONNBONDS].iatoms[k++] = a1;
-                        molt->ilist[F_CONNBONDS].iatoms[k++] = a2;
+                        numQmAtoms++;
                     }
-                    break;
-                case 3:
-                    a1    = molt->ilist[i].iatoms[j+1];
-                    a2    = molt->ilist[i].iatoms[j+2];
-                    a3    = molt->ilist[i].iatoms[j+3];
-                    bexcl = ((bQMMM[a1] && bQMMM[a2]) ||
-                             (bQMMM[a1] && bQMMM[a3]) ||
-                             (bQMMM[a2] && bQMMM[a3]));
-                    break;
-                case 4:
-                    a1    = molt->ilist[i].iatoms[j+1];
-                    a2    = molt->ilist[i].iatoms[j+2];
-                    a3    = molt->ilist[i].iatoms[j+3];
-                    a4    = molt->ilist[i].iatoms[j+4];
-                    bexcl = ((bQMMM[a1] && bQMMM[a2] && bQMMM[a3]) ||
-                             (bQMMM[a1] && bQMMM[a2] && bQMMM[a4]) ||
-                             (bQMMM[a1] && bQMMM[a3] && bQMMM[a4]) ||
-                             (bQMMM[a2] && bQMMM[a3] && bQMMM[a4]));
-                    break;
-                default:
-                    gmx_fatal(FARGS, "no such bonded interactions with %d atoms\n", nratoms);
-                    bexcl = FALSE;
+                }
+                bexcl = (numQmAtoms >= nratoms - 1);
+
+                if (bexcl && ftype == F_SETTLE)
+                {
+                    gmx_fatal(FARGS, "Can not apply QM to molecules with SETTLE, replace the moleculetype using QM and SETTLE by one without SETTLE");
+                }
             }
             if (bexcl)
             {
                 /* since the interaction involves QM atoms, these should be
                  * removed from the MM ilist
                  */
-                molt->ilist[i].nr -= (nratoms+1);
-                for (l = j; l < molt->ilist[i].nr; l++)
+                molt->ilist[ftype].nr -= (nratoms+1);
+                for (int l = j; l < molt->ilist[ftype].nr; l++)
                 {
-                    molt->ilist[i].iatoms[l] = molt->ilist[i].iatoms[l+(nratoms+1)];
+                    molt->ilist[ftype].iatoms[l] = molt->ilist[ftype].iatoms[l+(nratoms+1)];
                 }
             }
             else
@@ -1326,15 +1335,15 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
      * linkatoms interaction with the QMatoms and would be counted
      * twice.  */
 
-    for (i = 0; i < F_NRE; i++)
+    for (int i = 0; i < F_NRE; i++)
     {
         if (IS_CHEMBOND(i))
         {
-            j = 0;
+            int j = 0;
             while (j < molt->ilist[i].nr)
             {
-                a1 = molt->ilist[i].iatoms[j+1];
-                a2 = molt->ilist[i].iatoms[j+2];
+                int a1 = molt->ilist[i].iatoms[j+1];
+                int a2 = molt->ilist[i].iatoms[j+2];
                 if ((bQMMM[a1] && !bQMMM[a2]) || (!bQMMM[a1] && bQMMM[a2]))
                 {
                     if (link_nr >= link_max)
@@ -1356,32 +1365,33 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
         }
     }
     snew(blink, molt->atoms.nr);
-    for (i = 0; i < molt->atoms.nr; i++)
+    for (int i = 0; i < molt->atoms.nr; i++)
     {
         blink[i] = FALSE;
     }
-    for (i = 0; i < link_nr; i++)
+    for (int i = 0; i < link_nr; i++)
     {
         blink[link_arr[i]] = TRUE;
     }
     /* creating the exclusion block for the QM atoms. Each QM atom has
      * as excluded elements all the other QMatoms (and itself).
      */
+    t_blocka  qmexcl;
     qmexcl.nr  = molt->atoms.nr;
     qmexcl.nra = qm_nr*(qm_nr+link_nr)+link_nr*qm_nr;
     snew(qmexcl.index, qmexcl.nr+1);
     snew(qmexcl.a, qmexcl.nra);
-    j = 0;
-    for (i = 0; i < qmexcl.nr; i++)
+    int j = 0;
+    for (int i = 0; i < qmexcl.nr; i++)
     {
         qmexcl.index[i] = j;
         if (bQMMM[i])
         {
-            for (k = 0; k < qm_nr; k++)
+            for (int k = 0; k < qm_nr; k++)
             {
                 qmexcl.a[k+j] = qm_arr[k];
             }
-            for (k = 0; k < link_nr; k++)
+            for (int k = 0; k < link_nr; k++)
             {
                 qmexcl.a[qm_nr+k+j] = link_arr[k];
             }
@@ -1389,7 +1399,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
         }
         if (blink[i])
         {
-            for (k = 0; k < qm_nr; k++)
+            for (int k = 0; k < qm_nr; k++)
             {
                 qmexcl.a[k+j] = qm_arr[k];
             }
@@ -1401,6 +1411,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
     /* and merging with the exclusions already present in sys.
      */
 
+    t_block2  qmexcl2;
     init_block2(&qmexcl2, molt->atoms.nr);
     b_to_b2(&qmexcl, &qmexcl2);
     merge_excl(&(molt->excls), &qmexcl2);
@@ -1411,24 +1422,24 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
      * as this interaction is already accounted for by the QM, so also
      * here we run the risk of double counting! We proceed in a similar
      * way as we did above for the other bonded interactions: */
-    for (i = F_LJ14; i < F_COUL14; i++)
+    for (int i = F_LJ14; i < F_COUL14; i++)
     {
-        nratoms = interaction_function[i].nratoms;
-        j       = 0;
+        int nratoms = interaction_function[i].nratoms;
+        int j       = 0;
         while (j < molt->ilist[i].nr)
         {
-            a1    = molt->ilist[i].iatoms[j+1];
-            a2    = molt->ilist[i].iatoms[j+2];
-            bexcl = ((bQMMM[a1] && bQMMM[a2]) ||
-                     (blink[a1] && bQMMM[a2]) ||
-                     (bQMMM[a1] && blink[a2]));
+            int  a1    = molt->ilist[i].iatoms[j+1];
+            int  a2    = molt->ilist[i].iatoms[j+2];
+            bool bexcl = ((bQMMM[a1] && bQMMM[a2]) ||
+                          (blink[a1] && bQMMM[a2]) ||
+                          (bQMMM[a1] && blink[a2]));
             if (bexcl)
             {
                 /* since the interaction involves QM atoms, these should be
                  * removed from the MM ilist
                  */
                 molt->ilist[i].nr -= (nratoms+1);
-                for (k = j; k < molt->ilist[i].nr; k++)
+                for (int k = j; k < molt->ilist[i].nr; k++)
                 {
                     molt->ilist[i].iatoms[k] = molt->ilist[i].iatoms[k+(nratoms+1)];
                 }

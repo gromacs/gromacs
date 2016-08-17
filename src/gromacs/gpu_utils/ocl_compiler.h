@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,54 +33,55 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal \file
- *  \brief Declare infrastructure for OpenCL JIT compilation for Gromacs
+ *  \brief Declare infrastructure for OpenCL JIT compilation
  *
  *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
  *  \author Anca Hamuraru <anca@streamcomputing.eu>
  *  \author Teemu Virolainen <teemu@streamcomputing.eu>
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
  *  \inlibraryapi
- *
- * TODO Currently this file handles compilation of NBNXN kernels,
- * but e.g. organizing the defines for various physics models
- * is leaking in here a bit.
  */
 #ifndef GMX_GPU_UTILS_OCL_COMPILER_H
 #define GMX_GPU_UTILS_OCL_COMPILER_H
 
+#include <string>
+
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 
-/*! \brief Vendor specific kernel sources
- *
- * Only affects the bottom level kernel sources (nbnxn_ocl_kernel_[spec].cl)
- */
-typedef enum {
-    generic_vendor_kernels = 0, /**< Standard (warp-less) source file with generated methods/energy/prune */
-    nvidia_vendor_kernels,      /**< Nvidia source file with generated methods/energy/prune */
-    amd_vendor_kernels,         /**< AMD source file with generated methods/energy/prune */
-    auto_vendor_kernels         /**< Compiler will select source based on vendor id*/
-} kernel_vendor_spec_t;
+namespace gmx
+{
+namespace ocl
+{
 
-/*! \brief Kernel sources index
+/*! \brief Compile the specified kernel for the context and device.
  *
- * For now there is only default source. One may add here future kernel versions etc.
- * This affect the top level kernel sources (nbnxn_ocl_kernels.cl)
- */
-typedef enum {
-    default_source = 0  /* The default top-level source  */
-} kernel_source_index_t;
+ * \param[out] fplog                 Open file pointer for log output
+ * \param[in]  kernelBaseFilename    The name of the kernel source file to compile, e.g. "nbnxn_ocl_kernels.cl"
+ * \param[in]  extraDefines          Preprocessor defines required by the calling code, e.g. for configuring the kernels
+ * \param[in]  context               OpenCL context on the device to compile for
+ * \param[in]  deviceId              OpenCL device id of the device to compile for
+ * \param[in]  deviceVendorId        Enumerator of the device vendor to compile for
+ *
+ * \returns The compiled OpenCL program
+ *
+ * \todo Consider whether we can parallelize the compilation of all
+ * the kernels by compiling them in separate programs - but since the
+ * resulting programs can't refer to each other, that might lead to
+ * bloat of util code?
+ *
+ * \throws std::bad_alloc  if out of memory.
+ *         FileIOError     if a file I/O error prevents returning a valid compiled program.
+ *         InternalError   if an OpenCL API error prevents returning a valid compiled program. */
+cl_program
+compileProgram(FILE              *fplog,
+               const std::string &kernelBaseFilename,
+               const std::string &extraDefines,
+               cl_context         context,
+               cl_device_id       deviceId,
+               ocl_vendor_id_t    deviceVendorId);
 
-cl_int
-ocl_compile_program(
-        kernel_source_index_t kernel_source_file,
-        kernel_vendor_spec_t  kernel_vendor_spec,
-        const char *          defines_for_kernel_types,
-        char *                result_str,
-        cl_context            context,
-        cl_device_id          device_id,
-        ocl_vendor_id_t       ocl_device_vendor,
-        cl_program *          p_program,
-        const char *          custom_build_options
-        );
+} // namespace
+} // namespace
 
 #endif

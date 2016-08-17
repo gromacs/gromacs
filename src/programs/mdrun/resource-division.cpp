@@ -44,7 +44,6 @@
 
 #include <algorithm>
 
-#include "gromacs/gmxlib/md_logging.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
@@ -57,6 +56,8 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/stringutil.h"
 
 
 /* DISCLAIMER: All the atom count and thread numbers below are heuristic.
@@ -257,7 +258,7 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
 }
 
 
-static int getMaxGpuUsable(FILE *fplog, const t_commrec *cr, const gmx_hw_info_t *hwinfo,
+static int getMaxGpuUsable(const gmx::MDLogger &mdlog, const gmx_hw_info_t *hwinfo,
                            int cutoff_scheme, gmx_bool bUseGpu)
 {
     /* This code relies on the fact that GPU are not detected when GPU
@@ -275,7 +276,7 @@ static int getMaxGpuUsable(FILE *fplog, const t_commrec *cr, const gmx_hw_info_t
         {
             if (hwinfo->gpu_info.n_dev_compatible > 1)
             {
-                md_print_warn(cr, fplog, "More than one compatible GPU is available, but GROMACS can only use one of them. Using a single thread-MPI rank.\n");
+                GMX_LOG(mdlog.warning).asParagraph().appendText("More than one compatible GPU is available, but GROMACS can only use one of them. Using a single thread-MPI rank.");
             }
             return 1;
         }
@@ -295,6 +296,44 @@ gmxSmtIsEnabled(const gmx::HardwareTopology &hwTop)
     return (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic && hwTop.machine().sockets[0].cores[0].hwThreads.size() > 1);
 }
 
+namespace
+{
+
+class SingleRankChecker
+{
+    public:
+        //! Constructor
+        SingleRankChecker() : value_(false), reasons_() {}
+        /*! \brief Call this function for each possible condition
+            under which a single rank is required, along with a string
+            describing the constraint when it is applied. */
+        void applyConstraint(bool condition, const char *description)
+        {
+            if (condition)
+            {
+                value_ = true;
+                reasons_.push_back(gmx::formatString("%s only supports a single rank.", description));
+            }
+        }
+        //! After applying any conditions, is a single rank required?
+        bool mustUseOneRank() const
+        {
+            return value_;
+        }
+        /*! \brief Return a formatted string to use when writing a
+            message when a single rank is required, (or empty if no
+            constraint exists.) */
+        std::string getMessage() const
+        {
+            return formatAndJoin(reasons_, "\n", gmx::IdentityFormatter());
+        }
+    private:
+        bool                     value_;
+        std::vector<std::string> reasons_;
+};
+
+} // namespace
+
 /* Get the number of MPI ranks to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
  * and how many particles there are.
@@ -306,9 +345,9 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                      gmx_hw_opt_t        *hw_opt,
                      const t_inputrec    *inputrec,
                      const gmx_mtop_t    *mtop,
-                     const t_commrec     *cr,
-                     FILE                *fplog,
-                     gmx_bool             bUseGpu)
+                     const gmx::MDLogger &mdlog,
+                     gmx_bool             bUseGpu,
+                     bool                 doMembed)
 {
     int                          nthreads_hw, nthreads_tot_max, nrank, ngpu;
     int                          min_atoms_per_mpi_rank;
@@ -316,17 +355,25 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     const gmx::CpuInfo          &cpuInfo = *hwinfo->cpuInfo;
     const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
 
-    /* Check if an algorithm does not support parallel simulation.  */
-    if (inputrec->eI == eiLBFGS ||
-        inputrec->coulombtype == eelEWALD)
     {
-        md_print_warn(cr, fplog, "The integration or electrostatics algorithm doesn't support parallel runs. Using a single thread-MPI rank.\n");
-        if (hw_opt->nthreads_tmpi > 1)
+        /* Check if an algorithm does not support parallel simulation.  */
+        // TODO This might work better if e.g. implemented algorithms
+        // had to define a function that returns such requirements,
+        // and a description string.
+        SingleRankChecker checker;
+        checker.applyConstraint(inputrec->eI == eiLBFGS, "L-BFGS minimization");
+        checker.applyConstraint(inputrec->coulombtype == eelEWALD, "Plain Ewald electrostatics");
+        checker.applyConstraint(doMembed, "Membrane embedding");
+        if (checker.mustUseOneRank())
         {
-            gmx_fatal(FARGS, "You asked for more than 1 thread-MPI rank, but an algorithm doesn't support that");
+            std::string message = checker.getMessage();
+            if (hw_opt->nthreads_tmpi > 1)
+            {
+                gmx_fatal(FARGS, "%s However, you asked for more than 1 thread-MPI rank, so mdrun cannot continue. Choose a single rank, or a different algorithm.", message.c_str());
+            }
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("%s Choosing to use only a single thread-MPI rank.", message.c_str());
+            return 1;
         }
-
-        return 1;
     }
 
     if (hw_opt->nthreads_tmpi > 0)
@@ -353,7 +400,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
         nthreads_tot_max = nthreads_hw;
     }
 
-    ngpu = getMaxGpuUsable(fplog, cr, hwinfo, inputrec->cutoff_scheme, bUseGpu);
+    ngpu = getMaxGpuUsable(mdlog, hwinfo, inputrec->cutoff_scheme, bUseGpu);
 
     if (inputrec->cutoff_scheme == ecutsGROUP)
     {
@@ -475,7 +522,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
                                         const gmx_hw_opt_t  *hw_opt,
                                         gmx_bool             bNtOmpOptionSet,
                                         t_commrec           *cr,
-                                        FILE                *fplog)
+                                        const gmx::MDLogger &mdlog)
 {
 #if GMX_OPENMP && GMX_MPI
     int         nth_omp_min, nth_omp_max, ngpu;
@@ -544,7 +591,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
 
             if (bNtOmpOptionSet)
             {
-                md_print_warn(cr, fplog, "NOTE: %s\n", buf);
+                GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("NOTE: %s", buf);
             }
             else
             {
@@ -592,7 +639,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
              */
             if (bNtOmpOptionSet || (bEnvSet && nth_omp_min != nth_omp_max))
             {
-                md_print_warn(cr, fplog, "NOTE: %s\n", buf);
+                GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("NOTE: %s", buf);
             }
             else
             {
@@ -604,21 +651,14 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
       /* No OpenMP and/or MPI: it doesn't make much sense to check */
     GMX_UNUSED_VALUE(hw_opt);
     GMX_UNUSED_VALUE(bNtOmpOptionSet);
+    GMX_UNUSED_VALUE(cr);
     /* Check if we have more than 1 physical core, if detected,
      * or more than 1 hardware thread if physical cores were not detected.
      */
-#if !GMX_OPENMP && !GMX_MPI
-    if ((hwinfo->ncore > 1) ||
-        (hwinfo->ncore == 0 && hwinfo->nthreads_hw_avail > 1))
+    if (!GMX_OPENMP && !GMX_MPI && hwinfo->hardwareTopology->numberOfCores() > 1)
     {
-        md_print_warn(cr, fplog, "NOTE: GROMACS was compiled without OpenMP and (thread-)MPI support, can only use a single CPU core\n");
+        GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: GROMACS was compiled without OpenMP and (thread-)MPI support, can only use a single CPU core");
     }
-#else
-    GMX_UNUSED_VALUE(hwinfo);
-    GMX_UNUSED_VALUE(cr);
-    GMX_UNUSED_VALUE(fplog);
-#endif
-
 #endif /* GMX_OPENMP && GMX_MPI */
 }
 

@@ -101,7 +101,7 @@
  * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
  * per multiprocessor is reduced proportionally to get the original number of max
  * threads in flight (and slightly lower performance).
- * - On CC 3.7 there are enough registers to double the number of threads; using
+ * - On CC 3.7 and 6.0 there are enough registers to double the number of threads; using
  * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
  * with low-register use).
  *
@@ -112,16 +112,18 @@
 /* Kernel launch bounds for different compute capabilities. The value of NTHREAD_Z
  * determines the number of threads per block and it is chosen such that
  * 16 blocks/multiprocessor can be kept in flight.
- * - CC 2.x, 3.0, 3.5, 5.x: NTHREAD_Z=1, (64, 16) bounds
- * - CC 3.7:                NTHREAD_Z=2, (128, 16) bounds
+ * - CC 3.0/3.5/5.x, >=6.1: NTHREAD_Z=1, (64, 16) bounds
+ * - CC 3.7, 6.0:           NTHREAD_Z=2, (128, 16) bounds
+ *
+ * Note: convenience macros, need to be undef-ed at the end of the file.
  */
-#if GMX_PTX_ARCH == 370
+#if GMX_PTX_ARCH == 370 || GMX_PTX_ARCH == 600
     #define NTHREAD_Z           (2)
     #define MIN_BLOCKS_PER_MP   (16)
 #else
     #define NTHREAD_Z           (1)
     #define MIN_BLOCKS_PER_MP   (16)
-#endif /* GMX_PTX_ARCH == 370 */
+#endif /* GMX_PTX_ARCH == 370 || GMX_PTX_ARCH == 600 */
 #define THREADS_PER_BLOCK   (c_clSize*c_clSize*NTHREAD_Z)
 
 #if GMX_PTX_ARCH >= 350
@@ -252,13 +254,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     extern __shared__  float4 xqib[];
 
     /* shmem buffer for cj, for each warp separately */
-    int *cjs       = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + tidxz * 2 * c_nbnxnGpuJgroupSize;
+    int *cjs       = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
+    int *cjs_end   = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
 #ifndef LJ_COMB
     /* shmem buffer for i atom-type pre-loading */
-    int *atib      = ((int *)(xqib + c_numClPerSupercl * c_clSize)) + NTHREAD_Z * 2 * c_nbnxnGpuJgroupSize;
+    int *atib      = cjs_end;
 #else
     /* shmem buffer for i-atom LJ combination rule parameters */
-    float2 *ljcpib = ((float2 *)(xqib + c_numClPerSupercl * c_clSize)) + NTHREAD_Z * 2 * c_nbnxnGpuJgroupSize;
+    float2 *ljcpib = (float2 *)cjs_end;
 #endif
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
@@ -440,8 +443,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif                          /* LJ_COMB_GEOM */
 #endif                          /* LJ_COMB */
 
-                                /* avoid NaN for excluded pairs at r=0 */
-                                r2      += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
+                                // Ensure distance do not become so small that r^-12 overflows
+                                r2      = max(r2, NBNXN_MIN_RSQ);
 
                                 inv_r   = rsqrt(r2);
                                 inv_r2  = inv_r * inv_r;

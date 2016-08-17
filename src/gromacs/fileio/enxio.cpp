@@ -52,6 +52,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/compare.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -965,6 +966,8 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
         {
             fprintf(stderr, "\rLast energy frame read %d time %8.3f         ",
                     ef->framenr-1, ef->frametime);
+            fflush(stderr);
+
             if (!bOK)
             {
                 fprintf(stderr,
@@ -996,12 +999,11 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
     {
         bSane = bSane || (fr->block[b].nsub > 0);
     }
-    if (!((fr->step >= 0) && bSane))
+    if (!((fr->step >= 0) && bSane) && bRead)
     {
         fprintf(stderr, "\nWARNING: there may be something wrong with energy file %s\n",
                 gmx_fio_getname(ef->fio));
-        fprintf(stderr, "Found: step=%" GMX_PRId64 ", nre=%d, nblock=%d, time=%g.\n"
-                "Trying to skip frame expect a crash though\n",
+        fprintf(stderr, "Found: step=%" GMX_PRId64 ", nre=%d, nblock=%d, time=%g.\n",
                 fr->step, fr->nre, fr->nblock, fr->t);
     }
     if (bRead && fr->nre > fr->e_alloc)
@@ -1244,4 +1246,365 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
     free_enxnms(nre, enm);
     free_enxframe(fr);
     sfree(fr);
+}
+
+static real ener_tensor_diag(int n, int *ind1, int *ind2,
+                             gmx_enxnm_t *enm1,
+                             int *tensi, int i,
+                             t_energy e1[], t_energy e2[])
+{
+    int    d1, d2;
+    int    j;
+    real   prod1, prod2;
+    int    nfound;
+    size_t len;
+
+    d1 = tensi[i]/DIM;
+    d2 = tensi[i] - d1*DIM;
+
+    /* Find the diagonal elements d1 and d2 */
+    len    = std::strlen(enm1[ind1[i]].name);
+    prod1  = 1;
+    prod2  = 1;
+    nfound = 0;
+    for (j = 0; j < n; j++)
+    {
+        if (tensi[j] >= 0 &&
+            std::strlen(enm1[ind1[j]].name) == len &&
+            std::strncmp(enm1[ind1[i]].name, enm1[ind1[j]].name, len-2) == 0 &&
+            (tensi[j] == d1*DIM+d1 || tensi[j] == d2*DIM+d2))
+        {
+            prod1 *= fabs(e1[ind1[j]].e);
+            prod2 *= fabs(e2[ind2[j]].e);
+            nfound++;
+        }
+    }
+
+    if (nfound == 2)
+    {
+        return 0.5*(std::sqrt(prod1) + std::sqrt(prod2));
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+static gmx_bool enernm_equal(const char *nm1, const char *nm2)
+{
+    int len1, len2;
+
+    len1 = std::strlen(nm1);
+    len2 = std::strlen(nm2);
+
+    /* Remove " (bar)" at the end of a name */
+    if (len1 > 6 && std::strcmp(nm1+len1-6, " (bar)") == 0)
+    {
+        len1 -= 6;
+    }
+    if (len2 > 6 && std::strcmp(nm2+len2-6, " (bar)") == 0)
+    {
+        len2 -= 6;
+    }
+
+    return (len1 == len2 && gmx_strncasecmp(nm1, nm2, len1) == 0);
+}
+
+static void cmp_energies(FILE *fp, int step1, int step2,
+                         t_energy e1[], t_energy e2[],
+                         gmx_enxnm_t *enm1,
+                         real ftol, real abstol,
+                         int nre, int *ind1, int *ind2, int maxener)
+{
+    int   i, ii;
+    int  *tensi, len, d1, d2;
+    real  ftol_i, abstol_i;
+
+    snew(tensi, maxener);
+    /* Check for tensor elements ending on "-XX", "-XY", ... , "-ZZ" */
+    for (i = 0; (i < maxener); i++)
+    {
+        ii       = ind1[i];
+        tensi[i] = -1;
+        len      = std::strlen(enm1[ii].name);
+        if (len > 3 && enm1[ii].name[len-3] == '-')
+        {
+            d1 = enm1[ii].name[len-2] - 'X';
+            d2 = enm1[ii].name[len-1] - 'X';
+            if (d1 >= 0 && d1 < DIM &&
+                d2 >= 0 && d2 < DIM)
+            {
+                tensi[i] = d1*DIM + d2;
+            }
+        }
+    }
+
+    for (i = 0; (i < maxener); i++)
+    {
+        /* Check if this is an off-diagonal tensor element */
+        if (tensi[i] >= 0 && tensi[i] != 0 && tensi[i] != 4 && tensi[i] != 8)
+        {
+            /* Turn on the relative tolerance check (4 is maximum relative diff.) */
+            ftol_i = 5;
+            /* Do the relative tolerance through an absolute tolerance times
+             * the size of diagonal components of the tensor.
+             */
+            abstol_i = ftol*ener_tensor_diag(nre, ind1, ind2, enm1, tensi, i, e1, e2);
+            if (debug)
+            {
+                fprintf(debug, "tensor '%s' val %f diag %f\n",
+                        enm1[i].name, e1[i].e, abstol_i/ftol);
+            }
+            if (abstol_i > 0)
+            {
+                /* We found a diagonal, we need to check with the minimum tolerance */
+                abstol_i = std::min(abstol_i, abstol);
+            }
+            else
+            {
+                /* We did not find a diagonal, ignore the relative tolerance check */
+                abstol_i = abstol;
+            }
+        }
+        else
+        {
+            ftol_i   = ftol;
+            abstol_i = abstol;
+        }
+        if (!equal_real(e1[ind1[i]].e, e2[ind2[i]].e, ftol_i, abstol_i))
+        {
+            fprintf(fp, "%-15s  step %3d:  %12g,  step %3d: %12g\n",
+                    enm1[ind1[i]].name,
+                    step1, e1[ind1[i]].e,
+                    step2, e2[ind2[i]].e);
+        }
+    }
+
+    sfree(tensi);
+}
+
+#if 0
+static void cmp_disres(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol)
+{
+    int  i;
+    char bav[64], bt[64], bs[22];
+
+    cmp_int(stdout, "ndisre", -1, fr1->ndisre, fr2->ndisre);
+    if ((fr1->ndisre == fr2->ndisre) && (fr1->ndisre > 0))
+    {
+        sprintf(bav, "step %s: disre rav", gmx_step_str(fr1->step, bs));
+        sprintf(bt, "step %s: disre  rt", gmx_step_str(fr1->step, bs));
+        for (i = 0; (i < fr1->ndisre); i++)
+        {
+            cmp_real(stdout, bav, i, fr1->disre_rm3tav[i], fr2->disre_rm3tav[i], ftol, abstol);
+            cmp_real(stdout, bt, i, fr1->disre_rt[i], fr2->disre_rt[i], ftol, abstol);
+        }
+    }
+}
+#endif
+
+static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol)
+{
+    int  i, j, k;
+    char buf[64], bs[22];
+
+    cmp_int(stdout, "nblock", -1, fr1->nblock, fr2->nblock);
+    if ((fr1->nblock == fr2->nblock) && (fr1->nblock > 0))
+    {
+        for (j = 0; (j < fr1->nblock); j++)
+        {
+            t_enxblock *b1, *b2; /* convenience vars */
+
+            b1 = &(fr1->block[j]);
+            b2 = &(fr2->block[j]);
+
+            sprintf(buf, "step %s: block[%d]", gmx_step_str(fr1->step, bs), j);
+            cmp_int(stdout, buf, -1, b1->nsub, b2->nsub);
+            cmp_int(stdout, buf, -1, b1->id, b2->id);
+
+            if ( (b1->nsub == b2->nsub) && (b1->id == b2->id) )
+            {
+                for (i = 0; i < b1->nsub; i++)
+                {
+                    t_enxsubblock *s1, *s2;
+
+                    s1 = &(b1->sub[i]);
+                    s2 = &(b2->sub[i]);
+
+                    cmp_int(stdout, buf, -1, (int)s1->type, (int)s2->type);
+                    cmp_int64(stdout, buf, s1->nr, s2->nr);
+
+                    if ((s1->type == s2->type) && (s1->nr == s2->nr))
+                    {
+                        switch (s1->type)
+                        {
+                            case xdr_datatype_float:
+                                for (k = 0; k < s1->nr; k++)
+                                {
+                                    cmp_float(stdout, buf, i,
+                                              s1->fval[k], s2->fval[k],
+                                              ftol, abstol);
+                                }
+                                break;
+                            case xdr_datatype_double:
+                                for (k = 0; k < s1->nr; k++)
+                                {
+                                    cmp_double(stdout, buf, i,
+                                               s1->dval[k], s2->dval[k],
+                                               ftol, abstol);
+                                }
+                                break;
+                            case xdr_datatype_int:
+                                for (k = 0; k < s1->nr; k++)
+                                {
+                                    cmp_int(stdout, buf, i,
+                                            s1->ival[k], s2->ival[k]);
+                                }
+                                break;
+                            case xdr_datatype_int64:
+                                for (k = 0; k < s1->nr; k++)
+                                {
+                                    cmp_int64(stdout, buf,
+                                              s1->lval[k], s2->lval[k]);
+                                }
+                                break;
+                            case xdr_datatype_char:
+                                for (k = 0; k < s1->nr; k++)
+                                {
+                                    cmp_uc(stdout, buf, i,
+                                           s1->cval[k], s2->cval[k]);
+                                }
+                                break;
+                            case xdr_datatype_string:
+                                for (k = 0; k < s1->nr; k++)
+                                {
+                                    cmp_str(stdout, buf, i,
+                                            s1->sval[k], s2->sval[k]);
+                                }
+                                break;
+                            default:
+                                gmx_incons("Unknown data type!!");
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const char *lastener)
+{
+    int            nre, nre1, nre2;
+    ener_file_t    in1, in2;
+    int            i, j, maxener, *ind1, *ind2, *have;
+    gmx_enxnm_t   *enm1 = NULL, *enm2 = NULL;
+    t_enxframe    *fr1, *fr2;
+    gmx_bool       b1, b2;
+
+    fprintf(stdout, "comparing energy file %s and %s\n\n", fn1, fn2);
+
+    in1 = open_enx(fn1, "r");
+    in2 = open_enx(fn2, "r");
+    do_enxnms(in1, &nre1, &enm1);
+    do_enxnms(in2, &nre2, &enm2);
+    if (nre1 != nre2)
+    {
+        fprintf(stdout, "There are %d and %d terms in the energy files\n\n",
+                nre1, nre2);
+    }
+    else
+    {
+        fprintf(stdout, "There are %d terms in the energy files\n\n", nre1);
+    }
+
+    snew(ind1, nre1);
+    snew(ind2, nre2);
+    snew(have, nre2);
+    nre = 0;
+    for (i = 0; i < nre1; i++)
+    {
+        for (j = 0; j < nre2; j++)
+        {
+            if (enernm_equal(enm1[i].name, enm2[j].name))
+            {
+                ind1[nre] = i;
+                ind2[nre] = j;
+                have[j]   = 1;
+                nre++;
+                break;
+            }
+        }
+        if (nre == 0 || ind1[nre-1] != i)
+        {
+            cmp_str(stdout, "enm", i, enm1[i].name, "-");
+        }
+    }
+    for (i = 0; i < nre2; i++)
+    {
+        if (have[i] == 0)
+        {
+            cmp_str(stdout, "enm", i, "-", enm2[i].name);
+        }
+    }
+
+    maxener = nre;
+    for (i = 0; i < nre; i++)
+    {
+        if ((lastener != NULL) && (std::strstr(enm1[i].name, lastener) != NULL))
+        {
+            maxener = i+1;
+            break;
+        }
+    }
+
+    fprintf(stdout, "There are %d terms to compare in the energy files\n\n",
+            maxener);
+
+    for (i = 0; i < maxener; i++)
+    {
+        cmp_str(stdout, "unit", i, enm1[ind1[i]].unit, enm2[ind2[i]].unit);
+    }
+
+    snew(fr1, 1);
+    snew(fr2, 1);
+    do
+    {
+        b1 = do_enx(in1, fr1);
+        b2 = do_enx(in2, fr2);
+        if (b1 && !b2)
+        {
+            fprintf(stdout, "\nEnd of file on %s but not on %s\n", fn2, fn1);
+        }
+        else if (!b1 && b2)
+        {
+            fprintf(stdout, "\nEnd of file on %s but not on %s\n", fn1, fn2);
+        }
+        else if (!b1 && !b2)
+        {
+            fprintf(stdout, "\nFiles read successfully\n");
+        }
+        else
+        {
+            cmp_real(stdout, "t", -1, fr1->t, fr2->t, ftol, abstol);
+            cmp_int(stdout, "step", -1, fr1->step, fr2->step);
+            /* We don't want to print the nre mismatch for every frame */
+            /* cmp_int(stdout,"nre",-1,fr1->nre,fr2->nre); */
+            if ((fr1->nre >= nre) && (fr2->nre >= nre))
+            {
+                cmp_energies(stdout, fr1->step, fr1->step, fr1->ener, fr2->ener,
+                             enm1, ftol, abstol, nre, ind1, ind2, maxener);
+            }
+            /*cmp_disres(fr1,fr2,ftol,abstol);*/
+            cmp_eblocks(fr1, fr2, ftol, abstol);
+        }
+    }
+    while (b1 && b2);
+
+    close_enx(in1);
+    close_enx(in2);
+
+    free_enxframe(fr2);
+    sfree(fr2);
+    free_enxframe(fr1);
+    sfree(fr1);
 }

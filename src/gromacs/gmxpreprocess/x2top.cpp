@@ -129,6 +129,7 @@ void mk_bonds(int nnm, t_nm2type nmt[],
         if ((i % 10) == 0)
         {
             fprintf(stderr, "\ratom %d", i);
+            fflush(stderr);
         }
         for (j = i+1; (j < atoms->nr); j++)
         {
@@ -160,6 +161,7 @@ void mk_bonds(int nnm, t_nm2type nmt[],
         }
     }
     fprintf(stderr, "\ratom %d\n", i);
+    fflush(stderr);
 }
 
 int *set_cgnr(t_atoms *atoms, gmx_bool bUsePDBcharge, real *qtot, real *mtot)

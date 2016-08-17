@@ -272,7 +272,7 @@ static inline int calc_shmem_required(const int num_threads_z, gmx_device_info_t
     /* i-atom x+q in shared memory */
     shmem  = c_numClPerSupercl * c_clSize * sizeof(float4);
     /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * 2 * c_nbnxnGpuJgroupSize * sizeof(int);
+    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
     if (dinfo->prop.major >= 3)
     {
         if (nbp->vdwtype == evdwCuCUTCOMBGEOM ||
@@ -423,7 +423,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int num_threads_z = 1;
-    if (nb->dev_info->prop.major == 3 && nb->dev_info->prop.minor == 7)
+    if ((nb->dev_info->prop.major == 3 && nb->dev_info->prop.minor == 7) ||
+        (nb->dev_info->prop.major == 6 && nb->dev_info->prop.minor == 0))
     {
         num_threads_z = 2;
     }

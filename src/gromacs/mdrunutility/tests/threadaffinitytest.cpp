@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +32,63 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GMXLIB_MD_LOGGING_H
-#define GMX_GMXLIB_MD_LOGGING_H
+#include "gmxpre.h"
 
-#include <cstdio>
+#include "threadaffinitytest.h"
 
-struct t_commrec;
+#include "config.h"
 
-void md_print_info(const t_commrec *cr, FILE *fplog,
-                   const char *fmt, ...);
-/* Print an general information message to stderr on the master node
- * and to fplog if fplog!=NULL.
- * fmt is a standard printf formatting string which should end in \n,
- * the arguments after that contain the values to be printed, as in printf.
- */
+#include <gmock/gmock.h>
 
-void md_print_warn(const t_commrec *cr, FILE *fplog,
-                   const char *fmt, ...);
-/* As md_print_info above, but for important notices or warnings.
- * The only difference with md_print_info is that a newline is printed
- * before and after the message such that it stands out.
- */
+#include "gromacs/hardware/hardwaretopology.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+namespace test
+{
+
+MockThreadAffinityAccess::MockThreadAffinityAccess()
+    : supported_(true)
+{
+    using ::testing::_;
+    using ::testing::Return;
+    ON_CALL(*this, setCurrentThreadAffinityToCore(_))
+        .WillByDefault(Return(true));
+}
+
+MockThreadAffinityAccess::~MockThreadAffinityAccess()
+{
+}
+
+
+ThreadAffinityTestHelper::ThreadAffinityTestHelper()
+{
+    snew(cr_, 1);
+    cr_->nnodes         = gmx_node_num();
+    cr_->nodeid         = gmx_node_rank();
+    cr_->rank_intranode = cr_->nodeid;
+    cr_->duty           = DUTY_PP;
+#if GMX_MPI
+    cr_->mpi_comm_mysim = MPI_COMM_WORLD;
 #endif
+    snew(hwOpt_, 1);
+    hwOpt_->thread_affinity = threadaffAUTO;
+}
+
+ThreadAffinityTestHelper::~ThreadAffinityTestHelper()
+{
+    sfree(cr_);
+    sfree(hwOpt_);
+}
+
+void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
+{
+    hwTop_.reset(new HardwareTopology(logicalProcessorCount));
+}
+
+} // namespace test
+} // namespace gmx

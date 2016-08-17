@@ -44,6 +44,7 @@
 #include <algorithm>
 
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/compare.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
@@ -323,6 +324,51 @@ void pr_atomtypes(FILE *fp, int indent, const char *title, const t_atomtypes *at
                     bShowNumbers ? i : -1, atomtypes->radius[i], atomtypes->vol[i],
                     atomtypes->gb_radius[i],
                     atomtypes->surftens[i], atomtypes->atomnumber[i], atomtypes->S_hct[i]);
+        }
+    }
+}
+
+static void cmp_atom(FILE *fp, int index, const t_atom *a1, const t_atom *a2, real ftol, real abstol)
+{
+    if (a2)
+    {
+        cmp_us(fp, "atom.type", index, a1->type, a2->type);
+        cmp_us(fp, "atom.ptype", index, a1->ptype, a2->ptype);
+        cmp_int(fp, "atom.resind", index, a1->resind, a2->resind);
+        cmp_int(fp, "atom.atomnumber", index, a1->atomnumber, a2->atomnumber);
+        cmp_real(fp, "atom.m", index, a1->m, a2->m, ftol, abstol);
+        cmp_real(fp, "atom.q", index, a1->q, a2->q, ftol, abstol);
+        cmp_us(fp, "atom.typeB", index, a1->typeB, a2->typeB);
+        cmp_real(fp, "atom.mB", index, a1->mB, a2->mB, ftol, abstol);
+        cmp_real(fp, "atom.qB", index, a1->qB, a2->qB, ftol, abstol);
+    }
+    else
+    {
+        cmp_us(fp, "atom.type", index, a1->type, a1->typeB);
+        cmp_real(fp, "atom.m", index, a1->m, a1->mB, ftol, abstol);
+        cmp_real(fp, "atom.q", index, a1->q, a1->qB, ftol, abstol);
+    }
+}
+
+void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real abstol)
+{
+    int i;
+
+    fprintf(fp, "comparing atoms\n");
+
+    if (a2)
+    {
+        cmp_int(fp, "atoms->nr", -1, a1->nr, a2->nr);
+        for (i = 0; (i < a1->nr); i++)
+        {
+            cmp_atom(fp, i, &(a1->atom[i]), &(a2->atom[i]), ftol, abstol);
+        }
+    }
+    else
+    {
+        for (i = 0; (i < a1->nr); i++)
+        {
+            cmp_atom(fp, i, &(a1->atom[i]), NULL, ftol, abstol);
         }
     }
 }

@@ -102,10 +102,10 @@ TEST(UniformRealDistributionTest, Logical)
 
 TEST(UniformRealDistributionTest, Reset)
 {
-    gmx::ThreeFry2x64<8>                           rng(123456, gmx::RandomDomain::Other);
-    gmx::UniformRealDistribution<real>             distA(2.0, 5.0);
-    gmx::UniformRealDistribution<real>             distB(2.0, 5.0);
-    gmx::UniformRealDistribution<>::result_type    valA, valB;
+    gmx::ThreeFry2x64<8>                             rng(123456, gmx::RandomDomain::Other);
+    gmx::UniformRealDistribution<real>               distA(2.0, 5.0);
+    gmx::UniformRealDistribution<real>               distB(2.0, 5.0);
+    gmx::UniformRealDistribution<real>::result_type  valA, valB;
 
     valA = distA(rng);
 
@@ -115,7 +115,9 @@ TEST(UniformRealDistributionTest, Reset)
 
     valB = distB(rng);
 
-    EXPECT_EQ(valA, valB);
+    // Use floating-point test with no tolerance rather than exact
+    // test, since the later fails with 32-bit gcc-4.8.4
+    EXPECT_REAL_EQ_TOL(valA, valB, gmx::test::ulpTolerance(0));
 }
 
 TEST(UniformRealDistributionTest, AltParam)
@@ -125,13 +127,20 @@ TEST(UniformRealDistributionTest, AltParam)
     gmx::UniformRealDistribution<real>              distA(2.0, 5.0);
     gmx::UniformRealDistribution<real>              distB; // default parameters
     gmx::UniformRealDistribution<real>::param_type  paramA(2.0, 5.0);
+    gmx::UniformRealDistribution<real>::result_type valA, valB;
 
     EXPECT_NE(distA(rngA), distB(rngB));
     rngA.restart();
     rngB.restart();
     distA.reset();
     distB.reset();
-    EXPECT_EQ(distA(rngA), distB(rngB, paramA));
+
+    valA = distA(rngA);
+    valB = distB(rngB, paramA);
+
+    // Use floating-point test with no tolerance rather than exact test,
+    // since the latter fails with 32-bit gcc-4.8.4
+    EXPECT_REAL_EQ_TOL(valA, valB, gmx::test::ulpTolerance(0));
 }
 
 }      // namespace anonymous

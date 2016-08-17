@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,62 +32,57 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+/*! \internal \file
+ * \brief Defines functionality used to test mdrun termination
+ * functionality under different conditions
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_mdrun_integration_tests
+ */
 #include "gmxpre.h"
 
-#include "md_logging.h"
+#include "terminationhelper.h"
 
-#include <cstdarg>
-#include <cstdio>
+#include <gtest/gtest.h>
 
-#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/path.h"
 
+#include "testutils/testfilemanager.h"
 
-void md_print_info(const t_commrec *cr, FILE *fplog,
-                   const char *fmt, ...)
+namespace gmx
 {
-    va_list ap;
+namespace test
+{
 
-    if (cr == NULL || SIMMASTER(cr))
-    {
-        va_start(ap, fmt);
-
-        vfprintf(stderr, fmt, ap);
-
-        va_end(ap);
-    }
-    if (fplog != NULL)
-    {
-        va_start(ap, fmt);
-
-        vfprintf(fplog, fmt, ap);
-
-        va_end(ap);
-    }
+TerminationHelper::TerminationHelper(TestFileManager  *fileManager,
+                                     CommandLine      *mdrunCaller,
+                                     SimulationRunner *runner)
+    : mdrunCaller_(mdrunCaller), runner_(runner)
+{
+    runner_->cptFileName_ = fileManager->getTemporaryFilePath(".cpt");
+    runner_->useTopGroAndNdxFromDatabase("spc2");
 }
 
-void md_print_warn(const t_commrec *cr, FILE *fplog,
-                   const char *fmt, ...)
+void TerminationHelper::runFirstMdrun(const std::string &expectedCptFileName)
 {
-    va_list ap;
-
-    if (cr == NULL || SIMMASTER(cr))
-    {
-        va_start(ap, fmt);
-
-        fprintf(stderr, "\n");
-        vfprintf(stderr, fmt, ap);
-        fprintf(stderr, "\n");
-
-        va_end(ap);
-    }
-    if (fplog != NULL)
-    {
-        va_start(ap, fmt);
-
-        fprintf(fplog, "\n");
-        vfprintf(fplog, fmt, ap);
-        fprintf(fplog, "\n");
-
-        va_end(ap);
-    }
+    CommandLine firstPart(*mdrunCaller_);
+    // Stop after 0.036 ms, which should be short enough that
+    // numSteps isn't reached first.
+    firstPart.addOption("-maxh", 1e-7);
+    firstPart.addOption("-nstlist", 1);
+    firstPart.addOption("-cpo", runner_->cptFileName_);
+    ASSERT_EQ(0, runner_->callMdrun(firstPart));
+    EXPECT_EQ(true, File::exists(expectedCptFileName, File::returnFalseOnError)) << expectedCptFileName << " was not found";
 }
+
+void TerminationHelper::runSecondMdrun()
+{
+    CommandLine secondPart(*mdrunCaller_);
+    secondPart.addOption("-cpi", runner_->cptFileName_);
+    secondPart.addOption("-nsteps", 2);
+    ASSERT_EQ(0, runner_->callMdrun(secondPart));
+}
+
+} // namespace
+} // namespace

@@ -75,6 +75,7 @@
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/perf_est.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
@@ -1354,6 +1355,73 @@ static real get_max_reference_temp(const t_inputrec *ir,
     return ref_t;
 }
 
+/* Checks if there are unbound atoms in moleculetype molt.
+ * Prints a note for each unbound atoms and a warning if any is present.
+ */
+static void checkForUnboundAtoms(const gmx_moltype_t *molt,
+                                 warninp_t            wi)
+{
+    const t_atoms *atoms = &molt->atoms;
+
+    if (atoms->nr == 1)
+    {
+        /* Only one atom, there can't be unbound atoms */
+        return;
+    }
+
+    std::vector<int> count(atoms->nr, 0);
+
+    for (int ftype = 0; ftype < F_NRE; ftype++)
+    {
+        if (((interaction_function[ftype].flags & IF_BOND) && ftype != F_CONNBONDS) ||
+            (interaction_function[ftype].flags & IF_CONSTRAINT) ||
+            ftype == F_SETTLE)
+        {
+            const t_ilist *il   = &molt->ilist[ftype];
+            int            nral = NRAL(ftype);
+
+            for (int i = 0; i < il->nr; i += 1 + nral)
+            {
+                for (int j = 0; j < nral; j++)
+                {
+                    count[il->iatoms[i + 1 + j]]++;
+                }
+            }
+        }
+    }
+
+    int numDanglingAtoms = 0;
+    for (int a = 0; a < atoms->nr; a++)
+    {
+        if (atoms->atom[a].ptype != eptVSite &&
+            count[a] == 0)
+        {
+            fprintf(stderr, "\nAtom %d '%s' in moleculetype '%s' is not bound by a potential or constraint to any other atom in the same moleculetype.\n",
+                    a + 1, *atoms->atomname[a], *molt->name);
+
+            numDanglingAtoms++;
+        }
+    }
+
+    if (numDanglingAtoms > 0)
+    {
+        char buf[STRLEN];
+        sprintf(buf, "In moleculetype '%s' %d atoms are not bound by a potential or constraint to any other atom in the same moleculetype. Although technically this might not cause issues in a simulation, this often means that the user forgot to add a bond/potential/constraint or put multiple molecules in the same moleculetype definition by mistake.",
+                *molt->name, numDanglingAtoms);
+        warning_note(wi, buf);
+    }
+}
+
+/* Checks all moleculetypes for unbound atoms */
+static void checkForUnboundAtoms(const gmx_mtop_t *mtop,
+                                 warninp_t         wi)
+{
+    for (int mt = 0; mt < mtop->nmoltype; mt++)
+    {
+        checkForUnboundAtoms(&mtop->moltype[mt], wi);
+    }
+}
+
 static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               t_inputrec       *ir,
                               real              buffer_temp,
@@ -1561,7 +1629,8 @@ int gmx_grompp(int argc, char *argv[])
     };
 
     /* Initiate some variables */
-    snew(ir, 1);
+    gmx::MDModules mdModules;
+    ir = mdModules.inputrec();
     snew(opts, 1);
     init_ir(ir, opts);
 
@@ -1810,6 +1879,8 @@ int gmx_grompp(int argc, char *argv[])
     /* check masses */
     check_mol(sys, wi);
 
+    checkForUnboundAtoms(sys, wi);
+
     for (i = 0; i < sys->nmoltype; i++)
     {
         check_cg_sizes(ftp2fn(efTOP, NFILE, fnm), &sys->moltype[i].cgs, wi);
@@ -1835,8 +1906,7 @@ int gmx_grompp(int argc, char *argv[])
              sys, bVerbose, ir,
              wi);
 
-    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0 &&
-        ir->nstlist > 1)
+    if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0)
     {
         if (EI_DYNAMICS(ir->eI) && inputrec2nboundeddim(ir) == 3)
         {

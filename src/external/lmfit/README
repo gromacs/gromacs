@@ -1,5 +1,13 @@
-This directory contains only the barebone version of the
-lmfit package, version 5.1. Full version is available from
+This directory contains only the barebones version of the
+lmfit package, version 6.1. Full version is available from
 http://apps.jcns.fz-juelich.de/doku/sc/lmfit
 
-License in gromacs root directory in file COPYING
+The license under which lmfit is bundled may be found in the GROMACS
+root directory in file COPYING.
+
+This version contains minor modifications
+* to convert to C++,
+* to declare functions not used outside lmfit.cpp as static,
+* to remove some dead code, and
+* to introduce some explicit pointer casts to pacify compilers.
+

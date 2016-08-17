@@ -381,6 +381,7 @@ TEST_F(SimdFloatingpointTest, cmpLt)
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1, 2, 0), selectByMask(rSimd_1_2_3, lt));
 }
 
+#if GMX_SIMD_HAVE_INT32_LOGICAL || GMX_SIMD_HAVE_LOGICAL
 TEST_F(SimdFloatingpointTest, testBits)
 {
     SimdBool eq   = testBits(setSimdRealFrom3R(1, 0, 2));
@@ -390,6 +391,7 @@ TEST_F(SimdFloatingpointTest, testBits)
     eq            = testBits(setSimdRealFrom1R(GMX_REAL_NEGZERO));
     GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3, selectByMask(rSimd_1_2_3, eq));
 }
+#endif
 
 TEST_F(SimdFloatingpointTest, andB)
 {

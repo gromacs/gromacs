@@ -1369,6 +1369,20 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     }
 
+    if (ir->bQMMM)
+    {
+        if (ir->cutoff_scheme != ecutsGROUP)
+        {
+            warning_error(wi, "QMMM is currently only supported with cutoff-scheme=group");
+        }
+        if (!EI_DYNAMICS(ir->eI))
+        {
+            char buf[STRLEN];
+            sprintf(buf, "QMMM is only supported with dynamics, not with integrator %s", ei_names[ir->eI]);
+            warning_error(wi, buf);
+        }
+    }
+
     if (ir->bAdress)
     {
         gmx_fatal(FARGS, "AdResS simulations are no longer supported");
@@ -1658,7 +1672,10 @@ static void do_wall_params(t_inputrec *ir,
             }
             for (i = 0; i < ir->nwall; i++)
             {
-                sscanf(names[i], "%lf", &dbl);
+                if (sscanf(names[i], "%lf", &dbl) != 1)
+                {
+                    gmx_fatal(FARGS, "Could not parse wall-density value from string '%s'", names[i]);
+                }
                 if (dbl <= 0)
                 {
                     gmx_fatal(FARGS, "wall-density[%d] = %f\n", i, dbl);
@@ -2301,16 +2318,15 @@ void get_ir(const char *mdparin, const char *mdparout,
                 case epctISOTROPIC:
                     if (sscanf(dumstr[m], "%lf", &(dumdub[m][XX])) != 1)
                     {
-                        warning_error(wi, "Pressure coupling not enough values (I need 1)");
+                        warning_error(wi, "Pressure coupling incorrect number of values (I need exactly 1)");
                     }
                     dumdub[m][YY] = dumdub[m][ZZ] = dumdub[m][XX];
                     break;
                 case epctSEMIISOTROPIC:
                 case epctSURFACETENSION:
-                    if (sscanf(dumstr[m], "%lf%lf",
-                               &(dumdub[m][XX]), &(dumdub[m][ZZ])) != 2)
+                    if (sscanf(dumstr[m], "%lf%lf", &(dumdub[m][XX]), &(dumdub[m][ZZ])) != 2)
                     {
-                        warning_error(wi, "Pressure coupling not enough values (I need 2)");
+                        warning_error(wi, "Pressure coupling incorrect number of values (I need exactly 2)");
                     }
                     dumdub[m][YY] = dumdub[m][XX];
                     break;
@@ -2319,7 +2335,7 @@ void get_ir(const char *mdparin, const char *mdparout,
                                &(dumdub[m][XX]), &(dumdub[m][YY]), &(dumdub[m][ZZ]),
                                &(dumdub[m][3]), &(dumdub[m][4]), &(dumdub[m][5])) != 6)
                     {
-                        warning_error(wi, "Pressure coupling not enough values (I need 6)");
+                        warning_error(wi, "Pressure coupling incorrect number of values (I need exactly 6)");
                     }
                     break;
                 default:
@@ -2463,9 +2479,17 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         dumdub[0][i] = 0;
     }
-    sscanf(is->deform, "%lf %lf %lf %lf %lf %lf",
-           &(dumdub[0][0]), &(dumdub[0][1]), &(dumdub[0][2]),
-           &(dumdub[0][3]), &(dumdub[0][4]), &(dumdub[0][5]));
+
+    double gmx_unused canary;
+    int               ndeform = sscanf(is->deform, "%lf %lf %lf %lf %lf %lf %lf",
+                                       &(dumdub[0][0]), &(dumdub[0][1]), &(dumdub[0][2]),
+                                       &(dumdub[0][3]), &(dumdub[0][4]), &(dumdub[0][5]), &canary);
+
+    if (strlen(is->deform) > 0 && ndeform != 6)
+    {
+        sprintf(warn_buf, "Cannot parse exactly 6 box deformation velocities from string '%s'", is->deform);
+        warning_error(wi, warn_buf);
+    }
     for (i = 0; i < 3; i++)
     {
         ir->deform[i][i] = dumdub[0][i];
@@ -2721,7 +2745,8 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     int                     natoms, ai, aj, i, j, d, g, imin, jmin;
     t_iatom                *ia;
     int                    *nrdf2, *na_vcm, na_tot;
-    double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, n_sub = 0;
+    double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, *nrdf_vcm_sub;
+    ivec                   *dof_vcm;
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
     int                     mb, mol, ftype, as;
@@ -2746,7 +2771,9 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
      */
     snew(nrdf_tc, groups->grps[egcTC].nr+1);
     snew(nrdf_vcm, groups->grps[egcVCM].nr+1);
+    snew(dof_vcm, groups->grps[egcVCM].nr+1);
     snew(na_vcm, groups->grps[egcVCM].nr+1);
+    snew(nrdf_vcm_sub, groups->grps[egcVCM].nr+1);
 
     for (i = 0; i < groups->grps[egcTC].nr; i++)
     {
@@ -2754,7 +2781,10 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     }
     for (i = 0; i < groups->grps[egcVCM].nr+1; i++)
     {
-        nrdf_vcm[i] = 0;
+        nrdf_vcm[i]     = 0;
+        clear_ivec(dof_vcm[i]);
+        na_vcm[i]       = 0;
+        nrdf_vcm_sub[i] = 0;
     }
 
     snew(nrdf2, natoms);
@@ -2765,12 +2795,14 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
         if (atom->ptype == eptAtom || atom->ptype == eptNucleus)
         {
             g = ggrpnr(groups, egcFREEZE, i);
-            /* Double count nrdf for particle i */
             for (d = 0; d < DIM; d++)
             {
                 if (opts->nFreeze[g][d] == 0)
                 {
-                    nrdf2[i] += 2;
+                    /* Add one DOF for particle i (counted as 2*1) */
+                    nrdf2[i]                              += 2;
+                    /* VCM group i has dim d as a DOF */
+                    dof_vcm[ggrpnr(groups, egcVCM, i)][d]  = 1;
                 }
             }
             nrdf_tc [ggrpnr(groups, egcTC, i)]  += 0.5*nrdf2[i];
@@ -2900,20 +2932,35 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 
     if (ir->nstcomm != 0)
     {
-        /* Subtract 3 from the number of degrees of freedom in each vcm group
-         * when com translation is removed and 6 when rotation is removed
-         * as well.
+        int ndim_rm_vcm;
+
+        /* We remove COM motion up to dim ndof_com() */
+        ndim_rm_vcm = ndof_com(ir);
+
+        /* Subtract ndim_rm_vcm (or less with frozen dimensions) from
+         * the number of degrees of freedom in each vcm group when COM
+         * translation is removed and 6 when rotation is removed as well.
          */
-        switch (ir->comm_mode)
+        for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
         {
-            case ecmLINEAR:
-                n_sub = ndof_com(ir);
-                break;
-            case ecmANGULAR:
-                n_sub = 6;
-                break;
-            default:
-                gmx_incons("Checking comm_mode");
+            switch (ir->comm_mode)
+            {
+                case ecmLINEAR:
+                    nrdf_vcm_sub[j] = 0;
+                    for (d = 0; d < ndim_rm_vcm; d++)
+                    {
+                        if (dof_vcm[j][d])
+                        {
+                            nrdf_vcm_sub[j]++;
+                        }
+                    }
+                    break;
+                case ecmANGULAR:
+                    nrdf_vcm_sub[j] = 6;
+                    break;
+                default:
+                    gmx_incons("Checking comm_mode");
+            }
         }
 
         for (i = 0; i < groups->grps[egcTC].nr; i++)
@@ -2938,16 +2985,15 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
             nrdf_uc = nrdf_tc[i];
             if (debug)
             {
-                fprintf(debug, "T-group[%d] nrdf_uc = %g, n_sub = %g\n",
-                        i, nrdf_uc, n_sub);
+                fprintf(debug, "T-group[%d] nrdf_uc = %g\n", i, nrdf_uc);
             }
             nrdf_tc[i] = 0;
             for (j = 0; j < groups->grps[egcVCM].nr+1; j++)
             {
-                if (nrdf_vcm[j] > n_sub)
+                if (nrdf_vcm[j] > nrdf_vcm_sub[j])
                 {
                     nrdf_tc[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
-                        (nrdf_vcm[j] - n_sub)/nrdf_vcm[j];
+                        (nrdf_vcm[j] - nrdf_vcm_sub[j])/nrdf_vcm[j];
                 }
                 if (debug)
                 {
@@ -2972,15 +3018,17 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     sfree(nrdf2);
     sfree(nrdf_tc);
     sfree(nrdf_vcm);
+    sfree(dof_vcm);
     sfree(na_vcm);
+    sfree(nrdf_vcm_sub);
 }
 
 static void decode_cos(char *s, t_cosines *cosine)
 {
-    char   *t;
-    char    format[STRLEN], f1[STRLEN];
-    double  a, phi;
-    int     i;
+    char              *t;
+    char               format[STRLEN], f1[STRLEN];
+    double             a, phi;
+    int                i;
 
     t = gmx_strdup(s);
     trim(t);
@@ -2990,7 +3038,10 @@ static void decode_cos(char *s, t_cosines *cosine)
     cosine->phi = NULL;
     if (strlen(t))
     {
-        sscanf(t, "%d", &(cosine->n));
+        if (sscanf(t, "%d", &(cosine->n)) != 1)
+        {
+            gmx_fatal(FARGS, "Cannot parse cosine multiplicity from string '%s'", t);
+        }
         if (cosine->n <= 0)
         {
             cosine->n = 0;
@@ -3003,9 +3054,11 @@ static void decode_cos(char *s, t_cosines *cosine)
             sprintf(format, "%%*d");
             for (i = 0; (i < cosine->n); i++)
             {
+                double  gmx_unused canary;
+
                 strcpy(f1, format);
-                strcat(f1, "%lf%lf");
-                if (sscanf(t, f1, &a, &phi) < 2)
+                strcat(f1, "%lf%lf%lf");
+                if (sscanf(t, f1, &a, &phi, &canary) != 2)
                 {
                     gmx_fatal(FARGS, "Invalid input for electric field shift: '%s'", t);
                 }
@@ -3906,9 +3959,13 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
     ptr = getenv("GMX_LJCOMB_TOL");
     if (ptr != NULL)
     {
-        double dbl;
+        double            dbl;
+        double gmx_unused canary;
 
-        sscanf(ptr, "%lf", &dbl);
+        if (sscanf(ptr, "%lf%lf", &dbl, &canary) != 1)
+        {
+            gmx_fatal(FARGS, "Could not parse a single floating-point number from GMX_LJCOMB_TOL (%s)", ptr);
+        }
         tol = dbl;
     }
 

@@ -47,10 +47,10 @@
 
 #include "config.h"
 
+#include <cstdio>
+
 #include <algorithm>
 #include <vector>
-
-#include <thread>
 
 #if GMX_HWLOC
 #    include <hwloc.h>
@@ -64,6 +64,11 @@
 #endif
 #if GMX_NATIVE_WINDOWS
 #    include <windows.h>      // GetSystemInfo()
+#endif
+
+//! Convenience macro to help us avoid ifdefs each time we use sysconf
+#if !defined(_SC_NPROCESSORS_ONLN) && defined(_SC_NPROC_ONLN)
+#    define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
 #endif
 
 namespace gmx
@@ -485,7 +490,8 @@ parseHwLocDevices(const hwloc_topology_t             topo,
 
 void
 parseHwLoc(HardwareTopology::Machine *        machine,
-           HardwareTopology::SupportLevel *   supportLevel)
+           HardwareTopology::SupportLevel *   supportLevel,
+           bool *                             isThisSystem)
 {
     hwloc_topology_t    topo;
 
@@ -505,7 +511,9 @@ parseHwLoc(HardwareTopology::Machine *        machine,
         hwloc_topology_destroy(topo);
         return; // SupportLevel::None.
     }
+
     // If we get here, we can get a valid root object for the topology
+    *isThisSystem = hwloc_topology_is_thissystem(topo);
 
     // Parse basic information about sockets, cores, and hardware threads
     if (parseHwLocSocketsCoresThreads(topo, machine) == 0)
@@ -548,39 +556,22 @@ parseHwLoc(HardwareTopology::Machine *        machine,
 int
 detectLogicalProcessorCount()
 {
-    // Try to use std::thread::hardware_concurrency() first. This result is only
-    // a hint, and it might be 0 if the information is not available.
-    // On Apple this will not compile with gcc-4.6, and since it just returns 0 on other
-    // platforms too we skip it entirely for gcc < 4.7
-#if defined __GNUC__ && (__GNUC__ == 4 && __GNUC_MINOR__ < 7)
     int count = 0;
-#else
-    int count = std::thread::hardware_concurrency();
-#endif
 
-    if (count == 0)
     {
 #if GMX_NATIVE_WINDOWS
         // Windows
         SYSTEM_INFO sysinfo;
         GetSystemInfo( &sysinfo );
         count = sysinfo.dwNumberOfProcessors;
-#elif defined HAVE_SYSCONF
-        // We are probably on Unix. Check if we have the argument to use before executing the call
-#    if defined(_SC_NPROCESSORS_CONF)
-        count = sysconf(_SC_NPROCESSORS_CONF);
-#    elif defined(_SC_NPROC_CONF)
-        count = sysconf(_SC_NPROC_CONF);
-#    elif defined(_SC_NPROCESSORS_ONLN)
+#elif defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
+        // We are probably on Unix. Check if we have the argument to use before executing any calls
         count = sysconf(_SC_NPROCESSORS_ONLN);
-#    elif defined(_SC_NPROC_ONLN)
-        count = sysconf(_SC_NPROC_ONLN);
-#    endif      // End of check for sysconf argument values
-
 #else
-        count = 0; // Neither windows nor Unix, and std::thread_hardware_concurrency() failed.
+        count = 0; // Neither windows nor Unix.
 #endif
     }
+
     return count;
 }
 
@@ -591,14 +582,8 @@ HardwareTopology HardwareTopology::detect()
 {
     HardwareTopology result;
 
-    // Default values for machine and numa stuff
-    result.machine_.logicalProcessorCount   = 0;
-    result.machine_.numa.baseLatency        = 0.0;
-    result.machine_.numa.maxRelativeLatency = 0.0;
-    result.supportLevel_                    = SupportLevel::None;
-
 #if GMX_HWLOC
-    parseHwLoc(&result.machine_, &result.supportLevel_);
+    parseHwLoc(&result.machine_, &result.supportLevel_, &result.isThisSystem_);
 #endif
 
     // If something went wrong in hwloc (or if it was not present) we might
@@ -621,10 +606,49 @@ HardwareTopology HardwareTopology::detect()
     return result;
 }
 
+HardwareTopology::Machine::Machine()
+{
+    logicalProcessorCount   = 0;
+    numa.baseLatency        = 0.0;
+    numa.maxRelativeLatency = 0.0;
+}
+
 
 HardwareTopology::HardwareTopology()
-    : supportLevel_(SupportLevel::None)
+    : supportLevel_(SupportLevel::None),
+      machine_(),
+      isThisSystem_(true)
 {
+}
+
+HardwareTopology::HardwareTopology(int logicalProcessorCount)
+    : supportLevel_(SupportLevel::None),
+      machine_(),
+      isThisSystem_(true)
+{
+    if (logicalProcessorCount > 0)
+    {
+        machine_.logicalProcessorCount = logicalProcessorCount;
+        supportLevel_                  = SupportLevel::LogicalProcessorCount;
+    }
+}
+
+int HardwareTopology::numberOfCores() const
+{
+    if (supportLevel() >= SupportLevel::Basic)
+    {
+        // We assume all sockets have the same number of cores as socket 0.
+        // Since topology information is present, we can assume there is at least one socket.
+        return machine().sockets.size() * machine().sockets[0].cores.size();
+    }
+    else if (supportLevel() >= SupportLevel::LogicalProcessorCount)
+    {
+        return machine().logicalProcessorCount;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 } // namespace gmx

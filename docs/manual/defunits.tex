@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -78,16 +78,16 @@ Quantity	& Symbol&  Unit						\\
 \hline			
 length		&  r	&  nm $= 10^{-9}$ m				\\
 mass		&  m	&  u (unified atomic mass unit)	$=$ 
-				$1.660\,538\,921(73) \times 10^{-27}$ kg	\\
+				$1.660\,538\,921 \times 10^{-27}$ kg	\\
 time		&  t	&  ps $= 10^{-12}$ s				\\
 charge		&  q	&  {\it e} $=$ elementary charge $=
-				1.602\,176\,565(35)\times 10^{-19}$ C	\\
+				1.602\,176\,565(\times 10^{-19}$ C	\\
 temperature	&  T	&  K  						\\
 \dline
 \end{tabular}
 }
 \caption[Basic units used in {\gromacs}.]{Basic units used in
-{\gromacs}. Numbers in parentheses give accuracy.}
+{\gromacs}.}
 \label{tab:basicunits}
 \end{table}
 
@@ -101,25 +101,24 @@ Quantity	& Symbol   & Unit				\\
 \hline
 energy		& $E,V$	   & kJ~mol$^{-1}$			\\
 Force		& $\ve{F}$ & kJ~mol$^{-1}$~nm$^{-1}$		\\
-pressure	& $p$	   & kJ~mol$^{-1}$~nm$^{-3} =
-				10^{30}/N_{AV}$~Pa		\\
-        	&	   & $1.660\,538\,921\times 10^6$~Pa $= 
-				16.605\,389\,21$~bar         		\\
+pressure	& $p$	   & bar                               \\
 velocity	& $v$	   & nm~ps$^{-1} = 1000$ m s$^{-1}$		\\
 dipole moment   & $\mu$	   & \emph{e}~nm                		\\ 
 electric potential& $\Phi$ & kJ~mol$^{-1}$~\emph{e}$^{-1} = 
-				0.010\,364\,269\,19(32)$ Volt   	\\
+				0.010\,364\,269\,19$ Volt   	\\
 electric field	& $E$	   & kJ~mol$^{-1}$~nm$^{-1}$~\emph{e}$^{-1} =
- 				1.036\,426\,919(32) \times 10^7$~V m$^{-1}$	\\
+ 				1.036\,426\,919 \times 10^7$~V m$^{-1}$	\\
 \dline
 \end{tabular}
 }
-\caption{Derived units}
+\caption{Derived units. Note that an additional conversion factor of 10$^{28}$ a.m.u ($\approx$16.6)
+is applied to get bar instead of internal MD units in the energy and
+log files.}
 \label{tab:derivedunits}
 \end{table}
 
 The {\bf electric conversion factor} $f=\frac{1}{4 \pi
-\varepsilon_o}=138.935\,457\,8(39)$ kJ~mol$^{-1}$~nm~e$^{-2}$. It relates
+\varepsilon_o}=\electricConvFactorValue$ kJ~mol$^{-1}$~nm~e$^{-2}$. It relates
 the mechanical quantities to the electrical quantities as in
 \beq
  V = f \frac{q^2}{r} \mbox{\ \ or\ \ } F = f \frac{q^2}{r^2}
@@ -163,11 +162,11 @@ $0.008\,314\,462\,1$~kJ~mol$^{-1}$~K$^{-1}$.
 \dline
 Symbol	& Name			& Value					\\
 \hline
-$N_{AV}$& Avogadro's number 	& $6.022\,141\,29(27)\times 10^{23}$  mol$^{-1}$	\\
-$R$   	& gas constant 	& $8.314\,462\,1(75)\times 10^{-3}$~kJ~mol$^{-1}$~K$^{-1}$	\\
+$N_{AV}$& Avogadro's number 	& $6.022\,141\,29\times 10^{23}$  mol$^{-1}$	\\
+$R$   	& gas constant 	& $8.314\,462\,1\times 10^{-3}$~kJ~mol$^{-1}$~K$^{-1}$	\\
 $k_B$  	& Boltzmann's constant  & \emph{idem}	\\
-$h$	& Planck's constant	& $0.399\,031\,271(17)$~kJ~mol$^{-1}$~ps \\
-$\hbar$	& Dirac's constant	& $0.063\,507\,799\,3(28)$~kJ~mol$^{-1}$~ps \\
+$h$	& Planck's constant	& $0.399\,031\,271$~kJ~mol$^{-1}$~ps \\
+$\hbar$	& Dirac's constant	& $0.063\,507\,799\,3$~kJ~mol$^{-1}$~ps \\
 $c$	& velocity of light	& $299\,792.458$~nm~ps$^{-1}$ \\
 \dline
 \end{tabular}

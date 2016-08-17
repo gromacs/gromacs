@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -147,7 +147,7 @@
 #endif
 #endif /* LJ_COMB_LB */
 
-    SimdReal  avoid_sing_S;
+    SimdReal  minRsq_S;
     SimdReal  rc2_S;
 #ifdef VDW_CUTOFF_CHECK
     SimdReal  rcvdw2_S;
@@ -305,7 +305,7 @@
     rcvdw2_S = SimdReal(ic->rvdw*ic->rvdw);
 #endif
 
-    avoid_sing_S = SimdReal(NBNXN_AVOID_SING_R2_INC);
+    minRsq_S            = SimdReal(NBNXN_MIN_RSQ);
 
     q                   = nbat->q;
     facel               = ic->epsfac;

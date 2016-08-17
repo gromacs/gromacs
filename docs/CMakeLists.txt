@@ -58,8 +58,12 @@ mark_as_advanced(SOURCE_MD5SUM)
 
 set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
+if (DEFINED PYTHON_EXECUTABLE)
+    # Keep quiet on subsequent runs of cmake
+    set(PythonInterp_FIND_QUIETLY ON)
+endif()
 find_package(PythonInterp 2.7)
-find_package(Sphinx 1.2.3 QUIET COMPONENTS pygments)
+find_package(Sphinx 1.3 QUIET COMPONENTS pygments)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
@@ -83,8 +87,6 @@ if (SPHINX_FOUND)
     # since some of them are generated, we copy everything into the build tree,
     # to this directory.
     set(SPHINX_INPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/sphinx-input)
-    set(SPHINX_CONFIG_FILE ${CMAKE_CURRENT_SOURCE_DIR}/conf.py)
-    set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
     set(SPHINX_EXTENSION_PATH ${CMAKE_CURRENT_SOURCE_DIR})
     if (SOURCE_MD5SUM STREQUAL "unknown")
         # But for testing the webpage build (e.g. from the repo) we
@@ -131,45 +133,43 @@ if (SPHINX_FOUND)
         links.dat
         )
 
-    # Remove other rst files from the build tree, since they confuse Sphinx.
-    file(GLOB_RECURSE _obsolete_sources RELATIVE ${SPHINX_INPUT_DIR}
-         ${SPHINX_INPUT_DIR}/*.rst)
-    list(REMOVE_ITEM _obsolete_sources ${SPHINX_SOURCE_FILES})
-    foreach(_file ${_obsolete_sources})
-        # Skip generated files in onlinehelp/, and fragments.
-        # The latter do not cause issues with obsolete files, as they
-        # are not considered as Sphinx input files, but will only be
-        # included using an explicit .. include::.
-        if (NOT _file MATCHES "^(onlinehelp|fragments)/.*\\.rst$")
-            message(STATUS "Removing obsolete Sphinx input ${_file}")
-            file(REMOVE ${SPHINX_INPUT_DIR}/${_file})
-        endif()
-    endforeach()
+    include(SphinxMacros.cmake)
+    gmx_init_sphinx_setup(${SPHINX_INPUT_DIR})
 
+    set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
     gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
         EXTRA_VARS
-            SPHINX_EXTENSION_PATH
+            SPHINX_EXTENSION_PATH RELENG_PATH
             EXPECTED_DOXYGEN_VERSION
             GMX_CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
             REQUIRED_OPENCL_MIN_VERSION
             REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
             SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
+            GMX_TNG_MINIMUM_REQUIRED_VERSION
+            GMX_LMFIT_MINIMUM_REQUIRED_VERSION
         COMMENT "Configuring Sphinx configuration file")
-    set(SPHINX_INPUT_FILES ${SPHINX_CONFIG_VARS_FILE})
-    foreach(_file ${SPHINX_SOURCE_FILES})
-        add_custom_command(
-            OUTPUT ${SPHINX_INPUT_DIR}/${_file}
-            COMMAND ${CMAKE_COMMAND} -E copy
-                ${CMAKE_CURRENT_SOURCE_DIR}/${_file}
-                ${SPHINX_INPUT_DIR}/${_file}
-            DEPENDS
-                ${CMAKE_CURRENT_SOURCE_DIR}/${_file}
-            COMMENT "Copying Sphinx input file ${_file}"
-            VERBATIM)
-        list(APPEND SPHINX_INPUT_FILES ${SPHINX_INPUT_DIR}/${_file})
-    endforeach()
-    gmx_add_custom_output_target(sphinx-input OUTPUT STAMP
-        DEPENDS ${SPHINX_INPUT_FILES})
+    gmx_add_sphinx_input_file(${SPHINX_CONFIG_VARS_FILE})
+    gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})
+    if (EXISTS ${RELENG_PATH}/docs/FileList.cmake)
+        include(${RELENG_PATH}/docs/FileList.cmake)
+        gmx_add_sphinx_source_files(
+            FROM ${RELENG_PATH}/docs TO dev-manual/releng PREFIX releng/docs/
+            FILES ${RELENG_SPHINX_FILES})
+    else()
+        gmx_add_sphinx_source_files(FILES
+            dev-manual/releng/index.rst
+            dev-manual/releng/jenkins-howto.rst
+            dev-manual/releng/jenkins-ui.rst
+            )
+    endif()
+    gmx_add_sphinx_input_target(sphinx-input)
+    # Remove other rst files from the build tree, since they confuse Sphinx.
+    # Skip generated files in onlinehelp/, and fragments.
+    # The latter do not cause issues with obsolete files, as they
+    # are not considered as Sphinx input files, but will only be
+    # included using an explicit .. include::.
+    gmx_remove_obsolete_sphinx_input_files("^(onlinehelp|fragments)/.*\\\\.rst$")
+
     # TODO: Make this remove obsolete .rst files.
     # TODO: This does not work in cross-compilation scenarios; disable up to
     # the necessary level.
@@ -269,10 +269,6 @@ if (MAN_PAGE_DIR)
         DESTINATION ${MAN_INSTALL_DIR}/man1
         COMPONENT man OPTIONAL
         FILES_MATCHING PATTERN "*.1")
-    install(DIRECTORY ${MAN_PAGE_DIR}/
-        DESTINATION ${MAN_INSTALL_DIR}/man7
-        COMPONENT man OPTIONAL
-        FILES_MATCHING PATTERN "*.7")
 endif()
 gmx_cpack_add_generated_source_directory(man)
 

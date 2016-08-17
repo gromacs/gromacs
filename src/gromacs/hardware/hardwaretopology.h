@@ -177,6 +177,8 @@ class HardwareTopology
          */
         struct Machine
         {
+            Machine();
+
             int                            logicalProcessorCount; //!< Number of logical processors in system
             std::vector<LogicalProcessor>  logicalProcessors;     //!< Map logical processors to socket/core
             std::vector<Socket>            sockets;               //!< All the sockets in the system
@@ -187,9 +189,16 @@ class HardwareTopology
 
     public:
 
-        /*! \brief Detects the hardware topology.
-         */
+        /*! \brief Detects the hardware topology. */
         static HardwareTopology detect();
+
+        /*! \brief Creates a topology with given number of logical cores.
+         *
+         * The support level will be either None or LogicalProcessorCount.
+         *
+         * Intended for testing of code that uses the hardware topology.
+         */
+        explicit HardwareTopology(int logicalProcessorCount);
 
         /*! \brief Check what topology information that is available and valid
          *
@@ -206,6 +215,17 @@ class HardwareTopology
          */
         SupportLevel
         supportLevel() const { return supportLevel_; }
+
+        /*! \brief Return true if we actually detected hardware.
+         *
+         *  \return This method will normally return true, when we actually ran
+         *          the hardware detection as part of this process to construct
+         *          the object. It will be false when the object was constructed
+         *          by reading a cached XML file, or possibly generated from
+         *          synthetic data.
+         */
+        bool
+        isThisSystem() const { return isThisSystem_; }
 
         /*! \brief Return the machine topology tree
          *
@@ -227,12 +247,21 @@ class HardwareTopology
         const Machine &
         machine() const { return machine_; }
 
+        /*! \brief Returns the number of cores.
+         *
+         * You can always call this routine, but if sufficient support is not
+         * available, it may return the logical processor count or zero instead
+         * of the physical core count.
+         */
+        int numberOfCores() const;
+
     private:
 
         HardwareTopology();
 
         SupportLevel        supportLevel_; //!< Available topology information
         Machine             machine_;      //!< The machine map
+        bool                isThisSystem_; //!< Machine map is real (vs. cached/synthetic)
 };
 
 }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,8 +43,11 @@
 #include <algorithm>
 
 #include "gromacs/math/vecdump.h"
+#include "gromacs/topology/atoms.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/compare.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/txtdump.h"
@@ -329,4 +332,214 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top, gmx_
         pr_blocka(fp, indent, "excls", &top->excls, bShowNumbers);
         pr_idef(fp, indent, "idef", &top->idef, bShowNumbers);
     }
+}
+
+static void cmp_ilist(FILE *fp, int ftype, const t_ilist *il1, const t_ilist *il2)
+{
+    int  i;
+    char buf[256];
+
+    fprintf(fp, "comparing ilist %s\n", interaction_function[ftype].name);
+    sprintf(buf, "%s->nr", interaction_function[ftype].name);
+    cmp_int(fp, buf, -1, il1->nr, il2->nr);
+    sprintf(buf, "%s->iatoms", interaction_function[ftype].name);
+    if (((il1->nr > 0) && (!il1->iatoms)) ||
+        ((il2->nr > 0) && (!il2->iatoms)) ||
+        ((il1->nr != il2->nr)))
+    {
+        fprintf(fp, "Comparing radically different topologies - %s is different\n",
+                buf);
+    }
+    else
+    {
+        for (i = 0; (i < il1->nr); i++)
+        {
+            cmp_int(fp, buf, i, il1->iatoms[i], il2->iatoms[i]);
+        }
+    }
+}
+
+static void cmp_iparm(FILE *fp, const char *s, t_functype ft,
+                      const t_iparams &ip1, const t_iparams &ip2, real ftol, real abstol)
+{
+    int      i;
+    gmx_bool bDiff;
+
+    bDiff = FALSE;
+    for (i = 0; i < MAXFORCEPARAM && !bDiff; i++)
+    {
+        bDiff = !equal_real(ip1.generic.buf[i], ip2.generic.buf[i], ftol, abstol);
+    }
+    if (bDiff)
+    {
+        fprintf(fp, "%s1: ", s);
+        pr_iparams(fp, ft, &ip1);
+        fprintf(fp, "%s2: ", s);
+        pr_iparams(fp, ft, &ip2);
+    }
+}
+
+static void cmp_iparm_AB(FILE *fp, const char *s, t_functype ft,
+                         const t_iparams &ip1, real ftol, real abstol)
+{
+    int      nrfpA, nrfpB, p0, i;
+    gmx_bool bDiff;
+
+    /* Normally the first parameter is perturbable */
+    p0    = 0;
+    nrfpA = interaction_function[ft].nrfpA;
+    nrfpB = interaction_function[ft].nrfpB;
+    if (ft == F_PDIHS)
+    {
+        nrfpB = 2;
+    }
+    else if (interaction_function[ft].flags & IF_TABULATED)
+    {
+        /* For tabulated interactions only the second parameter is perturbable */
+        p0    = 1;
+        nrfpB = 1;
+    }
+    bDiff = FALSE;
+    for (i = 0; i < nrfpB && !bDiff; i++)
+    {
+        bDiff = !equal_real(ip1.generic.buf[p0+i], ip1.generic.buf[nrfpA+i], ftol, abstol);
+    }
+    if (bDiff)
+    {
+        fprintf(fp, "%s: ", s);
+        pr_iparams(fp, ft, &ip1);
+    }
+}
+
+static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2, real ftol, real abstol)
+{
+    cmp_int(fp, "cmap ngrid", -1, cmap1->ngrid, cmap2->ngrid);
+    cmp_int(fp, "cmap grid_spacing", -1, cmap1->grid_spacing, cmap2->grid_spacing);
+    if (cmap1->ngrid == cmap2->ngrid &&
+        cmap1->grid_spacing == cmap2->grid_spacing)
+    {
+        int g;
+
+        for (g = 0; g < cmap1->ngrid; g++)
+        {
+            int i;
+
+            fprintf(fp, "comparing cmap %d\n", g);
+
+            for (i = 0; i < 4*cmap1->grid_spacing*cmap1->grid_spacing; i++)
+            {
+                cmp_real(fp, "", i, cmap1->cmapdata[g].cmap[i], cmap2->cmapdata[g].cmap[i], ftol, abstol);
+            }
+        }
+    }
+}
+
+static void cmp_idef(FILE *fp, const t_idef *id1, const t_idef *id2, real ftol, real abstol)
+{
+    int  i;
+    char buf1[64], buf2[64];
+
+    fprintf(fp, "comparing idef\n");
+    if (id2)
+    {
+        cmp_int(fp, "idef->ntypes", -1, id1->ntypes, id2->ntypes);
+        cmp_int(fp, "idef->atnr",  -1, id1->atnr, id2->atnr);
+        for (i = 0; (i < std::min(id1->ntypes, id2->ntypes)); i++)
+        {
+            sprintf(buf1, "idef->functype[%d]", i);
+            sprintf(buf2, "idef->iparam[%d]", i);
+            cmp_int(fp, buf1, i, (int)id1->functype[i], (int)id2->functype[i]);
+            cmp_iparm(fp, buf2, id1->functype[i],
+                      id1->iparams[i], id2->iparams[i], ftol, abstol);
+        }
+        cmp_real(fp, "fudgeQQ", -1, id1->fudgeQQ, id2->fudgeQQ, ftol, abstol);
+        cmp_cmap(fp, &id1->cmap_grid, &id2->cmap_grid, ftol, abstol);
+        for (i = 0; (i < F_NRE); i++)
+        {
+            cmp_ilist(fp, i, &(id1->il[i]), &(id2->il[i]));
+        }
+    }
+    else
+    {
+        for (i = 0; (i < id1->ntypes); i++)
+        {
+            cmp_iparm_AB(fp, "idef->iparam", id1->functype[i], id1->iparams[i], ftol, abstol);
+        }
+    }
+}
+
+static void cmp_block(FILE *fp, const t_block *b1, const t_block *b2, const char *s)
+{
+    char buf[32];
+
+    fprintf(fp, "comparing block %s\n", s);
+    sprintf(buf, "%s.nr", s);
+    cmp_int(fp, buf, -1, b1->nr, b2->nr);
+}
+
+static void cmp_blocka(FILE *fp, const t_blocka *b1, const t_blocka *b2, const char *s)
+{
+    char buf[32];
+
+    fprintf(fp, "comparing blocka %s\n", s);
+    sprintf(buf, "%s.nr", s);
+    cmp_int(fp, buf, -1, b1->nr, b2->nr);
+    sprintf(buf, "%s.nra", s);
+    cmp_int(fp, buf, -1, b1->nra, b2->nra);
+}
+
+void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, real abstol)
+{
+    fprintf(fp, "comparing top\n");
+    if (t2)
+    {
+        cmp_idef(fp, &(t1->idef), &(t2->idef), ftol, abstol);
+        cmp_atoms(fp, &(t1->atoms), &(t2->atoms), ftol, abstol);
+        cmp_block(fp, &t1->cgs, &t2->cgs, "cgs");
+        cmp_block(fp, &t1->mols, &t2->mols, "mols");
+        cmp_bool(fp, "bIntermolecularInteractions", -1, t1->bIntermolecularInteractions, t2->bIntermolecularInteractions);
+        cmp_blocka(fp, &t1->excls, &t2->excls, "excls");
+    }
+    else
+    {
+        cmp_idef(fp, &(t1->idef), NULL, ftol, abstol);
+        cmp_atoms(fp, &(t1->atoms), NULL, ftol, abstol);
+    }
+}
+
+void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
+                int natoms0, int natoms1)
+{
+    int  i, j;
+    char buf[32];
+
+    fprintf(fp, "comparing groups\n");
+
+    for (i = 0; i < egcNR; i++)
+    {
+        sprintf(buf, "grps[%d].nr", i);
+        cmp_int(fp, buf, -1, g0->grps[i].nr, g1->grps[i].nr);
+        if (g0->grps[i].nr == g1->grps[i].nr)
+        {
+            for (j = 0; j < g0->grps[i].nr; j++)
+            {
+                sprintf(buf, "grps[%d].name[%d]", i, j);
+                cmp_str(fp, buf, -1,
+                        *g0->grpname[g0->grps[i].nm_ind[j]],
+                        *g1->grpname[g1->grps[i].nm_ind[j]]);
+            }
+        }
+        cmp_int(fp, "ngrpnr", i, g0->ngrpnr[i], g1->ngrpnr[i]);
+        if (g0->ngrpnr[i] == g1->ngrpnr[i] && natoms0 == natoms1 &&
+            (g0->grpnr[i] != NULL || g1->grpnr[i] != NULL))
+        {
+            for (j = 0; j < natoms0; j++)
+            {
+                cmp_int(fp, gtypes[i], j, ggrpnr(g0, i, j), ggrpnr(g1, i, j));
+            }
+        }
+    }
+    /* We have compared the names in the groups lists,
+     * so we can skip the grpname list comparison.
+     */
 }

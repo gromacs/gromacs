@@ -195,6 +195,7 @@ static void printcount_(t_trxstatus *status, const gmx_output_env_t *oenv,
     {
         fprintf(stderr, "\r%-14s %6d time %8.3f   ", l, status->__frame,
                 output_env_conv_time(oenv, t));
+        fflush(stderr);
     }
 }
 
@@ -209,6 +210,7 @@ static void printlast(t_trxstatus *status, const gmx_output_env_t *oenv, real t)
 {
     printcount_(status, oenv, "Last frame", t);
     fprintf(stderr, "\n");
+    fflush(stderr);
 }
 
 static void printincomp(t_trxstatus *status, t_trxframe *fr)
@@ -223,6 +225,7 @@ static void printincomp(t_trxstatus *status, t_trxframe *fr)
         fprintf(stderr, "WARNING: Incomplete frame: nr %d time %g\n",
                 status->__frame+1, fr->time);
     }
+    fflush(stderr);
 }
 
 int prec2ndec(real prec)

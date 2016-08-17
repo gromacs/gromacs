@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,12 @@
 
 struct t_commrec;
 struct t_fcdata;
+struct t_filenm;
+
+namespace gmx
+{
+class MDLogger;
+}
 
 /*! \brief Create a new forcerec structure */
 t_forcerec *mk_forcerec(void);
@@ -90,6 +96,7 @@ void init_interaction_const_tables(FILE                   *fp,
  *
  * The Force rec struct must be created with mk_forcerec.
  * \param[in]  fplog       File for printing
+ * \param[in]  mdlog       File for printing
  * \param[out] fr          The forcerec
  * \param[in]  fcd         Force constant data
  * \param[in]  ir          Inputrec structure
@@ -98,12 +105,13 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  box         Simulation box
  * \param[in]  tabfn       Table potential file for non-bonded interactions
  * \param[in]  tabpfn      Table potential file for pair interactions
- * \param[in]  tabbfn      Table potential file for bonded interactions
+ * \param[in]  tabbfnm     Table potential files for bonded interactions
  * \param[in]  nbpu_opt    Nonbonded Processing Unit (GPU/CPU etc.)
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
  */
 void init_forcerec(FILE                   *fplog,
+                   const gmx::MDLogger    &mdlog,
                    t_forcerec             *fr,
                    t_fcdata               *fcd,
                    const t_inputrec       *ir,
@@ -112,7 +120,7 @@ void init_forcerec(FILE                   *fplog,
                    matrix                  box,
                    const char             *tabfn,
                    const char             *tabpfn,
-                   const char             *tabbfn,
+                   const t_filenm         *tabbfnm,
                    const char             *nbpu_opt,
                    gmx_bool                bNoSolvOpt,
                    real                    print_force);
