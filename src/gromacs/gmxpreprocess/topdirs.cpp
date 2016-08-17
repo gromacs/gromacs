@@ -273,6 +273,8 @@ int ifunc_index(directive d, int type)
                     return F_POLARIZATION;
                 case 2:
                     return F_ANHARM_POL;
+                case 3:
+                    return F_HYPER_POL;
                 default:
                     fprintf(stderr, "Invalid polarization type %d\n", type);
                     return -1;

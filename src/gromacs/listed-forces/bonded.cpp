@@ -645,6 +645,63 @@ real anharm_polarize(int nbonds,
     return vtot;
 }
 
+real hyper_polarize(int nbonds,
+                    const t_iatom forceatoms[], const t_iparams forceparams[],
+                    const rvec x[], rvec4 f[], rvec fshift[],
+                    const t_pbc *pbc, const t_graph *g,
+                    real gmx_unused lambda, real gmx_unused *dvdlambda,
+                    const t_mdatoms *md, t_fcdata gmx_unused *fcd,
+                    int gmx_unused *global_atom_index)
+{
+    int  i;
+    real vtot = 0.0;
+    for (i = 0; (i < nbonds); )
+    {
+        rvec dx;
+        ivec dt;
+        int  type  = forceatoms[i++];
+        int  ai    = forceatoms[i++];
+        int  aj    = forceatoms[i++];
+        real ksh   = gmx::square(md->chargeA[aj])*ONE_4PI_EPS0/forceparams[type].hyper_polarize.alpha; /* 7*/
+        real k3    = forceparams[type].hyper_polarize.k3;
+        real k4    = forceparams[type].hyper_polarize.k4;
+        if (debug)
+        {
+            fprintf(debug, "POL: local ai = %d aj = %d ksh = %.3f\n", ai, aj, ksh);
+        }
+
+        int  ki   = pbc_rvec_sub(pbc, x[ai], x[aj], dx);                         /*   3      */
+        real dr2  = iprod(dx, dx);                                               /*   5		*/
+
+        if (dr2 == 0.0)
+        {
+            continue;
+        }
+        
+        real dr_1   = gmx::invsqrt(dr2);                                         /*  10		*/
+        real dr     = dr2*dr_1;
+        real dr3    = dr2*dr;
+        real vbond  = 0.5*ksh*dr2 + k3*dr3 + k4*dr2*dr2;
+        real fbond  = -(ksh*dr + 3*k3*dr2 + 4*k4*dr3)*dr_1;
+        vtot  += vbond;             /* 1*/
+
+        if (g)
+        {
+            ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
+            ki = IVEC2IS(dt);
+        }
+        for (int m = 0; (m < DIM); m++)     /*  15		*/
+        {
+            real fij            = fbond*dx[m];
+            f[ai][m]           += fij;
+            f[aj][m]           -= fij;
+            fshift[ki][m]      += fij;
+            fshift[CENTRAL][m] -= fij;
+        }
+    }               /* 72 TOTAL	*/
+    return vtot;
+}
+
 real water_pol(int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
                const rvec x[], rvec4 f[], rvec gmx_unused fshift[],

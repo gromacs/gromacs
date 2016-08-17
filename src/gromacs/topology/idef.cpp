@@ -129,6 +129,12 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
         case F_POLARIZATION:
             fprintf(fp, "alpha=%15.8e\n", iparams->polarize.alpha);
             break;
+        case F_HYPER_POL:
+            fprintf(fp, "alpha=%15.8e k3=%15.8e k4=%15.8e\n",
+                    iparams->hyper_polarize.alpha,
+                    iparams->hyper_polarize.k3,
+                    iparams->hyper_polarize.k4);
+            break;
         case F_ANHARM_POL:
             fprintf(fp, "alpha=%15.8e drcut=%15.8e khyp=%15.8e\n",
                     iparams->anharm_polarize.alpha,

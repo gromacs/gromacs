@@ -111,6 +111,7 @@ enum tpxv {
     tpxv_RemoveTwinRange,                                    /**< removed support for twin-range interactions */
     tpxv_ReplacePullPrintCOM12,                              /**< Replaced print-com-1, 2 with pull-print-com */
     tpxv_PullExternalPotential,                              /**< Added pull type external potential */
+    tpxv_HyperPolarizability,                                /**< Added hyperpolarizability */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -216,6 +217,7 @@ static const t_ftupd ftupd[] = {
     { 79, F_DVDL_BONDED,      },
     { 79, F_DVDL_RESTRAINT    },
     { 79, F_DVDL_TEMPERATURE  },
+    { tpxv_HyperPolarizability, F_HYPER_POL       },
 };
 #define NFTUPD asize(ftupd)
 
@@ -2103,6 +2105,14 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->anharm_polarize.alpha);
             gmx_fio_do_real(fio, iparams->anharm_polarize.drcut);
             gmx_fio_do_real(fio, iparams->anharm_polarize.khyp);
+            break;
+        case F_HYPER_POL:
+            if (file_version >= tpxv_HyperPolarizability)
+            {
+                gmx_fio_do_real(fio, iparams->hyper_polarize.alpha);
+                gmx_fio_do_real(fio, iparams->hyper_polarize.k3);
+                gmx_fio_do_real(fio, iparams->hyper_polarize.k4);
+            }
             break;
         case F_WATER_POL:
             if (file_version < 31)

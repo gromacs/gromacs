@@ -111,6 +111,7 @@ enum {
     F_WATER_POL,
     F_THOLE_POL,
     F_ANHARM_POL,
+    F_HYPER_POL,
     F_POSRES,
     F_FBPOSRES,
     F_DISRES,
@@ -200,6 +201,9 @@ typedef union t_iparams
     struct {
         real alpha, drcut, khyp;
     } anharm_polarize;
+    struct {
+        real alpha, k3, k4;
+    } hyper_polarize;
     struct {
         real al_x, al_y, al_z, rOH, rHH, rOD;
     } wpol;

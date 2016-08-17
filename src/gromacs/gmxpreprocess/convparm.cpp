@@ -247,6 +247,11 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->anharm_polarize.drcut = old[1];
             newparam->anharm_polarize.khyp  = old[2];
             break;
+        case F_HYPER_POL:
+            newparam->hyper_polarize.alpha = old[0];
+            newparam->hyper_polarize.k3    = old[1];
+            newparam->hyper_polarize.k4    = old[2];
+            break;
         case F_WATER_POL:
             newparam->wpol.al_x   = old[0];
             newparam->wpol.al_y   = old[1];

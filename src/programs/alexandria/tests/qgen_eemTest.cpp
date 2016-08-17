@@ -70,16 +70,7 @@ class EemTest : public gmx::test::CommandLineTestBase
         //init set tolerance
         EemTest () : checker_(this->rootChecker())
         {
-            alexandria::MolProp     molprop;
             aps_ = gmx_atomprop_init();
-
-            //needed for ReadGauss
-            char                    * molnm    = (char *)"XXX";
-            char                    * iupac    = (char *)"";
-            char                    * conf     = (char *)"minimum";
-            char                    * basis    = (char *)"";
-            int                       maxpot   = 0;
-            int                       nsymm    = 0;
 
             //read input file for poldata
             std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
@@ -89,13 +80,6 @@ class EemTest : public gmx::test::CommandLineTestBase
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-            //Read input file for molprop
-            dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
-            ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
-                      maxpot, nsymm, pd_.getForceField().c_str());
-            std::vector<MolProp> vmp;
-            vmp.push_back(molprop);
-            mp_.molProp()->Merge(vmp.begin());
             
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
             checker_.setDefaultTolerance(tolerance);
@@ -108,6 +92,22 @@ class EemTest : public gmx::test::CommandLineTestBase
 
     void testEem(ChargeDistributionModel model)
         {
+            // Needed for ReadGauss
+            char                    * molnm    = (char *)"XXX";
+            char                    * iupac    = (char *)"";
+            char                    * conf     = (char *)"minimum";
+            char                    * basis    = (char *)"";
+            int                       maxpot   = 0;
+            int                       nsymm    = 0;
+
+            //Read input file for molprop
+            std::string dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
+            alexandria::MolProp     molprop;
+            ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
+                      maxpot, nsymm, pd_.getForceField().c_str());
+            std::vector<MolProp> vmp;
+            vmp.push_back(molprop);
+            mp_.molProp()->Merge(vmp.begin());
             //Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
             const char               *dihopt[]    = { NULL, "No", "Single", "All", NULL };
