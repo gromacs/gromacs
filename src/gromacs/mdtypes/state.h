@@ -56,17 +56,21 @@ struct energyhistory_t;
  */
 enum {
     estLAMBDA,
-    estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
+    estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTHERM_INT,
     estX,   estV,       est_SDX_NOTSUPPORTED,  estCGP,
     estLD_RNG, estLD_RNGI,
     estDISRE_INITF, estDISRE_RM3TAV,
     estORIRE_INITF, estORIRE_DTAV,
     estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
     estFEPSTATE, estMC_RNG, estMC_RNGI,
+    estBAROS_INT,
     estNR
 };
 
-#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estMC_RNGI)))
+/* Tells if state component e should be decomposed over domains.
+ * This is formulated negatively to catch errors when extending t_state.
+ */
+#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTHERM_INT) || ((e) >= estSVIR_PREV && (e) <= estBAROS_INT)))
 
 /* The names of the state entries, defined in src/gmxlib/checkpoint.c */
 extern const char *est_names[estNR];
@@ -210,7 +214,8 @@ typedef struct t_state
     double                 *nosehoover_vxi;  /* for N-H tcoupl (ngtc)               */
     double                 *nhpres_xi;       /* for Nose-Hoover pcoupl for barostat     */
     double                 *nhpres_vxi;      /* for Nose-Hoover pcoupl for barostat     */
-    double                 *therm_integral;  /* for N-H/V-rescale tcoupl (ngtc)     */
+    double                 *therm_integral;  /* for V-rescale/Berendsen T-coupling conserved quantity (ngtc)     */
+    double                  baros_integral;  /* for Berendsen P-coupling conserved quantity */
     real                    veta;            /* trotter based isotropic P-coupling             */
     real                    vol0;            /* initial volume,required for computing NPT conserverd quantity */
     int                     nalloc;          /* Allocation size for x and v when !=NULL*/

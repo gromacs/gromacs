@@ -1415,7 +1415,6 @@ bool integratorHasConservedEnergyQuantity(const t_inputrec *ir)
             ((ir->epc == epcPARRINELLORAHMAN || ir->epc == epcMTTK) &&
              (ir->ref_p[YY][XX] != 0 || ir->ref_p[ZZ][XX] != 0 || ir->ref_p[ZZ][YY] != 0));
 
-        // TODO: Add Berendsen pressure coupling conserved quantity
-        return !ETC_ANDERSEN(ir->etc) && ir->epc != epcBERENDSEN && !shearWithPR;
+        return !ETC_ANDERSEN(ir->etc) && !shearWithPR;
     }
 }

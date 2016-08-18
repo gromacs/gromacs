@@ -1722,10 +1722,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             (bGStatEveryStep ||
              (ir->nstpcouple > 0 && step % ir->nstpcouple == 0)))
         {
-            /* Store the pressure in t_state for pressure coupling
+            /* Store the pressure and virial in t_state for pressure coupling
              * at the next MD step.
              */
-            copy_mat(pres, state->pres_prev);
+            copy_mat(pres,      state->pres_prev);
+            copy_mat(force_vir, state->fvir_prev);
+            copy_mat(shake_vir, state->svir_prev);
         }
 
         /* #######  END SET VARIABLES FOR NEXT ITERATION ###### */

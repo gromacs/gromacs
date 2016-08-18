@@ -228,8 +228,10 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
                              gmx_bool bFirstStep);
 
 void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
-                      t_inputrec *ir, real dt, tensor pres, matrix box,
-                      matrix mu);
+                      const t_inputrec *ir, real dt,
+                      const tensor pres, const matrix box,
+                      const matrix force_vir, const matrix constraint_vir,
+                      matrix mu, double *baros_integral);
 
 
 void berendsen_pscale(t_inputrec *ir, matrix mu,
