@@ -1584,6 +1584,8 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       const t_inputrec *inputrec,
                                       const t_mdatoms  *md,
                                       const matrix      pressure,
+                                      const matrix      forceVirial,
+                                      const matrix      constraintVirial,
                                       const matrix      parrinellorahmanMu,
                                       t_state          *state,
                                       t_nrnb           *nrnb,
@@ -1607,8 +1609,10 @@ void update_pcouple_after_coordinates(FILE             *fplog,
             {
                 real   dtpc = inputrec->nstpcouple*dt;
                 matrix mu;
-                berendsen_pcoupl(fplog, step, inputrec, dtpc, pressure, state->box,
-                                 mu);
+                berendsen_pcoupl(fplog, step, inputrec, dtpc,
+                                 pressure, state->box,
+                                 forceVirial, constraintVirial,
+                                 mu, &state->baros_integral);
                 berendsen_pscale(inputrec, mu, state->box, state->box_rel,
                                  start, homenr, as_rvec_array(state->x.data()),
                                  md->cFREEZE, nrnb);
