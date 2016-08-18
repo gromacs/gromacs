@@ -690,7 +690,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
                 state->flags  |= (1<<estVETA);
                 state->flags  |= (1<<estVOL0);
             }
-            else
+            else if (ir->epc != epcBERENDSEN)
             {
                 state->flags |= (1<<estPRES_PREV);
             }

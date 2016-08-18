@@ -86,13 +86,24 @@ void update_tcouple(gmx_int64_t       step,
                     t_mdatoms        *md
                     );
 
-void update_pcouple(FILE             *fplog,
-                    gmx_int64_t       step,
-                    t_inputrec       *inputrec,
-                    t_state          *state,
-                    matrix            pcoupl_mu,
-                    matrix            M,
-                    gmx_bool          bInitStep);
+/* Update Parrinello-Rahman, to be called before the coordinate update */
+void update_pcouple_before_coordinates(FILE             *fplog,
+                                       gmx_int64_t       step,
+                                       const t_inputrec *inputrec,
+                                       t_state          *state,
+                                       matrix            pcoupl_mu,
+                                       matrix            M,
+                                       gmx_bool          bInitStep);
+
+/* Update Berendsen P-coupling, to be called after the coordinate update
+ * and after compute_globals and calculation of the pressure.
+ */
+void update_pcouple_after_coordinates(FILE             *fplog,
+                                      gmx_int64_t       step,
+                                      const t_inputrec *inputrec,
+                                      const matrix      pressure,
+                                      const t_state    *state,
+                                      matrix            pcoupl_mu);
 
 void update_coords(FILE              *fplog,
                    gmx_int64_t        step,
@@ -221,13 +232,14 @@ real calc_pres(int ePBC, int nwall, matrix box, tensor ekin, tensor vir,
  */
 
 void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
-                             t_inputrec *ir, real dt, tensor pres,
+                             const t_inputrec *ir, real dt, const tensor pres,
                              tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu,
                              gmx_bool bFirstStep);
 
 void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
-                      t_inputrec *ir, real dt, tensor pres, matrix box,
+                      const t_inputrec *ir, real dt,
+                      const tensor pres, const matrix box,
                       matrix mu);
 
 

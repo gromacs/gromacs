@@ -134,10 +134,19 @@ static bool isPressureCouplingStep(gmx_int64_t step, const t_inputrec *ir)
 {
     GMX_ASSERT(ir->epc != epcMTTK, "MTTK pressure coupling is not handled here");
 
+    int offset;
+    if (ir->epc == epcBERENDSEN)
+    {
+        offset = 0;
+    }
+    else
+    {
+        offset = 1;
+    }
     /* We should only couple after a step where pressures were determined */
     return ir->epc != etcNO &&
            (ir->nstpcouple == 1 ||
-            do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
+            do_per_step(step + ir->nstpcouple - offset, ir->nstpcouple));
 }
 
 /*! \brief Sets the number of different temperature coupling values */
@@ -1265,13 +1274,13 @@ void update_tcouple(gmx_int64_t       step,
     }
 }
 
-void update_pcouple(FILE             *fplog,
-                    gmx_int64_t       step,
-                    t_inputrec       *inputrec,
-                    t_state          *state,
-                    matrix            pcoupl_mu,
-                    matrix            M,
-                    gmx_bool          bInitStep)
+void update_pcouple_before_coordinates(FILE             *fplog,
+                                       gmx_int64_t       step,
+                                       const t_inputrec *inputrec,
+                                       t_state          *state,
+                                       matrix            pcoupl_mu,
+                                       matrix            M,
+                                       gmx_bool          bInitStep)
 {
     bool doPressureCoupling = false;
 
@@ -1304,11 +1313,7 @@ void update_pcouple(FILE             *fplog,
             case (epcNO):
                 break;
             case (epcBERENDSEN):
-                if (!bInitStep)
-                {
-                    berendsen_pcoupl(fplog, step, inputrec, dtpc, state->pres_prev, state->box,
-                                     pcoupl_mu);
-                }
+                /* Berendsen is handled after the coordinate update */
                 break;
             case (epcPARRINELLORAHMAN):
                 parrinellorahman_pcoupl(fplog, step, inputrec, dtpc, state->pres_prev,
@@ -1317,6 +1322,31 @@ void update_pcouple(FILE             *fplog,
                 break;
             default:
                 break;
+        }
+    }
+}
+
+void update_pcouple_after_coordinates(FILE             *fplog,
+                                      gmx_int64_t       step,
+                                      const t_inputrec *inputrec,
+                                      const matrix      pressure,
+                                      const t_state    *state,
+                                      matrix            pcoupl_mu)
+{
+    if (inputrec->epc == epcBERENDSEN &&
+        isPressureCouplingStep(step, inputrec))
+    {
+        real dtpc = inputrec->nstpcouple*inputrec->delta_t;
+
+        berendsen_pcoupl(fplog, step, inputrec, dtpc, pressure, state->box,
+                         pcoupl_mu);
+    }
+    else
+    {
+        clear_mat(pcoupl_mu);
+        for (int i = 0; i < DIM; i++)
+        {
+            pcoupl_mu[i][i] = 1.0;
         }
     }
 }
