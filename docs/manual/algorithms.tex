@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+% Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -1136,6 +1136,20 @@ in temperature appear to be negligible, but no completely
 comprehensive comparisons have been carried out, and some caution must
 be taking in interpreting the results.
 
+When using temperature and/or pressure coupling the total energy is
+no longer conserved. Instead there is a \normindex{conserved energy quantity}
+the formula of which will depend on the combination or temperature and
+pressure coupling algorithm used. For all coupling algorithms, except
+for Andersen temperature coupling and Parrinello-Rahman pressure coupling
+combined with shear stress, the conserved energy quantity is computed
+and stored in the energy and log file. Note that this quantity will not
+be conserved when external forces are applied to the system, such as
+pulling on group with a changing distance or an electric field.
+Furthermore, how well the energy is conserved depends on the accuracy
+of all algorithms involved in the simulation. Usually the algorithms that
+cause most drift are constraints and the pair-list buffer, depending
+on the parameters used.
+
 \subsubsection{Berendsen temperature coupling\pawsindexquiet{Berendsen}{temperature coupling}\index{weak coupling}}
 The Berendsen algorithm mimics weak coupling with first-order 
 kinetics to an external heat bath with given temperature $T_0$. 
@@ -1206,8 +1220,6 @@ There are no additional parameters, except for a random seed.
 This thermostat produces a correct canonical ensemble and still has
 the advantage of the Berendsen thermostat: first order decay of
 temperature deviations and no oscillations.
-When an $NVT$ ensemble is used, the conserved energy quantity
-is written to the energy and log file.  
 
 \subsubsection{\normindex{Andersen thermostat}}
 One simple way to maintain a thermostatted ensemble is to take an
