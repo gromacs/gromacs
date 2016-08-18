@@ -677,23 +677,17 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcMTTK))
         {
             state->flags |= (1<<estBOXV);
+            state->flags |= (1<<estPRES_PREV);
         }
-        if (ir->epc != epcNO)
+        if (inputrecNptTrotter(ir) || (inputrecNphTrotter(ir)))
         {
-            if (inputrecNptTrotter(ir) || (inputrecNphTrotter(ir)))
-            {
-                state->nnhpres = 1;
-                state->flags  |= (1<<estNHPRES_XI);
-                state->flags  |= (1<<estNHPRES_VXI);
-                state->flags  |= (1<<estSVIR_PREV);
-                state->flags  |= (1<<estFVIR_PREV);
-                state->flags  |= (1<<estVETA);
-                state->flags  |= (1<<estVOL0);
-            }
-            else
-            {
-                state->flags |= (1<<estPRES_PREV);
-            }
+            state->nnhpres = 1;
+            state->flags  |= (1<<estNHPRES_XI);
+            state->flags  |= (1<<estNHPRES_VXI);
+            state->flags  |= (1<<estSVIR_PREV);
+            state->flags  |= (1<<estFVIR_PREV);
+            state->flags  |= (1<<estVETA);
+            state->flags  |= (1<<estVOL0);
         }
     }
 
