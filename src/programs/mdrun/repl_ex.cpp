@@ -547,6 +547,7 @@ static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
     exchange_doubles(ms, b, state->nhpres_xi, nnhpres);
     exchange_doubles(ms, b, state->nhpres_vxi, nnhpres);
     exchange_doubles(ms, b, state->therm_integral, state->ngtc);
+    exchange_doubles(ms, b, &state->baros_integral, 1);
     exchange_rvecs(ms, b, state->x, state->natoms);
     exchange_rvecs(ms, b, state->v, state->natoms);
 }

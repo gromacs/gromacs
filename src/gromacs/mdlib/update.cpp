@@ -1330,6 +1330,8 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       gmx_int64_t       step,
                                       const t_inputrec *inputrec,
                                       const matrix      pressure,
+                                      const matrix      force_virial,
+                                      const matrix      constraint_virial,
                                       t_state          *state,
                                       matrix            pcoupl_mu)
 {
@@ -1338,8 +1340,9 @@ void update_pcouple_after_coordinates(FILE             *fplog,
     {
         real dtpc = inputrec->nstpcouple*inputrec->delta_t;
 
-        berendsen_pcoupl(fplog, step, inputrec, dtpc, pressure, state->box,
-                         pcoupl_mu);
+        berendsen_pcoupl(fplog, step, inputrec, dtpc,
+                         pressure, state->box, force_virial, constraint_virial,
+                         pcoupl_mu, &state->baros_integral);
     }
     else
     {

@@ -690,7 +690,11 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
                 state->flags  |= (1<<estVETA);
                 state->flags  |= (1<<estVOL0);
             }
-            else if (ir->epc != epcBERENDSEN)
+            else if (ir->epc == epcBERENDSEN)
+            {
+                state->flags  |= (1<<estBAROS_INT);
+            }
+            else
             {
                 state->flags |= (1<<estPRES_PREV);
             }
@@ -705,7 +709,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
 
     if (ir->etc == etcVRESCALE || ir->etc == etcBERENDSEN)
     {
-        state->flags |= (1<<estTC_INT);
+        state->flags |= (1<<estTHERM_INT);
     }
 
     init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */

@@ -1574,8 +1574,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             sum_dhdl(enerd, state->lambda, ir->fepvals);
         }
 
-        update_pcouple_after_coordinates(fplog, step, ir, state, pres,
-                                         pcoupl_mu);
+        update_pcouple_after_coordinates(fplog, step, ir,
+                                         pres, force_vir, shake_vir,
+                                         state, pcoupl_mu);
         update_box(fplog, step, ir, mdatoms, state, f,
                    pcoupl_mu, nrnb, upd);
 

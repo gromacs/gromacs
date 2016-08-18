@@ -146,6 +146,7 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
         state->nhpres_xi  = NULL;
         state->nhpres_vxi = NULL;
     }
+    state->baros_integral = 0.0;
 }
 
 
