@@ -77,13 +77,14 @@
  */
 enum {
     estLAMBDA,
-    estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
+    estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTHERM_INT,
     estX,   estV,       estSDX_NOTSUPPORTED,  estCGP,
     estLD_RNG_NOTSUPPORTED, estLD_RNGI_NOTSUPPORTED,
     estDISRE_INITF, estDISRE_RM3TAV,
     estORIRE_INITF, estORIRE_DTAV,
     estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
     estFEPSTATE, estMC_RNG_NOTSUPPORTED, estMC_RNGI_NOTSUPPORTED,
+    estBAROS_INT,
     estNR
 };
 
@@ -198,6 +199,7 @@ class t_state
         std::vector<double>      nhpres_xi;       //!< Pressure Nose-Hoover coordinates
         std::vector<double>      nhpres_vxi;      //!< Pressure Nose-Hoover velocities
         std::vector<double>      therm_integral;  //!< Work exterted N-H/V-rescale T-coupling (ngtc)
+        double                   baros_integral;  //!< For Berendsen P-coupling conserved quantity
         real                     veta;            //!< Trotter based isotropic P-coupling
         real                     vol0;            //!< Initial volume,required for computing MTTK conserved quantity
         PaddedRVecVector         x;               //!< The coordinates (natoms)
