@@ -343,7 +343,7 @@ real calc_temp(real ekin, real nrdf)
 }
 
 void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
-                             t_inputrec *ir, real dt, tensor pres,
+                             const t_inputrec *ir, real dt, const tensor pres,
                              tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu, gmx_bool bFirstStep)
 {
@@ -541,7 +541,8 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
 }
 
 void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
-                      t_inputrec *ir, real dt, tensor pres, matrix box,
+                      const t_inputrec *ir, real dt,
+                      const tensor pres, const matrix box,
                       matrix mu)
 {
     int     d, n;
@@ -652,10 +653,10 @@ void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
     }
 }
 
-void berendsen_pscale(t_inputrec *ir, matrix mu,
+void berendsen_pscale(const t_inputrec *ir, const matrix mu,
                       matrix box, matrix box_rel,
                       int start, int nr_atoms,
-                      rvec x[], unsigned short cFREEZE[],
+                      rvec x[], const unsigned short cFREEZE[],
                       t_nrnb *nrnb)
 {
     ivec   *nFreeze = ir->opts.nFreeze;
