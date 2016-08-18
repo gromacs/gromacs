@@ -343,7 +343,7 @@ real calc_temp(real ekin, real nrdf)
 }
 
 void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
-                             t_inputrec *ir, real dt, tensor pres,
+                             const t_inputrec *ir, real dt, const tensor pres,
                              tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu, gmx_bool bFirstStep)
 {
@@ -541,7 +541,8 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
 }
 
 void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
-                      t_inputrec *ir, real dt, tensor pres, matrix box,
+                      const t_inputrec *ir, real dt,
+                      const tensor pres, const matrix box,
                       matrix mu)
 {
     int     d, n;
