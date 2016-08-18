@@ -106,6 +106,8 @@ void update_pcouple_after_coordinates(FILE             *fplog,
                                       const t_inputrec *inputrec,
                                       const t_mdatoms  *md,
                                       const matrix      pressure,
+                                      const matrix      forceVirial,
+                                      const matrix      constraintVirial,
                                       const matrix      parrinellorahmanMu,
                                       t_state          *state,
                                       t_nrnb           *nrnb,
@@ -232,8 +234,8 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
 void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
                       const t_inputrec *ir, real dt,
                       const tensor pres, const matrix box,
-                      matrix mu);
-
+                      const matrix force_vir, const matrix constraint_vir,
+                      matrix mu, double *baros_integral);
 
 void berendsen_pscale(const t_inputrec *ir, const matrix mu,
                       matrix box, matrix box_rel,
