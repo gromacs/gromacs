@@ -339,7 +339,8 @@ void bcast_state(const t_commrec *cr, t_state *state)
                 case estNH_VXI:  nblock_abc(cr, nnht, &state->nosehoover_vxi); break;
                 case estNHPRES_XI:   nblock_abc(cr, nnhtp, &state->nhpres_xi); break;
                 case estNHPRES_VXI:  nblock_abc(cr, nnhtp, &state->nhpres_vxi); break;
-                case estTC_INT:  nblock_abc(cr, state->ngtc, &state->therm_integral); break;
+                case estTHERM_INT: nblock_abc(cr, state->ngtc, &state->therm_integral); break;
+                case estBAROS_INT: block_bc(cr, state->baros_integral); break;
                 case estVETA:    block_bc(cr, state->veta); break;
                 case estVOL0:    block_bc(cr, state->vol0); break;
                 case estX:       bcastPaddedRVecVector(cr, &state->x, state->natoms);

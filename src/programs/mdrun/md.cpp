@@ -1559,7 +1559,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         }
 
         update_pcouple_after_coordinates(fplog, step, ir, mdatoms,
-                                         pres, parrinellorahmanMu,
+                                         pres, force_vir, shake_vir,
+                                         parrinellorahmanMu,
                                          state, nrnb, upd);
 
         /* ################# END UPDATE STEP 2 ################# */

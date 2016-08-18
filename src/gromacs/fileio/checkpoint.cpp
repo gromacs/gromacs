@@ -103,7 +103,8 @@ const char *est_names[estNR] =
     "x", "v", "sdx-unsupported", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
-    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev", "fep_state", "MC-rng", "MC-rng-i"
+    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev", "fep_state", "MC-rng", "MC-rng-i",
+    "barostat-integral"
 };
 
 enum {
@@ -1018,7 +1019,8 @@ static int do_cpt_state(XDR *xd,
                 case estNH_VXI:  ret      = do_cpte_doubles(xd, cptpEST, i, sflags, nnht, &state->nosehoover_vxi, list); break;
                 case estNHPRES_XI:   ret  = do_cpte_doubles(xd, cptpEST, i, sflags, nnhtp, &state->nhpres_xi, list); break;
                 case estNHPRES_VXI:  ret  = do_cpte_doubles(xd, cptpEST, i, sflags, nnhtp, &state->nhpres_vxi, list); break;
-                case estTC_INT:  ret      = do_cpte_doubles(xd, cptpEST, i, sflags, state->ngtc, &state->therm_integral, list); break;
+                case estTHERM_INT:   ret  = do_cpte_doubles(xd, cptpEST, i, sflags, state->ngtc, &state->therm_integral, list); break;
+                case estBAROS_INT:   ret  = do_cpte_double(xd, cptpEST, i, sflags, &state->baros_integral, list); break;
                 case estVETA:    ret      = do_cpte_real(xd, cptpEST, i, sflags, &state->veta, list); break;
                 case estVOL0:    ret      = do_cpte_real(xd, cptpEST, i, sflags, &state->vol0, list); break;
                 case estX:       ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->x, list); break;
