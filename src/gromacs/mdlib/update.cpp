@@ -1305,8 +1305,8 @@ void update_pcouple(FILE             *fplog,
             case (epcBERENDSEN):
                 if (!bInitStep)
                 {
-                    berendsen_pcoupl(fplog, step, inputrec, dtpc, state->pres_prev, state->box,
-                                     pcoupl_mu);
+                    berendsen_pcoupl(fplog, step, inputrec, dtpc, state->pres_prev, state->box, state->fvir_prev, state->svir_prev,
+                                     pcoupl_mu, &state->baros_integral);
                 }
                 break;
             case (epcPARRINELLORAHMAN):

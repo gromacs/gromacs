@@ -548,8 +548,10 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
 }
 
 void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
-                      t_inputrec *ir, real dt, tensor pres, matrix box,
-                      matrix mu)
+                      const t_inputrec *ir, real dt,
+                      const tensor pres, const matrix box,
+                      const matrix force_vir, const matrix constraint_vir,
+                      matrix mu, double *baros_integral)
 {
     int     d, n;
     real    scalar_pressure, xy_pressure, p_corr_z;
@@ -636,6 +638,23 @@ void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
     mu[XX][YY]  = 0;
     mu[XX][ZZ]  = 0;
     mu[YY][ZZ]  = 0;
+
+    /* Keep track of by how much we are changing the energy in the system.
+     * Without constraints force_vir tells us how Epot changes when scaling.
+     * With constraints constraint_vir gives us the constraint contribution
+     * to both Epot and Ekin. Although we are not scaling velocities, scaling
+     * the coordinates leads to scaling of distances involved in constraints.
+     * This in turn changes the angular momentum (even if the constrained
+     * distances are corrected at the next step). The kinetic component
+     * of the constraint virial captures the angular momentum change.
+     */
+    for (int d = 0; d < DIM; d++)
+    {
+        for (int n = 0; n <= d; n++)
+        {
+            *baros_integral -= 2*(mu[d][n] - (n == d ? 1 : 0))*(force_vir[d][n] + constraint_vir[d][n]);
+        }
+    }
 
     if (debug)
     {
@@ -1424,8 +1443,7 @@ real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *Mas
                 }
                 break;
             case epcBERENDSEN:
-                // Not supported, excluded in integratorHasConservedEnergyQuantity()
-                // TODO: Implement
+                energyNPT += state->baros_integral;
                 break;
             default:
                 GMX_RELEASE_ASSERT(false, "Conserved energy quantity for pressure coupling is not handled. A case should be added with either the conserved quantity added or nothing added and an exclusion added to integratorHasConservedEnergyQuantity().");
