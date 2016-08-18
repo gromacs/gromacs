@@ -1325,6 +1325,7 @@ void dd_collect_state(gmx_domdec_t *dd,
                 state->nhpres_vxi[i*nh+j]       = state_local->nhpres_vxi[i*nh+j];
             }
         }
+        state->baros_integral = state_local->baros_integral;
     }
     if (state_local->flags & (1 << estX))
     {
@@ -1563,6 +1564,7 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
                 state_local->nhpres_vxi[i*nh+j]       = state->nhpres_vxi[i*nh+j];
             }
         }
+        state_local->baros_integral = state->baros_integral;
     }
     dd_bcast(dd, ((efptNR)*sizeof(real)), state_local->lambda.data());
     dd_bcast(dd, sizeof(int), &state_local->fep_state);
