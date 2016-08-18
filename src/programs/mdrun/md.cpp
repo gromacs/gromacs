@@ -247,7 +247,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     t_trxstatus      *status;
     rvec              mu_tot;
     t_vcm            *vcm;
-    matrix            pcoupl_mu, M;
+    matrix            parrinellorahmanMu, M;
     t_trxframe        rerun_fr;
     gmx_repl_ex_t     repl_ex = NULL;
     int               nchkpt  = 1;
@@ -1387,7 +1387,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             else
             {
                 update_tcouple(step, ir, state, ekind, &MassQ, mdatoms);
-                update_pcouple(fplog, step, ir, state, pcoupl_mu, M, bInitStep);
+                update_pcouple_before_coordinates(fplog, step, ir, state,
+                                                  parrinellorahmanMu, M,
+                                                  bInitStep);
             }
 
             if (EI_VV(ir->eI))
@@ -1555,8 +1557,10 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                Currently done every step so that dhdl is correct in the .edr */
             sum_dhdl(enerd, &state->lambda, ir->fepvals);
         }
-        update_box(fplog, step, ir, mdatoms, state,
-                   pcoupl_mu, nrnb, upd);
+
+        update_pcouple_after_coordinates(fplog, step, ir, mdatoms,
+                                         pres, parrinellorahmanMu,
+                                         state, nrnb, upd);
 
         /* ################# END UPDATE STEP 2 ################# */
         /* #### We now have r(t+dt) and v(t+dt/2)  ############# */
