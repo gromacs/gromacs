@@ -106,6 +106,7 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
     state->nosehoover_xi.resize(state->nhchainlength*state->ngtc, 0);
     state->nosehoover_vxi.resize(state->nhchainlength*state->ngtc, 0);
     state->therm_integral.resize(state->ngtc, 0);
+    state->baros_integral = 0.0;
     state->nhpres_xi.resize(state->nhchainlength*nnhpres, 0);
     state->nhpres_vxi.resize(state->nhchainlength*nnhpres, 0);
 }
@@ -257,6 +258,7 @@ t_state::t_state() : natoms(0),
                      nhpres_xi(),
                      nhpres_vxi(),
                      therm_integral(),
+                     baros_integral(0),
                      veta(0),
                      vol0(0),
                      x(),
