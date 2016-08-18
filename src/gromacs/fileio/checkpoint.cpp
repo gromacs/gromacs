@@ -106,6 +106,7 @@ const char *est_names[estNR] =
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
     "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev", "fep_state", "MC-rng-unsupported", "MC-rng-i-unsupported"
+    "barostat-integral"
 };
 
 enum {
@@ -1042,7 +1043,8 @@ static int do_cpt_state(XDR *xd,
                 case estNH_VXI:  ret      = doVector<double>(xd, part, i, sflags, &state->nosehoover_vxi, list); break;
                 case estNHPRES_XI:   ret  = doVector<double>(xd, part, i, sflags, &state->nhpres_xi, list); break;
                 case estNHPRES_VXI:  ret  = doVector<double>(xd, part, i, sflags, &state->nhpres_vxi, list); break;
-                case estTC_INT:  ret      = doVector<double>(xd, part, i, sflags, &state->therm_integral, list); break;
+                case estTHERM_INT:   ret  = doVector<double>(xd, part, i, sflags, &state->therm_integral, list); break;
+                case estBAROS_INT:   ret  = do_cpte_double(xd, part, i, sflags, &state->baros_integral, list); break;
                 case estVETA:    ret      = do_cpte_real(xd, part, i, sflags, &state->veta, list); break;
                 case estVOL0:    ret      = do_cpte_real(xd, part, i, sflags, &state->vol0, list); break;
                 case estX:       ret      = doPaddedRvecVector(xd, part, i, sflags, &state->x, list); break;

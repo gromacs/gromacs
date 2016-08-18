@@ -107,6 +107,7 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
     state->therm_integral.resize(state->ngtc, 0);
     state->nhpres_xi.resize(state->nhchainlength*nnhpres, 0);
     state->nhpres_vxi.resize(state->nhchainlength*nnhpres, 0);
+    state->baros_integral = 0.0;
 }
 
 
