@@ -54,7 +54,7 @@ struct t_state;
  * \param[in] box_rel Relative box
  * \param[out] b      The corrected box
  */
-void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b);
+void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix b);
 
 /*! \brief Determine the relative box components
  *
@@ -62,6 +62,6 @@ void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b);
  * \param[in] ir       Input record
  * \param[inout] state Structure containing the box
  */
-void set_box_rel(struct t_inputrec *ir, t_state *state);
+void set_box_rel(const t_inputrec *ir, t_state *state);
 
 #endif

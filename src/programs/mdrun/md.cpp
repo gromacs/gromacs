@@ -1404,7 +1404,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             else
             {
                 update_tcouple(step, ir, state, ekind, &MassQ, mdatoms);
-                update_pcouple(fplog, step, ir, state, pcoupl_mu, M, bInitStep);
+                update_pcouple_before_coordinates(fplog, step, ir, state,
+                                                  pcoupl_mu, M, bInitStep);
             }
 
             if (EI_VV(ir->eI))
@@ -1572,6 +1573,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                Currently done every step so that dhdl is correct in the .edr */
             sum_dhdl(enerd, state->lambda, ir->fepvals);
         }
+
+        update_pcouple_after_coordinates(fplog, step, ir, state, pres,
+                                         pcoupl_mu);
         update_box(fplog, step, ir, mdatoms, state, f,
                    pcoupl_mu, nrnb, upd);
 
