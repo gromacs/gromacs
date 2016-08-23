@@ -977,7 +977,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             {
                                 init_block2(&(block2[nmol-1]), mi0->atoms.nr);
                             }
-                            push_excl(pline, &(block2[nmol-1]));
+                            push_excl(pline, &(block2[nmol-1]), wi);
                             break;
                         case d_system:
                             trim(pline);
@@ -1020,7 +1020,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                               mi0->plist,
                                               &nnb,
                                               &(mi0->excls));
-                                merge_excl(&(mi0->excls), &(block2[whichmol]));
+                                merge_excl(&(mi0->excls), &(block2[whichmol]), wi);
                                 done_block2(&(block2[whichmol]));
                                 make_shake(mi0->plist, &mi0->atoms, opts->nshake);
 
@@ -1041,7 +1041,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                     convert_moltype_couple(mi0, dcatt, *fudgeQQ,
                                                            opts->couple_lam0, opts->couple_lam1,
                                                            opts->bCoupleIntra,
-                                                           nb_funct, &(plist[nb_funct]));
+                                                           nb_funct, &(plist[nb_funct]), wi);
                                 }
                                 stupid_fill_block(&mi0->mols, mi0->atoms.nr, TRUE);
                                 mi0->bProcessed = TRUE;
@@ -1174,7 +1174,7 @@ char **do_top(gmx_bool          bVerbose,
 
 
 static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
-                                    t_inputrec *ir)
+                                    t_inputrec *ir, warninp_t wi)
 {
     /* This routine expects molt->ilist to be of size F_NRE and ordered. */
 
@@ -1414,7 +1414,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
     t_block2  qmexcl2;
     init_block2(&qmexcl2, molt->atoms.nr);
     b_to_b2(&qmexcl, &qmexcl2);
-    merge_excl(&(molt->excls), &qmexcl2);
+    merge_excl(&(molt->excls), &qmexcl2, wi);
     done_block2(&qmexcl2);
 
     /* Finally, we also need to get rid of the pair interactions of the
@@ -1530,7 +1530,7 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
                     /* Set the molecule type for the QMMM molblock */
                     molb->type = sys->nmoltype - 1;
                 }
-                generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir);
+                generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, wi);
             }
             if (grpnr)
             {
