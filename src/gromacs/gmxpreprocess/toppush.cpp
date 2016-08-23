@@ -737,11 +737,13 @@ void push_bt(directive d, t_params bt[], int nral,
     {
         if (at && ((p.a[i] = get_atomtype_type(alc[i], at)) == NOTSET))
         {
-            gmx_fatal(FARGS, "Unknown atomtype %s\n", alc[i]);
+            sprintf(errbuf, "Unknown atomtype %s\n", alc[i]);
+            warning_error(wi, errbuf);
         }
         else if (bat && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
         {
-            gmx_fatal(FARGS, "Unknown bond_atomtype %s\n", alc[i]);
+            sprintf(errbuf, "Unknown bond_atomtype %s\n", alc[i]);
+            warning_error(wi, errbuf);
         }
     }
     for (i = 0; (i < nrfp); i++)
@@ -906,7 +908,8 @@ void push_dihedraltype(directive d, t_params bt[],
         {
             if ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET)
             {
-                gmx_fatal(FARGS, "Unknown bond_atomtype %s", alc[i]);
+                sprintf(errbuf, "Unknown bond_atomtype %s", alc[i]);
+                warning_error(wi, errbuf);
             }
         }
     }
@@ -1001,8 +1004,10 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     }
     else
     {
-        gmx_fatal(FARGS, "Number of force parameters for nonbonded interactions is %d"
-                  " in file %s, line %d", nrfp, __FILE__, __LINE__);
+        gmx_fatal(FARGS, "[ file %s, line %d ]:\n"
+                  "Number of force parameters for nonbonded interactions is %d"
+                  " in source file %s, line %d",
+                  get_warning_file(wi), get_warning_line(wi), nrfp, __FILE__, __LINE__);
     }
     for (i = 0; (i < nrfp); i++)
     {
@@ -1012,11 +1017,13 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     /* Put the parameters in the matrix */
     if ((ai = get_atomtype_type (a0, atype)) == NOTSET)
     {
-        gmx_fatal(FARGS, "Atomtype %s not found", a0);
+        sprintf(errbuf, "Atomtype %s not found", a0);
+        warning_error(wi, errbuf);
     }
     if ((aj = get_atomtype_type (a1, atype)) == NOTSET)
     {
-        gmx_fatal(FARGS, "Atomtype %s not found", a1);
+        sprintf(errbuf, "Atomtype %s not found", a1);
+        warning_error(wi, errbuf);
     }
     nbp = &(nbt[std::max(ai, aj)][std::min(ai, aj)]);
 
@@ -1109,7 +1116,8 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     /* Check for equal grid spacing in x and y dims */
     if (nxcmap != nycmap)
     {
-        gmx_fatal(FARGS, "Not the same grid spacing in x and y for cmap grid: x=%d, y=%d", nxcmap, nycmap);
+        sprintf(errbuf, "Not the same grid spacing in x and y for cmap grid: x=%d, y=%d", nxcmap, nycmap);
+        warning_error(wi, errbuf);
     }
 
     ncmap  = nxcmap*nycmap;
@@ -1140,7 +1148,8 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
         }
         else
         {
-            gmx_fatal(FARGS, "Error in reading cmap parameter for angle %s %s %s %s %s", alc[0], alc[1], alc[2], alc[3], alc[4]);
+            sprintf(errbuf, "Error in reading cmap parameter for angle %s %s %s %s %s", alc[0], alc[1], alc[2], alc[3], alc[4]);
+            warning_error(wi, errbuf);
         }
 
     }
@@ -1184,11 +1193,13 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     {
         if (at && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
         {
-            gmx_fatal(FARGS, "Unknown atomtype %s\n", alc[i]);
+            sprintf(errbuf, "Unknown atomtype %s\n", alc[i]);
+            warning_error(wi, errbuf);
         }
         else if (bat && ((p.a[i] = get_bond_atomtype_type(alc[i], bat)) == NOTSET))
         {
-            gmx_fatal(FARGS, "Unknown bond_atomtype %s\n", alc[i]);
+            sprintf(errbuf, "Unknown bond_atomtype %s\n", alc[i]);
+            warning_error(wi, errbuf);
         }
 
         /* Assign a grid number to each cmap_type */
@@ -1201,7 +1212,8 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     /* Check for the correct number of atoms (again) */
     if (bt[F_CMAP].nct != nct)
     {
-        gmx_fatal(FARGS, "Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].nc);
+        sprintf(errbuf, "Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].nc);
+        warning_error(wi, errbuf);
     }
 
     /* Is this correct?? */
