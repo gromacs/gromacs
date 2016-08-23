@@ -95,6 +95,13 @@ warning_error(warninp_t wi, const char *s);
  * are printed, nwarn_error (local) is incremented.
  */
 
+/*! \brief Issue an error with warning_error() and prevent further
+ * processing by calling check_warning_error().
+ *
+ * This is intended for use where there is no way to produce a data
+ * structure that would prevent execution from segfaulting. */
+gmx_noreturn void warning_error_and_exit(warninp_t wi, const char *s, int f_errno, const char *file, int line);
+
 gmx_bool warning_errors_exist(warninp_t wi);
 /* Return whether any error-level warnings were issued to wi. */
 
