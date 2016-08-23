@@ -75,7 +75,7 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
     {
         case efGRO:
             out = gmx_fio_fopen(outfile, "w");
-            write_hconf_indexed_p(out, title, atoms, nindex, index, 3, x, v, box);
+            write_hconf_indexed_p(out, title, atoms, nindex, index, x, v, box);
             gmx_fio_fclose(out);
             break;
         case efG96:
@@ -130,7 +130,7 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
     switch (ftp)
     {
         case efGRO:
-            write_conf_p(outfile, title, atoms, 3, x, v, box);
+            write_conf_p(outfile, title, atoms, x, v, box);
             break;
         case efG96:
             clear_trxframe(&fr, TRUE);
@@ -185,7 +185,7 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
     {
         case efGRO:
             out = gmx_fio_fopen(outfile, "w");
-            write_hconf_mtop(out, title, mtop, 3, x, v, box);
+            write_hconf_mtop(out, title, mtop, x, v, box);
             gmx_fio_fclose(out);
             break;
         default:
