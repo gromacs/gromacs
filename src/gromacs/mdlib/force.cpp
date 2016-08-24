@@ -476,8 +476,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     *dvdlt_q  = 0;
                     *dvdlt_lj = 0;
 
-                    ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
-                                       cr, t, fr,
+                    ewald_LRcorrection(md->homenr, cr, nthreads, t, fr,
                                        md->chargeA, md->chargeB,
                                        md->sqrt_c6A, md->sqrt_c6B,
                                        md->sigmaA, md->sigmaB,
