@@ -189,10 +189,6 @@ void init_forcerec(FILE              *fplog,
  * print_force >= 0: print forces for atoms with force >= print_force
  */
 
-void forcerec_set_excl_load(t_forcerec           *fr,
-                            const gmx_localtop_t *top);
-/* Set the exclusion load for the local exclusions and possibly threads */
-
 void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd);
 /* Intializes the energy storage struct */
 
