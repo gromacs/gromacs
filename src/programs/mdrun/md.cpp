@@ -373,8 +373,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         top = gmx_mtop_generate_local_top(top_global, ir);
 
-        forcerec_set_excl_load(fr, top);
-
         state    = serial_init_local_state(state_global);
         f_global = f;
 

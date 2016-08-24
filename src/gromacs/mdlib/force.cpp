@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -476,8 +476,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     *dvdlt_q  = 0;
                     *dvdlt_lj = 0;
 
-                    ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
-                                       cr, t, fr,
+                    ewald_LRcorrection(md->homenr, cr, nthreads, t, fr,
                                        md->chargeA, md->chargeB,
                                        md->sqrt_c6A, md->sqrt_c6B,
                                        md->sigmaA, md->sigmaB,
