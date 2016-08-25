@@ -124,8 +124,8 @@ t_corr *init_corr(int nrgrp, int type, int axis, real dim_factor,
     curr->delta_t    = dt;
     curr->beginfit   = (1 - 2*GMX_REAL_EPS)*beginfit;
     curr->endfit     = (1 + 2*GMX_REAL_EPS)*endfit;
-    curr->x0         = NULL;
-    curr->n_offs     = NULL;
+    curr->x0         = nullptr;
+    curr->n_offs     = nullptr;
     curr->nframes    = 0;
     curr->nlast      = 0;
     curr->dim_factor = dim_factor;
@@ -138,15 +138,15 @@ t_corr *init_corr(int nrgrp, int type, int axis, real dim_factor,
     }
     for (i = 0; (i < nrgrp); i++)
     {
-        curr->ndata[i] = NULL;
-        curr->data[i]  = NULL;
+        curr->ndata[i] = nullptr;
+        curr->data[i]  = nullptr;
         if (bTen)
         {
-            curr->datam[i] = NULL;
+            curr->datam[i] = nullptr;
         }
     }
-    curr->time = NULL;
-    curr->lsq  = NULL;
+    curr->time = nullptr;
+    curr->lsq  = nullptr;
     curr->nmol = nmol;
     if (curr->nmol > 0)
     {
@@ -553,8 +553,8 @@ static void printmol(t_corr *curr, const char *fn,
     gmx_stats_t lsq1;
     int         i, j;
     real        a, b, D, Dav, D2av, VarD, sqrtD, sqrtD_max, scale;
-    t_pdbinfo  *pdbinfo = NULL;
-    const int  *mol2a   = NULL;
+    t_pdbinfo  *pdbinfo = nullptr;
+    const int  *mol2a   = nullptr;
 
     out = xvgropen(fn, "Diffusion Coefficients / Molecule", "Molecule", "D", oenv);
 
@@ -578,7 +578,7 @@ static void printmol(t_corr *curr, const char *fn,
                 gmx_stats_add_point(lsq1, xx, yy, dx, dy);
             }
         }
-        gmx_stats_get_ab(lsq1, elsqWEIGHT_NONE, &a, &b, NULL, NULL, NULL, NULL);
+        gmx_stats_get_ab(lsq1, elsqWEIGHT_NONE, &a, &b, nullptr, nullptr, nullptr, nullptr);
         gmx_stats_free(lsq1);
         D     = a*FACTOR/curr->dim_factor;
         if (D < 0)
@@ -622,12 +622,12 @@ static void printmol(t_corr *curr, const char *fn,
         {
             scale *= 10;
         }
-        GMX_RELEASE_ASSERT(pdbinfo != NULL, "Internal error - pdbinfo not set for PDB input");
+        GMX_RELEASE_ASSERT(pdbinfo != nullptr, "Internal error - pdbinfo not set for PDB input");
         for (i = 0; i < top->atoms.nr; i++)
         {
             pdbinfo[i].bfac *= scale;
         }
-        write_sto_conf(fn_pdb, "molecular MSD", &top->atoms, x, NULL, ePBC, box);
+        write_sto_conf(fn_pdb, "molecular MSD", &top->atoms, x, nullptr, ePBC, box);
     }
 }
 
@@ -650,13 +650,13 @@ int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
 #define        prev (1-cur)
     matrix           box;
     gmx_bool         bFirst;
-    gmx_rmpbc_t      gpbc = NULL;
+    gmx_rmpbc_t      gpbc = nullptr;
 
     natoms = read_first_x(oenv, &status, fn, &curr->t0, &(x[cur]), box);
 #ifdef DEBUG
     fprintf(stderr, "Read %d atoms for first frame\n", natoms);
 #endif
-    if ((gnx_com != NULL) && natoms < top->atoms.nr)
+    if ((gnx_com != nullptr) && natoms < top->atoms.nr)
     {
         fprintf(stderr, "WARNING: The trajectory only contains part of the system (%d of %d atoms) and therefore the COM motion of only this part of the system will be removed\n", natoms, top->atoms.nr);
     }
@@ -680,7 +680,7 @@ int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
     t      = curr->t0;
     if (x_pdb)
     {
-        *x_pdb = NULL;
+        *x_pdb = nullptr;
     }
 
     if (bMol)
@@ -696,7 +696,7 @@ int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
                        t_pdb > t - 0.5*(t - t_prev) &&
                        t_pdb < t + 0.5*(t - t_prev))))
         {
-            if (*x_pdb == NULL)
+            if (*x_pdb == nullptr)
             {
                 snew(*x_pdb, natoms);
             }
@@ -737,14 +737,14 @@ int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
             {
                 for (i = 0; (i < curr->ngrp); i++)
                 {
-                    curr->ndata[i] = NULL;
-                    curr->data[i]  = NULL;
+                    curr->ndata[i] = nullptr;
+                    curr->data[i]  = nullptr;
                     if (bTen)
                     {
-                        curr->datam[i] = NULL;
+                        curr->datam[i] = nullptr;
                     }
                 }
-                curr->time = NULL;
+                curr->time = nullptr;
             }
             maxframes += 10;
             for (i = 0; (i < curr->ngrp); i++)
@@ -808,7 +808,7 @@ int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
         for (i = 0; (i < curr->ngrp); i++)
         {
             /* calculate something useful, like mean square displacements */
-            calc_corr(curr, i, gnx[i], index[i], xa[cur], (gnx_com != NULL), com,
+            calc_corr(curr, i, gnx[i], index[i], xa[cur], (gnx_com != nullptr), com,
                       calc1, bTen);
         }
         cur    = prev;
@@ -882,9 +882,9 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
     real          *DD, *SigmaD, a, a2, b, r, chi2;
     rvec          *x;
     matrix         box;
-    int           *gnx_com     = NULL; /* the COM removal group size  */
-    int          **index_com   = NULL; /* the COM removal group atom indices */
-    char         **grpname_com = NULL; /* the COM removal group name */
+    int           *gnx_com     = nullptr; /* the COM removal group size  */
+    int          **index_com   = nullptr; /* the COM removal group atom indices */
+    char         **grpname_com = nullptr; /* the COM removal group name */
 
     snew(gnx, nrgrp);
     snew(index, nrgrp);
@@ -909,14 +909,14 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
     }
 
     msd = init_corr(nrgrp, type, axis, dim_factor,
-                    mol_file == NULL ? 0 : gnx[0], bTen, bMW, dt, top,
+                    mol_file == nullptr ? 0 : gnx[0], bTen, bMW, dt, top,
                     beginfit, endfit);
 
     nat_trx =
         corr_loop(msd, trx_file, top, ePBC, mol_file ? gnx[0] : 0, gnx, index,
-                  (mol_file != NULL) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
+                  (mol_file != nullptr) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
                   bTen, gnx_com, index_com, dt, t_pdb,
-                  pdb_file ? &x : NULL, box, oenv);
+                  pdb_file ? &x : nullptr, box, oenv);
 
     /* Correct for the number of points */
     for (j = 0; (j < msd->ngrp); j++)
@@ -933,14 +933,14 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
 
     if (mol_file)
     {
-        if (pdb_file && x == NULL)
+        if (pdb_file && x == nullptr)
         {
             fprintf(stderr, "\nNo frame found need time tpdb = %g ps\n"
                     "Can not write %s\n\n", t_pdb, pdb_file);
         }
         i             = top->atoms.nr;
         top->atoms.nr = nat_trx;
-        if (pdb_file && top->atoms.pdbinfo == NULL)
+        if (pdb_file && top->atoms.pdbinfo == nullptr)
         {
             snew(top->atoms.pdbinfo, top->atoms.nr);
         }
@@ -948,8 +948,8 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
         top->atoms.nr = i;
     }
 
-    DD     = NULL;
-    SigmaD = NULL;
+    DD     = nullptr;
+    SigmaD = nullptr;
 
     if (beginfit == -1)
     {
@@ -1069,8 +1069,8 @@ int gmx_msd(int argc, char *argv[])
         "the diffusion coefficient of the molecule.",
         "This option implies option [TT]-mol[tt]."
     };
-    static const char *normtype[] = { NULL, "no", "x", "y", "z", NULL };
-    static const char *axtitle[]  = { NULL, "no", "x", "y", "z", NULL };
+    static const char *normtype[] = { nullptr, "no", "x", "y", "z", nullptr };
+    static const char *axtitle[]  = { nullptr, "no", "x", "y", "z", nullptr };
     static int         ngroup     = 1;
     static real        dt         = 10;
     static real        t_pdb      = 0;
@@ -1103,10 +1103,10 @@ int gmx_msd(int argc, char *argv[])
     };
 
     t_filenm           fnm[] = {
-        { efTRX, NULL, NULL,  ffREAD },
-        { efTPS, NULL, NULL,  ffREAD },
-        { efNDX, NULL, NULL,  ffOPTRD },
-        { efXVG, NULL, "msd", ffWRITE },
+        { efTRX, nullptr, nullptr,  ffREAD },
+        { efTPS, nullptr, nullptr,  ffREAD },
+        { efNDX, nullptr, nullptr,  ffOPTRD },
+        { efXVG, nullptr, "msd", ffWRITE },
         { efXVG, "-mol", "diff_mol", ffOPTWR },
         { efPDB, "-pdb", "diff_mol", ffOPTWR }
     };
@@ -1124,7 +1124,7 @@ int gmx_msd(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_TIME_UNIT,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -1159,8 +1159,8 @@ int gmx_msd(int argc, char *argv[])
         fprintf(stderr, "Calculating diffusion coefficients for molecules.\n");
     }
 
-    GMX_RELEASE_ASSERT(normtype[0] != 0, "Options inconsistency; normtype[0] is NULL");
-    GMX_RELEASE_ASSERT(axtitle[0] != 0, "Options inconsistency; axtitle[0] is NULL");
+    GMX_RELEASE_ASSERT(normtype[0] != nullptr, "Options inconsistency; normtype[0] is NULL");
+    GMX_RELEASE_ASSERT(axtitle[0] != nullptr, "Options inconsistency; axtitle[0] is NULL");
 
     if (normtype[0][0] != 'n')
     {
@@ -1188,7 +1188,7 @@ int gmx_msd(int argc, char *argv[])
         gmx_fatal(FARGS, "Can only calculate the full tensor for 3D msd");
     }
 
-    bTop = read_tps_conf(tps_file, &top, &ePBC, &xdum, NULL, box, bMW || bRmCOMM);
+    bTop = read_tps_conf(tps_file, &top, &ePBC, &xdum, nullptr, box, bMW || bRmCOMM);
     if (mol_file && !bTop)
     {
         gmx_fatal(FARGS,

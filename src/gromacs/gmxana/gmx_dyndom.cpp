@@ -190,7 +190,7 @@ int gmx_dyndom(int argc, char *argv[])
     };
     int               i, j, natoms, isize;
     t_trxstatus      *status;
-    int              *index = NULL, *index_all;
+    int              *index = nullptr, *index_all;
     char             *grpname;
     real              angle, trans;
     rvec             *x, *v, *xout, *vout;
@@ -205,7 +205,7 @@ int gmx_dyndom(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -217,9 +217,9 @@ int gmx_dyndom(int argc, char *argv[])
 
     t_topology *top;
     snew(top, 1);
-    read_tps_conf(opt2fn("-f", NFILE, fnm), top, NULL, &x, &v, box, FALSE);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, nullptr, &x, &v, box, FALSE);
     t_atoms  &atoms = top->atoms;
-    if (atoms.pdbinfo == NULL)
+    if (atoms.pdbinfo == nullptr)
     {
         snew(atoms.pdbinfo, atoms.nr);
     }
@@ -257,7 +257,7 @@ int gmx_dyndom(int argc, char *argv[])
             atoms.resinfo[atoms.atom[j].resind].chainid = label;
         }
 
-        write_trx(status, atoms.nr, index_all, &atoms, i, angle, box, xout, vout, NULL);
+        write_trx(status, atoms.nr, index_all, &atoms, i, angle, box, xout, vout, nullptr);
     }
     close_trx(status);
 

@@ -198,7 +198,7 @@ void copy_coupling_state(t_state *statea, t_state *stateb,
             stateb->nosehoover_vxi[nc+j] = statea->nosehoover_vxi[nc+j];
         }
     }
-    if (stateb->nhpres_xi != NULL)
+    if (stateb->nhpres_xi != nullptr)
     {
         for (i = 0; i < stateb->nnhpres; i++)
         {
@@ -311,7 +311,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
             {
                 wallcycle_start(wcycle, ewcMoveE);
                 global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
-                            ir, ekind, constr, bStopCM ? vcm : NULL,
+                            ir, ekind, constr, bStopCM ? vcm : nullptr,
                             signalBuffer.size(), signalBuffer.data(),
                             totalNumberOfBondedInteractions,
                             *bSumEkinhOld, flags);
@@ -658,11 +658,11 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         state->flags |= (1<<estFEPSTATE);
     }
     state->flags |= (1<<estX);
-    if (state->lambda == NULL)
+    if (state->lambda == nullptr)
     {
         snew(state->lambda, efptNR);
     }
-    if (state->x == NULL)
+    if (state->x == nullptr)
     {
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
@@ -672,7 +672,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     if (EI_DYNAMICS(ir->eI))
     {
         state->flags |= (1<<estV);
-        if (state->v == NULL)
+        if (state->v == nullptr)
         {
             snew(state->v, state->nalloc + 1);
         }
@@ -680,7 +680,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     if (ir->eI == eiCG)
     {
         state->flags |= (1<<estCGP);
-        if (state->cg_p == NULL)
+        if (state->cg_p == nullptr)
         {
             /* cg_p is not stored in the tpx file, so we need to allocate it */
             snew(state->cg_p, state->nalloc + 1);

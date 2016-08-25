@@ -63,7 +63,7 @@ static void bc_cstring(const t_commrec *cr, char **s)
 {
     int size = 0;
 
-    if (MASTER(cr) && *s != NULL)
+    if (MASTER(cr) && *s != nullptr)
     {
         /* Size of the char buffer is string length + 1 for '\0' */
         size = strlen(*s) + 1;
@@ -77,10 +77,10 @@ static void bc_cstring(const t_commrec *cr, char **s)
         }
         nblock_bc(cr, size, *s);
     }
-    else if (!MASTER(cr) && *s != NULL)
+    else if (!MASTER(cr) && *s != nullptr)
     {
         sfree(*s);
-        *s = NULL;
+        *s = nullptr;
     }
 }
 
@@ -245,7 +245,7 @@ static void bc_groups(const t_commrec *cr, t_symtab *symtab,
         block_bc(cr, n);
         if (n == 0)
         {
-            groups->grpnr[g] = NULL;
+            groups->grpnr[g] = nullptr;
         }
         else
         {
@@ -276,7 +276,7 @@ void bcast_state(const t_commrec *cr, t_state *state)
     block_bc(cr, state->nnhpres);
     block_bc(cr, state->nhchainlength);
     block_bc(cr, state->flags);
-    if (state->lambda == NULL)
+    if (state->lambda == nullptr)
     {
         snew_bc(cr, state->lambda, efptNR)
     }
@@ -533,7 +533,7 @@ static void bc_pull(const t_commrec *cr, pull_params_t *pull)
     {
         if (!MASTER(cr))
         {
-            pull->coord[c].externalPotentialProvider = NULL;
+            pull->coord[c].externalPotentialProvider = nullptr;
         }
         if (pull->coord[c].eType == epullEXTERNAL)
         {

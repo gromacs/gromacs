@@ -71,11 +71,11 @@ class SurfaceAreaTest : public ::testing::Test
     public:
         SurfaceAreaTest()
             : rng_(12345), area_(0.0), volume_(0.0),
-              atomArea_(NULL), dotCount_(0), dots_(NULL)
+              atomArea_(nullptr), dotCount_(0), dots_(nullptr)
         {
             clear_mat(box_);
         }
-        ~SurfaceAreaTest()
+        ~SurfaceAreaTest() override
         {
             sfree(atomArea_);
             sfree(dots_);
@@ -88,7 +88,7 @@ class SurfaceAreaTest : public ::testing::Test
             {
                 index_.push_back(x_.size());
             }
-            x_.push_back(gmx::RVec(x, y, z));
+            x_.emplace_back(x, y, z);
             radius_.push_back(radius);
         }
 
@@ -142,10 +142,10 @@ class SurfaceAreaTest : public ::testing::Test
         {
             volume_   = 0.0;
             sfree(atomArea_);
-            atomArea_ = NULL;
+            atomArea_ = nullptr;
             dotCount_ = 0;
             sfree(dots_);
-            dots_     = NULL;
+            dots_     = nullptr;
             t_pbc       pbc;
             if (bPBC)
             {
@@ -156,7 +156,7 @@ class SurfaceAreaTest : public ::testing::Test
                         gmx::SurfaceAreaCalculator calculator;
                         calculator.setDotCount(ndots);
                         calculator.setRadii(radius_);
-                        calculator.calculate(as_rvec_array(x_.data()), bPBC ? &pbc : NULL,
+                        calculator.calculate(as_rvec_array(x_.data()), bPBC ? &pbc : nullptr,
                                              index_.size(), index_.data(), flags,
                                              &area_, &volume_, &atomArea_,
                                              &dots_, &dotCount_);
@@ -176,11 +176,11 @@ class SurfaceAreaTest : public ::testing::Test
             {
                 compound.checkReal(volume_, "Volume");
             }
-            if (atomArea_ != NULL)
+            if (atomArea_ != nullptr)
             {
                 compound.checkSequenceArray(index_.size(), atomArea_, "AtomArea");
             }
-            if (dots_ != NULL)
+            if (dots_ != nullptr)
             {
                 if (checkDotCoordinates)
                 {

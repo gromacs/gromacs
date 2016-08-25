@@ -100,7 +100,7 @@ class AbstractOptionSectionHandle : public IOptionsContainerWithSections
     public:
         // From IOptionsContainer
         //! \copydoc IOptionsContainer::addGroup()
-        virtual IOptionsContainer &addGroup();
+        IOptionsContainer &addGroup() override;
 
     protected:
         //! \cond libapi
@@ -131,10 +131,10 @@ class AbstractOptionSectionHandle : public IOptionsContainerWithSections
 
     private:
         // From IOptionsContainerWithSections
-        virtual internal::OptionSectionImpl *
-        addSectionImpl(const AbstractOptionSection &section);
+        internal::OptionSectionImpl *
+        addSectionImpl(const AbstractOptionSection &section) override;
         // From IOptionsContainer
-        virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
+        OptionInfo *addOptionImpl(const AbstractOption &settings) override;
 
         /*! \brief
          * Implementation helper for the template method.

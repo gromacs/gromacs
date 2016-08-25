@@ -75,7 +75,7 @@ namespace
  */
 std::string quoteIfNecessary(const char *str)
 {
-    const bool bSpaces = (std::strchr(str, ' ') != NULL);
+    const bool bSpaces = (std::strchr(str, ' ') != nullptr);
     if (bSpaces)
     {
         return formatString("'%s'", str);
@@ -103,11 +103,11 @@ class DefaultExecutableEnvironment : public IExecutableEnvironment
         {
         }
 
-        virtual std::string getWorkingDirectory() const
+        std::string getWorkingDirectory() const override
         {
             return initialWorkingDirectory_;
         }
-        virtual std::vector<std::string> getExecutablePaths() const
+        std::vector<std::string> getExecutablePaths() const override
         {
             return Path::getExecutablePaths();
         }
@@ -381,8 +381,7 @@ CommandLineProgramContext::CommandLineProgramContext(
 }
 
 CommandLineProgramContext::~CommandLineProgramContext()
-{
-}
+    = default;
 
 void CommandLineProgramContext::setDisplayName(const std::string &name)
 {

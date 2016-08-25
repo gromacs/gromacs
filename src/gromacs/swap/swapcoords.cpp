@@ -73,8 +73,8 @@
 static const char *SwS      = {"SWAP:"};                                           /**< For output that comes from the swap module */
 static const char *SwSEmpty = {"     "};                                           /**< Placeholder for multi-line output */
 static const char* CompStr[eCompNR] = {"A", "B" };                                 /**< Compartment name */
-static const char *SwapStr[eSwapTypesNR+1] = { "", "X-", "Y-", "Z-", NULL};        /**< Name for the swap types. */
-static const char *DimStr[DIM+1] = { "X", "Y", "Z", NULL};                         /**< Name for the swap dimension. */
+static const char *SwapStr[eSwapTypesNR+1] = { "", "X-", "Y-", "Z-", nullptr};     /**< Name for the swap types. */
+static const char *DimStr[DIM+1] = { "X", "Y", "Z", nullptr};                      /**< Name for the swap dimension. */
 
 /** Keep track of through which channel the ions have passed */
 enum eChannelHistory {
@@ -312,7 +312,7 @@ static void get_molecule_center(
         rvec_add(reference, dx, correctPBCimage);
 
         /* Take weight into account */
-        if (NULL == weights)
+        if (nullptr == weights)
         {
             wi = 1.0;
         }
@@ -701,7 +701,7 @@ static void sortMoleculesIntoCompartments(
                 add_to_list(iAtom, &g->comp[comp], dist);
 
                 /* Master also checks for ion groups through which channel each ion has passed */
-                if (MASTER(cr) && (g->comp_now != NULL) && !bIsSolvent)
+                if (MASTER(cr) && (g->comp_now != nullptr) && !bIsSolvent)
                 {
                     int globalAtomNr = g->ind[iAtom] + 1; /* PDB index starts at 1 ... */
                     detect_flux_per_channel(g, globalAtomNr, comp, g->xc[iAtom],
@@ -737,7 +737,7 @@ static void sortMoleculesIntoCompartments(
         }
     }
 
-    if (bIsSolvent && NULL != fpout)
+    if (bIsSolvent && nullptr != fpout)
     {
         fprintf(fpout, "# Solv. molecules in comp.%s: %d   comp.%s: %d\n",
                 CompStr[eCompA], g->comp[eCompA].nMol,
@@ -924,10 +924,10 @@ static void bc_initial_concentrations(
 /*! \brief Ensure that each atom belongs to at most one of the swap groups. */
 static void check_swap_groups(t_swap *s, int nat, gmx_bool bVerbose)
 {
-    int  *nGroup    = NULL; /* This array counts for each atom in the MD system to
-                               how many swap groups it belongs (should be 0 or 1!) */
+    int  *nGroup    = nullptr; /* This array counts for each atom in the MD system to
+                                  how many swap groups it belongs (should be 0 or 1!) */
     int   ind       = -1;
-    int   nMultiple = 0;    /* Number of atoms belonging to multiple groups */
+    int   nMultiple = 0;       /* Number of atoms belonging to multiple groups */
 
 
     if (bVerbose)
@@ -1047,9 +1047,9 @@ static void print_ionlist_legend(t_inputrec             *ir,
     }
 
     // Center of split groups
-    snprintf(buf, STRLEN, "%scenter of %s of split group 0", SwapStr[ir->eSwapCoords], (NULL != s->group[eGrpSplit0].m) ? "mass" : "geometry");
+    snprintf(buf, STRLEN, "%scenter of %s of split group 0", SwapStr[ir->eSwapCoords], (nullptr != s->group[eGrpSplit0].m) ? "mass" : "geometry");
     legend[count++] = gmx_strdup(buf);
-    snprintf(buf, STRLEN, "%scenter of %s of split group 1", SwapStr[ir->eSwapCoords], (NULL != s->group[eGrpSplit1].m) ? "mass" : "geometry");
+    snprintf(buf, STRLEN, "%scenter of %s of split group 1", SwapStr[ir->eSwapCoords], (nullptr != s->group[eGrpSplit1].m) ? "mass" : "geometry");
     legend[count++] = gmx_strdup(buf);
 
     // Ion flux for each channel and ion type
@@ -1106,9 +1106,9 @@ static void detect_flux_per_channel_init(
         /* All these flux detection routines run on the master only */
         if (!MASTER(cr))
         {
-            g->comp_now      = NULL;
-            g->comp_from     = NULL;
-            g->channel_label = NULL;
+            g->comp_now      = nullptr;
+            g->comp_from     = nullptr;
+            g->channel_label = nullptr;
 
             return;
         }
@@ -1205,13 +1205,13 @@ static void outputStartStructureIfWanted(gmx_mtop_t *mtop, rvec *x, int ePBC, ma
 {
     char *env = getenv("GMX_COMPELDUMP");
 
-    if (env != NULL)
+    if (env != nullptr)
     {
         fprintf(stderr, "\n%s Found env.var. GMX_COMPELDUMP, will output CompEL starting structure made whole.\n"
                 "%s In case of multimeric channels, please check whether they have the correct PBC representation.\n",
                 SwS, SwSEmpty);
 
-        write_sto_conf_mtop("CompELAssumedWholeConfiguration.pdb", *mtop->name, mtop, x, NULL, ePBC, box);
+        write_sto_conf_mtop("CompELAssumedWholeConfiguration.pdb", *mtop->name, mtop, x, nullptr, ePBC, box);
     }
 }
 
@@ -1234,7 +1234,7 @@ static void init_swapstate(
         matrix            box,
         int               ePBC)
 {
-    rvec      *x_pbc  = NULL; /* positions of the whole MD system with molecules made whole */
+    rvec      *x_pbc  = nullptr; /* positions of the whole MD system with molecules made whole */
     t_swapgrp *g;
     t_swap    *s;
 
@@ -1278,7 +1278,7 @@ static void init_swapstate(
         copy_rvecn(x, x_pbc, 0, mtop->natoms);
 
         /* This can only make individual molecules whole, not multimers */
-        do_pbc_mtop(NULL, ePBC, box, mtop, x_pbc);
+        do_pbc_mtop(nullptr, ePBC, box, mtop, x_pbc);
 
         /* Output the starting structure? */
         outputStartStructureIfWanted(mtop, x_pbc, ePBC, box);
@@ -1397,8 +1397,8 @@ void convertOldToNewGroupFormat(
      */
     int  nAnions    = 0;
     int  nCations   = 0;
-    int *indAnions  = NULL;
-    int *indCations = NULL;
+    int *indAnions  = nullptr;
+    int *indCations = nullptr;
     snew(indAnions, g->nat);
     snew(indCations, g->nat);
 
@@ -1470,7 +1470,7 @@ void init_swapcoords(
     t_swapgrp             *g;
     swapstateIons_t       *gs;
     gmx_bool               bAppend, bStartFromCpt, bRerun;
-    gmx_mtop_atomlookup_t  alook = NULL;
+    gmx_mtop_atomlookup_t  alook = nullptr;
     matrix                 boxCopy;
 
 
@@ -1708,7 +1708,7 @@ void init_swapcoords(
     }
     else
     {
-        s->fpout = NULL;
+        s->fpout = nullptr;
     }
 
     /* Prepare for parallel or serial run */
@@ -1719,7 +1719,7 @@ void init_swapcoords(
             g             = &(s->group[ig]);
             g->nat_loc    = 0;
             g->nalloc_loc = 0;
-            g->ind_loc    = NULL;
+            g->ind_loc    = nullptr;
         }
     }
     else
@@ -2003,7 +2003,7 @@ gmx_bool do_swapcoords(
     t_swapgrp            *g, *gsol;
     int                   isol, iion;
     rvec                  com_solvent, com_particle; /* solvent and swap molecule's center of mass */
-    gmx_mtop_atomlookup_t alook = NULL;
+    gmx_mtop_atomlookup_t alook = nullptr;
 
 
     wallcycle_start(wcycle, ewcSWAP);
@@ -2031,8 +2031,8 @@ gmx_bool do_swapcoords(
     for (ig = eSwapFixedGrpNR; ig < s->ngrp; ig++)
     {
         g = &(s->group[ig]);
-        communicate_group_positions(cr, g->xc, NULL, NULL, FALSE,
-                                    x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, NULL, NULL);
+        communicate_group_positions(cr, g->xc, nullptr, nullptr, FALSE,
+                                    x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, nullptr, nullptr);
 
         /* Determine how many ions of this type each compartment contains */
         sortMoleculesIntoCompartments(g, cr, sc, box, step, s->fpout, bRerun, FALSE);
@@ -2058,8 +2058,8 @@ gmx_bool do_swapcoords(
         /* Since we here know that we have to perform ion/water position exchanges,
          * we now assemble the solvent positions */
         g = &(s->group[eGrpSolvent]);
-        communicate_group_positions(cr, g->xc, NULL, NULL, FALSE,
-                                    x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, NULL, NULL);
+        communicate_group_positions(cr, g->xc, nullptr, nullptr, FALSE,
+                                    x, g->nat, g->nat_loc, g->ind_loc, g->c_ind_loc, nullptr, nullptr);
 
         /* Determine how many molecules of solvent each compartment contains */
         sortMoleculesIntoCompartments(g, cr, sc, box, step, s->fpout, bRerun, TRUE);
@@ -2147,7 +2147,7 @@ gmx_bool do_swapcoords(
         }
         gmx_mtop_atomlookup_destroy(alook);
 
-        if (s->fpout != NULL)
+        if (s->fpout != nullptr)
         {
             print_ionlist(s, t, "  # after swap");
         }

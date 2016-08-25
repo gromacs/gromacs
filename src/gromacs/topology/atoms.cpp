@@ -49,29 +49,29 @@
 #include "gromacs/utility/txtdump.h"
 
 const char *ptype_str[eptNR+1] = {
-    "Atom", "Nucleus", "Shell", "Bond", "VSite", NULL
+    "Atom", "Nucleus", "Shell", "Bond", "VSite", nullptr
 };
 
 void init_atom(t_atoms *at)
 {
     at->nr        = 0;
     at->nres      = 0;
-    at->atom      = NULL;
-    at->resinfo   = NULL;
-    at->atomname  = NULL;
-    at->atomtype  = NULL;
-    at->atomtypeB = NULL;
-    at->pdbinfo   = NULL;
+    at->atom      = nullptr;
+    at->resinfo   = nullptr;
+    at->atomname  = nullptr;
+    at->atomtype  = nullptr;
+    at->atomtypeB = nullptr;
+    at->pdbinfo   = nullptr;
 }
 
 void init_atomtypes(t_atomtypes *at)
 {
     at->nr         = 0;
-    at->radius     = NULL;
-    at->vol        = NULL;
-    at->atomnumber = NULL;
-    at->gb_radius  = NULL;
-    at->S_hct      = NULL;
+    at->radius     = nullptr;
+    at->vol        = nullptr;
+    at->atomnumber = nullptr;
+    at->gb_radius  = nullptr;
+    at->S_hct      = nullptr;
 }
 
 void done_atom(t_atoms *at)
@@ -104,33 +104,33 @@ void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra)
     {
         srenew(atoms->atomname, atoms->nr+natom_extra);
         srenew(atoms->atom, atoms->nr+natom_extra);
-        if (NULL != atoms->pdbinfo)
+        if (nullptr != atoms->pdbinfo)
         {
             srenew(atoms->pdbinfo, atoms->nr+natom_extra);
         }
-        if (NULL != atoms->atomtype)
+        if (nullptr != atoms->atomtype)
         {
             srenew(atoms->atomtype, atoms->nr+natom_extra);
         }
-        if (NULL != atoms->atomtypeB)
+        if (nullptr != atoms->atomtypeB)
         {
             srenew(atoms->atomtypeB, atoms->nr+natom_extra);
         }
         for (i = atoms->nr; (i < atoms->nr+natom_extra); i++)
         {
-            atoms->atomname[i] = NULL;
+            atoms->atomname[i] = nullptr;
             memset(&atoms->atom[i], 0, sizeof(atoms->atom[i]));
-            if (NULL != atoms->pdbinfo)
+            if (nullptr != atoms->pdbinfo)
             {
                 std::memset(&atoms->pdbinfo[i], 0, sizeof(atoms->pdbinfo[i]));
             }
-            if (NULL != atoms->atomtype)
+            if (nullptr != atoms->atomtype)
             {
-                atoms->atomtype[i] = NULL;
+                atoms->atomtype[i] = nullptr;
             }
-            if (NULL != atoms->atomtypeB)
+            if (nullptr != atoms->atomtypeB)
             {
-                atoms->atomtypeB[i] = NULL;
+                atoms->atomtypeB[i] = nullptr;
             }
         }
         atoms->nr += natom_extra;
@@ -151,8 +151,8 @@ void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo)
     atoms->nr   = natoms;
     atoms->nres = 0;
     snew(atoms->atomname, natoms);
-    atoms->atomtype  = NULL;
-    atoms->atomtypeB = NULL;
+    atoms->atomtype  = nullptr;
+    atoms->atomtypeB = nullptr;
     snew(atoms->resinfo, natoms);
     snew(atoms->atom, natoms);
     if (bPdbinfo)
@@ -161,7 +161,7 @@ void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo)
     }
     else
     {
-        atoms->pdbinfo = NULL;
+        atoms->pdbinfo = nullptr;
     }
 }
 
@@ -183,36 +183,36 @@ t_atoms *copy_t_atoms(const t_atoms *src)
     int      i;
 
     snew(dst, 1);
-    init_t_atoms(dst, src->nr, (NULL != src->pdbinfo));
+    init_t_atoms(dst, src->nr, (nullptr != src->pdbinfo));
     dst->nr = src->nr;
-    if (NULL != src->atomname)
+    if (nullptr != src->atomname)
     {
         snew(dst->atomname, src->nr);
     }
-    if (NULL != src->atomtype)
+    if (nullptr != src->atomtype)
     {
         snew(dst->atomtype, src->nr);
     }
-    if (NULL != src->atomtypeB)
+    if (nullptr != src->atomtypeB)
     {
         snew(dst->atomtypeB, src->nr);
     }
     for (i = 0; (i < src->nr); i++)
     {
         dst->atom[i] = src->atom[i];
-        if (NULL != src->pdbinfo)
+        if (nullptr != src->pdbinfo)
         {
             dst->pdbinfo[i] = src->pdbinfo[i];
         }
-        if (NULL != src->atomname)
+        if (nullptr != src->atomname)
         {
             dst->atomname[i]  = src->atomname[i];
         }
-        if (NULL != src->atomtype)
+        if (nullptr != src->atomtype)
         {
             dst->atomtype[i] = src->atomtype[i];
         }
-        if (NULL != src->atomtypeB)
+        if (nullptr != src->atomtypeB)
         {
             dst->atomtypeB[i] = src->atomtypeB[i];
         }
@@ -233,7 +233,7 @@ void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, t_symtab *symtab,
 
     ri           = &atoms->resinfo[atoms->atom[atom_ind].resind];
     ri->name     = put_symtab(symtab, resname);
-    ri->rtp      = NULL;
+    ri->rtp      = nullptr;
     ri->nr       = resnr;
     ri->ic       = ic;
     ri->chainnum = chainnum;
@@ -368,7 +368,7 @@ void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real a
     {
         for (i = 0; (i < a1->nr); i++)
         {
-            cmp_atom(fp, i, &(a1->atom[i]), NULL, ftol, abstol);
+            cmp_atom(fp, i, &(a1->atom[i]), nullptr, ftol, abstol);
         }
     }
 }

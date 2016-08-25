@@ -280,8 +280,7 @@ MdrunTestFixtureBase::MdrunTestFixtureBase()
 }
 
 MdrunTestFixtureBase::~MdrunTestFixtureBase()
-{
-}
+    = default;
 
 // ====
 
@@ -290,8 +289,7 @@ MdrunTestFixture::MdrunTestFixture() : runner_(this)
 }
 
 MdrunTestFixture::~MdrunTestFixture()
-{
-}
+    = default;
 
 } // namespace test
 } // namespace gmx

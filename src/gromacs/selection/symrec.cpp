@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,7 +81,7 @@ class SelectionParserSymbol::Impl
          * \a var_ members as appropriate.
          */
         Impl(SymbolType type, const char *name)
-            : name_(name), type_(type), meth_(NULL)
+            : name_(name), type_(type), meth_(nullptr)
         {
         }
 
@@ -101,8 +101,7 @@ SelectionParserSymbol::SelectionParserSymbol(Impl *impl)
 }
 
 SelectionParserSymbol::~SelectionParserSymbol()
-{
-}
+    = default;
 
 const std::string &
 SelectionParserSymbol::name() const
@@ -204,7 +203,7 @@ SelectionParserSymbolTable::Impl::addPositionSymbols()
 {
     const char *const *postypes
         = gmx::PositionCalculationCollection::typeEnumValues;
-    for (int i = 0; postypes[i] != NULL; ++i)
+    for (int i = 0; postypes[i] != nullptr; ++i)
     {
         SymbolPointer sym(new SelectionParserSymbol(
                                   new SelectionParserSymbol::Impl(
@@ -267,8 +266,7 @@ SelectionParserSymbolIterator::SelectionParserSymbolIterator(
 }
 
 SelectionParserSymbolIterator::~SelectionParserSymbolIterator()
-{
-}
+    = default;
 
 SelectionParserSymbolIterator &SelectionParserSymbolIterator::operator=(
         const SelectionParserSymbolIterator &other)
@@ -311,8 +309,7 @@ SelectionParserSymbolTable::SelectionParserSymbolTable()
 }
 
 SelectionParserSymbolTable::~SelectionParserSymbolTable()
-{
-}
+    = default;
 
 const SelectionParserSymbol *
 SelectionParserSymbolTable::findSymbol(const std::string &name) const
@@ -320,13 +317,13 @@ SelectionParserSymbolTable::findSymbol(const std::string &name) const
     Impl::SymbolMap::const_iterator sym = impl_->symbols_.lower_bound(name);
     if (sym == impl_->symbols_.end())
     {
-        return NULL;
+        return nullptr;
     }
     if (sym->second->name() == name)
     {
         return sym->second.get();
     }
-    return NULL;
+    return nullptr;
 }
 
 SelectionParserSymbolIterator

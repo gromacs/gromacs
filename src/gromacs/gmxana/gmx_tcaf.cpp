@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,9 +79,9 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
                          const char *fn_tcf, const char *fn_cub,
                          const char *fn_vk, const gmx_output_env_t *oenv)
 {
-    FILE  *fp, *fp_vk, *fp_cub = NULL;
+    FILE  *fp, *fp_vk, *fp_cub = nullptr;
     int    nk, ntc;
-    real **tcaf, **tcafc = NULL, eta, *sig;
+    real **tcaf, **tcafc = nullptr, eta, *sig;
     int    i, j, k, kc;
     int    ncorr;
     double fitparms[3];
@@ -208,8 +208,8 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         tcaf[k][0]   = 1.0;
         fitparms[0]  = 1;
         fitparms[1]  = 1;
-        do_lmfit(ncorr, tcaf[k], sig, dt, 0, 0, ncorr*dt,
-                 oenv, bDebugMode(), effnVAC, fitparms, 0, NULL);
+        do_lmfit(ncorr, tcaf[k], sig, dt, nullptr, 0, ncorr*dt,
+                 oenv, bDebugMode(), effnVAC, fitparms, 0, nullptr);
         eta = 1000*fitparms[1]*rho/
             (4*fitparms[0]*PICO*norm2(kfac[k])/(NANO*NANO));
         fprintf(stdout, "k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
@@ -233,8 +233,8 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             tcafc[k][0]  = 1.0;
             fitparms[0]  = 1;
             fitparms[1]  = 1;
-            do_lmfit(ncorr, tcafc[k], sig, dt, 0, 0, ncorr*dt,
-                     oenv, bDebugMode(), effnVAC, fitparms, 0, NULL);
+            do_lmfit(ncorr, tcafc[k], sig, dt, nullptr, 0, ncorr*dt,
+                     oenv, bDebugMode(), effnVAC, fitparms, 0, nullptr);
             eta = 1000*fitparms[1]*rho/
                 (4*fitparms[0]*PICO*norm2(kfac[kset_c[k]])/(NANO*NANO));
             fprintf(stdout,
@@ -309,7 +309,7 @@ int gmx_tcaf(int argc, char *argv[])
     matrix            box;
     gmx_bool          bTop;
     int               gnx;
-    int              *index, *atndx = NULL, at;
+    int              *index, *atndx = nullptr, at;
     char             *grpname;
     char              title[256];
     real              t0, t1, dt, m, mtot, sysmass, rho, sx, cx;
@@ -323,9 +323,9 @@ int gmx_tcaf(int argc, char *argv[])
 #define NHISTO 360
 
     t_filenm  fnm[] = {
-        { efTRN, "-f",    NULL,      ffREAD  },
-        { efTPS, NULL,    NULL,      ffOPTRD },
-        { efNDX, NULL,    NULL,      ffOPTRD },
+        { efTRN, "-f",    nullptr,      ffREAD  },
+        { efTPS, nullptr,    nullptr,      ffOPTRD },
+        { efNDX, nullptr,    nullptr,      ffOPTRD },
         { efXVG, "-ot",  "transcur", ffOPTWR },
         { efXVG, "-oa",  "tcaf_all", ffWRITE },
         { efXVG, "-o",   "tcaf",     ffWRITE },
@@ -341,12 +341,12 @@ int gmx_tcaf(int argc, char *argv[])
     ppa    = add_acf_pargs(&npargs, pa);
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, NULL, NULL, box,
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box,
                          TRUE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 

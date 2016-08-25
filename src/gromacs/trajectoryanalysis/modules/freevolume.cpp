@@ -89,16 +89,16 @@ class FreeVolume : public TrajectoryAnalysisModule
 {
     public:
         FreeVolume();
-        virtual ~FreeVolume() {};
+        ~FreeVolume() override = default;;
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+        void initOptions(IOptionsContainer          *options,
+                         TrajectoryAnalysisSettings *settings) override;
+        void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                          const TopologyInformation        &top) override;
+        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                          TrajectoryAnalysisModuleData *pdata) override;
+        void finishAnalysis(int nframes) override;
+        void writeOutput() override;
 
     private:
         std::string                       fnFreevol_;
@@ -317,7 +317,7 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     const Selection                     &sel  = pdata->parallelSelection(sel_);
     gmx::UniformRealDistribution<real>   dist;
 
-    GMX_RELEASE_ASSERT(NULL != pbc, "You have no periodic boundary conditions");
+    GMX_RELEASE_ASSERT(nullptr != pbc, "You have no periodic boundary conditions");
 
     // Analysis framework magic
     dh.startFrame(frnr, fr.time);

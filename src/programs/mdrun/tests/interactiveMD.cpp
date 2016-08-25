@@ -53,7 +53,7 @@ class ImdTestFixture : public MdrunTestFixture
 {
     protected:
         ImdTestFixture();
-        ~ImdTestFixture();
+        ~ImdTestFixture() override;
 };
 
 
@@ -62,8 +62,7 @@ ImdTestFixture::ImdTestFixture()
 }
 
 ImdTestFixture::~ImdTestFixture()
-{
-}
+    = default;
 
 
 //! Test fixture for mdrun with IMD settings

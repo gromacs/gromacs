@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,7 @@ class IntegrationTestFixture : public ::testing::Test
 {
     protected:
         IntegrationTestFixture();
-        virtual ~IntegrationTestFixture();
+        ~IntegrationTestFixture() override;
 
         /*! \brief Accepts a string as input, writes it to a temporary
          * file and then reopens stdin to read the contents of that

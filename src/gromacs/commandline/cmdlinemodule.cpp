@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,8 +62,7 @@ CommandLineModuleSettings::CommandLineModuleSettings()
 }
 
 CommandLineModuleSettings::~CommandLineModuleSettings()
-{
-}
+    = default;
 
 int CommandLineModuleSettings::defaultNiceLevel() const
 {
@@ -84,7 +83,7 @@ void writeCommandLineHelpCMain(
     int   argc = 1;
     // TODO: The constness should not be cast away.
     argv[0] = const_cast<char *>(name);
-    argv[1] = NULL;
+    argv[1] = nullptr;
     GlobalCommandLineHelpContext global(context);
     mainFunction(argc, argv);
 }

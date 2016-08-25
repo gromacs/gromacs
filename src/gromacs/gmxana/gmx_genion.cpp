@@ -143,7 +143,7 @@ void sort_ions(int nsa, int nw, int repl[], int index[],
 {
     int    i, j, k, r, np, nn, starta, startr, npi, nni;
     rvec  *xt;
-    char **pptr = NULL, **nptr = NULL, **paptr = NULL, **naptr = NULL;
+    char **pptr = nullptr, **nptr = nullptr, **paptr = nullptr, **naptr = nullptr;
 
     snew(xt, atoms->nr);
 
@@ -239,7 +239,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
                          const char *p_name, const char *n_name, char *grpname)
 {
     FILE    *fpin, *fpout;
-    char     buf[STRLEN], buf2[STRLEN], *temp, **mol_line = NULL;
+    char     buf[STRLEN], buf2[STRLEN], *temp, **mol_line = nullptr;
     int      line, i, nmol_line, sol_line, nsol_last;
     gmx_bool bMolecules;
     char     temporary_filename[STRLEN];
@@ -258,7 +258,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
     {
         line++;
         std::strcpy(buf2, buf);
-        if ((temp = std::strchr(buf2, '\n')) != NULL)
+        if ((temp = std::strchr(buf2, '\n')) != nullptr)
         {
             temp[0] = '\0';
         }
@@ -266,7 +266,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
         if (buf2[0] == '[')
         {
             buf2[0] = ' ';
-            if ((temp = std::strchr(buf2, '\n')) != NULL)
+            if ((temp = std::strchr(buf2, '\n')) != nullptr)
             {
                 temp[0] = '\0';
             }
@@ -396,9 +396,9 @@ int gmx_genion(int argc, char *argv[])
     int                i, nw, nwa, nsa, nsalt, iqtot;
     gmx_output_env_t  *oenv;
     t_filenm           fnm[] = {
-        { efTPR, NULL,  NULL,      ffREAD  },
-        { efNDX, NULL,  NULL,      ffOPTRD },
-        { efSTO, "-o",  NULL,      ffWRITE },
+        { efTPR, nullptr,  nullptr,      ffREAD  },
+        { efNDX, nullptr,  nullptr,      ffOPTRD },
+        { efSTO, "-o",  nullptr,      ffWRITE },
         { efTOP, "-p",  "topol",   ffOPTRW }
     };
 #define NFILE asize(fnm)
@@ -549,9 +549,9 @@ int gmx_genion(int argc, char *argv[])
         }
 
         sfree(atoms.pdbinfo);
-        atoms.pdbinfo = NULL;
+        atoms.pdbinfo = nullptr;
     }
-    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, NULL, ePBC, box);
+    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, nullptr, ePBC, box);
 
     return 0;
 }

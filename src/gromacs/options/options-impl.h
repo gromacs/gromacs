@@ -95,8 +95,8 @@ class OptionSectionImpl : public IOptionsContainerWithSections
                 explicit Group(OptionSectionImpl *parent) : parent_(parent) {}
 
                 // From IOptionsContainer
-                virtual IOptionsContainer &addGroup();
-                virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
+                IOptionsContainer &addGroup() override;
+                OptionInfo *addOptionImpl(const AbstractOption &settings) override;
 
                 //! Containing options object.
                 OptionSectionImpl  *parent_;
@@ -131,11 +131,11 @@ class OptionSectionImpl : public IOptionsContainerWithSections
         }
 
         // From IOptionsContainerWithSections
-        virtual OptionSectionImpl *addSectionImpl(const AbstractOptionSection &section);
+        OptionSectionImpl *addSectionImpl(const AbstractOptionSection &section) override;
 
         // From IOptionsContainer
-        virtual IOptionsContainer &addGroup();
-        virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
+        IOptionsContainer &addGroup() override;
+        OptionInfo *addOptionImpl(const AbstractOption &settings) override;
 
         //! Returns section info object for this section.
         OptionSectionInfo       &info() { return info_; }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,7 +71,7 @@ class AnalysisDataHandleImpl
     public:
         //! Creates a handle associated with the given data object.
         explicit AnalysisDataHandleImpl(AnalysisData *data)
-            : data_(*data), currentFrame_(NULL)
+            : data_(*data), currentFrame_(nullptr)
         {
         }
 
@@ -123,8 +123,7 @@ AnalysisData::AnalysisData()
 
 
 AnalysisData::~AnalysisData()
-{
-}
+    = default;
 
 
 void
@@ -227,7 +226,7 @@ AnalysisData::requestStorageInternal(int nframes)
  */
 
 AnalysisDataHandle::AnalysisDataHandle()
-    : impl_(NULL)
+    : impl_(nullptr)
 {
 }
 
@@ -241,8 +240,8 @@ AnalysisDataHandle::AnalysisDataHandle(internal::AnalysisDataHandleImpl *impl)
 void
 AnalysisDataHandle::startFrame(int index, real x, real dx)
 {
-    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ == NULL,
+    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ == nullptr,
                        "startFrame() called twice without calling finishFrame()");
     impl_->currentFrame_ =
         &impl_->data_.impl_->storage_.startFrame(index, x, dx);
@@ -252,8 +251,8 @@ AnalysisDataHandle::startFrame(int index, real x, real dx)
 void
 AnalysisDataHandle::selectDataSet(int index)
 {
-    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
                        "selectDataSet() called without calling startFrame()");
     impl_->currentFrame_->selectDataSet(index);
 }
@@ -262,8 +261,8 @@ AnalysisDataHandle::selectDataSet(int index)
 void
 AnalysisDataHandle::setPoint(int column, real value, bool bPresent)
 {
-    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
                        "setPoint() called without calling startFrame()");
     impl_->currentFrame_->setValue(column, value, bPresent);
 }
@@ -272,8 +271,8 @@ AnalysisDataHandle::setPoint(int column, real value, bool bPresent)
 void
 AnalysisDataHandle::setPoint(int column, real value, real error, bool bPresent)
 {
-    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
                        "setPoint() called without calling startFrame()");
     impl_->currentFrame_->setValue(column, value, error, bPresent);
 }
@@ -282,8 +281,8 @@ AnalysisDataHandle::setPoint(int column, real value, real error, bool bPresent)
 void
 AnalysisDataHandle::setPoints(int firstColumn, int count, const real *values)
 {
-    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
                        "setPoints() called without calling startFrame()");
     for (int i = 0; i < count; ++i)
     {
@@ -295,10 +294,10 @@ AnalysisDataHandle::setPoints(int firstColumn, int count, const real *values)
 void
 AnalysisDataHandle::finishPointSet()
 {
-    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->data_.isMultipoint(),
                        "finishPointSet() called for non-multipoint data");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
                        "finishPointSet() called without calling startFrame()");
     impl_->currentFrame_->finishPointSet();
 }
@@ -307,11 +306,11 @@ AnalysisDataHandle::finishPointSet()
 void
 AnalysisDataHandle::finishFrame()
 {
-    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
-    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
                        "finishFrame() called without calling startFrame()");
     AnalysisDataStorageFrame *frame = impl_->currentFrame_;
-    impl_->currentFrame_ = NULL;
+    impl_->currentFrame_ = nullptr;
     frame->finishFrame();
 }
 
@@ -319,10 +318,10 @@ AnalysisDataHandle::finishFrame()
 void
 AnalysisDataHandle::finishData()
 {
-    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     // Deletes the implementation pointer.
     impl_->data_.finishData(*this);
-    impl_ = NULL;
+    impl_ = nullptr;
 }
 
 } // namespace gmx

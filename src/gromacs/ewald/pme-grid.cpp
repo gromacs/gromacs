@@ -567,7 +567,7 @@ void pmegrid_init(pmegrid_t *grid,
     }
 
     grid->order = pme_order;
-    if (ptr == NULL)
+    if (ptr == nullptr)
     {
         gridsize = grid->s[XX]*grid->s[YY]*grid->s[ZZ];
         set_gridsize_alignment(&gridsize, pme_order);
@@ -627,7 +627,7 @@ static void make_subgrid_division(const ivec n, int ovl, int nthread,
     }
 
     env = getenv("GMX_PME_THREAD_DIVISION");
-    if (env != NULL)
+    if (env != nullptr)
     {
         sscanf(env, "%20d %20d %20d", &nsub[XX], &nsub[YY], &nsub[ZZ]);
     }
@@ -658,7 +658,7 @@ void pmegrids_init(pmegrids_t *grids,
     n_base[ZZ] = nz_base;
 
     pmegrid_init(&grids->grid, 0, 0, 0, 0, 0, 0, n[XX], n[YY], n[ZZ], FALSE, pme_order,
-                 NULL);
+                 nullptr);
 
     grids->nthread = nthread;
 
@@ -716,7 +716,7 @@ void pmegrids_init(pmegrids_t *grids,
     }
     else
     {
-        grids->grid_th = NULL;
+        grids->grid_th = nullptr;
     }
 
     snew(grids->g2t, DIM);
@@ -751,7 +751,7 @@ void pmegrids_init(pmegrids_t *grids,
         {
             grids->nthread_comm[d]++;
         }
-        if (debug != NULL)
+        if (debug != nullptr)
         {
             fprintf(debug, "pmegrid thread grid communication range in %c: %d\n",
                     'x'+d, grids->nthread_comm[d]);
@@ -770,7 +770,7 @@ void pmegrids_destroy(pmegrids_t *grids)
 {
     int t;
 
-    if (grids->grid.grid != NULL)
+    if (grids->grid.grid != nullptr)
     {
         sfree(grids->grid.grid);
 
@@ -861,7 +861,7 @@ void reuse_pmegrids(const pmegrids_t *oldgrid, pmegrids_t *newgrid)
     sfree_aligned(newgrid->grid.grid);
     newgrid->grid.grid = oldgrid->grid.grid;
 
-    if (newgrid->grid_th != NULL && newgrid->nthread == oldgrid->nthread)
+    if (newgrid->grid_th != nullptr && newgrid->nthread == oldgrid->nthread)
     {
         sfree_aligned(newgrid->grid_all);
         for (t = 0; t < newgrid->nthread; t++)

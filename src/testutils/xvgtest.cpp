@@ -73,8 +73,8 @@ class XvgMatcher : public ITextBlockMatcher
         {
         }
 
-        virtual void checkStream(TextInputStream      *stream,
-                                 TestReferenceChecker *checker)
+        void checkStream(TextInputStream      *stream,
+                         TestReferenceChecker *checker) override
         {
             checkXvgFile(stream, checker, settings_);
         }
@@ -96,7 +96,7 @@ bool isRelevantXvgCommand(const std::string &line)
 //! Helper function to check a single xvg value in a sequence.
 void checkXvgDataPoint(TestReferenceChecker *checker, const std::string &value)
 {
-    checker->checkRealFromString(value, NULL);
+    checker->checkRealFromString(value, nullptr);
 }
 
 }       // namespace

@@ -124,7 +124,7 @@ static void generate_trial_conf(const std::vector<RVec> &xin,
     }
     if (enum_rot == en_rotXYZ || enum_rot == en_rotZ)
     {
-        rotate_conf(xout->size(), as_rvec_array(xout->data()), NULL, alfa, beta, gamma);
+        rotate_conf(xout->size(), as_rvec_array(xout->data()), nullptr, alfa, beta, gamma);
     }
     for (size_t i = 0; i < xout->size(); ++i)
     {
@@ -207,7 +207,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     set_pbc(&pbc, ePBC, box);
 
     /* With -ip, take nmol_insrt from file posfn */
-    double     **rpos              = NULL;
+    double     **rpos              = nullptr;
     const bool   insertAtPositions = !posfn.empty();
     if (insertAtPositions)
     {
@@ -304,7 +304,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                 originalAtomCount - top->atoms.nr);
     }
 
-    if (rpos != NULL)
+    if (rpos != nullptr)
     {
         for (int i = 0; i < DIM; ++i)
         {
@@ -326,15 +326,15 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         InsertMolecules()
             : bBox_(false), nmolIns_(0), nmolTry_(10), seed_(0),
               defaultDistance_(0.105), scaleFactor_(0.57), enumRot_(en_rotXYZ),
-              top_(NULL), ePBC_(-1)
+              top_(nullptr), ePBC_(-1)
         {
             clear_rvec(newBox_);
             clear_rvec(deltaR_);
             clear_mat(box_);
         }
-        virtual ~InsertMolecules()
+        ~InsertMolecules() override
         {
-            if (top_ != NULL)
+            if (top_ != nullptr)
             {
                 done_top(top_);
                 sfree(top_);
@@ -342,17 +342,17 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         }
 
         // From ITopologyProvider
-        virtual t_topology *getTopology(bool /*required*/) { return top_; }
-        virtual int getAtomCount() { return 0; }
+        t_topology *getTopology(bool /*required*/) override { return top_; }
+        int getAtomCount() override { return 0; }
 
         // From ICommandLineOptionsModule
-        virtual void init(CommandLineModuleSettings * /*settings*/)
+        void init(CommandLineModuleSettings * /*settings*/) override
         {
         }
-        virtual void initOptions(IOptionsContainer                 *options,
-                                 ICommandLineOptionsModuleSettings *settings);
-        virtual void optionsFinished();
-        virtual int run();
+        void initOptions(IOptionsContainer                 *options,
+                         ICommandLineOptionsModuleSettings *settings) override;
+        void optionsFinished() override;
+        int run() override;
 
     private:
         void loadSolute();
@@ -506,7 +506,7 @@ void InsertMolecules::optionsFinished()
     snew(top_, 1);
     if (!inputConfFile_.empty())
     {
-        readConformation(inputConfFile_.c_str(), top_, &x_, NULL,
+        readConformation(inputConfFile_.c_str(), top_, &x_, nullptr,
                          &ePBC_, box_, "solute");
         if (top_->atoms.nr == 0)
         {
@@ -557,13 +557,13 @@ int InsertMolecules::run()
         int         ePBC_dummy;
         matrix      box_dummy;
         readConformation(insertConfFile_.c_str(), top_insrt, &x_insrt,
-                         NULL, &ePBC_dummy, box_dummy, "molecule");
+                         nullptr, &ePBC_dummy, box_dummy, "molecule");
         if (top_insrt->atoms.nr == 0)
         {
             gmx_fatal(FARGS, "No molecule in %s, please check your input",
                       insertConfFile_.c_str());
         }
-        if (top_->name == NULL)
+        if (top_->name == nullptr)
         {
             top_->name = top_insrt->name;
         }
@@ -583,7 +583,7 @@ int InsertMolecules::run()
     fprintf(stderr, "Writing generated configuration to %s\n",
             outputConfFile_.c_str());
     write_sto_conf(outputConfFile_.c_str(), *top_->name, &top_->atoms,
-                   as_rvec_array(x_.data()), NULL, ePBC_, box_);
+                   as_rvec_array(x_.data()), nullptr, ePBC_, box_);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",

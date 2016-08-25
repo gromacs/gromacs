@@ -79,12 +79,12 @@ struct gmx_output_env_t
 static const real  timefactors[] =   { real(0),  real(1e3),  real(1), real(1e-3), real(1e-6), real(1e-9), real(1e-12), real(0) };
 static const real  timeinvfactors[] = { real(0), real(1e-3),  real(1),  real(1e3),  real(1e6),  real(1e9),  real(1e12), real(0) };
 static const char *time_units_str[] = {
-    NULL, "fs", "ps", "ns", "us",
+    nullptr, "fs", "ps", "ns", "us",
     "\\mus", "ms", "s"
 };
 static const char *time_units_xvgr[] = {
-    NULL, "fs", "ps", "ns",
-    "ms", "s", NULL
+    nullptr, "fs", "ps", "ns",
+    "ms", "s", nullptr
 };
 
 
@@ -196,7 +196,7 @@ xvg_format_t output_env_get_xvg_format(const gmx_output_env_t *oenv)
 
 const char *output_env_get_program_display_name(const gmx_output_env_t *oenv)
 {
-    const char *displayName = NULL;
+    const char *displayName = nullptr;
 
     try
     {

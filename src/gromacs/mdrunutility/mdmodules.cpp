@@ -76,8 +76,7 @@ MDModules::MDModules() : impl_(new Impl)
 }
 
 MDModules::~MDModules()
-{
-}
+    = default;
 
 t_inputrec *MDModules::inputrec()
 {

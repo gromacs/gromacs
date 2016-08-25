@@ -216,13 +216,13 @@ static void mk_hbmap(t_hbdata *hb)
     for (i = 0; (i < hb->d.nrd); i++)
     {
         snew(hb->hbmap[i], hb->a.nra);
-        if (hb->hbmap[i] == NULL)
+        if (hb->hbmap[i] == nullptr)
         {
             gmx_fatal(FARGS, "Could not allocate enough memory for hbmap");
         }
         for (j = 0; (j > hb->a.nra); j++)
         {
-            hb->hbmap[i][j] = NULL;
+            hb->hbmap[i][j] = nullptr;
         }
     }
 }
@@ -267,7 +267,7 @@ static gmx_bool is_hb(unsigned int hbexist[], int frame)
 
 static void set_hb(t_hbdata *hb, int id, int ih, int ia, int frame, int ihb)
 {
-    unsigned int *ghptr = NULL;
+    unsigned int *ghptr = nullptr;
 
     if (ihb == hbHB)
     {
@@ -502,7 +502,7 @@ static void add_hbond(t_hbdata *hb, int d, int a, int h, int grpd, int grpa,
             {
                 try
                 {
-                    if (hb->hbmap[id][ia] == NULL)
+                    if (hb->hbmap[id][ia] == nullptr)
                     {
                         snew(hb->hbmap[id][ia], 1);
                         snew(hb->hbmap[id][ia]->h, hb->maxhydro);
@@ -1183,7 +1183,7 @@ static void free_grid(ivec ngrid, t_gridcell ****grid)
         sfree(g[z]);
     }
     sfree(g);
-    g = NULL;
+    g = nullptr;
 }
 
 void pbc_correct_gem(rvec dx, matrix box, rvec hbox)
@@ -1469,8 +1469,8 @@ static void merge_hb(t_hbdata *hb, gmx_bool bTwo, gmx_bool bContact)
                     }
                     sfree(hb1->h[0]);
                     sfree(hb1->g[0]);
-                    hb1->h[0]       = NULL;
-                    hb1->g[0]       = NULL;
+                    hb1->h[0]       = nullptr;
+                    hb1->g[0]       = nullptr;
                     hb1->history[0] = hbNo;
                 }
             }
@@ -1767,7 +1767,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
     real       k = 1, kp = 1, kow = 1;
     real       Q = 0, chi2, tau_hb, dtau, tau_rlx, e_1, sigma_k, sigma_kp, ddg;
     double     tmp, sn2 = 0, sc2 = 0, sk2 = 0, scn = 0, sck = 0, snk = 0;
-    gmx_bool   bError = (sigma_ct != NULL) && (sigma_nt != NULL) && (sigma_kt != NULL);
+    gmx_bool   bError = (sigma_ct != nullptr) && (sigma_nt != nullptr) && (sigma_kt != nullptr);
 
     for (i0 = 0; (i0 < n-2) && ((t[i0]-t[0]) < fit_start); i0++)
     {
@@ -1843,7 +1843,7 @@ void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],
                    sc2, sn2, sk2, sck, snk, scn);
         }
         /* Determine integral of the correlation function */
-        tau_hb = evaluate_integral(n, t, ct, NULL, (t[n-1]-t[0])/2, &dtau);
+        tau_hb = evaluate_integral(n, t, ct, nullptr, (t[n-1]-t[0])/2, &dtau);
         printf("Integral   %10.3f   %s%8.3f  %10.3f\n", 1/tau_hb,
                bError ? "       " : "", tau_hb, calc_dg(tau_hb, temp));
         e_1 = std::exp(-1.0);
@@ -1900,7 +1900,7 @@ static void normalizeACF(real *ct, real *gt, int nhb, int len)
     for (i = 0; i < len; i++)
     {
         ct[i] *= ct_fac;
-        if (gt != NULL)
+        if (gt != nullptr)
         {
             gt[i] *= gt_fac;
         }
@@ -1923,15 +1923,15 @@ static void do_hbac(const char *fn, t_hbdata *hb,
     };
     gmx_bool       bNorm = FALSE;
     double         nhb   = 0;
-    real          *rhbex = NULL, *ht, *gt, *ght, *dght, *kt;
+    real          *rhbex = nullptr, *ht, *gt, *ght, *dght, *kt;
     real          *ct, tail, tail2, dtail, *cct;
     const real     tol     = 1e-3;
     int            nframes = hb->nframes;
-    unsigned int **h       = NULL, **g = NULL;
+    unsigned int **h       = nullptr, **g = nullptr;
     int            nh, nhbonds, nhydro;
     t_hbond       *hbh;
     int            acType;
-    int           *dondata      = NULL;
+    int           *dondata      = nullptr;
 
     enum {
         AC_NONE, AC_NN, AC_GEM, AC_LUZAR
@@ -2072,7 +2072,7 @@ static void do_hbac(const char *fn, t_hbdata *hb,
                     }
 
                     /* The autocorrelation function is normalized after summation only */
-                    low_do_autocorr(NULL, oenv, NULL, nframes, 1, -1, &rhbex, hb->time[1]-hb->time[0],
+                    low_do_autocorr(nullptr, oenv, nullptr, nframes, 1, -1, &rhbex, hb->time[1]-hb->time[0],
                                     eacNormal, 1, FALSE, bNorm, FALSE, 0, -1, 0);
 
                     /* Cross correlation analysis for thermodynamics */
@@ -2149,10 +2149,10 @@ static void do_hbac(const char *fn, t_hbdata *hb,
     }
     xvgrclose(fp);
 
-    analyse_corr(nn, hb->time, ct, ght, kt, NULL, NULL, NULL,
+    analyse_corr(nn, hb->time, ct, ght, kt, nullptr, nullptr, nullptr,
                  fit_start, temp);
 
-    do_view(oenv, fn, NULL);
+    do_view(oenv, fn, nullptr);
     sfree(rhbex);
     sfree(ct);
     sfree(gt);
@@ -2180,12 +2180,12 @@ static FILE *open_donor_properties_file(const char             *fn,
                                         t_hbdata               *hb,
                                         const gmx_output_env_t *oenv)
 {
-    FILE       *fp    = NULL;
+    FILE       *fp    = nullptr;
     const char *leg[] = { "Nbound", "Nfree" };
 
     if (!fn || !hb)
     {
-        return NULL;
+        return nullptr;
     }
 
     fp = xvgropen(fn, "Donor properties", output_env_get_xvgr_tlabel(oenv), "Number", oenv);
@@ -2242,7 +2242,7 @@ static void dump_hbmap(t_hbdata *hb,
     }
     else
     {
-        fplog = NULL;
+        fplog = nullptr;
     }
     for (grp = gr0; grp <= (bTwo ? gr1 : gr0); grp++)
     {
@@ -2482,9 +2482,9 @@ int gmx_hbond(int argc, char *argv[])
         "The option [TT]-sel[tt] that used to work on selected hbonds is out of order, and therefore not available for the time being."
     };
     t_filenm    fnm[] = {
-        { efTRX, "-f",   NULL,     ffREAD  },
-        { efTPR, NULL,   NULL,     ffREAD  },
-        { efNDX, NULL,   NULL,     ffOPTRD },
+        { efTRX, "-f",   nullptr,     ffREAD  },
+        { efTPR, nullptr,   nullptr,     ffREAD  },
+        { efNDX, nullptr,   nullptr,     ffOPTRD },
         /*    { efNDX, "-sel", "select", ffOPTRD },*/
         { efXVG, "-num", "hbnum",  ffWRITE },
         { efLOG, "-g",   "hbond",  ffOPTWR },
@@ -2527,7 +2527,7 @@ int gmx_hbond(int argc, char *argv[])
     int                   grp, nabin, nrbin, resdist, ihb;
     char                **leg;
     t_hbdata             *hb;
-    FILE                 *fp, *fpnhb = NULL, *donor_properties = NULL;
+    FILE                 *fp, *fpnhb = nullptr, *donor_properties = nullptr;
     t_gridcell         ***grid;
     t_ncell              *icell, *jcell;
     ivec                  ngrid;
@@ -2538,8 +2538,8 @@ int gmx_hbond(int argc, char *argv[])
     gmx_bool              bParallel;
     gmx_bool              bEdge_yjj, bEdge_xjj;
 
-    t_hbdata            **p_hb    = NULL;                   /* one per thread, then merge after the frame loop */
-    int                 **p_adist = NULL, **p_rdist = NULL; /* a histogram for each thread. */
+    t_hbdata            **p_hb    = nullptr;                      /* one per thread, then merge after the frame loop */
+    int                 **p_adist = nullptr, **p_rdist = nullptr; /* a histogram for each thread. */
 
     const bool            bOMP = GMX_OPENMP;
 
@@ -2585,7 +2585,7 @@ int gmx_hbond(int argc, char *argv[])
     hb = mk_hbdata(bHBmap, opt2bSet("-dan", NFILE, fnm), bMerge || bContact);
 
     /* get topology */
-    read_tpx_top(ftp2fn(efTPR, NFILE, fnm), &ir, box, &natoms, NULL, NULL, &top);
+    read_tpx_top(ftp2fn(efTPR, NFILE, fnm), &ir, box, &natoms, nullptr, nullptr, &top);
 
     snew(grpnames, grNR);
     snew(index, grNR);
@@ -2810,11 +2810,11 @@ int gmx_hbond(int argc, char *argv[])
             snew(p_rdist[i], nrbin+1);
 
             p_hb[i]->max_frames = 0;
-            p_hb[i]->nhb        = NULL;
-            p_hb[i]->ndist      = NULL;
-            p_hb[i]->n_bound    = NULL;
-            p_hb[i]->time       = NULL;
-            p_hb[i]->nhx        = NULL;
+            p_hb[i]->nhb        = nullptr;
+            p_hb[i]->ndist      = nullptr;
+            p_hb[i]->n_bound    = nullptr;
+            p_hb[i]->time       = nullptr;
+            p_hb[i]->nhx        = nullptr;
 
             p_hb[i]->bHBmap     = hb->bHBmap;
             p_hb[i]->bDAnr      = hb->bDAnr;

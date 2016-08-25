@@ -354,7 +354,7 @@ int gmx_convert_tpr(int argc, char *argv[])
 
     const char       *top_fn, *frame_fn;
     struct t_fileio  *fp;
-    ener_file_t       fp_ener = NULL;
+    ener_file_t       fp_ener = nullptr;
     gmx_trr_header_t  head;
     int               i;
     gmx_int64_t       nsteps_req, run_step, frame;
@@ -365,21 +365,21 @@ int gmx_convert_tpr(int argc, char *argv[])
     t_atoms           atoms;
     t_inputrec       *ir;
     t_state           state;
-    rvec             *newx = NULL, *newv = NULL, *tmpx, *tmpv;
+    rvec             *newx = nullptr, *newv = nullptr, *tmpx, *tmpv;
     matrix            newbox;
     int               gnx;
     char             *grpname;
-    int              *index = NULL;
+    int              *index = nullptr;
     int               nre;
-    gmx_enxnm_t      *enm     = NULL;
-    t_enxframe       *fr_ener = NULL;
+    gmx_enxnm_t      *enm     = nullptr;
+    t_enxframe       *fr_ener = nullptr;
     char              buf[200], buf2[200];
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
-        { efTPR, NULL,  NULL,    ffREAD  },
-        { efTRN, "-f",  NULL,    ffOPTRD },
-        { efEDR, "-e",  NULL,    ffOPTRD },
-        { efNDX, NULL,  NULL,    ffOPTRD },
+        { efTPR, nullptr,  nullptr,    ffREAD  },
+        { efTRN, "-f",  nullptr,    ffOPTRD },
+        { efEDR, "-e",  nullptr,    ffOPTRD },
+        { efNDX, nullptr,  nullptr,    ffOPTRD },
         { efTPR, "-o",  "tprout", ffWRITE }
     };
 #define NFILE asize(fnm)
@@ -410,7 +410,7 @@ int gmx_convert_tpr(int argc, char *argv[])
 
     /* Parse the command line */
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -524,7 +524,7 @@ int gmx_convert_tpr(int argc, char *argv[])
                 bFrame = bFrame && bOK;
                 if (bFrame)
                 {
-                    bOK = gmx_trr_read_frame_data(fp, &head, newbox, newx, newv, NULL);
+                    bOK = gmx_trr_read_frame_data(fp, &head, newbox, newx, newv, nullptr);
                 }
                 bFrame = bFrame && bOK;
                 bUse   = FALSE;

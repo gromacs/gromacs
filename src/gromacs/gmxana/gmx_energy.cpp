@@ -116,7 +116,7 @@ static int *select_it(int nre, char *nm[], int *nset)
     int      *set;
     gmx_bool  bVerbose = TRUE;
 
-    if ((getenv("GMX_ENER_VERBOSE")) != NULL)
+    if ((getenv("GMX_ENER_VERBOSE")) != nullptr)
     {
         bVerbose = FALSE;
     }
@@ -184,9 +184,9 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
     char       *ptr, buf[STRLEN];
     const char *fm4   = "%3d  %-14s";
     const char *fm2   = "%3d  %-34s";
-    char      **newnm = NULL;
+    char      **newnm = nullptr;
 
-    if ((getenv("GMX_ENER_VERBOSE")) != NULL)
+    if ((getenv("GMX_ENER_VERBOSE")) != nullptr)
     {
         bVerbose = FALSE;
     }
@@ -203,7 +203,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
     {
         newnm[k] = gmx_strdup(nm[k].name);
         /* Insert dashes in all the names */
-        while ((ptr = std::strchr(newnm[k], ' ')) != NULL)
+        while ((ptr = std::strchr(newnm[k], ' ')) != nullptr)
         {
             *ptr = '-';
         }
@@ -323,7 +323,7 @@ static int *select_by_name(int nre, gmx_enxnm_t *nm, int *nset)
                     }
                 }
                 /* Look for the first space, and remove spaces from there */
-                if ((ptr = std::strchr(ptr, ' ')) != NULL)
+                if ((ptr = std::strchr(ptr, ' ')) != nullptr)
                 {
                     trim(ptr);
                 }
@@ -364,7 +364,7 @@ static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
     matrix      box;
 
     /* all we need is the ir to be able to write the label */
-    read_tpx(topnm, ir, box, &natoms, NULL, NULL, &mtop);
+    read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, &mtop);
 }
 
 static void get_orires_parms(const char *topnm,
@@ -379,7 +379,7 @@ static void get_orires_parms(const char *topnm,
     int             nb;
     matrix          box;
 
-    read_tpx(topnm, &ir, box, &natoms, NULL, NULL, &mtop);
+    read_tpx(topnm, &ir, box, &natoms, nullptr, nullptr, &mtop);
     top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
 
     ip       = top->idef.iparams;
@@ -424,7 +424,7 @@ static int get_bounds(const char *topnm,
     int             nb, label1;
     matrix          box;
 
-    read_tpx(topnm, ir, box, &natoms, NULL, NULL, mtop);
+    read_tpx(topnm, ir, box, &natoms, nullptr, nullptr, mtop);
     snew(*ltop, 1);
     top   = gmx_mtop_generate_local_top(mtop, ir->efep != efepNO);
     *ltop = top;
@@ -534,7 +534,7 @@ static void analyse_disre(const char *voutfn,    int nframes,
 
     /* Subtract bounds from distances, to calculate violations */
     calc_violations(violaver, violaver,
-                    nbounds, pair, bounds, NULL, &sumt, &sumaver);
+                    nbounds, pair, bounds, nullptr, &sumt, &sumaver);
 
 #ifdef DEBUG
     fprintf(stdout, "\nSum of violations averaged over simulation: %g nm\n",
@@ -956,7 +956,7 @@ static void remove_drift(int nset, int nbmin, int nbmax, real dt, enerdata_t *ed
         {
             delta = edat->s[i].slope*dt;
 
-            if (NULL != debug)
+            if (nullptr != debug)
             {
                 fprintf(debug, "slope for set %d is %g\n", i, edat->s[i].slope);
             }
@@ -1076,7 +1076,7 @@ static void calc_fluctuation_props(FILE *fp,
         fprintf(fp, "WARNING: Please verify that your simulations are converged and perform\n"
                 "a block-averaging error analysis (not implemented in g_energy yet)\n");
 
-        if (debug != NULL)
+        if (debug != nullptr)
         {
             if (varv != NOTSET)
             {
@@ -1144,10 +1144,10 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
     FILE           *fp;
     /* Check out the printed manual for equations! */
     double          Dt, aver, stddev, errest, delta_t, totaldrift;
-    enerdata_t     *esum = NULL;
+    enerdata_t     *esum = nullptr;
     real            integral, intBulk, Temp = 0, Pres = 0;
     real            pr_aver, pr_stddev, pr_errest;
-    double          beta = 0, expE, expEtot, *fee = NULL;
+    double          beta = 0, expE, expEtot, *fee = nullptr;
     gmx_int64_t     nsteps;
     int             nexact, nnotexact;
     int             i, j, nout;
@@ -1262,15 +1262,15 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
 
                 fee[i] = std::log(expE/edat->nframes)/beta + aver/nmol;
             }
-            if (std::strstr(leg[i], "empera") != NULL)
+            if (std::strstr(leg[i], "empera") != nullptr)
             {
                 Temp = aver;
             }
-            else if (std::strstr(leg[i], "olum") != NULL)
+            else if (std::strstr(leg[i], "olum") != nullptr)
             {
                 Vaver = aver;
             }
-            else if (std::strstr(leg[i], "essure") != NULL)
+            else if (std::strstr(leg[i], "essure") != nullptr)
             {
                 Pres = aver;
             }
@@ -1485,13 +1485,13 @@ static void fec(const char *ene2fn, const char *runavgfn,
     real         aver, beta;
     real       **eneset2;
     double       dE, sum;
-    gmx_enxnm_t *enm = NULL;
+    gmx_enxnm_t *enm = nullptr;
     t_enxframe  *fr;
     char         buf[22];
 
     /* read second energy file */
     snew(fr, 1);
-    enm = NULL;
+    enm = nullptr;
     enx = open_enx(ene2fn, "r");
     do_enxnms(enx, &(fr->nre), &enm);
 
@@ -1529,7 +1529,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
                         srenew(eneset2[i], maxenergy);
                     }
                 }
-                GMX_RELEASE_ASSERT(time != NULL, "trying to dereference NULL time pointer");
+                GMX_RELEASE_ASSERT(time != nullptr, "trying to dereference NULL time pointer");
 
                 if (fr->t != time[nenergy2])
                 {
@@ -1555,7 +1555,7 @@ static void fec(const char *ene2fn, const char *runavgfn,
     nenergy = std::min(edat->nframes, nenergy2);
 
     /* calculate fe difference dF = -kT ln < exp(-(E_B-E_A)/kT) >_A */
-    fp = NULL;
+    fp = nullptr;
     if (runavgfn)
     {
         fp = xvgropen(runavgfn, "Running average free energy difference",
@@ -1607,8 +1607,8 @@ static void do_dhdl(t_enxframe *fr, const t_inputrec *ir, FILE **fp_dhdl,
     /* coll data */
     double       temp              = 0, start_time = 0, delta_time = 0, start_lambda = 0;
     static int   setnr             = 0;
-    double      *native_lambda_vec = NULL;
-    const char **lambda_components = NULL;
+    double      *native_lambda_vec = nullptr;
+    const char **lambda_components = nullptr;
     int          n_lambda_vec      = 0;
     bool         firstPass         = true;
 
@@ -1986,48 +1986,48 @@ int gmx_energy(int argc, char *argv[])
         "Volume",  "Pressure"
     };
 
-    FILE              *out     = NULL, *fp_pairs = NULL, *fort = NULL, *fodt = NULL, *foten = NULL;
-    FILE              *fp_dhdl = NULL;
+    FILE              *out     = nullptr, *fp_pairs = nullptr, *fort = nullptr, *fodt = nullptr, *foten = nullptr;
+    FILE              *fp_dhdl = nullptr;
     ener_file_t        fp;
     int                timecheck = 0;
     gmx_mtop_t         mtop;
-    gmx_localtop_t    *top = NULL;
+    gmx_localtop_t    *top = nullptr;
     t_inputrec         ir;
     enerdata_t         edat;
-    gmx_enxnm_t       *enm = NULL;
-    t_enxframe        *frame, *fr = NULL;
+    gmx_enxnm_t       *enm = nullptr;
+    t_enxframe        *frame, *fr = nullptr;
     int                cur = 0;
 #define NEXT (1-cur)
     int                nre, teller, teller_disre, nfr;
     gmx_int64_t        start_step;
     int                nor = 0, nex = 0, norfr = 0, enx_i = 0;
     real               start_t;
-    real              *bounds  = NULL, *violaver = NULL, *oobs = NULL, *orient = NULL, *odrms = NULL;
-    int               *index   = NULL, *pair = NULL, norsel = 0, *orsel = NULL, *or_label = NULL;
+    real              *bounds  = nullptr, *violaver = nullptr, *oobs = nullptr, *orient = nullptr, *odrms = nullptr;
+    int               *index   = nullptr, *pair = nullptr, norsel = 0, *orsel = nullptr, *or_label = nullptr;
     int                nbounds = 0, npairs;
     gmx_bool           bDisRe, bDRAll, bORA, bORT, bODA, bODR, bODT, bORIRE, bOTEN, bDHDL;
     gmx_bool           bFoundStart, bCont, bVisco;
     double             sum, sumaver, sumt, dbl;
-    double            *time = NULL;
+    double            *time = nullptr;
     real               Vaver;
-    int               *set     = NULL, i, j, k, nset, sss;
-    gmx_bool          *bIsEner = NULL;
+    int               *set     = nullptr, i, j, k, nset, sss;
+    gmx_bool          *bIsEner = nullptr;
     char             **pairleg, **odtleg, **otenleg;
-    char             **leg = NULL;
+    char             **leg = nullptr;
     char              *anm_j, *anm_k, *resnm_j, *resnm_k;
     int                resnr_j, resnr_k;
     const char        *orinst_sub = "@ subtitle \"instantaneous\"\n";
     char               buf[256];
     gmx_output_env_t  *oenv;
-    t_enxblock        *blk       = NULL;
-    t_enxblock        *blk_disre = NULL;
+    t_enxblock        *blk       = nullptr;
+    t_enxblock        *blk_disre = nullptr;
     int                ndisre    = 0;
     int                dh_blocks = 0, dh_hists = 0, dh_samples = 0, dh_lambdas = 0;
 
     t_filenm           fnm[] = {
-        { efEDR, "-f",    NULL,      ffREAD  },
-        { efEDR, "-f2",   NULL,      ffOPTRD },
-        { efTPR, "-s",    NULL,      ffOPTRD },
+        { efEDR, "-f",    nullptr,      ffREAD  },
+        { efEDR, "-f2",   nullptr,      ffOPTRD },
+        { efTPR, "-s",    nullptr,      ffOPTRD },
         { efXVG, "-o",    "energy",  ffWRITE },
         { efXVG, "-viol", "violaver", ffOPTWR },
         { efXVG, "-pairs", "pairs",   ffOPTWR },
@@ -2050,7 +2050,7 @@ int gmx_energy(int argc, char *argv[])
     ppa    = add_acf_pargs(&npargs, pa);
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END,
-                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -2168,7 +2168,7 @@ int gmx_energy(int argc, char *argv[])
             gmx_fatal(FARGS, "Printing averages can only be done when a single set is selected");
         }
 
-        time = NULL;
+        time = nullptr;
 
         if (bORIRE || bOTEN)
         {
@@ -2199,7 +2199,7 @@ int gmx_energy(int argc, char *argv[])
                 fprintf(stderr, "Select the orientation restraint labels you want (-1 is all)\n");
                 fprintf(stderr, "End your selection with 0\n");
                 j     = -1;
-                orsel = NULL;
+                orsel = nullptr;
                 do
                 {
                     j++;
@@ -2323,9 +2323,9 @@ int gmx_energy(int argc, char *argv[])
     edat.nsteps    = 0;
     edat.npoints   = 0;
     edat.nframes   = 0;
-    edat.step      = NULL;
-    edat.steps     = NULL;
-    edat.points    = NULL;
+    edat.step      = nullptr;
+    edat.steps     = nullptr;
+    edat.points    = nullptr;
     edat.bHaveSums = TRUE;
     snew(edat.s, nset);
 
@@ -2451,7 +2451,7 @@ int gmx_energy(int argc, char *argv[])
              * Define distance restraint legends. Can only be done after
              * the first frame has been read... (Then we know how many there are)
              */
-            blk_disre = find_block_id_enxframe(fr, enxDISRE, NULL);
+            blk_disre = find_block_id_enxframe(fr, enxDISRE, nullptr);
             if (bDisRe && bDRAll && !leg && blk_disre)
             {
                 t_iatom   *fa;
@@ -2519,7 +2519,7 @@ int gmx_energy(int argc, char *argv[])
                      *******************************************/
                     if (ndisre > 0)
                     {
-                        GMX_RELEASE_ASSERT(blk_disre != NULL, "Trying to dereference NULL blk_disre pointer");
+                        GMX_RELEASE_ASSERT(blk_disre != nullptr, "Trying to dereference NULL blk_disre pointer");
  #if !GMX_DOUBLE
                         float  *disre_rt     =     blk_disre->sub[0].fval;
                         float  *disre_rm3tav = blk_disre->sub[1].fval;
@@ -2529,7 +2529,7 @@ int gmx_energy(int argc, char *argv[])
  #endif
 
                         print_time(out, fr->t);
-                        if (violaver == NULL)
+                        if (violaver == nullptr)
                         {
                             snew(violaver, ndisre);
                         }
@@ -2608,7 +2608,7 @@ int gmx_energy(int argc, char *argv[])
                             fprintf(out, "\n");
                         }
                     }
-                    blk = find_block_id_enxframe(fr, enx_i, NULL);
+                    blk = find_block_id_enxframe(fr, enx_i, nullptr);
                     if (bORIRE && blk)
                     {
 #if !GMX_DOUBLE
@@ -2666,7 +2666,7 @@ int gmx_energy(int argc, char *argv[])
                         }
                         norfr++;
                     }
-                    blk = find_block_id_enxframe(fr, enxORT, NULL);
+                    blk = find_block_id_enxframe(fr, enxORT, nullptr);
                     if (bOTEN && blk)
                     {
 #if !GMX_DOUBLE

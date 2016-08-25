@@ -430,7 +430,7 @@ void calc_listed(const struct gmx_multisim_t *ms,
     }
     else
     {
-        pbc_null = NULL;
+        pbc_null = nullptr;
     }
 
 #ifdef DEBUG
@@ -587,7 +587,7 @@ void calc_listed_lambda(const t_idef *idef,
     }
     else
     {
-        pbc_null = NULL;
+        pbc_null = nullptr;
     }
 
     /* Copy the whole idef, so we can modify the contents locally */

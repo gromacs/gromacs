@@ -443,28 +443,28 @@ FloatOption::createStorage(const OptionManagerContainer & /*managers*/) const
 StringOptionStorage::StringOptionStorage(const StringOption &settings)
     : MyBase(settings), info_(this)
 {
-    if (settings.defaultEnumIndex_ >= 0 && settings.enumValues_ == NULL)
+    if (settings.defaultEnumIndex_ >= 0 && settings.enumValues_ == nullptr)
     {
         GMX_THROW(APIError("Cannot set default enum index without enum values"));
     }
-    if (settings.enumValues_ != NULL)
+    if (settings.enumValues_ != nullptr)
     {
         int count = settings.enumValuesCount_;
         if (count < 0)
         {
             count = 0;
-            while (settings.enumValues_[count] != NULL)
+            while (settings.enumValues_[count] != nullptr)
             {
                 ++count;
             }
         }
         for (int i = 0; i < count; ++i)
         {
-            if (settings.enumValues_[i] == NULL)
+            if (settings.enumValues_[i] == nullptr)
             {
                 GMX_THROW(APIError("Enumeration value cannot be NULL"));
             }
-            allowed_.push_back(settings.enumValues_[i]);
+            allowed_.emplace_back(settings.enumValues_[i]);
         }
         if (settings.defaultEnumIndex_ >= 0)
         {
@@ -473,7 +473,7 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
                 GMX_THROW(APIError("Default enumeration index is out of range"));
             }
             const std::string *defaultValue = settings.defaultValue();
-            if (defaultValue != NULL && *defaultValue != allowed_[settings.defaultEnumIndex_])
+            if (defaultValue != nullptr && *defaultValue != allowed_[settings.defaultEnumIndex_])
             {
                 GMX_THROW(APIError("Conflicting default values"));
             }
@@ -556,7 +556,7 @@ EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
                                      StorePointer store)
     : MyBase(settings, std::move(store)), info_(this)
 {
-    if (enumValues == NULL)
+    if (enumValues == nullptr)
     {
         GMX_THROW(APIError("Allowed values must be provided to EnumOption"));
     }
@@ -564,18 +564,18 @@ EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
     if (count < 0)
     {
         count = 0;
-        while (enumValues[count] != NULL)
+        while (enumValues[count] != nullptr)
         {
             ++count;
         }
     }
     for (int i = 0; i < count; ++i)
     {
-        if (enumValues[i] == NULL)
+        if (enumValues[i] == nullptr)
         {
             GMX_THROW(APIError("Enumeration value cannot be NULL"));
         }
-        allowed_.push_back(enumValues[i]);
+        allowed_.emplace_back(enumValues[i]);
     }
 
     GMX_ASSERT(defaultValue < count, "Default enumeration value is out of range");

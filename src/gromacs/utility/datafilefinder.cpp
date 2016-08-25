@@ -68,7 +68,7 @@ class DataFileFinder::Impl
     public:
         static std::string getDefaultPath();
 
-        Impl() : envName_(NULL), bEnvIsSet_(false) {}
+        Impl() : envName_(nullptr), bEnvIsSet_(false) {}
 
         const char               *envName_;
         bool                      bEnvIsSet_;
@@ -98,8 +98,7 @@ DataFileFinder::DataFileFinder()
 }
 
 DataFileFinder::~DataFileFinder()
-{
-}
+    = default;
 
 void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
 {
@@ -125,7 +124,7 @@ FILE *DataFileFinder::openFile(const DataFileOptions &options) const
     std::string filename = findFile(options);
     if (filename.empty())
     {
-        return NULL;
+        return nullptr;
     }
 #if 0
     if (debug)
@@ -201,7 +200,7 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
             message.append(defaultPath);
             message.append(" (default)");
         }
-        if (!bEnvIsSet && envName != NULL)
+        if (!bEnvIsSet && envName != nullptr)
         {
             message.append(
                     formatString("\nYou can set additional directories to search "
@@ -227,7 +226,7 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
                         ".", options.filename_, false);
         for (i = files.begin(); i != files.end(); ++i)
         {
-            result.push_back(DataFileInfo(".", *i, false));
+            result.emplace_back(".", *i, false);
         }
     }
     if (impl_ != nullptr)
@@ -240,7 +239,7 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
                             j->c_str(), options.filename_, false);
             for (i = files.begin(); i != files.end(); ++i)
             {
-                result.push_back(DataFileInfo(*j, *i, false));
+                result.emplace_back(*j, *i, false);
             }
         }
     }
@@ -252,7 +251,7 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
                         defaultPath.c_str(), options.filename_, false);
         for (i = files.begin(); i != files.end(); ++i)
         {
-            result.push_back(DataFileInfo(defaultPath, *i, true));
+            result.emplace_back(defaultPath, *i, true);
         }
     }
     if (result.empty() && options.bThrow_)

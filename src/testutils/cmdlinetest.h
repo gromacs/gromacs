@@ -357,7 +357,7 @@ class CommandLineTestBase : public ::testing::Test
 {
     public:
         CommandLineTestBase();
-        ~CommandLineTestBase();
+        ~CommandLineTestBase() override;
 
         /*! \brief
          * Sets an input file.

@@ -147,8 +147,7 @@ InteractiveTestHelper::InteractiveTestHelper(TestReferenceChecker checker)
 }
 
 InteractiveTestHelper::~InteractiveTestHelper()
-{
-}
+    = default;
 
 void InteractiveTestHelper::setLastNewline(bool bInclude)
 {

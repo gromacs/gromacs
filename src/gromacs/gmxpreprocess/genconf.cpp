@@ -138,7 +138,7 @@ int gmx_genconf(int argc, char *argv[])
     t_filenm          fnm[] = {
         { efSTX, "-f", "conf", ffREAD  },
         { efSTO, "-o", "out",  ffWRITE },
-        { efTRX, "-trj", NULL,  ffOPTRD }
+        { efTRX, "-trj", nullptr,  ffOPTRD }
     };
 #define NFILE asize(fnm)
     static rvec       nrbox    = {1, 1, 1};

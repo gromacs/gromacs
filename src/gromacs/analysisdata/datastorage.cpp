@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -399,7 +399,7 @@ class AnalysisDataStorageFrameData
  */
 
 AnalysisDataStorageImpl::AnalysisDataStorageImpl()
-    : data_(NULL), modules_(NULL),
+    : data_(nullptr), modules_(nullptr),
       storageLimit_(0), pendingLimit_(1),
       firstFrameLocation_(0), firstUnnotifiedIndex_(0), nextIndex_(0)
 {
@@ -564,7 +564,7 @@ AnalysisDataStorageFrameData::AnalysisDataStorageFrameData(
         int                      index)
     : storageImpl_(*storageImpl), header_(index, 0.0, 0.0), status_(eMissing)
 {
-    GMX_RELEASE_ASSERT(storageImpl->data_ != NULL,
+    GMX_RELEASE_ASSERT(storageImpl->data_ != nullptr,
                        "Storage frame constructed before data started");
     // With non-multipoint data, the point set structure is static,
     // so initialize it only once here.
@@ -574,8 +574,7 @@ AnalysisDataStorageFrameData::AnalysisDataStorageFrameData(
         for (int i = 0; i < baseData().dataSetCount(); ++i)
         {
             int columnCount = baseData().columnCount(i);
-            pointSets_.push_back(
-                    AnalysisDataPointSetInfo(offset, columnCount, i, 0));
+            pointSets_.emplace_back(offset, columnCount, i, 0);
             offset += columnCount;
         }
     }
@@ -625,9 +624,8 @@ AnalysisDataStorageFrameData::addPointSet(int dataSetIndex, int firstColumn,
     }
     else if (storageImpl().needStorage())
     {
-        pointSets_.push_back(
-                AnalysisDataPointSetInfo(values_.size(), valueCount,
-                                         dataSetIndex, firstColumn));
+        pointSets_.emplace_back(values_.size(), valueCount,
+                                dataSetIndex, firstColumn);
         std::copy(begin, end, std::back_inserter(values_));
     }
 }
@@ -677,7 +675,7 @@ AnalysisDataStorageFrameData::pointSet(int index) const
 
 AnalysisDataStorageFrame::AnalysisDataStorageFrame(
         const AbstractAnalysisData &data)
-    : data_(NULL), currentDataSet_(0), currentOffset_(0),
+    : data_(nullptr), currentDataSet_(0), currentOffset_(0),
       columnCount_(data.columnCount(0)), bPointSetInProgress_(false)
 {
     int totalColumnCount = 0;
@@ -690,8 +688,7 @@ AnalysisDataStorageFrame::AnalysisDataStorageFrame(
 
 
 AnalysisDataStorageFrame::~AnalysisDataStorageFrame()
-{
-}
+    = default;
 
 
 void
@@ -712,7 +709,7 @@ AnalysisDataStorageFrame::clearValues()
 void
 AnalysisDataStorageFrame::selectDataSet(int index)
 {
-    GMX_RELEASE_ASSERT(data_ != NULL, "Invalid frame accessed");
+    GMX_RELEASE_ASSERT(data_ != nullptr, "Invalid frame accessed");
     const AbstractAnalysisData &baseData = data_->baseData();
     GMX_RELEASE_ASSERT(index >= 0 && index < baseData.dataSetCount(),
                        "Out of range data set index");
@@ -732,7 +729,7 @@ AnalysisDataStorageFrame::selectDataSet(int index)
 void
 AnalysisDataStorageFrame::finishPointSet()
 {
-    GMX_RELEASE_ASSERT(data_ != NULL, "Invalid frame accessed");
+    GMX_RELEASE_ASSERT(data_ != nullptr, "Invalid frame accessed");
     GMX_RELEASE_ASSERT(data_->baseData().isMultipoint(),
                        "Should not be called for non-multipoint data");
     if (bPointSetInProgress_)
@@ -764,7 +761,7 @@ AnalysisDataStorageFrame::finishPointSet()
 void
 AnalysisDataStorageFrame::finishFrame()
 {
-    GMX_RELEASE_ASSERT(data_ != NULL, "Invalid frame accessed");
+    GMX_RELEASE_ASSERT(data_ != nullptr, "Invalid frame accessed");
     data_->storageImpl().finishFrame(data_->frameIndex());
 }
 
@@ -780,8 +777,7 @@ AnalysisDataStorage::AnalysisDataStorage()
 
 
 AnalysisDataStorage::~AnalysisDataStorage()
-{
-}
+    = default;
 
 
 int

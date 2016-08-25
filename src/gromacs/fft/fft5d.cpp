@@ -174,11 +174,11 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
 
     int        P[2], bMaster, prank[2], i, t;
     int        rNG, rMG, rKG;
-    int       *N0 = 0, *N1 = 0, *M0 = 0, *M1 = 0, *K0 = 0, *K1 = 0, *oN0 = 0, *oN1 = 0, *oM0 = 0, *oM1 = 0, *oK0 = 0, *oK1 = 0;
-    int        N[3], M[3], K[3], pN[3], pM[3], pK[3], oM[3], oK[3], *iNin[3] = {0}, *oNin[3] = {0}, *iNout[3] = {0}, *oNout[3] = {0};
+    int       *N0 = nullptr, *N1 = nullptr, *M0 = nullptr, *M1 = nullptr, *K0 = nullptr, *K1 = nullptr, *oN0 = nullptr, *oN1 = nullptr, *oM0 = nullptr, *oM1 = nullptr, *oK0 = nullptr, *oK1 = nullptr;
+    int        N[3], M[3], K[3], pN[3], pM[3], pK[3], oM[3], oK[3], *iNin[3] = {nullptr}, *oNin[3] = {nullptr}, *iNout[3] = {nullptr}, *oNout[3] = {nullptr};
     int        C[3], rC[3], nP[2];
     int        lsize;
-    t_complex *lin = 0, *lout = 0, *lout2 = 0, *lout3 = 0;
+    t_complex *lin = nullptr, *lout = nullptr, *lout2 = nullptr, *lout3 = nullptr;
     fft5d_plan plan;
     int        s;
 
@@ -239,7 +239,7 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         {
             printf("FFT5D: FATAL: Datasize cannot be zero in any dimension\n");
         }
-        return 0;
+        return nullptr;
     }
 
     rNG = NG; rMG = MG; rKG = KG;
@@ -556,21 +556,21 @@ fft5d_plan fft5d_plan_3d(int NG, int MG, int KG, MPI_Comm comm[2], int flags, t_
         if ((flags&FFT5D_REALCOMPLEX) && !(flags&FFT5D_BACKWARD))
         {
             plan->p3d = FFTW(plan_guru_dft_r2c)(/*rank*/ 3, dims,
-                                                         /*howmany*/ 0, /*howmany_dims*/ 0,
+                                                         /*howmany*/ 0, /*howmany_dims*/ nullptr,
                                                          (real*)lin, (FFTW(complex) *) lout,
                                                          /*flags*/ fftwflags);
         }
         else if ((flags&FFT5D_REALCOMPLEX) && (flags&FFT5D_BACKWARD))
         {
             plan->p3d = FFTW(plan_guru_dft_c2r)(/*rank*/ 3, dims,
-                                                         /*howmany*/ 0, /*howmany_dims*/ 0,
+                                                         /*howmany*/ 0, /*howmany_dims*/ nullptr,
                                                          (FFTW(complex) *) lin, (real*)lout,
                                                          /*flags*/ fftwflags);
         }
         else
         {
             plan->p3d = FFTW(plan_guru_dft)(/*rank*/ 3, dims,
-                                                     /*howmany*/ 0, /*howmany_dims*/ 0,
+                                                     /*howmany*/ 0, /*howmany_dims*/ nullptr,
                                                      (FFTW(complex) *) lin, (FFTW(complex) *) lout,
                                                      /*sign*/ (flags&FFT5D_BACKWARD) ? 1 : -1, /*flags*/ fftwflags);
         }
@@ -1264,22 +1264,22 @@ void fft5d_destroy(fft5d_plan plan)
         if (plan->iNin[s])
         {
             free(plan->iNin[s]);
-            plan->iNin[s] = 0;
+            plan->iNin[s] = nullptr;
         }
         if (plan->oNin[s])
         {
             free(plan->oNin[s]);
-            plan->oNin[s] = 0;
+            plan->oNin[s] = nullptr;
         }
         if (plan->iNout[s])
         {
             free(plan->iNout[s]);
-            plan->iNout[s] = 0;
+            plan->iNout[s] = nullptr;
         }
         if (plan->oNout[s])
         {
             free(plan->oNout[s]);
-            plan->oNout[s] = 0;
+            plan->oNout[s] = nullptr;
         }
     }
 #if GMX_FFT_FFTW3
@@ -1334,7 +1334,7 @@ void fft5d_local_size(fft5d_plan plan, int* N1, int* M0, int* K0, int* K1, int**
    of processor dimensions*/
 fft5d_plan fft5d_plan_3d_cart(int NG, int MG, int KG, MPI_Comm comm, int P0, int flags, t_complex** rlin, t_complex** rlout, t_complex** rlout2, t_complex** rlout3, int nthreads)
 {
-    MPI_Comm cart[2] = {0};
+    MPI_Comm cart[2] = {nullptr};
 #if GMX_MPI
     int      size = 1, prank = 0;
     int      P[2];

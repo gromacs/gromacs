@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -294,7 +294,7 @@ class Selection
          * assigned results in undefined behavior.
          * isValid() returns `false` for the selection until it is initialized.
          */
-        Selection() : sel_(NULL) {}
+        Selection() : sel_(nullptr) {}
         /*! \brief
          * Creates a new selection object.
          *
@@ -305,7 +305,7 @@ class Selection
         explicit Selection(internal::SelectionData *sel) : sel_(sel) {}
 
         //! Returns whether the selection object is initialized.
-        bool isValid() const { return sel_ != NULL; }
+        bool isValid() const { return sel_ != nullptr; }
 
         //! Returns whether two selection objects wrap the same selection.
         bool operator==(const Selection &other) const
@@ -352,7 +352,7 @@ class Selection
             return constArrayRefFromArray(data().rawPositions_.x, posCount());
         }
         //! Returns whether velocities are available for this selection.
-        bool hasVelocities() const { return data().rawPositions_.v != NULL; }
+        bool hasVelocities() const { return data().rawPositions_.v != nullptr; }
         /*! \brief
          * Returns velocities for this selection as a continuous array.
          *
@@ -364,7 +364,7 @@ class Selection
             return constArrayRefFromArray(data().rawPositions_.v, posCount());
         }
         //! Returns whether forces are available for this selection.
-        bool hasForces() const { return sel_->rawPositions_.f != NULL; }
+        bool hasForces() const { return sel_->rawPositions_.f != nullptr; }
         /*! \brief
          * Returns forces for this selection as a continuous array.
          *
@@ -691,7 +691,7 @@ class SelectionPosition
         ConstArrayRef<int> atomIndices() const
         {
             const int *atoms = sel_->rawPositions_.m.mapb.a;
-            if (atoms == NULL)
+            if (atoms == nullptr)
             {
                 return ConstArrayRef<int>();
             }

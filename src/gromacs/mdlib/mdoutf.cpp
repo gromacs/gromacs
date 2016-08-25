@@ -91,13 +91,13 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
 
     snew(of, 1);
 
-    of->fp_trn       = NULL;
-    of->fp_ene       = NULL;
-    of->fp_xtc       = NULL;
-    of->tng          = NULL;
-    of->tng_low_prec = NULL;
-    of->fp_dhdl      = NULL;
-    of->fp_field     = NULL;
+    of->fp_trn       = nullptr;
+    of->fp_ene       = nullptr;
+    of->fp_xtc       = nullptr;
+    of->tng          = nullptr;
+    of->tng_low_prec = nullptr;
+    of->fp_dhdl      = nullptr;
+    of->fp_field     = nullptr;
 
     of->eIntegrator             = ir->eI;
     of->bExpanded               = ir->bExpanded;
@@ -105,7 +105,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
     of->simulation_part         = ir->simulation_part;
     of->x_compression_precision = static_cast<int>(ir->x_compression_precision);
     of->wcycle                  = wcycle;
-    of->f_global                = NULL;
+    of->f_global                = nullptr;
 
     if (MASTER(cr))
     {
@@ -342,9 +342,9 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
             {
                 gmx_trr_write_frame(of->fp_trn, step, t, state_local->lambda[efptFEP],
                                     state_local->box, top_global->natoms,
-                                    (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                                    (mdof_flags & MDOF_V) ? global_v : NULL,
-                                    (mdof_flags & MDOF_F) ? f_global : NULL);
+                                    (mdof_flags & MDOF_X) ? state_global->x : nullptr,
+                                    (mdof_flags & MDOF_V) ? global_v : nullptr,
+                                    (mdof_flags & MDOF_F) ? f_global : nullptr);
                 if (gmx_fio_flush(of->fp_trn) != 0)
                 {
                     gmx_file("Cannot write trajectory; maybe you are out of disk space?");
@@ -358,9 +358,9 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 gmx_fwrite_tng(of->tng, FALSE, step, t, state_local->lambda[efptFEP],
                                state_local->box,
                                top_global->natoms,
-                               (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                               (mdof_flags & MDOF_V) ? global_v : NULL,
-                               (mdof_flags & MDOF_F) ? f_global : NULL);
+                               (mdof_flags & MDOF_X) ? state_global->x : nullptr,
+                               (mdof_flags & MDOF_V) ? global_v : nullptr,
+                               (mdof_flags & MDOF_F) ? f_global : nullptr);
             }
             /* If only a TNG file is open for compressed coordinate output (no uncompressed
                coordinate output) also write forces and velocities to it. */
@@ -369,14 +369,14 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 gmx_fwrite_tng(of->tng_low_prec, FALSE, step, t, state_local->lambda[efptFEP],
                                state_local->box,
                                top_global->natoms,
-                               (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                               (mdof_flags & MDOF_V) ? global_v : NULL,
-                               (mdof_flags & MDOF_F) ? f_global : NULL);
+                               (mdof_flags & MDOF_X) ? state_global->x : nullptr,
+                               (mdof_flags & MDOF_V) ? global_v : nullptr,
+                               (mdof_flags & MDOF_F) ? f_global : nullptr);
             }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
         {
-            rvec *xxtc = NULL;
+            rvec *xxtc = nullptr;
 
             if (of->natoms_x_compressed == of->natoms_global)
             {
@@ -413,8 +413,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                            state_local->box,
                            of->natoms_x_compressed,
                            xxtc,
-                           NULL,
-                           NULL);
+                           nullptr,
+                           nullptr);
             if (of->natoms_x_compressed != of->natoms_global)
             {
                 sfree(xxtc);
@@ -436,7 +436,7 @@ void mdoutf_tng_close(gmx_mdoutf_t of)
 
 void done_mdoutf(gmx_mdoutf_t of)
 {
-    if (of->fp_ene != NULL)
+    if (of->fp_ene != nullptr)
     {
         close_enx(of->fp_ene);
     }
@@ -448,18 +448,18 @@ void done_mdoutf(gmx_mdoutf_t of)
     {
         gmx_trr_close(of->fp_trn);
     }
-    if (of->fp_dhdl != NULL)
+    if (of->fp_dhdl != nullptr)
     {
         gmx_fio_fclose(of->fp_dhdl);
     }
-    if (of->fp_field != NULL)
+    if (of->fp_field != nullptr)
     {
         /* This is opened sometimes with xvgropen, sometimes with
          * gmx_fio_fopen, so we use the least common denominator for closing.
          */
         gmx_fio_fclose(of->fp_field);
     }
-    if (of->f_global != NULL)
+    if (of->f_global != nullptr)
     {
         sfree(of->f_global);
     }

@@ -55,7 +55,7 @@ namespace gmx
 class SimdDouble
 {
     public:
-        SimdDouble() {}
+        SimdDouble() = default;
 
         SimdDouble(double d) : simdInternal_(_mm256_set1_pd(d)) {}
 
@@ -68,7 +68,7 @@ class SimdDouble
 class SimdDInt32
 {
     public:
-        SimdDInt32() {}
+        SimdDInt32() = default;
 
         SimdDInt32(std::int32_t i) : simdInternal_(_mm_set1_epi32(i)) {}
 
@@ -81,7 +81,7 @@ class SimdDInt32
 class SimdDBool
 {
     public:
-        SimdDBool() {}
+        SimdDBool() = default;
 
         SimdDBool(bool b) : simdInternal_(_mm256_castsi256_pd(_mm256_set1_epi32( b ? 0xFFFFFFFF : 0))) {}
 
@@ -94,7 +94,7 @@ class SimdDBool
 class SimdDIBool
 {
     public:
-        SimdDIBool() {}
+        SimdDIBool() = default;
 
         SimdDIBool(bool b) : simdInternal_(_mm_set1_epi32( b ? 0xFFFFFFFF : 0)) {}
 

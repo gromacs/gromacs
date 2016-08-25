@@ -58,8 +58,7 @@ namespace test
 {
 
 MdrunComparisonFixture::~MdrunComparisonFixture()
-{
-}
+    = default;
 
 namespace
 {

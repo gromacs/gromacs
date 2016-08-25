@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,17 +81,17 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         {
             generateReferenceTopology();
             generateReferenceCoordinates();
-            testTop_ = NULL;
-            testX_   = NULL;
+            testTop_ = nullptr;
+            testX_   = nullptr;
             clear_mat(testBox_);
             referenceFilename_ =
                 fileManager_.getTemporaryFilePath(getFileSuffix("ref"));
             testFilename_ =
                 fileManager_.getTemporaryFilePath(getFileSuffix("test"));
         }
-        ~StructureIORoundtripTest()
+        ~StructureIORoundtripTest() override
         {
-            if (testTop_ != NULL)
+            if (testTop_ != nullptr)
             {
                 done_top(testTop_);
                 sfree(testTop_);
@@ -104,7 +104,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         void writeReferenceFile()
         {
             write_sto_conf(referenceFilename_.c_str(), *refTop_->name,
-                           &refTop_->atoms, as_rvec_array(refX_.data()), NULL, -1,
+                           &refTop_->atoms, as_rvec_array(refX_.data()), nullptr, -1,
                            refBox_);
         }
 
@@ -113,7 +113,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             snew(testTop_, 1);
             int  ePBC = -2;
             read_tps_conf(referenceFilename_.c_str(), testTop_,
-                          &ePBC, &testX_, NULL, testBox_, FALSE);
+                          &ePBC, &testX_, nullptr, testBox_, FALSE);
         }
 
         void testTopologies()
@@ -124,7 +124,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         void writeTestFileAndTest()
         {
             write_sto_conf(testFilename_.c_str(), *testTop_->name,
-                           &testTop_->atoms, testX_, NULL, -1, testBox_);
+                           &testTop_->atoms, testX_, nullptr, -1, testBox_);
             testFilesEqual(referenceFilename_, testFilename_);
         }
 
@@ -181,7 +181,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             refX_.reserve(atomCount);
             for (int i = 0; i < atomCount; ++i)
             {
-                refX_.push_back(gmx::RVec(i%4, i/4, (i/2)%3));
+                refX_.emplace_back(i%4, i/4, (i/2)%3);
             }
         }
 

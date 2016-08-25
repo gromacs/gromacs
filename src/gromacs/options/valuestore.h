@@ -59,9 +59,9 @@ class OptionValueStorePlain : public IOptionValueStore<T>
         {
         }
 
-        virtual int valueCount() { return count_; }
-        virtual ArrayRef<T> values() { return ArrayRef<T>::fromArray(store_, count_); }
-        virtual void clear()
+        int valueCount() override { return count_; }
+        ArrayRef<T> values() override { return ArrayRef<T>::fromArray(store_, count_); }
+        void clear() override
         {
             count_ = 0;
             if (storeCount_ != nullptr)
@@ -69,10 +69,10 @@ class OptionValueStorePlain : public IOptionValueStore<T>
                 *storeCount_ = count_;
             }
         }
-        virtual void reserve(size_t /*count*/)
+        void reserve(size_t /*count*/) override
         {
         }
-        virtual void append(const T &value)
+        void append(const T &value) override
         {
             store_[count_] = value;
             ++count_;
@@ -95,14 +95,14 @@ class OptionValueStoreVector : public IOptionValueStore<T>
         // cppcheck-suppress uninitMemberVar
         explicit OptionValueStoreVector(std::vector<T> *store) : store_(store) {}
 
-        virtual int valueCount() { return static_cast<int>(store_->size()); }
-        virtual ArrayRef<T> values() { return *store_; }
-        virtual void clear() { store_->clear(); }
-        virtual void reserve(size_t count)
+        int valueCount() override { return static_cast<int>(store_->size()); }
+        ArrayRef<T> values() override { return *store_; }
+        void clear() override { store_->clear(); }
+        void reserve(size_t count) override
         {
             store_->reserve(store_->size() + count);
         }
-        virtual void append(const T &value)
+        void append(const T &value) override
         {
             store_->push_back(value);
         }
@@ -120,23 +120,23 @@ class OptionValueStoreVector<bool> : public IOptionValueStore<bool>
         {
         }
 
-        virtual int valueCount() { return static_cast<int>(store_->size()); }
-        virtual ArrayRef<bool> values()
+        int valueCount() override { return static_cast<int>(store_->size()); }
+        ArrayRef<bool> values() override
         {
             return ArrayRef<bool>::fromArray(reinterpret_cast<bool *>(boolStore_.data()),
                                              boolStore_.size());
         }
-        virtual void clear()
+        void clear() override
         {
             boolStore_.clear();
             store_->clear();
         }
-        virtual void reserve(size_t count)
+        void reserve(size_t count) override
         {
             boolStore_.reserve(boolStore_.size() + count);
             store_->reserve(store_->size() + count);
         }
-        virtual void append(const bool &value)
+        void append(const bool &value) override
         {
             boolStore_.push_back({value});
             store_->push_back(value);
@@ -167,11 +167,11 @@ class OptionValueStoreNull : public IOptionValueStore<T>
     public:
         OptionValueStoreNull() : store_(&vector_) {}
 
-        virtual int valueCount() { return store_.valueCount(); }
-        virtual ArrayRef<T> values() { return store_.values(); }
-        virtual void clear() { store_.clear(); }
-        virtual void reserve(size_t count) { store_.reserve(count); }
-        virtual void append(const T &value) { store_.append(value); }
+        int valueCount() override { return store_.valueCount(); }
+        ArrayRef<T> values() override { return store_.values(); }
+        void clear() override { store_.clear(); }
+        void reserve(size_t count) override { store_.reserve(count); }
+        void append(const T &value) override { store_.append(value); }
 
     private:
         std::vector<T>            vector_;

@@ -327,15 +327,15 @@ t_UmbrellaWindow * initUmbrellaWindows(int nwin)
     snew(win, nwin);
     for (i = 0; i < nwin; i++)
     {
-        win[i].Histo    = win[i].cum  = 0;
-        win[i].k        = win[i].pos  = win[i].z = 0;
-        win[i].N        = win[i].Ntot = 0;
-        win[i].g        = win[i].tau  = win[i].tausmooth = 0;
-        win[i].bContrib = 0;
-        win[i].ztime    = 0;
-        win[i].forceAv  = 0;
-        win[i].aver     = win[i].sigma = 0;
-        win[i].bsWeight = 0;
+        win[i].Histo    = win[i].cum  = nullptr;
+        win[i].k        = win[i].pos  = win[i].z = nullptr;
+        win[i].N        = win[i].Ntot = nullptr;
+        win[i].g        = win[i].tau  = win[i].tausmooth = nullptr;
+        win[i].bContrib = nullptr;
+        win[i].ztime    = nullptr;
+        win[i].forceAv  = nullptr;
+        win[i].aver     = win[i].sigma = nullptr;
+        win[i].bsWeight = nullptr;
     }
     return win;
 }
@@ -437,7 +437,7 @@ void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *
     std::istringstream ist;
 
     /*  line 1 */
-    if (fgets(line, 2048, file) == NULL)
+    if (fgets(line, 2048, file) == nullptr)
     {
         gmx_fatal(FARGS, "Error reading header from pdo file\n");
     }
@@ -455,7 +455,7 @@ void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *
     }
 
     /*  line 2 */
-    if (fgets(line, 2048, file) == NULL)
+    if (fgets(line, 2048, file) == nullptr)
     {
         gmx_fatal(FARGS, "Error reading header from pdo file\n");
     }
@@ -470,7 +470,7 @@ void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *
     }
 
     /* line3 */
-    if (fgets(line, 2048, file) == NULL)
+    if (fgets(line, 2048, file) == nullptr)
     {
         gmx_fatal(FARGS, "Error reading header from pdo file\n");
     }
@@ -478,7 +478,7 @@ void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *
     ist >> Buffer0 >> Buffer1 >> header->nSkip;
 
     /* line 4 */
-    if (fgets(line, 2048, file) == NULL)
+    if (fgets(line, 2048, file) == nullptr)
     {
         gmx_fatal(FARGS, "Error reading header from pdo file\n");
     }
@@ -486,7 +486,7 @@ void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *
     ist >> Buffer0 >> Buffer1 >> Buffer2 >> header->Reference;
 
     /* line 5 */
-    if (fgets(line, 2048, file) == NULL)
+    if (fgets(line, 2048, file) == nullptr)
     {
         gmx_fatal(FARGS, "Error reading header from pdo file\n");
     }
@@ -501,7 +501,7 @@ void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *
 
     for (i = 0; i < header->nPull; ++i)
     {
-        if (fgets(line, 2048, file) == NULL)
+        if (fgets(line, 2048, file) == nullptr)
         {
             gmx_fatal(FARGS, "Error reading header from pdo file\n");
         }
@@ -517,7 +517,7 @@ void read_pdo_header(FILE * file, t_UmbrellaHeader * header, t_UmbrellaOptions *
         }
     }
 
-    if (fgets(line, 2048, file) == NULL)
+    if (fgets(line, 2048, file) == nullptr)
     {
         gmx_fatal(FARGS, "Cannot read from file\n");
     }
@@ -535,18 +535,18 @@ static char *fgets3(FILE *fp, char ptr[], int *len)
     char *p;
     int   slen;
 
-    if (fgets(ptr, *len-1, fp) == NULL)
+    if (fgets(ptr, *len-1, fp) == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
     p = ptr;
-    while ((std::strchr(ptr, '\n') == NULL) && (!feof(fp)))
+    while ((std::strchr(ptr, '\n') == nullptr) && (!feof(fp)))
     {
         /* This line is longer than len characters, let's increase len! */
         *len += STRLEN;
         p    += STRLEN;
         srenew(ptr, *len);
-        if (fgets(p-1, STRLEN, fp) == NULL)
+        if (fgets(p-1, STRLEN, fp) == nullptr)
         {
             break;
         }
@@ -574,13 +574,13 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
     int                i, inttemp, bins, count, ntot;
     real               minval, maxval, minfound = 1e20, maxfound = -1e20;
     double             temp, time, time0 = 0, dt;
-    char              *ptr    = 0;
-    t_UmbrellaWindow * window = 0;
+    char              *ptr    = nullptr;
+    t_UmbrellaWindow * window = nullptr;
     gmx_bool           timeok, dt_ok = 1;
-    char              *tmpbuf   = 0, fmt[256], fmtign[256], fmtlf[5] = "%lf";
+    char              *tmpbuf   = nullptr, fmt[256], fmtign[256], fmtlf[5] = "%lf";
     int                len      = STRLEN, dstep = 1;
     const int          blocklen = 4096;
-    int               *lennow   = 0;
+    int               *lennow   = nullptr;
 
     if (!bGetMinMax)
     {
@@ -602,7 +602,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
         snew(window->g, window->nPull);
         snew(window->bsWeight, window->nPull);
 
-        window->bContrib = 0;
+        window->bContrib = nullptr;
 
         if (opt->bCalcTauInt)
         {
@@ -610,7 +610,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
         }
         else
         {
-            window->ztime = 0;
+            window->ztime = nullptr;
         }
         snew(lennow, window->nPull);
 
@@ -626,7 +626,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
             window->g[i]    = 1.;
             if (opt->bCalcTauInt)
             {
-                window->ztime[i] = 0;
+                window->ztime[i] = nullptr;
             }
         }
 
@@ -641,7 +641,7 @@ void read_pdo_data(FILE * file, t_UmbrellaHeader * header,
 
     count = 0;
     snew(tmpbuf, len);
-    while ( (ptr = fgets3(file, tmpbuf, &len)) != NULL)
+    while ( (ptr = fgets3(file, tmpbuf, &len)) != nullptr)
     {
         trim(ptr);
 
@@ -1261,8 +1261,8 @@ void calc_cumulatives(t_UmbrellaWindow *window, int nWindows,
 {
     int    i, j, k, nbin;
     double last;
-    char  *fn = 0, *buf = 0;
-    FILE  *fp = 0;
+    char  *fn = nullptr, *buf = nullptr;
+    FILE  *fp = nullptr;
 
     if (opt->bs_verbose)
     {
@@ -1502,7 +1502,7 @@ void create_synthetic_histo(t_UmbrellaWindow *synthWindow, t_UmbrellaWindow *thi
 void print_histograms(const char *fnhist, t_UmbrellaWindow * window, int nWindows,
                       int bs_index, t_UmbrellaOptions *opt, const char *xlabel)
 {
-    char *fn = 0, *buf = 0, title[256];
+    char *fn = nullptr, *buf = nullptr, title[256];
     FILE *fp;
     int   bins, l, i, j;
 
@@ -1607,7 +1607,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
 {
     t_UmbrellaWindow * synthWindow;
     double            *bsProfile, *bsProfiles_av, *bsProfiles_av2, maxchange = 1e20, tmp, stddev;
-    int                i, j, *randomArray = 0, winid, pullid, ib;
+    int                i, j, *randomArray = nullptr, winid, pullid, ib;
     int                iAllPull, nAllPull, *allPull_winId, *allPull_pullId;
     FILE              *fp;
     gmx_bool           bExact = FALSE;
@@ -1826,14 +1826,14 @@ int whaminFileType(char *fn)
 void read_wham_in(const char *fn, char ***filenamesRet, int *nfilesRet,
                   t_UmbrellaOptions *opt)
 {
-    char **filename = 0, tmp[WHAM_MAXFILELEN+2];
+    char **filename = nullptr, tmp[WHAM_MAXFILELEN+2];
     int    nread, sizenow, i, block = 1;
     FILE  *fp;
 
     fp      = gmx_ffopen(fn, "r");
     nread   = 0;
     sizenow = 0;
-    while (fgets(tmp, sizeof(tmp), fp) != NULL)
+    while (fgets(tmp, sizeof(tmp), fp) != nullptr)
     {
         if (std::strlen(tmp) >= WHAM_MAXFILELEN)
         {
@@ -1867,8 +1867,8 @@ void read_wham_in(const char *fn, char ***filenamesRet, int *nfilesRet,
 //! Open a file or a pipe to a gzipped file
 FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
 {
-    char            Buffer[1024], gunzip[1024], *Path = 0;
-    FILE           *pipe   = 0;
+    char            Buffer[1024], gunzip[1024], *Path = nullptr;
+    FILE           *pipe   = nullptr;
     static gmx_bool bFirst = 1;
 
     /* gzipped pdo file? */
@@ -1916,7 +1916,7 @@ FILE *open_pdo_pipe(const char *fn, t_UmbrellaOptions *opt, gmx_bool *bPipeOpen)
             printf("Executing command '%s'\n", Buffer);
         }
 #if HAVE_PIPES
-        if ((pipe = popen(Buffer, "r")) == NULL)
+        if ((pipe = popen(Buffer, "r")) == nullptr)
         {
             gmx_fatal(FARGS, "Unable to open pipe to `%s'\n", Buffer);
         }
@@ -1978,7 +1978,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
             }
             read_pdo_header(file, header, opt);
             /* here only determine min and max of this window */
-            read_pdo_data(file, header, i, NULL, opt, TRUE, &mintmp, &maxtmp);
+            read_pdo_data(file, header, i, nullptr, opt, TRUE, &mintmp, &maxtmp);
             if (maxtmp > opt->max)
             {
                 opt->max = maxtmp;
@@ -2020,7 +2020,7 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
         file = open_pdo_pipe(fn[i], opt, &bPipeOpen);
         read_pdo_header(file, header, opt);
         /* load data into window */
-        read_pdo_data(file, header, i, window, opt, FALSE, NULL, NULL);
+        read_pdo_data(file, header, i, window, opt, FALSE, nullptr, nullptr);
         if ((window+i)->Ntot[0] == 0)
         {
             fprintf(stderr, "\nWARNING, no data points read from file %s (check -b option)\n", fn[i]);
@@ -2054,7 +2054,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     static int  first = 1;
 
     /* printf("Reading %s \n",fn); */
-    read_tpx_state(fn, &ir, &state, NULL);
+    read_tpx_state(fn, &ir, &state, nullptr);
 
     if (!ir.bPull)
     {
@@ -2108,7 +2108,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     bool geometryIsSet = false;
     for (i = 0; i < ir.pull->ncoord; i++)
     {
-        if (coordsel == NULL || coordsel->bUse[i])
+        if (coordsel == nullptr || coordsel->bUse[i])
         {
             if (header->pcrd[i].pull_type != epullUMBRELLA)
             {
@@ -2168,7 +2168,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
                 maxlen+1);
         for (i = 0; i < ir.pull->ncoord; i++)
         {
-            bool use = (coordsel == NULL || coordsel->bUse[i]);
+            bool use = (coordsel == nullptr || coordsel->bUse[i]);
             printf(fmt,
                    epullg_names[header->pcrd[i].geometry], header->pcrd[i].k, header->pcrd[i].init_dist,
                    int2YN(header->pcrd[i].dim[XX]), int2YN(header->pcrd[i].dim[YY]), int2YN(header->pcrd[i].dim[ZZ]),
@@ -2216,14 +2216,14 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
                   gmx_bool bGetMinMax, real *mintmp, real *maxtmp,
                   t_coordselection *coordsel)
 {
-    double        **y = 0, pos = 0., t, force, time0 = 0., dt;
+    double        **y = nullptr, pos = 0., t, force, time0 = 0., dt;
     int             ny, nt, bins, ibin, i, g, gUsed, dstep = 1;
     int             nColExpect, ntot, column;
     real            min, max, minfound = 1e20, maxfound = -1e20;
     gmx_bool        dt_ok, timeok;
     const char     *quantity;
     const int       blocklen = 4096;
-    int            *lennow   = 0;
+    int            *lennow   = nullptr;
     static gmx_bool bFirst   = TRUE;
 
     /*
@@ -2345,7 +2345,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
         snew(window->Ntot,     window->nPull);
         snew(window->g,        window->nPull);
         snew(window->bsWeight, window->nPull);
-        window->bContrib = 0;
+        window->bContrib = nullptr;
 
         if (opt->bCalcTauInt)
         {
@@ -2353,7 +2353,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
         }
         else
         {
-            window->ztime = NULL;
+            window->ztime = nullptr;
         }
         snew(lennow, window->nPull);
 
@@ -2368,7 +2368,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
 
             if (opt->bCalcTauInt)
             {
-                window->ztime[g] = NULL;
+                window->ztime[g] = nullptr;
             }
         }
 
@@ -2566,13 +2566,13 @@ void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
             {
                 gmx_fatal(FARGS, "Expected the %d'th file in input file to be a tpr file\n", i);
             }
-            read_tpr_header(fnTprs[i], header, opt, (opt->nCoordsel > 0) ? &opt->coordsel[i] : NULL);
+            read_tpr_header(fnTprs[i], header, opt, (opt->nCoordsel > 0) ? &opt->coordsel[i] : nullptr);
             if (whaminFileType(fnPull[i]) != whamin_pullxf)
             {
                 gmx_fatal(FARGS, "Expected the %d'th file in input file to be a xvg (pullx/pullf) file\n", i);
             }
-            read_pull_xf(fnPull[i], header, NULL, opt, TRUE, &mintmp, &maxtmp,
-                         (opt->nCoordsel > 0) ? &opt->coordsel[i] : NULL);
+            read_pull_xf(fnPull[i], header, nullptr, opt, TRUE, &mintmp, &maxtmp,
+                         (opt->nCoordsel > 0) ? &opt->coordsel[i] : nullptr);
             if (maxtmp > opt->max)
             {
                 opt->max = maxtmp;
@@ -2599,13 +2599,13 @@ void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
         {
             gmx_fatal(FARGS, "Expected the %d'th file in input file to be a tpr file\n", i);
         }
-        read_tpr_header(fnTprs[i], header, opt, (opt->nCoordsel > 0) ? &opt->coordsel[i] : NULL);
+        read_tpr_header(fnTprs[i], header, opt, (opt->nCoordsel > 0) ? &opt->coordsel[i] : nullptr);
         if (whaminFileType(fnPull[i]) != whamin_pullxf)
         {
             gmx_fatal(FARGS, "Expected the %d'th file in input file to be a xvg (pullx/pullf) file\n", i);
         }
-        read_pull_xf(fnPull[i], header, window+i, opt, FALSE, NULL, NULL,
-                     (opt->nCoordsel > 0) ? &opt->coordsel[i] : NULL);
+        read_pull_xf(fnPull[i], header, window+i, opt, FALSE, nullptr, nullptr,
+                     (opt->nCoordsel > 0) ? &opt->coordsel[i] : nullptr);
         if (window[i].Ntot[0] == 0)
         {
             fprintf(stderr, "\nWARNING, no data points read from file %s (check -b option)\n", fnPull[i]);
@@ -2737,7 +2737,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
     int   i, ig, ncorr, ntot, j, k, *count, restart;
     real *corr, c0, dt, tmp;
     real *ztime, av, tausteps;
-    FILE *fp, *fpcorr = 0;
+    FILE *fp, *fpcorr = nullptr;
 
     if (opt->verbose)
     {
@@ -3181,17 +3181,17 @@ void readPullCoordSelection(t_UmbrellaOptions *opt, char **fnTpr, int nTpr)
 {
     FILE *fp;
     int   i, iline, n, len = STRLEN, temp;
-    char *ptr = 0, *tmpbuf = 0;
+    char *ptr = nullptr, *tmpbuf = nullptr;
     char  fmt[1024], fmtign[1024];
     int   block = 1, sizenow;
 
     fp            = gmx_ffopen(opt->fnCoordSel, "r");
-    opt->coordsel = NULL;
+    opt->coordsel = nullptr;
 
     snew(tmpbuf, len);
     sizenow = 0;
     iline   = 0;
-    while ( (ptr = fgets3(fp, tmpbuf, &len)) != NULL)
+    while ( (ptr = fgets3(fp, tmpbuf, &len)) != nullptr)
     {
         trim(ptr);
         n = wordcount(ptr);
@@ -3417,9 +3417,9 @@ int gmx_wham(int argc, char *argv[])
         "the histograms."
     };
 
-    const char              *en_unit[]       = {NULL, "kJ", "kCal", "kT", NULL};
-    const char              *en_unit_label[] = {"", "E (kJ mol\\S-1\\N)", "E (kcal mol\\S-1\\N)", "E (kT)", NULL};
-    const char              *en_bsMethod[]   = { NULL, "b-hist", "hist", "traj", "traj-gauss", NULL };
+    const char              *en_unit[]       = {nullptr, "kJ", "kCal", "kT", nullptr};
+    const char              *en_unit_label[] = {"", "E (kJ mol\\S-1\\N)", "E (kcal mol\\S-1\\N)", "E (kT)", nullptr};
+    const char              *en_bsMethod[]   = { nullptr, "b-hist", "hist", "traj", "traj-gauss", nullptr };
     static t_UmbrellaOptions opt;
 
     t_pargs                  pa[] = {
@@ -3503,7 +3503,7 @@ int gmx_wham(int argc, char *argv[])
 
     int                      i, j, l, nfiles, nwins, nfiles2;
     t_UmbrellaHeader         header;
-    t_UmbrellaWindow       * window = NULL;
+    t_UmbrellaWindow       * window = nullptr;
     double                  *profile, maxchange = 1e20;
     gmx_bool                 bMinSet, bMaxSet, bAutoSet, bExact = FALSE;
     char                   **fninTpr, **fninPull, **fninPdo;
@@ -3522,7 +3522,7 @@ int gmx_wham(int argc, char *argv[])
     opt.max       = 0;
     opt.bAuto     = TRUE;
     opt.nCoordsel = 0;
-    opt.coordsel  = NULL;
+    opt.coordsel  = nullptr;
 
     /* bootstrapping stuff */
     opt.nBootStrap               = 0;
@@ -3548,7 +3548,7 @@ int gmx_wham(int argc, char *argv[])
     opt.stepUpdateContrib     = 100;
 
     if (!parse_common_args(&argc, argv, 0,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &opt.oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &opt.oenv))
     {
         return 0;
     }
@@ -3638,7 +3638,7 @@ int gmx_wham(int argc, char *argv[])
         }
 
         /* Read file that selects the pull group to be used */
-        if (opt.fnCoordSel != NULL)
+        if (opt.fnCoordSel != nullptr)
         {
             readPullCoordSelection(&opt, fninTpr, nfiles);
         }
@@ -3648,7 +3648,7 @@ int gmx_wham(int argc, char *argv[])
     }
     else
     {   /* reading pdo files */
-        if  (opt.fnCoordSel != NULL)
+        if  (opt.fnCoordSel != nullptr)
         {
             gmx_fatal(FARGS, "Reading a -is file is not supported with PDO input files.\n"
                       "Use awk or a similar tool to pick the required pull groups from your PDO files\n");

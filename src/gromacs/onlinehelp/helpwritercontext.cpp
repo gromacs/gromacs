@@ -217,7 +217,7 @@ std::string repall(const std::string &s, const t_sandr (&sa)[nsr])
 class IWrapper
 {
     public:
-        virtual ~IWrapper() {}
+        virtual ~IWrapper() = default;
 
         /*! \brief
          * Provides the wrapping settings.
@@ -243,11 +243,11 @@ class WrapperToString : public IWrapper
         {
         }
 
-        virtual TextLineWrapperSettings &settings()
+        TextLineWrapperSettings &settings() override
         {
             return wrapper_.settings();
         }
-        virtual void wrap(const std::string &text)
+        void wrap(const std::string &text) override
         {
             result_.append(wrapper_.wrapToString(text));
         }
@@ -271,11 +271,11 @@ class WrapperToVector : public IWrapper
         {
         }
 
-        virtual TextLineWrapperSettings &settings()
+        TextLineWrapperSettings &settings() override
         {
             return wrapper_.settings();
         }
-        virtual void wrap(const std::string &text)
+        void wrap(const std::string &text) override
         {
             const std::vector<std::string> &lines = wrapper_.wrapToVector(text);
             result_.insert(result_.end(), lines.begin(), lines.end());
@@ -390,8 +390,7 @@ HelpLinks::HelpLinks(HelpOutputFormat format) : impl_(new Impl(format))
 }
 
 HelpLinks::~HelpLinks()
-{
-}
+    = default;
 
 void HelpLinks::addLink(const std::string &linkName,
                         const std::string &targetName,
@@ -409,7 +408,7 @@ void HelpLinks::addLink(const std::string &linkName,
         default:
             GMX_RELEASE_ASSERT(false, "Output format not implemented for links");
     }
-    impl_->links_.push_back(Impl::LinkItem(linkName, replacement));
+    impl_->links_.emplace_back(linkName, replacement);
 }
 
 /********************************************************************
@@ -457,10 +456,10 @@ class HelpWriterContext::Impl
                     {
                         consoleOptionsFormatter_.reset(new TextTableFormatter());
                         consoleOptionsFormatter_->setFirstColumnIndent(1);
-                        consoleOptionsFormatter_->addColumn(NULL, 7, false);
-                        consoleOptionsFormatter_->addColumn(NULL, 18, false);
-                        consoleOptionsFormatter_->addColumn(NULL, 16, false);
-                        consoleOptionsFormatter_->addColumn(NULL, 28, false);
+                        consoleOptionsFormatter_->addColumn(nullptr, 7, false);
+                        consoleOptionsFormatter_->addColumn(nullptr, 18, false);
+                        consoleOptionsFormatter_->addColumn(nullptr, 16, false);
+                        consoleOptionsFormatter_->addColumn(nullptr, 28, false);
                     }
                     return *consoleOptionsFormatter_;
                 }
@@ -508,7 +507,7 @@ class HelpWriterContext::Impl
         void addReplacement(const std::string &search,
                             const std::string &replace)
         {
-            replacements_.push_back(ReplaceItem(search, replace));
+            replacements_.emplace_back(search, replace);
         }
 
         //! Replaces links in a given string.
@@ -540,7 +539,7 @@ class HelpWriterContext::Impl
 std::string HelpWriterContext::Impl::replaceLinks(const std::string &input) const
 {
     std::string result(input);
-    if (state_->links_ != NULL)
+    if (state_->links_ != nullptr)
     {
         HelpLinks::Impl::LinkList::const_iterator link;
         for (link  = state_->links_->impl_->links_.begin();
@@ -603,7 +602,7 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
  */
 
 HelpWriterContext::HelpWriterContext(TextWriter *writer, HelpOutputFormat format)
-    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(writer, format, NULL)), 0))
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(writer, format, nullptr)), 0))
 {
 }
 
@@ -611,7 +610,7 @@ HelpWriterContext::HelpWriterContext(TextWriter *writer, HelpOutputFormat format
                                      const HelpLinks *links)
     : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(writer, format, links)), 0))
 {
-    if (links != NULL)
+    if (links != nullptr)
     {
         GMX_RELEASE_ASSERT(links->impl_->format_ == format,
                            "Links must have the same output format as the context");
@@ -629,8 +628,7 @@ HelpWriterContext::HelpWriterContext(const HelpWriterContext &other)
 }
 
 HelpWriterContext::~HelpWriterContext()
-{
-}
+    = default;
 
 void HelpWriterContext::setReplacement(const std::string &search,
                                        const std::string &replace)

@@ -123,7 +123,7 @@ double TimeUnitManager::inverseTimeScaleFactor() const
  */
 
 TimeUnitBehavior::TimeUnitBehavior()
-    : timeUnit_(TimeUnit_Default), timeUnitStore_(NULL)
+    : timeUnit_(TimeUnit_Default), timeUnitStore_(nullptr)
 {
 }
 
@@ -132,7 +132,7 @@ void TimeUnitBehavior::setTimeUnit(TimeUnit timeUnit)
     GMX_RELEASE_ASSERT(timeUnit >= 0 && timeUnit <= TimeUnit_s,
                        "Invalid time unit");
     timeUnit_ = timeUnit;
-    if (timeUnitStore_ != NULL)
+    if (timeUnitStore_ != nullptr)
     {
         *timeUnitStore_ = timeUnit;
     }
@@ -147,7 +147,7 @@ void TimeUnitBehavior::setTimeUnitStore(TimeUnit *store)
 void TimeUnitBehavior::setTimeUnitFromEnvironment()
 {
     const char *const value = std::getenv("GMXTIMEUNIT");
-    if (value != NULL)
+    if (value != nullptr)
     {
         ConstArrayRef<const char *>                 timeUnits(g_timeUnits);
         ConstArrayRef<const char *>::const_iterator i =
@@ -190,14 +190,14 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<FloatingPointOptionI
         //! Initializes a scaler with the given factor.
         explicit TimeOptionScaler(double factor) : factor_(factor) {}
 
-        void visitSection(OptionSectionInfo *section)
+        void visitSection(OptionSectionInfo *section) override
         {
             OptionsModifyingIterator iterator(section);
             iterator.acceptSections(this);
             iterator.acceptOptions(this);
         }
 
-        void visitOptionType(FloatingPointOptionInfo *option)
+        void visitOptionType(FloatingPointOptionInfo *option) override
         {
             if (option->isTime())
             {
@@ -216,7 +216,7 @@ void TimeUnitBehavior::optionsFinishing(Options *options)
     double factor = TimeUnitManager(timeUnit()).timeScaleFactor();
     TimeOptionScaler<DoubleOptionInfo>(factor).visitSection(&options->rootSection());
     TimeOptionScaler<FloatOptionInfo>(factor).visitSection(&options->rootSection());
-    if (timeUnitStore_ != NULL)
+    if (timeUnitStore_ != nullptr)
     {
         *timeUnitStore_ = static_cast<TimeUnit>(timeUnit_);
     }

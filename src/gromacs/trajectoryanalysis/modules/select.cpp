@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,7 +92,7 @@ class IndexFileWriterModule : public AnalysisDataModuleSerial
 {
     public:
         IndexFileWriterModule();
-        virtual ~IndexFileWriterModule();
+        ~IndexFileWriterModule() override;
 
         //! Sets the file name to write the index file to.
         void setFileName(const std::string &fnm);
@@ -103,13 +103,13 @@ class IndexFileWriterModule : public AnalysisDataModuleSerial
          */
         void addGroup(const std::string &name, bool bDynamic);
 
-        virtual int flags() const;
+        int flags() const override;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+        void dataStarted(AbstractAnalysisData *data) override;
+        void frameStarted(const AnalysisDataFrameHeader &header) override;
+        void pointsAdded(const AnalysisDataPointSetRef &points) override;
+        void frameFinished(const AnalysisDataFrameHeader &header) override;
+        void dataFinished() override;
 
     private:
         void closeFile();
@@ -137,7 +137,7 @@ class IndexFileWriterModule : public AnalysisDataModuleSerial
  */
 
 IndexFileWriterModule::IndexFileWriterModule()
-    : fp_(NULL), currentGroup_(-1), currentSize_(0), bAnyWritten_(false)
+    : fp_(nullptr), currentGroup_(-1), currentSize_(0), bAnyWritten_(false)
 {
 }
 
@@ -150,10 +150,10 @@ IndexFileWriterModule::~IndexFileWriterModule()
 
 void IndexFileWriterModule::closeFile()
 {
-    if (fp_ != NULL)
+    if (fp_ != nullptr)
     {
         gmx_fio_fclose(fp_);
-        fp_ = NULL;
+        fp_ = nullptr;
     }
 }
 
@@ -168,7 +168,7 @@ void IndexFileWriterModule::addGroup(const std::string &name, bool bDynamic)
 {
     std::string newName(name);
     std::replace(newName.begin(), newName.end(), ' ', '_');
-    groups_.push_back(GroupInfo(newName, bDynamic));
+    groups_.emplace_back(newName, bDynamic);
 }
 
 
@@ -197,7 +197,7 @@ void IndexFileWriterModule::frameStarted(const AnalysisDataFrameHeader & /*heade
 void
 IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    if (fp_ == NULL)
+    if (fp_ == nullptr)
     {
         return;
     }
@@ -245,7 +245,7 @@ void IndexFileWriterModule::frameFinished(const AnalysisDataFrameHeader & /*head
 
 void IndexFileWriterModule::dataFinished()
 {
-    if (fp_ != NULL)
+    if (fp_ != nullptr)
     {
         std::fprintf(fp_, "\n");
     }
@@ -279,17 +279,17 @@ class Select : public TrajectoryAnalysisModule
     public:
         Select();
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
+        void initOptions(IOptionsContainer          *options,
+                         TrajectoryAnalysisSettings *settings) override;
+        void optionsFinished(TrajectoryAnalysisSettings *settings) override;
+        void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                          const TopologyInformation        &top) override;
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                          TrajectoryAnalysisModuleData *pdata) override;
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+        void finishAnalysis(int nframes) override;
+        void writeOutput() override;
 
     private:
         SelectionList                       sel_;
@@ -321,9 +321,9 @@ class Select : public TrajectoryAnalysisModule
 };
 
 Select::Select()
-    : selOpt_(NULL), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
+    : selOpt_(nullptr), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
       bCumulativeLifetimes_(true), resNumberType_(ResidueNumbering_ByNumber),
-      pdbAtoms_(PdbAtomsSelection_All), top_(NULL),
+      pdbAtoms_(PdbAtomsSelection_All), top_(nullptr),
       occupancyModule_(new AnalysisDataAverageModule()),
       lifetimeModule_(new AnalysisDataLifetimeModule())
 {
@@ -672,7 +672,7 @@ Select::writeOutput()
         t_pdbinfo         *pdbinfo;
         snew(pdbinfo, atoms.nr);
         scoped_guard_sfree pdbinfoGuard(pdbinfo);
-        if (atoms.pdbinfo != NULL)
+        if (atoms.pdbinfo != nullptr)
         {
             std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));
         }
@@ -708,7 +708,7 @@ Select::writeOutput()
             case PdbAtomsSelection_All:
             {
                 t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
-                write_trxframe(status, &fr, NULL);
+                write_trxframe(status, &fr, nullptr);
                 close_trx(status);
                 break;
             }
@@ -724,7 +724,7 @@ Select::writeOutput()
                                                  atomIndicesSet.end());
                 t_trxstatus      *status = open_trx(fnPDB_.c_str(), "w");
                 write_trxframe_indexed(status, &fr, allAtomIndices.size(),
-                                       allAtomIndices.data(), NULL);
+                                       allAtomIndices.data(), nullptr);
                 close_trx(status);
                 break;
             }
@@ -739,7 +739,7 @@ Select::writeOutput()
                     }
                 }
                 t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
-                write_trxframe_indexed(status, &fr, indices.size(), indices.data(), NULL);
+                write_trxframe_indexed(status, &fr, indices.size(), indices.data(), nullptr);
                 close_trx(status);
                 break;
             }

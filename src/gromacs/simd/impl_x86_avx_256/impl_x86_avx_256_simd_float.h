@@ -50,7 +50,7 @@ namespace gmx
 class SimdFloat
 {
     public:
-        SimdFloat() {}
+        SimdFloat() = default;
 
         SimdFloat(float f) : simdInternal_(_mm256_set1_ps(f)) {}
 
@@ -63,7 +63,7 @@ class SimdFloat
 class SimdFInt32
 {
     public:
-        SimdFInt32() {}
+        SimdFInt32() = default;
 
         SimdFInt32(std::int32_t i) : simdInternal_(_mm256_set1_epi32(i)) {}
 
@@ -76,7 +76,7 @@ class SimdFInt32
 class SimdFBool
 {
     public:
-        SimdFBool() {}
+        SimdFBool() = default;
 
         SimdFBool(bool b) : simdInternal_(_mm256_castsi256_ps(_mm256_set1_epi32( b ? 0xFFFFFFFF : 0))) {}
 

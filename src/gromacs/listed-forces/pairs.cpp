@@ -374,8 +374,8 @@ do_pairs_general(int ftype, int nbonds,
             energygrp_vdw  = grppener->ener[egLJSR];
             break;
         default:
-            energygrp_elec = NULL; /* Keep compiler happy */
-            energygrp_vdw  = NULL; /* Keep compiler happy */
+            energygrp_elec = nullptr; /* Keep compiler happy */
+            energygrp_vdw  = nullptr; /* Keep compiler happy */
             gmx_fatal(FARGS, "Unknown function type %d in do_nonbonded14", ftype);
             break;
     }

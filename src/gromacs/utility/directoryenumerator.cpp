@@ -163,7 +163,7 @@ class DirectoryEnumerator::Impl
         {
             errno       = 0;
             DIR *handle = opendir(dirname);
-            if (handle == NULL)
+            if (handle == nullptr)
             {
                 if (bThrow)
                 {
@@ -173,7 +173,7 @@ class DirectoryEnumerator::Impl
                                      dirname);
                     GMX_THROW_WITH_ERRNO(FileIOError(message), "opendir", code);
                 }
-                return NULL;
+                return nullptr;
             }
             return new Impl(handle);
         }
@@ -199,7 +199,7 @@ class DirectoryEnumerator::Impl
             errno = 0;
             dirent *p;
             int     rc = readdir_r(dirent_handle, direntp_large, &p);
-            if (p == NULL && rc == 0)
+            if (p == nullptr && rc == 0)
             {
                 filename->clear();
                 return false;
@@ -275,7 +275,7 @@ DirectoryEnumerator::enumerateFilesWithExtension(
 DirectoryEnumerator::DirectoryEnumerator(const char *dirname, bool bThrow)
     : impl_(nullptr)
 {
-    GMX_RELEASE_ASSERT(dirname != NULL && dirname[0] != '\0',
+    GMX_RELEASE_ASSERT(dirname != nullptr && dirname[0] != '\0',
                        "Attempted to open empty/null directory path");
     impl_.reset(Impl::init(dirname, bThrow));
 }
@@ -289,8 +289,7 @@ DirectoryEnumerator::DirectoryEnumerator(const std::string &dirname, bool bThrow
 }
 
 DirectoryEnumerator::~DirectoryEnumerator()
-{
-}
+    = default;
 
 bool DirectoryEnumerator::nextFile(std::string *filename)
 {

@@ -121,7 +121,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     /* just pray the arrays are big enough */
     for (i = 0; (i < natoms); i++)
     {
-        if ((fgets2(line, STRLEN, in)) == NULL)
+        if ((fgets2(line, STRLEN, in)) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of file in file %s at line %d",
                       infile, i+2);
@@ -137,12 +137,12 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         {
             bFirst = FALSE;
             p1     = strchr(line, '.');
-            if (p1 == NULL)
+            if (p1 == nullptr)
             {
                 gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile);
             }
             p2 = strchr(&p1[1], '.');
-            if (p2 == NULL)
+            if (p2 == nullptr)
             {
                 gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile);
             }
@@ -150,7 +150,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
             *ndec = ddist - 5;
 
             p3 = strchr(&p2[1], '.');
-            if (p3 == NULL)
+            if (p3 == nullptr)
             {
                 gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile);
             }
@@ -357,7 +357,7 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
     sfree(atoms.atomname);
     done_symtab(&symtab);
 
-    if ((p = strstr(title, "t=")) != NULL)
+    if ((p = strstr(title, "t=")) != nullptr)
     {
         p += 2;
         if (sscanf(p, "%lf", &tt) == 1)
@@ -471,7 +471,7 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     fprintf(out, "%5d\n", nx);
 
-    make_hconf_format(pr, v != NULL, format);
+    make_hconf_format(pr, v != nullptr, format);
 
     for (i = 0; (i < nx); i++)
     {
@@ -530,7 +530,7 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop, int pr,
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     fprintf(out, "%5d\n", mtop->natoms);
 
-    make_hconf_format(pr, v != NULL, format);
+    make_hconf_format(pr, v != nullptr, format);
 
     aloop = gmx_mtop_atomloop_all_init(mtop);
     while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))

@@ -291,14 +291,14 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd,
             }
             else
             {
-                pcrd->externalPotentialProvider = NULL;
+                pcrd->externalPotentialProvider = nullptr;
             }
         }
         else
         {
             if (bRead)
             {
-                pcrd->externalPotentialProvider = NULL;
+                pcrd->externalPotentialProvider = nullptr;
             }
         }
         /* Note that we try to support adding new geometries without
@@ -537,7 +537,7 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     else
     {
         fepvals->n_lambda     = 0;
-        fepvals->all_lambda   = NULL;
+        fepvals->all_lambda   = nullptr;
         if (fepvals->init_lambda >= 0)
         {
             fepvals->separate_dvdl[efptFEP] = TRUE;
@@ -2131,7 +2131,7 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
         if (bClear)
         {
             ilist[j].nr     = 0;
-            ilist[j].iatoms = NULL;
+            ilist[j].iatoms = nullptr;
         }
         else
         {
@@ -2175,7 +2175,7 @@ static void do_block(t_fileio *fio, t_block *block, gmx_bool bRead, int file_ver
     }
     if (bRead)
     {
-        if ((block->nalloc_index > 0) && (NULL != block->index))
+        if ((block->nalloc_index > 0) && (nullptr != block->index))
         {
             sfree(block->index);
         }
@@ -2422,7 +2422,7 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
         {
             snew(groups->grpname, groups->ngrpname);
         }
-        atoms->pdbinfo = NULL;
+        atoms->pdbinfo = nullptr;
     }
     for (i = 0; (i < atoms->nr); i++)
     {
@@ -2462,7 +2462,7 @@ static void do_groups(t_fileio *fio, gmx_groups_t *groups,
         {
             if (bRead)
             {
-                groups->grpnr[g] = NULL;
+                groups->grpnr[g] = nullptr;
             }
         }
         else
@@ -2529,7 +2529,7 @@ static void do_symtab(t_fileio *fio, t_symtab *symtab, gmx_bool bRead)
     else
     {
         symbuf = symtab->symbuf;
-        while (symbuf != NULL)
+        while (symbuf != nullptr)
         {
             for (i = 0; (i < symbuf->bufsize) && (i < nr); i++)
             {
@@ -2876,7 +2876,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     {
         mtop->ffparams.cmap_grid.ngrid        = 0;
         mtop->ffparams.cmap_grid.grid_spacing = 0;
-        mtop->ffparams.cmap_grid.cmapdata     = NULL;
+        mtop->ffparams.cmap_grid.cmapdata     = nullptr;
     }
 
     if (file_version >= 57)
@@ -3084,15 +3084,15 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         tpx.ngtc      = state->ngtc;
         tpx.fep_state = state->fep_state;
         tpx.lambda    = state->lambda[efptFEP];
-        tpx.bIr       = (ir       != NULL);
-        tpx.bTop      = (mtop     != NULL);
-        tpx.bX        = (state->x != NULL);
-        tpx.bV        = (state->v != NULL);
+        tpx.bIr       = (ir       != nullptr);
+        tpx.bTop      = (mtop     != nullptr);
+        tpx.bX        = (state->x != nullptr);
+        tpx.bV        = (state->v != nullptr);
         tpx.bF        = FALSE;
         tpx.bBox      = TRUE;
     }
 
-    TopOnlyOK = (ir == NULL);
+    TopOnlyOK = (ir == nullptr);
 
     int fileVersion;    /* Version number of the code that wrote the file */
     int fileGeneration; /* Generation version number of the code that wrote the file */
@@ -3221,7 +3221,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         }
         if (fileGeneration <= tpx_generation && ir)
         {
-            do_inputrec(fio, ir, bRead, fileVersion, mtop ? &mtop->ffparams.fudgeQQ : NULL);
+            do_inputrec(fio, ir, bRead, fileVersion, mtop ? &mtop->ffparams.fudgeQQ : nullptr);
             if (fileVersion < 51)
             {
                 set_box_rel(ir, state);
@@ -3296,7 +3296,7 @@ void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK)
     t_fileio *fio;
 
     fio = open_tpx(fn, "r");
-    do_tpxheader(fio, TRUE, tpx, TopOnlyOK, NULL, NULL);
+    do_tpxheader(fio, TRUE, tpx, TopOnlyOK, nullptr, nullptr);
     close_tpx(fio);
 }
 
@@ -3341,8 +3341,8 @@ int read_tpx(const char *fn,
     {
         copy_mat(state.box, box);
     }
-    state.x = NULL;
-    state.v = NULL;
+    state.x = nullptr;
+    state.v = nullptr;
     done_state(&state);
 
     return ePBC;

@@ -1327,7 +1327,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
 
         pcrd->f_scal = dr_tot[c]/((pull->group[pcrd->params.group[0]].invtm + pull->group[pcrd->params.group[1]].invtm)*dt*dt);
 
-        if (vir != NULL && pcrd->params.eGeom != epullgDIRPBC && bMaster)
+        if (vir != nullptr && pcrd->params.eGeom != epullgDIRPBC && bMaster)
         {
             double f_invr;
 
@@ -1365,7 +1365,7 @@ static void add_virial_coord_dr(tensor vir, const dvec dr, const dvec f)
 /* Adds the pull contribution to the virial */
 static void add_virial_coord(tensor vir, const pull_coord_work_t *pcrd)
 {
-    if (vir != NULL && pcrd->params.eGeom != epullgDIRPBC)
+    if (vir != nullptr && pcrd->params.eGeom != epullgDIRPBC)
     {
         /* Add the pull contribution for each distance vector to the virial. */
         add_virial_coord_dr(vir, pcrd->dr01, pcrd->f01);
@@ -1564,8 +1564,8 @@ void register_external_pull_potential(struct pull_t *pull,
                                       int            coord_index,
                                       const char    *provider)
 {
-    GMX_RELEASE_ASSERT(pull != NULL, "register_external_pull_potential called before init_pull");
-    GMX_RELEASE_ASSERT(provider != NULL, "register_external_pull_potential called with NULL as provider name");
+    GMX_RELEASE_ASSERT(pull != nullptr, "register_external_pull_potential called before init_pull");
+    GMX_RELEASE_ASSERT(provider != nullptr, "register_external_pull_potential called with NULL as provider name");
 
     if (coord_index < 0 || coord_index > pull->ncoord - 1)
     {
@@ -1581,7 +1581,7 @@ void register_external_pull_potential(struct pull_t *pull,
                   provider, coord_index + 1, epull_names[pcrd->params.eType], epull_names[epullEXTERNAL]);
     }
 
-    GMX_RELEASE_ASSERT(pcrd->params.externalPotentialProvider != NULL, "The external potential provider string for a pull coordinate is NULL");
+    GMX_RELEASE_ASSERT(pcrd->params.externalPotentialProvider != nullptr, "The external potential provider string for a pull coordinate is NULL");
 
     if (gmx_strcasecmp(provider, pcrd->params.externalPotentialProvider) != 0)
     {
@@ -1702,7 +1702,7 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
     {
         real dVdl = 0;
 
-        pull_calc_coms(cr, pull, md, pbc, t, x, NULL);
+        pull_calc_coms(cr, pull, md, pbc, t, x, nullptr);
 
         for (int c = 0; c < pull->ncoord; c++)
         {
@@ -1714,7 +1714,7 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
             }
 
             do_pull_pot_coord(pull, c, pbc, t, lambda,
-                              &V, MASTER(cr) ? vir : NULL, &dVdl);
+                              &V, MASTER(cr) ? vir : nullptr, &dVdl);
 
             /* Distribute the force over the atoms in the pulled groups */
             apply_forces_coord(pull, c, md, f);
@@ -1771,13 +1771,13 @@ static void make_local_pull_group(gmx_ga2la_t *ga2la,
             {
                 pg->nalloc_loc = over_alloc_dd(pg->nat_loc+1);
                 srenew(pg->ind_loc, pg->nalloc_loc);
-                if (pg->epgrppbc == epgrppbcCOS || pg->params.weight != NULL)
+                if (pg->epgrppbc == epgrppbcCOS || pg->params.weight != nullptr)
                 {
                     srenew(pg->weight_loc, pg->nalloc_loc);
                 }
             }
             pg->ind_loc[pg->nat_loc] = ii;
-            if (pg->params.weight != NULL)
+            if (pg->params.weight != nullptr)
             {
                 pg->weight_loc[pg->nat_loc] = pg->params.weight[i];
             }
@@ -1804,13 +1804,13 @@ void dd_make_local_pull_groups(t_commrec *cr, struct pull_t *pull, t_mdatoms *md
     }
     else
     {
-        ga2la = NULL;
+        ga2la = nullptr;
     }
 
     /* We always make the master node participate, such that it can do i/o
      * and to simplify MC type extensions people might have.
      */
-    bMustParticipate = (comm->bParticipateAll || dd == NULL || DDMASTER(dd));
+    bMustParticipate = (comm->bParticipateAll || dd == nullptr || DDMASTER(dd));
 
     for (g = 0; g < pull->ngroup; g++)
     {
@@ -1852,7 +1852,7 @@ void dd_make_local_pull_groups(t_commrec *cr, struct pull_t *pull, t_mdatoms *md
             (comm->bParticipate &&
              comm->must_count >= comm->setup_count - history_count);
 
-        if (debug && dd != NULL)
+        if (debug && dd != nullptr)
         {
             fprintf(debug, "Our DD rank (%3d) pull #atoms>0 or master: %d, will be part %d\n",
                     dd->rank, bMustParticipate, bWillParticipate);
@@ -1940,8 +1940,8 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
     {
         pg->nat_loc    = 0;
         pg->nalloc_loc = 0;
-        pg->ind_loc    = NULL;
-        pg->weight_loc = NULL;
+        pg->ind_loc    = nullptr;
+        pg->weight_loc = nullptr;
     }
     else
     {
@@ -2011,7 +2011,7 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
             }
             else
             {
-                if (groups->grpnr[egcTC] == NULL)
+                if (groups->grpnr[egcTC] == nullptr)
                 {
                     mbd = ir->delta_t/ir->opts.tau_t[0];
                 }
@@ -2105,8 +2105,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     /* Copy the pull parameters */
     pull->params       = *pull_params;
     /* Avoid pointer copies */
-    pull->params.group = NULL;
-    pull->params.coord = NULL;
+    pull->params.group = nullptr;
+    pull->params.coord = nullptr;
 
     pull->ncoord       = pull_params->ncoord;
     pull->ngroup       = pull_params->ngroup;
@@ -2395,7 +2395,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                     }
                     else
                     {
-                        if (pgrp->params.weight != NULL)
+                        if (pgrp->params.weight != nullptr)
                         {
                             gmx_fatal(FARGS, "Pull groups can not have relative weights and cosine weighting at same time");
                         }
@@ -2452,9 +2452,9 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
 
 #if GMX_MPI
     /* Use a sub-communicator when we have more than 32 ranks */
-    comm->bParticipateAll = (cr == NULL || !DOMAINDECOMP(cr) ||
+    comm->bParticipateAll = (cr == nullptr || !DOMAINDECOMP(cr) ||
                              cr->dd->nnodes <= 32 ||
-                             getenv("GMX_PULL_PARTICIPATE_ALL") != NULL);
+                             getenv("GMX_PULL_PARTICIPATE_ALL") != nullptr);
     /* This sub-commicator is not used with comm->bParticipateAll,
      * so we can always initialize it to NULL.
      */
@@ -2468,21 +2468,21 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     comm->setup_count     = 0;
     comm->must_count      = 0;
 
-    if (!comm->bParticipateAll && fplog != NULL)
+    if (!comm->bParticipateAll && fplog != nullptr)
     {
         fprintf(fplog, "Will use a sub-communicator for pull communication\n");
     }
 
-    comm->rbuf     = NULL;
-    comm->dbuf     = NULL;
-    comm->dbuf_cyl = NULL;
+    comm->rbuf     = nullptr;
+    comm->dbuf     = nullptr;
+    comm->dbuf_cyl = nullptr;
 
     /* We still need to initialize the PBC reference coordinates */
     pull->bSetPBCatoms = TRUE;
 
     /* Only do I/O when we are doing dynamics and if we are the MASTER */
-    pull->out_x = NULL;
-    pull->out_f = NULL;
+    pull->out_x = nullptr;
+    pull->out_f = nullptr;
     if (bOutFile)
     {
         /* Check for px and pf filename collision, if we are writing

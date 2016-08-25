@@ -85,8 +85,8 @@ t_commrec *init_commrec()
 #if GMX_LIB_MPI
     gmx_fill_commrec_from_mpi(cr);
 #else
-    cr->mpi_comm_mysim   = NULL;
-    cr->mpi_comm_mygroup = NULL;
+    cr->mpi_comm_mysim   = nullptr;
+    cr->mpi_comm_mygroup = nullptr;
     cr->nnodes           = 1;
     cr->sim_nodeid       = 0;
     cr->nodeid           = cr->sim_nodeid;
@@ -358,7 +358,7 @@ void gmx_sumd(int gmx_unused nr, double gmx_unused r[], const t_commrec gmx_unus
         {
             /* This is here because of the silly MPI specification
                 that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, NULL, nr, MPI_DOUBLE, MPI_SUM, 0, cr->nc.comm_intra);
+            MPI_Reduce(r, nullptr, nr, MPI_DOUBLE, MPI_SUM, 0, cr->nc.comm_intra);
         }
         MPI_Bcast(r, nr, MPI_DOUBLE, 0, cr->nc.comm_intra);
     }
@@ -421,7 +421,7 @@ void gmx_sumf(int gmx_unused nr, float gmx_unused r[], const t_commrec gmx_unuse
         {
             /* This is here because of the silly MPI specification
                 that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, NULL, nr, MPI_FLOAT, MPI_SUM, 0, cr->nc.comm_intra);
+            MPI_Reduce(r, nullptr, nr, MPI_FLOAT, MPI_SUM, 0, cr->nc.comm_intra);
         }
         MPI_Bcast(r, nr, MPI_FLOAT, 0, cr->nc.comm_intra);
     }
@@ -481,7 +481,7 @@ void gmx_sumi(int gmx_unused nr, int gmx_unused r[], const t_commrec gmx_unused 
         {
             /* This is here because of the silly MPI specification
                 that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, NULL, nr, MPI_INT, MPI_SUM, 0, cr->nc.comm_intra);
+            MPI_Reduce(r, nullptr, nr, MPI_INT, MPI_SUM, 0, cr->nc.comm_intra);
         }
         MPI_Bcast(r, nr, MPI_INT, 0, cr->nc.comm_intra);
     }
@@ -541,7 +541,7 @@ void gmx_sumli(int gmx_unused nr, gmx_int64_t gmx_unused r[], const t_commrec gm
         {
             /* This is here because of the silly MPI specification
                 that MPI_IN_PLACE should be put in sendbuf instead of recvbuf */
-            MPI_Reduce(r, NULL, nr, MPI_INT64_T, MPI_SUM, 0, cr->nc.comm_intra);
+            MPI_Reduce(r, nullptr, nr, MPI_INT64_T, MPI_SUM, 0, cr->nc.comm_intra);
         }
         MPI_Bcast(r, nr, MPI_INT64_T, 0, cr->nc.comm_intra);
     }
@@ -704,7 +704,7 @@ void gmx_sumli_sim(int gmx_unused nr, gmx_int64_t gmx_unused r[], const gmx_mult
 const char *opt2fn_master(const char *opt, int nfile, const t_filenm fnm[],
                           t_commrec *cr)
 {
-    return SIMMASTER(cr) ? opt2fn(opt, nfile, fnm) : NULL;
+    return SIMMASTER(cr) ? opt2fn(opt, nfile, fnm) : nullptr;
 }
 
 void gmx_fatal_collective(int f_errno, const char *file, int line,

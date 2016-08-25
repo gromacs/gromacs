@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,7 +71,7 @@ class PositionCalculationTest : public ::testing::Test
 {
     public:
         PositionCalculationTest();
-        ~PositionCalculationTest();
+        ~PositionCalculationTest() override;
 
         void generateCoordinates();
 
@@ -201,7 +201,7 @@ PositionCalculationTest::initPositions(gmx_ana_poscalc_t *pc, const char *name)
     posList_.reserve(posList_.size() + 1);
     PositionPointer p(new gmx_ana_pos_t());
     gmx_ana_pos_t  *result = p.get();
-    posList_.push_back(PositionTest(std::move(p), pc, name));
+    posList_.emplace_back(std::move(p), pc, name);
     gmx_ana_poscalc_init_pos(pc, result);
     return result;
 }
@@ -209,7 +209,7 @@ PositionCalculationTest::initPositions(gmx_ana_poscalc_t *pc, const char *name)
 void PositionCalculationTest::checkInitialized()
 {
     gmx::test::TestReferenceChecker  compound(
-            checker_.checkCompound("InitializedPositions", NULL));
+            checker_.checkCompound("InitializedPositions", nullptr));
     PositionTestList::const_iterator pi;
     for (pi = posList_.begin(); pi != posList_.end(); ++pi)
     {
@@ -224,7 +224,7 @@ void PositionCalculationTest::updateAndCheck(
     gmx_ana_index_t g;
     g.isize = atoms.size();
     g.index = const_cast<int *>(atoms.data());
-    gmx_ana_poscalc_update(pc, p, &g, topManager_.frame(), NULL);
+    gmx_ana_poscalc_update(pc, p, &g, topManager_.frame(), nullptr);
     checkPositions(checker, name, p, true);
 }
 
@@ -245,7 +245,7 @@ void PositionCalculationTest::testSingleStatic(
     gmx_ana_poscalc_t *pc = createCalculation(type, flags);
     EXPECT_EQ(bExpectTop, gmx_ana_poscalc_requires_top(pc));
     setMaximumGroup(pc, atoms);
-    gmx_ana_pos_t *p = initPositions(pc, NULL);
+    gmx_ana_pos_t *p = initPositions(pc, nullptr);
     checkInitialized();
     {
         generateCoordinates();
@@ -257,7 +257,7 @@ void PositionCalculationTest::testSingleStatic(
         pcc_.initFrame(frame);
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
-        updateAndCheck(pc, p, atoms, &frameCompound, NULL);
+        updateAndCheck(pc, p, atoms, &frameCompound, nullptr);
     }
 }
 
@@ -270,7 +270,7 @@ void PositionCalculationTest::testSingleDynamic(
     gmx_ana_poscalc_t *pc = createCalculation(type, flags | POS_DYNAMIC);
     EXPECT_EQ(bExpectTop, gmx_ana_poscalc_requires_top(pc));
     setMaximumGroup(pc, initAtoms);
-    gmx_ana_pos_t *p = initPositions(pc, NULL);
+    gmx_ana_pos_t *p = initPositions(pc, nullptr);
     checkInitialized();
     {
         generateCoordinates();
@@ -282,7 +282,7 @@ void PositionCalculationTest::testSingleDynamic(
         pcc_.initFrame(topManager_.frame());
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
-        updateAndCheck(pc, p, evalAtoms, &frameCompound, NULL);
+        updateAndCheck(pc, p, evalAtoms, &frameCompound, nullptr);
     }
 }
 
@@ -325,7 +325,7 @@ void PositionCalculationTest::checkPositions(
     for (int i = 0; i < p->count(); ++i)
     {
         gmx::test::TestReferenceChecker posCompound(
-                compound.checkCompound("Position", NULL));
+                compound.checkCompound("Position", nullptr));
         posCompound.checkSequence(&p->m.mapb.a[p->m.mapb.index[i]],
                                   &p->m.mapb.a[p->m.mapb.index[i+1]],
                                   "Atoms");
@@ -334,11 +334,11 @@ void PositionCalculationTest::checkPositions(
         {
             posCompound.checkVector(p->x[i], "Coordinates");
         }
-        if (bCoordinates && p->v != NULL)
+        if (bCoordinates && p->v != nullptr)
         {
             posCompound.checkVector(p->v[i], "Velocity");
         }
-        if (bCoordinates && p->f != NULL)
+        if (bCoordinates && p->f != nullptr)
         {
             posCompound.checkVector(p->f[i], "Force");
         }

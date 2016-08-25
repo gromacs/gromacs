@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,7 +96,7 @@ class AnalysisData : public AbstractAnalysisData
          * \throws std::bad_alloc if out of memory.
          */
         AnalysisData();
-        virtual ~AnalysisData();
+        ~AnalysisData() override;
 
         /*! \brief
          * Sets the number of data sets.
@@ -140,7 +140,7 @@ class AnalysisData : public AbstractAnalysisData
          */
         void setMultipoint(bool bMultipoint);
 
-        virtual int frameCount() const;
+        int frameCount() const override;
 
         /*! \brief
          * Creates a handle for adding data.
@@ -194,8 +194,8 @@ class AnalysisData : public AbstractAnalysisData
         void finishData(AnalysisDataHandle handle);
 
     private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
+        AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
+        bool requestStorageInternal(int nframes) override;
 
         class Impl;
 
@@ -260,7 +260,7 @@ class AnalysisDataHandle
         AnalysisDataHandle();
 
         //! Returns whether this data handle is valid.
-        bool isValid() const { return impl_ != NULL; }
+        bool isValid() const { return impl_ != nullptr; }
 
         /*! \brief
          * Start data for a new frame.

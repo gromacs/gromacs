@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@ using gmx::RVec;
 TEST(RVecTest, CanBeStoredInVector)
 {
     std::vector<RVec> v;
-    v.push_back(RVec(1, 2, 3));
+    v.emplace_back(1, 2, 3);
     v.resize(2);
     EXPECT_EQ(1, v[0][XX]);
     EXPECT_EQ(2, v[0][YY]);
@@ -72,7 +72,7 @@ TEST(RVecTest, ConvertsImplicitlyFrom_rvec)
 {
     std::vector<RVec> v;
     rvec              x = { 1, 2, 3 };
-    v.push_back(x);
+    v.emplace_back(x);
     EXPECT_EQ(1, v[0][XX]);
     EXPECT_EQ(2, v[0][YY]);
     EXPECT_EQ(3, v[0][ZZ]);
@@ -81,7 +81,7 @@ TEST(RVecTest, ConvertsImplicitlyFrom_rvec)
 TEST(RVecTest, ConvertsImplicitlyTo_rvec)
 {
     std::vector<RVec> v;
-    v.push_back(RVec(1, 2, 3));
+    v.emplace_back(1, 2, 3);
     rvec              x;
     copy_rvec(v[0], x);
     EXPECT_EQ(1, x[XX]);
@@ -92,7 +92,7 @@ TEST(RVecTest, ConvertsImplicitlyTo_rvec)
 TEST(RVecTest, WorksAsMutable_rvec)
 {
     std::vector<RVec> v;
-    v.push_back(RVec(1, 2, 3));
+    v.emplace_back(1, 2, 3);
     rvec              x = {2, 3, 4};
     copy_rvec(x, v[0]);
     EXPECT_EQ(2, v[0][XX]);
@@ -103,8 +103,8 @@ TEST(RVecTest, WorksAsMutable_rvec)
 TEST(RVecTest, WorksAs_rvec_Array)
 {
     std::vector<RVec> v;
-    v.push_back(RVec(1, 2, 3));
-    v.push_back(RVec(2, 3, 4));
+    v.emplace_back(1, 2, 3);
+    v.emplace_back(2, 3, 4);
     const rvec *r = as_rvec_array(v.data());
     EXPECT_EQ(1, r[0][XX]);
     EXPECT_EQ(2, r[0][YY]);

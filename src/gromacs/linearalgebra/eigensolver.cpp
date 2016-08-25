@@ -76,7 +76,7 @@ eigensolver(real *   a,
     /* Make jobz point to the character "V" if eigenvectors
      * should be calculated, otherwise "N" (only eigenvalues).
      */
-    jobz = (eigenvectors != NULL) ? "V" : "N";
+    jobz = (eigenvectors != nullptr) ? "V" : "N";
 
     /* allocate lapack stuff */
     snew(isuppz, 2*n);
@@ -293,7 +293,7 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     }
 #endif
 
-    if (eigenvectors != NULL)
+    if (eigenvectors != nullptr)
     {
         dovec = 1;
     }
@@ -378,7 +378,7 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
                               workd, workl, &lworkl, &info);
 #else
     F77_FUNC(sseupd, SSEUPD) (&dovec, "A", select, eigenvalues, eigenvectors,
-                              &n, NULL, "I", &n, "SA", &neig, &abstol,
+                              &n, nullptr, "I", &n, "SA", &neig, &abstol,
                               resid, &ncv, v, &n, iparam, ipntr,
                               workd, workl, &lworkl, &info);
 #endif

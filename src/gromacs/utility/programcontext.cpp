@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,14 +67,14 @@ class DefaultProgramContext : public IProgramContext
     public:
         DefaultProgramContext() {}
 
-        virtual const char *programName() const { return "GROMACS"; }
-        virtual const char *displayName() const { return "GROMACS"; }
-        virtual const char *fullBinaryPath() const { return ""; }
-        virtual InstallationPrefixInfo installationPrefix() const
+        const char *programName() const override { return "GROMACS"; }
+        const char *displayName() const override { return "GROMACS"; }
+        const char *fullBinaryPath() const override { return ""; }
+        InstallationPrefixInfo installationPrefix() const override
         {
             return InstallationPrefixInfo("", false);
         }
-        virtual const char *commandLine() const { return ""; }
+        const char *commandLine() const override { return ""; }
 };
 
 //! Global program info; stores the object set with setProgramContext().
@@ -88,7 +88,7 @@ const DefaultProgramContext    g_defaultContext;
 
 const IProgramContext &getProgramContext()
 {
-    if (g_programContext != NULL)
+    if (g_programContext != nullptr)
     {
         return *g_programContext;
     }

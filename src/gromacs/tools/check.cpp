@@ -134,7 +134,7 @@ static void comp_tpx(const char *fn1, const char *fn2,
              * but it might be useful to keep t_topology comparison as an option.
              */
             top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
-            cmp_top(stdout, &top[0], NULL, ftol, abstol);
+            cmp_top(stdout, &top[0], nullptr, ftol, abstol);
         }
     }
 }
@@ -386,7 +386,7 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
     gmx_bool         bShowTimestep = TRUE, newline = FALSE;
     t_trxstatus     *status;
     gmx_mtop_t       mtop;
-    gmx_localtop_t  *top = NULL;
+    gmx_localtop_t  *top = nullptr;
     t_state          state;
     t_inputrec      *ir;
 
@@ -751,7 +751,7 @@ void chk_enx(const char *fn)
 {
     int            nre, fnr;
     ener_file_t    in;
-    gmx_enxnm_t   *enm = NULL;
+    gmx_enxnm_t   *enm = nullptr;
     t_enxframe    *fr;
     gmx_bool       bShowTStep;
     gmx_bool       timeSet;
@@ -840,18 +840,18 @@ int gmx_check(int argc, char *argv[])
         "consisting of a rough outline for a methods section for a paper."
     };
     t_filenm          fnm[] = {
-        { efTRX, "-f",  NULL, ffOPTRD },
-        { efTRX, "-f2",  NULL, ffOPTRD },
+        { efTRX, "-f",  nullptr, ffOPTRD },
+        { efTRX, "-f2",  nullptr, ffOPTRD },
         { efTPR, "-s1", "top1", ffOPTRD },
         { efTPR, "-s2", "top2", ffOPTRD },
-        { efTPS, "-c",  NULL, ffOPTRD },
-        { efEDR, "-e",  NULL, ffOPTRD },
+        { efTPS, "-c",  nullptr, ffOPTRD },
+        { efEDR, "-e",  nullptr, ffOPTRD },
         { efEDR, "-e2", "ener2", ffOPTRD },
-        { efNDX, "-n",  NULL, ffOPTRD },
-        { efTEX, "-m",  NULL, ffOPTWR }
+        { efNDX, "-n",  nullptr, ffOPTRD },
+        { efTEX, "-m",  nullptr, ffOPTWR }
     };
 #define NFILE asize(fnm)
-    const char       *fn1 = NULL, *fn2 = NULL, *tex = NULL;
+    const char       *fn1 = nullptr, *fn2 = nullptr, *tex = nullptr;
 
     gmx_output_env_t *oenv;
     static real       vdw_fac  = 0.8;
@@ -861,7 +861,7 @@ int gmx_check(int argc, char *argv[])
     static real       ftol     = 0.001;
     static real       abstol   = 0.001;
     static gmx_bool   bCompAB  = FALSE;
-    static char      *lastener = NULL;
+    static char      *lastener = nullptr;
     static t_pargs    pa[]     = {
         { "-vdwfac", FALSE, etREAL, {&vdw_fac},
           "Fraction of sum of VdW radii used as warning cutoff" },
@@ -882,7 +882,7 @@ int gmx_check(int argc, char *argv[])
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -909,11 +909,11 @@ int gmx_check(int argc, char *argv[])
     {
         if (bCompAB)
         {
-            if (fn1 == NULL)
+            if (fn1 == nullptr)
             {
                 gmx_fatal(FARGS, "With -ab you need to set the -s1 option");
             }
-            fn2 = NULL;
+            fn2 = nullptr;
         }
         comp_tpx(fn1, fn2, bRMSD, ftol, abstol);
     }

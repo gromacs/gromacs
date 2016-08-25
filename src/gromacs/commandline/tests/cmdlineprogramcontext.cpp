@@ -81,11 +81,11 @@ class TestExecutableEnvironment : public gmx::IExecutableEnvironment
         {
         }
 
-        virtual std::string getWorkingDirectory() const
+        std::string getWorkingDirectory() const override
         {
             return workingDirectory_;
         }
-        virtual std::vector<std::string> getExecutablePaths() const
+        std::vector<std::string> getExecutablePaths() const override
         {
             return path_;
         }
@@ -114,7 +114,7 @@ class CommandLineProgramContextTest : public ::testing::Test
 
         void testBinaryPathSearch(const char *argv0)
         {
-            ASSERT_TRUE(env_.get() != NULL);
+            ASSERT_TRUE(env_.get() != nullptr);
             gmx::CommandLineProgramContext  info(1, &argv0, move(env_));
             EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
         }
@@ -146,7 +146,7 @@ TEST_F(CommandLineProgramContextTest, FindsBinaryFromPath)
 TEST_F(CommandLineProgramContextTest, FindsBinaryFromCurrentDirectory)
 {
     env_->workingDirectory_ = Path::join(env_->getWorkingDirectory(), "bin");
-    env_->path_.push_back("");
+    env_->path_.emplace_back("");
     testBinaryPathSearch("test-exe");
 }
 

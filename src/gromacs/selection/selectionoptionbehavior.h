@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -156,7 +156,7 @@ class SelectionOptionBehavior : public IOptionsBehavior
          */
         SelectionOptionBehavior(SelectionCollection *selections,
                                 ITopologyProvider   *topologyProvider);
-        ~SelectionOptionBehavior();
+        ~SelectionOptionBehavior() override;
 
         /*! \brief
          * Add common options for controlling selections.
@@ -167,9 +167,9 @@ class SelectionOptionBehavior : public IOptionsBehavior
         void initOptions(IOptionsContainer *options);
 
         // From IOptionsBehavior
-        virtual void initBehavior(Options *options);
-        virtual void optionsFinishing(Options * /*options*/) {}
-        virtual void optionsFinished();
+        void initBehavior(Options *options) override;
+        void optionsFinishing(Options * /*options*/) override {}
+        void optionsFinished() override;
 
     private:
         class Impl;

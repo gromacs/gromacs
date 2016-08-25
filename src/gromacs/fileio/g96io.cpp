@@ -234,7 +234,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr,
         {
             fr->bTitle = (std::strcmp(line, "TITLE") == 0);
         }
-        if (fr->title == NULL)
+        if (fr->title == nullptr)
         {
             fgets2(line, STRLEN, fp);
             fr->title = gmx_strdup(line);
@@ -267,7 +267,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr,
                 fr->bTime = bTime;
                 do
                 {
-                    bFinished = (fgets2(line, STRLEN, fp) == NULL);
+                    bFinished = (fgets2(line, STRLEN, fp) == nullptr);
                 }
                 while (!bFinished && (line[0] == '#'));
                 sscanf(line, "%15" GMX_SCNd64 "%15lf", &(fr->step), &db1);

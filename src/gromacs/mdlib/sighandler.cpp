@@ -117,7 +117,7 @@ static void gmx_signal(int signum)
     act.sa_handler = signal_handler;
     sigemptyset(&act.sa_mask);
     act.sa_flags = SA_RESTART;
-    sigaction(signum, &act, NULL);
+    sigaction(signum, &act, nullptr);
 #else
     signal(signum, signal_handler);
 #endif
@@ -125,7 +125,7 @@ static void gmx_signal(int signum)
 
 void signal_handler_install(void)
 {
-    if (getenv("GMX_NO_TERM") == NULL)
+    if (getenv("GMX_NO_TERM") == nullptr)
     {
         if (debug)
         {
@@ -133,7 +133,7 @@ void signal_handler_install(void)
         }
         gmx_signal(SIGTERM);
     }
-    if (getenv("GMX_NO_INT") == NULL)
+    if (getenv("GMX_NO_INT") == nullptr)
     {
         if (debug)
         {
@@ -142,7 +142,7 @@ void signal_handler_install(void)
         gmx_signal(SIGINT);
     }
 #if HAVE_SIGUSR1
-    if (getenv("GMX_NO_USR1") == NULL)
+    if (getenv("GMX_NO_USR1") == nullptr)
     {
         if (debug)
         {

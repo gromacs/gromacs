@@ -201,14 +201,14 @@ gmx_settledata_t settle_init(const gmx_mtop_t *mtop)
     real dHH = mtop->ffparams.iparams[settle_type].settle.dhh;
     settleparam_init(&settled->mass1, 1.0, 1.0, 1.0, 1.0, dOH, dHH);
 
-    settled->ow1    = NULL;
-    settled->hw2    = NULL;
-    settled->hw3    = NULL;
-    settled->virfac = NULL;
+    settled->ow1    = nullptr;
+    settled->hw2    = nullptr;
+    settled->hw3    = nullptr;
+    settled->virfac = nullptr;
     settled->nalloc = 0;
 
     /* Without SIMD configured, this bool is not used */
-    settled->bUseSimd = (getenv("GMX_DISABLE_SIMD_KERNELS") == NULL);
+    settled->bUseSimd = (getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr);
 
     return settled;
 }
@@ -332,7 +332,7 @@ void settle_proj(gmx_settledata_t settled, int econq,
         hw2 = iatoms[i*nral1 + 2];
         hw3 = iatoms[i*nral1 + 3];
 
-        if (pbc == NULL)
+        if (pbc == nullptr)
         {
             rvec_sub(x[ow1], x[hw2], roh2);
             rvec_sub(x[ow1], x[hw3], roh3);
@@ -761,7 +761,7 @@ static void settleTemplateWrapper(gmx_settledata_t settled,
     int settleStart    = ((numSettlePacks* thread      + nthread - 1)/nthread)*packSize;
     int settleEnd      = ((numSettlePacks*(thread + 1) + nthread - 1)/nthread)*packSize;
 
-    if (v != NULL)
+    if (v != nullptr)
     {
         if (!bCalcVirial)
         {
@@ -773,7 +773,7 @@ static void settleTemplateWrapper(gmx_settledata_t settled,
                 pbc,
                 x, xprime,
                 invdt, v,
-                NULL,
+                nullptr,
                 bErrorHasOccurred);
         }
         else
@@ -802,7 +802,7 @@ static void settleTemplateWrapper(gmx_settledata_t settled,
                 pbc,
                 x, xprime,
                 invdt, v,
-                NULL,
+                nullptr,
                 bErrorHasOccurred);
         }
         else
@@ -853,13 +853,13 @@ void csettle(gmx_settledata_t settled,
         t_pbc        pbcNo;
         const t_pbc *pbcNonNull;
 
-        if (pbc != NULL)
+        if (pbc != nullptr)
         {
             pbcNonNull = pbc;
         }
         else
         {
-            set_pbc(&pbcNo, epbcNONE, NULL);
+            set_pbc(&pbcNo, epbcNONE, nullptr);
             pbcNonNull = &pbcNo;
         }
 

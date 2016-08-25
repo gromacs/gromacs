@@ -75,13 +75,13 @@ class OptionsListWriter : public OptionsVisitor
     public:
         const std::string &optionList() const { return optionList_; }
 
-        virtual void visitSection(const OptionSectionInfo &section)
+        void visitSection(const OptionSectionInfo &section) override
         {
             OptionsIterator iterator(section);
             iterator.acceptSections(this);
             iterator.acceptOptions(this);
         }
-        virtual void visitOption(const OptionInfo &option)
+        void visitOption(const OptionInfo &option) override
         {
             if (option.isHidden())
             {
@@ -94,7 +94,7 @@ class OptionsListWriter : public OptionsVisitor
             optionList_.append("-");
             const BooleanOptionInfo *booleanOption
                 = option.toType<BooleanOptionInfo>();
-            if (booleanOption != NULL && booleanOption->defaultValue())
+            if (booleanOption != nullptr && booleanOption->defaultValue())
             {
                 optionList_.append("no");
             }
@@ -110,13 +110,13 @@ class OptionCompletionWriter : public OptionsVisitor
     public:
         explicit OptionCompletionWriter(TextWriter *out) : out_(*out) {}
 
-        virtual void visitSection(const OptionSectionInfo &section)
+        void visitSection(const OptionSectionInfo &section) override
         {
             OptionsIterator iterator(section);
             iterator.acceptSections(this);
             iterator.acceptOptions(this);
         }
-        virtual void visitOption(const OptionInfo &option);
+        void visitOption(const OptionInfo &option) override;
 
     private:
         void writeOptionCompletion(const OptionInfo  &option,
@@ -132,7 +132,7 @@ void OptionCompletionWriter::visitOption(const OptionInfo &option)
         return;
     }
     const FileNameOptionInfo *fileOption = option.toType<FileNameOptionInfo>();
-    if (fileOption != NULL)
+    if (fileOption != nullptr)
     {
         if (fileOption->isDirectoryOption())
         {
@@ -157,7 +157,7 @@ void OptionCompletionWriter::visitOption(const OptionInfo &option)
         return;
     }
     const StringOptionInfo *stringOption = option.toType<StringOptionInfo>();
-    if (stringOption != NULL && stringOption->isEnumerated())
+    if (stringOption != nullptr && stringOption->isEnumerated())
     {
         std::string completion("compgen -S ' ' -W $'");
         completion.append(joinStrings(stringOption->allowedValues(), "\\n"));
@@ -211,8 +211,7 @@ ShellCompletionWriter::ShellCompletionWriter(const std::string     &binaryName,
 }
 
 ShellCompletionWriter::~ShellCompletionWriter()
-{
-}
+    = default;
 
 TextWriter &ShellCompletionWriter::outputWriter()
 {

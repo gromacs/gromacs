@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -162,8 +162,7 @@ TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData(
 
 
 TrajectoryAnalysisModuleData::~TrajectoryAnalysisModuleData()
-{
-}
+    = default;
 
 
 void TrajectoryAnalysisModuleData::finishDataHandles()
@@ -242,7 +241,7 @@ class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
                                           const AnalysisDataParallelOptions &opt,
                                           const SelectionCollection         &selections);
 
-        virtual void finish();
+        void finish() override;
 };
 
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
@@ -274,8 +273,7 @@ TrajectoryAnalysisModule::TrajectoryAnalysisModule()
 
 
 TrajectoryAnalysisModule::~TrajectoryAnalysisModule()
-{
-}
+    = default;
 
 
 void TrajectoryAnalysisModule::optionsFinished(
@@ -345,12 +343,12 @@ AbstractAnalysisData &TrajectoryAnalysisModule::datasetFromName(const char *name
 void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
                                                     const char           *name)
 {
-    GMX_RELEASE_ASSERT(data != NULL, "Attempting to register NULL data");
+    GMX_RELEASE_ASSERT(data != nullptr, "Attempting to register NULL data");
     // TODO: Strong exception safety should be possible to implement.
     GMX_RELEASE_ASSERT(impl_->datasets_.find(name) == impl_->datasets_.end(),
                        "Duplicate data set name registered");
     impl_->datasets_[name] = data;
-    impl_->datasetNames_.push_back(name);
+    impl_->datasetNames_.emplace_back(name);
 }
 
 

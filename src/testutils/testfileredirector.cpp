@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,8 +67,7 @@ TestFileInputRedirector::TestFileInputRedirector()
 }
 
 TestFileInputRedirector::~TestFileInputRedirector()
-{
-}
+    = default;
 
 void TestFileInputRedirector::addExistingFile(const char *filename)
 {
@@ -80,7 +79,7 @@ bool TestFileInputRedirector::fileExists(const char            *filename,
 {
     if (existingFiles_.count(filename) == 0)
     {
-        File::NotFoundInfo info(filename, "File not present in test", NULL, false, 0);
+        File::NotFoundInfo info(filename, "File not present in test", nullptr, false, 0);
         onNotFound(info);
         return false;
     }
@@ -111,15 +110,14 @@ TestFileOutputRedirector::TestFileOutputRedirector()
 }
 
 TestFileOutputRedirector::~TestFileOutputRedirector()
-{
-}
+    = default;
 
 TextOutputStream &TestFileOutputRedirector::standardOutput()
 {
     if (!impl_->stdoutStream_)
     {
         impl_->stdoutStream_.reset(new StringOutputStream);
-        impl_->fileList_.push_back(Impl::FileListEntry("<stdout>", impl_->stdoutStream_));
+        impl_->fileList_.emplace_back("<stdout>", impl_->stdoutStream_);
     }
     return *impl_->stdoutStream_;
 }
@@ -128,7 +126,7 @@ TextOutputStreamPointer
 TestFileOutputRedirector::openTextOutputFile(const char *filename)
 {
     Impl::StringStreamPointer stream(new StringOutputStream);
-    impl_->fileList_.push_back(Impl::FileListEntry(filename, stream));
+    impl_->fileList_.emplace_back(filename, stream);
     return stream;
 }
 

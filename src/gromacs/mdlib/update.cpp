@@ -180,7 +180,7 @@ static void do_update_md(int start, int nrend, double dt,
             }
         }
     }
-    else if (cFREEZE != NULL ||
+    else if (cFREEZE != nullptr ||
              nFreeze[0][XX] || nFreeze[0][YY] || nFreeze[0][ZZ] ||
              bNEMD)
     {
@@ -559,7 +559,7 @@ gmx_update_t *init_update(const t_inputrec *ir)
 
     update_temperature_constants(upd, ir);
 
-    upd->xp        = NULL;
+    upd->xp        = nullptr;
     upd->xp_nalloc = 0;
 
     return upd;
@@ -1340,21 +1340,21 @@ void update_constraints(FILE             *fplog,
         wallcycle_start(wcycle, ewcCONSTR);
         if (EI_VV(inputrec->eI) && bFirstHalf)
         {
-            constrain(NULL, bLog, bEner, constr, idef,
+            constrain(nullptr, bLog, bEner, constr, idef,
                       inputrec, cr, step, 1, 1.0, md,
                       state->x, state->v, state->v,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc);
+                      nullptr, bCalcVir ? &vir_con : nullptr, nrnb, econqVeloc);
         }
         else
         {
-            constrain(NULL, bLog, bEner, constr, idef,
+            constrain(nullptr, bLog, bEner, constr, idef,
                       inputrec, cr, step, 1, 1.0, md,
-                      state->x, upd->xp, NULL,
+                      state->x, upd->xp, nullptr,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      state->v, bCalcVir ? &vir_con : NULL, nrnb, econqCoord);
+                      state->v, bCalcVir ? &vir_con : nullptr, nrnb, econqCoord);
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
@@ -1400,7 +1400,7 @@ void update_constraints(FILE             *fplog,
                               state->x, upd->xp, state->v, force,
                               bDoConstr, FALSE,
                               step, inputrec->ld_seed,
-                              DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                              DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
@@ -1412,12 +1412,12 @@ void update_constraints(FILE             *fplog,
             /* Constrain the coordinates upd->xp for half a time step */
             wallcycle_start(wcycle, ewcCONSTR);
 
-            constrain(NULL, bLog, bEner, constr, idef,
+            constrain(nullptr, bLog, bEner, constr, idef,
                       inputrec, cr, step, 1, 0.5, md,
-                      state->x, upd->xp, NULL,
+                      state->x, upd->xp, nullptr,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      state->v, NULL, nrnb, econqCoord);
+                      state->v, nullptr, nrnb, econqCoord);
 
             wallcycle_stop(wcycle, ewcCONSTR);
         }
@@ -1435,7 +1435,7 @@ void update_constraints(FILE             *fplog,
          */
         wallcycle_start_nocount(wcycle, ewcUPDATE);
 
-        if (md->cFREEZE != NULL && constr != NULL)
+        if (md->cFREEZE != nullptr && constr != nullptr)
         {
             /* If we have atoms that are frozen along some, but not all
              * dimensions, the constraints will have moved them also along
@@ -1618,7 +1618,7 @@ void update_coords(FILE             *fplog,
     int               start, homenr, nrend;
     int               nth, th;
 
-    bDoConstr = (NULL != constr);
+    bDoConstr = (nullptr != constr);
 
     /* Running the velocity half does nothing except for velocity verlet */
     if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
@@ -1699,7 +1699,7 @@ void update_coords(FILE             *fplog,
                                   md->cFREEZE, md->cACC, md->cTC,
                                   state->x, upd->xp, state->v, f,
                                   bDoConstr, TRUE,
-                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
                     break;
                 case (eiBD):
                     do_update_bd(start_th, end_th, dt,
@@ -1708,7 +1708,7 @@ void update_coords(FILE             *fplog,
                                  state->x, upd->xp, state->v, f,
                                  inputrec->bd_fric,
                                  upd->sd->bd_rf,
-                                 step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+                                 step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
                     break;
                 case (eiVV):
                 case (eiVVAK):
@@ -1804,7 +1804,7 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, co
 
     real rate = (ir->delta_t)/ir->opts.tau_t[0];
 
-    if (ir->etc == etcANDERSEN && constr != NULL)
+    if (ir->etc == etcANDERSEN && constr != nullptr)
     {
         /* Currently, Andersen thermostat does not support constrained
            systems. Functionality exists in the andersen_tcoupl

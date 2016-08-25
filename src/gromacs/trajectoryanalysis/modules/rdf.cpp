@@ -116,22 +116,22 @@ class Rdf : public TrajectoryAnalysisModule
     public:
         Rdf();
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void optionsFinished(TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
-        virtual void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
-                                         const t_trxframe                 &fr);
+        void initOptions(IOptionsContainer          *options,
+                         TrajectoryAnalysisSettings *settings) override;
+        void optionsFinished(TrajectoryAnalysisSettings *settings) override;
+        void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                          const TopologyInformation        &top) override;
+        void initAfterFirstFrame(const TrajectoryAnalysisSettings &settings,
+                                 const t_trxframe                 &fr) override;
 
-        virtual TrajectoryAnalysisModuleDataPointer startFrames(
+        TrajectoryAnalysisModuleDataPointer startFrames(
             const AnalysisDataParallelOptions &opt,
-            const SelectionCollection         &selections);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
+            const SelectionCollection         &selections) override;
+        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                          TrajectoryAnalysisModuleData *pdata) override;
 
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+        void finishAnalysis(int nframes) override;
+        void writeOutput() override;
 
     private:
         std::string                               fnRdf_;
@@ -437,7 +437,7 @@ class RdfModuleData : public TrajectoryAnalysisModuleData
             surfaceDist2_.resize(surfaceGroupCount);
         }
 
-        virtual void finish() { finishDataHandles(); }
+        void finish() override { finishDataHandles(); }
 
         /*! \brief
          * Minimum distance to each surface group.

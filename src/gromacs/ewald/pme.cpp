@@ -154,7 +154,7 @@ int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata)
 {
     int i;
 
-    if (NULL != log)
+    if (nullptr != log)
     {
         fprintf(log, "Destroying PME data structures.\n");
     }
@@ -177,7 +177,7 @@ int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata)
     pme_free_all_work(&(*pmedata)->solve_work, (*pmedata)->nthread);
 
     sfree(*pmedata);
-    *pmedata = NULL;
+    *pmedata = nullptr;
 
     return 0;
 }
@@ -446,7 +446,7 @@ void gmx_pme_check_restrictions(int pme_order,
                   nkx/(double)nnodes_major, pme_order);
     }
 
-    if (bValidSettings != NULL)
+    if (bValidSettings != nullptr)
     {
         *bValidSettings = TRUE;
     }
@@ -471,7 +471,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
                  gmx_bool           bReproducible,
                  int                nthread)
 {
-    struct gmx_pme_t *pme = NULL;
+    struct gmx_pme_t *pme = nullptr;
 
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
@@ -482,8 +482,8 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     }
     snew(pme, 1);
 
-    pme->sum_qgrid_tmp       = NULL;
-    pme->sum_qgrid_dd_tmp    = NULL;
+    pme->sum_qgrid_tmp       = nullptr;
+    pme->sum_qgrid_dd_tmp    = nullptr;
     pme->buf_nalloc          = 0;
 
     pme->nnodes              = 1;
@@ -597,7 +597,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     pme->nkx         = ir->nkx;
     pme->nky         = ir->nky;
     pme->nkz         = ir->nkz;
-    pme->bP3M        = (ir->coulombtype == eelP3M_AD || getenv("GMX_PME_P3M") != NULL);
+    pme->bP3M        = (ir->coulombtype == eelP3M_AD || getenv("GMX_PME_P3M") != nullptr);
     pme->pme_order   = ir->pme_order;
 
     /* Always constant electrostatics coefficients */
@@ -613,7 +613,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
                                pme->nnodes_minor,
                                pme->bUseThreads,
                                TRUE,
-                               NULL);
+                               nullptr);
 
     if (pme->nnodes > 1)
     {
@@ -780,8 +780,8 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
         pme_realloc_atomcomm_things(&pme->atc[0]);
     }
 
-    pme->lb_buf1       = NULL;
-    pme->lb_buf2       = NULL;
+    pme->lb_buf1       = nullptr;
+    pme->lb_buf2       = nullptr;
     pme->lb_buf_nalloc = 0;
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
@@ -844,7 +844,7 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
 
     atc            = &pme->atc_energy;
     atc->nthread   = 1;
-    if (atc->spline == NULL)
+    if (atc->spline == nullptr)
     {
         snew(atc->spline, atc->nthread);
     }
@@ -860,7 +860,7 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
     grid = &pme->pmegrid[PME_GRID_QA];
 
     /* Only calculate the spline coefficients, don't actually spread */
-    spread_on_grid(pme, atc, NULL, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA);
+    spread_on_grid(pme, atc, nullptr, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA);
 
     *V = gather_energy_bsplines(pme, grid->grid.grid, atc);
 }
@@ -910,11 +910,11 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 {
     int                  d, i, j, npme, grid_index, max_grid_index;
     int                  n_d;
-    pme_atomcomm_t      *atc        = NULL;
-    pmegrids_t          *pmegrid    = NULL;
-    real                *grid       = NULL;
+    pme_atomcomm_t      *atc        = nullptr;
+    pmegrids_t          *pmegrid    = nullptr;
+    real                *grid       = nullptr;
     rvec                *f_d;
-    real                *coefficient = NULL;
+    real                *coefficient = nullptr;
     real                 energy_AB[4];
     matrix               vir_AB[4];
     real                 scale, lambda;
@@ -1019,7 +1019,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             fprintf(debug, "PME: number of ranks = %d, rank = %d\n",
                     cr->nnodes, cr->nodeid);
             fprintf(debug, "Grid = %p\n", (void*)grid);
-            if (grid == NULL)
+            if (grid == nullptr)
             {
                 gmx_fatal(FARGS, "No grid!");
             }
@@ -1250,10 +1250,10 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         /* Loop over A- and B-state if we are doing FEP */
         for (fep_state = 0; fep_state < fep_states_lj; ++fep_state)
         {
-            real *local_c6 = NULL, *local_sigma = NULL, *RedistC6 = NULL, *RedistSigma = NULL;
+            real *local_c6 = nullptr, *local_sigma = nullptr, *RedistC6 = nullptr, *RedistSigma = nullptr;
             if (pme->nnodes == 1)
             {
-                if (pme->lb_buf1 == NULL)
+                if (pme->lb_buf1 == nullptr)
                 {
                     pme->lb_buf_nalloc = pme->atc[0].n;
                     snew(pme->lb_buf1, pme->lb_buf_nalloc);

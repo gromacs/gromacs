@@ -104,7 +104,7 @@ class BaseFFTTest : public ::testing::Test
             checker_.setDefaultTolerance(
                     gmx::test::relativeToleranceAsPrecisionDependentUlp(10.0, 64, 512));
         }
-        ~BaseFFTTest()
+        ~BaseFFTTest() override
         {
             gmx_fft_cleanup();
         }
@@ -118,10 +118,10 @@ class BaseFFTTest : public ::testing::Test
 class FFTTest : public BaseFFTTest
 {
     public:
-        FFTTest() : fft_(NULL)
+        FFTTest() : fft_(nullptr)
         {
         }
-        ~FFTTest()
+        ~FFTTest() override
         {
             if (fft_)
             {
@@ -134,10 +134,10 @@ class FFTTest : public BaseFFTTest
 class ManyFFTTest : public BaseFFTTest
 {
     public:
-        ManyFFTTest() : fft_(NULL)
+        ManyFFTTest() : fft_(nullptr)
         {
         }
-        ~ManyFFTTest()
+        ~ManyFFTTest() override
         {
             if (fft_)
             {
@@ -158,10 +158,10 @@ class FFTTest1D : public FFTTest, public ::testing::WithParamInterface<int>
 class FFFTest3D : public BaseFFTTest
 {
     public:
-        FFFTest3D() : fft_(NULL)
+        FFFTest3D() : fft_(nullptr)
         {
         }
-        ~FFFTest3D()
+        ~FFFTest3D() override
         {
             if (fft_)
             {
@@ -301,7 +301,7 @@ TEST_F(FFFTest3D, Real5_6_9)
     std::copy(inputdata, inputdata+sizeInReals, in_.begin());
     // Use memcpy to convert to t_complex easily
     memcpy(rdata, in_.data(), sizeInBytes);
-    gmx_parallel_3dfft_execute(fft_, GMX_FFT_REAL_TO_COMPLEX, 0, NULL);
+    gmx_parallel_3dfft_execute(fft_, GMX_FFT_REAL_TO_COMPLEX, 0, nullptr);
     //TODO use std::complex and add checkComplex for it
     checker_.checkSequenceArray(size*2,
                                 reinterpret_cast<real*>(cdata), "forward");
@@ -310,7 +310,7 @@ TEST_F(FFFTest3D, Real5_6_9)
     std::copy(inputdata, inputdata+sizeInReals, in_.begin());
     // Use memcpy to convert to t_complex easily
     memcpy(cdata, in_.data(), sizeInBytes);
-    gmx_parallel_3dfft_execute(fft_, GMX_FFT_COMPLEX_TO_REAL, 0, NULL);
+    gmx_parallel_3dfft_execute(fft_, GMX_FFT_COMPLEX_TO_REAL, 0, nullptr);
     for (int i = 0; i < ndata[0]*ndata[1]; i++) //check sequence but skip unused data
     {
         checker_.checkSequenceArray(ndata[2], rdata+i*rsize[2],

@@ -77,7 +77,7 @@ class MdrunComparisonFixture : public MdrunTestFixture
 {
     public:
         //! Destructor
-        virtual ~MdrunComparisonFixture();
+        ~MdrunComparisonFixture() override;
         //! Helper typedef
         typedef std::map<std::string, std::string> MdpFieldValues;
         /*! \brief Prepare .mdp values to do a simulation

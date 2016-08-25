@@ -2100,9 +2100,9 @@ yyreduce:
                  SelectionTreeElementPointer s
                         = _gmx_sel_init_group_by_id((yyvsp[(1) - (1)].i), scanner);
                  SelectionTreeElementPointer p
-                        = _gmx_sel_init_position(s, NULL, scanner);
+                        = _gmx_sel_init_position(s, nullptr, scanner);
                  if (!p) YYERROR;
-                 set((yyval.sel), _gmx_sel_init_selection(NULL, p, scanner));
+                 set((yyval.sel), _gmx_sel_init_selection(nullptr, p, scanner));
                  END_ACTION;
              }
     break;
@@ -2116,9 +2116,9 @@ yyreduce:
                  SelectionTreeElementPointer s
                         = _gmx_sel_init_group_by_name((yyvsp[(1) - (1)].str), scanner);
                  SelectionTreeElementPointer p
-                        = _gmx_sel_init_position(s, NULL, scanner);
+                        = _gmx_sel_init_position(s, nullptr, scanner);
                  if (!p) YYERROR;
-                 set((yyval.sel), _gmx_sel_init_selection(NULL, p, scanner));
+                 set((yyval.sel), _gmx_sel_init_selection(nullptr, p, scanner));
                  END_ACTION;
              }
     break;
@@ -2128,7 +2128,7 @@ yyreduce:
 #line 265 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.sel), _gmx_sel_init_selection(NULL, get((yyvsp[(1) - (1)].sel)), scanner));
+                 set((yyval.sel), _gmx_sel_init_selection(nullptr, get((yyvsp[(1) - (1)].sel)), scanner));
                  END_ACTION;
              }
     break;
@@ -2188,7 +2188,7 @@ yyreduce:
 #line 303 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.sel), _gmx_sel_init_position(get((yyvsp[(1) - (1)].sel)), NULL, scanner));
+                 set((yyval.sel), _gmx_sel_init_position(get((yyvsp[(1) - (1)].sel)), nullptr, scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
              }
@@ -2346,7 +2346,7 @@ yyreduce:
   case 33:
 /* Line 1787 of yacc.c  */
 #line 410 "parser.y"
-    { (yyval.str) = NULL; }
+    { (yyval.str) = nullptr; }
     break;
 
   case 34:
@@ -2613,7 +2613,7 @@ yyreduce:
 #line 607 "parser.y"
     {
                  BEGIN_ACTION;
-                 set((yyval.sel), _gmx_sel_init_method((yyvsp[(1) - (2)].meth), get((yyvsp[(2) - (2)].plist)), NULL, scanner));
+                 set((yyval.sel), _gmx_sel_init_method((yyvsp[(1) - (2)].meth), get((yyvsp[(2) - (2)].plist)), nullptr, scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
              }

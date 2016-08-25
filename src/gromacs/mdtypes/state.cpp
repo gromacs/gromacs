@@ -59,21 +59,21 @@ static void zero_history(history_t *hist)
 {
     hist->disre_initf  = 0;
     hist->ndisrepairs  = 0;
-    hist->disre_rm3tav = NULL;
+    hist->disre_rm3tav = nullptr;
     hist->orire_initf  = 0;
     hist->norire_Dtav  = 0;
-    hist->orire_Dtav   = NULL;
+    hist->orire_Dtav   = nullptr;
 }
 
 static void zero_ekinstate(ekinstate_t *eks)
 {
     eks->ekin_n         = 0;
-    eks->ekinh          = NULL;
-    eks->ekinf          = NULL;
-    eks->ekinh_old      = NULL;
-    eks->ekinscalef_nhc = NULL;
-    eks->ekinscaleh_nhc = NULL;
-    eks->vscale_nhc     = NULL;
+    eks->ekinh          = nullptr;
+    eks->ekinf          = nullptr;
+    eks->ekinh_old      = nullptr;
+    eks->ekinscalef_nhc = nullptr;
+    eks->ekinscaleh_nhc = nullptr;
+    eks->vscale_nhc     = nullptr;
     eks->dekindl        = 0;
     eks->mvcos          = 0;
 }
@@ -85,15 +85,15 @@ static void init_swapstate(swapstate_t *swapstate)
     swapstate->nIonTypes              = 0;
     swapstate->nAverage               = 0;
     swapstate->fluxleak               = 0;
-    swapstate->fluxleak_p             = NULL;
+    swapstate->fluxleak_p             = nullptr;
     swapstate->bFromCpt               = 0;
     swapstate->nat[eChan0]            = 0;
     swapstate->nat[eChan1]            = 0;
-    swapstate->xc_old_whole[eChan0]   = NULL;
-    swapstate->xc_old_whole[eChan1]   = NULL;
-    swapstate->xc_old_whole_p[eChan0] = NULL;
-    swapstate->xc_old_whole_p[eChan1] = NULL;
-    swapstate->ionType                = NULL;
+    swapstate->xc_old_whole[eChan0]   = nullptr;
+    swapstate->xc_old_whole[eChan1]   = nullptr;
+    swapstate->xc_old_whole_p[eChan0] = nullptr;
+    swapstate->xc_old_whole_p[eChan1] = nullptr;
+    swapstate->ionType                = nullptr;
 }
 
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
@@ -123,9 +123,9 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
     }
     else
     {
-        state->nosehoover_xi  = NULL;
-        state->nosehoover_vxi = NULL;
-        state->therm_integral = NULL;
+        state->nosehoover_xi  = nullptr;
+        state->nosehoover_vxi = nullptr;
+        state->therm_integral = nullptr;
     }
 
     if (state->nnhpres > 0)
@@ -143,8 +143,8 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
     }
     else
     {
-        state->nhpres_xi  = NULL;
-        state->nhpres_vxi = NULL;
+        state->nhpres_xi  = nullptr;
+        state->nhpres_vxi = nullptr;
     }
 }
 
@@ -156,7 +156,7 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     state->natoms    = natoms;
     state->flags     = 0;
     state->fep_state = 0;
-    state->lambda    = 0;
+    state->lambda    = nullptr;
     snew(state->lambda, efptNR);
     for (i = 0; i < efptNR; i++)
     {
@@ -181,10 +181,10 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     }
     else
     {
-        state->x = NULL;
-        state->v = NULL;
+        state->x = nullptr;
+        state->v = nullptr;
     }
-    state->cg_p = NULL;
+    state->cg_p = nullptr;
     zero_history(&state->hist);
     zero_ekinstate(&state->ekinstate);
     snew(state->enerhist, 1);
@@ -193,7 +193,7 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     init_swapstate(&state->swapstate);
     state->ddp_count       = 0;
     state->ddp_count_cg_gl = 0;
-    state->cg_gl           = NULL;
+    state->cg_gl           = nullptr;
     state->cg_gl_nalloc    = 0;
 }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,7 @@ namespace gmx
 class Simd4Double
 {
     public:
-        Simd4Double() {}
+        Simd4Double() = default;
 
         Simd4Double(double d) : simdInternal_(_mm256_set1_pd(d)) {}
 
@@ -62,7 +62,7 @@ class Simd4Double
 class Simd4DBool
 {
     public:
-        Simd4DBool() {}
+        Simd4DBool() = default;
 
         //! \brief Construct from scalar bool
         Simd4DBool(bool b) : simdInternal_(_mm256_castsi256_pd(_mm256_set1_epi32( b ? 0xFFFFFFFF : 0))) {}

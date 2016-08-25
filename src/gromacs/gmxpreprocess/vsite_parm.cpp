@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -873,9 +873,9 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                     }
 
                     nrbond = nrang = nridih = 0;
-                    bonds  = NULL;
-                    angles = NULL;
-                    idihs  = NULL;
+                    bonds  = nullptr;
+                    angles = nullptr;
+                    idihs  = nullptr;
                     nrset++;
                     /* now set the vsite parameters: */
                     get_bondeds(NRAL(ftype), plist[ftype].param[i].a, at2vb,
@@ -1050,7 +1050,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
     for (i = 0; (i < ps->nr); i++) /* for all bonds in the plist */
     {
         int            vsnral      = 0;
-        const int     *first_atoms = NULL;
+        const int     *first_atoms = nullptr;
 
         bKeep   = FALSE;
         bRemove = FALSE;
@@ -1307,7 +1307,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
     for (i = 0; (i < ps->nr); i++) /* for all angles in the plist */
     {
         int            vsnral      = 0;
-        const int     *first_atoms = NULL;
+        const int     *first_atoms = nullptr;
 
         bKeep    = FALSE;
         bAll3FAD = TRUE;
@@ -1443,7 +1443,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
     {
         int            k, m, n, nvsite;
         int            vsnral      = 0;
-        const int     *first_atoms = NULL;
+        const int     *first_atoms = nullptr;
         int            atom;
         gmx_bool       bKeep, bUsed, bPresent;
 
@@ -1561,7 +1561,7 @@ void clean_vsite_bondeds(t_params *plist, int natoms, gmx_bool bRmVSiteBds)
     t_pindex      *pindex;
     at2vsitecon_t *at2vc;
 
-    pindex = 0; /* avoid warnings */
+    pindex = nullptr; /* avoid warnings */
     /* make vsite_type array */
     snew(vsite_type, natoms);
     for (i = 0; i < natoms; i++)

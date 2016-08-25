@@ -97,9 +97,9 @@ class OptionStorageTemplate : public AbstractOptionStorage
         // the declarations are still included for clarity.
         // The various copydoc calls are needed with Doxygen 1.8.10, although
         // things work without with 1.8.5...
-        virtual std::string typeString() const = 0;
+        std::string typeString() const override = 0;
         //! \copydoc gmx::AbstractOptionStorage::valueCount()
-        virtual int valueCount() const { return store_->valueCount(); }
+        int valueCount() const override { return store_->valueCount(); }
         /*! \copydoc gmx::AbstractOptionStorage::formatValue()
          *
          * OptionStorageTemplate implements handling of DefaultValueIfSetIndex
@@ -107,7 +107,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * Derived classes must implement formatSingleValue() to provide the
          * actual formatting for a value of type \p T.
          */
-        virtual std::string formatValue(int i) const;
+        std::string formatValue(int i) const override;
 
     protected:
         //! Smart pointer for managing the final storage interface.
@@ -138,7 +138,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
                               StorePointer          store);
 
         //! \copydoc gmx::AbstractOptionStorage::clearSet()
-        virtual void clearSet();
+        void clearSet() override;
         /*! \copydoc gmx::AbstractOptionStorage::convertValue()
          *
          * Derived classes should call addValue() after they have converted
@@ -148,7 +148,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * should be considered whether the implementation can be made strongly
          * exception safe.
          */
-        virtual void convertValue(const Variant &value) = 0;
+        void convertValue(const Variant &value) override = 0;
         /*! \brief
          * Processes values for a set after all have been converted.
          *
@@ -174,12 +174,12 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * override that method instead of this one if set value processing is
          * necessary.
          */
-        virtual void processSet();
+        void processSet() override;
         /*! \copydoc gmx::AbstractOptionStorage::processAll()
          *
          * The implementation in OptionStorageTemplate does nothing.
          */
-        virtual void processAll()
+        void processAll() override
         {
         }
         /*! \brief
@@ -343,7 +343,7 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
         }
 
     private:
-        virtual void convertValue(const Variant &variant)
+        void convertValue(const Variant &variant) override
         {
             if (!initialized_)
             {
@@ -373,19 +373,19 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
                           settings.maxValueCount_ : settings.minValueCount_)))
 {
     if (hasFlag(efOption_NoDefaultValue)
-        && (settings.defaultValue_ != NULL
-            || settings.defaultValueIfSet_ != NULL))
+        && (settings.defaultValue_ != nullptr
+            || settings.defaultValueIfSet_ != nullptr))
     {
         GMX_THROW(APIError("Option does not support default value, but one is set"));
     }
     if (!hasFlag(efOption_NoDefaultValue))
     {
         setFlag(efOption_HasDefaultValue);
-        if (settings.defaultValue_ != NULL)
+        if (settings.defaultValue_ != nullptr)
         {
             setDefaultValue(*settings.defaultValue_);
         }
-        if (settings.defaultValueIfSet_ != NULL)
+        if (settings.defaultValueIfSet_ != nullptr)
         {
             setDefaultValueIfSet(*settings.defaultValueIfSet_);
         }
@@ -442,7 +442,7 @@ std::string OptionStorageTemplate<T>::formatValue(int i) const
                        "Invalid value index");
     if (i == DefaultValueIfSetIndex)
     {
-        if (defaultValueIfSet_.get() != NULL)
+        if (defaultValueIfSet_.get() != nullptr)
         {
             return formatSingleValue(*defaultValueIfSet_);
         }
@@ -463,7 +463,7 @@ template <typename T>
 void OptionStorageTemplate<T>::processSet()
 {
     processSetValues(&setValues_);
-    if (setValues_.empty() && defaultValueIfSet_.get() != NULL)
+    if (setValues_.empty() && defaultValueIfSet_.get() != nullptr)
     {
         addValue(*defaultValueIfSet_);
         setFlag(efOption_HasDefaultValue);

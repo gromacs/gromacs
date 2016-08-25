@@ -218,15 +218,15 @@ int gmx_velacc(int argc, char *argv[])
     rvec              mv_mol;
     /* Array for the correlation function */
     real            **c1;
-    real             *normm = NULL;
+    real             *normm = nullptr;
     gmx_output_env_t *oenv;
 
 #define NHISTO 360
 
     t_filenm  fnm[] = {
-        { efTRN, "-f",    NULL,   ffREAD  },
-        { efTPS, NULL,    NULL,   ffOPTRD },
-        { efNDX, NULL,    NULL,   ffOPTRD },
+        { efTRN, "-f",    nullptr,   ffREAD  },
+        { efTPS, nullptr,    nullptr,   ffOPTRD },
+        { efNDX, nullptr,    nullptr,   ffOPTRD },
         { efXVG, "-o",    "vac",  ffWRITE },
         { efXVG, "-os",   "spectrum", ffOPTWR }
     };
@@ -237,7 +237,7 @@ int gmx_velacc(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -249,7 +249,7 @@ int gmx_velacc(int argc, char *argv[])
 
     if (bTPS)
     {
-        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, NULL, NULL, box,
+        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box,
                              TRUE);
         get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
     }
@@ -273,7 +273,7 @@ int gmx_velacc(int argc, char *argv[])
     snew(c1, gnx);
     for (i = 0; (i < gnx); i++)
     {
-        c1[i] = NULL;
+        c1[i] = nullptr;
     }
 
     read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, TRX_NEED_V);

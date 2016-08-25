@@ -160,7 +160,7 @@ void pme_free_all_work(struct pme_solve_work_t **work, int nthread)
         free_work(&(*work)[thread]);
     }
     sfree(work);
-    *work = NULL;
+    *work = nullptr;
 }
 
 void get_pme_ener_vir_q(struct pme_solve_work_t *work, int nthread,

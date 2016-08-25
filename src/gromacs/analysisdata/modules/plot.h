@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,7 +142,7 @@ class AnalysisDataPlotSettings
 class AbstractPlotModule : public AnalysisDataModuleSerial
 {
     public:
-        virtual ~AbstractPlotModule();
+        ~AbstractPlotModule() override;
 
         /*! \brief
          * Set common settings for the plotting.
@@ -224,13 +224,13 @@ class AbstractPlotModule : public AnalysisDataModuleSerial
          */
         void setYFormat(int width, int precision, char format = 'f');
 
-        virtual int flags() const;
+        int flags() const override;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points) = 0;
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+        void dataStarted(AbstractAnalysisData *data) override;
+        void frameStarted(const AnalysisDataFrameHeader &header) override;
+        void pointsAdded(const AnalysisDataPointSetRef &points) override = 0;
+        void frameFinished(const AnalysisDataFrameHeader &header) override;
+        void dataFinished() override;
 
     protected:
         /*! \cond libapi */
@@ -275,7 +275,7 @@ class AnalysisDataPlotModule : public AbstractPlotModule
         //! Creates AnalysisDataPlotModule and assign common settings.
         explicit AnalysisDataPlotModule(const AnalysisDataPlotSettings &settings);
 
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+        void pointsAdded(const AnalysisDataPointSetRef &points) override;
 
         // Copy and assign disallowed by base.
 };
@@ -317,7 +317,7 @@ class AnalysisDataVectorPlotModule : public AbstractPlotModule
          */
         void setWriteMask(bool bWrite[4]);
 
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
+        void pointsAdded(const AnalysisDataPointSetRef &points) override;
 
     private:
         bool                    bWrite_[4];

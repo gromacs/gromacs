@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -131,7 +131,7 @@ class ShakeTest : public ::testing::Test
     public:
         /*! \brief Set up data for test cases to use when constructing
             their input */
-        void SetUp()
+        void SetUp() override
         {
             inverseMassesDatabase_.push_back(2.0);
             inverseMassesDatabase_.push_back(3.0);

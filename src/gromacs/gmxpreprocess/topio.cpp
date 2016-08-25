@@ -269,7 +269,7 @@ static void get_nbparm(char *nb_str, char *comb_str, int *nb, int *comb,
     }
     if (*nb == -1)
     {
-        *nb = strtol(nb_str, NULL, 10);
+        *nb = strtol(nb_str, nullptr, 10);
     }
     if ((*nb < 1) || (*nb >= eNBF_NR))
     {
@@ -288,7 +288,7 @@ static void get_nbparm(char *nb_str, char *comb_str, int *nb, int *comb,
     }
     if (*comb == -1)
     {
-        *comb = strtol(comb_str, NULL, 10);
+        *comb = strtol(comb_str, nullptr, 10);
     }
     if ((*comb < 1) || (*comb >= eCOMB_NR))
     {
@@ -305,7 +305,7 @@ static char ** cpp_opts(const char *define, const char *include,
     int         n, len;
     int         ncppopts = 0;
     const char *cppadds[2];
-    char      **cppopts   = NULL;
+    char      **cppopts   = nullptr;
     const char *option[2] = { "-D", "-I" };
     const char *nopt[2]   = { "define", "include" };
     const char *ptr;
@@ -354,7 +354,7 @@ static char ** cpp_opts(const char *define, const char *include,
         }
     }
     srenew(cppopts, ++ncppopts);
-    cppopts[ncppopts-1] = NULL;
+    cppopts[ncppopts-1] = nullptr;
 
     return cppopts;
 }
@@ -544,7 +544,7 @@ static void make_atoms_sys(int nmolb, const gmx_molblock_t *molb,
     const t_atoms *mol_atoms;
 
     atoms->nr   = 0;
-    atoms->atom = NULL;
+    atoms->atom = nullptr;
 
     for (mb = 0; mb < nmolb; mb++)
     {
@@ -585,14 +585,14 @@ static char **read_topol(const char *infile, const char *outfile,
 {
     FILE           *out;
     int             i, sl, nb_funct;
-    char           *pline = NULL, **title = NULL;
+    char           *pline = nullptr, **title = nullptr;
     char            line[STRLEN], errbuf[256], comb_str[256], nb_str[256];
     char            genpairs[32];
     char           *dirstr, *dummy2;
     int             nrcopies, nmol, nmolb = 0, nscan, ncombs, ncopy;
     double          fLJ, fQQ, fPOW;
-    gmx_molblock_t *molb  = NULL;
-    t_molinfo      *mi0   = NULL;
+    gmx_molblock_t *molb  = nullptr;
+    t_molinfo      *mi0   = nullptr;
     DirStack       *DS;
     directive       d, newd;
     t_nbparam     **nbparam, **pair;
@@ -606,7 +606,7 @@ static char **read_topol(const char *infile, const char *outfile,
     /* File handling variables */
     int             status, done;
     gmx_cpp_t       handle;
-    char           *tmp_line = NULL;
+    char           *tmp_line = nullptr;
     char            warn_buf[STRLEN];
     const char     *floating_point_arithmetic_tip =
         "Total charge should normally be an integer. See\n"
@@ -621,7 +621,7 @@ static char **read_topol(const char *infile, const char *outfile,
     }
     else
     {
-        out = NULL;
+        out = nullptr;
     }
 
     /* open input file */
@@ -635,14 +635,14 @@ static char **read_topol(const char *infile, const char *outfile,
     DS_Init(&DS);         /* directive stack			 */
     nmol     = 0;         /* no molecules yet...			 */
     d        = d_invalid; /* first thing should be a directive   */
-    nbparam  = NULL;      /* The temporary non-bonded matrix       */
-    pair     = NULL;      /* The temporary pair interaction matrix */
-    block2   = NULL;      /* the extra exclusions			 */
+    nbparam  = nullptr;   /* The temporary non-bonded matrix       */
+    pair     = nullptr;   /* The temporary pair interaction matrix */
+    block2   = nullptr;   /* the extra exclusions			 */
     nb_funct = F_LJ;
 
     *reppow  = 12.0;      /* Default value for repulsion power     */
 
-    *intermolecular_interactions = NULL;
+    *intermolecular_interactions = nullptr;
 
     /* Init the number of CMAP torsion angles  and grid spacing */
     plist[F_CMAP].grid_spacing = 0;
@@ -732,7 +732,7 @@ static char **read_topol(const char *infile, const char *outfile,
                      * skip spaces and tabs on either side of directive
                      */
                     dirstr = gmx_strdup((pline+1));
-                    if ((dummy2 = strchr (dirstr, CLOSEDIR)) != NULL)
+                    if ((dummy2 = strchr (dirstr, CLOSEDIR)) != nullptr)
                     {
                         (*dummy2) = 0;
                     }
@@ -766,7 +766,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
                         if (d == d_intermolecular_interactions)
                         {
-                            if (*intermolecular_interactions == NULL)
+                            if (*intermolecular_interactions == nullptr)
                             {
                                 /* We (mis)use the moleculetype processing
                                  * to process the intermolecular interactions
@@ -836,14 +836,14 @@ static char **read_topol(const char *infile, const char *outfile,
                             break;
                         case d_atomtypes:
                             push_at(symtab, atype, batype, pline, nb_funct,
-                                    &nbparam, bGenPairs ? &pair : NULL, wi);
+                                    &nbparam, bGenPairs ? &pair : nullptr, wi);
                             break;
 
                         case d_bondtypes:
-                            push_bt(d, plist, 2, NULL, batype, pline, wi);
+                            push_bt(d, plist, 2, nullptr, batype, pline, wi);
                             break;
                         case d_constrainttypes:
-                            push_bt(d, plist, 2, NULL, batype, pline, wi);
+                            push_bt(d, plist, 2, nullptr, batype, pline, wi);
                             break;
                         case d_pairtypes:
                             if (bGenPairs)
@@ -852,11 +852,11 @@ static char **read_topol(const char *infile, const char *outfile,
                             }
                             else
                             {
-                                push_bt(d, plist, 2, atype, NULL, pline, wi);
+                                push_bt(d, plist, 2, atype, nullptr, pline, wi);
                             }
                             break;
                         case d_angletypes:
-                            push_bt(d, plist, 3, NULL, batype, pline, wi);
+                            push_bt(d, plist, 3, nullptr, batype, pline, wi);
                             break;
                         case d_dihedraltypes:
                             /* Special routine that can read both 2 and 4 atom dihedral definitions. */
@@ -896,14 +896,14 @@ static char **read_topol(const char *infile, const char *outfile,
                             if (!bReadMolType)
                             {
                                 int ntype;
-                                if (opts->couple_moltype != NULL &&
+                                if (opts->couple_moltype != nullptr &&
                                     (opts->couple_lam0 == ecouplamNONE ||
                                      opts->couple_lam0 == ecouplamQ ||
                                      opts->couple_lam1 == ecouplamNONE ||
                                      opts->couple_lam1 == ecouplamQ))
                                 {
                                     dcatt = add_atomtype_decoupled(symtab, atype,
-                                                                   &nbparam, bGenPairs ? &pair : NULL);
+                                                                   &nbparam, bGenPairs ? &pair : nullptr);
                                 }
                                 ntype  = get_atomtype_ntypes(atype);
                                 ncombs = (ntype*(ntype+1))/2;
@@ -995,7 +995,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             molb[nmolb].nmol = nrcopies;
                             nmolb++;
 
-                            bCouple = (opts->couple_moltype != NULL &&
+                            bCouple = (opts->couple_moltype != nullptr &&
                                        (gmx_strcasecmp("system", opts->couple_moltype) == 0 ||
                                         strcmp(*(mi0->name), opts->couple_moltype) == 0));
                             if (bCouple)
@@ -1055,7 +1055,7 @@ static char **read_topol(const char *infile, const char *outfile,
                 }
             }
             sfree(pline);
-            pline = NULL;
+            pline = nullptr;
         }
     }
     while (!done);
@@ -1105,7 +1105,7 @@ static char **read_topol(const char *infile, const char *outfile,
 
     done_bond_atomtype(&batype);
 
-    if (*intermolecular_interactions != NULL)
+    if (*intermolecular_interactions != nullptr)
     {
         sfree(mi0->atoms.atom);
     }
@@ -1148,7 +1148,7 @@ char **do_top(gmx_bool          bVerbose,
     }
     else
     {
-        tmpfile = NULL;
+        tmpfile = nullptr;
     }
 
     if (bVerbose)
@@ -1183,7 +1183,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
      * not by the gromacs routines
      */
     int       qm_max = 0, qm_nr = 0, link_nr = 0, link_max = 0;
-    int      *qm_arr = NULL, *link_arr = NULL;
+    int      *qm_arr = nullptr, *link_arr = nullptr;
     gmx_bool *bQMMM, *blink;
 
     /* First we search and select the QM atoms in an qm_arr array that

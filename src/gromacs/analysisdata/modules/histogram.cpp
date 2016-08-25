@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -257,8 +257,7 @@ AbstractAverageHistogram::AbstractAverageHistogram(
 
 
 AbstractAverageHistogram::~AbstractAverageHistogram()
-{
-}
+    = default;
 
 
 void
@@ -438,13 +437,13 @@ class BasicAverageHistogramModule : public AbstractAverageHistogram,
 
         using AbstractAverageHistogram::init;
 
-        virtual int flags() const;
+        int flags() const override;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+        void dataStarted(AbstractAnalysisData *data) override;
+        void frameStarted(const AnalysisDataFrameHeader &header) override;
+        void pointsAdded(const AnalysisDataPointSetRef &points) override;
+        void frameFinished(const AnalysisDataFrameHeader &header) override;
+        void dataFinished() override;
 
     private:
         //! Averaging helper objects for each input data set.
@@ -575,8 +574,7 @@ BasicHistogramImpl::BasicHistogramImpl(const AnalysisHistogramSettings &settings
 
 
 BasicHistogramImpl::~BasicHistogramImpl()
-{
-}
+    = default;
 
 
 void BasicHistogramImpl::init(const AnalysisHistogramSettings &settings)
@@ -628,8 +626,7 @@ AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule(
 
 
 AnalysisDataSimpleHistogramModule::~AnalysisDataSimpleHistogramModule()
-{
-}
+    = default;
 
 
 void AnalysisDataSimpleHistogramModule::init(const AnalysisHistogramSettings &settings)
@@ -802,8 +799,7 @@ AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule(
 
 
 AnalysisDataWeightedHistogramModule::~AnalysisDataWeightedHistogramModule()
-{
-}
+    = default;
 
 
 void AnalysisDataWeightedHistogramModule::init(const AnalysisHistogramSettings &settings)
@@ -973,8 +969,7 @@ AnalysisDataBinAverageModule::AnalysisDataBinAverageModule(
 
 
 AnalysisDataBinAverageModule::~AnalysisDataBinAverageModule()
-{
-}
+    = default;
 
 
 void

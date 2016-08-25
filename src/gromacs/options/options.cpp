@@ -63,32 +63,28 @@ namespace gmx
  */
 
 IOptionManager::~IOptionManager()
-{
-}
+    = default;
 
 /********************************************************************
  * IOptionsContainer
  */
 
 IOptionsContainer::~IOptionsContainer()
-{
-}
+    = default;
 
 /********************************************************************
  * IOptionsContainerWithSections
  */
 
 IOptionsContainerWithSections::~IOptionsContainerWithSections()
-{
-}
+    = default;
 
 /********************************************************************
  * IOptionSectionStorage
  */
 
 IOptionSectionStorage::~IOptionSectionStorage()
-{
-}
+    = default;
 
 /********************************************************************
  * OptionsImpl
@@ -111,7 +107,7 @@ OptionSectionImpl::addSectionImpl(const AbstractOptionSection &section)
 {
     const char *name = section.name_;
     // Make sure that there are no duplicate sections.
-    GMX_RELEASE_ASSERT(findSection(name) == NULL, "Duplicate subsection name");
+    GMX_RELEASE_ASSERT(findSection(name) == nullptr, "Duplicate subsection name");
     std::unique_ptr<IOptionSectionStorage> storage(section.createStorage());
     subsections_.push_back(SectionPointer(new OptionSectionImpl(managers_, std::move(storage), name)));
     return subsections_.back().get();
@@ -200,7 +196,7 @@ void OptionSectionImpl::finish()
 
 IOptionsContainer &OptionSectionImpl::Group::addGroup()
 {
-    subgroups_.push_back(Group(parent_));
+    subgroups_.emplace_back(parent_);
     return subgroups_.back();
 }
 
@@ -236,8 +232,7 @@ Options::Options()
 }
 
 Options::~Options()
-{
-}
+    = default;
 
 
 void Options::addManager(IOptionManager *manager)

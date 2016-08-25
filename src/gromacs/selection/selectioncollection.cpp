@@ -83,13 +83,13 @@ namespace gmx
  */
 
 SelectionCollection::Impl::Impl()
-    : debugLevel_(0), bExternalGroupsSet_(false), grps_(NULL)
+    : debugLevel_(0), bExternalGroupsSet_(false), grps_(nullptr)
 {
     sc_.nvars     = 0;
-    sc_.varstrs   = NULL;
-    sc_.top       = NULL;
+    sc_.varstrs   = nullptr;
+    sc_.top       = nullptr;
     gmx_ana_index_clear(&sc_.gall);
-    sc_.mempool   = NULL;
+    sc_.mempool   = nullptr;
     sc_.symtab.reset(new SelectionParserSymbolTable);
     gmx_ana_index_clear(&requiredAtoms_);
     gmx_ana_selmethod_register_defaults(sc_.symtab.get());
@@ -140,7 +140,7 @@ namespace
 bool promptLine(TextInputStream *inputStream, TextWriter *statusWriter,
                 std::string *line)
 {
-    if (statusWriter != NULL)
+    if (statusWriter != nullptr)
     {
         statusWriter->writeString("> ");
     }
@@ -151,7 +151,7 @@ bool promptLine(TextInputStream *inputStream, TextWriter *statusWriter,
     while (endsWith(*line, "\\\n"))
     {
         line->resize(line->length() - 2);
-        if (statusWriter != NULL)
+        if (statusWriter != nullptr)
         {
             statusWriter->writeString("... ");
         }
@@ -165,7 +165,7 @@ bool promptLine(TextInputStream *inputStream, TextWriter *statusWriter,
     {
         line->resize(line->length() - 1);
     }
-    else if (statusWriter != NULL)
+    else if (statusWriter != nullptr)
     {
         statusWriter->writeLine();
     }
@@ -222,7 +222,7 @@ void printCurrentStatus(TextWriter *writer, gmx_ana_selcollection_t *sc,
                         gmx_ana_indexgrps_t *grps, size_t firstSelection,
                         int maxCount, const std::string &context, bool bFirst)
 {
-    if (grps != NULL)
+    if (grps != nullptr)
     {
         writer->writeLine("Available static index groups:");
         gmx_ana_indexgrps_print(writer, grps, 0);
@@ -283,7 +283,7 @@ void printCurrentStatus(TextWriter *writer, gmx_ana_selcollection_t *sc,
 void printHelp(TextWriter *writer, gmx_ana_selcollection_t *sc,
                const std::string &line)
 {
-    if (sc->rootHelp.get() == NULL)
+    if (sc->rootHelp.get() == nullptr)
     {
         sc->rootHelp = createSelectionHelpTopic();
     }
@@ -340,7 +340,7 @@ SelectionList runParser(yyscan_t scanner, TextInputStream *inputStream,
         if (bInteractive)
         {
             TextWriter *statusWriter = _gmx_sel_lexer_get_status_writer(scanner);
-            if (statusWriter != NULL)
+            if (statusWriter != nullptr)
             {
                 printCurrentStatus(statusWriter, sc, grps, oldCount, maxnr, context, true);
             }
@@ -348,7 +348,7 @@ SelectionList runParser(yyscan_t scanner, TextInputStream *inputStream,
             int         status;
             while (promptLine(inputStream, statusWriter, &line))
             {
-                if (statusWriter != NULL)
+                if (statusWriter != nullptr)
                 {
                     line = stripString(line);
                     if (line.empty())
@@ -375,7 +375,7 @@ SelectionList runParser(yyscan_t scanner, TextInputStream *inputStream,
             }
             {
                 YYLTYPE location;
-                status = _gmx_sel_yypush_parse(parserState.get(), 0, NULL,
+                status = _gmx_sel_yypush_parse(parserState.get(), 0, nullptr,
                                                &location, scanner);
             }
             // TODO: Remove added selections from the collection if parsing failed?
@@ -406,7 +406,7 @@ early_termination:
     result.reserve(nr);
     for (i = sc->sel.begin() + oldCount; i != sc->sel.end(); ++i)
     {
-        result.push_back(Selection(i->get()));
+        result.emplace_back(i->get());
     }
     return result;
 }
@@ -490,8 +490,7 @@ SelectionCollection::SelectionCollection()
 
 
 SelectionCollection::~SelectionCollection()
-{
-}
+    = default;
 
 
 void
@@ -528,7 +527,7 @@ SelectionCollection::initOptions(IOptionsContainer   *options,
 void
 SelectionCollection::setReferencePosType(const char *type)
 {
-    GMX_RELEASE_ASSERT(type != NULL, "Cannot assign NULL position type");
+    GMX_RELEASE_ASSERT(type != nullptr, "Cannot assign NULL position type");
     // Check that the type is valid, throw if it is not.
     e_poscalc_t  dummytype;
     int          dummyflags;
@@ -540,7 +539,7 @@ SelectionCollection::setReferencePosType(const char *type)
 void
 SelectionCollection::setOutputPosType(const char *type)
 {
-    GMX_RELEASE_ASSERT(type != NULL, "Cannot assign NULL position type");
+    GMX_RELEASE_ASSERT(type != nullptr, "Cannot assign NULL position type");
     // Check that the type is valid, throw if it is not.
     e_poscalc_t  dummytype;
     int          dummyflags;
@@ -559,7 +558,7 @@ SelectionCollection::setDebugLevel(int debugLevel)
 void
 SelectionCollection::setTopology(t_topology *top, int natoms)
 {
-    GMX_RELEASE_ASSERT(natoms > 0 || top != NULL,
+    GMX_RELEASE_ASSERT(natoms > 0 || top != nullptr,
                        "The number of atoms must be given if there is no topology");
     // Get the number of atoms from the topology if it is not given.
     if (natoms <= 0)
@@ -591,7 +590,7 @@ SelectionCollection::setTopology(t_topology *top, int natoms)
 void
 SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
 {
-    GMX_RELEASE_ASSERT(grps == NULL || !impl_->bExternalGroupsSet_,
+    GMX_RELEASE_ASSERT(grps == nullptr || !impl_->bExternalGroupsSet_,
                        "Can only set external groups once or clear them afterwards");
     impl_->grps_               = grps;
     impl_->bExternalGroupsSet_ = true;
@@ -678,7 +677,7 @@ SelectionCollection::parseFromStdin(int count, bool bInteractive,
                                     const std::string &context)
 {
     return parseInteractive(count, &StandardInputStream::instance(),
-                            bInteractive ? &TextOutputFile::standardError() : NULL,
+                            bInteractive ? &TextOutputFile::standardError() : nullptr,
                             context);
 }
 
@@ -689,7 +688,7 @@ namespace
 std::unique_ptr<TextWriter> initStatusWriter(TextOutputStream *statusStream)
 {
     std::unique_ptr<TextWriter> statusWriter;
-    if (statusStream != NULL)
+    if (statusStream != nullptr)
     {
         statusWriter.reset(new TextWriter(statusStream));
         statusWriter->wrapperSettings().setLineLength(78);
@@ -724,11 +723,11 @@ SelectionCollection::parseFromFile(const std::string &filename)
         yyscan_t      scanner;
         TextInputFile file(filename);
         // TODO: Exception-safe way of using the lexer.
-        _gmx_sel_init_lexer(&scanner, &impl_->sc_, NULL, -1,
+        _gmx_sel_init_lexer(&scanner, &impl_->sc_, nullptr, -1,
                             impl_->bExternalGroupsSet_,
                             impl_->grps_);
         _gmx_sel_set_lex_input_file(scanner, file.handle());
-        return runParser(scanner, NULL, false, -1, std::string());
+        return runParser(scanner, nullptr, false, -1, std::string());
     }
     catch (GromacsException &ex)
     {
@@ -745,24 +744,24 @@ SelectionCollection::parseFromString(const std::string &str)
 {
     yyscan_t scanner;
 
-    _gmx_sel_init_lexer(&scanner, &impl_->sc_, NULL, -1,
+    _gmx_sel_init_lexer(&scanner, &impl_->sc_, nullptr, -1,
                         impl_->bExternalGroupsSet_,
                         impl_->grps_);
     _gmx_sel_set_lex_input_str(scanner, str.c_str());
-    return runParser(scanner, NULL, false, -1, std::string());
+    return runParser(scanner, nullptr, false, -1, std::string());
 }
 
 
 void
 SelectionCollection::compile()
 {
-    if (impl_->sc_.top == NULL && requiresTopology())
+    if (impl_->sc_.top == nullptr && requiresTopology())
     {
         GMX_THROW(InconsistentInputError("Selection requires topology information, but none provided"));
     }
     if (!impl_->bExternalGroupsSet_)
     {
-        setIndexGroups(NULL);
+        setIndexGroups(nullptr);
     }
     if (impl_->debugLevel_ >= 1)
     {

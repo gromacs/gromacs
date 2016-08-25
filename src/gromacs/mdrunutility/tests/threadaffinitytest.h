@@ -58,11 +58,11 @@ class MockThreadAffinityAccess : public IThreadAffinityAccess
 {
     public:
         MockThreadAffinityAccess();
-        ~MockThreadAffinityAccess();
+        ~MockThreadAffinityAccess() override;
 
         void setSupported(bool supported) { supported_ = supported; }
 
-        virtual bool isThreadAffinitySupported() const { return supported_; }
+        bool isThreadAffinitySupported() const override { return supported_; }
         MOCK_METHOD1(setCurrentThreadAffinityToCore, bool(int core));
 
     private:

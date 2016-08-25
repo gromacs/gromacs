@@ -162,7 +162,7 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 
     fprintf(fplog, "\nInitializing Replica Exchange\n");
 
-    if (ms == NULL || ms->nsim == 1)
+    if (ms == nullptr || ms->nsim == 1)
     {
         gmx_fatal(FARGS, "Nothing to exchange with only one replica, maybe you forgot to set the -multi option of mdrun?");
     }
@@ -555,7 +555,7 @@ static void copy_rvecs(rvec *s, rvec *d, int n)
 {
     int i;
 
-    if (d != NULL)
+    if (d != nullptr)
     {
         for (i = 0; i < n; i++)
         {
@@ -568,7 +568,7 @@ static void copy_doubles(const double *s, double *d, int n)
 {
     int i;
 
-    if (d != NULL)
+    if (d != nullptr)
     {
         for (i = 0; i < n; i++)
         {
@@ -581,7 +581,7 @@ static void copy_reals(const real *s, real *d, int n)
 {
     int i;
 
-    if (d != NULL)
+    if (d != nullptr)
     {
         for (i = 0; i < n; i++)
         {
@@ -594,7 +594,7 @@ static void copy_ints(const int *s, int *d, int n)
 {
     int i;
 
-    if (d != NULL)
+    if (d != nullptr)
     {
         for (i = 0; i < n; i++)
         {
@@ -690,7 +690,7 @@ static void print_ind(FILE *fplog, const char *leg, int n, int *ind, gmx_bool *b
     fprintf(fplog, "Repl %2s %2d", leg, ind[0]);
     for (i = 1; i < n; i++)
     {
-        fprintf(fplog, " %c %2d", (bEx != 0 && bEx[i]) ? 'x' : ' ', ind[i]);
+        fprintf(fplog, " %c %2d", (bEx != nullptr && bEx[i]) ? 'x' : ' ', ind[i]);
     }
     fprintf(fplog, "\n");
 }
@@ -1381,11 +1381,11 @@ void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
                 re->prob[i] =  re->prob_sum[i]/re->nattempt[i%2];
             }
         }
-        print_ind(fplog, "", re->nrepl, re->ind, NULL);
+        print_ind(fplog, "", re->nrepl, re->ind, nullptr);
         print_prob(fplog, "", re->nrepl, re->prob);
 
         fprintf(fplog, "Repl  number of exchanges:\n");
-        print_ind(fplog, "", re->nrepl, re->ind, NULL);
+        print_ind(fplog, "", re->nrepl, re->ind, nullptr);
         print_count(fplog, "", re->nrepl, re->nexchange);
 
         fprintf(fplog, "Repl  average number of exchanges:\n");
@@ -1400,7 +1400,7 @@ void print_replica_exchange_statistics(FILE *fplog, struct gmx_repl_ex *re)
                 re->prob[i] =  ((real)re->nexchange[i])/re->nattempt[i%2];
             }
         }
-        print_ind(fplog, "", re->nrepl, re->ind, NULL);
+        print_ind(fplog, "", re->nrepl, re->ind, nullptr);
         print_prob(fplog, "", re->nrepl, re->prob);
 
         fprintf(fplog, "\n");

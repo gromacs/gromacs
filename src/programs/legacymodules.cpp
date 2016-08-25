@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,24 +78,24 @@ class ObsoleteToolModule : public gmx::ICommandLineModule
         {
         }
 
-        virtual const char *name() const
+        const char *name() const override
         {
             return name_;
         }
-        virtual const char *shortDescription() const
+        const char *shortDescription() const override
         {
-            return NULL;
+            return nullptr;
         }
 
-        virtual void init(gmx::CommandLineModuleSettings * /*settings*/)
+        void init(gmx::CommandLineModuleSettings * /*settings*/) override
         {
         }
-        virtual int run(int /*argc*/, char * /*argv*/[])
+        int run(int /*argc*/, char * /*argv*/[]) override
         {
             printMessage();
             return 0;
         }
-        virtual void writeHelp(const gmx::CommandLineHelpContext & /*context*/) const
+        void writeHelp(const gmx::CommandLineHelpContext & /*context*/) const override
         {
             printMessage();
         }
@@ -137,24 +137,24 @@ class NoNiceModule : public gmx::ICommandLineModule
         {
         }
 
-        virtual const char *name() const
+        const char *name() const override
         {
             return name_;
         }
-        virtual const char *shortDescription() const
+        const char *shortDescription() const override
         {
             return shortDescription_;
         }
 
-        virtual void init(gmx::CommandLineModuleSettings *settings)
+        void init(gmx::CommandLineModuleSettings *settings) override
         {
             settings->setDefaultNiceLevel(0);
         }
-        virtual int run(int argc, char *argv[])
+        int run(int argc, char *argv[]) override
         {
             return mainFunction_(argc, argv);
         }
-        virtual void writeHelp(const gmx::CommandLineHelpContext &context) const
+        void writeHelp(const gmx::CommandLineHelpContext &context) const override
         {
             writeCommandLineHelpCMain(context, name_, mainFunction_);
         }

@@ -69,11 +69,11 @@ namespace
 class DefaultThreadAffinityAccess : public gmx::IThreadAffinityAccess
 {
     public:
-        virtual bool isThreadAffinitySupported() const
+        bool isThreadAffinitySupported() const override
         {
             return tMPI_Thread_setaffinity_support() == TMPI_SETAFFINITY_SUPPORT_YES;
         }
-        virtual bool setCurrentThreadAffinityToCore(int core)
+        bool setCurrentThreadAffinityToCore(int core) override
         {
             const int ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
             return ret == 0;
@@ -86,8 +86,7 @@ DefaultThreadAffinityAccess g_defaultAffinityAccess;
 } // namespace
 
 gmx::IThreadAffinityAccess::~IThreadAffinityAccess()
-{
-}
+    = default;
 
 static bool invalidWithinSimulation(const t_commrec *cr, bool invalidLocally)
 {
@@ -154,7 +153,7 @@ get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
     {
         /* topology information not available or invalid, ignore it */
         hwThreads       = hwTop.machine().logicalProcessorCount;
-        *localityOrder  = NULL;
+        *localityOrder  = nullptr;
     }
     // Only warn about the first problem per node.  Otherwise, the first test
     // failing would essentially always cause also the other problems get
@@ -246,7 +245,7 @@ get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
     }
     validLayout = validLayout && !invalidValue;
 
-    if (validLayout && fplog != NULL)
+    if (validLayout && fplog != nullptr)
     {
         fprintf(fplog, "Pinning threads with a%s logical core stride of %d\n",
                 bPickPinStride ? "n auto-selected" : " user-specified",

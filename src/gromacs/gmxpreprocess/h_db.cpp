@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -113,11 +113,11 @@ void read_ab(char *line, const char *fn, t_hack *hack)
     }
     for (; i < 4; i++)
     {
-        hack->a[i] = NULL;
+        hack->a[i] = nullptr;
     }
-    hack->oname = NULL;
+    hack->oname = nullptr;
     hack->nname = gmx_strdup(hn);
-    hack->atom  = NULL;
+    hack->atom  = nullptr;
     hack->cgnr  = NOTSET;
     hack->bXSet = FALSE;
     for (i = 0; i < DIM; i++)
@@ -181,7 +181,7 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
                               "while reading Hydrogen Database %s residue %s",
                               nab, i-1, aah[nah].name, hfn);
                 }
-                if (NULL == fgets(buf, STRLEN, in))
+                if (nullptr == fgets(buf, STRLEN, in))
                 {
                     gmx_fatal(FARGS, "Error reading from file %s", hfn);
                 }
@@ -218,7 +218,7 @@ int read_h_db(const char *ffdir, t_hackblock **ah)
      */
     nhdbf = fflib_search_file_end(ffdir, ".hdb", FALSE, &hdbf);
     nah   = 0;
-    *ah   = NULL;
+    *ah   = nullptr;
     for (f = 0; f < nhdbf; f++)
     {
         read_h_db_file(hdbf[f], &nah, ah);
@@ -235,7 +235,7 @@ t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key)
 
     if (nh <= 0)
     {
-        return NULL;
+        return nullptr;
     }
 
     ahkey.name = key;

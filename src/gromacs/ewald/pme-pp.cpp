@@ -241,7 +241,7 @@ static void gmx_pme_send_coeffs_coords(t_commrec *cr, int flags,
     if (dd->pme_receive_vir_ener)
     {
         /* Peer PP node: communicate all data */
-        if (dd->cnb == NULL)
+        if (dd->cnb == nullptr)
         {
             snew(dd->cnb, 1);
         }
@@ -360,7 +360,7 @@ void gmx_pme_send_parameters(t_commrec *cr,
     gmx_pme_send_coeffs_coords(cr, flags,
                                chargeA, chargeB,
                                sqrt_c6A, sqrt_c6B, sigmaA, sigmaB,
-                               NULL, NULL, 0, 0, maxshift_x, maxshift_y, -1);
+                               nullptr, nullptr, 0, 0, maxshift_x, maxshift_y, -1);
 }
 
 void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
@@ -384,7 +384,7 @@ void gmx_pme_send_coordinates(t_commrec *cr, matrix box, rvec *x,
     {
         flags |= PP_PME_ENER_VIR;
     }
-    gmx_pme_send_coeffs_coords(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL,
+    gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
                                box, x, lambda_q, lambda_lj, 0, 0, step);
 }
 
@@ -394,7 +394,7 @@ void gmx_pme_send_finish(t_commrec *cr)
 
     flags = PP_PME_FINISH;
 
-    gmx_pme_send_coeffs_coords(cr, flags, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, 0, 0, 0, -1);
+    gmx_pme_send_coeffs_coords(cr, flags, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, 0, -1);
 }
 
 void gmx_pme_send_switchgrid(t_commrec gmx_unused *cr,

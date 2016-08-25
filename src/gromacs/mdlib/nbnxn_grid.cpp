@@ -65,11 +65,11 @@ struct gmx_domdec_zones_t;
 
 static void nbnxn_grid_init(nbnxn_grid_t * grid)
 {
-    grid->cxy_na      = NULL;
-    grid->cxy_ind     = NULL;
+    grid->cxy_na      = nullptr;
+    grid->cxy_ind     = nullptr;
     grid->cxy_nalloc  = 0;
-    grid->bb          = NULL;
-    grid->bbj         = NULL;
+    grid->bb          = nullptr;
+    grid->bbj         = nullptr;
     grid->nc_nalloc   = 0;
 }
 
@@ -1008,7 +1008,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
 
             fill_cell(nbs, grid, nbat,
                       ash_c, ash_c+na_c, atinfo, x,
-                      NULL);
+                      nullptr);
 
             /* This copy to bbcz is not really necessary.
              * But it allows to use the same grid search code
@@ -1162,7 +1162,7 @@ static void calc_column_indices(nbnxn_grid_t *grid,
         /* Home zone */
         for (int i = n0; i < n1; i++)
         {
-            if (move == NULL || move[i] >= 0)
+            if (move == nullptr || move[i] >= 0)
             {
                 /* We need to be careful with rounding,
                  * particles might be a few bits outside the local zone.
@@ -1562,14 +1562,14 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t                   nbs,
             c1[d] = zones->size[zone].bb_x1[d];
         }
 
-        nbnxn_put_on_grid(nbs, nbs->ePBC, NULL,
+        nbnxn_put_on_grid(nbs, nbs->ePBC, nullptr,
                           zone, c0, c1,
                           zones->cg_range[zone],
                           zones->cg_range[zone+1],
                           -1,
                           atinfo,
                           x,
-                          0, NULL,
+                          0, nullptr,
                           nb_kernel_type,
                           nbat);
     }

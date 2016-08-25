@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,7 @@ namespace gmx
 class Simd4Float
 {
     public:
-        Simd4Float() {}
+        Simd4Float() = default;
 
         Simd4Float(float f) : simdInternal_(_mm_set1_ps(f)) {}
 
@@ -62,7 +62,7 @@ class Simd4Float
 class Simd4FBool
 {
     public:
-        Simd4FBool() {}
+        Simd4FBool() = default;
 
         //! \brief Construct from scalar bool
         Simd4FBool(bool b) : simdInternal_(_mm_castsi128_ps(_mm_set1_epi32( b ? 0xFFFFFFFF : 0))) {}

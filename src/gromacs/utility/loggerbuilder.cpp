@@ -55,7 +55,7 @@ class LogTargetCollection : public ILogTarget
             targets_.push_back(target);
         }
 
-        virtual void writeEntry(const LogEntry &entry)
+        void writeEntry(const LogEntry &entry) override
         {
             for (ILogTarget *target : targets_)
             {
@@ -72,7 +72,7 @@ class LogTargetFormatter : public ILogTarget
     public:
         explicit LogTargetFormatter(TextOutputStream *stream) : writer_(stream) {}
 
-        virtual void writeEntry(const LogEntry &entry);
+        void writeEntry(const LogEntry &entry) override;
 
     private:
         TextWriter writer_;
@@ -131,8 +131,7 @@ LoggerOwner &LoggerOwner::operator=(LoggerOwner &&other)
 }
 
 LoggerOwner::~LoggerOwner()
-{
-}
+    = default;
 
 /********************************************************************
  * LoggerBuilder::Impl
@@ -156,8 +155,7 @@ LoggerBuilder::LoggerBuilder()
 }
 
 LoggerBuilder::~LoggerBuilder()
-{
-}
+    = default;
 
 void LoggerBuilder::addTargetStream(MDLogger::LogLevel level, TextOutputStream *stream)
 {

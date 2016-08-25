@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,7 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
     dh->ndhmax = ndhmax+2;
     for (i = 0; i < 2; i++)
     {
-        dh->bin[i] = NULL;
+        dh->bin[i] = nullptr;
     }
 
     snew(dh->dh, dh->ndhmax);
@@ -262,7 +262,7 @@ void mde_delta_h_handle_block(t_mde_delta_h *dh, t_enxblock *blk)
         {
             blk->sub[2].nr   = 0;
             blk->sub[2].type = xdr_datatype_float;
-            blk->sub[2].fval = NULL;
+            blk->sub[2].fval = nullptr;
         }
     }
     else
@@ -407,9 +407,9 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
     else
     {
         /* don't allocate the meta-data subblocks for lambda vectors */
-        dhc->native_lambda_vec        = NULL;
+        dhc->native_lambda_vec        = nullptr;
         dhc->n_lambda_vec             = 0;
-        dhc->native_lambda_components = 0;
+        dhc->native_lambda_components = nullptr;
         dhc->lambda_index             = -1;
     }
     /* allocate metadata subblocks */
@@ -419,9 +419,9 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
     /* now decide which data to write out */
     dhc->nlambda     = 0;
     dhc->ndhdl       = 0;
-    dhc->dh_expanded = NULL;
-    dhc->dh_energy   = NULL;
-    dhc->dh_pv       = NULL;
+    dhc->dh_expanded = nullptr;
+    dhc->dh_energy   = nullptr;
+    dhc->dh_pv       = nullptr;
 
     /* total number of raw data point collections in the sample */
     dhc->ndh = 0;
@@ -483,7 +483,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
             dhc->dh_expanded = dhc->dh+n;
             mde_delta_h_init(dhc->dh+n, ir->fepvals->dh_hist_size,
                              ir->fepvals->dh_hist_spacing, ndhmax,
-                             dhbtEXPANDED, 0, 0, NULL);
+                             dhbtEXPANDED, 0, 0, nullptr);
             n++;
         }
         if (bEnergy)
@@ -491,7 +491,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
             dhc->dh_energy = dhc->dh+n;
             mde_delta_h_init(dhc->dh+n, ir->fepvals->dh_hist_size,
                              ir->fepvals->dh_hist_spacing, ndhmax,
-                             dhbtEN, 0, 0, NULL);
+                             dhbtEN, 0, 0, nullptr);
             n++;
         }
         /* add the dhdl's */
@@ -550,7 +550,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
             dhc->dh_pv = dhc->dh+n;
             mde_delta_h_init(dhc->dh+n, ir->fepvals->dh_hist_size,
                              ir->fepvals->dh_hist_spacing, ndhmax,
-                             dhbtPV, 0, 0, NULL);
+                             dhbtPV, 0, 0, nullptr);
             n++;
         }
     }
@@ -581,15 +581,15 @@ void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc,
     {
         mde_delta_h_add_dh(dhc->dh_du+i, foreign_dU[i]);
     }
-    if (dhc->dh_pv != NULL)
+    if (dhc->dh_pv != nullptr)
     {
         mde_delta_h_add_dh(dhc->dh_pv, pV);
     }
-    if (dhc->dh_energy != NULL)
+    if (dhc->dh_energy != nullptr)
     {
         mde_delta_h_add_dh(dhc->dh_energy, energy);
     }
-    if (dhc->dh_expanded != NULL)
+    if (dhc->dh_expanded != nullptr)
     {
         mde_delta_h_add_dh(dhc->dh_expanded, fep_state);
     }
@@ -611,7 +611,7 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
 
     /* only allocate lambda vector component blocks if they must be written out
        for backward compatibility */
-    if (dhc->native_lambda_components != NULL)
+    if (dhc->native_lambda_components != nullptr)
     {
         add_subblocks_enxblock(blk, 2);
     }
@@ -626,7 +626,7 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
     dhc->subblock_d[3] = dhc->start_lambda; /* old-style lambda at starttime */
     dhc->subblock_d[4] = dhc->delta_lambda; /* lambda diff. between samples */
     /* set the lambda vector components if they exist */
-    if (dhc->native_lambda_components != NULL)
+    if (dhc->native_lambda_components != nullptr)
     {
         for (i = 0; i < dhc->n_lambda_vec; i++)
         {
@@ -638,7 +638,7 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
     blk->sub[0].type = xdr_datatype_double;
     blk->sub[0].dval = dhc->subblock_d;
 
-    if (dhc->native_lambda_components != NULL)
+    if (dhc->native_lambda_components != nullptr)
     {
         dhc->subblock_i[0] = dhc->lambda_index;
         /* set the lambda vector component IDs if they exist */

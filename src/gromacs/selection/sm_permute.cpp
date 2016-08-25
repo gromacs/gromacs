@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,8 +120,8 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 
 /** Parameters for the \p permute selection modifier. */
 static gmx_ana_selparam_t smparams_permute[] = {
-    {NULL,       {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
-    {NULL,       {INT_VALUE, -1, {NULL}}, NULL, SPAR_VARNUM},
+    {nullptr,       {POS_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
+    {nullptr,       {INT_VALUE, -1, {nullptr}}, nullptr, SPAR_VARNUM},
 };
 
 /** Help text for the \p permute selection modifier. */
@@ -148,12 +148,12 @@ gmx_ana_selmethod_t sm_permute = {
     "permute", POS_VALUE, SMETH_MODIFIER,
     asize(smparams_permute), smparams_permute,
     &init_data_permute,
-    NULL,
+    nullptr,
     &init_permute,
     &init_output_permute,
     &free_data_permute,
-    NULL,
-    NULL,
+    nullptr,
+    nullptr,
     &evaluate_permute,
     {"POSEXPR permute P1 ... PN",
      "Permuting selections", asize(help_permute), help_permute},
@@ -164,8 +164,8 @@ init_data_permute(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_permute *data = new t_methoddata_permute();
     data->n          = 0;
-    data->perm       = NULL;
-    data->rperm      = NULL;
+    data->perm       = nullptr;
+    data->rperm      = nullptr;
     param[0].val.u.p = &data->p;
     return data;
 }
@@ -211,7 +211,7 @@ init_output_permute(t_topology * /* top */, gmx_ana_selvalue_t *out, void *data)
 
     out->u.p->m.type = d->p.m.type;
     gmx_ana_pos_reserve_for_append(out->u.p, d->p.count(), d->p.m.b.nra,
-                                   d->p.v != NULL, d->p.f != NULL);
+                                   d->p.v != nullptr, d->p.f != nullptr);
     gmx_ana_pos_empty_init(out->u.p);
     for (i = 0; i < d->p.count(); i += d->n)
     {

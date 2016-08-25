@@ -185,7 +185,7 @@ static void write_constr_pdb(const char *fn, const char *title,
     gmx_domdec_t *dd;
     char         *anm, *resnm;
 
-    dd = NULL;
+    dd = nullptr;
     if (DOMAINDECOMP(cr))
     {
         dd = cr->dd;
@@ -209,7 +209,7 @@ static void write_constr_pdb(const char *fn, const char *title,
     gmx_write_pdb_box(out, -1, box);
     for (i = start; i < start+homenr; i++)
     {
-        if (dd != NULL)
+        if (dd != nullptr)
         {
             if (i >= dd->nat_home && i < dd_ac0)
             {
@@ -324,7 +324,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         lambda += delta_step*ir->fepvals->delta_lambda;
     }
 
-    if (vir != NULL)
+    if (vir != nullptr)
     {
         clear_mat(vir_r_m_dr);
     }
@@ -349,7 +349,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
      * For constraints there is both forward and backward communication.
      */
     if (ir->ePBC != epbcNONE &&
-        (cr->dd || bMolPBC) && !(cr->dd && cr->dd->constraint_comm == NULL))
+        (cr->dd || bMolPBC) && !(cr->dd && cr->dd->constraint_comm == nullptr))
     {
         /* With pbc=screw the screw has been changed to a shift
          * by the constraint coordinate communication routine,
@@ -361,7 +361,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     }
     else
     {
-        pbc_null = NULL;
+        pbc_null = nullptr;
     }
 
     /* Communicate the coordinates required for the non-local constraints
@@ -371,7 +371,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     {
         dd_move_x_constraints(cr->dd, box, x, xprime, econq == econqCoord);
 
-        if (v != NULL)
+        if (v != nullptr)
         {
             /* We need to initialize the non-local components of v.
              * We never actually use these values, but we do increment them,
@@ -381,17 +381,17 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         }
     }
 
-    if (constr->lincsd != NULL)
+    if (constr->lincsd != nullptr)
     {
         bOK = constrain_lincs(fplog, bLog, bEner, ir, step, constr->lincsd, md, cr,
                               x, xprime, min_proj,
                               box, pbc_null, lambda, dvdlambda,
-                              invdt, v, vir != NULL, vir_r_m_dr,
+                              invdt, v, vir != nullptr, vir_r_m_dr,
                               econq, nrnb,
                               constr->maxwarn, &constr->warncount_lincs);
         if (!bOK && constr->maxwarn >= 0)
         {
-            if (fplog != NULL)
+            if (fplog != nullptr)
             {
                 fprintf(fplog, "Constraint error in algorithm %s at step %s\n",
                         econstr_names[econtLINCS], gmx_step_str(step, buf));
@@ -409,7 +409,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                               md->invmass, constr->nblocks, constr->sblock,
                               idef, ir, x, xprime, nrnb,
                               constr->lagr, lambda, dvdlambda,
-                              invdt, v, vir != NULL, vir_r_m_dr,
+                              invdt, v, vir != nullptr, vir_r_m_dr,
                               constr->maxwarn >= 0, econq);
                 break;
             case (econqVeloc):
@@ -417,7 +417,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                               md->invmass, constr->nblocks, constr->sblock,
                               idef, ir, x, min_proj, nrnb,
                               constr->lagr, lambda, dvdlambda,
-                              invdt, NULL, vir != NULL, vir_r_m_dr,
+                              invdt, nullptr, vir != nullptr, vir_r_m_dr,
                               constr->maxwarn >= 0, econq);
                 break;
             default:
@@ -427,7 +427,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
         if (!bOK && constr->maxwarn >= 0)
         {
-            if (fplog != NULL)
+            if (fplog != nullptr)
             {
                 fprintf(fplog, "Constraint error in algorithm %s at step %s\n",
                         econstr_names[econtSHAKE], gmx_step_str(step, buf));
@@ -457,19 +457,19 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                                 nth, th,
                                 pbc_null,
                                 x[0], xprime[0],
-                                invdt, v ? v[0] : NULL,
-                                vir != NULL,
+                                invdt, v ? v[0] : nullptr,
+                                vir != nullptr,
                                 th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th],
                                 th == 0 ? &bSettleErrorHasOccurred : &constr->bSettleErrorHasOccurred[th]);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                 }
                 inc_nrnb(nrnb, eNR_SETTLE, nsettle);
-                if (v != NULL)
+                if (v != nullptr)
                 {
                     inc_nrnb(nrnb, eNR_CONSTR_V, nsettle*3);
                 }
-                if (vir != NULL)
+                if (vir != nullptr)
                 {
                     inc_nrnb(nrnb, eNR_CONSTR_VIR, nsettle*3);
                 }
@@ -485,7 +485,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                     {
                         int calcvir_atom_end;
 
-                        if (vir == NULL)
+                        if (vir == nullptr)
                         {
                             calcvir_atom_end = 0;
                         }
@@ -525,7 +525,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                 gmx_incons("Unknown constraint quantity for settle");
         }
 
-        if (vir != NULL)
+        if (vir != nullptr)
         {
             /* Reduce the virial contributions over the threads */
             for (int th = 1; th < nth; th++)
@@ -565,7 +565,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         }
     }
 
-    if (vir != NULL)
+    if (vir != nullptr)
     {
         /* The normal uses of constrain() pass step_scaling = 1.0.
          * The call to constrain() for SD1 that passes step_scaling =
@@ -642,7 +642,7 @@ real *constr_rmsd_data(struct gmx_constr *constr)
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -674,7 +674,7 @@ static void make_shake_sblock_serial(struct gmx_constr *constr,
     ncons = idef->il[F_CONSTR].nr/3;
 
     init_blocka(&sblocks);
-    gen_sblocks(NULL, 0, md->homenr, idef, &sblocks, FALSE);
+    gen_sblocks(nullptr, 0, md->homenr, idef, &sblocks, FALSE);
 
     /*
        bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
@@ -1154,13 +1154,13 @@ gmx_constr_t init_constraints(FILE *fplog,
     int nsettles =
         gmx_mtop_ftype_count(mtop, F_SETTLE);
 
-    GMX_RELEASE_ASSERT(!ir->bPull || ir->pull_work != NULL, "init_constraints called with COM pulling before/without initializing the pull code");
+    GMX_RELEASE_ASSERT(!ir->bPull || ir->pull_work != nullptr, "init_constraints called with COM pulling before/without initializing the pull code");
 
     if (nconstraints + nsettles == 0 &&
         !(ir->bPull && pull_have_constraint(ir->pull_work)) &&
-        ed == NULL)
+        ed == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
 
     struct gmx_constr *constr;
@@ -1259,7 +1259,7 @@ gmx_constr_t init_constraints(FILE *fplog,
 
         /* Allocate thread-local work arrays */
         int nthreads = gmx_omp_nthreads_get(emntSETTLE);
-        if (nthreads > 1 && constr->vir_r_m_dr_th == NULL)
+        if (nthreads > 1 && constr->vir_r_m_dr_th == nullptr)
         {
             snew(constr->vir_r_m_dr_th, nthreads);
             snew(constr->bSettleErrorHasOccurred, nthreads);
@@ -1300,7 +1300,7 @@ gmx_constr_t init_constraints(FILE *fplog,
     /* Initialize the essential dynamics sampling.
      * Put the pointer to the ED struct in constr */
     constr->ed = ed;
-    if (ed != NULL || state->edsamstate.nED > 0)
+    if (ed != nullptr || state->edsamstate.nED > 0)
     {
         init_edsam(mtop, ir, cr, ed, state->x, state->box, &state->edsamstate);
     }

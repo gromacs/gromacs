@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -497,7 +497,7 @@ static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
     /* Add all the impropers from the residue database to the list. */
     nimproper = 0;
     start     = 0;
-    if (hb != NULL)
+    if (hb != nullptr)
     {
         for (i = 0; (i < atoms->nres); i++)
         {
@@ -523,7 +523,7 @@ static int get_impropers(t_atoms *atoms, t_hackblock hb[], t_param **improper,
                         srenew(*improper, nalloc);
                     }
                     /* Not broken out */
-                    set_p(&((*improper)[nimproper]), ai, NULL, impropers->b[j].s);
+                    set_p(&((*improper)[nimproper]), ai, nullptr, impropers->b[j].s);
                     nimproper++;
                 }
             }

@@ -307,9 +307,9 @@ int gmx_dos(int argc, char *argv[])
     };
 
     t_filenm            fnm[] = {
-        { efTRN, "-f",    NULL,    ffREAD  },
-        { efTPR, "-s",    NULL,    ffREAD  },
-        { efNDX, NULL,    NULL,    ffOPTRD },
+        { efTRN, "-f",    nullptr,    ffREAD  },
+        { efTPR, "-s",    nullptr,    ffREAD  },
+        { efNDX, nullptr,    nullptr,    ffOPTRD },
         { efXVG, "-vacf", "vacf",  ffWRITE },
         { efXVG, "-mvacf", "mvacf", ffWRITE },
         { efXVG, "-dos",  "dos",   ffWRITE },
@@ -338,7 +338,7 @@ int gmx_dos(int argc, char *argv[])
     please_cite(fplog, "Pascal2011a");
     please_cite(fplog, "Caleman2011b");
 
-    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, NULL, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
 
     /* Handle index groups */
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &grpNatoms, &index, &grpname);
@@ -358,7 +358,7 @@ int gmx_dos(int argc, char *argv[])
     snew(c1, gnx);
     for (i = 0; (i < gnx); i++)
     {
-        c1[i] = NULL;
+        c1[i] = nullptr;
     }
 
     read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, TRX_NEED_V);
@@ -428,7 +428,7 @@ int gmx_dos(int argc, char *argv[])
     normalizeAutocorrelation = opt2parg_bool("-normalize", npargs, ppa);
 
     /* Note that we always disable normalization here, regardless of user settings */
-    low_do_autocorr(NULL, oenv, NULL, nframes, gnx, nframes, c1, dt, eacNormal, 0, FALSE,
+    low_do_autocorr(nullptr, oenv, nullptr, nframes, gnx, nframes, c1, dt, eacNormal, 0, FALSE,
                     FALSE, FALSE, -1, -1, 0);
     snew(dos, DOS_NR);
     for (j = 0; (j < DOS_NR); j++)
@@ -505,7 +505,7 @@ int gmx_dos(int argc, char *argv[])
         }
     }
     /* Normalize it */
-    dostot = evaluate_integral(nframes/4, nu, dos[DOS], NULL, nframes/4, &stddev);
+    dostot = evaluate_integral(nframes/4, nu, dos[DOS], nullptr, nframes/4, &stddev);
     if (bNormalizeDos)
     {
         for (j = 0; (j < nframes/4); j++)
@@ -584,14 +584,14 @@ int gmx_dos(int argc, char *argv[])
         dos[DOS_E][j]  = (dos[DOS_DIFF][j]*wEdiff +
                           dos[DOS_SOLID][j]*wEsolid(nu[j], beta));
     }
-    DiffCoeff = evaluate_integral(nframes/2, tt, dos[VACF], NULL, nframes/2, &stddev);
+    DiffCoeff = evaluate_integral(nframes/2, tt, dos[VACF], nullptr, nframes/2, &stddev);
     DiffCoeff = 1000*DiffCoeff/3.0;
     fprintf(fplog, "Diffusion coefficient from VACF %g 10^-5 cm^2/s\n",
             DiffCoeff);
     fprintf(fplog, "Diffusion coefficient from DoS %g 10^-5 cm^2/s\n",
             1000*DoS0/(12*tmass*beta));
 
-    cP = BOLTZ * evaluate_integral(nframes/4, nu, dos[DOS_CP], NULL,
+    cP = BOLTZ * evaluate_integral(nframes/4, nu, dos[DOS_CP], nullptr,
                                    nframes/4, &stddev);
     fprintf(fplog, "Heat capacity %g J/mol K\n", 1000*cP/Nmol);
     fprintf(fplog, "\nArrivederci!\n");

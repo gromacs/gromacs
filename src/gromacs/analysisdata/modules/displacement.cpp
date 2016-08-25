@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -103,8 +103,8 @@ class AnalysisDataDisplacementModule::Impl
 AnalysisDataDisplacementModule::Impl::Impl()
     : nmax(0), tmax(0.0), ndim(3),
       bFirst(true), t0(0.0), dt(0.0), t(0.0), ci(0),
-      max_store(-1), nstored(0), oldval(NULL),
-      histm(NULL)
+      max_store(-1), nstored(0), oldval(nullptr),
+      histm(nullptr)
 {
 }
 
@@ -125,8 +125,7 @@ AnalysisDataDisplacementModule::AnalysisDataDisplacementModule()
 
 
 AnalysisDataDisplacementModule::~AnalysisDataDisplacementModule()
-{
-}
+    = default;
 
 
 void
@@ -140,7 +139,7 @@ void
 AnalysisDataDisplacementModule::setMSDHistogram(
         AnalysisDataBinAverageModulePointer histm)
 {
-    GMX_RELEASE_ASSERT(_impl->histm == NULL, "Can only set MSD histogram once");
+    GMX_RELEASE_ASSERT(_impl->histm == nullptr, "Can only set MSD histogram once");
     _impl->histm = histm.get();
     addModule(histm);
 }
@@ -280,7 +279,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
             i += _impl->max_store;
         }
         _impl->currValues_.clear();
-        _impl->currValues_.push_back(AnalysisDataValue(step * _impl->dt));
+        _impl->currValues_.emplace_back(step * _impl->dt);
         int k = 1;
         for (int j = 0; j < _impl->nmax; j += _impl->ndim, ++k)
         {
@@ -292,7 +291,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
                     - _impl->oldval[i + j + d];
                 dist2 += displ * displ;
             }
-            _impl->currValues_.push_back(AnalysisDataValue(dist2));
+            _impl->currValues_.emplace_back(dist2);
         }
         moduleManager().notifyPointsAdd(AnalysisDataPointSetRef(header, _impl->currValues_));
     }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -340,7 +340,7 @@ class SelectionTreeElement
          * \param[in] name  Name to set (can be NULL).
          * \throws    std::bad_alloc if out of memory.
          */
-        void setName(const char *name) { name_ = (name != NULL ? name : ""); }
+        void setName(const char *name) { name_ = (name != nullptr ? name : ""); }
         //! \copydoc setName(const char *)
         void setName(const std::string &name) { name_ = name; }
         /*! \brief

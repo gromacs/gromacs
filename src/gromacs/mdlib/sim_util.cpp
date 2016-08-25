@@ -285,7 +285,7 @@ static void calc_f_el(FILE *fp, int  start, int homenr,
             Ext[m] = 0;
         }
     }
-    if (fp != NULL)
+    if (fp != nullptr)
     {
         fprintf(fp, "%10g  %10g  %10g  %10g #FIELD\n", t,
                 Ext[XX]/FIELDFAC, Ext[YY]/FIELDFAC, Ext[ZZ]/FIELDFAC);
@@ -430,7 +430,7 @@ static void post_process_forces(t_commrec *cr,
              * if the constructing atoms aren't local.
              */
             wallcycle_start(wcycle, ewcVSITESPREAD);
-            spread_vsite_f(vsite, x, fr->f_novirsum, NULL,
+            spread_vsite_f(vsite, x, fr->f_novirsum, nullptr,
                            (flags & GMX_FORCE_VIRIAL), fr->vir_el_recip,
                            nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
@@ -735,7 +735,7 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
 
 gmx_bool use_GPU(const nonbonded_verlet_t *nbv)
 {
-    return nbv != NULL && nbv->bUseGPU;
+    return nbv != nullptr && nbv->bUseGPU;
 }
 
 static gmx_inline void clear_rvecs_omp(int n, rvec v[])
@@ -946,7 +946,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             nbnxn_put_on_grid(nbv->nbs, fr->ePBC, box,
                               0, vzero, box_diag,
                               0, mdatoms->homenr, -1, fr->cginfo, x,
-                              0, NULL,
+                              0, nullptr,
                               nbv->grp[eintLocal].kernel_type,
                               nbv->grp[eintLocal].nbat);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_LOCAL);
@@ -1477,7 +1477,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (inputrecElecField(inputrec))
         {
             /* Compute forces due to electric field */
-            calc_f_el(MASTER(cr) ? field : NULL,
+            calc_f_el(MASTER(cr) ? field : nullptr,
                       start, homenr, mdatoms->chargeA, fr->f_novirsum,
                       inputrec->ex, inputrec->et, t);
         }
@@ -1488,7 +1488,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
         {
             wallcycle_start(wcycle, ewcVSITESPREAD);
-            spread_vsite_f(vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
+            spread_vsite_f(vsite, x, f, fr->fshift, FALSE, nullptr, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
             wallcycle_stop(wcycle, ewcVSITESPREAD);
         }
@@ -1852,7 +1852,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (inputrecElecField(inputrec))
         {
             /* Compute forces due to electric field */
-            calc_f_el(MASTER(cr) ? field : NULL,
+            calc_f_el(MASTER(cr) ? field : nullptr,
                       start, homenr, mdatoms->chargeA, fr->f_novirsum,
                       inputrec->ex, inputrec->et, t);
         }
@@ -1872,7 +1872,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
                 (flags & GMX_FORCE_VIRIAL))
             {
-                dd_move_f(cr->dd, fr->f_novirsum, NULL);
+                dd_move_f(cr->dd, fr->f_novirsum, nullptr);
             }
             wallcycle_stop(wcycle, ewcMOVEF);
         }
@@ -1883,7 +1883,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
         {
             wallcycle_start(wcycle, ewcVSITESPREAD);
-            spread_vsite_f(vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
+            spread_vsite_f(vsite, x, f, fr->fshift, FALSE, nullptr, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
             wallcycle_stop(wcycle, ewcVSITESPREAD);
         }
@@ -2039,22 +2039,22 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
     dvdl_dum = 0;
 
     /* constrain the current position */
-    constrain(NULL, TRUE, FALSE, constr, &(top->idef),
+    constrain(nullptr, TRUE, FALSE, constr, &(top->idef),
               ir, cr, step, 0, 1.0, md,
-              state->x, state->x, NULL,
+              state->x, state->x, nullptr,
               fr->bMolPBC, state->box,
               state->lambda[efptBONDED], &dvdl_dum,
-              NULL, NULL, nrnb, econqCoord);
+              nullptr, nullptr, nrnb, econqCoord);
     if (EI_VV(ir->eI))
     {
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
-        constrain(NULL, TRUE, FALSE, constr, &(top->idef),
+        constrain(nullptr, TRUE, FALSE, constr, &(top->idef),
                   ir, cr, step, 0, 1.0, md,
                   state->x, state->v, state->v,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
-                  NULL, NULL, nrnb, econqVeloc);
+                  nullptr, nullptr, nrnb, econqVeloc);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
@@ -2079,12 +2079,12 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                     gmx_step_str(step, buf));
         }
         dvdl_dum = 0;
-        constrain(NULL, TRUE, FALSE, constr, &(top->idef),
+        constrain(nullptr, TRUE, FALSE, constr, &(top->idef),
                   ir, cr, step, -1, 1.0, md,
-                  state->x, savex, NULL,
+                  state->x, savex, nullptr,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
-                  state->v, NULL, nrnb, econqCoord);
+                  state->v, nullptr, nrnb, econqCoord);
 
         for (i = start; i < end; i++)
         {
@@ -2515,7 +2515,7 @@ static void low_do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
         else
         {
             /* Pass NULL iso fplog to avoid graph prints for each molecule type */
-            mk_graph_ilist(NULL, mtop->moltype[molb->type].ilist,
+            mk_graph_ilist(nullptr, mtop->moltype[molb->type].ilist,
                            0, molb->natoms_mol, FALSE, FALSE, graph);
 
             for (mol = 0; mol < molb->nmol; mol++)
@@ -2576,7 +2576,7 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
                 nonbonded_verlet_t *nbv,
                 gmx_bool bWriteStat)
 {
-    t_nrnb *nrnb_tot = NULL;
+    t_nrnb *nrnb_tot = nullptr;
     double  delta_t  = 0;
     double  nbfs     = 0, mflop = 0;
     double  elapsed_time,
@@ -2644,7 +2644,7 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
 
     if (SIMMASTER(cr))
     {
-        struct gmx_wallclock_gpu_t* gputimes = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : NULL;
+        struct gmx_wallclock_gpu_t* gputimes = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : nullptr;
 
         wallcycle_print(fplog, mdlog, cr->nnodes, cr->npmenodes, nthreads_pp, nthreads_pme,
                         elapsed_time_over_all_ranks,
@@ -2731,7 +2731,7 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, real
     }
 
     /* Send to the log the information on the current lambdas */
-    if (fplog != NULL)
+    if (fplog != nullptr)
     {
         fprintf(fplog, "Initial vector of lambda components:[ ");
         for (i = 0; i < efptNR; i++)
@@ -2781,10 +2781,10 @@ void init_md(FILE *fplog,
     }
     if (*bSimAnn)
     {
-        update_annealing_target_temp(ir, ir->init_t, upd ? *upd : NULL);
+        update_annealing_target_temp(ir, ir->init_t, upd ? *upd : nullptr);
     }
 
-    if (vcm != NULL)
+    if (vcm != nullptr)
     {
         *vcm = init_vcm(fplog, &mtop->groups, ir);
     }
@@ -2814,7 +2814,7 @@ void init_md(FILE *fplog,
     {
         *outf = init_mdoutf(fplog, nfile, fnm, Flags, cr, ir, mtop, oenv, wcycle);
 
-        *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : mdoutf_get_fp_ene(*outf),
+        *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? nullptr : mdoutf_get_fp_ene(*outf),
                               mtop, ir, mdoutf_get_fp_dhdl(*outf));
     }
 

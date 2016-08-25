@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -137,20 +137,20 @@ evaluate_within(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */
 
 /** Parameters for the \p distance selection method. */
 static gmx_ana_selparam_t smparams_distance[] = {
-    {"cutoff", {REAL_VALUE, 1, {NULL}}, NULL, SPAR_OPTIONAL},
-    {"from",   {POS_VALUE,  1, {NULL}}, NULL, SPAR_DYNAMIC},
+    {"cutoff", {REAL_VALUE, 1, {nullptr}}, nullptr, SPAR_OPTIONAL},
+    {"from",   {POS_VALUE,  1, {nullptr}}, nullptr, SPAR_DYNAMIC},
 };
 
 /** Parameters for the \p mindistance selection method. */
 static gmx_ana_selparam_t smparams_mindistance[] = {
-    {"cutoff", {REAL_VALUE, 1, {NULL}}, NULL, SPAR_OPTIONAL},
-    {"from",   {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
+    {"cutoff", {REAL_VALUE, 1, {nullptr}}, nullptr, SPAR_OPTIONAL},
+    {"from",   {POS_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
 /** Parameters for the \p within selection method. */
 static gmx_ana_selparam_t smparams_within[] = {
-    {NULL, {REAL_VALUE,  1, {NULL}}, NULL, 0},
-    {"of", {POS_VALUE,  -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
+    {nullptr, {REAL_VALUE,  1, {nullptr}}, nullptr, 0},
+    {"of", {POS_VALUE,  -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
 //! Help title for distance selection methods.
@@ -181,12 +181,12 @@ gmx_ana_selmethod_t sm_distance = {
     "distance", REAL_VALUE, SMETH_DYNAMIC,
     asize(smparams_distance), smparams_distance,
     &init_data_common,
-    NULL,
+    nullptr,
     &init_common,
-    NULL,
+    nullptr,
     &free_data_common,
     &init_frame_common,
-    NULL,
+    nullptr,
     &evaluate_distance,
     {"distance from POS [cutoff REAL]",
      helptitle_distance, asize(help_distance), help_distance},
@@ -197,12 +197,12 @@ gmx_ana_selmethod_t sm_mindistance = {
     "mindistance", REAL_VALUE, SMETH_DYNAMIC,
     asize(smparams_mindistance), smparams_mindistance,
     &init_data_common,
-    NULL,
+    nullptr,
     &init_common,
-    NULL,
+    nullptr,
     &free_data_common,
     &init_frame_common,
-    NULL,
+    nullptr,
     &evaluate_distance,
     {"mindistance from POS_EXPR [cutoff REAL]",
      helptitle_distance, asize(help_distance), help_distance},
@@ -213,12 +213,12 @@ gmx_ana_selmethod_t sm_within = {
     "within", GROUP_VALUE, SMETH_DYNAMIC,
     asize(smparams_within), smparams_within,
     &init_data_common,
-    NULL,
+    nullptr,
     &init_common,
-    NULL,
+    nullptr,
     &free_data_common,
     &init_frame_common,
-    NULL,
+    nullptr,
     &evaluate_within,
     {"within REAL of POS_EXPR",
      helptitle_distance, asize(help_distance), help_distance},

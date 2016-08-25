@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,8 +64,7 @@ namespace gmx
  */
 
 ITopologyProvider::~ITopologyProvider()
-{
-}
+    = default;
 
 /********************************************************************
  * SelectionOptionBehavior
@@ -77,12 +76,12 @@ class SelectionOptionBehavior::Impl
         Impl(SelectionCollection *selections,
              ITopologyProvider   *topologyProvider)
             : selections_(*selections), topologyProvider_(*topologyProvider),
-              manager_(selections), grps_(NULL)
+              manager_(selections), grps_(nullptr)
         {
         }
         ~Impl()
         {
-            if (grps_ != NULL)
+            if (grps_ != nullptr)
             {
                 gmx_ana_indexgrps_free(grps_);
             }
@@ -106,27 +105,27 @@ class SelectionOptionBehavior::Impl
                                  "  %s\n(with -n), but it was not used by any selection.\n",
                                  ndxfile_.c_str());
                 }
-                selections_.setIndexGroups(NULL);
+                selections_.setIndexGroups(nullptr);
                 return;
             }
             if (ndxfile_.empty())
             {
                 t_topology *top = topologyProvider_.getTopology(false);
-                gmx_ana_indexgrps_init(&grps_, top, NULL);
+                gmx_ana_indexgrps_init(&grps_, top, nullptr);
             }
             else
             {
-                gmx_ana_indexgrps_init(&grps_, NULL, ndxfile_.c_str());
+                gmx_ana_indexgrps_init(&grps_, nullptr, ndxfile_.c_str());
             }
             selections_.setIndexGroups(grps_);
         }
         void doneIndexGroups()
         {
-            if (grps_ != NULL)
+            if (grps_ != nullptr)
             {
-                selections_.setIndexGroups(NULL);
+                selections_.setIndexGroups(nullptr);
                 gmx_ana_indexgrps_free(grps_);
-                grps_ = NULL;
+                grps_ = nullptr;
             }
         }
 
@@ -134,7 +133,7 @@ class SelectionOptionBehavior::Impl
         {
             t_topology *top    = topologyProvider_.getTopology(selections_.requiresTopology());
             int         natoms = -1;
-            if (top == NULL)
+            if (top == nullptr)
             {
                 natoms = topologyProvider_.getAtomCount();
             }
@@ -158,8 +157,7 @@ SelectionOptionBehavior::SelectionOptionBehavior(
 }
 
 SelectionOptionBehavior::~SelectionOptionBehavior()
-{
-}
+    = default;
 
 void
 SelectionOptionBehavior::initOptions(IOptionsContainer *options)

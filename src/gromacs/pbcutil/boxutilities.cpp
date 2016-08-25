@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,7 +99,7 @@ void preserve_box_shape(t_inputrec *ir, matrix box_rel, matrix b)
 void set_box_rel(t_inputrec *ir, t_state *state)
 {
     /* Make sure the box obeys the restrictions before we fix the ratios */
-    correct_box(NULL, 0, state->box, NULL);
+    correct_box(nullptr, 0, state->box, nullptr);
 
     clear_mat(state->box_rel);
 
