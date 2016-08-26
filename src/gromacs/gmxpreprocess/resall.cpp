@@ -320,8 +320,8 @@ void clear_t_restp(t_restp *rrtp)
 void print_resall_header(FILE *out, t_restp rtp[])
 {
     fprintf(out, "[ bondedtypes ]\n");
-    fprintf(out, "; bonds  angles  dihedrals  impropers all_dihedrals nr_exclusions  HH14  remove_dih\n");
-    fprintf(out, " %5d  %6d  %9d  %9d  %14d  %14d %14d %14d\n\n",
+    fprintf(out, "; bonds  angles  dihedrals  impropers all_dihedrals nr_exclusions  HH14  remove_dih polarizable\n");
+    fprintf(out, " %5d  %6d  %9d  %9d  %14d  %14d %14d %14d %14d\n\n",
             rtp[0].rb[0].type,
             rtp[0].rb[1].type,
             rtp[0].rb[2].type,
@@ -329,7 +329,8 @@ void print_resall_header(FILE *out, t_restp rtp[])
             rtp[0].bKeepAllGeneratedDihedrals,
             rtp[0].nrexcl,
             rtp[0].bGenerateHH14Interactions,
-            rtp[0].bRemoveDihedralIfWithImproper);
+            rtp[0].bRemoveDihedralIfWithImproper,
+            rtp[0].bPolarizable);
 }
 
 void print_resall(FILE *out, int nrtp, t_restp rtp[],
@@ -360,12 +361,12 @@ void print_resall(FILE *out, int nrtp, t_restp rtp[],
 /* TODO: modify for alpha and Thole */
 void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
                  gpp_atomtype_t atype, t_symtab *tab,
-                 gmx_bool bAllowOverrideRTP, gmx_bool bDrude)
+                 gmx_bool bAllowOverrideRTP, gmx_bool *bDrude)
 {
     FILE         *in;
     char          filebase[STRLEN], line[STRLEN], header[STRLEN];
     int           i, nrtp, maxrtp, bt, nparam;
-    int           dum1, dum2, dum3;
+    int           dum1, dum2, dum3, dum4;
     t_restp      *rrtp, *header_settings;
     gmx_bool      bNextResidue, bError;
     int           firstrtp;
@@ -398,6 +399,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
     header_settings->nrexcl                        = 3;
     header_settings->bGenerateHH14Interactions     = TRUE;
     header_settings->bRemoveDihedralIfWithImproper = TRUE;
+    header_settings->bPolarizable                  = FALSE;
 
     /* Column 5 & 6 aren't really bonded types, but we include
      * them here to avoid introducing a new section:
@@ -415,6 +417,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
      * Column 7: Generate 1,4 interactions between two hydrogen atoms
      * Column 8: Remove proper dihedrals if centered on the same bond
      *           as an improper dihedral
+     * Column 9: Whether or not the force field is polarizable (e.g. Drude FF)
      */
     get_a_line(in, line, STRLEN);
     if (!get_header(line, header))
@@ -424,16 +427,17 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
     if (gmx_strncasecmp("bondedtypes", header, 5) == 0)
     {
         get_a_line(in, line, STRLEN);
-        if ((nparam = sscanf(line, "%d %d %d %d %d %d %d %d",
+        if ((nparam = sscanf(line, "%d %d %d %d %d %d %d %d %d",
                              &header_settings->rb[ebtsBONDS].type, &header_settings->rb[ebtsANGLES].type,
                              &header_settings->rb[ebtsPDIHS].type, &header_settings->rb[ebtsIDIHS].type,
-                             &dum1, &header_settings->nrexcl, &dum2, &dum3)) < 4)
+                             &dum1, &header_settings->nrexcl, &dum2, &dum3, &dum4)) < 4)
         {
             gmx_fatal(FARGS, "need 4 to 8 parameters in the header of .rtp file %s at line:\n%s\n", rrdb, line);
         }
         header_settings->bKeepAllGeneratedDihedrals    = (dum1 != 0);
         header_settings->bGenerateHH14Interactions     = (dum2 != 0);
         header_settings->bRemoveDihedralIfWithImproper = (dum3 != 0);
+        header_settings->bPolarizable                  = (dum4 != 0);
         get_a_line(in, line, STRLEN);
         if (nparam < 5)
         {
@@ -455,6 +459,15 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
             fprintf(stderr, "Using default: removing proper dihedrals found on the same bond as a proper dihedral\n");
             header_settings->bRemoveDihedralIfWithImproper = TRUE;
         }
+        if (nparam < 9)
+        {
+            fprintf(stderr, "Detected a non-polarizable force field\n");
+            header_settings->bPolarizable = FALSE;
+        }
+        if (nparam == 9 && (header_settings->bPolarizable == TRUE))
+        {
+            fprintf(stderr, "Detected a polarizable force field\n");
+        }
     }
     else
     {
@@ -463,6 +476,9 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
                 "Will proceed as if the entry was:\n");
         print_resall_header(stderr, header_settings);
     }
+
+    (*bDrude) = header_settings->bPolarizable;
+
     /* We don't know the current size of rrtp, but simply realloc immediately */
     nrtp   = *nrtpptr;
     rrtp   = *rtp;
@@ -504,7 +520,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
                 else if (gmx_strncasecmp("atoms", header, 5) == 0)
                 {
                     /* header is the atoms directive */
-                    bError = !read_atoms(in, line, &(rrtp[nrtp]), tab, atype, bDrude);
+                    bError = !read_atoms(in, line, &(rrtp[nrtp]), tab, atype, (*bDrude));
                 }
                 else
                 {

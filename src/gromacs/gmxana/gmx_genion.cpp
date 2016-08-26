@@ -468,8 +468,7 @@ int gmx_genion(int argc, char *argv[])
         { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator" },
         { "-conc",  FALSE, etREAL, {&conc},
           "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [TT].tpr[tt] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
-        { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "},
-        { "-charmmdrude", FALSE, etBOOL, {&bDrude}, "Add polarizable ions. ONLY for the CHARMM Drude force field." }
+        { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "}
     };
     t_topology         top;
     rvec              *x, *v;
@@ -481,7 +480,7 @@ int gmx_genion(int argc, char *argv[])
     int               *index;
     char              *grpname;
     gmx_bool          *bSet;
-    int                i, nw, nwa, nsa, nsalt, iqtot;
+    int                i, nw, nwa, nsa, nsalt, iqtot, nshell;
     gmx_output_env_t  *oenv;
     gmx_rng_t          rng;
     t_filenm           fnm[] = {
@@ -513,14 +512,24 @@ int gmx_genion(int argc, char *argv[])
     read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, &x, &v, box, FALSE);
     atoms = top.atoms;
 
-    /* Compute total charge */
+    /* Compute total charge and look for shells/Drudes in one loop */
     qtot = 0;
+    nshell = 0;
     for (i = 0; (i < atoms.nr); i++)
     {
         qtot += atoms.atom[i].q;
+        if (atoms.atom[i].ptype == eptShell)
+        {
+            nshell++;
+        }
     }
     iqtot = std::round(qtot);
 
+    if (nshell > 0)
+    {
+        bDrude = TRUE;
+        fprintf(stderr, "%d shells detected, will add polarizable ions.\n", nshell);
+    }
 
     if (conc > 0)
     {

@@ -90,6 +90,7 @@ typedef struct {
     int           nrexcl;
     gmx_bool      bGenerateHH14Interactions;
     gmx_bool      bRemoveDihedralIfWithImproper;
+    gmx_bool      bPolarizable;
     /* list of bonded interactions to add */
     t_rbondeds    rb[ebtsNR];
 } t_restp;

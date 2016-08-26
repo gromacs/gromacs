@@ -1324,7 +1324,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     static gmx_bool    bSort          = TRUE, bAllowMissing = FALSE, bRemoveH = FALSE;
     static gmx_bool    bDeuterate     = FALSE, bVerbose = FALSE, bChargeGroups = TRUE, bCmap = TRUE;
     static gmx_bool    bRenumRes      = FALSE, bRTPresname = FALSE;
-    static gmx_bool    bDrude         = FALSE;
+    static gmx_bool    bPolarizable   = FALSE;
     static real        angle          = 135.0, distance = 0.3, posre_fc = 1000;
     static real        long_bond_dist = 0.25, short_bond_dist = 0.05;
     static const char *vsitestr[]     = { NULL, "none", "hydrogens", "aromatics", NULL };
@@ -1396,9 +1396,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         { "-renum", TRUE, etBOOL, {&bRenumRes},
           "Renumber the residues consecutively in the output"  },
         { "-rtpres", TRUE, etBOOL, {&bRTPresname},
-          "Use [REF].rtp[ref] entry names as residue names"  },
-        { "-charmmdrude", FALSE, etBOOL, {&bDrude},
-          "Add Drude oscillators to structure. ONLY for the CHARMM-Drude force field." }
+          "Use [REF].rtp[ref] entry names as residue names"  }
     };
 #define NPARGS asize(pa)
 
@@ -1771,7 +1769,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     restp = NULL;
     for (i = 0; i < nrtpf; i++)
     {
-        read_resall(rtpf[i], &nrtp, &restp, atype, &symtab, FALSE, bDrude);
+        read_resall(rtpf[i], &nrtp, &restp, atype, &symtab, FALSE, &bPolarizable);
         sfree(rtpf[i]);
     }
     sfree(rtpf);
@@ -1787,8 +1785,8 @@ int gmx_pdb2gmx(int argc, char *argv[])
     nah = read_h_db(ffdir, &ah);
 
     /* Read Termini database... */
-    nNtdb = read_ter_db(ffdir, 'n', &ntdb, atype, bDrude);
-    nCtdb = read_ter_db(ffdir, 'c', &ctdb, atype, bDrude);
+    nNtdb = read_ter_db(ffdir, 'n', &ntdb, atype, bPolarizable);
+    nCtdb = read_ter_db(ffdir, 'c', &ctdb, atype, bPolarizable);
 
     top_fn   = ftp2fn(efTOP, NFILE, fnm);
     top_file = gmx_fio_fopen(top_fn, "w");
@@ -1998,7 +1996,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
         /* Generate Hydrogen atoms (and termini) in the sequence */
         fprintf(stderr, "Generating any missing hydrogen atoms%s and/or adding termini.\n",
-                bDrude ? ", Drudes, lone pairs," : "");
+                bPolarizable ? ", Drudes, lone pairs," : "");
 
         /* Note that new function types have been added to cause add_h to build terminus-specific
          * Drudes and lone pairs, so this function builds more than just H now */ 
@@ -2009,7 +2007,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         /* At this point, pdba has all H and termini built, so we need to add lone pairs (if any)
          * and Drudes. For topology reasons and compatibility with CHARMM, we need to follow this
          * exact order, so that H are inserted first (above), then LP, and Drudes. */ 
-        if (bDrude)
+        if (bPolarizable)
         {
             add_drude_lonepairs(&pdba, &x, restp_chain, nssbonds, ssbonds);
             add_drudes(&pdba, &x);
@@ -2147,7 +2145,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
          * Drude positions will normally coincide with the parent atom  
          * if the structure has not yet been energy-minimized, so most
          * input files will generate a ton of warnings without this */
-        if (bDrude)
+        if (bPolarizable)
         {
             short_bond_dist = 0.0;
         }
@@ -2159,7 +2157,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
                 bVsites, bVsiteAromatics, ffdir,
                 mHmult, nssbonds, ssbonds,
                 long_bond_dist, short_bond_dist, bDeuterate, bChargeGroups, bCmap,
-                bRenumRes, bRTPresname, bDrude);
+                bRenumRes, bRTPresname, bPolarizable);
 
         if (!cc->bAllWat)
         {
