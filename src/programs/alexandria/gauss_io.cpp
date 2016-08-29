@@ -316,11 +316,12 @@ static void gmx_molprop_read_babel(const char *g98,
     }
 
     {
-        double              temperature, DeltaHf0, DeltaHfT, DeltaGfT, DeltaSfT, S0T, CVT, CPT;
+        double              temperature, DeltaHf0, DeltaHfT, DeltaGfT, DeltaSfT, S0T, CVT, CPT, ZPE;
         std::vector<double> Scomponents;
         if (extract_thermochemistry(mol, false, &nsymm,
                                     0, 0.0,
                                     &temperature,
+				    &ZPE,
                                     &DeltaHf0,
                                     &DeltaHfT,
                                     &DeltaGfT,
@@ -383,6 +384,13 @@ static void gmx_molprop_read_babel(const char *g98,
                                                 0);
                 mpt.LastExperiment()->AddEnergy(mes);
             }
+	    alexandria::MolecularEnergy me7("ZPE",
+                                            mpo_unit[MPO_ENERGY],
+                                            0,
+                                            epGAS,
+                                            convert2gmx(ZPE, eg2cKcal_Mole),
+                                            0);
+            mpt.LastExperiment()->AddEnergy(me7);
         }
     }
 

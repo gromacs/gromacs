@@ -45,7 +45,9 @@
 #include <gtest/gtest.h>
 
 #include "programs/alexandria/poldata.h"
+#include "programs/alexandria/poldata-low.h"
 #include "programs/alexandria/poldata_xml.h"
+#include "programs/alexandria/plistwrapper.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -227,6 +229,14 @@ TEST_F (PoldataTest, forceField)
 {
     std::string force =  pd_.getForceField( );
     checker_.checkString(force, "forceField");
+}
+
+
+TEST_F (PoldataTest, lenghtUnit)
+{
+    auto fs = pd_.findForces(alexandria::eitBONDS);
+    std::string length =  fs->unit();
+    checker_.checkString(length, "lenghtUnit");
 }
 
 TEST_F (PoldataTest, polarUnit)

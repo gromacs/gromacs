@@ -4,8 +4,8 @@
   <String Name="elem">H</String>
   <String Name="desc">other hydrogen e.g. on aromatic C</String>
   <String Name="type">h1</String>
-  <String Name="ptype">ha</String>
-  <String Name="btype">h1</String>
-  <String Name="vdwparams">0 0</String>
-  <String Name="refEnthalpy">217.999</String>
+  <String Name="ptype">p_ha</String>
+  <String Name="btype">b_h1</String>
+  <String Name="vdwparams">2.471350e-01 6.568880e-02 1.000000e+01</String>
+  <String Name="refEnthalpy">222.2325</String>
 </ReferenceData>

@@ -427,8 +427,8 @@ static void round_numbers(real *av, real *sig)
 }
 
 void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
-               real Dm, real beta, real kt,
-               real klin, real kp, real kub)
+               real Dm, real beta, real kt, real klin, 
+	       real kp, real kimp, real kub)
 {
     int                      N;
     real                     av, sig;
@@ -511,7 +511,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         gmx_stats_get_average(i.lsq, &av);
         gmx_stats_get_sigma(i.lsq, &sig);
         gmx_stats_get_npoints(i.lsq, &N);
-        sprintf(pbuf, "%g  1", kp);
+        sprintf(pbuf, "%g  1", kimp);
         round_numbers(&av, &sig);
         atoms = {i.a1, i.a2, i.a3, i.a4};
         improper_dihedral->addForce(atoms, pbuf, av, sig, N);
@@ -540,7 +540,7 @@ int alex_bastat(int argc, char *argv[])
     static int                       compress       = 0;
     static int                       maxwarn        = 0;
     static gmx_bool                  bHisto         = FALSE, bBondOrder = TRUE, bDih = FALSE;
-    static real                      Dm             = 0, kt = 0, kp = 0, beta = 0, klin = 0, kub = 0;
+    static real                      Dm             = 0, kt = 0, kp = 0, kimp = 0, beta = 0, klin = 0, kub = 0;
     static char                     *lot            = (char *)"B3LYP/aug-cc-pVTZ";
     static const char               *cqdist[]       = {
         NULL, "AXp", "AXs", "AXg", "Yang", "Bultinck", "Rappe", NULL
@@ -560,6 +560,8 @@ int alex_bastat(int argc, char *argv[])
           "Linear angle force constant (kJ/mol/nm^2)" },
         { "-kp",    FALSE, etREAL, {&kp},
           "Dihedral angle force constant (kJ/mol/rad^2)" },
+	{ "-kimp",    FALSE, etREAL, {&kimp},
+          "Improper dihedral angle force constant (kJ/mol/rad^2)" },
         { "-kub",   FALSE, etREAL, {&kub},
           "Urey_Bradley force constant" },
         { "-dih",   FALSE, etBOOL, {&bDih},
@@ -737,6 +739,7 @@ int alex_bastat(int argc, char *argv[])
                         int          ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
                         int          aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                         int          ak = mmi.ltop_->idef.il[funcType].iatoms[j+3];
+
                         rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
                         rvec_sub(mmi.x_[ak], mmi.x_[aj], dx2);
 
@@ -744,10 +747,10 @@ int alex_bastat(int argc, char *argv[])
 
                         if ( (refValue > 175) || (refValue < 5))
                         {
-                            real b0  = 1000*norm(dx);
-                            real b1  = 1000*norm(dx2);
-                            refValue = (b1/(b0+b1));
-                            linear   = true;
+                            double b0  = norm(dx);
+                            double b1  = norm(dx2);
+                            refValue   = 1000*(b1/(b0+b1));
+                            linear     = true;
                         }
 
                         std::string cai, caj, cak;
@@ -820,7 +823,7 @@ int alex_bastat(int argc, char *argv[])
     {
         dump_histo(bonds, bspacing, aspacing, oenv);
     }
-    update_pd(fp, bonds, pd, Dm, beta, kt, klin, kp, kub);
+    update_pd(fp, bonds, pd, Dm, beta, kt, klin, kp, kimp, kub);
 
     writePoldata(opt2fn("-o", NFILE, fnm), pd, compress);
 

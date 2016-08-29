@@ -69,7 +69,7 @@ class MolDip
                   char *lot, const MolSelect &gms,
                   real watoms, gmx_bool bCheckSupport,
                   bool bPairs, bool bDihedral, 
-		  bool bPolar, const char *tabfn);
+		  bool bPolar, bool bZPE, const char *tabfn);
 
         void CalcDeviation();
 };

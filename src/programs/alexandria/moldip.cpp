@@ -531,7 +531,7 @@ void MolDip::Read(FILE *fp,
                   real watoms,
                   gmx_bool bCheckSupport,
                   bool bPairs, bool bDihedral,
-                  bool bPolar,
+                  bool bPolar, bool bZPE,
                   const char *tabfn)
 {
     int                              nwarn = 0, nmol_cpu;
@@ -621,7 +621,7 @@ void MolDip::Read(FILE *fp,
                 }
                 if (immOK == imm)
                 {
-                    imm = mpnew.getExpProps(_bQM, bZero, lot, pd_);
+		    imm = mpnew.getExpProps(_bQM, bZero, bZPE, lot, pd_);
                 }
 
                 if (NULL != debug)
@@ -743,7 +743,7 @@ void MolDip::Read(FILE *fp,
             }
             if (immOK == imm)
             {
-                imm = mpnew.getExpProps(_bQM, bZero, lot, pd_);
+	        imm = mpnew.getExpProps(_bQM, bZero, bZPE, lot, pd_);
             }
 
             mpnew.eSupp = eSupportLocal;

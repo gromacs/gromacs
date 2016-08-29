@@ -545,14 +545,15 @@ void readPoldata(const std::string &fileName,
 
 static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
 {
-    xmlNodePtr                    child, grandchild;
-    int                           nexcl;
-    std::string                   geometry, name,
-                                  acentral, attached, tau_unit, ahp_unit,
-                                  epref, desc, params;
+    xmlNodePtr   child, grandchild;
+    int          nexcl;
+    std::string  geometry, name,
+                 acentral, attached, tau_unit, ahp_unit,
+                 epref, desc, params;
     std::string  neighbors, zeta, qstr, rowstr;
     double       fudgeQQ, fudgeLJ;
     std::string  tmp, func, blu;
+
     child = add_xml_child(parent, exml_names[exmlATOMTYPES]);
     tmp   = pd.getForceField();
     if (0 != tmp.size())

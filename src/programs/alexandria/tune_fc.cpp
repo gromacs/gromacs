@@ -959,7 +959,7 @@ double OptPrep::calcDeviation()
 {
     rvec    mu_tot;
     int     j;
-    double  ener, morse, angle, coulSR, lang, lj, bham;
+    double  ener;
     FILE   *dbcopy;
 
     if (PAR(_cr))
@@ -1031,15 +1031,9 @@ double OptPrep::calcDeviation()
 
             if (nullptr != debug)
             {
-                morse   = mymol.enerd_->term[F_MORSE];
-                angle   = mymol.enerd_->term[F_UREY_BRADLEY];
-                coulSR  = mymol.enerd_->term[F_COUL_SR];
-                bham    = mymol.enerd_->term[F_BHAM];
-                lj      = mymol.enerd_->term[F_LJ];
-                lang    = mymol.enerd_->term[F_LINEAR_ANGLES];
-                fprintf(debug, "%s Chi_2 %g Hform %g Emol %g  Ecalc %g Morse %g  Angles %g LinearAng %g  CoulSR %g  LJ  %g  BHAM  %g  Force2 %g\n",
-                        mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, mymol.Emol,
-                        mymol.Ecalc, morse, angle, lang, coulSR, lj, bham, mymol.Force2);
+                fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  Hangle %g Langle %g  PDIHS  %g  Coul %g  LJ  %g  BHAM  %g  Force2 %g\n",
+                        mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, mymol.Emol, mymol.Ecalc, mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY], 
+			mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS], mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ], mymol.enerd_->term[F_BHAM], mymol.Force2);
             }
         }
     }
@@ -1408,7 +1402,8 @@ int alex_tune_fc(int argc, char *argv[])
     static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data  = 3, compress = 0;
     static real           tol           = 1e-3, stol = 1e-6, watoms = 0;
-    static gmx_bool       bRandom       = FALSE, bBound = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bGaussianBug = TRUE, bPolar = FALSE, bFitZeta = TRUE;
+    static gmx_bool       bRandom       = FALSE, bBound = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE; 
+    static gmx_bool       bQM           = FALSE, bGaussianBug = TRUE, bPolar = FALSE, bFitZeta = TRUE, bZPE = FALSE;
     static real           J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
     static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50;
     static real           fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0, fc_epot = 1, fc_force = 0.001;
@@ -1466,6 +1461,8 @@ int alex_tune_fc(int argc, char *argv[])
           "Minimum value for D0 in Morse potential" },
         { "-qm",     FALSE, etBOOL, {&bQM},
           "Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" },
+	{ "-zpe",     FALSE, etBOOL, {&bZPE},
+          "Consider zero-point energy from thermochemistry calculations in order to calculate the reference enthalpy of the molecule" },
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
         { "-fc_bound",    FALSE, etREAL, {&fc_bound},
@@ -1559,7 +1556,7 @@ int alex_tune_fc(int argc, char *argv[])
              opt_elem, const_elem,
              lot, gms, watoms, FALSE,
              bOpt[eitLJ14], bOpt[eitPROPER_DIHEDRALS],
-             bPolar, tabfn);
+             bPolar, bZPE, tabfn);
 
     opt.checkSupport(fp, bOpt);
 

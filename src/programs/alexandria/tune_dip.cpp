@@ -906,7 +906,8 @@ int alex_tune_dip(int argc, char *argv[])
     static int                  nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
     static int                  minimum_data  = 3, compress = 1;
     static real                 tol           = 1e-3, stol = 1e-6, watoms = 0;
-    static gmx_bool             bRandom       = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bCharged = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
+    static gmx_bool             bRandom       = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE;
+    static gmx_bool             bCharged      = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE, bZPE = FALSE;
     static real                 J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
     static real                 J0_1          = 30, Chi0_1 = 30, w_1 = 50;
     static real                 fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0;
@@ -986,6 +987,8 @@ int alex_tune_dip(int argc, char *argv[])
           "Controls whether or not the Gaussian/Slater widths are optimized." },
         { "-zero", FALSE, etBOOL, {&bZero},
           "Use molecules with zero dipole in the fit as well" },
+	{ "-zpe",     FALSE, etBOOL, {&bZPE},
+          "Consider zero-point energy from thermochemistry calculations in order to calculate the reference enthalpy of the molecule" },
         { "-weight", FALSE, etBOOL, {&bWeighted},
           "Perform a weighted fit, by using the errors in the dipoles presented in the input file. This may or may not improve convergence." },
         { "-hfac",  FALSE, etREAL, {&hfac},
@@ -1055,7 +1058,7 @@ int alex_tune_dip(int argc, char *argv[])
             minimum_data, bZero,
             opt_elem, const_elem,
             lot, gms, watoms, TRUE,
-            false, false, bPol,
+            false, false, bPol, bZPE,
             opt2fn_null("-tab", NFILE, fnm));
     printf("Read %d molecules\n", (int)md._mymol.size());
 

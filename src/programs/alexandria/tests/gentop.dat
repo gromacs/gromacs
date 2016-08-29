@@ -1,85 +1,85 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes forcefield="GAFF" function="LJ_SR" combination_rule="Arithmetic" nexclusions="3" fudgeQQ="1" fudgeLJ="1">
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h1" ptype="ha" btype="h1" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h2" ptype="ha" btype="h1" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h3" ptype="ha" btype="h1" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h4" ptype="ha" btype="h2" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h5" ptype="ha" btype="h2" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="ha" ptype="ha" btype="ha" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="H" description="hydrogen on aliphatic C" atype="hc" ptype="ha" btype="hc" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="H" description="hydrogen on nitrogen" atype="hn" ptype="ha" btype="hp" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="H" description="hydrogen on oxygen" atype="ho" ptype="hp" btype="hp" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="H" description="hydrogen on phosphor" atype="hp" ptype="hp" btype="hp" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="H" description="hydrogen on sulphur" atype="hs" ptype="hp" btype="hp" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="H" description="hydrogen on X" atype="hx" ptype="ha" btype="hp" vdwparams="0 0" ref_enthalpy="217.999"/>
-    <atomtype elem="Li" description="lithium ion" atype="Li+" ptype="Li+" btype="" vdwparams="0 0" ref_enthalpy="685.719"/>
-    <atomtype elem="Be" description="beryllium ion" atype="Be2+" ptype="Be2+" btype="" vdwparams="0 0" ref_enthalpy="2976.332"/>
-    <atomtype elem="C" description="other sp C" atype="c1" ptype="c1" btype="c1" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="C=O or C=S" atype="c" ptype="c2" btype="c" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="pure aromatic atom" atype="ca" ptype="ca" btype="ca" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="bridge aromatic c in byphenyl system" atype="cp" ptype="c2" btype="ca" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cc" ptype="c2" btype="cc" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cd" ptype="c2" btype="cd" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="sp C of conjugated system" atype="cg" ptype="c2" btype="cg" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="ce" ptype="c2" btype="ce" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="cf" ptype="c2" btype="cf" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="sp2 carbon in a 3-membered ring" atype="cu" ptype="c2" btype="cu" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="sp2 carbon in a 4-membered ring" atype="cv" ptype="c2" btype="cv" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="guanidine carbon" atype="cz" ptype="c2" btype="cz" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="other sp2 C" atype="c2" ptype="c2" btype="c2" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="other sp3 C" atype="c3" ptype="c3" btype="c3" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="3-membered ring atom" atype="cx" ptype="c3" btype="cx" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="C" description="4-membered ring atom" atype="cy" ptype="c3" btype="cy" vdwparams="0 0" ref_enthalpy="716.67"/>
-    <atomtype elem="N" description="sp2 N in amides" atype="n" ptype="n" btype="n" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="N" description="sp3 N" atype="n4" ptype="n" btype="n1" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="N" description="sp2 N" atype="n2" ptype="n" btype="n2" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated chain system" atype="ne" ptype="n" btype="n1" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="N" description="sp1 N" atype="n1" ptype="n" btype="n1" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="N" description="sp3 N" atype="n3" ptype="n" btype="n3" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="N" description="amine N connected to aromatic ring" atype="nh" ptype="n" btype="nh" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="N" description="aromatic N" atype="na" ptype="n" btype="na" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="N" description="aromatic N" atype="nb" ptype="n" btype="nb" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="n" btype="nc" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="n" btype="nd" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="N" description="N in nitro group" atype="no" ptype="n" btype="no" vdwparams="0 0" ref_enthalpy="472.683"/>
-    <atomtype elem="O" description="sp2 O" atype="o" ptype="o" btype="o" vdwparams="0 0" ref_enthalpy="249.173"/>
-    <atomtype elem="O" description="sp3 O in hydroxyl group" atype="oh" ptype="o" btype="oh" vdwparams="0 0" ref_enthalpy="249.173"/>
-    <atomtype elem="O" description="sp3 O in hydroxyl group" atype="ow" ptype="ow" btype="oh" vdwparams="0 0" ref_enthalpy="249.173"/>
-    <atomtype elem="O" description="O in carboxylic group with a single bond without hydrogen" atype="on" ptype="o" btype="on" vdwparams="0 0" ref_enthalpy="249.173"/>
-    <atomtype elem="O" description="sp3 O in esters and ethers" atype="os" ptype="o" btype="os" vdwparams="0 0" ref_enthalpy="249.173"/>
-    <atomtype elem="F" description="general fluorine" atype="f" ptype="f" btype="f" vdwparams="0 0" ref_enthalpy="79.39"/>
-    <atomtype elem="F" description="fluoride ion" atype="F" ptype="F-" btype="" vdwparams="0 0" ref_enthalpy="-255.079"/>
-    <atomtype elem="Na" description="sodium ion" atype="Na" ptype="Na+" btype="" vdwparams="0 0" ref_enthalpy="609.343"/>
-    <atomtype elem="Mg" description="magnesium ion" atype="Mg" ptype="Mg2+" btype="" vdwparams="0 0" ref_enthalpy="2341.747"/>
-    <atomtype elem="Al" description="aluminum ion" atype="Al" ptype="Al3+" btype="" vdwparams="0 0" ref_enthalpy="5474.213"/>
-    <atomtype elem="P" description="other sp2 P" atype="p2" ptype="p" btype="p2" vdwparams="0 0" ref_enthalpy="316.39"/>
-    <atomtype elem="P" description="other sp3 P" atype="p3" ptype="p" btype="p3" vdwparams="0 0" ref_enthalpy="316.39"/>
-    <atomtype elem="P" description="hypervalent P" atype="p4" ptype="p" btype="p" vdwparams="0 0" ref_enthalpy="316.39"/>
-    <atomtype elem="P" description="hypervalent P" atype="p5" ptype="p" btype="p" vdwparams="0 0" ref_enthalpy="316.39"/>
-    <atomtype elem="P" description="aromatic P" atype="pb" ptype="p" btype="p" vdwparams="0 0" ref_enthalpy="316.39"/>
-    <atomtype elem="P" description="inner sp2 P of conjugated ring systems" atype="pc" ptype="p" btype="p" vdwparams="0 0" ref_enthalpy="316.39"/>
-    <atomtype elem="P" description="inner sp2 P of conjugated chain system" atype="pe" ptype="p" btype="p" vdwparams="0 0" ref_enthalpy="316.39"/>
-    <atomtype elem="P" description="sp2 P of conjugated system" atype="px" ptype="p" btype="p" vdwparams="0 0" ref_enthalpy="316.39"/>
-    <atomtype elem="P" description="P of conjugated system" atype="py" ptype="p" btype="p" vdwparams="0 0" ref_enthalpy="316.39"/>
-    <atomtype elem="S" description="Sulphur" atype="s" ptype="s" btype="s" vdwparams="0 0" ref_enthalpy="276.98"/>
-    <atomtype elem="S" description="sp2 sulphur" atype="s2" ptype="s" btype="s" vdwparams="0 0" ref_enthalpy="276.98"/>
-    <atomtype elem="S" description="hypervalent S" atype="s4" ptype="s" btype="s" vdwparams="0 0" ref_enthalpy="276.98"/>
-    <atomtype elem="S" description="hypervalent S" atype="s6" ptype="s" btype="s" vdwparams="0 0" ref_enthalpy="276.98"/>
-    <atomtype elem="S" description="sp3 S in thiol" atype="sh" ptype="s" btype="sh" vdwparams="0 0" ref_enthalpy="276.98"/>
-    <atomtype elem="S" description="sp3 sulphur" atype="ss" ptype="s" btype="s" vdwparams="0 0" ref_enthalpy="276.98"/>
-    <atomtype elem="S" description="conjugated S" atype="sx" ptype="s" btype="s" vdwparams="0 0" ref_enthalpy="276.98"/>
-    <atomtype elem="S" description="conjugated S" atype="sy" ptype="s" btype="s" vdwparams="0 0" ref_enthalpy="276.98"/>
-    <atomtype elem="Cl" description="general chlorine" atype="cl" ptype="cl" btype="cl" vdwparams="0 0" ref_enthalpy="121.302"/>
-    <atomtype elem="Cl" description="chloride ion" atype="Cl-" ptype="Cl-" btype="" vdwparams="0 0" ref_enthalpy="-233.954"/>
-    <atomtype elem="K" description="potassium ion" atype="K+" ptype="K+" btype="" vdwparams="0 0" ref_enthalpy="514.007"/>
-    <atomtype elem="Ca" description="calcium ion" atype="Ca2+" ptype="Ca2+" btype="" vdwparams="0 0" ref_enthalpy="1919.228"/>
-    <atomtype elem="Br" description="general bromine" atype="br" ptype="br" btype="br" vdwparams="0 0" ref_enthalpy="111.86"/>
-    <atomtype elem="Br" description="bromide ion" atype="Br" ptype="Br-" btype="" vdwparams="0 0" ref_enthalpy="-219.008"/>
-    <atomtype elem="Rb" description="rubidium ion" atype="Rb" ptype="Rb+" btype="" vdwparams="0 0" ref_enthalpy="490.129"/>
-    <atomtype elem="I" description="general iodine" atype="i" ptype="i" btype="i" vdwparams="0 0" ref_enthalpy="106.762"/>
-    <atomtype elem="I" description="iodide ion" atype="I" ptype="I-" btype="" vdwparams="0 0" ref_enthalpy="-194.591"/>
+  <atomtypes forcefield="GAFF" function="BHAM" combination_rule="KONG_MASON" nexclusions="2" fudgeQQ="1" fudgeLJ="1">
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h1" ptype="p_ha" btype="b_h1" vdwparams="2.471350e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h2" ptype="p_ha" btype="b_h1" vdwparams="2.293170e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h3" ptype="p_ha" btype="b_h1" vdwparams="2.114990e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h4" ptype="p_ha" btype="b_h2" vdwparams="2.510550e-01 6.276000e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="h5" ptype="p_ha" btype="b_h2" vdwparams="2.421460e-01 6.276000e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="other hydrogen e.g. on aromatic C" atype="ha" ptype="p_ha" btype="b_ha" vdwparams="2.599640e-01 6.276000e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on aliphatic C" atype="hc" ptype="p_ha" btype="b_hc" vdwparams="2.649530e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on nitrogen" atype="hn" ptype="p_ha" btype="b_hp" vdwparams="1.069080e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on oxygen" atype="ho" ptype="p_hp" btype="b_hp" vdwparams="0.000000e+00 0.000000e+00 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on phosphor" atype="hp" ptype="p_hp" btype="b_hp" vdwparams="1.069080e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on sulphur" atype="hs" ptype="p_hp" btype="b_hp" vdwparams="1.069080e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="H" description="hydrogen on X" atype="hx" ptype="p_ha" btype="b_hp" vdwparams="1.959980e-01 6.568880e-02 1.000000e+01" ref_enthalpy="222.2325"/>
+    <atomtype elem="Li" description="lithium ion" atype="Li+" ptype="p_Li+" btype="b_" vdwparams="0 0" ref_enthalpy="685.719"/>
+    <atomtype elem="Be" description="beryllium ion" atype="Be2+" ptype="p_Be2+" btype="b_" vdwparams="0 0" ref_enthalpy="2976.332"/>
+    <atomtype elem="C" description="other sp C" atype="c1" ptype="p_c1" btype="b_c1" vdwparams="3.399670e-01 8.786400e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="C=O or C=S" atype="c" ptype="p_c2" btype="b_c" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="pure aromatic atom" atype="ca" ptype="p_ca" btype="b_ca" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="bridge aromatic c in byphenyl system" atype="cp" ptype="p_c2" btype="b_ca" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cc" ptype="p_c2" btype="b_cc" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated ring systems" atype="cd" ptype="p_c2" btype="b_cd" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="sp C of conjugated system" atype="cg" ptype="p_c2" btype="b_cg" vdwparams="3.399670e-01 8.786400e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="ce" ptype="p_c2" btype="b_ce" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="inner sp2 C of conjugated chain systems" atype="cf" ptype="p_c2" btype="b_cf" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="sp2 carbon in a 3-membered ring" atype="cu" ptype="p_c2" btype="b_cu" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="sp2 carbon in a 4-membered ring" atype="cv" ptype="p_c2" btype="b_cv" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="guanidine carbon" atype="cz" ptype="p_c2" btype="b_cz" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="other sp2 C" atype="c2" ptype="p_c2" btype="b_c2" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="other sp3 C" atype="c3" ptype="p_c3" btype="b_c3" vdwparams="3.399670e-01 4.577300e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="3-membered ring atom" atype="cx" ptype="p_c3" btype="b_cx" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="C" description="4-membered ring atom" atype="cy" ptype="p_c3" btype="b_cy" vdwparams="3.399670e-01 3.598240e-01 1.000000e+01" ref_enthalpy="717.721"/>
+    <atomtype elem="N" description="sp2 N in amides" atype="n" ptype="p_n" btype="b_n" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp3 N" atype="n4" ptype="p_n" btype="b_n1" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp2 N" atype="n2" ptype="p_n" btype="b_n2" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated chain system" atype="ne" ptype="p_n" btype="b_n1" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp1 N" atype="n1" ptype="p_n" btype="b_n1" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="sp3 N" atype="n3" ptype="p_n" btype="b_n3" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="amine N connected to aromatic ring" atype="nh" ptype="p_n" btype="b_nh" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="aromatic N" atype="na" ptype="p_n" btype="b_na" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="aromatic N" atype="nb" ptype="p_n" btype="b_nb" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nc" ptype="p_n" btype="b_nc" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="inner sp2 N of conjugated ring systems" atype="nd" ptype="p_n" btype="b_nd" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="N" description="N in nitro group" atype="no" ptype="p_n" btype="b_no" vdwparams="3.250000e-01 7.112800e-01 1.000000e+01" ref_enthalpy="477.018"/>
+    <atomtype elem="O" description="sp2 O" atype="o" ptype="p_o" btype="b_o" vdwparams="2.959920e-01 8.786400e-01 1.000000e+01" ref_enthalpy="253.5145"/>
+    <atomtype elem="O" description="sp3 O in hydroxyl group" atype="oh" ptype="p_o" btype="b_oh" vdwparams="3.066470e-01 8.803140e-01 1.000000e+01" ref_enthalpy="253.5145"/>
+    <atomtype elem="O" description="sp3 O in hydroxyl group" atype="ow" ptype="p_ow" btype="b_oh" vdwparams="0 0" ref_enthalpy="253.5145"/>
+    <atomtype elem="O" description="O in carboxylic group with a single bond without hydrogen" atype="on" ptype="p_o" btype="b_on" vdwparams="0 0" ref_enthalpy="253.5145"/>
+    <atomtype elem="O" description="sp3 O in esters and ethers" atype="os" ptype="p_o" btype="b_os" vdwparams="3.000010e-01 7.112800e-01 1.000000e+01" ref_enthalpy="253.5145"/>
+    <atomtype elem="F" description="general fluorine" atype="f" ptype="p_f" btype="b_f" vdwparams="3.118150e-01 2.552240e-01 1.000000e+01" ref_enthalpy="83.8025"/>
+    <atomtype elem="F" description="fluoride ion" atype="F" ptype="p_F-" btype="b_" vdwparams="0 0" ref_enthalpy="-255.079"/>
+    <atomtype elem="Na" description="sodium ion" atype="Na" ptype="p_Na+" btype="b_" vdwparams="0.000000e+00 0.000000e+00 1.000000e+01" ref_enthalpy="609.343"/>
+    <atomtype elem="Mg" description="magnesium ion" atype="Mg" ptype="p_Mg2+" btype="b_" vdwparams="0.000000e+00 0.000000e+00 1.000000e+01" ref_enthalpy="2341.747"/>
+    <atomtype elem="Al" description="aluminum ion" atype="Al" ptype="p_Al3+" btype="b_" vdwparams="0.000000e+00 0.000000e+00 1.000000e+01" ref_enthalpy="5474.213"/>
+    <atomtype elem="P" description="other sp2 P" atype="p2" ptype="p_p" btype="b_p2" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="other sp3 P" atype="p3" ptype="p_p" btype="b_p3" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="hypervalent P" atype="p4" ptype="p_p" btype="b_p" vdwparams="0 0" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="hypervalent P" atype="p5" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="aromatic P" atype="pb" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="inner sp2 P of conjugated ring systems" atype="pc" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="inner sp2 P of conjugated chain system" atype="pe" ptype="p_p" btype="b_p" vdwparams="0 0" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="sp2 P of conjugated system" atype="px" ptype="p_p" btype="b_p" vdwparams="0 0" ref_enthalpy="321.75"/>
+    <atomtype elem="P" description="P of conjugated system" atype="py" ptype="p_p" btype="b_p" vdwparams="3.741770e-01 8.368000e-01 1.000000e+01" ref_enthalpy="321.75"/>
+    <atomtype elem="S" description="Sulphur" atype="s" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="sp2 sulphur" atype="s2" ptype="p_s" btype="b_s" vdwparams="0 0" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="hypervalent S" atype="s4" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="hypervalent S" atype="s6" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="sp3 S in thiol" atype="sh" ptype="p_s" btype="b_sh" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="sp3 sulphur" atype="ss" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="conjugated S" atype="sx" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="S" description="conjugated S" atype="sy" ptype="p_s" btype="b_s" vdwparams="3.563590e-01 1.046000e+00 1.000000e+01" ref_enthalpy="281.392"/>
+    <atomtype elem="Cl" description="general chlorine" atype="cl" ptype="p_cl" btype="b_cl" vdwparams="3.470940e-01 1.108760e+00 1.000000e+01" ref_enthalpy="125.8925"/>
+    <atomtype elem="Cl" description="chloride ion" atype="Cl-" ptype="p_Cl-" btype="b_" vdwparams="0 0" ref_enthalpy="-233.954"/>
+    <atomtype elem="K" description="potassium ion" atype="K+" ptype="p_K+" btype="b_" vdwparams="0 0" ref_enthalpy="514.007"/>
+    <atomtype elem="Ca" description="calcium ion" atype="Ca2+" ptype="p_Ca2+" btype="b_" vdwparams="0 0" ref_enthalpy="1919.228"/>
+    <atomtype elem="Br" description="general bromine" atype="br" ptype="p_br" btype="b_br" vdwparams="3.599230e-01 1.757280e+00 1.000000e+01" ref_enthalpy="124.1145"/>
+    <atomtype elem="Br" description="bromide ion" atype="Br" ptype="p_Br-" btype="b_" vdwparams="0 0" ref_enthalpy="-219.008"/>
+    <atomtype elem="Rb" description="rubidium ion" atype="Rb" ptype="p_Rb+" btype="b_" vdwparams="0 0" ref_enthalpy="490.129"/>
+    <atomtype elem="I" description="general iodine" atype="i" ptype="p_i" btype="b_i" vdwparams="3.830860e-01 2.092000e+00 1.000000e+01" ref_enthalpy="113.361"/>
+    <atomtype elem="I" description="iodide ion" atype="I" ptype="p_I-" btype="b_" vdwparams="0 0" ref_enthalpy="-194.591"/>
   </atomtypes>
   <poltypes polarizability_unit="Angstrom3" reference="Maaren2014a">
     <poltype ptype="hp" miller="H" bosque="H" polarizability="0" sigma_pol="0"/>
@@ -110,10 +110,11 @@
     <poltype ptype="i" miller="I" bosque="I" polarizability="0" sigma_pol="0"/>
     <poltype ptype="I-" miller="I-" bosque="I" polarizability="10.275" sigma_pol="0"/>
   </poltypes>
-  <gt_bonds length_unit="pm" function="morse"/>
-  <gt_angles angle_unit="degree" function="angles"/>
-  <gt_dihedrals angle_unit="degree" function="pdihs"/>
-  <gt_impropers angle_unit="degree" function="idihs"/>
+  <gt_bonds unit="pm" interaction="BONDS" function="MORSE"/>
+  <gt_angles unit="degree" interaction="ANGLES" function="UREY_BRADLEY"/>
+  <gt_angles unit="degree" interaction="LINEAR_ANGLES" function="LINEAR_ANGLES"/>
+  <gt_dihedrals unit="degree" interaction="PROPER_DIHEDRALS" function="PDIHS"/>
+  <gt_dihedrals unit="degree" interaction="IMPROPER_DIHEDRALS" function="IDIHS"/>
   <bsatoms polarizability_unit="A3" reference="Bosque2002a">
     <bsatom elem="H" polarizability="0.17"/>
     <bsatom elem="C" polarizability="1.51"/>

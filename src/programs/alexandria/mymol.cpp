@@ -143,146 +143,6 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
     return false;
 }
 
-void MyMol::getForceConstants(const Poldata &pd)
-{
-    int         n;
-    double      xx, sx;
-    std::string params;
-
-    for (std::vector<PlistWrapper>::iterator pw = plist_.begin();
-         (pw < plist_.end()); ++pw)
-    {
-        switch (pw->interactionType())
-        {
-            case eitBONDS:
-                for (ParamIterator j = pw->beginParam(); (j < pw->endParam()); ++j)
-                {
-                    std::string btype1, btype2;
-                    if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], btype1) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], btype2))
-                    {
-                        size_t                   ntrain;
-                        int                      lengthUnit;
-
-                        std::vector<std::string> atoms = {btype1, btype2};
-
-                        auto                     force = pd.findForces(eitBONDS);
-
-                        if (-1 == (lengthUnit = string2unit(force->unit().c_str())))
-                        {
-                            gmx_fatal(FARGS, "Unknown length unit %s for bonds", force->unit().c_str());
-                        }
-                        if (!pd.searchForce(atoms, params, &xx, &sx, &ntrain))
-                        {
-                            j->c[0] = convert2gmx(xx, lengthUnit);
-                            std::vector<std::string> ptr = gmx::splitString(params);
-                            n = 0;
-                            for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
-                            {
-                                if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
-                                {
-                                    j->c[1+n] = atof(pi->c_str());
-                                    n++;
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Default bond parameters
-                        j->c[0] = 0.15;
-                        j->c[1] = 2e5;
-                    }
-                }
-                break;
-            case eitANGLES:
-            case eitLINEAR_ANGLES:
-                for (ParamIterator j = pw->beginParam(); (j < pw->endParam()); ++j)
-                {
-                    std::string btype1, btype2, btype3;
-                    if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], btype1) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], btype2) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], btype3))
-                    {
-                        size_t                   ntrain;
-                        std::vector<std::string> atoms = {btype1, btype2, btype3};
-                        if (!pd.searchForce(atoms, params, &xx, &sx, &ntrain))
-                        {
-                            j->c[0] = xx;
-                            std::vector<std::string> ptr = gmx::splitString(params);
-                            n = 0;
-                            for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
-                            {
-                                if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
-                                {
-                                    j->c[1+n] = atof(pi->c_str());
-                                    n++;
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // Default angle parameters
-                        j->c[0] = 109;
-                        j->c[1] = 400;
-                    }
-                }
-                break;
-            case eitPROPER_DIHEDRALS:
-            case eitIMPROPER_DIHEDRALS:
-            {
-                for (ParamIterator j = pw->beginParam(); (j < pw->endParam()); ++j)
-                {
-                    std::string btype1, btype2, btype3, btype4;
-                    if (pd.atypeToBtype( *topology_->atoms.atomtype[j->a[0]], btype1) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[1]], btype2) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[2]], btype3) &&
-                        pd.atypeToBtype( *topology_->atoms.atomtype[j->a[3]], btype4))
-                    {
-                        size_t                   ntrain;
-                        std::vector<std::string> atoms = {btype1, btype2, btype3, btype4};
-                        if (!pd.searchForce(atoms, params, &xx, &sx, &ntrain))
-                        {
-                            j->c[0] = xx;
-                            std::vector<std::string> ptr = gmx::splitString(params);
-                            n = 0;
-                            for (std::vector<std::string>::iterator pi = ptr.begin(); (pi < ptr.end()); ++pi)
-                            {
-                                if ((pi->length() > 0) && (n < MAXFORCEPARAM-1))
-                                {
-                                    j->c[1+n] = atof(pi->c_str());
-                                    n++;
-                                }
-                            }
-                        }
-                    }
-                    else if (pw->getFtype() == eitPROPER_DIHEDRALS)
-                    {
-                        // Default dihedral parameters
-                        j->c[0] = 0;
-                        j->c[1] = 5;
-                        j->c[2] = 0;
-                    }
-                    else
-                    {
-                        // Default improper dihedral parameters
-                        j->c[0] = 0;
-                        j->c[1] = 5;
-                    }
-                }
-            }
-            break;
-            case eitPOLARIZATION:
-            case eitLJ14:
-            case eitVSITE2:
-            case eitCONSTR:
-            case eitNR:
-                break;
-        }
-    }
-}
-
 /*
  * Make Linear Angles, Improper Dihedrals, and Virtual Sites
  */
@@ -350,21 +210,6 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
     gvt_.generateSpecial(pd, bUseVsites, &topology_->atoms, &x_,
                          plist_, symtab_, atype_, &excls_);
     bHaveVSites_ = (topology_->atoms.nr > anr);
-}
-
-
-/*
- * Make the plist_ function types consistent with the poldata
- */
-static void mv_plists(std::vector<PlistWrapper> &plist,
-                      const Poldata             &pd)
-{
-    for (auto &p : plist)
-    {
-        auto iType = p.interactionType();
-        auto fs    = pd.findForces(iType);
-        p.setFtype(fs->fType());
-    }
 }
 
 static void cp_plist(t_params                  *plist,
@@ -496,19 +341,189 @@ void MyMol::MakeAngles(bool bPairs,
     }
 }
 
-static void init_urey_bradely_param(std::vector<PlistWrapper> &plist)
+static real calc_r13(const Poldata     &pd,   
+		     const std::string aai,
+                     const std::string aaj, 
+		     const std::string aak,
+                     const real        angle)
 {
+    std::string              params;
+    size_t                   ntrain;
+    double                   sigma;
+    real                     rij = 0, rjk = 0;
+    real                     r12 = 0, r23 = 0;
+    real                     r13 = 0;
+
+    std::vector<std::string> aij = {aai, aaj};
+    std::vector<std::string> ajk = {aaj, aak};
+
+    auto fs = pd.findForces(eitBONDS);
+    auto lu = string2unit(fs->unit().c_str());
+
+    pd.searchForce(aij, params, &rij, &sigma, &ntrain);
+    pd.searchForce(ajk, params, &rjk, &sigma, &ntrain);
+
+    r12 = convert2gmx(rij, lu);
+    r23 = convert2gmx(rjk, lu);
+
+    r13 = std::sqrt((r12*r12) + (r23*r23) - (2*r12*r23*std::cos(DEG2RAD*angle)));
+
+    return r13;
+}
+
+static void updatePlist(const Poldata             &pd,
+			std::vector<PlistWrapper> &plist,
+			t_topology                *top)
+{
+    std::string              aai, aaj, aak, aal, params;
+    std::vector<std::string> atoms, ptr;
+    int                      lu, n;
+    size_t                   ntrain;
+    double                   value, sigma, r13 = 0;
+
     for (auto &pw : plist)
     {
-        if (F_UREY_BRADLEY == pw.getFtype())
-        {
-            for (auto p = pw.beginParam(); p < pw.endParam(); ++p)
-            {
-                p->c[0] = GMX_REAL_MAX;
-                p->c[1] = GMX_REAL_MAX;
-            }
-            break;
-        }
+        auto iType = pw.getItype();
+	auto fs    = pd.findForces(iType);
+	pw.setFtype(fs->fType());
+
+	if (eitBONDS == iType)
+	{
+	    lu = string2unit(fs->unit().c_str());
+	    for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
+	    {
+	        if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+		    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj))
+		{
+		    atoms = {aai, aaj};
+		    n     = 0;
+		    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+		    {
+		        b->c[n++] = convert2gmx(value, lu);
+		        ptr       = gmx::splitString(params);
+			for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+			{
+			    b->c[n++] = atof(pi->c_str());
+			}
+		    }
+		    else
+		    {
+		        gmx_fatal(FARGS, "Unsuppotred bond: %s-%s!\n", 
+				  aai.c_str(), aaj.c_str());
+		    }
+		}
+		else
+		{
+		    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d!\n", 
+			      b->a[0], b->a[1]);
+		}
+	    }
+	}
+	else if (eitANGLES == iType)
+	{
+	    for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
+	    {
+	        if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+		    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
+		    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
+		{
+		    atoms = {aai, aaj, aak};
+		    n     = 0;
+		    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+		    {
+		        r13 = calc_r13(pd, aai, aaj, aak, value);
+			
+			b->c[n++] = value;
+			ptr       = gmx::splitString(params);
+			for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+			{
+			    b->c[n++] = atof(pi->c_str());
+			    if (n == 2)
+			    {
+			        b->c[n++] = r13;
+			    }
+			}
+		    }
+		    else
+		    {
+		        gmx_fatal(FARGS, "Unsuppotred harmonic angle: %s-%s-%s!\n", 
+				  aai.c_str(), aaj.c_str(), aak.c_str());
+		    }
+		}
+		else
+		{
+		    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n", 
+			      b->a[0], b->a[1], b->a[2]);
+		}
+	    }
+	}
+	else if (eitLINEAR_ANGLES == iType)
+	{
+	    lu = string2unit(fs->unit().c_str());
+	    for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
+	    {
+	        if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+		    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
+		    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
+		{
+		    atoms = {aai, aaj, aak};
+		    n     = 0;
+		    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+		    {
+		        b->c[n++] = convert2gmx(value, lu);
+			ptr       = gmx::splitString(params);
+			for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+			{
+			    b->c[n++] = atof(pi->c_str());
+			}
+		    }
+		    else
+		    {
+		        gmx_fatal(FARGS, "Unsuppotred linear angle: %s-%s-%s!\n", 
+				  aai.c_str(), aaj.c_str(), aak.c_str());
+		    }
+		}
+		else
+		{
+		    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n", 
+			      b->a[0], b->a[1], b->a[2]);
+		}
+	    }
+	}
+	else if (eitPROPER_DIHEDRALS == iType || 
+		 eitIMPROPER_DIHEDRALS == iType)
+	{
+	    for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
+	    {
+	        if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+		    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
+		    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak) &&
+		    pd.atypeToBtype(*top->atoms.atomtype[b->a[3]], aal))
+		{
+		    atoms = {aai, aaj, aak, aal};
+		    n     = 0;
+		    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+		    {
+		        b->c[n++] = value;
+			ptr       = gmx::splitString(params);
+			for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+			{
+			    b->c[n++] = atof(pi->c_str());
+			}
+		    }
+		    else
+		    {
+		        gmx_fatal(FARGS, "Unsuppotred dihedral: %s-%s-%s-%s!\n", 
+				  aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+		    }
+		}
+		else
+		{
+		    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d, %d!\n", 
+			      b->a[0], b->a[1], b->a[2], b->a[3]);
+		}
+	    }
+	}
     }
 }
 
@@ -1188,11 +1203,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
         MakeSpecialInteractions(pd, bUseVsites);
 
-        getForceConstants(pd);
-
-        mv_plists(plist_, pd);
-
-        init_urey_bradely_param(plist_);
+	updatePlist(pd, plist_, topology_);
 
         snew(mtop_, 1);
     }
@@ -1940,6 +1951,7 @@ void MyMol::PrintTopology(FILE                   *fp,
         //write_zeta_q(fp, qgen_, &topology_->atoms, iChargeDistributionModel);
         //write_zeta_q2(qgen,atype,&topology_->atoms,pd,iChargeDistributionModel);
     }
+    
     write_top2(fp, printmol.name, &topology_->atoms, FALSE,
                plist_, excls_, atype_, cgnr_, nexcl_, pd);
     if (!bITP)
@@ -2089,35 +2101,6 @@ static void copy_atoms(t_atoms *src, t_atoms *dest)
         }
     }
 }
-
-static real calc_r13(const Poldata   &pd,   const std::string aai,
-                     const std::string aaj, const std::string aak,
-                     const real angle)
-{
-    std::string              params;
-    size_t                   ntrain;
-    double                   sigma;
-    real                     rij = 0, rjk = 0;
-    real                     r12 = 0, r23 = 0;
-    real                     r13 = 0;
-
-    std::vector<std::string> aij = {aai, aaj};
-    std::vector<std::string> ajk = {aaj, aak};
-
-    auto                     fs = pd.findForces(eitBONDS);
-    auto                     lu = string2unit(fs->unit().c_str());
-
-    pd.searchForce(aij, params, &rij, &sigma, &ntrain);
-    pd.searchForce(ajk, params, &rjk, &sigma, &ntrain);
-
-    r12 = convert2gmx(rij, lu);
-    r23 = convert2gmx(rjk, lu);
-
-    r13 = std::sqrt((r12*r12) + (r23*r23) - (2*r12*r23*std::cos(angle)));
-
-    return r13;
-}
-
 
 void MyMol::addShells(const Poldata          &pd,
                       ChargeDistributionModel iModel)
@@ -2381,12 +2364,14 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
     }
 }
 
-immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
+immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, 
+			     gmx_bool bZPE, char *lot,
                              const Poldata &pd)
 {
     immStatus    imm = immOK;
     unsigned int m, nwarn = 0;
-    double       value, Hatom, T = -1, error, vec[3];
+    double       value, Hatom, ZPE;
+    double       T = -1, error, vec[3];
     tensor       quadrupole;
     std::string  myref, mylot;
     int          ia;
@@ -2451,6 +2436,22 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
                 break;
             }
         }
+
+	if (bZPE)
+	{
+	
+	    if (molProp()->getProp(MPO_ENERGY,iqmBoth, lot, nullptr, 
+				   (char *)"ZPE", &ZPE, &error, &T))
+	    {
+	        Emol -= ZPE;
+	    }
+	    else
+	    {
+	        fprintf(debug, "WARNING: NO Zero-point energy for molecule %s.\n",
+			molProp()->getMolname().c_str());
+	    }
+	}
+	
         if (ia < topology_->atoms.nr)
         {
             imm = immNoData;
@@ -2502,9 +2503,11 @@ void MyMol::CalcQPol(const Poldata &pd)
 void MyMol::UpdateIdef(const Poldata   &pd,
                        InteractionType  iType)
 {
-    std::string  aai, aaj, aak, aal, params;
-    int          lu;
-    double       value;
+    std::string              aai, aaj, aak, aal, params;
+    std::vector<std::string> atoms, ptr;
+    int                      lu, n;
+    double                   value, sigma, r13;
+    size_t                   ntrain;
 
     switch (iType)
     {
@@ -2525,16 +2528,13 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 int         aj  = ltop_->idef.il[ftb].iatoms[i+2];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj))
-                {
-
-                    double                   sigma;
-                    size_t                   ntrain;
-                    std::vector<std::string> atoms = {aai, aaj};
+                {                    
+                    atoms = {aai, aaj};
                     if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
                     {
                         mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value, lu);
-                        std::vector<std::string> ptr = gmx::splitString(params);
-                        int n = 0;
+                        ptr = gmx::splitString(params);
+                        n   = 0;
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
                             if (pi->length() > 0)
@@ -2574,10 +2574,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
                 {
-                    double                   sigma;
-                    real                     r13;
-                    size_t                   ntrain;
-                    std::vector<std::string> atoms = {aai, aaj, aak};
+                    atoms = {aai, aaj, aak};
                     if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
                     {
 
@@ -2589,8 +2586,8 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                         mtop_->ffparams.iparams[tp].u_b.r13A     =
                             mtop_->ffparams.iparams[tp].u_b.r13B = r13;
 
-                        auto ptr = gmx::splitString(params);
-                        int  n   = 0;
+                        ptr = gmx::splitString(params);
+                        n   = 0;
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
                             if (pi->length() > 0)
@@ -2621,6 +2618,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         case eitLINEAR_ANGLES:
         {
             auto fs  = pd.findForces(iType);
+	    lu       = string2unit(fs->unit().c_str());
             int  fta = fs->fType();
             for (int i = 0; (i < ltop_->idef.il[fta].nr); i += interaction_function[fta].nratoms+1)
             {
@@ -2632,14 +2630,12 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
                 {
-                    double                   sigma;
-                    size_t                   ntrain;
-                    std::vector<std::string> atoms = {aai, aaj, aak};
+                    atoms = {aai, aaj, aak};
                     if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
                     {
                         mtop_->ffparams.iparams[tp].linangle.aA     =
-                            mtop_->ffparams.iparams[tp].linangle.aB = value;
-                        auto ptr = gmx::splitString(params);
+                            mtop_->ffparams.iparams[tp].linangle.aB = convert2gmx(value, lu);
+                        ptr = gmx::splitString(params);
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
                             if (pi->length() > 0)
@@ -2674,14 +2670,13 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[al], aal))
                 {
-                    double                   sigma;
-                    size_t                   ntrain;
-                    std::vector<std::string> atoms = {aai, aaj, aak, aal};
+                    atoms = {aai, aaj, aak, aal};
                     if ((pd.searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
                     {
-                        mtop_->ffparams.iparams[tp].pdihs.phiA = value;
-                        std::vector<std::string> ptr = gmx::splitString(params);
-                        int n = 0;
+                        mtop_->ffparams.iparams[tp].pdihs.phiA   = 
+			  mtop_->ffparams.iparams[tp].pdihs.phiB = value;
+                        ptr = gmx::splitString(params);
+                        n   = 0;
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
                             if (pi->length() > 0)
@@ -2723,16 +2718,14 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[al], aal))
                 {
-                    double                   sigma;
-                    size_t                   ntrain;
-                    std::vector<std::string> atoms = {aai, aaj, aak, aal};
+                    atoms = {aai, aaj, aak, aal};
                     if ((pd.searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
                     {
                         mtop_->ffparams.iparams[tp].harmonic.rA     =
                             mtop_->ffparams.iparams[tp].harmonic.rB = value;
 
-                        std::vector<std::string> ptr = gmx::splitString(params);
-                        int n = 0;
+                        ptr = gmx::splitString(params);
+                        n   = 0;
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
                             if (pi->length() > 0)

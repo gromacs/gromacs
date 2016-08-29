@@ -165,7 +165,7 @@ class MyMol
          *
          * \param[in] pd
          */
-        void getForceConstants(const Poldata &pd);
+        //void getForceConstants(const Poldata &pd);
     public:
         rvec                     *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
         matrix                    box_;
@@ -273,7 +273,8 @@ class MyMol
          * \param[in] lot      The level of theory used for QM calculation
          * \param[in] gap      Gaussian atom property
          */
-        immStatus getExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
+        immStatus getExpProps(gmx_bool bQM, gmx_bool bZero, 
+			      gmx_bool bZPE, char *lot,
                               const Poldata &pd);
 
         /*! \brief
