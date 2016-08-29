@@ -44,10 +44,10 @@
 
 #include <gtest/gtest.h>
 
+#include "programs/alexandria/plistwrapper.h"
 #include "programs/alexandria/poldata.h"
 #include "programs/alexandria/poldata-low.h"
 #include "programs/alexandria/poldata_xml.h"
-#include "programs/alexandria/plistwrapper.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
