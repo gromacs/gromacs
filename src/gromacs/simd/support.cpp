@@ -166,10 +166,6 @@ simdSuggested(const CpuInfo &c)
                 {
                     suggested = SimdType::Ibm_Vsx;
                 }
-                else if (c.feature(CpuInfo::Feature::Ibm_Vsx))
-                {
-                    suggested = SimdType::Ibm_Vsx;
-                }
                 else if (c.feature(CpuInfo::Feature::Ibm_Qpx))
                 {
                     suggested = SimdType::Ibm_Qpx;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,7 @@
 
 #include "mdebin_bar.h"
 
+#include <assert.h>
 #include <float.h>
 #include <math.h>
 #include <string.h>
@@ -69,6 +70,11 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
     dh->derivative = derivative;
     dh->lambda     = lambda;
     dh->nlambda    = nlambda;
+
+    if (nlambda > 0)
+    {
+        assert(lambda);
+    }
 
     snew(dh->lambda, nlambda);
     for (i = 0; i < nlambda; i++)

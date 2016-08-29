@@ -105,6 +105,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=passedByValue:src/gromacs/simd/tests/*
         --suppress=redundantAssignment:src/gromacs/simd/simd_math.h #seems to be a bug in cppcheck
         --suppress=noExplicitConstructor # can't be selective about this, see http://sourceforge.net/p/cppcheck/discussion/general/thread/db1e4ba7/
+	--suppress=passedByValue     #doesn't work correctly for SIMD types
         )
 
     # This list will hold the list of all files with cppcheck errors
