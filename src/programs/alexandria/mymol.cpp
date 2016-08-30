@@ -1010,7 +1010,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
         snew(topology_->atoms.atomtype, ci->NAtom());
         snew(topology_->atoms.atomtypeB, ci->NAtom());
 
-        for (CalcAtomIterator cai = ci->BeginAtom(); (cai < ci->EndAtom()); cai++)
+        for (auto cai = ci->BeginAtom(); (cai < ci->EndAtom()); cai++)
         {
             myunit = string2unit((char *)cai->getUnit().c_str());
             if (myunit == -1)
@@ -1024,7 +1024,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
             x_[natom][ZZ] = convert2gmx(zz, myunit);
 
             double q = 0;
-            for (AtomicChargeIterator qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
+            for (auto qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
             {
                 // TODO Clean up this mess.
                 if ((qi->getType().compare("ESP") == 0) ||

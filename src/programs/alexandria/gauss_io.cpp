@@ -163,12 +163,16 @@ static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mo
     return NULL;
 }
 
-static void gmx_molprop_read_babel(const char *g98,
+static void gmx_molprop_read_babel(const char          *g98,
                                    alexandria::MolProp &mpt,
-                                   char *molnm, char *iupac, char *conformation,
-                                   char *basisset, int maxpot,
-                                   int nsymm,
-                                   const char *forcefield)
+                                   char                *molnm, 
+				   char                *iupac, 
+				   char                *conformation,
+                                   char                *basisset, 
+				   int                  maxpot,
+                                   int                  nsymm,
+                                   const char          *forcefield,
+				   char                *jobtype)
 {
     /* Read a gaussian log file */
     OpenBabel::OBMol           mol;
@@ -289,8 +293,9 @@ static void gmx_molprop_read_babel(const char *g98,
             g98ptr = (char *)g98;
         }
     }
+
     alexandria::Experiment ca(program, method, basis, reference,
-                              conformation, g98ptr);
+                              conformation, g98ptr, jobtype);
     mpt.AddExperiment(ca);
     mpt.SetCharge(mol.GetTotalCharge());
     mpt.SetMass(mol.GetMolWt());
@@ -627,15 +632,20 @@ int alexandria::GaussAtomProp::getValue(const char *element,
     return found;
 }
 
-void ReadGauss(const char *g98,
+void ReadGauss(const char          *g98,
                alexandria::MolProp &mp,
-               char *molnm, char *iupac, char *conf,
-               char *basis, int maxpot, int nsymm,
-               const char *forcefield)
+               char                *molnm, 
+	       char                *iupac, 
+	       char                *conf,
+               char                *basis, 
+	       int                  maxpot, 
+	       int                  nsymm,
+               const char          *forcefield,
+	       char                *jobtype)
 {
 #if HAVE_LIBOPENBABEL2
     gmx_molprop_read_babel(g98, mp, molnm, iupac, conf, basis,
-                           maxpot, nsymm, forcefield);
+                           maxpot, nsymm, forcefield, jobtype);
 #else
     gmx_fatal(FARGS, "For reading Gaussian input you need to link to OpenBabel");
 #endif

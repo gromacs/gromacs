@@ -42,7 +42,8 @@ int alex_gauss2molprop(int argc, char *argv[])
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
     static gmx_bool                  bVerbose   = FALSE;
-    static char                     *molnm      = NULL, *iupac = NULL, *conf = (char *)"minimum", *basis = NULL;
+    static char                     *molnm      = NULL, *iupac = NULL, *jobtype = (char *)"Opt"; 
+    static char                     *conf       = (char *)"minimum", *basis = NULL;
     static const char               *forcefield = "GAFF";
     static int                       maxpot     = 0;
     static int                       nsymm      = 0;
@@ -61,7 +62,9 @@ int alex_gauss2molprop(int argc, char *argv[])
         { "-conf",  FALSE, etSTR, {&conf},
           "Conformation of the molecule" },
         { "-basis",  FALSE, etSTR, {&basis},
-          "Basis-set used in this calculation for those case where it is difficult to extract from a Gaussian file" },
+          "Basis-set used in this calculation for those case where it is difficult to extract from a Gaussian file" },	
+	{ "-jobtype",  FALSE, etSTR, {&jobtype},
+          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." },
         { "-ff", FALSE, etSTR, {&forcefield},
           "Force field for basic atom typing available in OpenBabel" },
         { "-maxpot", FALSE, etINT, {&maxpot},
@@ -98,7 +101,7 @@ int alex_gauss2molprop(int argc, char *argv[])
         alexandria::MolProp mmm;
 
         ReadGauss(fns[i], mmm, molnm, iupac, conf, basis,
-                  maxpot, nsymm, pd.getForceField().c_str());
+                  maxpot, nsymm, pd.getForceField().c_str(), jobtype);
         mp.push_back(mmm);
     }
 
