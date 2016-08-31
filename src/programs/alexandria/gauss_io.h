@@ -111,11 +111,15 @@ class GaussAtomProp
  * \param[in] forcefield One of the force fields supported by OpenBabel used for atomtypes
  * \ingroup module_alexandria
  */
-void ReadGauss(const char *g98,
+void ReadGauss(const char          *g98,
                alexandria::MolProp &mpt,
-               char *molnm, char *iupac, char *conformation,
-               char *basisset,
-               int maxpot, int nsymm,
-               const char *forcefield);
+               char                *molnm, 
+	       char                *iupac, 
+	       char                *conformation,
+               char                *basisset,
+               int                  maxpot, 
+	       int                  nsymm,
+               const char          *forcefield,
+	       char                *jobtype);
 
 #endif

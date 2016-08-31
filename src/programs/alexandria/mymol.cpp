@@ -1010,7 +1010,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
         snew(topology_->atoms.atomtype, ci->NAtom());
         snew(topology_->atoms.atomtypeB, ci->NAtom());
 
-        for (CalcAtomIterator cai = ci->BeginAtom(); (cai < ci->EndAtom()); cai++)
+        for (auto cai = ci->BeginAtom(); (cai < ci->EndAtom()); cai++)
         {
             myunit = string2unit((char *)cai->getUnit().c_str());
             if (myunit == -1)
@@ -1024,7 +1024,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
             x_[natom][ZZ] = convert2gmx(zz, myunit);
 
             double q = 0;
-            for (AtomicChargeIterator qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
+            for (auto qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
             {
                 // TODO Clean up this mess.
                 if ((qi->getType().compare("ESP") == 0) ||
@@ -1321,6 +1321,25 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
     for (int i = 0; i < mtop_->natoms; i++)
     {
         copy_rvec(state_->x[i], x_[i]);
+    }
+}
+
+
+void MyMol::changeCoordinate(ExperimentIterator ei)
+{
+    double  xx, yy, zz;
+    int     unit, natom = 0;
+
+    for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
+    {
+        unit = string2unit((char *)eia->getUnit().c_str());
+	eia->getCoords(&xx, &yy, &zz);
+	
+	x_[natom][XX] = convert2gmx(xx, unit);
+	x_[natom][YY] = convert2gmx(yy, unit);
+	x_[natom][ZZ] = convert2gmx(zz, unit);
+	
+	natom++;
     }
 }
 

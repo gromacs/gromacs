@@ -174,6 +174,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bCONECT        = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = FALSE, bEntropy = FALSE;
     static gmx_bool                  bGenVSites     = FALSE, bSkipVSites = TRUE, bDihedral = FALSE, b13 = FALSE;
     static char                     *molnm          = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
+    static char                     *jobtype        = (char *)"";
     static int                       maxpot         = 0;
     static int                       seed           = 0;
     static int                       nsymm          = 0;
@@ -303,7 +304,9 @@ int alex_gentop(int argc, char *argv[])
         { "-kt",    FALSE, etREAL, {&kt},
           "HIDDENAngle force constant (kJ/mol/rad^2)" },
         { "-kp",    FALSE, etREAL, {&kp},
-          "HIDDENDihedral angle force constant (kJ/mol/rad^2)" }
+          "HIDDENDihedral angle force constant (kJ/mol/rad^2)" },
+	{ "-jobtype",  FALSE, etSTR, {&jobtype},
+          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm,
@@ -419,7 +422,7 @@ int alex_gentop(int argc, char *argv[])
             molnm = (char *)"XXX";
         }
         ReadGauss(fn, mp, molnm, iupac, conf, basis,
-                  maxpot, nsymm, pd.getForceField().c_str());
+                  maxpot, nsymm, pd.getForceField().c_str(), jobtype);
         mps.push_back(mp);
         mpi = mps.begin();
     }

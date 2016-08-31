@@ -77,6 +77,7 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
 
     iMolSelect                   ims;
     char                        *null    = (char *)"0", *empirical = (char *)"empirical", *minimum = (char *)"minimum", *minus = (char *)"-", *nofile = (char *)"none";
+    char                        *jobtype = (char *)"unknown";
     const char                  *program = "alexandria";
     const char                  *ang3;
     alexandria::CompositionSpecs cs;
@@ -152,14 +153,14 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
                         if (ic == alexandria::iCmiller)
                         {
                             alexandria::Experiment calc1(program, type, (char *)"ahc",
-                                                         ref, minimum, nofile);
+                                                         ref, minimum, nofile, jobtype);
                             ahc = 4*gmx::square(ahc)/Nelec;
                             alexandria::MolecularPolarizability md1(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, ahc, 0);
                             calc1.AddPolar(md1);
                             mpi.AddExperiment(calc1);
 
                             alexandria::Experiment              calc2(program, type, (char *)"ahp",
-                                                                      ref, minimum, nofile);
+                                                                      ref, minimum, nofile, jobtype);
                             alexandria::MolecularPolarizability md2(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, ahp, 0);
                             calc2.AddPolar(md2);
                             mpi.AddExperiment(calc2);
@@ -167,7 +168,7 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
                         else
                         {
                             alexandria::Experiment              calc(program, type, minus,
-                                                                     ref, minimum, nofile);
+                                                                     ref, minimum, nofile, jobtype);
                             alexandria::MolecularPolarizability md(empirical, ang3, 0, 0, 0, 0, 0, 0, 0, p, sp);
                             calc.AddPolar(md);
                             mpi.AddExperiment(calc);

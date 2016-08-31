@@ -329,6 +329,16 @@ class MyMol
          *
          * \param[in] ff   Force field
          */
+
+	/*! \brief
+         * Change the coordinate of the molecule based 
+         * on the coordinate of the conformation stored
+	 * in molprop experiment class.
+	 *
+         * \param[in] ei   ExperimentIterator
+         */
+	void changeCoordinate(ExperimentIterator ei);
+
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
 
         /*! \brief

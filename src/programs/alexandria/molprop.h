@@ -933,7 +933,7 @@ class Experiment
 {
     private:
         DataSource                           dataSource_;
-        std::string                          reference_, conformation_;
+        std::string                          reference_, conformation_, jobtype_;
         std::string                          _program, _method, _basisset, _datafile;
         std::vector<CalcAtom>                _catom;
         std::vector<ElectrostaticPotential>  _potential;
@@ -955,11 +955,12 @@ class Experiment
         //! Constructor initiating a Calculation
         Experiment(std::string program, std::string method,
                    std::string basisset, std::string reference,
-                   std::string conformation, std::string datafile) :
+                   std::string conformation, std::string datafile,
+		   std::string jobtype) :
             dataSource_(dsTheory),
-            reference_(reference), conformation_(conformation),
-            _program(program), _method(method), _basisset(basisset),
-            _datafile(datafile)
+	      reference_(reference), conformation_(conformation), jobtype_(jobtype),
+	      _program(program), _method(method), _basisset(basisset),
+	      _datafile(datafile)
         {}
 
         //! Return the type of data
@@ -1019,6 +1020,9 @@ class Experiment
         //! Return the literature reference
         const std::string &getReference() const { return reference_; }
 
+	//! Return the type of calculation
+        const std::string &getJobtype() const { return jobtype_; }
+
         //! Add a CalcAtom object to the list of atoms
         void AddAtom(CalcAtom ca);
 
@@ -1073,6 +1077,8 @@ class Experiment
         bool getVal(const char *type, MolPropObservable mpo,
                     double *value, double *error, double *T,
                     double vec[3], tensor quadrupole);
+
+	bool getHF(double *value);
 
         //! Merge in another object. Return number of warnings.
         int Merge(std::vector<Experiment>::iterator src);
@@ -1250,6 +1256,9 @@ class MolProp
         bool getProp(MolPropObservable mpo, iqmType iQM, char *lot,
                      char *conf, char *type,
                      double *value, double *error, double *T);
+	
+	//! Returns true if the HF energy of the optimized geometry exists and returns the HF
+	bool getOptHF(double *value);
 
         //! Add a classification category for this molecule
         void AddCategory(const std::string &category)

@@ -421,6 +421,20 @@ void Experiment::Dump(FILE *fp)
     }
 }
 
+bool Experiment::getHF(double *value)
+{
+    double      T    = -1;
+    double      error, vec[3];
+    bool        done = false;
+    tensor      quad;
+
+    if (getVal((char *)"HF", MPO_ENERGY, value, &error, &T, vec, quad))
+    {
+        done = true;
+    }
+    return done;
+}
+
 int Experiment::Merge(std::vector<Experiment>::iterator src)
 {
     int nwarn = 0;
@@ -676,7 +690,8 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
         {
             Experiment ca(ei->getProgram(), ei->getMethod(),
                           ei->getBasisset(), ei->getReference(),
-                          ei->getConformation(), ei->getDatafile());
+                          ei->getConformation(), ei->getDatafile(),
+			  ei->getJobtype());
             nwarn += ca.Merge(ei);
             AddExperiment(ca);
         }
@@ -1057,6 +1072,23 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
             }
         }
     }
+    return done;
+}
+
+bool MolProp::getOptHF(double *value)
+{
+    bool done = false;
+     
+    for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
+    {
+        if (strcasecmp("Opt", ei->getJobtype().c_str()) == 0)
+	{
+	    if (ei->getHF(value))
+	    {
+	        done = true;
+	    }
+	}
+    }    
     return done;
 }
 

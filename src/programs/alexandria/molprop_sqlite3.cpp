@@ -338,7 +338,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                     {
                         alexandria::Experiment calc("gentop", source,
                                                     "-", "unknown", "minimum",
-                                                    "unknown" );
+                                                    "unknown", "unknown");
                         if (strcasecmp(prop, "Polarizability") == 0)
                         {
                             alexandria::MolecularPolarizability mp(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0);

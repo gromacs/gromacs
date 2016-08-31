@@ -98,7 +98,7 @@ enum {
     exmlMETHOD, exmlREFERENCE, exmlTYPE, exmlSOURCE,
     exmlBOND, exmlAI, exmlAJ, exmlBONDORDER,
     exmlCOMPOSITION, exmlCOMPNAME, exmlCATOM, exmlC_NAME, exmlC_NUMBER,
-    exmlDATASOURCE, exmlPROGRAM, exmlBASISSET, exmlCONFORMATION, exmlDATAFILE,
+    exmlDATASOURCE, exmlPROGRAM, exmlBASISSET, exmlJOBTYPE, exmlCONFORMATION, exmlDATAFILE,
     exmlUNIT, exmlATOM, exmlATOMID, exmlOBTYPE, exmlX_UNIT, exmlV_UNIT, exmlESPID,
     exmlX, exmlY, exmlZ, exmlV, exmlXX, exmlYY, exmlZZ,
     exmlXY, exmlXZ, exmlYZ, exmlQ,
@@ -115,7 +115,7 @@ static const char *exml_names[exmlNR] = {
     "method", "reference", "type", "source",
     "bond", "ai", "aj", "bondorder",
     "composition", "compname", "catom", "cname", "cnumber",
-    "datasource", "program", "basisset", "conformation", "datafile",
+    "datasource", "program", "basisset", "jobtype", "conformation", "datafile",
     "unit", "atom", "atomid", "obtype", "coord_unit", "potential_unit", "espid",
     "x", "y", "z", "V", "xx", "yy", "zz", "xy", "xz", "yz", "q"
 };
@@ -501,11 +501,13 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                 if (ds == alexandria::dsTheory &&
                                     NN(xbuf[exmlPROGRAM]) && NN(xbuf[exmlMETHOD]) &&
                                     NN(xbuf[exmlBASISSET]) && NN(xbuf[exmlREFERENCE]) &&
-                                    NN(xbuf[exmlCONFORMATION]) && NN(xbuf[exmlDATAFILE]))
+                                    NN(xbuf[exmlCONFORMATION]) && NN(xbuf[exmlDATAFILE]) &&
+				    NN(xbuf[exmlJOBTYPE]))
                                 {
                                     alexandria::Experiment mycalc(xbuf[exmlPROGRAM], xbuf[exmlMETHOD],
                                                                   xbuf[exmlBASISSET], xbuf[exmlREFERENCE],
-                                                                  xbuf[exmlCONFORMATION], xbuf[exmlDATAFILE]);
+                                                                  xbuf[exmlCONFORMATION], xbuf[exmlDATAFILE],
+								  xbuf[exmlJOBTYPE]);
                                     mpt->AddExperiment(mycalc);
                                 }
                                 else if (ds == alexandria::dsExperiment &&
@@ -746,6 +748,7 @@ static void add_xml_molprop(xmlNodePtr                                 parent,
             add_xml_string(child, exml_names[exmlPROGRAM], e_it->getProgram());
             add_xml_string(child, exml_names[exmlMETHOD], e_it->getMethod());
             add_xml_string(child, exml_names[exmlBASISSET], e_it->getBasisset());
+	    add_xml_string(child, exml_names[exmlJOBTYPE], e_it->getJobtype());
             add_xml_string(child, exml_names[exmlDATAFILE], e_it->getDatafile());
         }
 
