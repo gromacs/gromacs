@@ -958,9 +958,8 @@ static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
 double OptPrep::calcDeviation()
 {
     rvec    mu_tot;
-    int     j, unit, natom;
-    FILE   *dbcopy;
-    double  xx, yy, zz;
+    int     j;
+    FILE   *dbcopy; 
     double  ener, optHF, spHF, deltaEn, Emol;
 
     if (PAR(_cr))
@@ -1006,15 +1005,7 @@ double OptPrep::calcDeviation()
             }
 
             /* Now compute energy */
-            atoms2md(mymol.mtop_, mymol.inputrec_, 
-		     0, NULL, 0, mymol.mdatoms_);
-
-            for (j = 0; (j < mymol.molProp()->NAtom()); j++)
-            {
-                clear_rvec(mymol.f_[j]);
-            }
-
-            /* Now optimize the shell positions */
+            atoms2md(mymol.mtop_, mymol.inputrec_, 0, NULL, 0, mymol.mdatoms_);
 
 	    mymol.molProp()->getOptHF(&optHF);
 
@@ -1024,28 +1015,21 @@ double OptPrep::calcDeviation()
 	        if (strcasecmp("Opt", ei->getJobtype().c_str()) == 0 ||
 		    strcasecmp("SP", ei->getJobtype().c_str()) == 0)
 		{
-		    natom = 0;
-		    for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
-		    {
-		        unit = string2unit((char *)eia->getUnit().c_str());
-			eia->getCoords(&xx, &yy, &zz);
-			
-			mymol.x_[natom][XX] = convert2gmx(xx, unit);
-			mymol.x_[natom][YY] = convert2gmx(yy, unit);
-			mymol.x_[natom][ZZ] = convert2gmx(zz, unit);
-			
-			natom++;
-		    }
 
 		    ei->getHF(&spHF);
 
 		    deltaEn = spHF - optHF;
-
 		    Emol    = mymol.Emol + deltaEn;
 		
 		    dbcopy = debug;
 		    debug  = nullptr;
 
+		    for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+		    {
+		        clear_rvec(mymol.f_[j]);
+		    }
+
+		    mymol.changeCoordinate(ei);
 		    mymol.computeForces(debug, _cr, mu_tot);
 
 		    debug         = dbcopy;
@@ -1064,9 +1048,15 @@ double OptPrep::calcDeviation()
 
 		    if (nullptr != debug)
 		    {
-		        fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  Hangle %g Langle %g  PDIHS  %g  Coul %g  LJ  %g  BHAM  %g  Force2 %g\n",
-				mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, mymol.Emol, mymol.Ecalc, mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY], 
-				mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS], mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ], mymol.enerd_->term[F_BHAM], mymol.Force2);
+		        fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
+
+		        fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g"  
+				"Hangle %g Langle %g  PDIHS  %g  Coul %g  LJ  %g  BHAM  %g  Force2 %g\n",
+				mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, Emol, mymol.Ecalc, 
+				mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY], 
+				mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS], 
+				mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ], 
+				mymol.enerd_->term[F_BHAM], mymol.Force2);
 		    }
 		}
 	    }

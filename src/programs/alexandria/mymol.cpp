@@ -1324,6 +1324,25 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
     }
 }
 
+
+void MyMol::changeCoordinate(ExperimentIterator ei)
+{
+    double  xx, yy, zz;
+    int     unit, natom = 0;
+
+    for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
+    {
+        unit = string2unit((char *)eia->getUnit().c_str());
+	eia->getCoords(&xx, &yy, &zz);
+	
+	x_[natom][XX] = convert2gmx(xx, unit);
+	x_[natom][YY] = convert2gmx(yy, unit);
+	x_[natom][ZZ] = convert2gmx(zz, unit);
+	
+	natom++;
+    }
+}
+
 std::vector<double> MyMol::computePolarizability(double efield,
                                                  FILE *fplog, t_commrec *cr)
 {
