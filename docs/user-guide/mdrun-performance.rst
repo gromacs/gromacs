@@ -535,7 +535,97 @@ parallel hardware.
 
 Finding out how to run mdrun better
 -----------------------------------
-TODO In future patch: red flags in log files, how to interpret wallcycle output
+
+The Wallcycle module is used for runtime performance measurement of :ref:`gmx mdrun`.
+At the end of the log file of each run, the "Real cycle and time accounting" section
+provides a table with runtime statistics for different parts of the :ref:`gmx mdrun` code
+in rows of the table.
+The table contains colums indicating the number of ranks and threads that
+executed the respective part of the run, wall-time and cycle
+count aggregates (across all threads and ranks) averaged over the entire run.
+The last column also shows what precentage of the total runtime each row represents.
+Note that the :ref:`gmx mdrun` timer resetting functionalities (`-resethway` and `-resetstep`)
+reset the performance counters and therefore are useful to avoid startup overhead and
+performance instability (e.g. due to load balancing) at the beginning of the run.
+
+The performance counters are:
+
+* Particle-particle during Particle mesh Ewald
+* Domain decomposition
+* Domain decomposition communication load
+* Domain decomposition communication bounds
+* Virtual site constraints
+* Send X to Particle mesh Ewald
+* Neighbor search
+* Launch GPU operations
+* Communication of coordinates
+* Born radii
+* Force
+* Waiting + Communication of force
+* Particle mesh Ewald
+* PME redist. X/F
+* PME spread/gather
+* PME 3D-FFT
+* PME 3D-FFT Communication
+* PME solve Lennard-Jones
+* PME solve Elec
+* PME wait for particle-particle
+* Wait + Receive PME force
+* Wait GPU nonlocal
+* Wait GPU local
+* Non-bonded position/force buffer operations
+* Virtual site spread
+* COM pull force
+* Write trajectory
+* Update
+* Constraints
+* Communication of energies
+* Enforced rotation
+* Add rotational forces
+* Position swapping
+* Interactive MD
+
+As performance data is collected for every run, they are essential to assessing
+and tuning the performance of :ref:`gmx mdrun` performance. Therefore, they benefit
+both code developers as well as users of the program.
+The counters are an average of the time/cycles different parts of the simulation take,
+hence can not directly reveal fluctuations during a single run (although comparisons across
+multiple runs are still very useful).
+
+Counters will appear in MD log file only if the related parts of the code were
+executed during the :ref:`gmx mdrun` run. There is also a special counter called "Rest" which
+indicated for the amount of time not accounted for by any of the counters above. Theerfore,
+a significant amount "Rest" time (more than a few percent) will often be an indication of
+parallelization inefficiency (e.g. serial code) and it is recommended to be reported to the
+developers.
+
+An additional set of subcounters can offer more fine-grained inspection of performance. They are:
+
+* Domain decomposition redistribution
+* DD neighbor search grid + sort
+* DD setup communication
+* DD make topology
+* DD make constraints
+* DD topology other
+* Neighbor search grid local
+* NS grid non-local
+* NS search local
+* NS search non-local
+* Bonded force
+* Bonded-FEP force
+* Restraints force
+* Listed buffer operations
+* Nonbonded force
+* Ewald force correction
+* Non-bonded position buffer operations
+* Non-bonded force buffer operations
+
+Subcounters are geared toward developers and have to be enabled during compilation. See
+:doc:`/dev-manual/build-system` for more information.
+
+TODO In future patch:
+- red flags in log files, how to interpret wallcycle output
+- hints to devs how to extend wallcycles
 
 TODO In future patch: import wiki page stuff on performance checklist; maybe here,
 maybe elsewhere
