@@ -49,6 +49,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/topology/topology.h"
 #include "programs/alexandria/gauss_io.h"
+#include "programs/alexandria/getmdlogger.h"
 #include "programs/alexandria/mymol.h"
 #include "programs/alexandria/poldata.h"
 #include "programs/alexandria/poldata_xml.h"
@@ -121,8 +122,9 @@ class EemTest : public gmx::test::CommandLineTestBase
             real        epsr        = 1;
             char       *symm_string = (char *)"";
             t_commrec  *cr          = init_commrec();
+            gmx::MDLogger fplog = getMdLogger(cr, stdout);
             
-            mp_.GenerateCharges(pd_, aps_, model, eqgEEM,
+            mp_.GenerateCharges(pd_, fplog, aps_, model, eqgEEM,
                                 hfac, epsr, lot, true, symm_string, cr, NULL);
 
             std::vector<double> qtotValues;

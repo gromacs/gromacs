@@ -384,146 +384,146 @@ static void updatePlist(const Poldata             &pd,
     for (auto &pw : plist)
     {
         auto iType = pw.getItype();
-	auto fs    = pd.findForces(iType);
-	pw.setFtype(fs->fType());
-
-	if (eitBONDS == iType)
-	{
-	    lu = string2unit(fs->unit().c_str());
-	    for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
-	    {
-	        if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-		    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj))
-		{
-		    atoms = {aai, aaj};
-		    n     = 0;
-		    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
-		    {
-		        b->c[n++] = convert2gmx(value, lu);
-		        ptr       = gmx::splitString(params);
-			for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
-			{
-			    b->c[n++] = atof(pi->c_str());
-			}
-		    }
-		    else
-		    {
-		        gmx_fatal(FARGS, "Unsuppotred bond: %s-%s!\n", 
-				  aai.c_str(), aaj.c_str());
-		    }
-		}
-		else
-		{
-		    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d!\n", 
-			      b->a[0], b->a[1]);
-		}
-	    }
-	}
-	else if (eitANGLES == iType)
-	{
-	    for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
-	    {
-	        if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-		    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
-		    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
-		{
-		    atoms = {aai, aaj, aak};
-		    n     = 0;
-		    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
-		    {
-		        r13 = calc_r13(pd, aai, aaj, aak, value);
-			
-			b->c[n++] = value;
-			ptr       = gmx::splitString(params);
-			for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
-			{
-			    b->c[n++] = atof(pi->c_str());
-			    if (n == 2)
-			    {
-			        b->c[n++] = r13;
-			    }
-			}
-		    }
-		    else
-		    {
-		        gmx_fatal(FARGS, "Unsuppotred harmonic angle: %s-%s-%s!\n", 
-				  aai.c_str(), aaj.c_str(), aak.c_str());
-		    }
-		}
-		else
-		{
-		    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n", 
-			      b->a[0], b->a[1], b->a[2]);
-		}
-	    }
-	}
-	else if (eitLINEAR_ANGLES == iType)
-	{
-	    lu = string2unit(fs->unit().c_str());
-	    for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
-	    {
-	        if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-		    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
-		    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
-		{
-		    atoms = {aai, aaj, aak};
-		    n     = 0;
-		    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
-		    {
-		        b->c[n++] = convert2gmx(value, lu);
-			ptr       = gmx::splitString(params);
-			for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
-			{
-			    b->c[n++] = atof(pi->c_str());
-			}
-		    }
-		    else
-		    {
-		        gmx_fatal(FARGS, "Unsuppotred linear angle: %s-%s-%s!\n", 
-				  aai.c_str(), aaj.c_str(), aak.c_str());
-		    }
-		}
-		else
-		{
-		    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n", 
-			      b->a[0], b->a[1], b->a[2]);
-		}
-	    }
-	}
-	else if (eitPROPER_DIHEDRALS == iType || 
-		 eitIMPROPER_DIHEDRALS == iType)
-	{
-	    for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
-	    {
-	        if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-		    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
-		    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak) &&
-		    pd.atypeToBtype(*top->atoms.atomtype[b->a[3]], aal))
-		{
-		    atoms = {aai, aaj, aak, aal};
-		    n     = 0;
-		    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
-		    {
-		        b->c[n++] = value;
-			ptr       = gmx::splitString(params);
-			for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
-			{
-			    b->c[n++] = atof(pi->c_str());
-			}
-		    }
-		    else
-		    {
-		        gmx_fatal(FARGS, "Unsuppotred dihedral: %s-%s-%s-%s!\n", 
-				  aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
-		    }
-		}
-		else
-		{
-		    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d, %d!\n", 
-			      b->a[0], b->a[1], b->a[2], b->a[3]);
-		}
-	    }
-	}
+        auto fs    = pd.findForces(iType);
+        pw.setFtype(fs->fType());
+        
+        if (eitBONDS == iType)
+        {
+            lu = string2unit(fs->unit().c_str());
+            for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
+            {
+                if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+                    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj))
+                {
+                    atoms = {aai, aaj};
+                    n     = 0;
+                    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                    {
+                        b->c[n++] = convert2gmx(value, lu);
+                        ptr       = gmx::splitString(params);
+                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        {
+                            b->c[n++] = atof(pi->c_str());
+                        }
+                    }
+                    else
+                    {
+                    gmx_fatal(FARGS, "Unsupported bond: %s-%s!\n", 
+                              aai.c_str(), aaj.c_str());
+                    }
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "Unsupported atom types: %d, %d!\n", 
+                              b->a[0], b->a[1]);
+                }
+            }
+        }
+        else if (eitANGLES == iType)
+        {
+            for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
+            {
+                if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+                    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
+                    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
+                {
+                    atoms = {aai, aaj, aak};
+                    n     = 0;
+                    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                    {
+                        r13 = calc_r13(pd, aai, aaj, aak, value);
+                        
+                        b->c[n++] = value;
+                        ptr       = gmx::splitString(params);
+                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        {
+                            b->c[n++] = atof(pi->c_str());
+                            if (n == 2)
+                            {
+                                b->c[n++] = r13;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Unsuppotred harmonic angle: %s-%s-%s!\n", 
+                                  aai.c_str(), aaj.c_str(), aak.c_str());
+                    }
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n", 
+                              b->a[0], b->a[1], b->a[2]);
+                }
+            }
+        }
+        else if (eitLINEAR_ANGLES == iType)
+        {
+            lu = string2unit(fs->unit().c_str());
+            for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
+            {
+                if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+                    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
+                    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
+                {
+                    atoms = {aai, aaj, aak};
+                    n     = 0;
+                    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                    {
+                        b->c[n++] = convert2gmx(value, lu);
+                        ptr       = gmx::splitString(params);
+                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        {
+                            b->c[n++] = atof(pi->c_str());
+                        }
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Unsuppotred linear angle: %s-%s-%s!\n", 
+                                  aai.c_str(), aaj.c_str(), aak.c_str());
+                    }
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n", 
+                              b->a[0], b->a[1], b->a[2]);
+                }
+            }
+        }
+        else if (eitPROPER_DIHEDRALS == iType || 
+                 eitIMPROPER_DIHEDRALS == iType)
+        {
+            for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
+            {
+                if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
+                    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
+                    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak) &&
+                    pd.atypeToBtype(*top->atoms.atomtype[b->a[3]], aal))
+                {
+                    atoms = {aai, aaj, aak, aal};
+                    n     = 0;
+                    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                    {
+                        b->c[n++] = value;
+                        ptr       = gmx::splitString(params);
+                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        {
+                            b->c[n++] = atof(pi->c_str());
+                        }
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Unsuppotred dihedral: %s-%s-%s-%s!\n", 
+                                  aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
+                    }
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d, %d!\n", 
+                              b->a[0], b->a[1], b->a[2], b->a[3]);
+                }
+            }
+        }
     }
 }
 
