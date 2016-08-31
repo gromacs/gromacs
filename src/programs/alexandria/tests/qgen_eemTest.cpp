@@ -94,22 +94,24 @@ class EemTest : public gmx::test::CommandLineTestBase
     void testEem(ChargeDistributionModel model)
         {
             // Needed for ReadGauss
-            char                    * molnm    = (char *)"XXX";
-            char                    * iupac    = (char *)"";
-            char                    * conf     = (char *)"minimum";
-            char                    * basis    = (char *)"";
-            int                       maxpot   = 0;
-            int                       nsymm    = 0;
+            const char *molnm   = (char *)"XXX";
+            const char *iupac   = (char *)"";
+            const char *conf    = (char *)"minimum";
+            const char *basis   = (char *)"";
+            const char *jobtype = (char *)"Pop";
+            
+            int    maxpot   = 0;
+            int    nsymm    = 0;
 
             //Read input file for molprop
             std::string dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
             alexandria::MolProp     molprop;
             ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
-                      maxpot, nsymm, pd_.getForceField().c_str());
+                      maxpot, nsymm, pd_.getForceField().c_str(), jobtype);
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
-            //Generate charges and topology
+            // Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
             const char               *dihopt[]    = { NULL, "No", "Single", "All", NULL };
             eDih                      edih        = (eDih) get_option(dihopt);
@@ -117,12 +119,12 @@ class EemTest : public gmx::test::CommandLineTestBase
             mp_.GenerateTopology(aps_, pd_, lot, model,
                                  false, false, edih, false);
 
-            //Needed for GenerateCharges
-            real        hfac        = 0;
-            real        epsr        = 1;
-            char       *symm_string = (char *)"";
-            t_commrec  *cr          = init_commrec();
-            gmx::MDLogger fplog = getMdLogger(cr, stdout);
+            // Needed for GenerateCharges
+            real           hfac        = 0;
+            real           epsr        = 1;
+            char          *symm_string = (char *)"";
+            t_commrec     *cr          = init_commrec();
+            gmx::MDLogger  fplog       = getMdLogger(cr, stdout);
             
             mp_.GenerateCharges(pd_, fplog, aps_, model, eqgEEM,
                                 hfac, epsr, lot, true, symm_string, cr, NULL);

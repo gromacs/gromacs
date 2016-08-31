@@ -75,12 +75,13 @@ class RespTest : public gmx::test::CommandLineTestBase
             aps_ = gmx_atomprop_init();
 
             //needed for ReadGauss
-            char                    * molnm    = (char *)"XXX";
-            char                    * iupac    = (char *)"";
-            char                    * conf     = (char *)"minimum";
-            char                    * basis    = (char *)"";
-            int                       maxpot   = 0;
-            int                       nsymm    = 0;
+            const char *molnm    = (char *)"XXX";
+            const char *iupac    = (char *)"";
+            const char *conf     = (char *)"minimum";
+            const char *basis    = (char *)"";
+            const char *jobtype  = (char *)"Pop";
+            int         maxpot   = 0;
+            int         nsymm    = 0;
 
             //read input file for poldata
             std::string dataName = gmx::test::TestFileManager::getInputFilePath("gentop.dat");
@@ -93,7 +94,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             //Read input file for molprop
             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
             ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
-                      maxpot, nsymm, pd_.getForceField().c_str());
+                      maxpot, nsymm, pd_.getForceField().c_str(), jobtype);
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());

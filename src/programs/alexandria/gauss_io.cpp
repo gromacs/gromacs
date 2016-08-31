@@ -165,14 +165,14 @@ static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mo
 
 static void gmx_molprop_read_babel(const char          *g98,
                                    alexandria::MolProp &mpt,
-                                   char                *molnm,
-                                   char                *iupac,
-                                   char                *conformation,
-                                   char                *basisset,
+                                   const char          *molnm,
+                                   const char          *iupac,
+                                   const char          *conformation,
+                                   const char          *basisset,
                                    int                  maxpot,
                                    int                  nsymm,
                                    const char          *forcefield,
-                                   char                *jobtype)
+                                   const char          *jobtype)
 {
     /* Read a gaussian log file */
     OpenBabel::OBMol           mol;
@@ -189,8 +189,8 @@ static void gmx_molprop_read_babel(const char          *g98,
 
     std::vector<alexandria::ElectrostaticPotential> espv;
 
-    const char              *reference = "Ghahremanpour2016a", *unknown = "unknown";
-    char                    *program, *method, *basis, *charge_model, *ptr, *g98ptr;
+    const char              *reference = "Ghahremanpour2016a", *unknown = "unknown", *basis;
+    char                    *program, *method, *charge_model, *ptr, *g98ptr;
     int                      bondid;
 
     OpenBabel::OBConversion *conv = read_babel(g98, &mol);
@@ -634,14 +634,14 @@ int alexandria::GaussAtomProp::getValue(const char *element,
 
 void ReadGauss(const char          *g98,
                alexandria::MolProp &mp,
-               char                *molnm,
-               char                *iupac,
-               char                *conf,
-               char                *basis,
+               const char          *molnm,
+               const char          *iupac,
+               const char          *conf,
+               const char          *basis,
                int                  maxpot,
                int                  nsymm,
                const char          *forcefield,
-               char                *jobtype)
+               const char          *jobtype)
 {
 #if HAVE_LIBOPENBABEL2
     gmx_molprop_read_babel(g98, mp, molnm, iupac, conf, basis,

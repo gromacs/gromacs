@@ -510,15 +510,19 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                                                   xbuf[exmlJOBTYPE]);
                                     mpt->AddExperiment(mycalc);
                                 }
-                                else if (ds == alexandria::dsExperiment &&
-                                         NN(xbuf[exmlREFERENCE]) && NN(xbuf[exmlCONFORMATION]))
+                                else if (ds == alexandria::dsExperiment)
                                 {
-                                    alexandria::Experiment myexp(xbuf[exmlREFERENCE], xbuf[exmlCONFORMATION]);
-                                    mpt->AddExperiment(myexp);
-                                }
-                                else
-                                {
-                                    gmx_fatal(FARGS, "Experimental data without reference");
+                                    if (NN(xbuf[exmlREFERENCE]))
+                                    {
+                                        const char *unknown = "unknown";
+                                        alexandria::Experiment myexp(xbuf[exmlREFERENCE], 
+                                                                     NN(xbuf[exmlCONFORMATION]) ? xbuf[exmlCONFORMATION] : unknown);
+                                        mpt->AddExperiment(myexp);
+                                    }
+                                    else
+                                    {
+                                        gmx_fatal(FARGS, "Experimental data without reference");
+                                    }
                                 }
                                 break;
                             }

@@ -146,14 +146,14 @@ class GaussAtomProp
  * \ingroup module_alexandria
  */
 void ReadGauss(const char          *g98,
-               alexandria::MolProp &mpt,
-               char                *molnm,
-               char                *iupac,
-               char                *conformation,
-               char                *basisset,
+               alexandria::MolProp &mp,
+               const char          *molnm,
+               const char          *iupac,
+               const char          *conf,
+               const char          *basis,
                int                  maxpot,
                int                  nsymm,
                const char          *forcefield,
-               char                *jobtype);
+               const char          *jobtype);
 
 #endif
