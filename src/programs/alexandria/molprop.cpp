@@ -691,7 +691,7 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
             Experiment ca(ei->getProgram(), ei->getMethod(),
                           ei->getBasisset(), ei->getReference(),
                           ei->getConformation(), ei->getDatafile(),
-			  ei->getJobtype());
+                          ei->getJobtype());
             nwarn += ca.Merge(ei);
             AddExperiment(ca);
         }
@@ -1078,17 +1078,17 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
 bool MolProp::getOptHF(double *value)
 {
     bool done = false;
-     
+
     for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
     {
         if (strcasecmp("Opt", ei->getJobtype().c_str()) == 0)
-	{
-	    if (ei->getHF(value))
-	    {
-	        done = true;
-	    }
-	}
-    }    
+        {
+            if (ei->getHF(value))
+            {
+                done = true;
+            }
+        }
+    }
     return done;
 }
 

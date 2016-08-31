@@ -59,35 +59,35 @@
 
 #include "stringutil.h"
 
-class Synonym 
+class Synonym
 {
-private:
-    std::string molname_;
-    std::string iupac_;
-public:
-    Synonym(const std::string molname,
-            const std::string iupac) : molname_(molname), iupac_(iupac) {}
-            
-    const std::string &iupac() const { return iupac_; }
-    
-    const std::string &molname() const { return molname_; }
+    private:
+        std::string molname_;
+        std::string iupac_;
+    public:
+        Synonym(const std::string molname,
+                const std::string iupac) : molname_(molname), iupac_(iupac) {}
+
+        const std::string &iupac() const { return iupac_; }
+
+        const std::string &molname() const { return molname_; }
 };
 
-class Classes 
+class Classes
 {
-private:
-    std::string              iupac_;
-    std::vector<std::string> classes_;
-public:
-    Classes(const std::string iupac) : iupac_(iupac) {}
-            
-    void addClass(const std::string &klas) { classes_.push_back(klas); }
-    
-    const std::string &iupac() const { return iupac_; }
-    
-    const std::vector<std::string>::iterator classBegin() { return classes_.begin(); }
-    
-    const std::vector<std::string>::iterator classEnd() { return classes_.end(); }
+    private:
+        std::string              iupac_;
+        std::vector<std::string> classes_;
+    public:
+        Classes(const std::string iupac) : iupac_(iupac) {}
+
+        void addClass(const std::string &klas) { classes_.push_back(klas); }
+
+        const std::string &iupac() const { return iupac_; }
+
+        const std::vector<std::string>::iterator classBegin() { return classes_.begin(); }
+
+        const std::vector<std::string>::iterator classEnd() { return classes_.end(); }
 };
 
 #ifdef HAVE_LIBSQLITE3
@@ -119,11 +119,11 @@ void getSynonyms(sqlite3              *db,
     sqlite3_stmt *stmt2 = NULL;
     char          sql_str[1024];
     int           rc;
-    
+
     /* Make renaming table */
     snprintf(sql_str, sizeof(sql_str),
              "SELECT syn.name,mol.iupac FROM molecules as mol,synonyms as syn WHERE syn.molid=mol.molid ORDER by syn.name");
-             
+
     if (NULL != debug)
     {
         fprintf(debug, "sql_str = '%s'\n", sql_str);
@@ -145,7 +145,7 @@ void getSynonyms(sqlite3              *db,
         }
         else
         {
-            printf("There are %d synonyms for %d molecules.\n", 
+            printf("There are %d synonyms for %d molecules.\n",
                    static_cast<int>(syn.size()), nMol);
         }
     }
@@ -163,11 +163,11 @@ void getClasses(sqlite3              *db,
     sqlite3_stmt *stmt2 = NULL;
     char          sql_str[1024];
     int           rc;
-    
+
     /* Make renaming table */
     snprintf(sql_str, sizeof(sql_str),
              "SELECT mol.iupac,class.class FROM molecules as mol,classification as class,link_mol_class as lmc WHERE (lmc.molid=mol.molid) and (lmc.classid=class.classid) ORDER by mol.iupac");
-             
+
     if (NULL != debug)
     {
         fprintf(debug, "sql_str = '%s'\n", sql_str);
@@ -182,10 +182,10 @@ void getClasses(sqlite3              *db,
         {
             const char *iupac = (char *)sqlite3_column_text(stmt2, 0);
             const char *klass = (char *)sqlite3_column_text(stmt2, 1);
-            auto s = std::find_if(classes.begin(), classes.end(),
-                                  [iupac](Classes const &c)
-                                  { return c.iupac().compare(iupac) == 0; });
-            if (s == classes.end()) 
+            auto        s     = std::find_if(classes.begin(), classes.end(),
+                                             [iupac](Classes const &c)
+                                             { return c.iupac().compare(iupac) == 0; });
+            if (s == classes.end())
             {
                 std::string i(iupac);
                 classes.push_back(i);
@@ -202,7 +202,7 @@ void getClasses(sqlite3              *db,
         }
         else
         {
-            printf("There are %d classes for %d molecules.\n", 
+            printf("There are %d classes for %d molecules.\n",
                    static_cast<int>(classes.size()), nMol);
         }
     }
@@ -244,10 +244,10 @@ void ReadSqlite3(const char                       *sqlite_file,
 
     // First get the synonyms out.
     getSynonyms(db, synonyms, mp.size());
-    
+
     // Now get the classes out.
     getClasses(db, classes, mp.size());
-    
+
     /* Now present a query statement */
     nexp_prop = 0;
     sprintf(sql_str, "SELECT mol.iupac,mol.cas,mol.csid,pt.prop,pt.unit_text,gp.temperature,gp.value,gp.error,ds.theory,ds.source FROM molecules as mol,molproperty as gp,proptypes as pt, datasource as ds,phasetype as ph WHERE ((gp.phaseid=ph.phaseid) AND (ph.phase='gas') AND (mol.molid = gp.molid) AND (gp.propid = pt.propid) AND (gp.srcid = ds.srcid) AND (upper(?) = upper(mol.iupac)));");
@@ -264,9 +264,9 @@ void ReadSqlite3(const char                       *sqlite_file,
     for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
         const std::string molname = mpi->getMolname();
-        auto keyptr = std::find_if(synonyms.begin(), synonyms.end(),
-                                   [molname](Synonym const &s)
-                                   { return molname.compare(s.molname()) == 0; });
+        auto              keyptr  = std::find_if(synonyms.begin(), synonyms.end(),
+                                                 [molname](Synonym const &s)
+                                                 { return molname.compare(s.molname()) == 0; });
 
         if (synonyms.end() == keyptr)
         {
@@ -303,7 +303,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                     error          = sqlite3_column_double(stmt, cidx++);
                     theory         = sqlite3_column_int(stmt, cidx++);
                     source         = (char *)sqlite3_column_text(stmt, cidx++);
-                    
+
                     bool bExp = (0 == theory);
                     if (bExp)
                     {
@@ -317,7 +317,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                         if (strcasecmp(prop, "Polarizability") == 0)
                         {
                             exper.AddPolar(alexandria::MolecularPolarizability(prop, unit, temperature, 0, 0, 0, 0, 0, 0, value, 0));
-                            
+
                         }
                         else if (strcasecmp(prop, "dipole") == 0)
                         {
@@ -354,7 +354,7 @@ void ReadSqlite3(const char                       *sqlite_file,
                                  (strcasecmp(prop, "S0") == 0) ||
                                  (strcasecmp(prop, "cp") == 0) ||
                                  (strcasecmp(prop, "cv") == 0))
-                            
+
                         {
                             calc.AddEnergy(alexandria::MolecularEnergy(prop, unit, temperature, epGAS, value, error));
                         }
@@ -362,12 +362,12 @@ void ReadSqlite3(const char                       *sqlite_file,
                     }
                     // Add classes to molprop from database
                     const char *iupac = keyptr->iupac().c_str();
-                    auto cptr = std::find_if(classes.begin(), classes.end(),
-                                             [iupac](Classes const &c)
-                                             { return c.iupac().compare(iupac) == 0; });
+                    auto        cptr  = std::find_if(classes.begin(), classes.end(),
+                                                     [iupac](Classes const &c)
+                                                     { return c.iupac().compare(iupac) == 0; });
                     if (cptr != classes.end())
                     {
-                        for(auto c = cptr->classBegin(); c < cptr->classEnd(); ++c)
+                        for (auto c = cptr->classBegin(); c < cptr->classEnd(); ++c)
                         {
                             mpi->AddCategory(*c);
                         }

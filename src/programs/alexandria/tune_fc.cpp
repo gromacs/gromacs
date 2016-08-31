@@ -291,7 +291,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
             {
                 int  index = 0;
                 char buf[STRLEN];
-		char buf_reverse[STRLEN];
+                char buf_reverse[STRLEN];
                 auto iType = static_cast<InteractionType>(bt_);
                 switch (iType)
                 {
@@ -304,7 +304,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                         if (fs->forceEnd() != f)
                         {
                             sprintf(buf, "%s %s", aai.c_str(), aaj.c_str());
-			    sprintf(buf_reverse, "%s %s", aaj.c_str(), aai.c_str());
+                            sprintf(buf_reverse, "%s %s", aaj.c_str(), aai.c_str());
                             params    = f->params();
                             index     = f - fs->forceBegin();
                             found     = true;
@@ -325,7 +325,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                             {
                                 sprintf(buf, "%s %s %s", aai.c_str(),
                                         aaj.c_str(), aak.c_str());
-				sprintf(buf_reverse, "%s %s %s", aak.c_str(),
+                                sprintf(buf_reverse, "%s %s %s", aak.c_str(),
                                         aaj.c_str(), aai.c_str());
                                 params = f->params();
                                 index  = f - fs->forceBegin();
@@ -350,7 +350,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                             {
                                 sprintf(buf, "%s %s %s %s", aai.c_str(),
                                         aaj.c_str(), aak.c_str(), aal.c_str());
-				sprintf(buf_reverse, "%s %s %s %s", aal.c_str(),
+                                sprintf(buf_reverse, "%s %s %s %s", aal.c_str(),
                                         aaj.c_str(), aak.c_str(), aai.c_str());
                                 params = f->params();
                                 index  = f - fs->forceBegin();
@@ -370,10 +370,10 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                 {
                     auto c = std::find_if(bn_.begin(), bn_.end(),
                                           [buf, buf_reverse](const BondNames &bn)
-                        {
-			    return (bn.name().compare(buf) == 0 ||
-				    bn.name().compare(buf_reverse) == 0);
-                        });
+                                          {
+                                              return (bn.name().compare(buf) == 0 ||
+                                                      bn.name().compare(buf_reverse) == 0);
+                                          });
                     if (c != bn_.end())
                     {
                         c->inc();
@@ -766,59 +766,59 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
             nD);
     fprintf(fplog, "There are %d (experimental) reference heat of formation.\n", nMol);
 
-    auto fs = pd_.findForces(eitBONDS);
-    int ftb = fs->fType();
-    int j   = 0;
+    auto fs  = pd_.findForces(eitBONDS);
+    int  ftb = fs->fType();
+    int  j   = 0;
 
     for (auto mymol = _mymol.begin(); mymol < _mymol.end(); mymol++, j++)
     {
         for (int i = 0; (i < mymol->ltop_->idef.il[ftb].nr);
-	     i += interaction_function[ftb].nratoms+1)
-	{
-	    int                      ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
-	    int                      aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
-	    std::string              aai, aaj;
-	    std::vector<std::string> atoms;
-	    if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
-		pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
-	    {
-	        atoms  = {aai, aaj};
-		auto f = fs->findForce(atoms);
-		if (fs->forceEnd() != f)
-		{
-		    int gt  = f - fs->forceBegin();
-		    int gti = ForceConstants_[eitBONDS].reverseIndex(gt);
-		    
-		    a[gti][j]++;
-		    ntest[gti]++;
-		    if (ctest[gti].empty())
-		    {
-		        char buf[STRLEN];
-			snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
-			ctest[gti].assign(buf);
-		    }
-		}
-	    }
-	    else
-	    {
-	        gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
-			  aai.c_str(), aaj.c_str(),
-			  *mymol->topology_->atoms.atomtype[ai],
-			  *mymol->topology_->atoms.atomtype[aj],
-			  mymol->molProp()->getIupac().c_str());
-	    }
-	}
-	rhs.push_back(-mymol->Emol);
+             i += interaction_function[ftb].nratoms+1)
+        {
+            int                      ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
+            int                      aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
+            std::string              aai, aaj;
+            std::vector<std::string> atoms;
+            if (pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[ai], aai) &&
+                pd_.atypeToBtype(*mymol->topology_->atoms.atomtype[aj], aaj))
+            {
+                atoms  = {aai, aaj};
+                auto f = fs->findForce(atoms);
+                if (fs->forceEnd() != f)
+                {
+                    int gt  = f - fs->forceBegin();
+                    int gti = ForceConstants_[eitBONDS].reverseIndex(gt);
+
+                    a[gti][j]++;
+                    ntest[gti]++;
+                    if (ctest[gti].empty())
+                    {
+                        char buf[STRLEN];
+                        snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
+                        ctest[gti].assign(buf);
+                    }
+                }
+            }
+            else
+            {
+                gmx_fatal(FARGS, "No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
+                          aai.c_str(), aaj.c_str(),
+                          *mymol->topology_->atoms.atomtype[ai],
+                          *mymol->topology_->atoms.atomtype[aj],
+                          mymol->molProp()->getIupac().c_str());
+            }
+        }
+        rhs.push_back(-mymol->Emol);
     }
-    
+
     char buf[STRLEN];
     snprintf(buf, sizeof(buf), "Inconsistency in number of energies nMol %d != #rhs %d", nMol, static_cast<int>(rhs.size()));
     GMX_RELEASE_ASSERT(static_cast<int>(rhs.size()) == nMol, buf);
 
-    int nzero = std::count_if(ntest.begin(), ntest.end(), [](const int n) 
-			      {
-				  return n == 0;
-			      });
+    int nzero = std::count_if(ntest.begin(), ntest.end(), [](const int n)
+                              {
+                                  return n == 0;
+                              });
 
     GMX_RELEASE_ASSERT(nzero == 0, "Inconsistency in the number of bonds in poldata and ForceConstants_");
 
@@ -842,18 +842,18 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     for (auto b = ForceConstants_[eitBONDS].beginBN();
          b < ForceConstants_[eitBONDS].endBN(); ++b)
     {
-	std::vector<std::string> atoms    = gmx::splitString(b->name());
-	auto                     fs       = pd_.findForces(eitBONDS);
-	auto                     f        = fs->findForce(atoms);
-	GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
-	std::vector<std::string> pp = gmx::splitString(b->paramString());
-	char                     buf[256];
-	// Here we use the "knowledge" that the energy is the second parameter in
-	// the Morse description. Not good!
-	snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[i], pp[1].c_str());
-	f->setParams(buf);
-	b->setParamString(buf);
-	i++;
+        std::vector<std::string> atoms    = gmx::splitString(b->name());
+        auto                     fs       = pd_.findForces(eitBONDS);
+        auto                     f        = fs->findForce(atoms);
+        GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
+        std::vector<std::string> pp = gmx::splitString(b->paramString());
+        char                     buf[256];
+        // Here we use the "knowledge" that the energy is the second parameter in
+        // the Morse description. Not good!
+        snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[i], pp[1].c_str());
+        f->setParams(buf);
+        b->setParamString(buf);
+        i++;
     }
 }
 
@@ -959,7 +959,7 @@ double OptPrep::calcDeviation()
 {
     rvec    mu_tot;
     int     j;
-    FILE   *dbcopy; 
+    FILE   *dbcopy;
     double  ener, optHF, spHF, deltaEn, Emol;
 
     if (PAR(_cr))
@@ -1007,60 +1007,60 @@ double OptPrep::calcDeviation()
             /* Now compute energy */
             atoms2md(mymol.mtop_, mymol.inputrec_, 0, NULL, 0, mymol.mdatoms_);
 
-	    mymol.molProp()->getOptHF(&optHF);
+            mymol.molProp()->getOptHF(&optHF);
 
-	    for (auto ei = mymol.molProp()->BeginExperiment();
-		 ei < mymol.molProp()->EndExperiment(); ++ei)
-	    {
-	        if (strcasecmp("Opt", ei->getJobtype().c_str()) == 0 ||
-		    strcasecmp("SP", ei->getJobtype().c_str()) == 0)
-		{
+            for (auto ei = mymol.molProp()->BeginExperiment();
+                 ei < mymol.molProp()->EndExperiment(); ++ei)
+            {
+                if (strcasecmp("Opt", ei->getJobtype().c_str()) == 0 ||
+                    strcasecmp("SP", ei->getJobtype().c_str()) == 0)
+                {
 
-		    ei->getHF(&spHF);
+                    ei->getHF(&spHF);
 
-		    deltaEn = spHF - optHF;
-		    Emol    = mymol.Emol + deltaEn;
-		
-		    dbcopy = debug;
-		    debug  = nullptr;
+                    deltaEn = spHF - optHF;
+                    Emol    = mymol.Emol + deltaEn;
 
-		    for (j = 0; (j < mymol.molProp()->NAtom()); j++)
-		    {
-		        clear_rvec(mymol.f_[j]);
-		    }
+                    dbcopy = debug;
+                    debug  = nullptr;
 
-		    mymol.changeCoordinate(ei);
-		    mymol.computeForces(debug, _cr, mu_tot);
+                    for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+                    {
+                        clear_rvec(mymol.f_[j]);
+                    }
 
-		    debug         = dbcopy;
-		    mymol.Force2  = 0;
-		    
-		    for (j = 0; (j < mymol.molProp()->NAtom()); j++)
-		    {
-		        mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
-		    }
-		    
-		    mymol.Force2      /= mymol.molProp()->NAtom();
-		    _ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
-		    mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
-		    ener               = gmx::square(mymol.Ecalc-Emol);
-		    _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
+                    mymol.changeCoordinate(ei);
+                    mymol.computeForces(debug, _cr, mu_tot);
 
-		    if (nullptr != debug)
-		    {
-		        fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
+                    debug         = dbcopy;
+                    mymol.Force2  = 0;
 
-		        fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g"  
-				"Hangle %g Langle %g  PDIHS  %g  Coul %g  LJ  %g  BHAM  %g  Force2 %g\n",
-				mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, Emol, mymol.Ecalc, 
-				mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY], 
-				mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS], 
-				mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ], 
-				mymol.enerd_->term[F_BHAM], mymol.Force2);
-		    }
-		}
-	    }
-	}
+                    for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+                    {
+                        mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
+                    }
+
+                    mymol.Force2      /= mymol.molProp()->NAtom();
+                    _ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
+                    mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
+                    ener               = gmx::square(mymol.Ecalc-Emol);
+                    _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
+
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
+
+                        fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g"
+                                "Hangle %g Langle %g  PDIHS  %g  Coul %g  LJ  %g  BHAM  %g  Force2 %g\n",
+                                mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, Emol, mymol.Ecalc,
+                                mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY],
+                                mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS],
+                                mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ],
+                                mymol.enerd_->term[F_BHAM], mymol.Force2);
+                    }
+                }
+            }
+        }
     }
     /* Compute E-bounds */
     for (size_t j = 0; (j < param_.size()); j++)
@@ -1426,7 +1426,7 @@ int alex_tune_fc(int argc, char *argv[])
     static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data  = 3, compress = 0;
     static real           tol           = 1e-3, stol = 1e-6, watoms = 0;
-    static gmx_bool       bRandom       = FALSE, bBound = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE; 
+    static gmx_bool       bRandom       = FALSE, bBound = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE;
     static gmx_bool       bQM           = FALSE, bGaussianBug = TRUE, bPolar = FALSE, bFitZeta = TRUE, bZPE = FALSE;
     static real           J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
     static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50;
@@ -1485,7 +1485,7 @@ int alex_tune_fc(int argc, char *argv[])
           "Minimum value for D0 in Morse potential" },
         { "-qm",     FALSE, etBOOL, {&bQM},
           "Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" },
-	{ "-zpe",     FALSE, etBOOL, {&bZPE},
+        { "-zpe",     FALSE, etBOOL, {&bZPE},
           "Consider zero-point energy from thermochemistry calculations in order to calculate the reference enthalpy of the molecule" },
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },

@@ -66,21 +66,21 @@
 
 static void merge_electrostatic_potential(alexandria::MolProp                             &mpt,
                                           std::vector<alexandria::ElectrostaticPotential> &espv,
-                                          int                                              natom, 
+                                          int                                              natom,
                                           int                                              maxpot)
 {
     int mymod = 1;
     if ((maxpot > 0) && (maxpot < (int)espv.size()))
     {
-        std::sort(espv.begin()+natom, espv.end(), 
+        std::sort(espv.begin()+natom, espv.end(),
                   [](const alexandria::ElectrostaticPotential &a,
                      const alexandria::ElectrostaticPotential &b)
                   {  return (a.getV() < b.getV()); });
-                  
+
         int npot = espv.size() - natom;
         mymod = npot / maxpot;
     }
-    
+
     int i  = 0;
     for (auto esi = espv.begin(); (esi < espv.end()); esi++, i++)
     {
@@ -165,14 +165,14 @@ static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mo
 
 static void gmx_molprop_read_babel(const char          *g98,
                                    alexandria::MolProp &mpt,
-                                   char                *molnm, 
-				   char                *iupac, 
-				   char                *conformation,
-                                   char                *basisset, 
-				   int                  maxpot,
+                                   char                *molnm,
+                                   char                *iupac,
+                                   char                *conformation,
+                                   char                *basisset,
+                                   int                  maxpot,
                                    int                  nsymm,
                                    const char          *forcefield,
-				   char                *jobtype)
+                                   char                *jobtype)
 {
     /* Read a gaussian log file */
     OpenBabel::OBMol           mol;
@@ -189,9 +189,9 @@ static void gmx_molprop_read_babel(const char          *g98,
 
     std::vector<alexandria::ElectrostaticPotential> espv;
 
-    const char *reference = "Ghahremanpour2016a", *unknown = "unknown";
-    char       *program, *method, *basis, *charge_model, *ptr, *g98ptr;
-    int         bondid;
+    const char              *reference = "Ghahremanpour2016a", *unknown = "unknown";
+    char                    *program, *method, *basis, *charge_model, *ptr, *g98ptr;
+    int                      bondid;
 
     OpenBabel::OBConversion *conv = read_babel(g98, &mol);
     if (NULL == conv)
@@ -207,14 +207,14 @@ static void gmx_molprop_read_babel(const char          *g98,
     {
         const char    *exclude[] = { ">", "C_ONS_bond", "Rotatable_bond", "Conjugated_double_bond", "Conjugated_triple_bond", "Chiral_center_specified", "Cis_double_bond", "Bridged_rings", "Conjugated_tripple_bond", "Trans_double_bond" };
 #define nexclude (sizeof(exclude)/sizeof(exclude[0]))
-        
+
         conv->AddOption("f", OpenBabel::OBConversion::OUTOPTIONS, "FP4");
         conv->AddOption("s");
         conv->Convert();
         // We need a copy here because WriteString removes the H.
         OpenBabel::OBMol         mol2 = mol;
-        std::string              ss = conv->WriteString(&mol2, false);
-        std::vector<std::string> vs = gmx::splitString(ss);
+        std::string              ss   = conv->WriteString(&mol2, false);
+        std::vector<std::string> vs   = gmx::splitString(ss);
         for (const auto &i : vs)
         {
             size_t j;
@@ -326,7 +326,7 @@ static void gmx_molprop_read_babel(const char          *g98,
         if (extract_thermochemistry(mol, false, &nsymm,
                                     0, 0.0,
                                     &temperature,
-				    &ZPE,
+                                    &ZPE,
                                     &DeltaHf0,
                                     &DeltaHfT,
                                     &DeltaGfT,
@@ -389,7 +389,7 @@ static void gmx_molprop_read_babel(const char          *g98,
                                                 0);
                 mpt.LastExperiment()->AddEnergy(mes);
             }
-	    alexandria::MolecularEnergy me7("ZPE",
+            alexandria::MolecularEnergy me7("ZPE",
                                             mpo_unit[MPO_ENERGY],
                                             0,
                                             epGAS,
@@ -403,7 +403,7 @@ static void gmx_molprop_read_babel(const char          *g98,
     alexandria::MolecularEnergy mes("HF", mpo_unit[MPO_ENERGY], 0, epGAS,
                                     convert2gmx( mol.GetEnergy(), eg2cKcal_Mole), 0);
     mpt.LastExperiment()->AddEnergy(mes);
-    
+
     /* Now add properties by extracting them from the OpenBabel structure */
     OBpd = (OpenBabel::OBPairData *) mol.GetData("PartialCharges");
     if (NULL != OBpd)
@@ -634,14 +634,14 @@ int alexandria::GaussAtomProp::getValue(const char *element,
 
 void ReadGauss(const char          *g98,
                alexandria::MolProp &mp,
-               char                *molnm, 
-	       char                *iupac, 
-	       char                *conf,
-               char                *basis, 
-	       int                  maxpot, 
-	       int                  nsymm,
+               char                *molnm,
+               char                *iupac,
+               char                *conf,
+               char                *basis,
+               int                  maxpot,
+               int                  nsymm,
                const char          *forcefield,
-	       char                *jobtype)
+               char                *jobtype)
 {
 #if HAVE_LIBOPENBABEL2
     gmx_molprop_read_babel(g98, mp, molnm, iupac, conf, basis,

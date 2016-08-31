@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_alexandria Processing of input files and force fields
+/*! Processing of input files and force fields
  * \ingroup group_preprocessing
  * \brief
  * Provides tools for input processing based on the alexandria force field
@@ -44,7 +44,6 @@
  * molecular topology files (or objects) is implemented.
  *
  * \author David van der Spoel <david.vanderspoel@gmail.com>
- * \inpublicapi
  * \ingroup module_alexandria
  */
 #ifndef MOLPROP_H
@@ -956,11 +955,11 @@ class Experiment
         Experiment(std::string program, std::string method,
                    std::string basisset, std::string reference,
                    std::string conformation, std::string datafile,
-		   std::string jobtype) :
+                   std::string jobtype) :
             dataSource_(dsTheory),
-	      reference_(reference), conformation_(conformation), jobtype_(jobtype),
-	      _program(program), _method(method), _basisset(basisset),
-	      _datafile(datafile)
+            reference_(reference), conformation_(conformation), jobtype_(jobtype),
+            _program(program), _method(method), _basisset(basisset),
+            _datafile(datafile)
         {}
 
         //! Return the type of data
@@ -1020,7 +1019,7 @@ class Experiment
         //! Return the literature reference
         const std::string &getReference() const { return reference_; }
 
-	//! Return the type of calculation
+        //! Return the type of calculation
         const std::string &getJobtype() const { return jobtype_; }
 
         //! Add a CalcAtom object to the list of atoms
@@ -1078,7 +1077,7 @@ class Experiment
                     double *value, double *error, double *T,
                     double vec[3], tensor quadrupole);
 
-	bool getHF(double *value);
+        bool getHF(double *value);
 
         //! Merge in another object. Return number of warnings.
         int Merge(std::vector<Experiment>::iterator src);
@@ -1256,9 +1255,9 @@ class MolProp
         bool getProp(MolPropObservable mpo, iqmType iQM, char *lot,
                      char *conf, char *type,
                      double *value, double *error, double *T);
-	
-	//! Returns true if the HF energy of the optimized geometry exists and returns the HF
-	bool getOptHF(double *value);
+
+        //! Returns true if the HF energy of the optimized geometry exists and returns the HF
+        bool getOptHF(double *value);
 
         //! Add a classification category for this molecule
         void AddCategory(const std::string &category)

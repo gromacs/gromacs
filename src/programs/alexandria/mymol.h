@@ -273,8 +273,8 @@ class MyMol
          * \param[in] lot      The level of theory used for QM calculation
          * \param[in] gap      Gaussian atom property
          */
-        immStatus getExpProps(gmx_bool bQM, gmx_bool bZero, 
-			      gmx_bool bZPE, char *lot,
+        immStatus getExpProps(gmx_bool bQM, gmx_bool bZero,
+                              gmx_bool bZPE, char *lot,
                               const Poldata &pd);
 
         /*! \brief
@@ -330,14 +330,14 @@ class MyMol
          * \param[in] ff   Force field
          */
 
-	/*! \brief
-         * Change the coordinate of the molecule based 
+        /*! \brief
+         * Change the coordinate of the molecule based
          * on the coordinate of the conformation stored
-	 * in molprop experiment class.
-	 *
+         * in molprop experiment class.
+         *
          * \param[in] ei   ExperimentIterator
          */
-	void changeCoordinate(ExperimentIterator ei);
+        void changeCoordinate(ExperimentIterator ei);
 
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
 

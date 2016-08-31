@@ -1,4 +1,4 @@
-/*! \defgroup module_alexandria Processing of input files and force fields
+/*! Processing of input files and force fields
  * \ingroup group_preprocessing
  * \brief
  * Provides tools for input processing based on the alexandria force field
@@ -23,7 +23,6 @@ namespace alexandria
 {
 /*! \brief
  * enum describing the different composition schemes
- * \inpublicapi
  * \ingroup module_alexandria
  */
 enum iComp {

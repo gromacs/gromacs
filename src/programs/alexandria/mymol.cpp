@@ -341,11 +341,11 @@ void MyMol::MakeAngles(bool bPairs,
     }
 }
 
-static real calc_r13(const Poldata     &pd,   
-		     const std::string aai,
-                     const std::string aaj, 
-		     const std::string aak,
-                     const real        angle)
+static real calc_r13(const Poldata     &pd,
+                     const std::string  aai,
+                     const std::string  aaj,
+                     const std::string  aak,
+                     const real         angle)
 {
     std::string              params;
     size_t                   ntrain;
@@ -357,8 +357,8 @@ static real calc_r13(const Poldata     &pd,
     std::vector<std::string> aij = {aai, aaj};
     std::vector<std::string> ajk = {aaj, aak};
 
-    auto fs = pd.findForces(eitBONDS);
-    auto lu = string2unit(fs->unit().c_str());
+    auto                     fs = pd.findForces(eitBONDS);
+    auto                     lu = string2unit(fs->unit().c_str());
 
     pd.searchForce(aij, params, &rij, &sigma, &ntrain);
     pd.searchForce(ajk, params, &rjk, &sigma, &ntrain);
@@ -372,8 +372,8 @@ static real calc_r13(const Poldata     &pd,
 }
 
 static void updatePlist(const Poldata             &pd,
-			std::vector<PlistWrapper> &plist,
-			t_topology                *top)
+                        std::vector<PlistWrapper> &plist,
+                        t_topology                *top)
 {
     std::string              aai, aaj, aak, aal, params;
     std::vector<std::string> atoms, ptr;
@@ -386,7 +386,7 @@ static void updatePlist(const Poldata             &pd,
         auto iType = pw.getItype();
         auto fs    = pd.findForces(iType);
         pw.setFtype(fs->fType());
-        
+
         if (eitBONDS == iType)
         {
             lu = string2unit(fs->unit().c_str());
@@ -408,13 +408,13 @@ static void updatePlist(const Poldata             &pd,
                     }
                     else
                     {
-                    gmx_fatal(FARGS, "Unsupported bond: %s-%s!\n", 
-                              aai.c_str(), aaj.c_str());
+                        gmx_fatal(FARGS, "Unsupported bond: %s-%s!\n",
+                                  aai.c_str(), aaj.c_str());
                     }
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "Unsupported atom types: %d, %d!\n", 
+                    gmx_fatal(FARGS, "Unsupported atom types: %d, %d!\n",
                               b->a[0], b->a[1]);
                 }
             }
@@ -432,7 +432,7 @@ static void updatePlist(const Poldata             &pd,
                     if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
                     {
                         r13 = calc_r13(pd, aai, aaj, aak, value);
-                        
+
                         b->c[n++] = value;
                         ptr       = gmx::splitString(params);
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
@@ -446,13 +446,13 @@ static void updatePlist(const Poldata             &pd,
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Unsuppotred harmonic angle: %s-%s-%s!\n", 
+                        gmx_fatal(FARGS, "Unsuppotred harmonic angle: %s-%s-%s!\n",
                                   aai.c_str(), aaj.c_str(), aak.c_str());
                     }
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n", 
+                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n",
                               b->a[0], b->a[1], b->a[2]);
                 }
             }
@@ -479,18 +479,18 @@ static void updatePlist(const Poldata             &pd,
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Unsuppotred linear angle: %s-%s-%s!\n", 
+                        gmx_fatal(FARGS, "Unsuppotred linear angle: %s-%s-%s!\n",
                                   aai.c_str(), aaj.c_str(), aak.c_str());
                     }
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n", 
+                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n",
                               b->a[0], b->a[1], b->a[2]);
                 }
             }
         }
-        else if (eitPROPER_DIHEDRALS == iType || 
+        else if (eitPROPER_DIHEDRALS == iType ||
                  eitIMPROPER_DIHEDRALS == iType)
         {
             for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
@@ -513,13 +513,13 @@ static void updatePlist(const Poldata             &pd,
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Unsuppotred dihedral: %s-%s-%s-%s!\n", 
+                        gmx_fatal(FARGS, "Unsuppotred dihedral: %s-%s-%s-%s!\n",
                                   aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
                     }
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d, %d!\n", 
+                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d, %d!\n",
                               b->a[0], b->a[1], b->a[2], b->a[3]);
                 }
             }
@@ -1203,7 +1203,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
         MakeSpecialInteractions(pd, bUseVsites);
 
-	updatePlist(pd, plist_, topology_);
+        updatePlist(pd, plist_, topology_);
 
         snew(mtop_, 1);
     }
@@ -1333,13 +1333,13 @@ void MyMol::changeCoordinate(ExperimentIterator ei)
     for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
     {
         unit = string2unit((char *)eia->getUnit().c_str());
-	eia->getCoords(&xx, &yy, &zz);
-	
-	x_[natom][XX] = convert2gmx(xx, unit);
-	x_[natom][YY] = convert2gmx(yy, unit);
-	x_[natom][ZZ] = convert2gmx(zz, unit);
-	
-	natom++;
+        eia->getCoords(&xx, &yy, &zz);
+
+        x_[natom][XX] = convert2gmx(xx, unit);
+        x_[natom][YY] = convert2gmx(yy, unit);
+        x_[natom][ZZ] = convert2gmx(zz, unit);
+
+        natom++;
     }
 }
 
@@ -1970,7 +1970,7 @@ void MyMol::PrintTopology(FILE                   *fp,
         //write_zeta_q(fp, qgen_, &topology_->atoms, iChargeDistributionModel);
         //write_zeta_q2(qgen,atype,&topology_->atoms,pd,iChargeDistributionModel);
     }
-    
+
     write_top2(fp, printmol.name, &topology_->atoms, FALSE,
                plist_, excls_, atype_, cgnr_, nexcl_, pd);
     if (!bITP)
@@ -2383,8 +2383,8 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
     }
 }
 
-immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero, 
-			     gmx_bool bZPE, char *lot,
+immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
+                             gmx_bool bZPE, char *lot,
                              const Poldata &pd)
 {
     immStatus    imm = immOK;
@@ -2456,21 +2456,21 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             }
         }
 
-	if (bZPE)
-	{
-	
-	    if (molProp()->getProp(MPO_ENERGY,iqmBoth, lot, nullptr, 
-				   (char *)"ZPE", &ZPE, &error, &T))
-	    {
-	        Emol -= ZPE;
-	    }
-	    else
-	    {
-	        fprintf(debug, "WARNING: NO Zero-point energy for molecule %s.\n",
-			molProp()->getMolname().c_str());
-	    }
-	}
-	
+        if (bZPE)
+        {
+
+            if (molProp()->getProp(MPO_ENERGY, iqmBoth, lot, nullptr,
+                                   (char *)"ZPE", &ZPE, &error, &T))
+            {
+                Emol -= ZPE;
+            }
+            else
+            {
+                fprintf(debug, "WARNING: NO Zero-point energy for molecule %s.\n",
+                        molProp()->getMolname().c_str());
+            }
+        }
+
         if (ia < topology_->atoms.nr)
         {
             imm = immNoData;
@@ -2547,7 +2547,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 int         aj  = ltop_->idef.il[ftb].iatoms[i+2];
                 if (pd.atypeToBtype(*topology_->atoms.atomtype[ai], aai) &&
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj))
-                {                    
+                {
                     atoms = {aai, aaj};
                     if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
                     {
@@ -2637,7 +2637,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         case eitLINEAR_ANGLES:
         {
             auto fs  = pd.findForces(iType);
-	    lu       = string2unit(fs->unit().c_str());
+            lu       = string2unit(fs->unit().c_str());
             int  fta = fs->fType();
             for (int i = 0; (i < ltop_->idef.il[fta].nr); i += interaction_function[fta].nratoms+1)
             {
@@ -2692,8 +2692,8 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     atoms = {aai, aaj, aak, aal};
                     if ((pd.searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
                     {
-                        mtop_->ffparams.iparams[tp].pdihs.phiA   = 
-			  mtop_->ffparams.iparams[tp].pdihs.phiB = value;
+                        mtop_->ffparams.iparams[tp].pdihs.phiA     =
+                            mtop_->ffparams.iparams[tp].pdihs.phiB = value;
                         ptr = gmx::splitString(params);
                         n   = 0;
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)

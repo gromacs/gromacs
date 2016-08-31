@@ -118,21 +118,21 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
                                 sig_pol  = 0;
                                 break;
                             case alexandria::iCmiller:
-                                {
-                                    double      tau_ahc, alpha_ahp;
-                                    int         atomnumber;
-                                    std::string aequiv;
-                                    bSupport = (pd.getMillerPol((char *)atomname, 
-                                                                &atomnumber,
-                                                                &tau_ahc, 
-                                                                &alpha_ahp, 
-                                                                aequiv) == 1);
-                                    
-                                    ahc   += tau_ahc*natom;
-                                    ahp   += alpha_ahp*natom;
-                                    Nelec += atomnumber*natom;
-                                }
-                                break;
+                            {
+                                double      tau_ahc, alpha_ahp;
+                                int         atomnumber;
+                                std::string aequiv;
+                                bSupport = (pd.getMillerPol((char *)atomname,
+                                                            &atomnumber,
+                                                            &tau_ahc,
+                                                            &alpha_ahp,
+                                                            aequiv) == 1);
+
+                                ahc   += tau_ahc*natom;
+                                ahp   += alpha_ahp*natom;
+                                Nelec += atomnumber*natom;
+                            }
+                            break;
                             default:
                                 gmx_incons("Out of range");
                         }
@@ -186,10 +186,10 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
 
 static void write_corr_xvg(const char *fn,
                            std::vector<alexandria::MolProp> &mp,
-                           MolPropObservable mpo, 
+                           MolPropObservable mpo,
                            alexandria::t_qmcount *qmc,
                            real rtoler, real atoler,
-                           const gmx_output_env_t *oenv, 
+                           const gmx_output_env_t *oenv,
                            const alexandria::MolSelect &gms,
                            char *exp_type)
 {
@@ -225,8 +225,8 @@ static void write_corr_xvg(const char *fn,
             double exp_val, exp_error;
             double Texp    = -1;
             bool   bExp    = mpi.getProp(mpo, iqmExp, NULL, NULL,
-                                      exp_type,
-                                      &exp_val, &exp_error, &Texp);
+                                         exp_type,
+                                         &exp_val, &exp_error, &Texp);
             iMolSelect ims = gms.status(mpi.getIupac());
             if ((ims == imsTrain) || (ims == imsTest))
             {
@@ -556,9 +556,9 @@ int alex_analyze(int argc, char *argv[])
     {
         mpo = MPO_DIPOLE;
     }
-    
+
     alexandria::Poldata pd;
-    try 
+    try
     {
         alexandria::readPoldata(opt2fn("-d", NFILE, fnm), pd, ap);
     }

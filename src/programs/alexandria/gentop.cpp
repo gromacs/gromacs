@@ -305,7 +305,7 @@ int alex_gentop(int argc, char *argv[])
           "HIDDENAngle force constant (kJ/mol/rad^2)" },
         { "-kp",    FALSE, etREAL, {&kp},
           "HIDDENDihedral angle force constant (kJ/mol/rad^2)" },
-	{ "-jobtype",  FALSE, etSTR, {&jobtype},
+        { "-jobtype",  FALSE, etSTR, {&jobtype},
           "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." }
     };
 

@@ -158,7 +158,7 @@ static double my_atof(const std::string &ptr)
     }
 }
 
-static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr, 
+static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr,
                            std::vector<std::string> &xbuf)
 {
     if (bZero)
@@ -174,7 +174,7 @@ static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr
         char *attrname = (char *)attr->name;
         char *attrval  = (char *)attr->children->content;
 
-        int kkk;
+        int   kkk;
         if ((kkk = find_elem(attrname, exmlNR, exml_names)) != -1)
         {
             if (attrval != NULL)
@@ -186,7 +186,7 @@ static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr
         {
             char  buf[100];
 
-            fprintf(fp, "%sProperty: '%s' Value: '%s'\n", 
+            fprintf(fp, "%sProperty: '%s' Value: '%s'\n",
                     sp(indent, buf, sizeof(buf)-1),
                     attrname, attrval);
         }
@@ -226,7 +226,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
     std::vector<std::string>     xbuf;
     int                          node, elem = -1;
     std::string                  xxx;
-    
+
     xxx.clear();
     xbuf.resize(exmlNR, xxx);
     while (tree != NULL)
@@ -438,7 +438,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                         case exmlCATOM:
                             if (NN(xbuf[exmlC_NAME]) && NN(xbuf[exmlC_NUMBER]) && bCompIt)
                             {
-                                alexandria::AtomNum an(xbuf[exmlC_NAME], atoi(xbuf[exmlC_NUMBER].c_str()));
+                                alexandria::AtomNum               an(xbuf[exmlC_NAME], atoi(xbuf[exmlC_NUMBER].c_str()));
                                 alexandria::MolecularComposition *l = mpt->LastMolecularComposition();
                                 if (nullptr != l)
                                 {
@@ -502,12 +502,12 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                     NN(xbuf[exmlPROGRAM]) && NN(xbuf[exmlMETHOD]) &&
                                     NN(xbuf[exmlBASISSET]) && NN(xbuf[exmlREFERENCE]) &&
                                     NN(xbuf[exmlCONFORMATION]) && NN(xbuf[exmlDATAFILE]) &&
-				    NN(xbuf[exmlJOBTYPE]))
+                                    NN(xbuf[exmlJOBTYPE]))
                                 {
                                     alexandria::Experiment mycalc(xbuf[exmlPROGRAM], xbuf[exmlMETHOD],
                                                                   xbuf[exmlBASISSET], xbuf[exmlREFERENCE],
                                                                   xbuf[exmlCONFORMATION], xbuf[exmlDATAFILE],
-								  xbuf[exmlJOBTYPE]);
+                                                                  xbuf[exmlJOBTYPE]);
                                     mpt->AddExperiment(mycalc);
                                 }
                                 else if (ds == alexandria::dsExperiment &&
@@ -748,7 +748,7 @@ static void add_xml_molprop(xmlNodePtr                                 parent,
             add_xml_string(child, exml_names[exmlPROGRAM], e_it->getProgram());
             add_xml_string(child, exml_names[exmlMETHOD], e_it->getMethod());
             add_xml_string(child, exml_names[exmlBASISSET], e_it->getBasisset());
-	    add_xml_string(child, exml_names[exmlJOBTYPE], e_it->getJobtype());
+            add_xml_string(child, exml_names[exmlJOBTYPE], e_it->getJobtype());
             add_xml_string(child, exml_names[exmlDATAFILE], e_it->getDatafile());
         }
 
