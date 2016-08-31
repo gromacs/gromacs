@@ -535,6 +535,75 @@ parallel hardware.
 
 Finding out how to run mdrun better
 -----------------------------------
+
+The Wallcycle module is used for the  measurement of mdrun performance. At the
+end of the log file of and MD run, section "Real cycle and time accounting"
+provides data on wall time and number of cycles or time per step for different
+parts of the mdrun code. Counters are:
+
+* Particle-particle during Particle mesh Ewald
+* Domain decomposition
+* Domain decomposition communication load
+* Domain decomposition communication bounds
+* Virtual site constraints
+* Send X to Particle mesh Ewald
+* Neighbor search
+* Launch GPU operations
+* Communication of coordinates
+* Born radii
+* Force
+* Waiting + Communication of force
+* Particle mesh Ewald
+* PME redist. X/F
+* PME spread/gather
+* PME 3D-FFT
+* PME 3D-FFT Communication
+* PME solve Lennard-Jones
+* PME solve Elec
+* PME wait for particle-particle
+* Wait + Receive PME force
+* Wait GPU nonlocal
+* Wait GPU local
+* Non-bonded position/force buffer operations
+* Virtual site spread
+* COM pull force
+* Write trajectory
+* Update
+* Constraints
+* Communication of energies
+* Enforced rotation
+* Add rotational forces
+* Position swapping
+* Interactive MD
+
+Counters will appear in MD log file only if the related parts of the code were
+executed during the MD run. There is also a special counter called Rest which
+counts the amount of time not accounted by any of the counters above.
+
+Subcounters offer more fine-grained inspection of performance. They are:
+
+* Domain decomposition redistribution
+* DD neighbor search grid + sort
+* DD setup communication
+* DD make topology
+* DD make constraints
+* DD topology other
+* Neighbor search grid local
+* NS grid non-local
+* NS search local
+* NS search non-local
+* Bonded force
+* Bonded-FEP force
+* Restraints force
+* Listed buffer operations
+* Nonbonded force
+* Ewald force correction
+* Non-bonded position buffer operations
+* Non-bonded force buffer operations
+
+Subcounters have to be enabled during compilation. See
+:doc:`/dev-manual/build-system` for more information.
+
 TODO In future patch: red flags in log files, how to interpret wallcycle output
 
 TODO In future patch: import wiki page stuff on performance checklist; maybe here,
