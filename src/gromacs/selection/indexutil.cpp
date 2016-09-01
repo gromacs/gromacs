@@ -140,7 +140,7 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
                 grp->index[j] = block->a[block->index[i]+j];
             }
             grp->nalloc_index = grp->isize;
-            (*g)->names.push_back(names[i]);
+            (*g)->names.emplace_back(names[i]);
         }
     }
     catch (...)

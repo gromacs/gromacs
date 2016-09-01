@@ -65,7 +65,7 @@ class InteractiveSession
 
         void addOutput(const char *output)
         {
-            events_.push_back(Event(WriteOutput, output));
+            events_.emplace_back(WriteOutput, output);
         }
         void addInputLine(const char *inputLine)
         {
@@ -73,7 +73,7 @@ class InteractiveSession
         }
         void addReadInput()
         {
-            events_.push_back(Event(ReadInput, ""));
+            events_.emplace_back(ReadInput, "");
         }
         void addInput(const char *inputLine)
         {
@@ -84,7 +84,7 @@ class InteractiveSession
         {
             addInputLine(inputLine);
             helper_.setLastNewline(false);
-            events_.push_back(Event(ReadInputNoNewline, ""));
+            events_.emplace_back(ReadInputNoNewline, "");
         }
 
         void run()

@@ -406,7 +406,7 @@ early_termination:
     result.reserve(nr);
     for (i = sc->sel.begin() + oldCount; i != sc->sel.end(); ++i)
     {
-        result.push_back(Selection(i->get()));
+        result.emplace_back(i->get());
     }
     return result;
 }

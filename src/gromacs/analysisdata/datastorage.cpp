@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -574,8 +574,7 @@ AnalysisDataStorageFrameData::AnalysisDataStorageFrameData(
         for (int i = 0; i < baseData().dataSetCount(); ++i)
         {
             int columnCount = baseData().columnCount(i);
-            pointSets_.push_back(
-                    AnalysisDataPointSetInfo(offset, columnCount, i, 0));
+            pointSets_.emplace_back(offset, columnCount, i, 0);
             offset += columnCount;
         }
     }
@@ -625,9 +624,8 @@ AnalysisDataStorageFrameData::addPointSet(int dataSetIndex, int firstColumn,
     }
     else if (storageImpl().needStorage())
     {
-        pointSets_.push_back(
-                AnalysisDataPointSetInfo(values_.size(), valueCount,
-                                         dataSetIndex, firstColumn));
+        pointSets_.emplace_back(values_.size(), valueCount,
+                                dataSetIndex, firstColumn);
         std::copy(begin, end, std::back_inserter(values_));
     }
 }

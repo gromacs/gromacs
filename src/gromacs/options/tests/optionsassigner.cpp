@@ -856,8 +856,8 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultValueFromVector)
 {
     gmx::Options             options;
     std::vector<std::string> value;
-    value.push_back("test");
-    value.push_back("value");
+    value.emplace_back("test");
+    value.emplace_back("value");
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                             StringOption("p").storeVector(&value).valueCount(2)

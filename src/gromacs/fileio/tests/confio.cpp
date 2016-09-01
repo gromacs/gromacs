@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -181,7 +181,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             refX_.reserve(atomCount);
             for (int i = 0; i < atomCount; ++i)
             {
-                refX_.push_back(gmx::RVec(i%4, i/4, (i/2)%3));
+                refX_.emplace_back(i%4, i/4, (i/2)%3);
             }
         }
 

@@ -358,8 +358,7 @@ void CommandLineTestHelper::setOutputFile(
     }
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(suffix);
     args->addOption(option, fullFilename);
-    impl_->outputFiles_.push_back(
-            Impl::OutputFileInfo(option, fullFilename, matcher.createMatcher()));
+    impl_->outputFiles_.emplace_back(option, fullFilename, matcher.createMatcher());
 }
 
 void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
