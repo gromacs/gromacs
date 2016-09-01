@@ -26,12 +26,7 @@ namespace alexandria
 
 class QgenEem
 {
-
     public:
-
-        ~QgenEem();
-
-
         QgenEem(const Poldata &pd,
                 t_atoms *atoms,
                 rvec *x,
@@ -79,7 +74,7 @@ class QgenEem
         std::vector<std::string>                           _elem;
         std::vector<int>                                   _atomnr;
         std::vector<double>                                _chi0, _rhs, _j00;
-        rvec                         *                     _x;
+        std::vector<gmx::RVec>                             _x;
         /* Jab is a matrix over atom pairs */
         std::vector<std::vector<double> >                  _Jab;
         /* For each atom i there are nZeta[i] row, q and zeta entries */

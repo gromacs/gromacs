@@ -202,8 +202,8 @@ static void dump_csv(const alexandria::Poldata        &pd,
                 mpi->SearchMolecularComposition(cs.searchCS(alexandria::iCalexandria)->name());
             fprintf(csv, "\"%d %s\",\"%s\",",
                     nn, mpi->getMolname().c_str(), mpi->formula().c_str());
-            int *count;
-            snew(count, ptypes.size());
+            std::vector<int> count;
+            count.resize(ptypes.size());
             for (alexandria::AtomNumIterator ani = mci->BeginAtomNum();
                  ani < mci->EndAtomNum(); ani++)
             {
@@ -235,7 +235,6 @@ static void dump_csv(const alexandria::Poldata        &pd,
                 a[nn][i] = at[i][nn] = count[i];
                 fprintf(csv, "%d,", count[i]);
             }
-            sfree(count);
             fprintf(csv, "%.3f\n", x[nn]);
             nn++;
         }
@@ -259,7 +258,7 @@ static int decompose_frag(FILE *fplog,
                           std::vector<std::string> zeropol,
                           const gmx_output_env_t *oenv)
 {
-    double                      *x, *atx, *fpp;
+    std::vector<double>          x, atx, fpp;
     double                     **a, **at, **ata;
     double                       pol, sig_pol, poltot, a0, da0, ax, chi2;
     std::vector<pType>           ptypes;
@@ -269,7 +268,7 @@ static int decompose_frag(FILE *fplog,
     alexandria::CompositionSpecs cs;
     const char                  *alex = cs.searchCS(alexandria::iCalexandria)->name();
 
-    snew(x, mp.size()+1);
+    x.resize(mp.size()+1);
     // Copy all atom types into array. Set usage array.
     {
         for (alexandria::PtypeConstIterator ptype = pd.getPtypeBegin();
@@ -460,7 +459,7 @@ static int decompose_frag(FILE *fplog,
         fflush(fplog);
     }
     // As a side effect this function fills a and at and probably x.
-    dump_csv(pd, mp, gms, ptypes, nusemol, x, a, at);
+    dump_csv(pd, mp, gms, ptypes, nusemol, x.data(), a, at);
 
     if (fplog)
     {
@@ -473,7 +472,7 @@ static int decompose_frag(FILE *fplog,
     }
 
     // Check for linear dependencies
-    if (!check_matrix(a, x, nusemol, ptypes))
+    if (!check_matrix(a, x.data(), nusemol, ptypes))
     {
         fprintf(stderr, "Matrix is linearly dependent. Sorry.\n");
     }
@@ -490,8 +489,8 @@ static int decompose_frag(FILE *fplog,
 
         double **a_copy  = alloc_matrix(nUseBootStrap, ptypes.size());
         double **at_copy = alloc_matrix(ptypes.size(), nUseBootStrap);
-        double  *x_copy;
-        snew(x_copy, nUseBootStrap);
+        std::vector<double> x_copy;
+        x_copy.resize(nUseBootStrap);
         for (int ii = 0; (ii < nUseBootStrap); ii++)
         {
             // Pick random molecule uu out of stack
@@ -507,11 +506,11 @@ static int decompose_frag(FILE *fplog,
         }
         matrix_multiply(debug, nUseBootStrap, ptypes.size(),
                         a_copy, at_copy, ata);
-        if (check_matrix(ata, x_copy, ptypes.size(), ptypes) &&
+        if (check_matrix(ata, x_copy.data(), ptypes.size(), ptypes) &&
             ((row = matrix_invert(debug, ptypes.size(), ata)) == 0))
         {
-            snew(atx, ptypes.size());
-            snew(fpp, ptypes.size());
+            atx.resize(ptypes.size());
+            fpp.resize(ptypes.size());
             a0 = 0;
             do
             {
@@ -561,7 +560,6 @@ static int decompose_frag(FILE *fplog,
         free_matrix(a_copy);
         free_matrix(at_copy);
         free_matrix(ata);
-        sfree(x_copy);
     }
     fprintf(stderr, "\n");
     FILE *xp = xvgropen(hisfn, "Polarizability distribution", "alpha (A\\S3\\N)", "", oenv);
@@ -609,7 +607,6 @@ static int decompose_frag(FILE *fplog,
         const char *null = (const char *)"0";
         pd.addPtype( null, NULL, null, a0, 0);
     }
-    sfree(fpp);
     free_matrix(a);
     free_matrix(at);
 

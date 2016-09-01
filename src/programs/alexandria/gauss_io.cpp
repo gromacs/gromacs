@@ -227,14 +227,10 @@ static void gmx_molprop_read_babel(const char          *g98,
             }
             if (j == nexclude)
             {
-                char *ptr;
-                char *dup = strdup(i.c_str());
-                while (NULL != (ptr = strchr(dup, '_')))
-                {
-                    *ptr = ' ';
-                }
+                std::string dup = i;
+                std::replace_if(dup.begin(), dup.end(),
+                                [](const char c) { return c == '_'; }, ' ');
                 mpt.AddCategory(dup);
-                sfree(dup);
             }
         }
     }

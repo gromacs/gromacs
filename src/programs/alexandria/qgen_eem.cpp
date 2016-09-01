@@ -55,7 +55,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/txtdump.h"
 
@@ -104,8 +103,7 @@ QgenEem::QgenEem(const Poldata            &pd,
     _j00.resize(_natom, 0);
     _q.resize(_natom+1);
     _nZeta.resize(_natom+1, 0);
-
-    snew(_x, _natom);
+    _x.resize(_natom);
 
     /* Special case for chi_eq */
     _nZeta[_natom] = 1;
@@ -172,11 +170,6 @@ QgenEem::QgenEem(const Poldata            &pd,
     }
 }
 
-QgenEem::~QgenEem()
-{
-    sfree(_x);
-}
-
 int QgenEem::getNzeta( int atom)
 {
     if ((0 <= atom) && (atom < _natom))
@@ -184,7 +177,6 @@ int QgenEem::getNzeta( int atom)
         return _nZeta[atom];
     }
     return 0;
-
 }
 
 int QgenEem::getRow( int atom, int z)

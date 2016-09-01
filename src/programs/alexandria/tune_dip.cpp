@@ -68,7 +68,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "gmx_simple_comm.h"
 #include "molselect.h"
@@ -659,7 +658,7 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
     double                           chi2, chi2_min;
     int                              nzeta, zz;
     int                              i, k, n, nparam;
-    double                          *test_param, *orig_param, *best_param, *start;
+    std::vector<double>              test_param, orig_param, best_param, start;
     gmx_bool                         bMinimum = FALSE;
     double                           J00, chi0, zeta;
     std::string                      name;
@@ -700,12 +699,12 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
         {
             nparam++;
         }
-        snew(test_param, nparam+1);
-        snew(orig_param, nparam+1);
-        snew(best_param, nparam+1);
+        test_param.resize(nparam+1, 0);
+        orig_param.resize(nparam+1, 0);
+        best_param.resize(nparam+1, 0);
 
         /* Starting point */
-        snew(start, nparam);
+        start.resize(nparam, 0);
 
         /* Monitor convergence graphically */
         if (NULL != convfn)
@@ -728,7 +727,7 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
             }
 
             k = guess_all_param(fplog, md, n, 0, stepsize, bRandom, gen, dis,
-                                orig_param, test_param);
+                                orig_param.data(), test_param.data());
             if (k != nparam)
             {
                 gmx_fatal(FARGS, "Inconsistency in guess_all_param: k = %d, should be %d", k, nparam);
@@ -738,7 +737,7 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
                 start[k] = test_param[k];
             }
 
-            nmsimplex(cfp, (void *)md, dipole_function, start, nparam,
+            nmsimplex(cfp, (void *)md, dipole_function, start.data(), start.size(),
                       tol, 1, maxiter, &chi2);
 
             if (chi2 < chi2_min)

@@ -67,7 +67,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/pleasecite.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/txtdump.h"
@@ -1049,13 +1048,13 @@ void QgenResp::optimizeCharges()
             fprintf(debug, "  %8g\n", rhs[i]);
         }
     }
-    double  *x;
     if (debug)
     {
         fprintf(debug, "ncolumn = %d nrow = %d\n", ncolumn, nrow);
     }
-    snew(x, ncolumn);
-    multi_regression2(nrow, rhs.data(), ncolumn, a, x);
+    std::vector<double> x;
+    x.resize(ncolumn);
+    multi_regression2(nrow, rhs.data(), ncolumn, a, x.data());
     i = 0;
     for (size_t ii = 0; ii < nAtom(); ii++)
     {
@@ -1074,7 +1073,6 @@ void QgenResp::optimizeCharges()
             i++;
         }
     }
-    sfree(x);
 
     free_matrix(a);
     regularizeCharges();
