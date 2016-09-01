@@ -326,7 +326,6 @@ static void gmx_molprop_read_babel(const char          *g98,
         if (extract_thermochemistry(mol, false, &nsymm,
                                     0, 0.0,
                                     &temperature,
-                                    &ZPE,
                                     &DeltaHf0,
                                     &DeltaHfT,
                                     &DeltaGfT,
@@ -334,7 +333,8 @@ static void gmx_molprop_read_babel(const char          *g98,
                                     &S0T,
                                     &CVT,
                                     &CPT,
-                                    Scomponents))
+                                    Scomponents,
+				    &ZPE))
         {
             alexandria::MolecularEnergy me1("DeltaHform",
                                             mpo_unit[MPO_ENERGY],

@@ -1034,14 +1034,17 @@ double OptPrep::calcDeviation()
 
 		    debug         = dbcopy;
 		    mymol.Force2  = 0;
-		    
-		    for (j = 0; (j < mymol.molProp()->NAtom()); j++)
-		    {
-		        mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
+
+		    if (strcasecmp("Opt", ei->getJobtype().c_str()) == 0)
+		    {	
+		         for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+			 {
+			     mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
+			 }
+		         mymol.Force2     /= mymol.molProp()->NAtom();
+			_ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
 		    }
-		    
-		    mymol.Force2      /= mymol.molProp()->NAtom();
-		    _ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
+
 		    mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
 		    ener               = gmx::square(mymol.Ecalc-Emol);
 		    _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
@@ -1061,7 +1064,6 @@ double OptPrep::calcDeviation()
 		}
 	    }
 	    _ener[ermsEPOT]   /= mymol.molProp()->NExperiment();
-	    _ener[ermsForce2] /= mymol.molProp()->NExperiment();
 	}
     }
     /* Compute E-bounds */
