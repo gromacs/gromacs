@@ -406,11 +406,6 @@ static void updatePlist(const Poldata             &pd,
                             b->c[n++] = atof(pi->c_str());
                         }
                     }
-                    else
-                    {
-                        gmx_fatal(FARGS, "Unsupported bond: %s-%s!\n",
-                                  aai.c_str(), aaj.c_str());
-                    }
                 }
                 else
                 {
@@ -444,11 +439,6 @@ static void updatePlist(const Poldata             &pd,
                             }
                         }
                     }
-                    else
-                    {
-                        gmx_fatal(FARGS, "Unsuppotred harmonic angle: %s-%s-%s!\n",
-                                  aai.c_str(), aaj.c_str(), aak.c_str());
-                    }
                 }
                 else
                 {
@@ -476,11 +466,6 @@ static void updatePlist(const Poldata             &pd,
                         {
                             b->c[n++] = atof(pi->c_str());
                         }
-                    }
-                    else
-                    {
-                        gmx_fatal(FARGS, "Unsuppotred linear angle: %s-%s-%s!\n",
-                                  aai.c_str(), aaj.c_str(), aak.c_str());
                     }
                 }
                 else
@@ -510,11 +495,6 @@ static void updatePlist(const Poldata             &pd,
                         {
                             b->c[n++] = atof(pi->c_str());
                         }
-                    }
-                    else
-                    {
-                        gmx_fatal(FARGS, "Unsuppotred dihedral: %s-%s-%s-%s!\n",
-                                  aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str());
                     }
                 }
                 else

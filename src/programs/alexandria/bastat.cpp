@@ -726,7 +726,8 @@ int alex_bastat(int argc, char *argv[])
                         }
                     }
                 }
-                else if (eitANGLES == fs->iType())
+                else if (eitANGLES == fs->iType() || 
+			 eitLINEAR_ANGLES == fs->iType())
                 {
                     unsigned int funcType = fs->fType();
 
