@@ -464,7 +464,7 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
             {
                 GMX_THROW(APIError("Enumeration value cannot be NULL"));
             }
-            allowed_.push_back(settings.enumValues_[i]);
+            allowed_.emplace_back(settings.enumValues_[i]);
         }
         if (settings.defaultEnumIndex_ >= 0)
         {
@@ -575,7 +575,7 @@ EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
         {
             GMX_THROW(APIError("Enumeration value cannot be NULL"));
         }
-        allowed_.push_back(enumValues[i]);
+        allowed_.emplace_back(enumValues[i]);
     }
 
     GMX_ASSERT(defaultValue < count, "Default enumeration value is out of range");

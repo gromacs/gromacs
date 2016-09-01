@@ -344,7 +344,7 @@ void OptionsAdapter::filenmToOptions(Options *options, t_filenm *fnm)
         GMX_RELEASE_ASSERT(defType != efNR,
                            "File name option specifies an invalid extension");
     }
-    fileNameOptions_.push_back(FileNameData(fnm));
+    fileNameOptions_.emplace_back(fnm);
     FileNameData &data = fileNameOptions_.back();
     data.optionInfo = options->addOption(
                 FileNameOption(name).storeVector(&data.values)
@@ -361,7 +361,7 @@ void OptionsAdapter::pargsToOptions(Options *options, t_pargs *pa)
     const bool        bHidden = startsWith(pa->desc, "HIDDEN");
     const char *const name    = &pa->option[1];
     const char *const desc    = (bHidden ? &pa->desc[6] : pa->desc);
-    programArgs_.push_back(ProgramArgData(pa));
+    programArgs_.emplace_back(pa);
     ProgramArgData   &data = programArgs_.back();
     switch (pa->type)
     {

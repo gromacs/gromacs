@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -625,7 +625,7 @@ init_kwstr(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, vo
     for (int i = 0; i < n; ++i)
     {
         const char *s = param[1].val.u.s[i];
-        d->matches.push_back(StringKeywordMatchItem(d->matchType, s));
+        d->matches.emplace_back(d->matchType, s);
     }
 }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -280,7 +280,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
             i += _impl->max_store;
         }
         _impl->currValues_.clear();
-        _impl->currValues_.push_back(AnalysisDataValue(step * _impl->dt));
+        _impl->currValues_.emplace_back(step * _impl->dt);
         int k = 1;
         for (int j = 0; j < _impl->nmax; j += _impl->ndim, ++k)
         {
@@ -292,7 +292,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
                     - _impl->oldval[i + j + d];
                 dist2 += displ * displ;
             }
-            _impl->currValues_.push_back(AnalysisDataValue(dist2));
+            _impl->currValues_.emplace_back(dist2);
         }
         moduleManager().notifyPointsAdd(AnalysisDataPointSetRef(header, _impl->currValues_));
     }

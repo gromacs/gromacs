@@ -181,7 +181,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesDefaultValuesFromVariables)
                           .store(iavalue).valueCount(2));
 
     std::vector<std::string> svalues;
-    svalues.push_back("foo");
+    svalues.emplace_back("foo");
     options.addOption(StringOption("str").description("String option")
                           .storeVector(&svalues).multiValue());
 
@@ -248,8 +248,8 @@ TEST_F(CommandLineHelpWriterTest, HandlesLongOptions)
     options.addOption(DoubleOption("dvec").description("Double vector option")
                           .vector().store(dblvec));
     std::vector<std::string> values;
-    values.push_back("A very long string value that overflows even the description column");
-    values.push_back("Another very long string value that overflows even the description column");
+    values.emplace_back("A very long string value that overflows even the description column");
+    values.emplace_back("Another very long string value that overflows even the description column");
     options.addOption(StringOption("string")
                           .description("String option with very long values (may "
                                        "be less relevant with selections having "
