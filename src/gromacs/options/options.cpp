@@ -200,7 +200,7 @@ void OptionSectionImpl::finish()
 
 IOptionsContainer &OptionSectionImpl::Group::addGroup()
 {
-    subgroups_.push_back(Group(parent_));
+    subgroups_.emplace_back(parent_);
     return subgroups_.back();
 }
 

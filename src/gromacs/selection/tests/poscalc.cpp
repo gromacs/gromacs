@@ -201,7 +201,7 @@ PositionCalculationTest::initPositions(gmx_ana_poscalc_t *pc, const char *name)
     posList_.reserve(posList_.size() + 1);
     PositionPointer p(new gmx_ana_pos_t());
     gmx_ana_pos_t  *result = p.get();
-    posList_.push_back(PositionTest(std::move(p), pc, name));
+    posList_.emplace_back(std::move(p), pc, name);
     gmx_ana_poscalc_init_pos(pc, result);
     return result;
 }

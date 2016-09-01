@@ -227,7 +227,7 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
                         ".", options.filename_, false);
         for (i = files.begin(); i != files.end(); ++i)
         {
-            result.push_back(DataFileInfo(".", *i, false));
+            result.emplace_back(".", *i, false);
         }
     }
     if (impl_ != nullptr)
@@ -240,7 +240,7 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
                             j->c_str(), options.filename_, false);
             for (i = files.begin(); i != files.end(); ++i)
             {
-                result.push_back(DataFileInfo(*j, *i, false));
+                result.emplace_back(*j, *i, false);
             }
         }
     }
@@ -252,7 +252,7 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
                         defaultPath.c_str(), options.filename_, false);
         for (i = files.begin(); i != files.end(); ++i)
         {
-            result.push_back(DataFileInfo(defaultPath, *i, true));
+            result.emplace_back(defaultPath, *i, true);
         }
     }
     if (result.empty() && options.bThrow_)

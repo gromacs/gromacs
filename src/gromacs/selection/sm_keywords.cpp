@@ -625,7 +625,7 @@ init_kwstr(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, vo
     for (int i = 0; i < n; ++i)
     {
         const char *s = param[1].val.u.s[i];
-        d->matches.push_back(StringKeywordMatchItem(d->matchType, s));
+        d->matches.emplace_back(d->matchType, s);
     }
 }
 

@@ -350,7 +350,7 @@ void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
     GMX_RELEASE_ASSERT(impl_->datasets_.find(name) == impl_->datasets_.end(),
                        "Duplicate data set name registered");
     impl_->datasets_[name] = data;
-    impl_->datasetNames_.push_back(name);
+    impl_->datasetNames_.emplace_back(name);
 }
 
 

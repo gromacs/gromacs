@@ -226,7 +226,7 @@ choose_ff_impl(const char *ffsel,
                 FILE *fp = gmx_ffopen(docFileName.c_str(), "r");
                 get_a_line(fp, buf, STRLEN);
                 gmx_ffclose(fp);
-                desc.push_back(buf);
+                desc.emplace_back(buf);
             }
             else
             {

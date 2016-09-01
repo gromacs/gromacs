@@ -229,7 +229,7 @@ void TextTableFormatter::addColumn(const char *title, int width, bool bWrap)
     {
         impl_->bPrintHeader_ = true;
     }
-    impl_->columns_.push_back(Impl::ColumnData(title, width, bWrap));
+    impl_->columns_.emplace_back(title, width, bWrap);
 }
 
 void TextTableFormatter::setFirstColumnIndent(int indent)
@@ -341,7 +341,7 @@ std::string TextTableFormatter::formatRow()
                 {
                     if (overflow > columnWidth && column->bWrap_)
                     {
-                        columnLines.push_back(std::string());
+                        columnLines.emplace_back();
                         continue;
                     }
                     columnWidth -= overflow;

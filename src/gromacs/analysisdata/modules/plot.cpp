@@ -282,7 +282,7 @@ AbstractPlotModule::setLegend(int nsets, const char * const *setname)
 void
 AbstractPlotModule::appendLegend(const char *setname)
 {
-    impl_->legend_.push_back(setname);
+    impl_->legend_.emplace_back(setname);
 }
 
 

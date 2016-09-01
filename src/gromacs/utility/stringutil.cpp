@@ -191,7 +191,7 @@ std::vector<std::string> splitString(const std::string &str)
         }
         if (startPos != end)
         {
-            result.push_back(std::string(startPos, currPos));
+            result.emplace_back(startPos, currPos);
         }
     }
     return result;

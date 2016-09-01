@@ -280,7 +280,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
             i += _impl->max_store;
         }
         _impl->currValues_.clear();
-        _impl->currValues_.push_back(AnalysisDataValue(step * _impl->dt));
+        _impl->currValues_.emplace_back(step * _impl->dt);
         int k = 1;
         for (int j = 0; j < _impl->nmax; j += _impl->ndim, ++k)
         {
@@ -292,7 +292,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
                     - _impl->oldval[i + j + d];
                 dist2 += displ * displ;
             }
-            _impl->currValues_.push_back(AnalysisDataValue(dist2));
+            _impl->currValues_.emplace_back(dist2);
         }
         moduleManager().notifyPointsAdd(AnalysisDataPointSetRef(header, _impl->currValues_));
     }

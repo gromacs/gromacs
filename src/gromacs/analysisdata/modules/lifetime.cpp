@@ -142,8 +142,8 @@ AnalysisDataLifetimeModule::dataStarted(AbstractAnalysisData *data)
     impl_->lifetimeHistograms_.reserve(data->dataSetCount());
     for (int i = 0; i < data->dataSetCount(); ++i)
     {
-        impl_->currentLifetimes_.push_back(std::vector<int>(data->columnCount(i), 0));
-        impl_->lifetimeHistograms_.push_back(std::deque<int>());
+        impl_->currentLifetimes_.emplace_back(data->columnCount(i), 0);
+        impl_->lifetimeHistograms_.emplace_back();
     }
 }
 

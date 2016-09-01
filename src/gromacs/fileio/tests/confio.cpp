@@ -181,7 +181,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             refX_.reserve(atomCount);
             for (int i = 0; i < atomCount; ++i)
             {
-                refX_.push_back(gmx::RVec(i%4, i/4, (i/2)%3));
+                refX_.emplace_back(i%4, i/4, (i/2)%3);
             }
         }
 

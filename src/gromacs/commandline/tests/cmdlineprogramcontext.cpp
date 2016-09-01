@@ -146,7 +146,7 @@ TEST_F(CommandLineProgramContextTest, FindsBinaryFromPath)
 TEST_F(CommandLineProgramContextTest, FindsBinaryFromCurrentDirectory)
 {
     env_->workingDirectory_ = Path::join(env_->getWorkingDirectory(), "bin");
-    env_->path_.push_back("");
+    env_->path_.emplace_back("");
     testBinaryPathSearch("test-exe");
 }
 

@@ -71,7 +71,7 @@ MessageStringCollector::~MessageStringCollector()
 
 void MessageStringCollector::startContext(const char *name)
 {
-    impl_->contexts_.push_back(name);
+    impl_->contexts_.emplace_back(name);
 }
 
 void MessageStringCollector::append(const std::string &message)

@@ -246,7 +246,7 @@ void SelectionOptionManager::Impl::requestUnsetRequiredOptions()
         SelectionOptionStorage &storage = **i;
         if (storage.isRequired() && !storage.isSet())
         {
-            requests_.push_back(SelectionRequest(&storage));
+            requests_.emplace_back(&storage);
         }
     }
 }
@@ -285,7 +285,7 @@ void
 SelectionOptionManager::requestOptionDelayedParsing(
         SelectionOptionStorage *storage)
 {
-    impl_->requests_.push_back(Impl::SelectionRequest(storage));
+    impl_->requests_.emplace_back(storage);
 }
 
 bool

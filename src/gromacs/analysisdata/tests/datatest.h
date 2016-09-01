@@ -115,11 +115,11 @@ class AnalysisDataTestInputPointSet
         }
 
         //! Appends a value to this point set.
-        void addValue(real y) { values_.push_back(Value(y)); }
+        void addValue(real y) { values_.emplace_back(y); }
         //! Appends a value with an error estimate to this point set.
         void addValueWithError(real y, real error)
         {
-            values_.push_back(Value(y, error));
+            values_.emplace_back(y, error);
         }
 
     private:

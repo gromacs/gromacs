@@ -119,7 +119,7 @@ TextOutputStream &TestFileOutputRedirector::standardOutput()
     if (!impl_->stdoutStream_)
     {
         impl_->stdoutStream_.reset(new StringOutputStream);
-        impl_->fileList_.push_back(Impl::FileListEntry("<stdout>", impl_->stdoutStream_));
+        impl_->fileList_.emplace_back("<stdout>", impl_->stdoutStream_);
     }
     return *impl_->stdoutStream_;
 }
@@ -128,7 +128,7 @@ TextOutputStreamPointer
 TestFileOutputRedirector::openTextOutputFile(const char *filename)
 {
     Impl::StringStreamPointer stream(new StringOutputStream);
-    impl_->fileList_.push_back(Impl::FileListEntry(filename, stream));
+    impl_->fileList_.emplace_back(filename, stream);
     return stream;
 }
 

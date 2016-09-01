@@ -168,7 +168,7 @@ void IndexFileWriterModule::addGroup(const std::string &name, bool bDynamic)
 {
     std::string newName(name);
     std::replace(newName.begin(), newName.end(), ' ', '_');
-    groups_.push_back(GroupInfo(newName, bDynamic));
+    groups_.emplace_back(newName, bDynamic);
 }
 
 

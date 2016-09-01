@@ -302,7 +302,7 @@ AnalysisDataModuleManager::addModule(AbstractAnalysisData      *data,
     {
         impl_->bAllowMissing_ = false;
     }
-    impl_->modules_.push_back(Impl::ModuleInfo(module));
+    impl_->modules_.emplace_back(module);
 }
 
 void
