@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -201,7 +201,7 @@ PositionCalculationTest::initPositions(gmx_ana_poscalc_t *pc, const char *name)
     posList_.reserve(posList_.size() + 1);
     PositionPointer p(new gmx_ana_pos_t());
     gmx_ana_pos_t  *result = p.get();
-    posList_.push_back(PositionTest(std::move(p), pc, name));
+    posList_.emplace_back(std::move(p), pc, name);
     gmx_ana_poscalc_init_pos(pc, result);
     return result;
 }

@@ -108,7 +108,7 @@ class RootHelpTopic : public AbstractCompositeHelpTopic
         {
             if (bExported)
             {
-                exportedTopics_.push_back(topic->name());
+                exportedTopics_.emplace_back(topic->name());
             }
             addSubTopic(std::move(topic));
         }
@@ -743,7 +743,7 @@ void HelpExportCompletion::exportModuleHelp(
         const std::string                 & /*tag*/,
         const std::string                 & /*displayName*/)
 {
-    modules_.push_back(module.name());
+    modules_.emplace_back(module.name());
     {
         CommandLineHelpContext context(&bashWriter_);
         // We use the display name to pass the name of the module to the

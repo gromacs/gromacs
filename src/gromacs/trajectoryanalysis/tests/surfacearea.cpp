@@ -88,7 +88,7 @@ class SurfaceAreaTest : public ::testing::Test
             {
                 index_.push_back(x_.size());
             }
-            x_.push_back(gmx::RVec(x, y, z));
+            x_.emplace_back(x, y, z);
             radius_.push_back(radius);
         }
 
