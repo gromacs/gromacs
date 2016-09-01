@@ -21,7 +21,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "categories.h"
@@ -224,16 +223,17 @@ void gmx_molprop_stats_table(FILE                 *fp,
                              const MolSelect      &gms,
                              iMolSelect            ims)
 {
-    std::vector<MolProp>::iterator mpi;
-    std::vector<std::string>::iterator         si;
-    int                                        k, N;
-    double                                     exp_val, qm_val;
-    real                                       rms, R, a, da, b, db, chi2;
-    char                                       buf[256];
-    gmx_stats_t                                lsq, *lsqtot;
-    LongTable                      lt(fp, true, NULL);
-    CompositionSpecs               cs;
-    const char                                *alex = cs.searchCS(iCalexandria)->name();
+    std::vector<MolProp>::iterator     mpi;
+    std::vector<std::string>::iterator si;
+    int                                k, N;
+    double                             exp_val, qm_val;
+    real                               rms, R, a, da, b, db, chi2;
+    char                               buf[256];
+    gmx_stats_t                        lsq;
+    std::vector<gmx_stats_t>           lsqtot;
+    LongTable                          lt(fp, true, NULL);
+    CompositionSpecs                   cs;
+    const char                        *alex = cs.searchCS(iCalexandria)->name();
 
     if (0 == cList.nCategories())
     {
@@ -320,7 +320,7 @@ void gmx_molprop_stats_table(FILE                 *fp,
     }
     std::string catbuf;
     catbuf.assign("All");
-    snew(lsqtot, qmc->n);
+    lsqtot.resize(qmc->n);
     for (k = 0; (k < qmc->n); k++)
     {
         char lot[256];
@@ -461,7 +461,6 @@ void gmx_molprop_stats_table(FILE                 *fp,
     {
         gmx_stats_free(lsqtot[k]);
     }
-    sfree(lsqtot);
 }
 
 static void composition_header(LongTable &lt,

@@ -840,10 +840,10 @@ static void add_element_to_formula(const char *elem, int number, char *formula, 
 bool MolProp::GenerateFormula(gmx_atomprop_t ap)
 {
     char  myform[1280], texform[2560];
-    int  *ncomp;
+    std::vector<int> ncomp;
     alexandria::MolecularCompositionIterator mci;
 
-    snew(ncomp, 110);
+    ncomp.resize(110, 0);
     myform[0]  = '\0';
     texform[0] = '\0';
     mci        = SearchMolecularComposition("bosque");
@@ -895,7 +895,6 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
                 getMolname().c_str());
         fflush(debug);
     }
-    sfree(ncomp);
 
     return (strlen(myform) > 0);
 }

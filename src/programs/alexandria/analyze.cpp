@@ -57,7 +57,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/pleasecite.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "categories.h"
 #include "composition.h"
@@ -266,32 +265,32 @@ static void write_corr_xvg(const char *fn,
     do_view(oenv, fn, NULL);
 }
 
-typedef struct {
-    int    nref;
-    int   *rcount;
-    char **refs;
-} t_refcount;
-
-static void add_refc(t_refcount *rc, const char *ref)
+class RefCount
 {
-    int i;
+private:
+    int         count_;
+    std::string ref_;
+public:
+    RefCount(const std::string ref) : count_(1), ref_(ref) {};
+    
+    int count() const { return count_; }
+    
+    void increment() { count_++; }
+    
+    const std::string ref() const { return ref_; }
+};
 
-    for (i = 0; (i < rc->nref); i++)
+static void add_refc(std::vector<RefCount> &rc, std::string ref)
+{
+    for (auto &r : rc)
     {
-        if (strcmp(ref, rc->refs[i]) == 0)
+        if (r.ref().compare(ref) == 0)
         {
-            rc->rcount[i]++;
-            break;
+            r.increment();
+            return;
         }
     }
-    if (i == rc->nref)
-    {
-        rc->nref++;
-        srenew(rc->rcount, rc->nref);
-        srenew(rc->refs, rc->nref);
-        rc->rcount[i] = 1;
-        rc->refs[i]   = strdup(ref);
-    }
+    rc.push_back(RefCount(ref));
 }
 
 static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
@@ -316,7 +315,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     FILE                          *fp, *gp;
     int                            i, ntot;
     alexandria::t_qmcount         *qmc;
-    t_refcount                    *rc;
+    std::vector<RefCount>          rc;
     double                         T, value, error, vec[3];
     tensor                         quadrupole;
     const char                    *iupac;
@@ -328,7 +327,6 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
 
     qmc = find_calculations(mp, mpo, fc_str);
 
-    snew(rc, 1);
     for (auto &mpi : mp)
     {
         for (alexandria::ExperimentIterator ei = mpi.BeginExperiment(); (ei < mpi.EndExperiment()); ++ei)
@@ -344,11 +342,11 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     printf("--------------------------------------------------\n");
     printf("      Some statistics for %s\n", mpo_name[mpo]);
     ntot = 0;
-    for (i = 0; (i < rc->nref); i++)
+    for (const auto &r : rc)
     {
         printf("There are %d experiments with %s as reference\n",
-               rc->rcount[i], rc->refs[i]);
-        ntot += rc->rcount[i];
+               r.count(), r.ref().c_str());
+        ntot += r.count();
     }
     printf("There are %d entries with experimental %s of type %s\n", ntot,
            mpo_name[mpo], exp_type);
