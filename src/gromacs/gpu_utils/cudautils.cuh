@@ -35,13 +35,11 @@
 #ifndef GMX_GPU_UTILS_CUDAUTILS_CUH
 #define GMX_GPU_UTILS_CUDAUTILS_CUH
 
-#include "config.h"
-
 #include <stdio.h>
-#if HAVE_NVML
-#include <nvml.h>
-#endif /* HAVE_NVML */
 
+#include <string>
+
+#include "gromacs/gpu_utils/nvml.cuh"
 #include "gromacs/utility/fatalerror.h"
 
 /* TODO error checking needs to be rewritten. We have 2 types of error checks needed
@@ -54,6 +52,7 @@
 
    Probably we'll need two sets of the macros below...
 
+   Note, CHECK_CUDA_ERRORS this changes, consider also changing checkNvmlErrors.
  */
 #define CHECK_CUDA_ERRORS
 
@@ -103,7 +102,6 @@
 #define CU_CHECK_PREV_ERR()     do { } while (0)
 #define CU_LAUNCH_ERR(msg)      do { } while (0)
 #define CU_LAUNCH_ERR_SYNC(msg) do { } while (0)
-#define HANDLE_NVML_RET_ERR(status, msg) do { } while (0)
 
 #endif /* CHECK_CUDA_ERRORS */
 
@@ -117,21 +115,15 @@
  */
 struct gmx_device_info_t
 {
-    int                 id;                      /* id of the CUDA device */
-    cudaDeviceProp      prop;                    /* CUDA device properties */
-    int                 stat;                    /* result of the device check */
-    unsigned int        nvml_orig_app_sm_clock;  /* The original SM clock before we changed it */
-    unsigned int        nvml_orig_app_mem_clock; /* The original memory clock before we changed it */
-    gmx_bool            nvml_app_clocks_changed; /* If application clocks have been changed */
-    unsigned int        nvml_set_app_sm_clock;   /* The SM clock we set */
-    unsigned int        nvml_set_app_mem_clock;  /* The memory clock we set */
-#if HAVE_NVML
-    nvmlDevice_t        nvml_device_id;          /* NVML device id */
-    // TODO This can become a bool with a more useful name
-    nvmlEnableState_t   nvml_is_restricted;      /* Status of application clocks permission */
-#endif                                           /* HAVE_NVML */
+    //! ID of the CUDA device
+    int              id;
+    //! CUDA device properties
+    cudaDeviceProp   prop;
+    //! Result of the device check
+    int              stat;
+    //! Manages NVML application clock handling
+    gmx::NvmlManager nvml;
 };
-
 
 /*! Launches asynchronous host to device memory copy in stream 0. */
 int cu_copy_D2H(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);

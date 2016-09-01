@@ -47,6 +47,8 @@
 
 #include <cstdio>
 
+#include <string>
+
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -120,18 +122,18 @@ void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU
  * The varible \p mygpu is the index of the GPU to initialize in the
  * gpu_info.gpu_dev array.
  *
- * \param      mdlog        log file to write to
  * \param[in]  mygpu        index of the GPU to initialize
- * \param[out] result_str   the message related to the error that occurred
+ * \param[out] errorMessage the message related to the error that occurred
  *                          during the initialization (if there was any).
- * \param[in] gpu_info      GPU info of all detected devices in the system.
- * \param[in] gpu_opt       options for using the GPUs in gpu_info
+ * \param[out] logMessage   if non-empty, a message to report to the log file
+ * \param[in]  gpu_info     GPU info of all detected devices in the system.
+ * \param[in]  gpu_opt      options for using the GPUs in gpu_info
  * \returns                 true if no error occurs during initialization.
  */
 GPU_FUNC_QUALIFIER
-gmx_bool init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
-                  int GPU_FUNC_ARGUMENT(mygpu),
-                  char *GPU_FUNC_ARGUMENT(result_str),
+gmx_bool init_gpu(int GPU_FUNC_ARGUMENT(mygpu),
+                  std::string *GPU_FUNC_ARGUMENT(errorMessage),
+                  std::string *GPU_FUNC_ARGUMENT(logMessage),
                   const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
                   const gmx_gpu_opt_t *GPU_FUNC_ARGUMENT(gpu_opt)) GPU_FUNC_TERM_WITH_RETURN(-1)
 

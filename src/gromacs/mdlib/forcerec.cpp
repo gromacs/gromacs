@@ -1802,7 +1802,6 @@ static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
                                  const gmx_gpu_opt_t *gpu_opt)
 {
     gmx_bool bEmulateGPUEnvVarSet;
-    char     gpu_err_str[STRLEN];
 
     *bUseGPU = FALSE;
 
@@ -1826,23 +1825,35 @@ static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
      */
     if (gpu_opt->n_dev_use > 0 && !(*bEmulateGPU))
     {
-        /* Each PP node will use the intra-node id-th device from the
-         * list of detected/selected GPUs. */
-        if (!init_gpu(mdlog, cr->rank_pp_intranode, gpu_err_str,
-                      &hwinfo->gpu_info, gpu_opt))
-        {
-            /* At this point the init should never fail as we made sure that
-             * we have all the GPUs we need. If it still does, we'll bail. */
-            /* TODO the decorating of gpu_err_str is nicer if it
-               happens inside init_gpu. Out here, the decorating with
-               the MPI rank makes sense. */
-            gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
-                      cr->nodeid,
-                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
-                                        cr->rank_pp_intranode),
-                      gpu_err_str);
-        }
+        std::string errorMessage, logMessage;
 
+        try
+        {
+            /* Each PP node will use the intra-node id-th device from the
+             * list of detected/selected GPUs. */
+            if (!init_gpu(cr->rank_pp_intranode, &errorMessage, &logMessage,
+                          &hwinfo->gpu_info, gpu_opt))
+            {
+                /* At this point the init should never fail as we made sure that
+                 * we have all the GPUs we need. If it still does, we'll bail. */
+                /* TODO the decorating of gpu_err_str is nicer if it
+                   happens inside init_gpu. Out here, the decorating with
+                   the MPI rank makes sense. */
+                gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
+                          cr->nodeid,
+                          get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
+                                            cr->rank_pp_intranode),
+                          errorMessage.c_str());
+            }
+            if (!logMessage.empty())
+            {
+                // TODO decide whether such messages should be reported
+                // now, or during performance reporting at the end, or
+                // both.
+                GMX_LOG(mdlog.warning).asParagraph().appendText(logMessage);
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         /* Here we actually turn on hardware GPU acceleration */
         *bUseGPU = TRUE;
     }

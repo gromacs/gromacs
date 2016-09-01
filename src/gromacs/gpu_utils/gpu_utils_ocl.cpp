@@ -50,6 +50,8 @@
 #    include <sys/sysctl.h>
 #endif
 
+#include <string>
+
 #include <memory.h>
 
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -447,24 +449,21 @@ void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unu
 }
 
 //! This function is documented in the header file
-gmx_bool init_gpu(const gmx::MDLogger              & /*mdlog*/,
-                  int                              mygpu,
-                  char                            *result_str,
-                  const gmx_gpu_info_t gmx_unused *gpu_info,
-                  const gmx_gpu_opt_t             *gpu_opt
+gmx_bool init_gpu(int                   mygpu,
+                  std::string          *errorMessage,
+                  std::string           */*logMessage*/,
+                  const gmx_gpu_info_t  */*gpu_info*/,
+                  const gmx_gpu_opt_t  *gpu_opt
                   )
 {
-    assert(result_str);
-
-    result_str[0] = 0;
+    assert(errorMessage);
 
     if (mygpu < 0 || mygpu >= gpu_opt->n_dev_use)
     {
-        char        sbuf[STRLEN];
-        sprintf(sbuf, "Trying to initialize an non-existent GPU: "
-                "there are %d %s-selected GPU(s), but #%d was requested.",
-                gpu_opt->n_dev_use, gpu_opt->bUserSet ? "user" : "auto", mygpu);
-        gmx_incons(sbuf);
+        errorMessage->gmx::formatString
+            ("Trying to initialize an non-existent GPU: "
+            "there are %d %s-selected GPU(s), but #%d was requested.",
+            gpu_opt->n_dev_use, gpu_opt->bUserSet ? "user" : "auto", mygpu);
     }
 
     // If the device is NVIDIA, for safety reasons we disable the JIT
