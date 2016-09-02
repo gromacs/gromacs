@@ -244,6 +244,8 @@ typedef struct gmx_pme_t {
     int        nthread;       /* The number of threads doing PME on our rank */
 
     gmx_bool   bPPnode;       /* Node also does particle-particle forces */
+    bool       doCoulomb;     /* Apply PME to electrostatics */
+    bool       doLJ;          /* Apply PME to Lennard-Jones r^-6 interactions */
     gmx_bool   bFEP;          /* Compute Free energy contribution */
     gmx_bool   bFEP_q;
     gmx_bool   bFEP_lj;
@@ -358,16 +360,16 @@ enum {
  * pmerecvqxSWITCHGRID:    only grid_size and *ewaldcoeff are set
  * pmerecvqxRESETCOUNTERS: *step is set
  */
-int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
+int gmx_pme_recv_coeffs_coords(const gmx_pme_t *pme,
+                               struct gmx_pme_pp *pme_pp,
                                int *natoms,
                                real **chargeA, real **chargeB,
                                real **sqrt_c6A, real **sqrt_c6B,
                                real **sigmaA, real **sigmaB,
                                matrix box, rvec **x, rvec **f,
                                int *maxshift_x, int *maxshift_y,
-                               gmx_bool *bFreeEnergy_q, gmx_bool *bFreeEnergy_lj,
                                real *lambda_q, real *lambda_lj,
-                               gmx_bool *bEnerVir, int *pme_flags,
+                               gmx_bool *bEnerVir,
                                gmx_int64_t *step,
                                ivec grid_size, real *ewaldcoeff_q, real *ewaldcoeff_lj);
 

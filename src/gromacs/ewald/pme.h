@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,12 +94,6 @@ int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata);
 /* This forces the grid to be backtransformed even without GMX_PME_CALC_F */
 #define GMX_PME_CALC_POT      (1<<4)
 
-/* These values label bits used for sending messages to PME nodes using the
- * routines in pme_pp.c and shouldn't conflict with the flags used there
- */
-#define GMX_PME_DO_COULOMB    (1<<13)
-#define GMX_PME_DO_LJ         (1<<14)
-
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 //@}
 
@@ -155,9 +149,8 @@ void gmx_pme_send_parameters(struct t_commrec *cr,
 
 /*! \brief Send the coordinates to our PME-only node and request a PME calculation */
 void gmx_pme_send_coordinates(struct t_commrec *cr, matrix box, rvec *x,
-                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                               real lambda_q, real lambda_lj,
-                              gmx_bool bEnerVir, int pme_flags,
+                              gmx_bool bEnerVir,
                               gmx_int64_t step);
 
 /*! \brief Tell our PME-only node to finish */
