@@ -3186,7 +3186,6 @@ void init_forcerec(FILE              *fp,
 
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);
-    snew(fr->excl_load, fr->nthread_ewc + 1);
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */
     init_interaction_const(fp, &fr->ic, fr);
@@ -3236,48 +3235,6 @@ void pr_forcerec(FILE *fp, t_forcerec *fr)
     pr_real(fp, fr->rcoulomb);
 
     fflush(fp);
-}
-
-void forcerec_set_excl_load(t_forcerec           *fr,
-                            const gmx_localtop_t *top)
-{
-    const int *ind, *a;
-    int        t, i, j, ntot, n, ntarget;
-
-    ind = top->excls.index;
-    a   = top->excls.a;
-
-    ntot = 0;
-    for (i = 0; i < top->excls.nr; i++)
-    {
-        for (j = ind[i]; j < ind[i+1]; j++)
-        {
-            if (a[j] > i)
-            {
-                ntot++;
-            }
-        }
-    }
-
-    fr->excl_load[0] = 0;
-    n                = 0;
-    i                = 0;
-    for (t = 1; t <= fr->nthread_ewc; t++)
-    {
-        ntarget = (ntot*t)/fr->nthread_ewc;
-        while (i < top->excls.nr && n < ntarget)
-        {
-            for (j = ind[i]; j < ind[i+1]; j++)
-            {
-                if (a[j] > i)
-                {
-                    n++;
-                }
-            }
-            i++;
-        }
-        fr->excl_load[t] = i;
-    }
 }
 
 /* Frees GPU memory and destroys the GPU context.

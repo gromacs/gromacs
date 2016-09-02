@@ -401,8 +401,6 @@ void init_em(FILE *fplog, const char *title,
 
         *top      = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
 
-        forcerec_set_excl_load(fr, *top);
-
         setup_bonded_threading(fr, &(*top)->idef);
 
         if (ir->ePBC != epbcNONE && !fr->bMolPBC)

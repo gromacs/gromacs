@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 /* There's nothing special to do here if just masses are perturbed,
  * but if either charge or type is perturbed then the implementation
@@ -59,8 +60,10 @@
  * perturbations. The parameter vectors for LJ-PME are likewise
  * undefined when LJ-PME is not active. This works because
  * bHaveChargeOrTypePerturbed handles the control flow. */
-void ewald_LRcorrection(int start, int end,
-                        t_commrec *cr, int thread, t_forcerec *fr,
+void ewald_LRcorrection(int numAtomsLocal,
+                        t_commrec *cr,
+                        int numThreads, int thread,
+                        t_forcerec *fr,
                         real *chargeA, real *chargeB,
                         real *C6A, real *C6B,
                         real *sigmaA, real *sigmaB,
@@ -75,6 +78,22 @@ void ewald_LRcorrection(int start, int end,
                         real lambda_q, real lambda_lj,
                         real *dvdlambda_q, real *dvdlambda_lj)
 {
+    int numAtomsToBeCorrected;
+    if (calc_excl_corr)
+    {
+        /* We need to correct all exclusion pairs (cutoff-scheme = group) */
+        numAtomsToBeCorrected = excl->nr;
+
+        GMX_RELEASE_ASSERT(numAtomsToBeCorrected >= numAtomsLocal, "We might need to do self-corrections");
+    }
+    else
+    {
+        /* We need to correct only self interactions */
+        numAtomsToBeCorrected = numAtomsLocal;
+    }
+    int         start =  (numAtomsToBeCorrected* thread     )/numThreads;
+    int         end   =  (numAtomsToBeCorrected*(thread + 1))/numThreads;
+
     int         i, i1, i2, j, k, m, iv, jv, q;
     int        *AA;
     double      Vexcl_q, dvdl_excl_q, dvdl_excl_lj; /* Necessary for precision */
@@ -305,7 +324,7 @@ void ewald_LRcorrection(int start, int end,
                 }
             }
             /* Dipole correction on force */
-            if (dipole_coeff != 0)
+            if (dipole_coeff != 0 && i < numAtomsLocal)
             {
                 for (j = 0; (j < DIM); j++)
                 {
@@ -452,7 +471,7 @@ void ewald_LRcorrection(int start, int end,
                 }
             }
             /* Dipole correction on force */
-            if (dipole_coeff != 0)
+            if (dipole_coeff != 0 && i < numAtomsLocal)
             {
                 for (j = 0; (j < DIM); j++)
                 {
@@ -532,7 +551,6 @@ void ewald_LRcorrection(int start, int end,
     if (debug)
     {
         fprintf(debug, "Long Range corrections for Ewald interactions:\n");
-        fprintf(debug, "start=%d,natoms=%d\n", start, end-start);
         fprintf(debug, "q2sum = %g, Vself_q=%g c6sum = %g, Vself_lj=%g\n",
                 L1_q*fr->q2sum[0]+lambda_q*fr->q2sum[1], L1_q*Vself_q[0]+lambda_q*Vself_q[1], L1_lj*fr->c6sum[0]+lambda_lj*fr->c6sum[1], L1_lj*Vself_lj[0]+lambda_lj*Vself_lj[1]);
         fprintf(debug, "Electrostatic Long Range correction: Vexcl=%g\n", Vexcl_q);

@@ -113,7 +113,8 @@ struct gmx_update_t
 };
 
 
-static void do_update_md(int start, int nrend, double dt,
+static void do_update_md(int start, int nrend,
+                         double dt, int nstpcouple,
                          t_grp_tcstat *tcstat,
                          double nh_vxi[],
                          gmx_bool bNEMD, t_grp_acc *gstat, rvec accel[],
@@ -166,7 +167,7 @@ static void do_update_md(int start, int nrend, double dt,
                 if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
                 {
                     vnrel = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*vxi*vrel[d]
-                                              - iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
+                                              - nstpcouple*iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
                     /* do not scale the mean velocities u */
                     vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel;
                     v[n][d]        = vn;
@@ -350,7 +351,8 @@ static void do_update_vv_pos(int start, int nrend, double dt,
     }
 } /* do_update_vv_pos */
 
-static void do_update_visc(int start, int nrend, double dt,
+static void do_update_visc(int start, int nrend,
+                           double dt, int nstpcouple,
                            t_grp_tcstat *tcstat,
                            double nh_vxi[],
                            real invmass[],
@@ -398,7 +400,7 @@ static void do_update_visc(int start, int nrend, double dt,
                 if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
                 {
                     vn  = (lg*vrel[d] + dt*(imass*f[n][d] - 0.5*vxi*vrel[d]
-                                            - iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
+                                            - nstpcouple*iprod(M[d], vrel)))/(1 + 0.5*vxi*dt);
                     if (d == XX)
                     {
                         vn += vc + dt*cosz*cos_accel;
@@ -1669,7 +1671,8 @@ void update_coords(FILE             *fplog,
                 case (eiMD):
                     if (ekind->cosacc.cos_accel == 0)
                     {
-                        do_update_md(start_th, end_th, dt,
+                        do_update_md(start_th, end_th,
+                                     dt, inputrec->nstpcouple,
                                      ekind->tcstat, state->nosehoover_vxi,
                                      ekind->bNEMD, ekind->grpstat, inputrec->opts.acc,
                                      inputrec->opts.nFreeze,
@@ -1680,7 +1683,8 @@ void update_coords(FILE             *fplog,
                     }
                     else
                     {
-                        do_update_visc(start_th, end_th, dt,
+                        do_update_visc(start_th, end_th,
+                                       dt, inputrec->nstpcouple,
                                        ekind->tcstat, state->nosehoover_vxi,
                                        md->invmass, md->ptype,
                                        md->cTC, state->x, upd->xp, state->v, f, M,
