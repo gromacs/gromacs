@@ -2376,7 +2376,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     int          ia;
 
     if (molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
-                              lot, nullptr, (char *)"elec",
+                              lot, "", (char *)"elec",
                               &value, &error, &T, myref, mylot,
                               vec, quadrupole))
     {
@@ -2408,7 +2408,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     }
     /* Check handling of LOT */
     if (molProp()->getPropRef(MPO_DIPOLE, iqmQM,
-                              (char *)mylot.c_str(), nullptr, (char *)"ESP", &value, &error, &T,
+                              (char *)mylot.c_str(), "", (char *)"ESP", &value, &error, &T,
                               myref, mylot, vec, quadrupole))
     {
         for (m = 0; (m < DIM); m++)
@@ -2417,7 +2417,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         }
     }
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
-                           lot, nullptr, (char *)"DeltaHform", &value, &error, &T))
+                           lot, "", (char *)"DeltaHform", &value, &error, &T))
     {
         Hform = value;
         Emol  = value;
@@ -2439,7 +2439,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         if (bZPE)
         {
 
-            if (molProp()->getProp(MPO_ENERGY, iqmBoth, lot, nullptr,
+            if (molProp()->getProp(MPO_ENERGY, iqmBoth, lot, "",
                                    (char *)"ZPE", &ZPE, &error, &T))
             {
                 Emol -= ZPE;
