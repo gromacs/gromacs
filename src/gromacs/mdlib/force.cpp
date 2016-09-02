@@ -497,14 +497,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
                 {
                     pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
-                    if (EEL_PME(fr->eeltype))
-                    {
-                        pme_flags     |= GMX_PME_DO_COULOMB;
-                    }
-                    if (EVDW_PME(fr->vdwtype))
-                    {
-                        pme_flags |= GMX_PME_DO_LJ;
-                    }
+
                     if (flags & GMX_FORCE_FORCES)
                     {
                         pme_flags |= GMX_PME_CALC_F;

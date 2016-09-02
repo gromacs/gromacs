@@ -163,7 +163,6 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     float              cycles;
     int                count;
     gmx_bool           bEnerVir;
-    int                pme_flags;
     gmx_int64_t        step;
     ivec               grid_switch;
 
@@ -183,17 +182,16 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         do
         {
             /* Domain decomposition */
-            ret = gmx_pme_recv_coeffs_coords(pme_pp,
+            ret = gmx_pme_recv_coeffs_coords(pme,
+                                             pme_pp,
                                              &natoms,
                                              &chargeA, &chargeB,
                                              &c6A, &c6B,
                                              &sigmaA, &sigmaB,
                                              box, &x_pp, &f_pp,
                                              &maxshift_x, &maxshift_y,
-                                             &pme->bFEP_q, &pme->bFEP_lj,
                                              &lambda_q, &lambda_lj,
                                              &bEnerVir,
-                                             &pme_flags,
                                              &step,
                                              grid_switch, &ewaldcoeff_q, &ewaldcoeff_lj);
 
@@ -235,7 +233,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                    cr, maxshift_x, maxshift_y, mynrnb, wcycle,
                    vir_q, ewaldcoeff_q, vir_lj, ewaldcoeff_lj,
                    &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
-                   pme_flags | GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
+                   GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
 
         cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 
