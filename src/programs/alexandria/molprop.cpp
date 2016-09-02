@@ -48,7 +48,6 @@
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "composition.h"
 #include "gmx_simple_comm.h"
@@ -1976,7 +1975,7 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
                         fprintf(debug, "Received a category %s\n", ptr);
                         fflush(debug);
                     }
-                    sfree(ptr);
+                    free(ptr);
                 }
                 else
                 {

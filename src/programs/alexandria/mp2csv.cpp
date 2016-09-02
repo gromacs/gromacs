@@ -46,7 +46,6 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "molprop.h"
 #include "molprop_util.h"

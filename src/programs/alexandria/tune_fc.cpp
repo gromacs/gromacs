@@ -480,14 +480,11 @@ class OptPrep : public MolDip
          */
         void getDissociationEnergy(FILE *fplog);
         void InitOpt(FILE *fplog, bool bOpt[eitNR], real factor);
-        void guessAll(int                              iter,
-                      real                             stepsize,
-                      bool                             bRandom,
-                      std::mt19937                     gen,
-                      std::uniform_real_distribution<> dis);
-        void optRun(FILE *fp, FILE *fplog, int maxiter, //real tol,
+        
+
+        void optRun(FILE *fp, FILE *fplog, int maxiter,
                     int nrun, real stepsize, int seed,
-                    bool bRandom, const gmx_output_env_t *oenv,
+                    const gmx_output_env_t *oenv,
                     int nprint, const char *xvgconv, const char *xvgepot,
                     real temperature, bool bBound);
         void Print(FILE *fp);
@@ -1118,72 +1115,10 @@ double OptPrep::objFunction(double v[])
     return rms;
 }
 
-static real guess_new_param(real x, real step, real x0,
-                            real x1, real randomNumber,
-                            gmx_bool bRandom)
-{
-    if (bRandom)
-    {
-        x = x0+(x1-x0)*randomNumber;
-    }
-    else
-    {
-        x = x*(1-step+2*step*randomNumber);
-    }
-
-    if (x < x0)
-    {
-        return x0;
-    }
-    else if (x > x1)
-    {
-        return x1;
-    }
-    else
-    {
-        return x;
-    }
-}
-
-void OptPrep::guessAll(int                              iter,
-                       real                             stepsize,
-                       bool                             bRandom,
-                       std::mt19937                     gen,
-                       std::uniform_real_distribution<> dis)
-{
-    double   ppp, xxx;
-    gmx_bool bStart = (iter == 0);
-    gmx_bool bRand  = bRandom && (iter == 0);
-
-    for (size_t n = 0; (n < param_.size()); n++)
-    {
-        if (bStart)
-        {
-            ppp = param_[n];
-            xxx = guess_new_param(ppp, stepsize, lower_[n], upper_[n], dis(gen), bRand);
-            if (bRand)
-            {
-                orig_[n] = xxx;
-            }
-            else
-            {
-                orig_[n] = ppp;
-            }
-            ppp = xxx;
-        }
-        else
-        {
-            ppp = guess_new_param(orig_[n], stepsize, lower_[n],
-                                  upper_[n], dis(gen), bRand);
-        }
-        param_[n] = ppp;
-    }
-}
-
 
 void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
                      int nrun, real stepsize, int seed,
-                     bool bRandom, const gmx_output_env_t *oenv,
+                     const gmx_output_env_t *oenv,
                      int nprint, const char *xvgconv, const char *xvgepot,
                      real temperature, bool bBound)
 {
@@ -1430,7 +1365,7 @@ int alex_tune_fc(int argc, char *argv[])
     static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data  = 3, compress = 0;
     static real           tol           = 1e-3, stol = 1e-6, watoms = 0;
-    static gmx_bool       bRandom       = FALSE, bBound = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE;
+    static gmx_bool       bBound        = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE;
     static gmx_bool       bQM           = FALSE, bGaussianBug = TRUE, bPolar = FALSE, bFitZeta = TRUE, bZPE = FALSE;
     static real           J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
     static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50;
@@ -1511,8 +1446,6 @@ int alex_tune_fc(int argc, char *argv[])
           "Random number seed for reinit" },
         { "-factor", FALSE, etREAL, {&factor},
           "Factor for generating random parameters. Parameters will be taken within the limit factor*x - x/factor" },
-        { "-random", FALSE, etBOOL, {&bRandom},
-          "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-bound", FALSE, etBOOL, {&bBound},
           "Impose box-constrains for the optimization. Box constraints give lower and upper bounds for each parameter seperately." },
         { "-weight", FALSE, etBOOL, {&bWeighted},
@@ -1605,7 +1538,7 @@ int alex_tune_fc(int argc, char *argv[])
 
     opt.optRun(MASTER(cr) ? stderr : NULL, fp,
                maxiter, nrun, step, seed,
-               bRandom, oenv, nprint,
+               oenv, nprint,
                opt2fn("-conv", NFILE, fnm),
                opt2fn("-epot", NFILE, fnm),
                temperature, bBound);

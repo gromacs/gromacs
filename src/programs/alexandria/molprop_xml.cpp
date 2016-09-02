@@ -50,13 +50,10 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "molprop.h"
 #include "stringutil.h"
 #include "xml_util.h"
-
-//int xmlDoValidityCheckingDefaultValue;
 
 static bool NN(const std::string &s)
 {
@@ -709,8 +706,8 @@ static void add_calc_properties(xmlNodePtr              exp,
             ptr = gmx_ftoa(V).c_str();
             add_xml_child_val(child, exml_names[exmlV], ptr);
         }
-        sfree(x_unit);
-        sfree(v_unit);
+        free(x_unit);
+        free(v_unit);
     }
 }
 
