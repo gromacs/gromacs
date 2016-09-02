@@ -41,6 +41,7 @@
 
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/topology/atomprop.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "molprop.h"
 #include "molselect.h"
@@ -55,63 +56,131 @@ struct t_topology;
  * \ingroup module_alexandria
  */
 enum MolPropSortAlgorithm {
-    MPSA_MOLNAME,
-    MPSA_FORMULA,
-    MPSA_COMPOSITION,
-    MPSA_SELECTION,
-    MPSA_NR
+    MPSA_MOLNAME     = 0,
+    MPSA_FORMULA     = 1,
+    MPSA_COMPOSITION = 2,
+    MPSA_SELECTION   = 3,
+    MPSA_NR          = 4
 };
 
 namespace alexandria
 {
+class QmCalc
+{
+    private:
+        std::string method_, basis_, type_, lot_;
+        int         count_;
+    public:
+        QmCalc(const std::string &method,
+               const std::string &basis,
+               const std::string &type) :
+            method_(method), basis_(basis), type_(type), lot_(method), count_(1)
+        {
+            lot_.append("/");
+            lot_.append(basis);
+        };
 
-    void generate_composition(std::vector<MolProp> &mp,
-                              const Poldata &pd);
-                                 
-    void generate_formula(std::vector<MolProp> &mp, 
-                          gmx_atomprop_t ap);
+        const std::string &method() const { return method_; }
+        const std::string &basis() const { return basis_; }
+        const std::string &type() const { return type_; }
+        const std::string &lot() const { return lot_; }
+        int count() const { return count_; }
+        void increment() { count_++; }
+        void decrement()
+        {
+            GMX_RELEASE_ASSERT(count_ > 0, "Trying to reduce count below zero");
+            count_--;
+        }
+};
 
-    int merge_doubles(std::vector<alexandria::MolProp> &mp,
-                      char *doubles, bool bForceMerge);
+class QmCount
+{
+    private:
+        std::vector<QmCalc>      qmc_;
+        std::vector<std::string> conf_;
 
-    int merge_xml(int nfile, char **infiles,
-                  std::vector<alexandria::MolProp> &mp,
-                  char *outf, char *sorted, char *doubles,
-                  gmx_atomprop_t ap,
-                  const Poldata &pd,
-                  bool bForceMerge);
+        std::vector<QmCalc>::const_iterator findCalc(const std::string &method,
+                                                     const std::string &basis,
+                                                     const std::string &type) const
+        {
+            return std::find_if(qmc_.begin(), qmc_.end(),
+                                [method, basis, type](const QmCalc &qmc)
+                                { return (qmc.method().compare(method) == 0 &&
+                                          qmc.basis().compare(basis) == 0 &&
+                                          qmc.type().compare(type) == 0); });
+        }
+        std::vector<QmCalc>::iterator findCalc(const std::string &method,
+                                               const std::string &basis,
+                                               const std::string &type)
+        {
+            return std::find_if(qmc_.begin(), qmc_.end(),
+                                [method, basis, type](const QmCalc &qmc)
+                                { return (qmc.method().compare(method) == 0 &&
+                                          qmc.basis().compare(basis) == 0 &&
+                                          qmc.type().compare(type) == 0); });
+        }
 
-    typedef struct {
-        int    n;
-        int   *count;
-        char **method, **basis, **type, **lot;
-        int    nconf;
-        char **conf;
-    } t_qmcount;
-    
-    /* Check the available molprops to see what kind of calculations are stored in there */
-    t_qmcount *find_calculations(std::vector<alexandria::MolProp> &mp,
-                                 MolPropObservable mpo, 
-                                 const char *fc_str);
-    
-    /*! \brief
-     * Sorts a vector of molprops
-     *
-     * Function that uses the std::sort routine and can apply different sorting
-     * keys.
-     *
-     * \param[inout]  mp        The vector of MolProp
-     * \param[in]     mpsa      The algorithm used for sorting
-     * \param[in]     apt       Database of atom properties
-     * \param[in]     mgs       Optional structure containing selection criteria
-     * \ingroup module_alexandria
-     */
-    void MolPropSort(std::vector<MolProp> &mp,
-                     MolPropSortAlgorithm mpsa,
-                     gmx_atomprop_t apt,
-                     const MolSelect &gms);
-    
+    public:
+        QmCount() {};
+
+        std::vector<QmCalc>::iterator beginCalc() { return qmc_.begin(); }
+        std::vector<QmCalc>::iterator endCalc() { return qmc_.end(); }
+        std::vector<QmCalc>::const_iterator beginCalc() const { return qmc_.begin(); }
+        std::vector<QmCalc>::const_iterator endCalc() const { return qmc_.end(); }
+        size_t nCalc() const { return qmc_.size(); }
+        int qmCalcCount(const std::string &method,
+                        const std::string &basis,
+                        const std::string &type) const;
+
+        void addConf(const std::string &conformation);
+
+        void addCalc(const std::string &method,
+                     const std::string &basis,
+                     const std::string &type);
+
+};
+
+
+
+void generate_composition(std::vector<MolProp> &mp,
+                          const Poldata        &pd);
+
+void generate_formula(std::vector<MolProp> &mp,
+                      gmx_atomprop_t        ap);
+
+int merge_doubles(std::vector<alexandria::MolProp> &mp,
+                  char *doubles, bool bForceMerge);
+
+int merge_xml(int nfile, char **infiles,
+              std::vector<alexandria::MolProp> &mp,
+              char *outf, char *sorted, char *doubles,
+              gmx_atomprop_t ap,
+              const Poldata &pd,
+              bool bForceMerge);
+
+/* Check the available molprops to see what kind of calculations are stored in there */
+void find_calculations(std::vector<alexandria::MolProp> &mp,
+                       MolPropObservable                 mpo,
+                       const char                       *fc_str,
+                       QmCount                          *qmc);
+
+/*! \brief
+ * Sorts a vector of molprops
+ *
+ * Function that uses the std::sort routine and can apply different sorting
+ * keys.
+ *
+ * \param[inout]  mp        The vector of MolProp
+ * \param[in]     mpsa      The algorithm used for sorting
+ * \param[in]     apt       Database of atom properties
+ * \param[in]     mgs       Optional structure containing selection criteria
+ * \ingroup module_alexandria
+ */
+void MolPropSort(std::vector<MolProp> &mp,
+                 MolPropSortAlgorithm  mpsa,
+                 gmx_atomprop_t        apt,
+                 const MolSelect      &gms);
+
 } // namespace alexandria
 
 #endif
-    

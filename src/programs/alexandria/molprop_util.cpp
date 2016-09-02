@@ -78,8 +78,9 @@
 namespace alexandria
 {
 
-void generate_composition(std::vector<MolProp> &mp, 
-                          const Poldata &pd)
+
+void generate_composition(std::vector<MolProp> &mp,
+                          const Poldata        &pd)
 {
     int              nOK = 0;
     CompositionSpecs cs;
@@ -108,7 +109,7 @@ void generate_composition(std::vector<MolProp> &mp,
 }
 
 void generate_formula(std::vector<MolProp> &mp,
-                      gmx_atomprop_t ap)
+                      gmx_atomprop_t        ap)
 {
     for (auto &mpi : mp)
     {
@@ -229,7 +230,7 @@ static void dump_mp(std::vector<alexandria::MolProp> mp)
 int merge_xml(int nfile, char **filens,
               std::vector<alexandria::MolProp> &mpout,
               char *outf, char *sorted, char *doubles,
-              gmx_atomprop_t ap, 
+              gmx_atomprop_t ap,
               const Poldata &pd,
               bool bForceMerge)
 {
@@ -432,109 +433,76 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
     }
 }
 
-static void add_qmc_conf(t_qmcount *qmc, const char *conformation)
+void QmCount::addConf(const std::string &conformation)
 {
-    int j;
-
-    for (j = 0; (j < qmc->nconf); j++)
+    auto s = std::find_if(conf_.begin(), conf_.end(),
+                          [conformation](const std::string &s)
+                          { return (s.compare(conformation) == 0); });
+    if (s == conf_.end())
     {
-        if (strcasecmp(qmc->conf[j], conformation) == 0)
-        {
-            break;
-        }
-    }
-    if (j == qmc->nconf)
-    {
-        qmc->nconf++;
-        srenew(qmc->conf, qmc->nconf);
-        qmc->conf[j] = strdup(conformation);
+        conf_.push_back(conformation);
     }
 }
 
-static int get_qmc_count(t_qmcount *qmc, const char *method, const char *basis, const char *type)
+int QmCount::qmCalcCount(const std::string &method,
+                         const std::string &basis,
+                         const std::string &type) const
 {
-    int j;
-
-    for (j = 0; (j < qmc->n); j++)
+    auto a = findCalc(method, basis, type);
+    if (qmc_.end() == a)
     {
-        if ((strcasecmp(qmc->method[j], method) == 0) &&
-            (strcasecmp(qmc->basis[j], basis) == 0) &&
-            (strcasecmp(qmc->type[j], type) == 0))
-        {
-            return qmc->count[j];
-        }
-    }
-    return 0;
-}
-
-static void add_qmc_calc(t_qmcount *qmc, const char *method, const char *basis, const char *type)
-{
-    int j;
-
-    for (j = 0; (j < qmc->n); j++)
-    {
-        if ((strcasecmp(qmc->method[j], method) == 0) &&
-            (strcasecmp(qmc->basis[j], basis) == 0) &&
-            (strcasecmp(qmc->type[j], type) == 0))
-        {
-            break;
-        }
-    }
-    if (j == qmc->n)
-    {
-        srenew(qmc->method, qmc->n+1);
-        srenew(qmc->basis, qmc->n+1);
-        srenew(qmc->type, qmc->n+1);
-        srenew(qmc->count, qmc->n+1);
-        srenew(qmc->lot, qmc->n+1);
-        qmc->method[qmc->n] = strdup(method);
-        qmc->basis[qmc->n]  = strdup(basis);
-        qmc->type[qmc->n]   = strdup(type);
-        snew(qmc->lot[qmc->n], strlen(method)+strlen(basis)+strlen(type)+16);
-        sprintf(qmc->lot[qmc->n], "%s/%s/%s", method, basis, type);
-        qmc->count[qmc->n]  = 1;
-        qmc->n++;
+        return 0;
     }
     else
     {
-        qmc->count[j]++;
+        return a->count();
     }
 }
 
-t_qmcount *find_calculations(std::vector<alexandria::MolProp> &mp,
-                             MolPropObservable                       mpo,
-                             const char                             *fc_str )
+void QmCount::addCalc(const std::string &method,
+                      const std::string &basis,
+                      const std::string &type)
 {
-    alexandria::MolPropIterator        mpi;
+    auto a = findCalc(method, basis, type);
 
-    const char                        *method, *basis;
-    int                                i, n;
-    double                             T, value, error, vec[3];
-    tensor                             quadrupole;
-    t_qmcount                         *qmc;
-    std::vector<std::string>           types;
-    std::vector<std::string>::iterator ti;
+    if (qmc_.end() == a)
+    {
+        QmCalc qmc(method, basis, type);
+        qmc_.push_back(qmc);
+    }
+    else
+    {
+        a->increment();
+    }
+}
 
-    snew(qmc, 1);
-    for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+void find_calculations(std::vector<alexandria::MolProp> &mp,
+                       MolPropObservable                 mpo,
+                       const char                       *fc_str,
+                       QmCount                          *qmc)
+{
+    std::vector<std::string> types;
+
+    for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
         for (alexandria::ExperimentIterator ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
         {
-            add_qmc_conf(qmc, ei->getConformation().c_str());
+            qmc->addConf(ei->getConformation());
         }
     }
     if (NULL != fc_str)
     {
         std::vector<std::string> qm = split(fc_str, ':');
-        n = 0;
-        for (std::vector<std::string>::iterator pqm = qm.begin(); (pqm < qm.end()); ++pqm)
+        int n = 0;
+        for (auto pqm = qm.begin(); (pqm < qm.end()); ++pqm)
         {
             if (pqm->length() > 0)
             {
                 std::vector<std::string> ll = split(pqm->c_str(), '/');
                 if (ll.size() == 3)
                 {
-                    add_qmc_calc(qmc, ll[0].c_str(), ll[1].c_str(), ll[2].c_str());
+                    std::vector<std::string>::iterator ti;
+                    qmc->addCalc(ll[0], ll[1], ll[2]);
                     for (ti = types.begin(); (ti < types.end()); ti++)
                     {
                         if (0 == strcasecmp(ti->c_str(), ll[2].c_str()))
@@ -552,39 +520,41 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> &mp,
         }
     }
 
-    for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
-        for (alexandria::ExperimentIterator ci = mpi->BeginExperiment(); (ci < mpi->EndExperiment()); ci++)
+        for (auto ci = mpi->BeginExperiment(); (ci < mpi->EndExperiment()); ++ci)
         {
             if (dsExperiment ==  ci->dataSource())
             {
                 continue;
             }
-            method = ci->getMethod().c_str();
-            basis  = ci->getBasisset().c_str();
-            for (ti = types.begin(); (ti < types.end()); ti++)
+            for (auto ti = types.begin(); (ti < types.end()); ti++)
             {
-                if ((NULL == fc_str) || (get_qmc_count(qmc, method, basis, ti->c_str()) > 0))
+                if ((NULL == fc_str) || (qmc->qmCalcCount(ci->getMethod(),
+                                                          ci->getBasisset(),
+                                                          *ti) > 0))
                 {
+                    double T, value, error, vec[3];
+                    tensor quadrupole;
                     if (ci->getVal(ti->c_str(), mpo, &value, &error, &T,
                                    vec, quadrupole))
                     {
-                        add_qmc_calc(qmc, method, basis, ti->c_str());
+                        qmc->addCalc(ci->getMethod(),
+                                     ci->getBasisset(),
+                                     *ti);
                     }
                 }
             }
         }
     }
-    for (i = 0; (i < qmc->n); i++)
+    for (auto q = qmc->beginCalc(); q < qmc->endCalc(); ++q)
     {
         /* Since we initialized these we have counted one extra */
         if (NULL != fc_str)
         {
-            qmc->count[i]--;
+            q->decrement();
         }
     }
-
-    return qmc;
 }
 
 } // namespace alexandria

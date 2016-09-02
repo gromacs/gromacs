@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -25,26 +59,25 @@ static void gmx_molprop_csv(const char *fn,
 {
     alexandria::MolPropIterator mpi;
     FILE                       *fp;
-    int                         i, j, k, ll;
+    int                         k, ll;
     double                      T, d, err, vec[3];
     tensor                      quadrupole;
 #define NEMP 3
     MolPropObservable           mpo[NEMP]   = { MPO_DIPOLE, MPO_POLARIZABILITY, MPO_ENERGY  };
     const char                 *ename[NEMP] = { "Dipole", "Polarizability", "Heat of formation" };
-    alexandria::t_qmcount      *qmc[NEMP];
+    alexandria::QmCount         qmc[NEMP];
 
-    qmc[0] = find_calculations(mp, mpo[0], dip_str);
-    qmc[1] = find_calculations(mp, mpo[1], pol_str);
-    qmc[2] = find_calculations(mp, mpo[2], ener_str);
+    find_calculations(mp, mpo[0], dip_str, &qmc[0]);
+    find_calculations(mp, mpo[1], pol_str, &qmc[1]);
+    find_calculations(mp, mpo[2], ener_str, &qmc[2]);
     for (k = 0; (k < NEMP); k++)
     {
         printf("--------------------------------------------------\n");
         printf("      Some statistics for %s\n", mpo_name[mpo[k]]);
-        for (i = 0; (i < qmc[k]->n); i++)
+        for (auto q = qmc[k].beginCalc(); q < qmc[k].endCalc(); ++q)
         {
-            printf("There are %d calculation results using %s/%s type %s\n",
-                   qmc[k]->count[i], qmc[k]->method[i],
-                   qmc[k]->basis[i], qmc[k]->type[i]);
+            printf("There are %d calculation results using %s type %s\n",
+                   q->count(), q->lot().c_str(), q->type().c_str());
         }
     }
     printf("--------------------------------------------------\n");
@@ -54,7 +87,7 @@ static void gmx_molprop_csv(const char *fn,
             "Molecule", "Formula", "InChi", "Charge", "Multiplicity", "Mass");
     for (k = 0; (k < NEMP); k++)
     {
-        for (j = 0; (j < qmc[k]->n+2); j++)
+        for (size_t j = 0; (j < qmc[k].nCalc()+2); j++)
         {
             fprintf(fp, ",\"%s\"", ename[k]);
         }
@@ -73,18 +106,18 @@ static void gmx_molprop_csv(const char *fn,
             {
                 fprintf(fp, ",\"\",\"\"");
             }
-            for (j = 0; (j < qmc[k]->n); j++)
+            for (auto j = qmc[k].beginCalc(); j < qmc[k].endCalc(); ++j)
             {
                 switch (ll)
                 {
                     case 0:
-                        fprintf(fp, ",\"%s\"", qmc[k]->method[j]);
+                        fprintf(fp, ",\"%s\"", j->method().c_str());
                         break;
                     case 1:
-                        fprintf(fp, ",\"%s\"", qmc[k]->basis[j]);
+                        fprintf(fp, ",\"%s\"", j->basis().c_str());
                         break;
                     case 2:
-                        fprintf(fp, ",\"%s\"", qmc[k]->type[j]);
+                        fprintf(fp, ",\"%s\"", j->type().c_str());
                         break;
                     default:
                         fprintf(stderr, "BOE\n");
@@ -116,9 +149,10 @@ static void gmx_molprop_csv(const char *fn,
             {
                 fprintf(fp, ",\"\",\"\"");
             }
-            for (j = 0; (j < qmc[k]->n); j++)
+            for (auto j = qmc[k].beginCalc(); j < qmc[k].endCalc(); j++)
             {
-                if (mpi->getProp(mpo[k], iqmQM, qmc[k]->lot[j], NULL, qmc[k]->type[j], &T, &d, NULL))
+                if (mpi->getProp(mpo[k], iqmQM, j->lot(), NULL, j->type(),
+                                 &T, &d, NULL))
                 {
                     fprintf(fp, ",\"%.4f\"", d);
                 }

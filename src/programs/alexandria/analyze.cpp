@@ -183,35 +183,41 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
     }
 }
 
-static void write_corr_xvg(const char *fn,
+static void write_corr_xvg(const char                       *fn,
                            std::vector<alexandria::MolProp> &mp,
-                           MolPropObservable mpo,
-                           alexandria::t_qmcount *qmc,
-                           real rtoler, real atoler,
-                           const gmx_output_env_t *oenv,
-                           const alexandria::MolSelect &gms,
-                           char *exp_type)
+                           MolPropObservable                 mpo,
+                           const alexandria::QmCount        &qmc,
+                           real                              rtoler,
+                           real                              atoler,
+                           const gmx_output_env_t           *oenv,
+                           const alexandria::MolSelect      &gms,
+                           char                             *exp_type)
 {
     FILE *fp;
 
     fp  = xvgropen(fn, "", "Exper.", "Calc. - Exper.", oenv);
-    for (int i = 0; (i < qmc->n); i++)
+    int i = 0;
+    for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
-        fprintf(fp, "@s%d legend \"%s/%s-%s\"\n", i, qmc->method[i], qmc->basis[i],
-                qmc->type[i]);
+        fprintf(fp, "@s%d legend \"%s/%s-%s\"\n", i,
+                q->method().c_str(),
+                q->basis().c_str(),
+                q->type().c_str());
         fprintf(fp, "@s%d line linestyle 0\n", i);
         fprintf(fp, "@s%d symbol %d\n", i, i+1);
         fprintf(fp, "@s%d symbol size %g\n", i, 0.5);
         fprintf(fp, "@s%d symbol fill color %d\n", i, i+1);
         fprintf(fp, "@s%d symbol fill pattern 1\n", i);
     }
-    for (int i = 0; (i < qmc->n); i++)
+    i = 0;
+    for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
         char LevelOfTheory[256];
-        snprintf(LevelOfTheory, sizeof(LevelOfTheory), "%s/%s", qmc->method[i], qmc->basis[i]);
+        snprintf(LevelOfTheory, sizeof(LevelOfTheory), "%s/%s",
+                 q->method().c_str(), q->basis().c_str());
         if (debug)
         {
-            fprintf(debug, "QM: %s LoT: %s\n", qmc->lot[i], LevelOfTheory);
+            fprintf(debug, "QM: %s LoT: %s\n", q->lot().c_str(), LevelOfTheory);
         }
         int nout = 0;
         fprintf(fp, "@type xydy\n");
@@ -231,10 +237,10 @@ static void write_corr_xvg(const char *fn,
             {
                 double Tqm  = -1;
                 double qm_val, qm_error;
-                bool   bQM  = mpi.getProp(mpo, iqmQM, LevelOfTheory, NULL, //qmc->conf[k],
-                                          qmc->type[i],
+                bool   bQM  = mpi.getProp(mpo, iqmQM, LevelOfTheory, NULL,
+                                          q->type().c_str(),
                                           &qm_val, &qm_error, &Tqm);
-                if (bExp && bQM) // && (strcmp(exp_type, qmc->type[i]) == 0))
+                if (bExp && bQM)
                 {
                     fprintf(fp, "%8.3f  %8.3f  %8.3f\n", exp_val, qm_val-exp_val, qm_error);
                     double diff = fabs(qm_val-exp_val);
@@ -258,7 +264,7 @@ static void write_corr_xvg(const char *fn,
         if (debug)
         {
             fprintf(debug, "There were %3d outliers for %s.\n",
-                    nout, qmc->lot[i]);
+                    nout, q->lot().c_str());
         }
     }
     fclose(fp);
@@ -267,17 +273,17 @@ static void write_corr_xvg(const char *fn,
 
 class RefCount
 {
-private:
-    int         count_;
-    std::string ref_;
-public:
-    RefCount(const std::string ref) : count_(1), ref_(ref) {};
-    
-    int count() const { return count_; }
-    
-    void increment() { count_++; }
-    
-    const std::string ref() const { return ref_; }
+    private:
+        int         count_;
+        std::string ref_;
+    public:
+        RefCount(const std::string ref) : count_(1), ref_(ref) {};
+
+        int count() const { return count_; }
+
+        void increment() { count_++; }
+
+        const std::string ref() const { return ref_; }
 };
 
 static void add_refc(std::vector<RefCount> &rc, std::string ref)
@@ -311,21 +317,21 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                                 const alexandria::MolSelect &gms,
                                 const char *selout)
 {
-    alexandria::CategoryList       cList;
-    FILE                          *fp, *gp;
-    int                            i, ntot;
-    alexandria::t_qmcount         *qmc;
-    std::vector<RefCount>          rc;
-    double                         T, value, error, vec[3];
-    tensor                         quadrupole;
-    const char                    *iupac;
+    alexandria::CategoryList  cList;
+    FILE                     *fp, *gp;
+    int                       ntot;
+    std::vector<RefCount>     rc;
+    double                    T, value, error, vec[3];
+    tensor                    quadrupole;
+    const char               *iupac;
+    alexandria::QmCount       qmc;
 
     if (bCalcPol)
     {
         calc_frag_miller(pd, mp, gms);
     }
 
-    qmc = find_calculations(mp, mpo, fc_str);
+    find_calculations(mp, mpo, fc_str, &qmc);
 
     for (auto &mpi : mp)
     {
@@ -354,10 +360,11 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
     {
         printf("   did you forget to pass the -exp_type flag?\n");
     }
-    for (i = 0; (i < qmc->n); i++)
+    for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
     {
         printf("There are %d calculation results using %s/%s type %s\n",
-               qmc->count[i], qmc->method[i], qmc->basis[i], qmc->type[i]);
+               q->count(), q->method().c_str(),
+               q->basis().c_str(), q->type().c_str());
     }
     printf("--------------------------------------------------\n");
 

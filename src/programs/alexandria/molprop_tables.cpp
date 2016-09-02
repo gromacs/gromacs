@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -161,15 +195,15 @@ void LongTable::printHLine()
     fprintf(fp_, "\\hline\n");
 }
 
-static void stats_header(LongTable &lt,
-                         MolPropObservable      mpo,
-                         t_qmcount             *qmc,
-                         iMolSelect             ims)
+static void stats_header(LongTable         &lt,
+                         MolPropObservable  mpo,
+                         const QmCount     &qmc,
+                         iMolSelect         ims)
 {
     char caption[STRLEN];
     char label[STRLEN];
 
-    lt.setColumns(1+qmc->n);
+    lt.setColumns(1+qmc.nCalc());
 
     for (int k = 0; (k < 2); k++)
     {
@@ -186,25 +220,25 @@ static void stats_header(LongTable &lt,
             char hline[STRLEN];
             char koko[STRLEN];
             snprintf(hline, STRLEN, "Method ");
-            for (int i = 0; (i < qmc->n); i++)
+            for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
             {
-                snprintf(koko, STRLEN, " & %s", qmc->method[i]);
+                snprintf(koko, STRLEN, " & %s", q->method().c_str());
                 strncat(hline, koko, STRLEN-strlen(hline)-1);
             }
             lt.addHeadLine(hline);
 
             snprintf(hline, STRLEN, " ");
-            for (int i = 0; (i < qmc->n); i++)
+            for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
             {
-                snprintf(koko, STRLEN, "& %s ", qmc->basis[i]);
+                snprintf(koko, STRLEN, "& %s ", q->basis().c_str());
                 strncat(hline, koko, STRLEN-strlen(hline)-1);
             }
             lt.addHeadLine(hline);
 
             snprintf(hline, STRLEN, " ");
-            for (int i = 0; (i < qmc->n); i++)
+            for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
             {
-                snprintf(koko, STRLEN, "& %s ", qmc->type[i]);
+                snprintf(koko, STRLEN, "& %s ", q->type().c_str());
                 strncat(hline, koko, STRLEN-strlen(hline)-1);
             }
             lt.addHeadLine(hline);
@@ -216,7 +250,7 @@ static void stats_header(LongTable &lt,
 void gmx_molprop_stats_table(FILE                 *fp,
                              MolPropObservable     mpo,
                              std::vector<MolProp> &mp,
-                             t_qmcount            *qmc,
+                             const QmCount        &qmc,
                              char                 *exp_type,
                              double                outlier,
                              CategoryList          cList,
@@ -225,7 +259,7 @@ void gmx_molprop_stats_table(FILE                 *fp,
 {
     std::vector<MolProp>::iterator     mpi;
     std::vector<std::string>::iterator si;
-    int                                k, N;
+    int                                N;
     double                             exp_val, qm_val;
     real                               rms, R, a, da, b, db, chi2;
     char                               buf[256];
@@ -246,55 +280,50 @@ void gmx_molprop_stats_table(FILE                 *fp,
     for (auto i = cList.beginCategories(); (i < cList.endCategories()); ++i)
     {
         std::string catbuf;
-        char        lot[256];
         int         nqmres  = 0;
         int         nexpres = 0;
         snprintf(buf, sizeof(buf), "%s", i->getName().c_str());
         catbuf.append(buf);
-        for (k = 0; (k < qmc->n); k++)
+        for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
         {
-            snprintf(lot, sizeof(lot), "%s/%s", qmc->method[k], qmc->basis[k]);
             lsq = gmx_stats_init();
-            //if (strcmp(exp_type, qmc->type[k]) == 0)
-            //{
-                for (auto &mpi : mp)
+            for (auto &mpi : mp)
+            {
+                if ((i->hasMolecule(mpi.getIupac())) &&
+                    (mpi.SearchCategory(i->getName()) == 1))
                 {
-                    if ((i->hasMolecule(mpi.getIupac())) &&
-                        (mpi.SearchCategory(i->getName()) == 1))
+                    double exp_err = 0;
+                    double Texp    = -1;
+                    bool   bQM     = false;
+                    bool   bExp    = mpi.getProp(mpo, iqmExp, NULL, NULL,
+                                                 exp_type, &exp_val, &exp_err, &Texp);
+                    if (bExp)
                     {
-                        double exp_err = 0;
-                        double Texp    = -1;
-                        bool   bQM     = false;
-                        bool   bExp    = mpi.getProp(mpo, iqmExp, NULL, NULL,
-                                                     exp_type, &exp_val, &exp_err, &Texp);
-                        if (bExp)
+                        double qm_err = 0;
+                        double Tqm    = -1;
+                        bQM    = mpi.getProp(mpo, iqmQM, q->lot(), NULL,
+                                             q->type(), &qm_val, &qm_err, &Tqm);
+                        //printf("Texp %g Tqm %g bQM = %s\n", Texp, Tqm, bQM ? "true" : "false");
+                        if (bQM)
                         {
-                            double qm_err = 0;
-                            double Tqm    = -1;
-                            bQM    = mpi.getProp(mpo, iqmQM, lot, NULL,
-                                                 qmc->type[k], &qm_val, &qm_err, &Tqm);
-                            //printf("Texp %g Tqm %g bQM = %s\n", Texp, Tqm, bQM ? "true" : "false");
-                            if (bQM)
+                            if (debug)
                             {
-                                if (debug)
-                                {
-                                    fprintf(debug, "%s %s k = %d - TAB4\n",
-                                            mpi.getMolname().c_str(),
-                                            i->getName().c_str(), k);
-                                }
-                                gmx_stats_add_point(lsq, exp_val, qm_val, exp_err, qm_err);
-                                nexpres = 1;
+                                fprintf(debug, "%s %s - TAB4\n",
+                                        mpi.getMolname().c_str(),
+                                        i->getName().c_str());
                             }
-                        }
-                        if (debug)
-                        {
-                            fprintf(debug, "STATSTAB: bQM %s bExp %s mol %s\n",
-                                    gmx::boolToString(bQM), gmx::boolToString(bExp),
-                                    mpi.getMolname().c_str());
+                            gmx_stats_add_point(lsq, exp_val, qm_val, exp_err, qm_err);
+                            nexpres = 1;
                         }
                     }
+                    if (debug)
+                    {
+                        fprintf(debug, "STATSTAB: bQM %s bExp %s mol %s\n",
+                                gmx::boolToString(bQM), gmx::boolToString(bExp),
+                                mpi.getMolname().c_str());
+                    }
                 }
-                //}
+            }
             if (outlier > 0)
             {
                 gmx_stats_remove_outliers(lsq, outlier);
@@ -320,11 +349,10 @@ void gmx_molprop_stats_table(FILE                 *fp,
     }
     std::string catbuf;
     catbuf.assign("All");
-    lsqtot.resize(qmc->n);
-    for (k = 0; (k < qmc->n); k++)
+    lsqtot.resize(qmc.nCalc());
+    int k = 0;
+    for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++k)
     {
-        char lot[256];
-        snprintf(lot, sizeof(lot), "%s/%s", qmc->method[k], qmc->basis[k]);
         lsqtot[k] = gmx_stats_init();
         for (mpi = mp.begin(); (mpi < mp.end()); mpi++)
         {
@@ -336,7 +364,7 @@ void gmx_molprop_stats_table(FILE                 *fp,
                 bool   bExp = mpi->getProp(mpo, iqmExp, NULL, NULL, exp_type,
                                            &exp_val, &exp_err, &Texp);
                 double Tqm  = Texp;
-                bool   bQM  = mpi->getProp(mpo, iqmQM, lot, NULL, qmc->type[k],
+                bool   bQM  = mpi->getProp(mpo, iqmQM, q->lot(), NULL, q->type(),
                                            &qm_val, &qm_err, &Tqm);
                 if (bExp && bQM)
                 {
@@ -360,9 +388,9 @@ void gmx_molprop_stats_table(FILE                 *fp,
     lt.printHLine();
 
     catbuf.assign("a");
-    for (k = 0; (k < qmc->n); k++)
+    for (auto &k : lsqtot)
     {
-        if (gmx_stats_get_ab(lsqtot[k], elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
+        if (gmx_stats_get_ab(k, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
             estatsOK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f(%4.2f)", a, da);
@@ -376,9 +404,9 @@ void gmx_molprop_stats_table(FILE                 *fp,
     lt.printLine(catbuf);
 
     catbuf.assign("b");
-    for (k = 0; (k < qmc->n); k++)
+    for (auto &k : lsqtot)
     {
-        if (gmx_stats_get_ab(lsqtot[k], elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
+        if (gmx_stats_get_ab(k, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
             estatsOK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f(%4.2f)", b, db);
@@ -392,9 +420,9 @@ void gmx_molprop_stats_table(FILE                 *fp,
     lt.printLine(catbuf);
 
     catbuf.assign("R$^2$ (\\%)");
-    for (k = 0; (k < qmc->n); k++)
+    for (auto &k : lsqtot)
     {
-        if (gmx_stats_get_corr_coeff(lsqtot[k], &R) == estatsOK)
+        if (gmx_stats_get_corr_coeff(k, &R) == estatsOK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f", 100*R*R);
             catbuf.append(buf);
@@ -407,9 +435,9 @@ void gmx_molprop_stats_table(FILE                 *fp,
     lt.printLine(catbuf);
 
     catbuf.assign("$\\chi^2$");
-    for (k = 0; (k < qmc->n); k++)
+    for (auto &k : lsqtot)
     {
-        if (gmx_stats_get_ab(lsqtot[k], elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
+        if (gmx_stats_get_ab(k, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &R) ==
             estatsOK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f", chi2);
@@ -423,10 +451,10 @@ void gmx_molprop_stats_table(FILE                 *fp,
     lt.printLine(catbuf);
 
     catbuf.assign("MSE");
-    for (k = 0; (k < qmc->n); k++)
+    for (auto &k : lsqtot)
     {
         real mse;
-        if (gmx_stats_get_mse_mae(lsqtot[k], &mse, NULL) ==
+        if (gmx_stats_get_mse_mae(k, &mse, NULL) ==
             estatsOK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f", mse);
@@ -440,10 +468,10 @@ void gmx_molprop_stats_table(FILE                 *fp,
     lt.printLine(catbuf);
 
     catbuf.assign("MAE");
-    for (k = 0; (k < qmc->n); k++)
+    for (auto &k : lsqtot)
     {
         real mae;
-        if (gmx_stats_get_mse_mae(lsqtot[k], NULL, &mae) ==
+        if (gmx_stats_get_mse_mae(k, NULL, &mae) ==
             estatsOK)
         {
             snprintf(buf, sizeof(buf), "& %8.2f", mae);
@@ -457,13 +485,13 @@ void gmx_molprop_stats_table(FILE                 *fp,
     lt.printLine(catbuf);
     lt.printFooter();
 
-    for (k = 0; (k < qmc->n); k++)
+    for (auto &k : lsqtot)
     {
-        gmx_stats_free(lsqtot[k]);
+        gmx_stats_free(k);
     }
 }
 
-static void composition_header(LongTable &lt,
+static void composition_header(LongTable             &lt,
                                iMolSelect             ims)
 {
     char caption[STRLEN];
@@ -480,12 +508,12 @@ static void composition_header(LongTable &lt,
 void gmx_molprop_composition_table(FILE *fp, std::vector<MolProp> mp,
                                    const MolSelect &gms, iMolSelect ims)
 {
-    std::vector<MolProp>::iterator mpi;
-    MolecularCompositionIterator   mci;
+    std::vector<MolProp>::iterator             mpi;
+    MolecularCompositionIterator               mci;
     int                                        q, m, iline, nprint;
     char                                       qbuf[32], longbuf[STRLEN], buf[256];
-    LongTable                      lt(fp, true, "small");
-    CompositionSpecs               cs;
+    LongTable                                  lt(fp, true, "small");
+    CompositionSpecs                           cs;
     const char                                *alex = cs.searchCS(iCalexandria)->name();
 
     nprint = 0;
@@ -569,7 +597,7 @@ static void category_header(LongTable &lt)
 
 void gmx_molprop_category_table(FILE                             *fp,
                                 int                               catmin,
-                                CategoryList          cList)
+                                CategoryList                      cList)
 {
     if (cList.nCategories() > 0)
     {
@@ -610,7 +638,7 @@ void gmx_molprop_category_table(FILE                             *fp,
 
 static void atomtype_tab_header(LongTable &lt)
 {
-    char longbuf[STRLEN];
+    char             longbuf[STRLEN];
     CompositionSpecs cs;
 
     lt.setColumns("ccccccc");
@@ -634,17 +662,17 @@ typedef struct {
 } t_sm_lsq;
 
 static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
-                                             Poldata              &pd,
-                                             std::vector<MolProp> &mp,
-                                             char                 *lot,
-                                             char                 *exp_type)
+                                             const Poldata        &pd,
+                                             std::vector<MolProp>  mp,
+                                             const char           *lot,
+                                             const char           *exp_type)
 {
-    std::vector<MolProp>::iterator mpi;
-    double                         ahc, ahp, bos_pol;
-    char                           longbuf[STRLEN];
-    MolPropObservable              mpo = MPO_POLARIZABILITY;
-    LongTable                      lt(fp, false, NULL);
-    CompositionSpecs               cs;
+    std::vector<MolProp>::iterator  mpi;
+    double                          ahc, ahp, bos_pol;
+    char                            longbuf[STRLEN];
+    MolPropObservable               mpo = MPO_POLARIZABILITY;
+    LongTable                       lt(fp, false, NULL);
+    CompositionSpecs                cs;
     const char                     *alex = cs.searchCS(iCalexandria)->name();
 
     /* Prepare printing it! */
@@ -732,14 +760,11 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
     fflush(fp);
 }
 
-static void gmx_molprop_atomtype_dip_table(FILE    *fp, 
-                                           Poldata &pd)
+static void gmx_molprop_atomtype_dip_table(FILE          *fp,
+                                           const Poldata &pd)
 {
     int         i, k, m, cur = 0;
     std::string gt_type[2] = { "", "" };
-
-
-
 
 #define prev (1-cur)
 #define NEQG 5
@@ -748,7 +773,7 @@ static void gmx_molprop_atomtype_dip_table(FILE    *fp,
     int                     npcol[NEQG]  = { 2, 3, 3 };
     const char             *clab[3]      = { "$J_0$", "$\\chi_0$", "$\\zeta$" };
     int                     ncol;
-    LongTable   lt(fp, true, NULL);
+    LongTable               lt(fp, true, NULL);
 
     ncol = 1;
     for (i = 0; (i < NEQG); i++)
@@ -780,8 +805,7 @@ static void gmx_molprop_atomtype_dip_table(FILE    *fp,
     lt.addHeadLine(longbuf);
     lt.printHeader();
 
-    for (FfatypeIterator aType = pd.getAtypeBegin();
-         aType != pd.getAtypeEnd(); aType++)
+    for (auto aType = pd.getAtypeBegin(); aType != pd.getAtypeEnd(); aType++)
     {
         gt_type[cur] = aType->getType();
         if (((0 == gt_type[prev].size()) || (strcmp(gt_type[cur].c_str(), gt_type[cur].c_str()) != 0)))
@@ -822,12 +846,12 @@ static void gmx_molprop_atomtype_dip_table(FILE    *fp,
     lt.printFooter();
 }
 
-void gmx_molprop_atomtype_table(FILE *fp, 
-                                bool bPolar,
-                                Poldata &pd,
-                                std::vector<MolProp> &mp,
-                                char *lot,
-                                char *exp_type)
+void gmx_molprop_atomtype_table(FILE                       *fp,
+                                bool                        bPolar,
+                                const Poldata              &pd,
+                                const std::vector<MolProp> &mp,
+                                const char                 *lot,
+                                const char                 *exp_type)
 {
     if (bPolar)
     {
@@ -839,16 +863,16 @@ void gmx_molprop_atomtype_table(FILE *fp,
     }
 }
 
-static void prop_header(LongTable &lt,
-                        const char            *property,
-                        const char            *unit,
-                        real                   rel_toler,
-                        real                   abs_toler,
-                        t_qmcount             *qmc,
-                        iMolSelect             ims,
-                        bool                   bPrintConf,
-                        bool                   bPrintBasis,
-                        bool                   bPrintMultQ)
+static void prop_header(LongTable     &lt,
+                        const char    *property,
+                        const char    *unit,
+                        real           rel_toler,
+                        real           abs_toler,
+                        const QmCount  qmc,
+                        iMolSelect     ims,
+                        bool           bPrintConf,
+                        bool           bPrintBasis,
+                        bool           bPrintMultQ)
 {
     int  i, k, nc;
     char columns[256];
@@ -856,7 +880,7 @@ static void prop_header(LongTable &lt,
     char buf[256];
 
     snprintf(columns, 256, "p{75mm}");
-    nc = 2 + qmc->n;
+    nc = 2 + qmc.nCalc();
     if (bPrintMultQ)
     {
         nc += 2;
@@ -890,9 +914,9 @@ static void prop_header(LongTable &lt,
             snprintf(longbuf, STRLEN, "Molecule & Form. %s %s & Exper. ",
                      bPrintMultQ ? "& q & mult" : "",
                      bPrintConf  ? "& Conf." : "");
-            for (i = 0; (i < qmc->n); i++)
+            for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
             {
-                snprintf(buf, 256, "& %s", qmc->method[i]);
+                snprintf(buf, 256, "& %s", q->method().c_str());
                 strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
             }
             lt.addHeadLine(longbuf);
@@ -902,9 +926,9 @@ static void prop_header(LongTable &lt,
                 snprintf(longbuf, STRLEN, " & & %s %s",
                          bPrintMultQ ? "& &" : "",
                          bPrintConf ? "&" : "");
-                for (i = 0; (i < qmc->n); i++)
+                for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
                 {
-                    snprintf(buf, 256, "& %s", qmc->basis[i]);
+                    snprintf(buf, 256, "& %s", q->basis().c_str());
                     strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
                 }
                 lt.addHeadLine(longbuf);
@@ -912,9 +936,9 @@ static void prop_header(LongTable &lt,
             snprintf(longbuf, STRLEN, "Type & &%s %s",
                      bPrintMultQ ? "& &" : "",
                      bPrintConf ? "&" : "");
-            for (i = 0; (i < qmc->n); i++)
+            for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
             {
-                snprintf(buf, 256, "& %s", qmc->type[i]);
+                snprintf(buf, 256, "& %s", q->type().c_str());
                 strncat(longbuf, buf, STRLEN-strlen(longbuf)-1);
             }
             lt.addHeadLine(longbuf);
@@ -977,39 +1001,38 @@ class CalcData
         { val_ = val; err_ = err; temp_ = temp; found_ = found; }
 };
 
-void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
-                            real rel_toler, real abs_toler,
-                            std::vector<MolProp> mp,
-                            t_qmcount *qmc,
-                            const char *exp_type, bool bPrintAll,
-                            bool bPrintBasis, bool bPrintMultQ,
-                            const MolSelect &gms, iMolSelect ims)
+void gmx_molprop_prop_table(FILE                 *fp,
+                            MolPropObservable     mpo,
+                            real                  rel_toler,
+                            real                  abs_toler,
+                            std::vector<MolProp> &mp,
+                            const QmCount        &qmc,
+                            const char           *exp_type,
+                            bool                  bPrintAll,
+                            bool                  bPrintBasis,
+                            bool                  bPrintMultQ,
+                            const MolSelect      &gms,
+                            iMolSelect            ims)
 {
     MolecularQuadrupoleIterator qi;
     MolecularEnergyIterator     mei;
 
-    int                                     j, iprint = 0;
+    int                         iprint = 0;
 #define BLEN 1024
-    char                                    lbuf[BLEN], myline[BLEN], mylbuf[BLEN], vbuf[BLEN];
-    double                                  calc_val, calc_err, vc;
-    int                                     nprint;
-    double                                  dvec[DIM];
-    tensor                                  quadrupole;
-    bool                                    bPrintConf;
+    char                        myline[BLEN], mylbuf[BLEN], vbuf[BLEN];
+    double                      calc_val, calc_err, vc;
+    double                      dvec[DIM];
+    tensor                      quadrupole;
+    bool                        bPrintConf;
     CompositionSpecs            cs;
-    const char                             *alex = cs.searchCS(iCalexandria)->name();
+    const char                 *alex = cs.searchCS(iCalexandria)->name();
 
     LongTable                   lt(fp, true, "small");
 
-    nprint = 0;
-    for (MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
-    {
-        if ((ims == gms.status(mpi->getIupac())) &&
-            (mpi->HasComposition(alex)))
-        {
-            nprint++;
-        }
-    }
+    int nprint = std::count_if(mp.begin(), mp.end(),
+                               [ims, alex, gms](const MolProp &mpi)
+                               { return ((ims == gms.status(mpi.getIupac())) &&
+                                         (mpi.HasComposition(alex))); });
     if (nprint <= 0)
     {
         return;
@@ -1018,14 +1041,14 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
     prop_header(lt, mpo_name[mpo], mpo_unit[mpo],
                 rel_toler, abs_toler, qmc,
                 ims, bPrintConf, bPrintBasis, bPrintMultQ);
-    for (MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (auto &mpi : mp)
     {
-        if ((ims == gms.status(mpi->getIupac())) &&
-            (mpi->HasComposition(alex)))
+        if ((ims == gms.status(mpi.getIupac())) &&
+            (mpi.HasComposition(alex)))
         {
             std::vector<ExpData>  ed;
             std::vector<CalcData> cd;
-            for (ExperimentIterator ei = mpi->BeginExperiment(); (ei < mpi->EndExperiment()); ei++)
+            for (auto ei = mpi.BeginExperiment(); (ei < mpi.EndExperiment()); ei++)
             {
                 switch (mpo)
                 {
@@ -1083,15 +1106,14 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
             int nqm = 0;
             for (int nexp = 0; (nexp < (int)ed.size()); nexp++)
             {
-                for (j = 0; (j < qmc->n); j++)
+                for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
                 {
                     std::string ref, mylot;
                     double      T = ed[nexp].temp_;
-                    sprintf(lbuf, "%s/%s", qmc->method[j], qmc->basis[j]);
-                    if ((strcmp(qmc->type[j], exp_type) == 0) &&
-                        mpi->getPropRef(mpo, iqmQM, lbuf, NULL,
-                                        qmc->type[j], &calc_val, &calc_err, &T,
-                                        ref, mylot, dvec, quadrupole))
+                    if ((q->type().compare(exp_type) == 0) &&
+                        mpi.getPropRef(mpo, iqmQM, q->lot(), NULL,
+                                       q->type(), &calc_val, &calc_err, &T,
+                                       ref, mylot, dvec, quadrupole))
                     {
                         cd.push_back(CalcData(calc_val, calc_err, T, 1));
                         nqm++;
@@ -1118,16 +1140,16 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                         if (bPrintMultQ)
                         {
                             snprintf(myline, BLEN, "%d. %-15s & %s & %d & %d",
-                                     iprint, mpi->getIupac().c_str(),
-                                     mpi->getTexFormula().c_str(),
-                                     mpi->getCharge(),
-                                     mpi->getMultiplicity());
+                                     iprint, mpi.getIupac().c_str(),
+                                     mpi.getTexFormula().c_str(),
+                                     mpi.getCharge(),
+                                     mpi.getMultiplicity());
                         }
                         else
                         {
                             snprintf(myline, BLEN, "%d. %-15s & %s",
-                                     iprint, mpi->getIupac().c_str(),
-                                     mpi->getTexFormula().c_str());
+                                     iprint, mpi.getIupac().c_str(),
+                                     mpi.getTexFormula().c_str());
                         }
                     }
                     else
@@ -1149,7 +1171,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                             sprintf(mylbuf, "(%.3f)", ed[nexp].err_);
                             strncat(myline, mylbuf, BLEN-strlen(myline)-1);
                         }
-                        if (strcmp(ed[nexp].ref_.c_str(), "Maaren2014a") == 0)
+                        if (strcmp(ed[nexp].ref_.c_str(), "Maaren2017a") == 0)
                         {
                             sprintf(mylbuf, " (*)");
                         }
@@ -1164,7 +1186,7 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable mpo,
                         sprintf(mylbuf, "& - ");
                         strncat(myline, mylbuf, BLEN-strlen(myline)-1);
                     }
-                    for (j = 0; (j < qmc->n); j++)
+                    for (size_t j = 0; (j < qmc.nCalc()); j++)
                     {
                         if (cd[j].found_ > 0)
                         {

@@ -69,9 +69,6 @@ class GaussAtomPropVal
             _temp    = temp; _value = value;
         }
 
-        //! Default destructor
-        ~GaussAtomPropVal() {}
-
         //! Return element name
         std::string getElement() { return _element; }
 
@@ -103,11 +100,8 @@ class GaussAtomProp
     private:
         std::vector<GaussAtomPropVal> _gapv;
     public:
-        //! Default constructor
+        //! Constructor
         GaussAtomProp();
-
-        //! Default destructor
-        ~GaussAtomProp() {}
 
         /*! \brief
          * Look up the value corresponding to input variables

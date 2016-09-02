@@ -275,6 +275,8 @@ class MolecularComposition
 };
 //! Iterates over MolecularComposition items
 typedef std::vector<MolecularComposition>::iterator MolecularCompositionIterator;
+//! Iterates over MolecularComposition items but const
+typedef std::vector<MolecularComposition>::const_iterator MolecularCompositionConstIterator;
 
 /*! \brief
  * Generic molecular property base clase
@@ -1245,15 +1247,19 @@ class MolProp
         const std::string &getInchi() const { return _inchi; }
 
         //! Convenience function
-        bool getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
-                        const char *conf, const char *type,
+        bool getPropRef(MolPropObservable mpo, iqmType iQM,
+                        const std::string &lot,
+                        const std::string &conf,
+                        const std::string &type,
                         double *value, double *error, double *T,
                         std::string &ref, std::string &mylot,
                         double vec[3], tensor quadrupole);
 
         //! And another one
-        bool getProp(MolPropObservable mpo, iqmType iQM, char *lot,
-                     char *conf, char *type,
+        bool getProp(MolPropObservable mpo, iqmType iQM,
+                     const std::string &lot,
+                     const std::string &conf,
+                     const std::string &type,
                      double *value, double *error, double *T);
 
         //! Returns true if the HF energy of the optimized geometry exists and returns the HF
@@ -1290,6 +1296,12 @@ class MolProp
         { return _mol_comp; }
 
         //! Begin Iterator over MolecularCompostion items
+        MolecularCompositionConstIterator BeginMolecularComposition() const { return _mol_comp.begin(); }
+
+        //! End Iterator over MolecularCompostion items
+        MolecularCompositionConstIterator EndMolecularComposition() const { return _mol_comp.end(); }
+
+        //! Begin Iterator over MolecularCompostion items
         MolecularCompositionIterator BeginMolecularComposition() { return _mol_comp.begin(); }
 
         //! End Iterator over MolecularCompostion items
@@ -1308,10 +1320,7 @@ class MolProp
         bool GenerateComposition(const Poldata &pd);
 
         //! Returns boolean stating whether a particular composition is present
-        bool HasComposition(char *composition) { std::string _str(composition); return HasComposition(_str); }
-
-        //! Returns boolean stating whether a particular composition is present
-        bool HasComposition(std::string composition);
+        bool HasComposition(const std::string &composition) const;
 
         //! Add a Bond element
         void AddBond(Bond b);

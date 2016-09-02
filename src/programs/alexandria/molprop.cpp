@@ -839,7 +839,7 @@ static void add_element_to_formula(const char *elem, int number, char *formula, 
 
 bool MolProp::GenerateFormula(gmx_atomprop_t ap)
 {
-    char  myform[1280], texform[2560];
+    char             myform[1280], texform[2560];
     std::vector<int> ncomp;
     alexandria::MolecularCompositionIterator mci;
 
@@ -899,29 +899,14 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
     return (strlen(myform) > 0);
 }
 
-bool MolProp::HasComposition(std::string composition)
+bool MolProp::HasComposition(const std::string &composition) const
 {
-    bool bComp  = false;
-    MolecularCompositionIterator mci;
-
-    if (composition.size() > 0)
-    {
-        for (mci = BeginMolecularComposition(); !bComp && (mci < EndMolecularComposition()); mci++)
-        {
-            if (mci->getCompName().compare(composition) == 0)
-            {
-                bComp = true;
-            }
-        }
-    }
-    if (debug && !bComp)
-    {
-        fprintf(debug, "No composition %s for molecule %s\n", composition.c_str(),
-                getMolname().c_str());
-        fflush(debug);
-    }
-
-    return bComp;
+    return std::find_if(BeginMolecularComposition(),
+                        EndMolecularComposition(),
+                        [composition](const MolecularComposition &mi)
+                        {
+                            return mi.getCompName().compare(composition) == 0;
+                        }) != EndMolecularComposition();
 }
 
 bool Experiment::getVal(const char *type, MolPropObservable mpo,
@@ -1019,8 +1004,10 @@ bool bCheckTemperature(double Tref, double T)
     return (Tref < 0) || (fabs(T - Tref) < 0.05);
 }
 
-bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
-                         const char *conf, const char *type,
+bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
+                         const std::string &lot,
+                         const std::string &conf,
+                         const std::string &type,
                          double *value, double *error, double *T,
                          std::string &ref, std::string &mylot,
                          double vec[3], tensor quad_polar)
@@ -1032,9 +1019,10 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
     {
         for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
         {
-            if ((NULL == conf) || (strcasecmp(conf, ei->getConformation().c_str()) == 0))
+            if ((conf.size() == 0) ||
+                (ei->getConformation().compare(conf) == 0))
             {
-                if (ei->getVal(type, mpo, value, error, T, vec, quad_polar) &&
+                if (ei->getVal(type.c_str(), mpo, value, error, T, vec, quad_polar) &&
                     bCheckTemperature(Told, *T))
                 {
                     ref = ei->getReference();
@@ -1057,10 +1045,10 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM, char *lot,
             char buf[256];
             snprintf(buf, sizeof(buf), "%s/%s",
                      ci->getMethod().c_str(), ci->getBasisset().c_str());
-            if (((NULL == lot) || (strcmp(lot, buf) == 0))  &&
-                ((NULL == conf) || (strcasecmp(conf, ci->getConformation().c_str()) == 0)))
+            if (((lot.size() == 0) || (lot.compare(buf) == 0))  &&
+                ((conf.size() == 0) || (ci->getConformation().compare(conf)) == 0))
             {
-                if  (ci->getVal(type, mpo, value, error, T, vec, quad_polar) &&
+                if  (ci->getVal(type.c_str(), mpo, value, error, T, vec, quad_polar) &&
                      bCheckTemperature(Told, *T))
                 {
                     ref = ci->getReference();
@@ -1091,8 +1079,10 @@ bool MolProp::getOptHF(double *value)
     return done;
 }
 
-bool MolProp::getProp(MolPropObservable mpo, iqmType iQM, char *lot,
-                      char *conf, char *type,
+bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
+                      const std::string &lot,
+                      const std::string &conf,
+                      const std::string &type,
                       double *value, double *error, double *T)
 {
     double      myerror, vec[3];

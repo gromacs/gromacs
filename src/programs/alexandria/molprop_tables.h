@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2016, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -20,7 +54,7 @@ extern char *ftoa(double f);
 //! Utility function converting int to char *
 extern char *itoa(int f);
 
-namespace alexandria 
+namespace alexandria
 {
 /*! \brief
  * Generates a LaTeX table containing the statistics (RMSD from experiment) of a calculated property per molecule category
@@ -28,7 +62,7 @@ namespace alexandria
  * \param[out] fp   File pointer to write to
  * \param[in] eprop The property of choice
  * \param[in] mp    Array of molecules
- * \param[in] qmc
+ * \param[in] qmc   QM calc statistics
  * \param[in] iQM
  * \param[in] lot   Level of theory in 'A/B' form
  * \param[in] exp_type The type of experimental property
@@ -40,15 +74,15 @@ namespace alexandria
  * \todo Transform iQM to enum
  * \ingroup module_alexandria
  */
-void gmx_molprop_stats_table(FILE *fp, 
-                             MolPropObservable eprop,
+void gmx_molprop_stats_table(FILE                 *fp,
+                             MolPropObservable     eprop,
                              std::vector<MolProp> &mp,
-                             t_qmcount *qmc, 
-                             char *exp_type,
-                             double outlier,
-                             CategoryList cList,
-                             const MolSelect &gms, 
-                             iMolSelect ims);
+                             const QmCount        &qmc,
+                             char                 *exp_type,
+                             double                outlier,
+                             CategoryList          cList,
+                             const MolSelect      &gms,
+                             iMolSelect            ims);
 
 /*! \brief
  * Generates a LaTeX table containing the composition in atoms of each molecule
@@ -60,9 +94,10 @@ void gmx_molprop_stats_table(FILE *fp,
  * \todo Transform ims to enum
  * \ingroup module_alexandria
  */
-void gmx_molprop_composition_table(FILE *fp,
-                                   std::vector<alexandria::MolProp> mp,
-                                   const MolSelect &gms, iMolSelect ims);
+void gmx_molprop_composition_table(FILE                 *fp,
+                                   std::vector<MolProp>  mp,
+                                   const MolSelect      &gms,
+                                   iMolSelect            ims);
 
 /*! \brief
  * Generates a LaTeX table containing the molecules in each molecule category
@@ -95,13 +130,19 @@ void gmx_molprop_category_table(FILE                    *fp,
  * \todo Introduce enum to switch between absolute and relative tolerance
  * \ingroup module_alexandria
  */
-void gmx_molprop_prop_table(FILE *fp, MolPropObservable eprop,
-                            real rel_toler, real abs_toler,
-                            std::vector<alexandria::MolProp> mp,
-                            t_qmcount *qmc, const char *exp_type,
-                            bool bPrintAll, bool bPrintBasis,
-                            bool bPrintMultQ, const MolSelect &gms, iMolSelect ims);
- 
+void gmx_molprop_prop_table(FILE                             *fp,
+                            MolPropObservable                 eprop,
+                            real                              rel_toler,
+                            real                              abs_toler,
+                            std::vector<alexandria::MolProp> &mp,
+                            const QmCount                    &qmc,
+                            const char                       *exp_type,
+                            bool                              bPrintAll,
+                            bool                              bPrintBasis,
+                            bool                              bPrintMultQ,
+                            const MolSelect                  &gms,
+                            iMolSelect                        ims);
+
 /*! \brief
  * Generates a LaTeX table containing the atomtypes in Alexandria
  *
@@ -114,12 +155,12 @@ void gmx_molprop_prop_table(FILE *fp, MolPropObservable eprop,
  * \todo More explanation text
  * \ingroup module_alexandria
  */
-void gmx_molprop_atomtype_table(FILE *fp, 
-                                bool bPolar,
-                                Poldata &pd,
-                                std::vector<alexandria::MolProp> &mp,
-                                char *lot, 
-                                char *exp_type);
+void gmx_molprop_atomtype_table(FILE                                   *fp,
+                                bool                                    bPolar,
+                                const Poldata                          &pd,
+                                const std::vector<alexandria::MolProp> &mp,
+                                const char                             *lot,
+                                const char                             *exp_type);
 
 } // namespace alexandria
 
