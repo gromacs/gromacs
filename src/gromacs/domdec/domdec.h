@@ -242,6 +242,9 @@ float dd_pme_f_ratio(struct gmx_domdec_t *dd);
 /*! \brief Communicate the coordinates to the neighboring cells and do pbc. */
 void dd_move_x(struct gmx_domdec_t *dd, matrix box, rvec x[]);
 
+/*! \brief Communicate the velocities to neighboring cells. Needed for Drude thermostat. */
+void dd_move_v(struct gmx_domdec_t *dd, rvec v[]);
+
 /*! \brief Sum the forces over the neighboring cells.
  *
  * When fshift!=NULL the shift forces are updated to obtain

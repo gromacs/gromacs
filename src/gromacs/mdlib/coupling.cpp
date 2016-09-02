@@ -774,6 +774,12 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, real dt, t_
     for (n=0; n<nc; n++)
     {
         /* calculate kinetic energies associated with thermostats */
+        /* communication of velocities needed here to ensure that non-local
+         * indices are accounted for */
+        if (DOMAINDECOMP(cr))
+        {
+            dd_move_v(cr->dd, state->v);
+        }
         nosehoover_KE(ir, cr, idef, md, state, grpmass, ekind, NULL, TRUE);
         if (DOMAINDECOMP(cr))
         {
@@ -949,6 +955,12 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, real dt, t_
         }
 
         /* calculate new kinetic energies */
+        /* as above, communicate velocities */ 
+        if (DOMAINDECOMP(cr))
+        {
+            dd_move_v(cr->dd, state->v);
+        }
+
         nosehoover_KE(ir, cr, idef, md, state, grpmass, ekind, NULL, TRUE);
         if (DOMAINDECOMP(cr))
         {

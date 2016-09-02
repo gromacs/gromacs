@@ -1013,6 +1013,13 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
         fprintf(debug, "HARDWALL: rwall = %f  rwall2 = %f\n", rwall, rwall2);
     }
 
+    /* communicate velocities in the case of non-local interactions */
+    /* NOTE: additional x comm had no effect, still crashed */
+    if (DOMAINDECOMP(cr))
+    {
+        dd_move_v(cr->dd, state->v);
+    }
+
     /* Here, we get the local bonded interactions that will be used for searching.
      * Basically, we will check any atom-Drude bond for the hardwall criterion and
      * apply the constraint, if necessary.  So the total number of bonds/polarization entries is
