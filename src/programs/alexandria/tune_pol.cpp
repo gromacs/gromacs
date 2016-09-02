@@ -55,7 +55,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "composition.h"
@@ -487,8 +486,8 @@ static int decompose_frag(FILE *fplog,
         fprintf(stderr, "\rBootStrap %d", 1+kk);
         ata    = alloc_matrix(ptypes.size(), ptypes.size());
 
-        double **a_copy  = alloc_matrix(nUseBootStrap, ptypes.size());
-        double **at_copy = alloc_matrix(ptypes.size(), nUseBootStrap);
+        double            **a_copy  = alloc_matrix(nUseBootStrap, ptypes.size());
+        double            **at_copy = alloc_matrix(ptypes.size(), nUseBootStrap);
         std::vector<double> x_copy;
         x_copy.resize(nUseBootStrap);
         for (int ii = 0; (ii < nUseBootStrap); ii++)
@@ -592,8 +591,8 @@ static int decompose_frag(FILE *fplog,
                 fprintf(xp, "%.3f  %.3f\n", my_x[ll], my_y[ll]);
             }
             fprintf(xp, "&\n");
-            sfree(my_x);
-            sfree(my_y);
+            free(my_x);
+            free(my_y);
         }
         else
         {

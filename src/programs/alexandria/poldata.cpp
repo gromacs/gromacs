@@ -55,7 +55,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "gmx_simple_comm.h"
@@ -336,7 +335,7 @@ bool Poldata::getMillerPol(const std::string &miller,
 
 /*
  *-+-+-+-+-+-+-+-+-+-+
- * LISTED FORCES 
+ * LISTED FORCES
  *-+-+-+-+-+-+-+-+-+-+
  */
 
@@ -376,7 +375,7 @@ void Poldata::addBtype(const std::string &btype)
 }
 
 bool Poldata::findForce(std::vector<std::string> &atoms,
-			ListedForceIterator      *force)
+                        ListedForceIterator      *force)
 {
     for (auto &f : forces_)
     {
@@ -391,7 +390,7 @@ bool Poldata::findForce(std::vector<std::string> &atoms,
 }
 
 bool Poldata::findForce(const std::vector<std::string> &atoms,
-			ListedForceConstIterator      *force) const
+                        ListedForceConstIterator       *force) const
 {
     for (const auto &f : forces_)
     {
@@ -406,15 +405,15 @@ bool Poldata::findForce(const std::vector<std::string> &atoms,
 }
 
 bool Poldata::searchForce(std::vector<std::string> &atoms,
-			  std::string              &params,
-			  double                   *refValue,
-			  double                   *sigma,
-			  size_t                   *ntrain) const
+                          std::string              &params,
+                          double                   *refValue,
+                          double                   *sigma,
+                          size_t                   *ntrain) const
 {
     for (auto &f : forces_)
     {
         if (f.searchForce(atoms, params, refValue,
-			  sigma, ntrain))
+                          sigma, ntrain))
         {
             return true;
         }

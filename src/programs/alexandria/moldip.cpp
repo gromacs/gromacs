@@ -540,7 +540,6 @@ void MolDip::Read(FILE            *fp,
     int                              imm_count[immNR];
     immStatus                        imm;
     std::vector<alexandria::MolProp> mp;
-    alexandria::GaussAtomProp        gap;
     real                             rms;
 
     for (int i = 0; (i < immNR); i++)

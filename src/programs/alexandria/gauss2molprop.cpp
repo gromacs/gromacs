@@ -54,7 +54,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "gauss_io.h"
 #include "molprop.h"
@@ -108,7 +107,6 @@ int alex_gauss2molprop(int argc, char *argv[])
     gmx_atomprop_t                   aps;
     alexandria::Poldata              pd;
     std::vector<alexandria::MolProp> mp;
-    alexandria::GaussAtomProp        gap;
     char **fns = NULL;
     int    i, nfn;
 

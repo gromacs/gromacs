@@ -57,7 +57,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "gmx_simple_comm.h"
@@ -104,11 +103,11 @@ Ptype::Ptype(const std::string &ptype,
              double             polarizability,
              double             sigPol)
     :
-    type_(ptype),
-    miller_(miller),
-    bosque_(bosque),
-    polarizability_(polarizability),
-    sigPol_(sigPol)
+      type_(ptype),
+      miller_(miller),
+      bosque_(bosque),
+      polarizability_(polarizability),
+      sigPol_(sigPol)
 {}
 
 Ffatype::Ffatype(const std::string &desc,
@@ -119,13 +118,13 @@ Ffatype::Ffatype(const std::string &desc,
                  const std::string &vdwparams,
                  const std::string &refEnthalpy)
     :
-    desc_(desc),
-    type_(type),
-    ptype_(ptype),
-    btype_(btype),
-    elem_(elem),
-    vdwparams_(vdwparams),
-    refEnthalpy_(refEnthalpy)
+      desc_(desc),
+      type_(type),
+      ptype_(ptype),
+      btype_(btype),
+      elem_(elem),
+      vdwparams_(vdwparams),
+      refEnthalpy_(refEnthalpy)
 {}
 
 ListedForce::ListedForce(const std::vector<std::string> atoms,
@@ -134,11 +133,11 @@ ListedForce::ListedForce(const std::vector<std::string> atoms,
                          double                         sigma,
                          size_t                         ntrain)
     :
-    atoms_(atoms),
-    params_(params),
-    refValue_(refValue),
-    sigma_(sigma),
-    ntrain_(ntrain)
+      atoms_(atoms),
+      params_(params),
+      refValue_(refValue),
+      sigma_(sigma),
+      ntrain_(ntrain)
 
 {}
 
@@ -147,9 +146,9 @@ ListedForces::ListedForces(const std::string   iType,
                            const std::string  &function,
                            const std::string  &unit)
     :
-    iType_(string2iType(iType.c_str())),
-    function_(function),
-    unit_(unit)
+      iType_(string2iType(iType.c_str())),
+      function_(function),
+      unit_(unit)
 {
     unsigned int funcType;
 
@@ -173,10 +172,10 @@ ListedForceIterator ListedForces::findForce(const std::vector<std::string> &atom
 
     ListedForceIterator fb = forceBegin(), fe = forceEnd();
     return std::find_if(fb, fe, [atoms](const ListedForce &force)
-        {
-            std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
-            return (atoms == force.atoms() || atoms_re == force.atoms());
-        });
+                        {
+                            std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
+                            return (atoms == force.atoms() || atoms_re == force.atoms());
+                        });
 }
 
 ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> &atoms) const
@@ -184,10 +183,10 @@ ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> 
 
     ListedForceConstIterator fb = forceBegin(), fe = forceEnd();
     return std::find_if(fb, fe, [atoms](const ListedForce &force)
-        {
-            std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
-            return (atoms == force.atoms() || atoms_re == force.atoms());
-        });
+                        {
+                            std::vector<std::string> atoms_re(atoms.rbegin(), atoms.rend());
+                            return (atoms == force.atoms() || atoms_re == force.atoms());
+                        });
 }
 
 bool ListedForces::setForceParams(const std::vector<std::string> &atoms,
@@ -252,8 +251,8 @@ bool ListedForces::searchForce(std::vector<std::string> &atoms,
 
 Bosque::Bosque(const std::string &bosque, double polarizability)
     :
-    bosque_(bosque),
-    polarizability_(polarizability)
+      bosque_(bosque),
+      polarizability_(polarizability)
 {}
 
 Miller::Miller(const std::string &miller,
@@ -262,37 +261,37 @@ Miller::Miller(const std::string &miller,
                double             alphaAhp,
                const std::string &alexandria_equiv)
     :
-    miller_(miller),
-    atomnumber_(atomnumber),
-    tauAhc_(tauAhc),
-    alphaAhp_(alphaAhp),
-    alexandria_equiv_(alexandria_equiv)
+      miller_(miller),
+      atomnumber_(atomnumber),
+      tauAhc_(tauAhc),
+      alphaAhp_(alphaAhp),
+      alexandria_equiv_(alexandria_equiv)
 {}
 
 Symcharges::Symcharges(const std::string &central,
                        const std::string &attached,
                        int                numattach)
     :
-    central_(central),
-    attached_(attached),
-    numattach_(numattach)
+      central_(central),
+      attached_(attached),
+      numattach_(numattach)
 {}
 
 Epref::Epref(ChargeDistributionModel  eqdModel,
              const std::string       &epref)
     :
-    eqdModel_(eqdModel),
-    epref_(epref)
+      eqdModel_(eqdModel),
+      epref_(epref)
 {}
 
 RowZetaQ::RowZetaQ(int row, double zeta, double q)
 
     :
 
-    row_(row),
-    zeta_(zeta),
-    q_(q),
-    zetaRef_(zeta)
+      row_(row),
+      zeta_(zeta),
+      q_(q),
+      zetaRef_(zeta)
 
 
 {
@@ -317,13 +316,13 @@ Eemprops::Eemprops(ChargeDistributionModel   eqdModel,
                    double                    J0,
                    double                    chi0)
     :
-    eqdModel_(eqdModel),
-    name_(name),
-    rowstr_(rowstr),
-    zetastr_(zetastr),
-    qstr_(qstr),
-    J0_(J0),
-    chi0_(chi0)
+      eqdModel_(eqdModel),
+      name_(name),
+      rowstr_(rowstr),
+      zetastr_(zetastr),
+      qstr_(qstr),
+      J0_(J0),
+      chi0_(chi0)
 {
     setRowZetaQ(rowstr, zetastr, qstr);
 }

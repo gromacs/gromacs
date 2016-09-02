@@ -208,17 +208,21 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
     FILE         *xvgf, *qdiff, *mud, *tdiff, *hh, *espd;
     double        d2 = 0;
     real          rms, sigma, aver, error, qq, chi2;
-    int           j, k, n, nout, nlsqt = 0, mm, nn;
+    int           j, n, nout, mm, nn;
     char         *resnm, *atomnm;
-    const  char **atomtypes = NULL;
+    struct AtomTypeLsq {
+        std::string atomtype;
+        gmx_stats_t lsq;
+    };
     enum {
         eprEEM, eprESP, eprNR
     };
-    gmx_stats_t             lsq_q, lsq_mu[eprNR], lsq_quad[eprNR], *lsqt = NULL, lsq_esp;
-    const char             *eprnm[eprNR] = { "EEM", "ESP" };
-    gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
-    int                     at_global, resnr;
+    gmx_stats_t               lsq_q, lsq_mu[eprNR], lsq_quad[eprNR], lsq_esp;
+    std::vector<AtomTypeLsq>  lsqt;
+    const char               *eprnm[eprNR] = { "EEM", "ESP" };
+    gmx_mtop_atomloop_all_t   aloop;
+    t_atom                   *atom;
+    int                       at_global, resnr;
 
 
     xvgf  = xvgropen(xvgfn, "Correlation between dipoles",
@@ -293,27 +297,28 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
             while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
             {
                 gmx_mtop_atomloop_all_names(aloop, &atomnm, &resnr, &resnm);
-                for (k = 0; (k < nlsqt); k++)
+                const char *at = *(mi->topology_->atoms.atomtype[j]);
+                auto        k  = std::find_if(lsqt.begin(), lsqt.end(),
+                                              [at](const AtomTypeLsq &atlsq)
+                                              {
+                                                  return atlsq.atomtype.compare(at) == 0;
+                                              });
+                if (k == lsqt.end())
                 {
-                    if (strcmp(atomtypes[k], *(mi->topology_->atoms.atomtype[j])) == 0)
-                    {
-                        break;
-                    }
-                }
-                if (k == nlsqt)
-                {
-                    srenew(lsqt, ++nlsqt);
-                    srenew(atomtypes, nlsqt);
-                    atomtypes[k] = strdup(*(mi->topology_->atoms.atomtype[j]));
-                    lsqt[k]      = gmx_stats_init();
+                    lsqt.resize(1+lsqt.size());
+                    lsqt[lsqt.size()-1].atomtype.assign(at);
+                    lsqt[lsqt.size()-1].lsq = gmx_stats_init();
+                    k = lsqt.end() - 1;
                 }
                 qq = atom->q;
                 fprintf(fp, "%-2s%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f %s\n",
-                        atomnm, j+1,
-                        *(mi->topology_->atoms.atomtype[j]), qq, mi->qESP[j],
+                        atomnm,
+                        j+1,
+                        *(mi->topology_->atoms.atomtype[j]),
+                        qq, mi->qESP[j],
                         mi->x_[j][XX], mi->x_[j][YY], mi->x_[j][ZZ],
                         fabs(qq-mi->qESP[j]) > q_toler ? "ZZZ" : "");
-                gmx_stats_add_point(lsqt[k], mi->qESP[j], atom->q, 0, 0);
+                gmx_stats_add_point(k->lsq, mi->qESP[j], atom->q, 0, 0);
                 gmx_stats_add_point(lsq_q, mi->qESP[j], atom->q, 0, 0);
                 j++;
             }
@@ -353,23 +358,28 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
     print_lsq_set(tdiff, lsq_quad[1]);
     fclose(tdiff);
     qdiff = xvgropen(cdiff, "Correlation between ESP and EEM", "qESP", "qEEM", oenv);
-    xvgr_legend(qdiff, nlsqt, atomtypes, oenv);
-    xvgr_symbolize(qdiff, nlsqt, atomtypes, oenv);
+    std::vector<const char *> atypes;
+    for (const auto &k : lsqt)
+    {
+        atypes.push_back(k.atomtype.c_str());
+    }
+    xvgr_legend(qdiff, atypes.size(), atypes.data(), oenv);
+    xvgr_symbolize(qdiff, atypes.size(), atypes.data(), oenv);
     hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
-    xvgr_legend(hh, nlsqt, atomtypes, oenv);
+    xvgr_legend(hh, atypes.size(), atypes.data(), oenv);
     fprintf(fp, "\nDeviations of the charges separated per atomtype:\n");
-    for (k = 0; (k < nlsqt); k++)
+    for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
     {
         int   N;
         real *x, *y;
 
-        print_stats(fp, atomtypes[k], lsqt[k], (k == 0), (char *)"ESP",
-                    (char *)"EEM");
-        print_lsq_set(qdiff, lsqt[k]);
-        if (gmx_stats_get_npoints(lsqt[k], &N) == estatsOK)
+        print_stats(fp, k->atomtype.c_str(), k->lsq, (k == lsqt.begin()),
+                    (char *)"ESP", (char *)"EEM");
+        print_lsq_set(qdiff, k->lsq);
+        if (gmx_stats_get_npoints(k->lsq, &N) == estatsOK)
         {
             N = N/4;
-            if (gmx_stats_make_histogram(lsqt[k], 0, &N, ehistoY, 0, &x, &y) == estatsOK)
+            if (gmx_stats_make_histogram(k->lsq, 0, &N, ehistoY, 0, &x, &y) == estatsOK)
             {
                 fprintf(hh, "@type xy\n");
                 for (int i = 0; (i < N); i++)
@@ -377,8 +387,8 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
                     fprintf(hh, "%10g  %10g\n", x[i], y[i]);
                 }
                 fprintf(hh, "&\n");
-                sfree(x);
-                sfree(y);
+                free(x);
+                free(y);
             }
         }
     }
@@ -986,7 +996,7 @@ int alex_tune_dip(int argc, char *argv[])
           "Controls whether or not the Gaussian/Slater widths are optimized." },
         { "-zero", FALSE, etBOOL, {&bZero},
           "Use molecules with zero dipole in the fit as well" },
-	{ "-zpe",     FALSE, etBOOL, {&bZPE},
+        { "-zpe",     FALSE, etBOOL, {&bZPE},
           "Consider zero-point energy from thermochemistry calculations in order to calculate the reference enthalpy of the molecule" },
         { "-weight", FALSE, etBOOL, {&bWeighted},
           "Perform a weighted fit, by using the errors in the dipoles presented in the input file. This may or may not improve convergence." },

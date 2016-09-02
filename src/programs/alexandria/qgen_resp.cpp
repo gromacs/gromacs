@@ -288,8 +288,8 @@ void QgenResp::writeHisto(const std::string      &fn,
     {
         fprintf(fp, "%10g  %10g\n", x[i], y[i]);
     }
-    sfree(x);
-    sfree(y);
+    free(x);
+    free(y);
     fclose(fp);
     gmx_stats_free(gs);
 }
@@ -411,8 +411,8 @@ void QgenResp::writeDiffCube(QgenResp               &src,
             {
                 fprintf(fp, "%10g  %10g\n", x[i], y[i]);
             }
-            sfree(x);
-            sfree(y);
+            free(x);
+            free(y);
         }
         fclose(fp);
         fp = xvgropen("diff-pot.xvg", "Correlation between QM and Calc", "Pot (QM)",

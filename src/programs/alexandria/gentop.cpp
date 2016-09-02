@@ -59,7 +59,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "gauss_io.h"
 #include "gentop_core.h"

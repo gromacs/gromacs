@@ -59,7 +59,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
 
 // Alexandria stuff
 #include "molprop_util.h"
@@ -98,50 +97,50 @@ static void sort_dihs(std::vector<t_dih> &dih)
 {
     std::sort(dih.begin(), dih.end(),
               [](const t_dih &a, const t_dih &b)
-    {
-        int d = a.a1.compare(b.a1);
-        if (0 == d)
-        {
-            if ((d = a.a2.compare(b.a2)) == 0)
-            {
-                if ((d = a.a3.compare(b.a3)) == 0)
-                {
-                    return a.a4.compare(b.a4);
-                }
-            }
-        }
-        return d;
-    });
+              {
+                  int d = a.a1.compare(b.a1);
+                  if (0 == d)
+                  {
+                      if ((d = a.a2.compare(b.a2)) == 0)
+                      {
+                          if ((d = a.a3.compare(b.a3)) == 0)
+                          {
+                              return a.a4.compare(b.a4);
+                          }
+                      }
+                  }
+                  return d;
+              });
 }
 
 static void sort_bonds(t_bonds *b)
 {
     std::sort(b->bond.begin(), b->bond.end(),
               [](const t_bond &a, const t_bond &b)
-    {
-        int d = a.a1.compare(b.a1);
-        if (d == 0)
-        {
-            if ((d = a.a2.compare(b.a2)) == 0)
-            {
-                d = a.order-b.order;
-            }
-        }
-        return d;
-    });
+              {
+                  int d = a.a1.compare(b.a1);
+                  if (d == 0)
+                  {
+                      if ((d = a.a2.compare(b.a2)) == 0)
+                      {
+                          d = a.order-b.order;
+                      }
+                  }
+                  return d;
+              });
     std::sort(b->angle.begin(), b->angle.end(),
               [](const t_angle &a, const t_angle &b)
-    {
-        int d = a.a1.compare(b.a1);
-        if (0 == d)
-        {
-            if ((d = a.a2.compare(b.a2)) == 0)
-            {
-                return a.a3.compare(b.a3);
-            }
-        }
-        return d;
-    });
+              {
+                  int d = a.a1.compare(b.a1);
+                  if (0 == d)
+                  {
+                      if ((d = a.a2.compare(b.a2)) == 0)
+                      {
+                          return a.a3.compare(b.a3);
+                      }
+                  }
+                  return d;
+              });
     sort_dihs(b->dih);
     sort_dihs(b->imp);
 }
@@ -155,11 +154,11 @@ void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     size_t index   = std::lround(blen/spacing);
     auto   b       = std::find_if(bonds->bond.begin(), bonds->bond.end(),
                                   [a1, a2, order](t_bond b)
-    {
-        return ((((b.a1.compare(a1) == 0) && (b.a2.compare(a2) == 0)) ||
-                 ((b.a1.compare(a2) == 0) && (b.a2.compare(a1) == 0))) &&
-                (b.order == order));
-    });
+                                  {
+                                      return ((((b.a1.compare(a1) == 0) && (b.a2.compare(a2) == 0)) ||
+                                               ((b.a1.compare(a2) == 0) && (b.a2.compare(a1) == 0))) &&
+                                              (b.order == order));
+                                  });
     if (b == bonds->bond.end())
     {
         t_bond bb;
@@ -203,15 +202,15 @@ void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
     size_t index = std::lround(refValue/spacing);
     auto   a     = std::find_if(angle.begin(), angle.end(),
                                 [a1, a2, a3](const t_angle &a)
-    {
-        int d = a.a2.compare(a2);
-        if (0 == d)
-        {
-            return ((a.a1.compare(a1) == 0 && a.a3.compare(a3) == 0) ||
-                    (a.a1.compare(a3) == 0 && a.a3.compare(a1) == 0));
-        }
-        return false;
-    });
+                                {
+                                    int d = a.a2.compare(a2);
+                                    if (0 == d)
+                                    {
+                                        return ((a.a1.compare(a1) == 0 && a.a3.compare(a3) == 0) ||
+                                                (a.a1.compare(a3) == 0 && a.a3.compare(a1) == 0));
+                                    }
+                                    return false;
+                                });
 
     if (a == angle.end())
     {
@@ -275,12 +274,12 @@ static void lo_add_dih(FILE *fplog, const char *molname,
     }
     auto d = std::find_if(dih.begin(), dih.end(),
                           [a1, a2, a3, a4](const t_dih &d)
-    {
-        return ((d.a1.compare(a1) == 0 && d.a2.compare(a2) == 0 &&
-                 d.a3.compare(a3) == 0 && d.a4.compare(a4) == 0) ||
-                (d.a1.compare(a4) == 0 && d.a2.compare(a3) == 0 &&
-                 d.a3.compare(a2) == 0 && d.a4.compare(a1) == 0));
-    });
+                          {
+                              return ((d.a1.compare(a1) == 0 && d.a2.compare(a2) == 0 &&
+                                       d.a3.compare(a3) == 0 && d.a4.compare(a4) == 0) ||
+                                      (d.a1.compare(a4) == 0 && d.a2.compare(a3) == 0 &&
+                                       d.a3.compare(a2) == 0 && d.a4.compare(a1) == 0));
+                          });
 
     if (dih.end() == d)
     {
@@ -427,8 +426,8 @@ static void round_numbers(real *av, real *sig)
 }
 
 void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
-               real Dm, real beta, real kt, real klin, 
-	       real kp, real kimp, real kub)
+               real Dm, real beta, real kt, real klin,
+               real kp, real kimp, real kub)
 {
     int                      N;
     real                     av, sig;
@@ -560,7 +559,7 @@ int alex_bastat(int argc, char *argv[])
           "Linear angle force constant (kJ/mol/nm^2)" },
         { "-kp",    FALSE, etREAL, {&kp},
           "Dihedral angle force constant (kJ/mol/rad^2)" },
-	{ "-kimp",    FALSE, etREAL, {&kimp},
+        { "-kimp",    FALSE, etREAL, {&kimp},
           "Improper dihedral angle force constant (kJ/mol/rad^2)" },
         { "-kub",   FALSE, etREAL, {&kub},
           "Urey_Bradley force constant" },
@@ -726,8 +725,8 @@ int alex_bastat(int argc, char *argv[])
                         }
                     }
                 }
-                else if (eitANGLES == fs->iType() || 
-			 eitLINEAR_ANGLES == fs->iType())
+                else if (eitANGLES == fs->iType() ||
+                         eitLINEAR_ANGLES == fs->iType())
                 {
                     unsigned int funcType = fs->fType();
 
