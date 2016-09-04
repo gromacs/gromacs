@@ -444,6 +444,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif /* LJ_EWALD_COMB_GEOM */
 #endif /* LJ_EWALD */
 
+#ifdef LJ_POT_SWITCH
+#ifdef CALC_ENERGIES
+                                calculate_potential_switch_F_E(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+#else
+                                calculate_potential_switch_F(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+#endif /* CALC_ENERGIES */
+#endif /* LJ_POT_SWITCH */
+
 #ifdef VDW_CUTOFF_CHECK
                                 /* Separate VDW cut-off check to enable twin-range cut-offs
                                  * (rvdw < rcoulomb <= rlist)
@@ -454,14 +462,6 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 E_lj_p       *= vdw_in_range;
 #endif
 #endif                          /* VDW_CUTOFF_CHECK */
-
-#ifdef LJ_POT_SWITCH
-#ifdef CALC_ENERGIES
-                                calculate_potential_switch_F_E(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
-#else
-                                calculate_potential_switch_F(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
-#endif /* CALC_ENERGIES */
-#endif /* LJ_POT_SWITCH */
 
 #ifdef CALC_ENERGIES
                                 E_lj    += E_lj_p;

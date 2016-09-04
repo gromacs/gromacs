@@ -78,6 +78,11 @@ void get_coordnum(const char *infile, int *natoms)
     gmx_fio_fclose(in);
 }
 
+/* Note that the .gro reading routine still support variable precision
+ * for backward compatibility with old .gro files.
+ * We have removed writing of variable precision to avoid compatibility
+ * issues with other software packages.
+ */
 static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
                            t_symtab *symtab, t_atoms *atoms, int *ndec,
                            rvec x[], rvec *v, matrix box)
@@ -403,75 +408,47 @@ int gro_first_x_or_v(FILE *status, t_trxframe *fr)
     return fr->natoms;
 }
 
-static void make_hconf_format(int pr, gmx_bool bVel, char format[])
+static const char *get_hconf_format(bool haveVelocities)
 {
-    int l, vpr;
-
-    /* build format string for printing,
-       something like "%8.3f" for x and "%8.4f" for v */
-    if (pr < 0)
+    if (haveVelocities)
     {
-        pr = 0;
-    }
-    if (pr > 30)
-    {
-        pr = 30;
-    }
-    l   = pr+5;
-    vpr = pr+1;
-    if (bVel)
-    {
-        sprintf(format, "%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df\n",
-                l, pr, l, pr, l, pr, l, vpr, l, vpr, l, vpr);
+        return "%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f\n";
     }
     else
     {
-        sprintf(format, "%%%d.%df%%%d.%df%%%d.%df\n", l, pr, l, pr, l, pr);
+        return "%8.3f%8.3f%8.3f\n";
     }
 
 }
 
-static void write_hconf_box(FILE *out, int pr, const matrix box)
+static void write_hconf_box(FILE *out, const matrix box)
 {
-    char format[100];
-    int  l;
-
-    if (pr < 5)
-    {
-        pr = 5;
-    }
-    l = pr+5;
-
     if (box[XX][YY] || box[XX][ZZ] || box[YY][XX] || box[YY][ZZ] ||
         box[ZZ][XX] || box[ZZ][YY])
     {
-        sprintf(format, "%%%d.%df%%%d.%df%%%d.%df"
-                "%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df\n",
-                l, pr, l, pr, l, pr, l, pr, l, pr, l, pr, l, pr, l, pr, l, pr);
-        fprintf(out, format,
+        fprintf(out, "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f\n",
                 box[XX][XX], box[YY][YY], box[ZZ][ZZ],
                 box[XX][YY], box[XX][ZZ], box[YY][XX],
                 box[YY][ZZ], box[ZZ][XX], box[ZZ][YY]);
     }
     else
     {
-        sprintf(format, "%%%d.%df%%%d.%df%%%d.%df\n", l, pr, l, pr, l, pr);
-        fprintf(out, format,
+        fprintf(out, "%10.5f%10.5f%10.5f\n",
                 box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
     }
 }
 
 void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
-                           int nx, const int index[], int pr,
+                           int nx, const int index[],
                            const rvec *x, const rvec *v, const matrix box)
 {
-    char resnm[6], nm[6], format[100];
+    char resnm[6], nm[6];
     int  ai, i, resind, resnr;
 
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     fprintf(out, "%5d\n", nx);
 
-    make_hconf_format(pr, v != NULL, format);
+    const char *format = get_hconf_format(v != NULL);
 
     for (i = 0; (i < nx); i++)
     {
@@ -513,15 +490,14 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
         }
     }
 
-    write_hconf_box(out, pr, box);
+    write_hconf_box(out, box);
 
     fflush(out);
 }
 
-void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop, int pr,
+void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop,
                       const rvec *x, const rvec *v, const matrix box)
 {
-    char                    format[100];
     int                     i, resnr;
     gmx_mtop_atomloop_all_t aloop;
     t_atom                 *atom;
@@ -530,7 +506,7 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop, int pr,
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     fprintf(out, "%5d\n", mtop->natoms);
 
-    make_hconf_format(pr, v != NULL, format);
+    const char *format = get_hconf_format(v != NULL);
 
     aloop = gmx_mtop_atomloop_all_init(mtop);
     while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
@@ -552,12 +528,12 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop, int pr,
         }
     }
 
-    write_hconf_box(out, pr, box);
+    write_hconf_box(out, box);
 
     fflush(out);
 }
 
-void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms, int pr,
+void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms,
                    const rvec *x, const rvec *v, const matrix box)
 {
     int     *aa;
@@ -568,17 +544,17 @@ void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms, int pr,
     {
         aa[i] = i;
     }
-    write_hconf_indexed_p(out, title, atoms, atoms->nr, aa, pr, x, v, box);
+    write_hconf_indexed_p(out, title, atoms, atoms->nr, aa, x, v, box);
     sfree(aa);
 }
 
 void write_conf_p(const char *outfile, const char *title,
-                  const t_atoms *atoms, int pr,
+                  const t_atoms *atoms,
                   const rvec *x, const rvec *v, const matrix box)
 {
     FILE *out;
 
     out = gmx_fio_fopen(outfile, "w");
-    write_hconf_p(out, title, atoms, pr, x, v, box);
+    write_hconf_p(out, title, atoms, x, v, box);
     gmx_fio_fclose(out);
 }

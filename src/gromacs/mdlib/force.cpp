@@ -449,8 +449,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                          * exclusion forces) are calculated, so we can store
                          * the forces in the normal, single fr->f_novirsum array.
                          */
-                        ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
-                                           cr, t, fr,
+                        ewald_LRcorrection(md->homenr, cr, nthreads, t, fr,
                                            md->chargeA, md->chargeB,
                                            md->sqrt_c6A, md->sqrt_c6B,
                                            md->sigmaA, md->sigmaB,

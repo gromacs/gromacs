@@ -2219,8 +2219,6 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     if (dd->reverse_top->bExclRequired)
     {
         dd->nbonded_local += nexcl;
-
-        forcerec_set_excl_load(fr, ltop);
     }
 
     ltop->atomtypes  = mtop->atomtypes;

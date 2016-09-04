@@ -423,8 +423,6 @@ typedef struct t_forcerec {
     /* Ewald correction thread local virial and energy data */
     int                  nthread_ewc;
     ewald_corr_thread_t *ewc_t;
-    /* Ewald charge correction load distribution over the threads */
-    int                 *excl_load;
 } t_forcerec;
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

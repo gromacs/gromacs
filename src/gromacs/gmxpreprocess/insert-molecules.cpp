@@ -261,6 +261,8 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
                         rpos[XX][mol], rpos[YY][mol], rpos[ZZ][mol]);
                 ++mol;
                 ++failed;
+                firstTrial = trial;
+                continue;
             }
             // Insert at positions taken from option -ip file.
             offset_x[XX] = rpos[XX][mol] + deltaR[XX]*(2 * dist(rng)-1);

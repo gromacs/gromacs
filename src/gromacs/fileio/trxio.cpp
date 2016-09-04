@@ -426,7 +426,6 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
             if (ftp == efGRO)
             {
                 write_hconf_indexed_p(gmx_fio_getfp(status->fio), title, fr->atoms, nind, ind,
-                                      prec2ndec(prec),
                                       fr->x, fr->bV ? fr->v : NULL, fr->box);
             }
             else
@@ -578,7 +577,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             if (gmx_fio_getftp(status->fio) == efGRO)
             {
                 write_hconf_p(gmx_fio_getfp(status->fio), title, fr->atoms,
-                              prec2ndec(prec), fr->x, fr->bV ? fr->v : NULL, fr->box);
+                              fr->x, fr->bV ? fr->v : NULL, fr->box);
             }
             else
             {

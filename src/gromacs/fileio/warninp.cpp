@@ -163,17 +163,29 @@ static void print_warn_count(const char *type, int n)
     }
 }
 
+// Note it is the caller's responsibility to ensure that exiting is correct behaviour
+static gmx_noreturn void check_warning_error_impl(warninp_t wi, int f_errno, const char *file, int line)
+{
+    print_warn_count("note", wi->nwarn_note);
+    print_warn_count("warning", wi->nwarn_warn);
+
+    gmx_fatal(f_errno, file, line, "There %s %d error%s in input file(s)",
+              (wi->nwarn_error == 1) ? "was" : "were", wi->nwarn_error,
+              (wi->nwarn_error == 1) ? ""    : "s");
+}
+
 void check_warning_error(warninp_t wi, int f_errno, const char *file, int line)
 {
     if (wi->nwarn_error > 0)
     {
-        print_warn_count("note", wi->nwarn_note);
-        print_warn_count("warning", wi->nwarn_warn);
-
-        gmx_fatal(f_errno, file, line, "There %s %d error%s in input file(s)",
-                  (wi->nwarn_error == 1) ? "was" : "were", wi->nwarn_error,
-                  (wi->nwarn_error == 1) ? ""    : "s");
+        check_warning_error_impl(wi, f_errno, file, line);
     }
+}
+
+void warning_error_and_exit(warninp_t wi, const char *s, int f_errno, const char *file, int line)
+{
+    warning_error(wi, s);
+    check_warning_error_impl(wi, f_errno, file, line);
 }
 
 gmx_bool warning_errors_exist(warninp_t wi)
@@ -183,10 +195,13 @@ gmx_bool warning_errors_exist(warninp_t wi)
 
 void done_warning(warninp_t wi, int f_errno, const char *file, int line)
 {
+    // If we've had an error, then this will report the number of
+    // notes and warnings, and then exit.
+    check_warning_error(wi, f_errno, file, line);
+
+    // Otherwise, we report the number of notes and warnings.
     print_warn_count("note", wi->nwarn_note);
     print_warn_count("warning", wi->nwarn_warn);
-
-    check_warning_error(wi, f_errno, file, line);
 
     if (wi->maxwarn >= 0 && wi->nwarn_warn > wi->maxwarn)
     {
