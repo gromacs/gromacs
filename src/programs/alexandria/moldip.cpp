@@ -42,6 +42,8 @@
 
 #include <cmath>
 
+#include <vector>
+
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
@@ -54,7 +56,6 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 // Alexandria stuff
@@ -66,235 +67,143 @@
 
 #define STRLEN 256
 
-static void add_index_count(t_index_count *ic, const char *name, gmx_bool bConst)
+namespace alexandria
 {
-    int i;
 
-    for (i = 0; (i < ic->n); i++)
+void IndexCount::addName(const std::string &name,
+                         bool               bConst)
+{
+    auto ai = std::find_if(atomIndex_.begin(), atomIndex_.end(),
+                           [name](const AtomIndex a)
+                           { return a.name().compare(name) == 0; });
+    if (atomIndex_.end() == ai)
     {
-        if (strcasecmp(ic->name[i], name) == 0)
-        {
-            if (ic->bConst[i] != bConst)
-            {
-                gmx_fatal(FARGS, "Trying to add atom %s as both constant and optimized",
-                          name);
-            }
-            else
-            {
-                fprintf(stderr, "Trying to add %s twice\n", name);
-            }
-        }
+        AtomIndex aaa(name, bConst);
+        atomIndex_.push_back(aaa);
     }
-    if (i == ic->n)
+    else
     {
-        ic->n++;
-        srenew(ic->name, ic->n);
-        srenew(ic->tot_count, ic->n);
-        srenew(ic->count, ic->n);
-        srenew(ic->bConst, ic->n);
-        ic->name[i]      = strdup(name);
-        ic->tot_count[i] = 0;
-        ic->count[i]     = 0;
-        ic->bConst[i]    = bConst;
-        if (bConst)
+        if (ai->isConst() == bConst)
         {
-            ic->nconst++;
+            fprintf(stderr, "Trying to add %s twice\n", name.c_str());
+            // ai.increment();
         }
         else
         {
-            ic->nopt++;
+            gmx_fatal(FARGS, "Trying to add atom %s as both constant and optimized",
+                      name.c_str());
         }
     }
 }
 
-static void sum_index_count(t_index_count *ic, t_commrec *cr)
+void IndexCount::sumCount(t_commrec *cr)
 {
-    int i;
-
-    for (i = 0; (i < ic->n); i++)
+    totCount_.resize(atomIndex_.size(), 0);
+    int i = 0;
+    for (const auto &ai : atomIndex_)
     {
-        ic->tot_count[i] = ic->count[i];
+        totCount_[i++] = ai.count();
     }
     if (cr->nnodes > 1)
     {
-        gmx_sumi(ic->n, ic->tot_count, cr);
+        gmx_sumi(totCount_.size(), totCount_.data(), cr);
     }
 }
 
-static void inc_index_count(t_index_count *ic, char *name)
+void IndexCount::incrementName(const std::string &name)
 {
-    int i;
-
-    for (i = 0; (i < ic->n); i++)
+    auto ai = findName(name);
+    if (ai == atomIndex_.end())
     {
-        if (strcasecmp(ic->name[i], name) == 0)
-        {
-            ic->count[i]++;
-            break;
-        }
+        gmx_fatal(FARGS, "No such atom %s", name.c_str());
     }
-    if (i == ic->n)
-    {
-        gmx_fatal(FARGS, "No such atom %s", name);
-    }
+    ai->increment();
 }
 
-static void dec_index_count(t_index_count *ic, char *name)
+void IndexCount::decrementName(const std::string &name)
 {
-    int i;
-
-    for (i = 0; (i < ic->n); i++)
+    auto ai = findName(name);
+    if (ai == atomIndex_.end())
     {
-        if (strcasecmp(ic->name[i], name) == 0)
-        {
-            if (ic->count[i] > 0)
-            {
-                ic->count[i]--;
-                break;
-            }
-            else
-            {
-                fprintf(stderr, "Trying to decrease number of atoms %s below zero\n",
-                        name);
-            }
-        }
+        gmx_fatal(FARGS, "No such atom %s", name.c_str());
     }
-    if (i == ic->n)
-    {
-        fprintf(stderr, "No such atom %s ic->n = %d\n", name, ic->n);
-    }
+    ai->decrement();
 }
 
-static int n_index_count(t_index_count *ic, char *name)
+int IndexCount::count(const std::string &name)
 {
-    int i;
-
-    for (i = 0; (i < ic->n); i++)
+    auto ai = findName(name);
+    if (ai == atomIndex_.end())
     {
-        if (strcasecmp(ic->name[i], name) == 0)
-        {
-            return i;
-        }
-    }
-    return -1;
-}
-
-static int c_index_count(t_index_count *ic, char *name)
-{
-    int i;
-
-    for (i = 0; (i < ic->n); i++)
-    {
-        if (strcasecmp(ic->name[i], name) == 0)
-        {
-            return ic->tot_count[i];
-        }
+        return ai->count();
     }
     return 0;
 }
 
-char *opt_index_count(t_index_count *ic)
-{
-    for (; (ic->nopt_c < ic->n); ic->nopt_c++)
-    {
-        if (!ic->bConst[ic->nopt_c])
-        {
-            return ic->name[ic->nopt_c++];
-        }
-    }
-    ic->nopt_c = 0;
-
-    return NULL;
-}
-
-static gmx_bool const_index_count(t_index_count *ic, char *name)
-{
-    int i;
-
-    for (i = 0; (i < ic->n); i++)
-    {
-        if (strcasecmp(ic->name[i], name) == 0)
-        {
-            return ic->bConst[i];
-        }
-    }
-    return FALSE;
-}
-
-static void dump_index_count(t_index_count          *ic,
+static void dump_index_count(const IndexCount       *ic,
                              FILE                   *fp,
                              ChargeDistributionModel iDistributionModel,
                              const Poldata          &pd,
                              gmx_bool                bFitZeta)
 {
-    int    i, j, nZeta, nZopt;
-    double zz;
-    if (fp)
+    if (!fp)
     {
-        fprintf(fp, "Atom index for this optimization.\n");
-        fprintf(fp, "Name  Number  Action   #Zeta\n");
-        for (i = 0; (i < ic->n); i++)
+        return;
+    }
+    fprintf(fp, "Atom index for this optimization.\n");
+    fprintf(fp, "Name  Number  Action   #Zeta\n");
+    for (auto i = ic->beginIndex(); i < ic->endIndex(); ++i)
+    {
+        int nZeta = pd.getNzeta(iDistributionModel,
+                                i->name());
+        int nZopt = 0;
+        for (int j = 0; (j < nZeta); j++)
         {
-            nZeta = pd.getNzeta(iDistributionModel, ic->name[i]);
-            nZopt = 0;
-            for (j = 0; (j < nZeta); j++)
+            if (pd.getZeta(iDistributionModel,
+                           i->name(), j) > 0)
             {
-                zz = pd.getZeta(iDistributionModel, ic->name[i], j);
-                if (zz > 0)
-                {
-                    nZopt++;
-                }
-            }
-            if (ic->bConst[i])
-            {
-                fprintf(fp, "%-4s  %6d  Constant\n", ic->name[i], ic->count[i]);
-            }
-            else
-            {
-                fprintf(fp, "%-4s  %6d  Optimized %4d%s\n",
-                        ic->name[i], ic->count[i], nZopt,
-                        bFitZeta ? " optimized" : " constant");
+                nZopt++;
             }
         }
-        fprintf(fp, "\n");
-        fflush(fp);
+        if (i->isConst())
+        {
+            fprintf(fp, "%-4s  %6d  Constant\n",
+                    i->name().c_str(), i->count());
+        }
+        else
+        {
+            fprintf(fp, "%-4s  %6d  Optimized %4d%s\n",
+                    i->name().c_str(),
+                    i->count(), nZopt,
+                    bFitZeta ? " optimized" : " constant");
+        }
     }
+    fprintf(fp, "\n");
+    fflush(fp);
 }
 
-static int clean_index_count(t_index_count *ic, int minimum_data, FILE *fp)
+int IndexCount::cleanIndex(int   minimum_data,
+                           FILE *fp)
 {
-    int i, j, nremove = 0;
+    int nremove = 0;
 
-    for (i = 0; (i < ic->n); )
+    for (auto i = atomIndex_.begin(); i < atomIndex_.end(); ++i)
     {
-        if (!ic->bConst[i] && (ic->tot_count[i] < minimum_data))
+        if (!i->isConst() && (i->count() < minimum_data))
         {
             if (fp)
             {
                 fprintf(fp, "Not enough support in data set for optimizing %s\n",
-                        ic->name[i]);
+                        i->name().c_str());
             }
-            sfree(ic->name[i]);
-            for (j = i; (j < ic->n-1); j++)
-            {
-                ic->name[j]       = ic->name[j+1];
-                ic->count[j]      = ic->count[j+1];
-                ic->tot_count[j]  = ic->tot_count[j+1];
-                ic->bConst[j]     = ic->bConst[j+1];
-            }
+            i = atomIndex_.erase(i);
             nremove++;
-            ic->n--;
-            ic->nopt--;
-        }
-        else
-        {
-            i++;
         }
     }
     return nremove;
 }
 
-static void update_index_count_bool(t_index_count          *ic,
+static void update_index_count_bool(IndexCount             *ic,
                                     const Poldata          &pd,
                                     const char             *string,
                                     gmx_bool                bSet,
@@ -306,20 +215,22 @@ static void update_index_count_bool(t_index_count          *ic,
     {
         if (pd.haveEemSupport(iDistributionModel, k, bAllowZero))
         {
-            add_index_count(ic, k.c_str(), bSet);
+            ic->addName(k, bSet);
         }
     }
 }
 
-static int check_data_sufficiency(FILE *fp,
+static int check_data_sufficiency(FILE                           *fp,
                                   std::vector<alexandria::MyMol> &mol,
-                                  int minimum_data,
-                                  const Poldata &pd,
-                                  t_index_count *ic,
-                                  ChargeDistributionModel iDistributionModel,
-                                  char *opt_elem, char *const_elem,
-                                  t_commrec *cr, gmx_bool bPol,
-                                  gmx_bool bFitZeta)
+                                  int                             minimum_data,
+                                  const Poldata                  &pd,
+                                  IndexCount                     *ic,
+                                  ChargeDistributionModel         iDistributionModel,
+                                  char                           *opt_elem,
+                                  char                           *const_elem,
+                                  t_commrec                      *cr,
+                                  gmx_bool                        bPol,
+                                  gmx_bool                        bFitZeta)
 {
     int                      j, nremove, nsupported;
     gmx_mtop_atomloop_all_t  aloop;
@@ -339,15 +250,16 @@ static int check_data_sufficiency(FILE *fp,
     {
         for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
         {
+            auto ai = ic->findName(eep->getName());
             if ((eep->getEqdModel() == iDistributionModel) &&
-                !const_index_count(ic, (char *)eep->getName()) &&
+                (ai != ic->endIndex()) && !ai->isConst() &&
                 pd.haveEemSupport(iDistributionModel, eep->getName(), FALSE))
             {
-                add_index_count(ic, eep->getName(), FALSE);
+                ic->addName(eep->getName(), FALSE);
             }
         }
     }
-    sum_index_count(ic, cr);
+    ic->sumCount(cr);
     dump_index_count(ic, debug, iDistributionModel, pd, bFitZeta);
     for (auto &mmi : mol)
     {
@@ -360,7 +272,8 @@ static int check_data_sufficiency(FILE *fp,
             {
                 if ((atom->atomnumber > 0) || !bPol)
                 {
-                    if (n_index_count(ic, *(mmi.topology_->atoms.atomtype[k])) == -1)
+                    auto ai = ic->findName(*mmi.topology_->atoms.atomtype[k]);
+                    if (ic->endIndex() == ai)
                     {
                         if (debug)
                         {
@@ -382,7 +295,7 @@ static int check_data_sufficiency(FILE *fp,
                 {
                     if ((atom->atomnumber > 0) || !bPol)
                     {
-                        inc_index_count(ic, *(mmi.topology_->atoms.atomtype[k]));
+                        ic->incrementName(*(mmi.topology_->atoms.atomtype[k]));
                     }
                     k++;
                 }
@@ -392,7 +305,7 @@ static int check_data_sufficiency(FILE *fp,
     }
     do
     {
-        sum_index_count(ic, cr);
+        ic->sumCount(cr);
         dump_index_count(ic, debug, iDistributionModel, pd, bFitZeta);
         nremove = 0;
         for (auto &mmi : mol)
@@ -403,7 +316,8 @@ static int check_data_sufficiency(FILE *fp,
                 aloop = gmx_mtop_atomloop_all_init(mmi.mtop_);
                 while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
                 {
-                    if (c_index_count(ic, *(mmi.topology_->atoms.atomtype[j])) < minimum_data)
+                    auto ai = ic->findName(*mmi.topology_->atoms.atomtype[j]);
+                    if (ic->endIndex() == ai || ai->count() < minimum_data)
                     {
                         if (debug)
                         {
@@ -421,7 +335,7 @@ static int check_data_sufficiency(FILE *fp,
                     k     = 0;
                     while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
                     {
-                        dec_index_count(ic, *(mmi.topology_->atoms.atomtype[k++]));
+                        ic->decrementName(*(mmi.topology_->atoms.atomtype[k++]));
                     }
                     mmi.eSupp = eSupportNo;
                     nremove++;
@@ -435,8 +349,8 @@ static int check_data_sufficiency(FILE *fp,
         }
     }
     while (nremove > 0);
-    nremove = clean_index_count(ic, minimum_data, debug);
-    sum_index_count(ic, cr);
+    nremove = ic->cleanIndex(minimum_data, debug);
+    ic->sumCount(cr);
     dump_index_count(ic, fp, iDistributionModel, pd, bFitZeta);
 
     nsupported = 0;
@@ -464,12 +378,8 @@ static int check_data_sufficiency(FILE *fp,
     return nsupported;
 }
 
-namespace alexandria
-{
-
 MolDip::MolDip()
 {
-    _ic     = NULL;
     _cr     = NULL;
     _fixchi = NULL;
     for (int i = 0; (i < ermsNR); i++)
@@ -760,14 +670,14 @@ void MolDip::Read(FILE            *fp,
             gmx_send_int(_cr, 0, imm);
         }
     }
-    int  nnn     = nmol_cpu;
-    int *nmolpar = NULL;
+    int              nnn     = nmol_cpu;
+    std::vector<int> nmolpar;
 
     if (PAR(_cr))
     {
-        snew(nmolpar, _cr->nnodes);
+        nmolpar.resize(_cr->nnodes, 0);
         nmolpar[_cr->nodeid] = nnn;
-        gmx_sumi(_cr->nnodes, nmolpar, _cr);
+        gmx_sumi(_cr->nnodes, nmolpar.data(), _cr);
     }
 
     if (fp)
@@ -802,13 +712,11 @@ void MolDip::Read(FILE            *fp,
             fprintf(fp, "Check alexandria.debug for more information.\nYou may have to use the -debug 1 flag.\n\n");
         }
     }
-    sfree(nmolpar);
-    snew(_ic, 1);
     if (bCheckSupport)
     {
         _nmol_support =
             check_data_sufficiency(MASTER(_cr) ? fp : NULL, _mymol,
-                                   minimum_data, pd_, _ic,
+                                   minimum_data, pd_, &indexCount_,
                                    _iChargeDistributionModel, opt_elem, const_elem, _cr,
                                    _bPol, _bFitZeta);
         if (_nmol_support == 0)
@@ -884,7 +792,7 @@ void MolDip::CalcDeviation()
     real                    etot[ermsNR];
     real                    t      = 0;
     rvec                    mu_tot = {0, 0, 0};
-    gmx_enerdata_t         *epot;
+    //  gmx_enerdata_t          enerd;
     tensor                  force_vir = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
     t_nrnb                  my_nrnb;
     gmx_wallcycle_t         wcycle;
@@ -907,7 +815,8 @@ void MolDip::CalcDeviation()
         pd_.broadcast(_cr);
     }
     init_nrnb(&my_nrnb);
-    snew(epot, 1);
+    //   init_enerdata(1, 0, enerd);
+
 
     wcycle  = wallcycle_init(stdout, 0, _cr);
     for (j = 0; (j < ermsNR); j++)
@@ -1041,7 +950,6 @@ void MolDip::CalcDeviation()
         _ener[j]       += _fc[j]*etot[j]/_nmol_support;
         _ener[ermsTOT] += _ener[j];
     }
-    sfree(epot);
     if (debug)
     {
         fprintf(debug, "ENER:");
