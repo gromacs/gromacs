@@ -72,6 +72,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/md-setup.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdebin.h"
@@ -91,6 +92,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -338,7 +340,7 @@ void init_em(FILE *fplog, const char *title,
              t_nrnb *nrnb, rvec mu_tot,
              t_forcerec *fr, gmx_enerdata_t **enerd,
              t_graph **graph, t_mdatoms *mdatoms, gmx_global_stat_t *gstat,
-             gmx_vsite_t *vsite, gmx_constr_t constr,
+             gmx_vsite_t *vsite, gmx_constr_t constr, gmx_shellfc_t **shellfc,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              int imdport, unsigned long gmx_unused Flags,
@@ -362,6 +364,24 @@ void init_em(FILE *fplog, const char *title,
     /* Interactive molecular dynamics */
     init_IMD(ir, cr, top_global, fplog, 1, state_global->x,
              nfile, fnm, NULL, imdport, Flags);
+
+    if (ir->eI == eiNM)
+    {
+        *shellfc = init_shell_flexcon(stdout,
+                                      top_global,
+                                      n_flexible_constraints(constr),
+                                      ir->nstcalcenergy,
+                                      DOMAINDECOMP(cr));
+    }
+    else
+    {
+        GMX_ASSERT(EI_ENERGY_MINIMIZATION(ir->eI), "This else currently only handles energy minimizers, consider if your algorithm needs shellf support");
+
+        /* With energy minimization, shells and flexible constraints are
+         * automatically minimized when treated like normal DOFS.
+         */
+        *shellfc = NULL;
+    }
 
     if (DOMAINDECOMP(cr))
     {
@@ -399,20 +419,11 @@ void init_em(FILE *fplog, const char *title,
         }
         copy_mat(state_global->box, ems->s.box);
 
-        *top      = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
 
-        setup_bonded_threading(fr, &(*top)->idef);
+        snew(*top, 1);
+        mdAlgorithmsSetupAtomData(cr, ir, top_global, *top, fr,
+                                  graph, mdatoms, vsite, *shellfc);
 
-        if (ir->ePBC != epbcNONE && !fr->bMolPBC)
-        {
-            *graph = mk_graph(fplog, &((*top)->idef), 0, top_global->natoms, FALSE, FALSE);
-        }
-        else
-        {
-            *graph = NULL;
-        }
-
-        atoms2md(top_global, ir, 0, NULL, top_global->natoms, mdatoms);
         update_mdatoms(mdatoms, state_global->lambda[efptFEP]);
 
         if (vsite)
@@ -1073,7 +1084,8 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     /* Init em and store the local state in s_min */
     init_em(fplog, CG, cr, inputrec,
             state_global, top_global, s_min, &top, &f,
-            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
+            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
+            vsite, constr, NULL,
             nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
 
     /* Print to log file */
@@ -1762,7 +1774,8 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     /* Init em */
     init_em(fplog, LBFGS, cr, inputrec,
             state_global, top_global, &ems, &top, &f,
-            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
+            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
+            vsite, constr, NULL,
             nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
     /* Do_lbfgs is not completely updated like do_steep and do_cg,
      * so we free some memory again.
@@ -2538,7 +2551,8 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     /* Init em and store the local state in s_try */
     init_em(fplog, SD, cr, inputrec,
             state_global, top_global, s_try, &top, &f,
-            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
+            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
+            vsite, constr, NULL,
             nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
 
     /* Print to log file  */
@@ -2812,23 +2826,16 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
     state_work = init_em_state();
 
+    gmx_shellfc_t *shellfc;
+
     /* Init em and store the local state in state_minimum */
     init_em(fplog, NM, cr, inputrec,
             state_global, top_global, state_work, &top,
             &f,
-            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat, vsite, constr,
+            nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
+            vsite, constr, &shellfc,
             nfile, fnm, &outf, NULL, imdport, Flags, wcycle);
 
-    gmx_shellfc_t *shellfc = init_shell_flexcon(stdout,
-                                                top_global,
-                                                n_flexible_constraints(constr),
-                                                inputrec->nstcalcenergy,
-                                                DOMAINDECOMP(cr));
-
-    if (shellfc)
-    {
-        make_local_shells(cr, mdatoms, shellfc);
-    }
     std::vector<size_t> atom_index = get_atom_index(top_global);
     snew(fneg, atom_index.size());
     snew(dfdx, atom_index.size());
