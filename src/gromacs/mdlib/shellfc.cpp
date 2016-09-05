@@ -336,6 +336,17 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     snew(shfc, 1);
     shfc->nflexcon = nflexcon;
 
+    if (nshell == 0)
+    {
+        /* Only flexible constraints, no shells.
+         * Note that make_local_shells() does not need to be called.
+         */
+        shfc->nshell   = 0;
+        shfc->bPredict = FALSE;
+
+        return shfc;
+    }
+
     if (nstcalcenergy != 1)
     {
         gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combination with shell particles.\nPlease make a new tpr file.", nstcalcenergy);
@@ -343,11 +354,6 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     if (usingDomainDecomposition)
     {
         gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
-    }
-
-    if (nshell == 0)
-    {
-        return shfc;
     }
 
     /* We have shells: fill the shell data structure */
