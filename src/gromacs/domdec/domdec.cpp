@@ -68,6 +68,7 @@
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/md-setup.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -344,6 +345,15 @@ void dd_get_ns_ranges(const gmx_domdec_t *dd, int icg,
             shift1[dim] += 1;
         }
     }
+}
+
+int dd_natoms_mdatoms(const gmx_domdec_t *dd)
+{
+    /* We currently set mdatoms entries for all atoms:
+     * local + non-local + communicated for vsite + constraints
+     */
+
+    return dd->comm->nat[ddnatNR - 1];
 }
 
 int dd_natoms_vsite(const gmx_domdec_t *dd)
@@ -9553,30 +9563,14 @@ void dd_partition_system(FILE                *fplog,
     forcerec_set_ranges(fr, dd->ncg_home, dd->ncg_tot,
                         dd->nat_tot, comm->nat[ddnatCON], nat_f_novirsum);
 
-    /* We make the all mdatoms up to nat_tot_con.
-     * We could save some work by only setting invmass
-     * between nat_tot and nat_tot_con.
-     */
-    /* This call also sets the new number of home particles to dd->nat_home */
-    atoms2md(top_global, ir,
-             comm->nat[ddnatCON], dd->gatindex, dd->nat_home, mdatoms);
-
-    /* Now we have the charges we can sort the FE interactions */
-    dd_sort_local_top(dd, mdatoms, top_local);
-
-    if (vsite != NULL)
-    {
-        /* Now we have updated mdatoms, we can do the last vsite bookkeeping */
-        split_vsites_over_threads(top_local->idef.il, top_local->idef.iparams,
-                                  mdatoms, FALSE, vsite);
-    }
+    /* Update atom data for mdatoms and several algorithms */
+    mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr,
+                              NULL, mdatoms, vsite, NULL);
 
     if (ir->implicit_solvent)
     {
         make_local_gb(cr, fr->born, ir->gb_algorithm);
     }
-
-    setup_bonded_threading(fr, &top_local->idef);
 
     if (!(cr->duty & DUTY_PME))
     {

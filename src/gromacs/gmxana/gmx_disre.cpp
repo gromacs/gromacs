@@ -839,7 +839,7 @@ int gmx_disre(int argc, char *argv[])
     }
 
     mdatoms = init_mdatoms(fplog, &mtop, ir.efep != efepNO);
-    atoms2md(&mtop, &ir, 0, NULL, mtop.natoms, mdatoms);
+    atoms2md(&mtop, &ir, -1, NULL, mtop.natoms, mdatoms);
     update_mdatoms(mdatoms, ir.fepvals->init_lambda);
     init_nrnb(&nrnb);
     if (ir.ePBC != epbcNONE)
