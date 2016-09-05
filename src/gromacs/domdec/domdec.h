@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,6 +108,9 @@ struct gmx_domdec_zones_t *domdec_zones(struct gmx_domdec_t *dd);
 /*! \brief Sets the j-charge-group range for i-charge-group \p icg */
 void dd_get_ns_ranges(const gmx_domdec_t *dd, int icg,
                       int *jcg0, int *jcg1, ivec shift0, ivec shift1);
+
+/*! \brief Returns the atom range in the local state for atoms that need to be present in mdatoms */
+int dd_natoms_mdatoms(const gmx_domdec_t *dd);
 
 /*! \brief Returns the atom range in the local state for atoms involved in virtual sites */
 int dd_natoms_vsite(const gmx_domdec_t *dd);
