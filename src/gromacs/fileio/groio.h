@@ -60,19 +60,19 @@ int gro_first_x_or_v(FILE *status, struct t_trxframe *fr);
 /* read first/next x and/or v frame from gro file */
 
 void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
-                           int nx, const int index[], int ndec,
+                           int nx, const int index[],
                            const rvec *x, const rvec *v, const matrix box);
 
-void write_hconf_mtop(FILE *out, const char *title, struct gmx_mtop_t *mtop, int pr,
+void write_hconf_mtop(FILE *out, const char *title, struct gmx_mtop_t *mtop,
                       const rvec *x, const rvec *v, const matrix box);
 
-void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms, int ndec,
+void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms,
                    const rvec *x, const rvec *v, const matrix box);
 /* Write a Gromos file with precision ndec: number of decimal places in x,
  * v has one place more. */
 
 void write_conf_p(const char *outfile, const char *title,
-                  const t_atoms *atoms, int pr,
+                  const t_atoms *atoms,
                   const rvec *x, const rvec *v, const matrix box);
 
 #ifdef __cplusplus

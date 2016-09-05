@@ -1814,7 +1814,7 @@ int gmx_trjconv(int argc, char *argv[])
                                 switch (ftp)
                                 {
                                     case efGRO:
-                                        write_hconf_p(out, title, &useatoms, prec2ndec(frout.prec),
+                                        write_hconf_p(out, title, &useatoms,
                                                       frout.x, frout.bV ? frout.v : NULL, frout.box);
                                         break;
                                     case efPDB:

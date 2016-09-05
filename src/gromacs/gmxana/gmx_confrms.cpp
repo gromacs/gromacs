@@ -812,9 +812,9 @@ int gmx_confrms(int argc, char *argv[])
             fp = gmx_ffopen(outfile, "w");
             if (!bOne)
             {
-                write_hconf_p(fp, *top1->name, atoms1, 3, x1, v1, box1);
+                write_hconf_p(fp, *top1->name, atoms1, x1, v1, box1);
             }
-            write_hconf_p(fp, *top2->name, atoms2, 3, x2, v2, box2);
+            write_hconf_p(fp, *top2->name, atoms2, x2, v2, box2);
             gmx_ffclose(fp);
             break;
         default:
