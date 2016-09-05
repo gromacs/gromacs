@@ -908,9 +908,13 @@ bool MolProp::HasComposition(const std::string &composition) const
                         }) != EndMolecularComposition();
 }
 
-bool Experiment::getVal(const char *type, MolPropObservable mpo,
-                        double *value, double *error, double *T,
-                        double vec[3], tensor quad_polar)
+bool Experiment::getVal(const std::string  type,
+                        MolPropObservable  mpo,
+                        double            *value,
+                        double            *error,
+                        double            *T,
+                        double             vec[3], 
+                        tensor             quad_polar)
 {
     bool   done = false;
     double x, y, z;
@@ -922,7 +926,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
         case MPO_ENTROPY:
             for (auto mei = BeginEnergy(); !done && (mei < EndEnergy()); ++mei)
             {
-                if (((NULL == type) || (strcasecmp(mei->getType().c_str(), type) == 0)) &&
+                if (((type.size() == 0) || (type.compare(mei->getType()) == 0)) &&
                     bCheckTemperature(Told, mei->getTemperature()))
                 {
                     mei->get(value, error);
@@ -934,7 +938,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
         case MPO_DIPOLE:
             for (auto mdp = BeginDipole(); !done && (mdp < EndDipole()); ++mdp)
             {
-                if (((NULL == type) || (strcasecmp(mdp->getType().c_str(), type) == 0))  &&
+                if (((type.size() == 0) || (type.compare(mdp->getType()) == 0))  &&
                     bCheckTemperature(Told, mdp->getTemperature()))
                 {
                     mdp->get(&x, &y, &z, value, error);
@@ -950,7 +954,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
         {
             for (auto mdp = BeginPolar(); !done && (mdp < EndPolar()); ++mdp)
             {
-                if (((NULL == type) || (strcasecmp(mdp->getType().c_str(), type) == 0)) &&
+                if (((type.size() == 0) || (type.compare(mdp->getType()) == 0)) &&
                     bCheckTemperature(Told, mdp->getTemperature()))
                 {
                     double xx, yy, zz, xy, xz, yz;
@@ -973,7 +977,7 @@ bool Experiment::getVal(const char *type, MolPropObservable mpo,
         case MPO_QUADRUPOLE:
             for (auto mqi = BeginQuadrupole(); !done && (mqi < EndQuadrupole()); ++mqi)
             {
-                if (((NULL == type) || (strcasecmp(mqi->getType().c_str(), type) == 0)) &&
+                if (((type.size() == 0) || (type.compare(mqi->getType()) == 0)) &&
                     bCheckTemperature(Told, mqi->getTemperature()))
                 {
                     double xx, yy, zz, xy, xz, yz;
@@ -1021,7 +1025,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
             if ((conf.size() == 0) ||
                 (ei->getConformation().compare(conf) == 0))
             {
-                if (ei->getVal(type.c_str(), mpo, value, error, T, vec, quad_polar) &&
+                if (ei->getVal(type, mpo, value, error, T, vec, quad_polar) &&
                     bCheckTemperature(Told, *T))
                 {
                     ref = ei->getReference();

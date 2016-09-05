@@ -1067,6 +1067,7 @@ class Experiment
          * Convenience function that fetches a value from this experiment
          *
          * \param[in]  type   The type of the data (dependent on whether it is dipole, energy etc.)
+         *                    If size is 0, then this is ignored.
          * \param[in]  mpo    Enum selecting the type of data to fetch
          * \param[out] value  The value of e.g. the energy
          * \param[out] error  The error in the value of e.g. the energy
@@ -1075,9 +1076,13 @@ class Experiment
          * \param[out] quadrupole The quadrupole tensor
          * \return true on success
          */
-        bool getVal(const char *type, MolPropObservable mpo,
-                    double *value, double *error, double *T,
-                    double vec[3], tensor quadrupole);
+        bool getVal(const std::string  type, 
+                    MolPropObservable  mpo,
+                    double            *value,
+                    double            *error, 
+                    double            *T,
+                    double             vec[3],
+                    tensor             quadrupole);
 
         bool getHF(double *value);
 

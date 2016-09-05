@@ -70,19 +70,31 @@
 class pType
 {
     private:
+    //! Poltype name
         std::string name_;
         bool        bUse_;
+    //! Number of data points corresponding to this poltype
         int         nCopies_;
+    //! Statistics structure
         gmx_stats_t polstats;
     public:
+    //! Constructor
         pType(std::string name, const bool bUse, const int nCopies);
+    //! Is this one used
         bool bUse() { return bUse_; }
+    //! Set the flag for being used
         void setUse(bool bUse) { bUse_ = bUse; }
+    //! Check whether we have sufficient data to use this one
         void checkUse(int mindata) { bUse_ = (nCopies_ > mindata); }
+    //! Return the name of the poltype
         std::string name() { return name_; }
+    //! Return the number of this poltype in all molecules
         int nCopies() { return nCopies_; }
+    //! Set the number of copies to 0
         void resetCopies() { nCopies_ = 0; }
+    //! Increase the number of copies for this poltype
         void incCopies() { nCopies_++; }
+    //! Return the statistics structure (which is a pointer)
         gmx_stats_t stats() { return polstats; }
 };
 
@@ -245,63 +257,68 @@ static void dump_csv(const alexandria::Poldata        &pd,
     }
 }
 
-static int decompose_frag(FILE *fplog,
-                          const char *hisfn,
-                          alexandria::Poldata &pd,
+static int decompose_frag(FILE                             *fplog,
+                          const char                       *hisfn,
+                          alexandria::Poldata              &pd,
                           std::vector<alexandria::MolProp> &mp,
-                          gmx_bool bQM, char *lot,
-                          int mindata,
-                          const alexandria::MolSelect &gms,
-                          gmx_bool bZero, gmx_bool bForceFit,
-                          int nBootStrap, real fractionBootStrap,
-                          std::vector<std::string> zeropol,
-                          const gmx_output_env_t *oenv)
+                          gmx_bool                          bQM, 
+                          const char                       *lot,
+                          int                               mindata,
+                          const alexandria::MolSelect      &gms,
+                          gmx_bool                          bZero,
+                          gmx_bool                          bForceFit,
+                          int                               nBootStrap, 
+                          std::vector<std::string>          zeropol,
+                          const gmx_output_env_t           *oenv,
+                          const char                       *exp_type)
 {
     std::vector<double>          x, atx, fpp;
     double                     **a, **at, **ata;
-    double                       pol, sig_pol, poltot, a0, da0, ax, chi2;
+    double                       poltot, a0, da0, ax, chi2;
     std::vector<pType>           ptypes;
     int                          j, niter = 0;
-    int                          row;
-    unsigned int                 ptsize, nusemol;
+    int                          row, nusemol;
     alexandria::CompositionSpecs cs;
     const char                  *alex = cs.searchCS(alexandria::iCalexandria)->name();
 
     x.resize(mp.size()+1);
     // Copy all atom types into array. Set usage array.
+    for (alexandria::PtypeConstIterator ptype = pd.getPtypeBegin();
+         ptype != pd.getPtypeEnd(); ptype++)
     {
-        for (alexandria::PtypeConstIterator ptype = pd.getPtypeBegin();
-             ptype != pd.getPtypeEnd(); ptype++)
+        
+        if (!bZeroPol(ptype->getType().c_str(), zeropol))
         {
-
-            if (!bZeroPol(ptype->getType().c_str(), zeropol))
-            {
-                ptypes.push_back(pType(ptype->getType().c_str(), false, 0));
-            }
+            ptypes.push_back(pType(ptype->getType().c_str(), false, 0));
         }
     }
+    int ptstart = ptypes.size();
+    int ptsize;
     int iter      = 1;
     int nmol_orig = mp.size();
     // Check whether molecules have all supported atom types, remove the molecule otherwise
     do
     {
         ptsize = ptypes.size();
-
         if (NULL != fplog)
         {
             fprintf(fplog, "iter %d %d ptypes left\n", iter++, ptsize);
         }
-        nusemol = 0;
-        poltot  = 0;
-        double T;
+        nusemol  = 0;
+        poltot   = 0;
         for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); )
         {
             iMolSelect ims  = gms.status(mpi->getIupac());
-
-            pol             = 0;
+            double T        = -1;
+            double pol      = 0;
+            double sig_pol  = 0;
+            if (mpi->getIupac().compare("1-amino-2-propanol") == 0)
+            {
+                printf("Hey ho, let's go!\n");
+            }
             bool       bPol = mpi->getProp(MPO_POLARIZABILITY,
                                            bQM ? iqmBoth : iqmExp,
-                                           lot, "", "", &pol, NULL, &T);
+                                           lot, "", exp_type, &pol, &sig_pol, &T);
             alexandria::MolecularCompositionIterator mci =
                 mpi->SearchMolecularComposition(alex);
 
@@ -310,7 +327,9 @@ static int decompose_frag(FILE *fplog,
                                      bHaveComposition);
             if (NULL != fplog)
             {
-                fprintf(fplog, "%s pol %g Use: %s\n", mpi->getMolname().c_str(), pol,
+                fprintf(fplog, "%s nExper %d pol %g Use: %s\n", 
+                        mpi->getMolname().c_str(), mpi->NExperiment(),
+                        pol,
                         gmx::boolToString(bUseMol));
             }
 
@@ -381,28 +400,25 @@ static int decompose_frag(FILE *fplog,
         // Now we have checked all molecules, now check whether the
         // ptypes still have support
         // in experimental/QM polarizabilities
-        for (std::vector<pType>::iterator pi = ptypes.begin();
-             (pi < ptypes.end()); )
+        for (auto pi = ptypes.begin(); pi < ptypes.end(); ++pi)
         {
             pi->resetCopies();
-
-            if ((1 == pd.getPtypePol( pi->name(),
-                                      &pol, &sig_pol)) &&
+            double pol, sig_pol;
+            if ((1 == pd.getPtypePol(pi->name(), &pol, &sig_pol)) &&
                 ((pol == 0) || bForceFit))
             {
-                for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+                for (auto &mpi : mp)
                 {
-                    alexandria::MolecularCompositionIterator mci =
-                        mpi->SearchMolecularComposition(alex);
-                    for (alexandria::AtomNumIterator ani = mci->BeginAtomNum();
-                         ani < mci->EndAtomNum(); ani++)
+                    auto mci = mpi.SearchMolecularComposition(alex);
+                    for (auto ani = mci->BeginAtomNum(); ani < mci->EndAtomNum(); ++ani)
                     {
                         std::string p;
-                        if (pd.atypeToPtype(ani->getAtom(), p) &&
-                            (p.compare(pi->name()) == 0))
+                        if (pd.atypeToPtype(ani->getAtom(), p))
                         {
-                            pi->incCopies();
-                            break;
+                            if (p.compare(pi->name()) == 0)
+                            {
+                                pi->incCopies();
+                            }
                         }
                     }
                 }
@@ -441,7 +457,7 @@ static int decompose_frag(FILE *fplog,
     if (ptypes.size() == 0)
     {
         printf("No polarization types to optimize, but before compaction %d.\n",
-               ptsize);
+               ptstart);
         return 0;
     }
     /* Now we know how many atomtypes there are (ptypes.size()) and
@@ -477,20 +493,19 @@ static int decompose_frag(FILE *fplog,
     }
 
     // Now loop over the number of bootstrap loops
-    int nUseBootStrap = std::min(nusemol, (unsigned int)(1+floor(fractionBootStrap*nusemol)));
     std::random_device              rd;
     std::mt19937                    gen(rd());
-    std::uniform_int_distribution<> dis(0, nUseBootStrap-1);
+    std::uniform_int_distribution<> dis(0, nusemol-1);
     for (int kk = 0; (kk < nBootStrap); kk++)
     {
         fprintf(stderr, "\rBootStrap %d", 1+kk);
         ata    = alloc_matrix(ptypes.size(), ptypes.size());
 
-        double            **a_copy  = alloc_matrix(nUseBootStrap, ptypes.size());
-        double            **at_copy = alloc_matrix(ptypes.size(), nUseBootStrap);
+        double            **a_copy  = alloc_matrix(nusemol, ptypes.size());
+        double            **at_copy = alloc_matrix(ptypes.size(), nusemol);
         std::vector<double> x_copy;
-        x_copy.resize(nUseBootStrap);
-        for (int ii = 0; (ii < nUseBootStrap); ii++)
+        x_copy.resize(nusemol);
+        for (int ii = 0; (ii < nusemol); ii++)
         {
             // Pick random molecule uu out of stack
             int uu = dis(gen);
@@ -503,7 +518,7 @@ static int decompose_frag(FILE *fplog,
                 x_copy[ii] = x[uu];
             }
         }
-        matrix_multiply(debug, nUseBootStrap, ptypes.size(),
+        matrix_multiply(debug, nusemol, ptypes.size(),
                         a_copy, at_copy, ata);
         if (check_matrix(ata, x_copy.data(), ptypes.size(), ptypes) &&
             ((row = matrix_invert(debug, ptypes.size(), ata)) == 0))
@@ -516,7 +531,7 @@ static int decompose_frag(FILE *fplog,
                 for (unsigned int i = 0; (i < ptypes.size()); i++)
                 {
                     atx[i] = 0;
-                    for (j = 0; (j < nUseBootStrap); j++)
+                    for (j = 0; (j < nusemol); j++)
                     {
                         atx[i] += at_copy[i][j]*(x_copy[j]-a0);
                     }
@@ -533,7 +548,7 @@ static int decompose_frag(FILE *fplog,
                 chi2 = 0;
                 if (bZero)
                 {
-                    for (j = 0; (j < nUseBootStrap); j++)
+                    for (j = 0; (j < nusemol); j++)
                     {
                         ax = a0;
                         for (unsigned int i = 0; (i < ptypes.size()); i++)
@@ -636,14 +651,14 @@ int alex_tune_pol(int argc, char *argv[])
     };
     t_filenm                               fnm[] =
     {
-        { efDAT, "-f",  "data",      ffRDMULT },
-        { efDAT, "-o",  "allmols",   ffOPTWR  },
-        { efDAT, "-di", "gentop",    ffOPTRD  },
-        { efDAT, "-do", "tune_pol",  ffWRITE  },
-        { efDAT, "-sel", "molselect", ffREAD   },
-        { efLOG, "-g",  "tune_pol",  ffWRITE  },
-        { efTEX, "-atype",  "atomtypes", ffWRITE  },
-        { efXVG, "-his",  "polhisto",  ffWRITE  }
+        { efDAT, "-f",     "data",      ffRDMULT },
+        { efDAT, "-o",     "allmols",   ffOPTWR  },
+        { efDAT, "-di",    "gentop",    ffOPTRD  },
+        { efDAT, "-do",    "tune_pol",  ffWRITE  },
+        { efDAT, "-sel",   "molselect", ffREAD   },
+        { efLOG, "-g",     "tune_pol",  ffWRITE  },
+        { efTEX, "-atype", "atomtypes", ffWRITE  },
+        { efXVG, "-his",   "polhisto",  ffWRITE  }
     };
     int                                    NFILE       = (sizeof(fnm)/sizeof(fnm[0]));
     static char                           *sort[]      = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", NULL };
@@ -654,7 +669,6 @@ int alex_tune_pol(int argc, char *argv[])
     static int                             nBootStrap  = 1;
     static int                             maxwarn     = 0;
     static int                             seed;
-    static real                            fractionBootStrap = 1;
     static char                           *lot               = (char *)"B3LYP/aug-cc-pVTZ";
     static real                            sigma             = 0;
     static gmx_bool                        bZero             = FALSE, bForceFit = FALSE, bCompress = TRUE;
@@ -680,8 +694,6 @@ int alex_tune_pol(int argc, char *argv[])
           "Reset all polarizablities to zero in order to re-optimize based on a gentop.dat file with previous values" },
         { "-nBootStrap", FALSE, etINT, {&nBootStrap},
           "Number of trials for bootstrapping" },
-        { "-fractionBootStrap", FALSE, etREAL, {&fractionBootStrap},
-          "Fraction of data points to use in each trial for bootstrapping" },
         { "-seed", FALSE, etINT, {&seed},
           "Seed for random numbers in bootstrapping. If <= 0 a seed will be generated." },
         { "-exp_type", FALSE, etSTR, {&exp_type},
@@ -706,10 +718,6 @@ int alex_tune_pol(int argc, char *argv[])
                            0, NULL, &oenv))
     {
         return 0;
-    }
-    if ((fractionBootStrap < 0) || (fractionBootStrap > 1))
-    {
-        gmx_fatal(FARGS, "fractionBootStrap should be in [0..1]");
     }
     if (nBootStrap <= 0)
     {
@@ -755,8 +763,8 @@ int alex_tune_pol(int argc, char *argv[])
     nalexandria_atypes = decompose_frag(fplog, opt2fn("-his", NFILE, fnm),
                                         pd, mp, bQM, lot, mindata,
                                         gms, bZero, bForceFit,
-                                        nBootStrap, fractionBootStrap,
-                                        zpol, oenv);
+                                        nBootStrap,
+                                        zpol, oenv, exp_type);
     fprintf(fplog, "There are %d alexandria atom types\n", nalexandria_atypes);
 
     const char *pdout = opt2fn("-do", NFILE, fnm);

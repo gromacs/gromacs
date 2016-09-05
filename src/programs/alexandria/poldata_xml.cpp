@@ -52,7 +52,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "poldata.h"
 #include "poldata-low.h"
@@ -439,16 +438,6 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 }
             }
     }
-
-    /* Clean up */
-    /*for (i = 0; (i < exmlNR); i++)
-       {
-       if (xbuf[i].size() != 0)
-        {
-            sfree(xbuf[i]);
-        }
-       }*/
-
 }
 
 static void processTree(FILE *fp, xmlNodePtr tree, int indent,
