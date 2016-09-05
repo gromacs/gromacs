@@ -75,6 +75,7 @@
 #include "gromacs/mdlib/mdebin.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdlib/mdsetup.h"
 #include "gromacs/mdlib/nb_verlet.h"
 #include "gromacs/mdlib/nbnxn_gpu_data_mgmt.h"
 #include "gromacs/mdlib/ns.h"
@@ -421,28 +422,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     }
     else
     {
-        top = gmx_mtop_generate_local_top(top_global, ir->efep != efepNO);
-
         state    = serial_init_local_state(state_global);
 
-        atoms2md(top_global, ir, 0, NULL, top_global->natoms, mdatoms);
-
-        if (vsite)
-        {
-            set_vsite_top(vsite, top, mdatoms, cr);
-        }
-
-        if (ir->ePBC != epbcNONE && !fr->bMolPBC)
-        {
-            graph = mk_graph(fplog, &(top->idef), 0, top_global->natoms, FALSE, FALSE);
-        }
-
-        if (shellfc)
-        {
-            make_local_shells(cr, mdatoms, shellfc);
-        }
-
-        setup_bonded_threading(fr, &top->idef);
+        snew(top, 1);
+        mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
+                                  &graph, mdatoms, vsite, shellfc);
 
         update_realloc(upd, state->nalloc);
     }
