@@ -223,13 +223,13 @@ static void write_corr_xvg(const char                       *fn,
         fprintf(fp, "@type xydy\n");
         for (auto &mpi : mp)
         {
-            if (mpi.getMolname().compare("water") == 0)
+	  /*if (mpi.getMolname().compare("water") == 0)
             {
                 printf("%s\n", mpi.getMolname().c_str());
-            }
+		}*/
             double exp_val, exp_error;
             double Texp    = -1;
-            bool   bExp    = mpi.getProp(mpo, iqmExp, NULL, NULL,
+            bool   bExp    = mpi.getProp(mpo, iqmExp, "", "",
                                          exp_type,
                                          &exp_val, &exp_error, &Texp);
             iMolSelect ims = gms.status(mpi.getIupac());
@@ -237,7 +237,7 @@ static void write_corr_xvg(const char                       *fn,
             {
                 double Tqm  = -1;
                 double qm_val, qm_error;
-                bool   bQM  = mpi.getProp(mpo, iqmQM, LevelOfTheory, NULL,
+                bool   bQM  = mpi.getProp(mpo, iqmQM, LevelOfTheory, "",
                                           q->type().c_str(),
                                           &qm_val, &qm_error, &Tqm);
                 if (bExp && bQM)
@@ -397,7 +397,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> &mp,
                 if ((NULL != iupac) && (strlen(iupac) > 0))
                 {
                     std::string myref, mylot;
-                    if (mpi->getPropRef(mpo, iqmBoth, lot, NULL, NULL,
+                    if (mpi->getPropRef(mpo, iqmBoth, lot, "", "",
                                         &value, &error, &T, myref, mylot,
                                         vec, quadrupole))
                     {

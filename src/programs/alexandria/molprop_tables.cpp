@@ -295,13 +295,13 @@ void gmx_molprop_stats_table(FILE                 *fp,
                     double exp_err = 0;
                     double Texp    = -1;
                     bool   bQM     = false;
-                    bool   bExp    = mpi.getProp(mpo, iqmExp, NULL, NULL,
+                    bool   bExp    = mpi.getProp(mpo, iqmExp, "", "",
                                                  exp_type, &exp_val, &exp_err, &Texp);
                     if (bExp)
                     {
                         double qm_err = 0;
                         double Tqm    = -1;
-                        bQM    = mpi.getProp(mpo, iqmQM, q->lot(), NULL,
+                        bQM    = mpi.getProp(mpo, iqmQM, q->lot(), "",
                                              q->type(), &qm_val, &qm_err, &Tqm);
                         //printf("Texp %g Tqm %g bQM = %s\n", Texp, Tqm, bQM ? "true" : "false");
                         if (bQM)
@@ -361,10 +361,10 @@ void gmx_molprop_stats_table(FILE                 *fp,
             {
                 double exp_err, qm_err;
                 double Texp = -1;
-                bool   bExp = mpi->getProp(mpo, iqmExp, NULL, NULL, exp_type,
+                bool   bExp = mpi->getProp(mpo, iqmExp, "", "", exp_type,
                                            &exp_val, &exp_err, &Texp);
                 double Tqm  = Texp;
-                bool   bQM  = mpi->getProp(mpo, iqmQM, q->lot(), NULL, q->type(),
+                bool   bQM  = mpi->getProp(mpo, iqmQM, q->lot(), "", q->type(),
                                            &qm_val, &qm_err, &Tqm);
                 if (bExp && bQM)
                 {
@@ -714,11 +714,11 @@ static void gmx_molprop_atomtype_polar_table(FILE                 *fp,
                     if (bFound)
                     {
                         double val, T;
-                        if (mpi.getProp(mpo, iqmExp, lot, NULL, exp_type, &val, NULL, &T))
+                        if (mpi.getProp(mpo, iqmExp, lot, "", exp_type, &val, NULL, &T))
                         {
                             nexp++;
                         }
-                        else if (mpi.getProp(mpo, iqmQM, lot, NULL, NULL, &val, NULL, &T))
+                        else if (mpi.getProp(mpo, iqmQM, lot, "", "", &val, NULL, &T))
                         {
                             nqm++;
                         }
@@ -1111,7 +1111,7 @@ void gmx_molprop_prop_table(FILE                 *fp,
                     std::string ref, mylot;
                     double      T = ed[nexp].temp_;
                     if ((q->type().compare(exp_type) == 0) &&
-                        mpi.getPropRef(mpo, iqmQM, q->lot(), NULL,
+                        mpi.getPropRef(mpo, iqmQM, q->lot(), "",
                                        q->type(), &calc_val, &calc_err, &T,
                                        ref, mylot, dvec, quadrupole))
                     {

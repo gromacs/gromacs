@@ -483,7 +483,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         gmx_stats_get_npoints(i.lsq, &N);
         round_numbers(&av, &sig);
         atoms = {i.a1, i.a2, i.a3};
-        sprintf(pbuf, "%g",  klin);
+        sprintf(pbuf, "%g  %g",  klin, kub);
         linear_angle->addForce(atoms, pbuf, av, sig, N);
 
         fprintf(fp, "linear_angle-%s-%s-%s angle %g sigma %g (deg) N = %d%s\n",
@@ -747,9 +747,9 @@ int alex_bastat(int argc, char *argv[])
 
                         if ( (refValue > 175) || (refValue < 5))
                         {
-                            double b0  = norm(dx);
-                            double b1  = norm(dx2);
-                            refValue   = 1000*(b1/(b0+b1));
+			  //double b0  = norm(dx);
+			  //double b1  = norm(dx2);
+			  //refValue   = 1000*(b1/(b0+b1));
                             linear     = true;
                         }
 

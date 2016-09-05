@@ -371,6 +371,35 @@ static real calc_r13(const Poldata     &pd,
     return r13;
 }
 
+static real calc_relposition(const Poldata     &pd,
+			      const std::string  aai,
+			      const std::string  aaj,
+			      const std::string  aak)
+{
+    std::string              params;
+    size_t                   ntrain;
+    double                   sigma;
+    real                     rij = 0, rjk = 0;
+    real                     b0 = 0, b1 = 0;
+    real                     relative_position = 0;
+
+    std::vector<std::string> aij = {aai, aaj};
+    std::vector<std::string> ajk = {aaj, aak};
+
+    auto                     fs = pd.findForces(eitBONDS);
+    auto                     lu = string2unit(fs->unit().c_str());
+
+    pd.searchForce(aij, params, &rij, &sigma, &ntrain);
+    pd.searchForce(ajk, params, &rjk, &sigma, &ntrain);
+
+    b0 = convert2gmx(rij, lu);
+    b1 = convert2gmx(rjk, lu);
+
+    relative_position = (b1/(b0+b1));
+
+    return relative_position;
+}
+
 static void updatePlist(const Poldata             &pd,
                         std::vector<PlistWrapper> &plist,
                         t_topology                *top)
@@ -414,7 +443,8 @@ static void updatePlist(const Poldata             &pd,
                 }
             }
         }
-        else if (eitANGLES == iType)
+        else if (eitANGLES == iType ||
+		 eitLINEAR_ANGLES == iType)
         {
             for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
             {
@@ -437,34 +467,6 @@ static void updatePlist(const Poldata             &pd,
                             {
                                 b->c[n++] = r13;
                             }
-                        }
-                    }
-                }
-                else
-                {
-                    gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n",
-                              b->a[0], b->a[1], b->a[2]);
-                }
-            }
-        }
-        else if (eitLINEAR_ANGLES == iType)
-        {
-            lu = string2unit(fs->unit().c_str());
-            for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
-            {
-                if (pd.atypeToBtype(*top->atoms.atomtype[b->a[0]], aai) &&
-                    pd.atypeToBtype(*top->atoms.atomtype[b->a[1]], aaj) &&
-                    pd.atypeToBtype(*top->atoms.atomtype[b->a[2]], aak))
-                {
-                    atoms = {aai, aaj, aak};
-                    n     = 0;
-                    if ((fs->searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
-                    {
-                        b->c[n++] = convert2gmx(value, lu);
-                        ptr       = gmx::splitString(params);
-                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
-                        {
-                            b->c[n++] = atof(pi->c_str());
                         }
                     }
                 }
@@ -2507,6 +2509,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     int                      lu, n;
     double                   value, sigma, r13;
     size_t                   ntrain;
+    double                   relative_position = 0;
 
     switch (iType)
     {
@@ -2632,15 +2635,33 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     atoms = {aai, aaj, aak};
                     if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
                     {
+		        r13 = calc_r13(pd, aai, aaj, aak, value);
+
+			relative_position = calc_relposition(pd, aai, aaj, aak);
+
                         mtop_->ffparams.iparams[tp].linangle.aA     =
-                            mtop_->ffparams.iparams[tp].linangle.aB = convert2gmx(value, lu);
+                            mtop_->ffparams.iparams[tp].linangle.aB = relative_position;
+
+			mtop_->ffparams.iparams[tp].linangle.r13A     =
+                            mtop_->ffparams.iparams[tp].linangle.r13B = r13;
+
                         ptr = gmx::splitString(params);
+			n = 0;
                         for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
                         {
                             if (pi->length() > 0)
                             {
-                                mtop_->ffparams.iparams[tp].linangle.klinA     =
-                                    mtop_->ffparams.iparams[tp].linangle.klinB = atof(pi->c_str());
+			      if (n == 0)
+			      {
+                                  mtop_->ffparams.iparams[tp].linangle.klinA     =
+				    mtop_->ffparams.iparams[tp].linangle.klinB = atof(pi->c_str());
+			      }
+			      else
+                              {
+				  mtop_->ffparams.iparams[tp].linangle.kUBA     =
+				    mtop_->ffparams.iparams[tp].linangle.kUBB = atof(pi->c_str());
+			      }
+			      n++;
                             }
                         }
                     }
