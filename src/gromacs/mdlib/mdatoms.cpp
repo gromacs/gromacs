@@ -129,17 +129,14 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     groups = &mtop->groups;
 
-    /* Index==NULL indicates no DD (unless we have a DD node with no
-     * atoms), so also check for homenr. This should be
-     * signaled properly with an extra parameter or nindex==-1.
-     */
-    if (index == NULL && (homenr > 0))
+    /* nindex>=0 indicates DD where we use an index */
+    if (nindex >= 0)
     {
-        md->nr = mtop->natoms;
+        md->nr = nindex;
     }
     else
     {
-        md->nr = nindex;
+        md->nr = mtop->natoms;
     }
 
     if (md->nr > md->nalloc)

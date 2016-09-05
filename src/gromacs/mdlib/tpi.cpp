@@ -284,7 +284,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         sscanf(dump_pdb, "%20lf", &dump_ener);
     }
 
-    atoms2md(top_global, inputrec, 0, NULL, top_global->natoms, mdatoms);
+    atoms2md(top_global, inputrec, -1, NULL, top_global->natoms, mdatoms);
     update_mdatoms(mdatoms, inputrec->fepvals->init_lambda);
 
     snew(enerd, 1);
