@@ -1736,8 +1736,12 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
         case F_LINEAR_ANGLES:
             gmx_fio_do_real(fio, iparams->linangle.klinA);
             gmx_fio_do_real(fio, iparams->linangle.aA);
+	    gmx_fio_do_real(fio, iparams->linangle.r13A);
+	    gmx_fio_do_real(fio, iparams->linangle.kUBA);
             gmx_fio_do_real(fio, iparams->linangle.klinB);
             gmx_fio_do_real(fio, iparams->linangle.aB);
+	    gmx_fio_do_real(fio, iparams->linangle.r13B);
+	    gmx_fio_do_real(fio, iparams->linangle.kUBB);
             break;
         case F_FENEBONDS:
             gmx_fio_do_real(fio, iparams->fene.bm);

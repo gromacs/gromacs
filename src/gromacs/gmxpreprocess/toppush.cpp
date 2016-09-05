@@ -641,7 +641,9 @@ static void push_bondtype(t_params     *       bt,
         if (ftype == F_LINEAR_ANGLES)
         {
             bt->param[bt->nr+1].c[0] = 1-bt->param[bt->nr+1].c[0];
-            bt->param[bt->nr+1].c[2] = 1-bt->param[bt->nr+1].c[2];
+	    bt->param[bt->nr+1].c[3] = 1-bt->param[bt->nr+1].c[3];
+            bt->param[bt->nr+1].c[4] = 1-bt->param[bt->nr+1].c[4];
+	    bt->param[bt->nr+1].c[7] = 1-bt->param[bt->nr+1].c[7];
         }
 
         for (j = 0; (j < nral); j++)

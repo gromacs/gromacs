@@ -70,9 +70,9 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
                     iparams->cross_ba.r3e, iparams->cross_ba.krt);
             break;
         case F_LINEAR_ANGLES:
-            fprintf(fp, "klinA=%15.8e, aA=%15.8e, klinB=%15.8e, aB=%15.8e\n",
-                    iparams->linangle.klinA, iparams->linangle.aA,
-                    iparams->linangle.klinB, iparams->linangle.aB);
+            fprintf(fp, "klinA=%15.8e, aA=%15.8e, r13A=%15.8e, kUBA=%15.8e, klinB=%15.8e, aB=%15.8e, r13B=%15.8e, kUBB=%15.8e\n",
+                    iparams->linangle.klinA, iparams->linangle.aA, iparams->linangle.r13A, iparams->linangle.kUBA,
+                    iparams->linangle.klinB, iparams->linangle.aB, iparams->linangle.r13B, iparams->linangle.kUBB);
             break;
         case F_UREY_BRADLEY:
             fprintf(fp, "thetaA=%15.8e, kthetaA=%15.8e, r13A=%15.8e, kUBA=%15.8e, thetaB=%15.8e, kthetaB=%15.8e, r13B=%15.8e, kUBB=%15.8e\n", iparams->u_b.thetaA, iparams->u_b.kthetaA, iparams->u_b.r13A, iparams->u_b.kUBA, iparams->u_b.thetaB, iparams->u_b.kthetaB, iparams->u_b.r13B, iparams->u_b.kUBB);

@@ -208,8 +208,12 @@ assign_param(t_functype ftype, t_iparams *newparam,
         case F_LINEAR_ANGLES:
             newparam->linangle.aA    = old[0];
             newparam->linangle.klinA = old[1];
-            newparam->linangle.aB    = old[2];
-            newparam->linangle.klinB = old[3];
+	    newparam->linangle.r13A  = old[2];
+	    newparam->linangle.kUBA  = old[3];
+            newparam->linangle.aB    = old[4];
+            newparam->linangle.klinB = old[5];
+	    newparam->linangle.r13B  = old[6];
+	    newparam->linangle.kUBB  = old[7];
             break;
         case F_BONDS:
         case F_ANGLES:

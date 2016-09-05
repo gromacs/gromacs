@@ -171,7 +171,7 @@ typedef union t_iparams
         real rA, krA, rB, krB;
     } harmonic;
     struct {
-        real klinA, aA, klinB, aB;
+        real klinA, aA, r13A, kUBA, klinB, aB, r13B, kUBB;
     } linangle;
     struct {
         real lowA, up1A, up2A, kA, lowB, up1B, up2B, kB;
