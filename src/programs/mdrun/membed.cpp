@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -721,9 +721,8 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     mtop->mols.index = new_mols;
     mtop->natoms    -= n;
     state->natoms   -= n;
-    state->nalloc    = state->natoms;
-    snew(x_tmp, state->nalloc);
-    snew(v_tmp, state->nalloc);
+    snew(x_tmp, state->natoms);
+    snew(v_tmp, state->natoms);
 
     for (i = 0; i < egcNR; i++)
     {
@@ -778,10 +777,16 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
             }
         }
     }
-    sfree(state->x);
-    state->x = x_tmp;
-    sfree(state->v);
-    state->v = v_tmp;
+    for (int i = 0; i < state->natoms; i++)
+    {
+        copy_rvec(x_tmp[i], state->x[i]);
+    }
+    sfree(x_tmp);
+    for (int i = 0; i < state->natoms; i++)
+    {
+        copy_rvec(v_tmp[i], state->v[i]);
+    }
+    sfree(v_tmp);
 
     for (i = 0; i < egcNR; i++)
     {
@@ -1203,9 +1208,9 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         /* Check that moleculetypes in insertion group are not part of the rest of the system */
         check_types(ins_at, rest_at, mtop);
 
-        init_mem_at(mem_p, mtop, state->x, state->box, pos_ins);
+        init_mem_at(mem_p, mtop, as_rvec_array(state->x.data()), state->box, pos_ins);
 
-        prot_area = est_prot_area(pos_ins, state->x, ins_at, mem_p);
+        prot_area = est_prot_area(pos_ins, as_rvec_array(state->x.data()), ins_at, mem_p);
         if ( (prot_area > prot_vs_box) && ( (state->box[XX][XX]*state->box[YY][YY]-state->box[XX][YY]*state->box[YY][XX]) < box_vs_prot) )
         {
             warn++;
@@ -1235,14 +1240,14 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 
         /* resize the protein by xy and by z if necessary*/
         snew(r_ins, ins_at->nr);
-        init_resize(ins_at, r_ins, pos_ins, mem_p, state->x, bALLOW_ASYMMETRY);
+        init_resize(ins_at, r_ins, pos_ins, mem_p, as_rvec_array(state->x.data()), bALLOW_ASYMMETRY);
         membed->fac[0] = membed->fac[1] = xy_fac;
         membed->fac[2] = z_fac;
 
         membed->xy_step = (xy_max-xy_fac)/(double)(it_xy);
         membed->z_step  = (z_max-z_fac)/(double)(it_z-1);
 
-        resize(r_ins, state->x, pos_ins, membed->fac);
+        resize(r_ins, as_rvec_array(state->x.data()), pos_ins, membed->fac);
 
         /* remove overlapping lipids and water from the membrane box*/
         /*mark molecules to be removed*/
@@ -1250,7 +1255,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         set_pbc(pbc, inputrec->ePBC, state->box);
 
         snew(rm_p, 1);
-        lip_rm = gen_rm_list(rm_p, ins_at, rest_at, pbc, mtop, state->x, mem_p, pos_ins,
+        lip_rm = gen_rm_list(rm_p, ins_at, rest_at, pbc, mtop, as_rvec_array(state->x.data()), mem_p, pos_ins,
                              probe_rad, low_up_rm, bALLOW_ASYMMETRY);
         lip_rm -= low_up_rm;
 

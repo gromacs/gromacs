@@ -284,13 +284,8 @@ void dd_store_state(gmx_domdec_t *dd, t_state *state)
         gmx_incons("The state does not the domain decomposition state");
     }
 
-    state->ncg_gl = dd->ncg_home;
-    if (state->ncg_gl > state->cg_gl_nalloc)
-    {
-        state->cg_gl_nalloc = over_alloc_dd(state->ncg_gl);
-        srenew(state->cg_gl, state->cg_gl_nalloc);
-    }
-    for (i = 0; i < state->ncg_gl; i++)
+    state->cg_gl.resize(dd->ncg_home);
+    for (i = 0; i < dd->ncg_home; i++)
     {
         state->cg_gl[i] = dd->index_gl[i];
     }
@@ -1067,8 +1062,8 @@ static void dd_collect_cg(gmx_domdec_t *dd,
 
         cgs_gl = &dd->comm->cgs_gl;
 
-        ncg_home = state_local->ncg_gl;
-        cg       = state_local->cg_gl;
+        ncg_home = state_local->cg_gl.size();
+        cg       = state_local->cg_gl.data();
         nat_home = 0;
         for (i = 0; i < ncg_home; i++)
         {
@@ -1132,7 +1127,7 @@ static void dd_collect_cg(gmx_domdec_t *dd,
 }
 
 static void dd_collect_vec_sendrecv(gmx_domdec_t *dd,
-                                    rvec *lv, rvec *v)
+                                    const rvec *lv, rvec *v)
 {
     gmx_domdec_master_t *ma;
     int                  n, i, c, a, nalloc = 0;
@@ -1144,8 +1139,8 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t *dd,
     if (!DDMASTER(dd))
     {
 #if GMX_MPI
-        MPI_Send(lv, dd->nat_home*sizeof(rvec), MPI_BYTE, DDMASTERRANK(dd),
-                 dd->rank, dd->mpi_comm_all);
+        MPI_Send(const_cast<void *>(static_cast<const void *>(lv)), dd->nat_home*sizeof(rvec), MPI_BYTE,
+                 DDMASTERRANK(dd), dd->rank, dd->mpi_comm_all);
 #endif
     }
     else
@@ -1209,7 +1204,7 @@ static void get_commbuffer_counts(gmx_domdec_t *dd,
 }
 
 static void dd_collect_vec_gatherv(gmx_domdec_t *dd,
-                                   rvec *lv, rvec *v)
+                                   const rvec *lv, rvec *v)
 {
     gmx_domdec_master_t *ma;
     int                 *rcounts = NULL, *disps = NULL;
@@ -1246,10 +1241,14 @@ static void dd_collect_vec_gatherv(gmx_domdec_t *dd,
     }
 }
 
-void dd_collect_vec(gmx_domdec_t *dd,
-                    t_state *state_local, rvec *lv, rvec *v)
+void dd_collect_vec(gmx_domdec_t           *dd,
+                    t_state                *state_local,
+                    const PaddedRVecVector *localVector,
+                    rvec                   *v)
 {
     dd_collect_cg(dd, state_local);
+
+    const rvec *lv = as_rvec_array(localVector->data());
 
     if (dd->nnodes <= GMX_DD_NNODES_SENDRECV)
     {
@@ -1259,6 +1258,14 @@ void dd_collect_vec(gmx_domdec_t *dd,
     {
         dd_collect_vec_gatherv(dd, lv, v);
     }
+}
+
+void dd_collect_vec(gmx_domdec_t           *dd,
+                    t_state                *state_local,
+                    const PaddedRVecVector *localVector,
+                    PaddedRVecVector       *vector)
+{
+    dd_collect_vec(dd, state_local, localVector, as_rvec_array(vector->data()));
 }
 
 
@@ -1309,15 +1316,15 @@ void dd_collect_state(gmx_domdec_t *dd,
             switch (est)
             {
                 case estX:
-                    dd_collect_vec(dd, state_local, state_local->x, state->x);
+                    dd_collect_vec(dd, state_local, &state_local->x, &state->x);
                     break;
                 case estV:
-                    dd_collect_vec(dd, state_local, state_local->v, state->v);
+                    dd_collect_vec(dd, state_local, &state_local->v, &state->v);
                     break;
                 case est_SDX_NOTSUPPORTED:
                     break;
                 case estCGP:
-                    dd_collect_vec(dd, state_local, state_local->cg_p, state->cg_p);
+                    dd_collect_vec(dd, state_local, &state_local->cg_p, &state->cg_p);
                     break;
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
@@ -1331,16 +1338,14 @@ void dd_collect_state(gmx_domdec_t *dd,
     }
 }
 
-static void dd_realloc_state(t_state *state, rvec **f, int nalloc)
+static void dd_resize_state(t_state *state, PaddedRVecVector *f, int natoms)
 {
     int est;
 
     if (debug)
     {
-        fprintf(debug, "Reallocating state: currently %d, required %d, allocating %d\n", state->nalloc, nalloc, over_alloc_dd(nalloc));
+        fprintf(debug, "Resizing state: currently %d, required %d\n", state->natoms, natoms);
     }
-
-    state->nalloc = over_alloc_dd(nalloc);
 
     for (est = 0; est < estNR; est++)
     {
@@ -1352,15 +1357,15 @@ static void dd_realloc_state(t_state *state, rvec **f, int nalloc)
             switch (est)
             {
                 case estX:
-                    srenew(state->x, state->nalloc + 1);
+                    state->x.resize(natoms + 1);
                     break;
                 case estV:
-                    srenew(state->v, state->nalloc + 1);
+                    state->v.resize(natoms + 1);
                     break;
                 case est_SDX_NOTSUPPORTED:
                     break;
                 case estCGP:
-                    srenew(state->cg_p, state->nalloc + 1);
+                    state->cg_p.resize(natoms + 1);
                     break;
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
@@ -1369,39 +1374,41 @@ static void dd_realloc_state(t_state *state, rvec **f, int nalloc)
                     /* No reallocation required */
                     break;
                 default:
-                    gmx_incons("Unknown state entry encountered in dd_realloc_state");
+                    gmx_incons("Unknown state entry encountered in dd_resize_state");
             }
         }
     }
 
     if (f != NULL)
     {
-        srenew(*f, state->nalloc);
+        (*f).resize(natoms + 1);
     }
 }
 
-static void dd_check_alloc_ncg(t_forcerec *fr, t_state *state, rvec **f,
-                               int nalloc)
+static void dd_check_alloc_ncg(t_forcerec       *fr,
+                               t_state          *state,
+                               PaddedRVecVector *f,
+                               int               numChargeGroups)
 {
-    if (nalloc > fr->cg_nalloc)
+    if (numChargeGroups > fr->cg_nalloc)
     {
         if (debug)
         {
-            fprintf(debug, "Reallocating forcerec: currently %d, required %d, allocating %d\n", fr->cg_nalloc, nalloc, over_alloc_dd(nalloc));
+            fprintf(debug, "Reallocating forcerec: currently %d, required %d, allocating %d\n", fr->cg_nalloc, numChargeGroups, over_alloc_dd(numChargeGroups));
         }
-        fr->cg_nalloc = over_alloc_dd(nalloc);
+        fr->cg_nalloc = over_alloc_dd(numChargeGroups);
         srenew(fr->cginfo, fr->cg_nalloc);
         if (fr->cutoff_scheme == ecutsGROUP)
         {
             srenew(fr->cg_cm, fr->cg_nalloc);
         }
     }
-    if (fr->cutoff_scheme == ecutsVERLET && nalloc > state->nalloc)
+    if (fr->cutoff_scheme == ecutsVERLET)
     {
         /* We don't use charge groups, we use x in state to set up
          * the atom communication.
          */
-        dd_realloc_state(state, f, nalloc);
+        dd_resize_state(state, f, numChargeGroups);
     }
 }
 
@@ -1544,7 +1551,7 @@ static void dd_distribute_dfhist(gmx_domdec_t *dd, df_history_t *dfhist)
 
 static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
                                 t_state *state, t_state *state_local,
-                                rvec **f)
+                                PaddedRVecVector *f)
 {
     int  i, j, nh;
 
@@ -1586,7 +1593,7 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
             }
         }
     }
-    dd_bcast(dd, ((efptNR)*sizeof(real)), state_local->lambda);
+    dd_bcast(dd, ((efptNR)*sizeof(real)), state_local->lambda.data());
     dd_bcast(dd, sizeof(int), &state_local->fep_state);
     dd_bcast(dd, sizeof(real), &state_local->veta);
     dd_bcast(dd, sizeof(real), &state_local->vol0);
@@ -1595,19 +1602,17 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
     dd_bcast(dd, sizeof(state_local->boxv), state_local->boxv);
     dd_bcast(dd, sizeof(state_local->svir_prev), state_local->svir_prev);
     dd_bcast(dd, sizeof(state_local->fvir_prev), state_local->fvir_prev);
-    dd_bcast(dd, ((state_local->ngtc*nh)*sizeof(double)), state_local->nosehoover_xi);
-    dd_bcast(dd, ((state_local->ngtc*nh)*sizeof(double)), state_local->nosehoover_vxi);
-    dd_bcast(dd, state_local->ngtc*sizeof(double), state_local->therm_integral);
-    dd_bcast(dd, ((state_local->nnhpres*nh)*sizeof(double)), state_local->nhpres_xi);
-    dd_bcast(dd, ((state_local->nnhpres*nh)*sizeof(double)), state_local->nhpres_vxi);
+    dd_bcast(dd, ((state_local->ngtc*nh)*sizeof(double)), state_local->nosehoover_xi.data());
+    dd_bcast(dd, ((state_local->ngtc*nh)*sizeof(double)), state_local->nosehoover_vxi.data());
+    dd_bcast(dd, state_local->ngtc*sizeof(double), state_local->therm_integral.data());
+    dd_bcast(dd, ((state_local->nnhpres*nh)*sizeof(double)), state_local->nhpres_xi.data());
+    dd_bcast(dd, ((state_local->nnhpres*nh)*sizeof(double)), state_local->nhpres_vxi.data());
 
     /* communicate df_history -- required for restarting from checkpoint */
     dd_distribute_dfhist(dd, state_local->dfhist);
 
-    if (dd->nat_home > state_local->nalloc)
-    {
-        dd_realloc_state(state_local, f, dd->nat_home);
-    }
+    dd_resize_state(state_local, f, dd->nat_home);
+
     for (i = 0; i < estNR; i++)
     {
         if (EST_DISTR(i) && (state_local->flags & (1<<i)))
@@ -1615,15 +1620,15 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
             switch (i)
             {
                 case estX:
-                    dd_distribute_vec(dd, cgs, state->x, state_local->x);
+                    dd_distribute_vec(dd, cgs, as_rvec_array(state->x.data()), as_rvec_array(state_local->x.data()));
                     break;
                 case estV:
-                    dd_distribute_vec(dd, cgs, state->v, state_local->v);
+                    dd_distribute_vec(dd, cgs, as_rvec_array(state->v.data()), as_rvec_array(state_local->v.data()));
                     break;
                 case est_SDX_NOTSUPPORTED:
                     break;
                 case estCGP:
-                    dd_distribute_vec(dd, cgs, state->cg_p, state_local->cg_p);
+                    dd_distribute_vec(dd, cgs, as_rvec_array(state->cg_p.data()), as_rvec_array(state_local->cg_p.data()));
                     break;
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
@@ -2150,23 +2155,22 @@ static void set_zones_ncg_home(gmx_domdec_t *dd)
 static void rebuild_cgindex(gmx_domdec_t *dd,
                             const int *gcgs_index, t_state *state)
 {
-    int nat, i, *ind, *dd_cg_gl, *cgindex, cg_gl;
+    int nat, *dd_cg_gl, *cgindex, cg_gl;
 
-    ind        = state->cg_gl;
     dd_cg_gl   = dd->index_gl;
     cgindex    = dd->cgindex;
     nat        = 0;
     cgindex[0] = nat;
-    for (i = 0; i < state->ncg_gl; i++)
+    for (unsigned int i = 0; i < state->cg_gl.size(); i++)
     {
         cgindex[i]  = nat;
-        cg_gl       = ind[i];
+        cg_gl       = dd->index_gl[i];
         dd_cg_gl[i] = cg_gl;
         nat        += gcgs_index[cg_gl+1] - gcgs_index[cg_gl];
     }
-    cgindex[i] = nat;
+    cgindex[state->cg_gl.size()] = nat;
 
-    dd->ncg_home = state->ncg_gl;
+    dd->ncg_home = state->cg_gl.size();
     dd->nat_home = nat;
 
     set_zones_ncg_home(dd);
@@ -4229,7 +4233,7 @@ static void calc_cg_move(FILE *fplog, gmx_int64_t step,
                     if (pos_d >= limit1[d])
                     {
                         cg_move_error(fplog, dd, step, cg, d, 1,
-                                      cg_cm != state->x, limitd[d],
+                                      cg_cm != as_rvec_array(state->x.data()), limitd[d],
                                       cg_cm[cg], cm_new, pos_d);
                     }
                     dev[d] = 1;
@@ -4256,7 +4260,7 @@ static void calc_cg_move(FILE *fplog, gmx_int64_t step,
                     if (pos_d < limit0[d])
                     {
                         cg_move_error(fplog, dd, step, cg, d, -1,
-                                      cg_cm != state->x, limitd[d],
+                                      cg_cm != as_rvec_array(state->x.data()), limitd[d],
                                       cg_cm[cg], cm_new, pos_d);
                     }
                     dev[d] = -1;
@@ -4340,7 +4344,7 @@ static void calc_cg_move(FILE *fplog, gmx_int64_t step,
 
 static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                                gmx_domdec_t *dd, ivec tric_dir,
-                               t_state *state, rvec **f,
+                               t_state *state, PaddedRVecVector *f,
                                t_forcerec *fr,
                                gmx_bool bCompact,
                                t_nrnb *nrnb,
@@ -4469,7 +4473,7 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                          cgindex,
                          ( thread   *dd->ncg_home)/nthread,
                          ((thread+1)*dd->ncg_home)/nthread,
-                         fr->cutoff_scheme == ecutsGROUP ? cg_cm : state->x,
+                         fr->cutoff_scheme == ecutsGROUP ? cg_cm : as_rvec_array(state->x.data()),
                          move);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -4548,7 +4552,7 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
              */
             home_pos_cg =
                 compact_and_copy_vec_cg(dd->ncg_home, move, cgindex,
-                                        nvec, state->x, comm, FALSE);
+                                        nvec, as_rvec_array(state->x.data()), comm, FALSE);
             if (bCompact)
             {
                 home_pos_cg -= *ncg_moved;
@@ -4562,16 +4566,19 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     vec         = 0;
     home_pos_at =
         compact_and_copy_vec_at(dd->ncg_home, move, cgindex,
-                                nvec, vec++, state->x, comm, bCompact);
+                                nvec, vec++, as_rvec_array(state->x.data()),
+                                comm, bCompact);
     if (bV)
     {
         compact_and_copy_vec_at(dd->ncg_home, move, cgindex,
-                                nvec, vec++, state->v, comm, bCompact);
+                                nvec, vec++, as_rvec_array(state->v.data()),
+                                comm, bCompact);
     }
     if (bCGP)
     {
         compact_and_copy_vec_at(dd->ncg_home, move, cgindex,
-                                nvec, vec++, state->cg_p, comm, bCompact);
+                                nvec, vec++, as_rvec_array(state->cg_p.data()),
+                                comm, bCompact);
     }
 
     if (bCompact)
@@ -4645,6 +4652,13 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                              comm->vbuf.v+nvr, i);
             ncg_recv += rbuf[0];
             nvr      += i;
+        }
+
+        dd_check_alloc_ncg(fr, state, f, home_pos_cg + ncg_recv);
+        if (fr->cutoff_scheme == ecutsGROUP)
+        {
+            /* Here we resize to more than necessary (but group is obsolete) */
+            dd_resize_state(state, f, home_pos_at + ncg_recv*MAX_CGCGSIZE);
         }
 
         /* Process the received charge groups */
@@ -4759,7 +4773,6 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 dd->index_gl[home_pos_cg]  = comm->buf_int[cg*DD_CGIBS];
                 dd->cgindex[home_pos_cg+1] = dd->cgindex[home_pos_cg] + nrcg;
                 /* Copy the state from the buffer */
-                dd_check_alloc_ncg(fr, state, f, home_pos_cg+1);
                 if (fr->cutoff_scheme == ecutsGROUP)
                 {
                     cg_cm = fr->cg_cm;
@@ -4775,10 +4788,6 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                     comm->bLocalCG[dd->index_gl[home_pos_cg]] = TRUE;
                 }
 
-                if (home_pos_at+nrcg > state->nalloc)
-                {
-                    dd_realloc_state(state, f, home_pos_at+nrcg);
-                }
                 for (i = 0; i < nrcg; i++)
                 {
                     copy_rvec(comm->vbuf.v[buf_pos++],
@@ -7217,7 +7226,7 @@ static gmx_bool test_dd_cutoff(t_commrec *cr,
     dd = cr->dd;
 
     set_ddbox(dd, FALSE, cr, ir, state->box,
-              TRUE, &dd->comm->cgs_gl, state->x, &ddbox);
+              TRUE, &dd->comm->cgs_gl, as_rvec_array(state->x.data()), &ddbox);
 
     LocallyLimited = 0;
 
@@ -7881,7 +7890,8 @@ get_zone_pulse_cgs(gmx_domdec_t *dd,
 
 static void setup_dd_communication(gmx_domdec_t *dd,
                                    matrix box, gmx_ddbox_t *ddbox,
-                                   t_forcerec *fr, t_state *state, rvec **f)
+                                   t_forcerec *fr,
+                                   t_state *state, PaddedRVecVector *f)
 {
     int                    dim_ind, dim, dim0, dim1, dim2, dimd, p, nat_tot;
     int                    nzone, nzone_send, zone, zonei, cg0, cg1;
@@ -7928,7 +7938,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             cg_cm = fr->cg_cm;
             break;
         case ecutsVERLET:
-            cg_cm = state->x;
+            cg_cm = as_rvec_array(state->x.data());
             break;
         default:
             gmx_incons("unimplemented");
@@ -8266,7 +8276,7 @@ static void setup_dd_communication(gmx_domdec_t *dd,
             }
             else
             {
-                cg_cm = state->x;
+                cg_cm = as_rvec_array(state->x.data());
             }
             /* Communicate cg_cm */
             if (cd->bInPlace)
@@ -8908,15 +8918,15 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
             switch (i)
             {
                 case estX:
-                    order_vec_atom(dd->ncg_home, cgindex, cgsort, state->x, vbuf);
+                    order_vec_atom(dd->ncg_home, cgindex, cgsort, as_rvec_array(state->x.data()), vbuf);
                     break;
                 case estV:
-                    order_vec_atom(dd->ncg_home, cgindex, cgsort, state->v, vbuf);
+                    order_vec_atom(dd->ncg_home, cgindex, cgsort, as_rvec_array(state->v.data()), vbuf);
                     break;
                 case est_SDX_NOTSUPPORTED:
                     break;
                 case estCGP:
-                    order_vec_atom(dd->ncg_home, cgindex, cgsort, state->cg_p, vbuf);
+                    order_vec_atom(dd->ncg_home, cgindex, cgsort, as_rvec_array(state->cg_p.data()), vbuf);
                     break;
                 case estLD_RNG:
                 case estLD_RNGI:
@@ -9090,7 +9100,7 @@ void dd_partition_system(FILE                *fplog,
                          const gmx_mtop_t    *top_global,
                          const t_inputrec    *ir,
                          t_state             *state_local,
-                         rvec               **f,
+                         PaddedRVecVector    *f,
                          t_mdatoms           *mdatoms,
                          gmx_localtop_t      *top_local,
                          t_forcerec          *fr,
@@ -9251,10 +9261,10 @@ void dd_partition_system(FILE                *fplog,
         ncgindex_set = 0;
 
         set_ddbox(dd, bMasterState, cr, ir, state_global->box,
-                  TRUE, cgs_gl, state_global->x, &ddbox);
+                  TRUE, cgs_gl, as_rvec_array(state_global->x.data()), &ddbox);
 
         get_cg_distribution(fplog, dd, cgs_gl,
-                            state_global->box, &ddbox, state_global->x);
+                            state_global->box, &ddbox, as_rvec_array(state_global->x.data()));
 
         dd_distribute_state(dd, cgs_gl,
                             state_global, state_local, f);
@@ -9267,7 +9277,7 @@ void dd_partition_system(FILE                *fplog,
         if (fr->cutoff_scheme == ecutsGROUP)
         {
             calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, state_local->x, fr->cg_cm);
+                      &top_local->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
         }
 
         inc_nrnb(nrnb, eNR_CGCM, dd->nat_home);
@@ -9298,7 +9308,7 @@ void dd_partition_system(FILE                *fplog,
         {
             /* Redetermine the cg COMs */
             calc_cgcm(fplog, 0, dd->ncg_home,
-                      &top_local->cgs, state_local->x, fr->cg_cm);
+                      &top_local->cgs, as_rvec_array(state_local->x.data()), fr->cg_cm);
         }
 
         inc_nrnb(nrnb, eNR_CGCM, dd->nat_home);
@@ -9306,7 +9316,7 @@ void dd_partition_system(FILE                *fplog,
         dd_set_cginfo(dd->index_gl, 0, dd->ncg_home, fr, comm->bLocalCG);
 
         set_ddbox(dd, bMasterState, cr, ir, state_local->box,
-                  TRUE, &top_local->cgs, state_local->x, &ddbox);
+                  TRUE, &top_local->cgs, as_rvec_array(state_local->x.data()), &ddbox);
 
         bRedist = dlbIsOn(comm);
     }
@@ -9325,7 +9335,7 @@ void dd_partition_system(FILE                *fplog,
             copy_rvec(comm->box_size, ddbox.box_size);
         }
         set_ddbox(dd, bMasterState, cr, ir, state_local->box,
-                  bNStGlobalComm, &top_local->cgs, state_local->x, &ddbox);
+                  bNStGlobalComm, &top_local->cgs, as_rvec_array(state_local->x.data()), &ddbox);
 
         bBoxChanged = TRUE;
         bRedist     = TRUE;
@@ -9414,7 +9424,7 @@ void dd_partition_system(FILE                *fplog,
                                   0, dd->ncg_home,
                                   comm->zones.dens_zone0,
                                   fr->cginfo,
-                                  state_local->x,
+                                  as_rvec_array(state_local->x.data()),
                                   ncg_moved, bRedist ? comm->moved : NULL,
                                   fr->nbv->grp[eintLocal].kernel_type,
                                   fr->nbv->grp[eintLocal].nbat);
@@ -9478,7 +9488,7 @@ void dd_partition_system(FILE                *fplog,
 
     /*
        write_dd_pdb("dd_home",step,"dump",top_global,cr,
-                 -1,state_local->x,state_local->box);
+                 -1,as_rvec_array(state_local->x.data()),state_local->box);
      */
 
     wallcycle_sub_start(wcycle, ewcsDD_MAKETOP);
@@ -9491,7 +9501,7 @@ void dd_partition_system(FILE                *fplog,
     dd_make_local_top(dd, &comm->zones, dd->npbcdim, state_local->box,
                       comm->cellsize_min, np,
                       fr,
-                      fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : state_local->x,
+                      fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : as_rvec_array(state_local->x.data()),
                       vsite, top_global, top_local);
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
@@ -9533,10 +9543,8 @@ void dd_partition_system(FILE                *fplog,
      * or constraint communication.
      */
     state_local->natoms = comm->nat[ddnatNR-1];
-    if (state_local->natoms > state_local->nalloc)
-    {
-        dd_realloc_state(state_local, f, state_local->natoms);
-    }
+
+    dd_resize_state(state_local, f, state_local->natoms);
 
     if (fr->bF_NoVirSum)
     {
@@ -9626,15 +9634,15 @@ void dd_partition_system(FILE                *fplog,
      * the last vsite construction, we need to communicate the constructing
      * atom coordinates again (for spreading the forces this MD step).
      */
-    dd_move_x_vsites(dd, state_local->box, state_local->x);
+    dd_move_x_vsites(dd, state_local->box, as_rvec_array(state_local->x.data()));
 
     wallcycle_sub_stop(wcycle, ewcsDD_TOPOTHER);
 
     if (comm->nstDDDump > 0 && step % comm->nstDDDump == 0)
     {
-        dd_move_x(dd, state_local->box, state_local->x);
+        dd_move_x(dd, state_local->box, as_rvec_array(state_local->x.data()));
         write_dd_pdb("dd_dump", step, "dump", top_global, cr,
-                     -1, state_local->x, state_local->box);
+                     -1, as_rvec_array(state_local->x.data()), state_local->box);
     }
 
     /* Store the partitioning step */

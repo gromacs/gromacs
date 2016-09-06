@@ -732,7 +732,7 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     }
 }
 
-void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
+void sum_dhdl(gmx_enerdata_t *enerd, const std::vector<real> *lambda, t_lambda *fepvals)
 {
     int    i, j, index;
     double dlam;
@@ -814,7 +814,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
         for (j = 0; j < efptNR; j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
-            dlam = (fepvals->all_lambda[j][i]-lambda[j]);
+            dlam = (fepvals->all_lambda[j][i] - (*lambda)[j]);
             enerd->enerpart_lambda[i+1] += dlam*enerd->dvdl_lin[j];
             if (debug)
             {

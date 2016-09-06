@@ -146,72 +146,6 @@ int multisim_min(const gmx_multisim_t *ms, int nmin, int n)
     return nmin;
 }
 
-void copy_coupling_state(t_state *statea, t_state *stateb,
-                         gmx_ekindata_t *ekinda, gmx_ekindata_t *ekindb, t_grpopts* opts)
-{
-
-    /* MRS note -- might be able to get rid of some of the arguments.  Look over it when it's all debugged */
-
-    int i, j, nc;
-
-    /* Make sure we have enough space for x and v */
-    if (statea->nalloc > stateb->nalloc)
-    {
-        stateb->nalloc = statea->nalloc;
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries.
-         */
-        srenew(stateb->x, stateb->nalloc + 1);
-        srenew(stateb->v, stateb->nalloc + 1);
-    }
-
-    stateb->natoms     = statea->natoms;
-    stateb->ngtc       = statea->ngtc;
-    stateb->nnhpres    = statea->nnhpres;
-    stateb->veta       = statea->veta;
-    if (ekinda)
-    {
-        copy_mat(ekinda->ekin, ekindb->ekin);
-        for (i = 0; i < stateb->ngtc; i++)
-        {
-            ekindb->tcstat[i].T  = ekinda->tcstat[i].T;
-            ekindb->tcstat[i].Th = ekinda->tcstat[i].Th;
-            copy_mat(ekinda->tcstat[i].ekinh, ekindb->tcstat[i].ekinh);
-            copy_mat(ekinda->tcstat[i].ekinf, ekindb->tcstat[i].ekinf);
-            ekindb->tcstat[i].ekinscalef_nhc =  ekinda->tcstat[i].ekinscalef_nhc;
-            ekindb->tcstat[i].ekinscaleh_nhc =  ekinda->tcstat[i].ekinscaleh_nhc;
-            ekindb->tcstat[i].vscale_nhc     =  ekinda->tcstat[i].vscale_nhc;
-        }
-    }
-    copy_rvecn(statea->x, stateb->x, 0, stateb->natoms);
-    copy_rvecn(statea->v, stateb->v, 0, stateb->natoms);
-    copy_mat(statea->box, stateb->box);
-    copy_mat(statea->box_rel, stateb->box_rel);
-    copy_mat(statea->boxv, stateb->boxv);
-
-    for (i = 0; i < stateb->ngtc; i++)
-    {
-        nc = i*opts->nhchainlength;
-        for (j = 0; j < opts->nhchainlength; j++)
-        {
-            stateb->nosehoover_xi[nc+j]  = statea->nosehoover_xi[nc+j];
-            stateb->nosehoover_vxi[nc+j] = statea->nosehoover_vxi[nc+j];
-        }
-    }
-    if (stateb->nhpres_xi != NULL)
-    {
-        for (i = 0; i < stateb->nnhpres; i++)
-        {
-            nc = i*opts->nhchainlength;
-            for (j = 0; j < opts->nhchainlength; j++)
-            {
-                stateb->nhpres_xi[nc+j]  = statea->nhpres_xi[nc+j];
-                stateb->nhpres_vxi[nc+j] = statea->nhpres_vxi[nc+j];
-            }
-        }
-    }
-}
-
 real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state, t_extmass *MassQ)
 {
     real quantity = 0;
@@ -225,7 +159,7 @@ real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state, t_extmass 
             quantity = NPT_energy(ir, state, MassQ);
             break;
         case etcVRESCALE:
-            quantity = vrescale_energy(&(ir->opts), state->therm_integral);
+            quantity = vrescale_energy(&(ir->opts), state->therm_integral.data());
             break;
         default:
             break;
@@ -291,7 +225,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     if (bStopCM)
     {
         calc_vcm_grp(0, mdatoms->homenr, mdatoms,
-                     state->x, state->v, vcm);
+                     as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), vcm);
     }
 
     if (bTemp || bStopCM || bPres || bEner || bConstrain)
@@ -326,7 +260,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     {
         correct_ekin(debug,
                      0, mdatoms->homenr,
-                     state->v, vcm->group_p[0],
+                     as_rvec_array(state->v.data()), vcm->group_p[0],
                      mdatoms->massT, mdatoms->tmass, ekind->ekin);
     }
 
@@ -335,7 +269,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     {
         check_cm_grp(fplog, vcm, ir, 1);
         do_stopcm_grp(0, mdatoms->homenr, mdatoms->cVCM,
-                      state->x, state->v, vcm);
+                      as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), vcm);
         inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
     }
 
@@ -658,33 +592,18 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         state->flags |= (1<<estFEPSTATE);
     }
     state->flags |= (1<<estX);
-    if (state->lambda == NULL)
-    {
-        snew(state->lambda, efptNR);
-    }
-    if (state->x == NULL)
-    {
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries.
-         */
-        snew(state->x, state->nalloc + 1);
-    }
+    state->lambda.resize(efptNR);
+    GMX_RELEASE_ASSERT(state->x.size() >= static_cast<unsigned int>(state->natoms), "We should start a run with an initialized state->x");
     if (EI_DYNAMICS(ir->eI))
     {
         state->flags |= (1<<estV);
-        if (state->v == NULL)
-        {
-            snew(state->v, state->nalloc + 1);
-        }
+        state->v.resize(state->natoms + 1);
     }
     if (ir->eI == eiCG)
     {
         state->flags |= (1<<estCGP);
-        if (state->cg_p == NULL)
-        {
-            /* cg_p is not stored in the tpx file, so we need to allocate it */
-            snew(state->cg_p, state->nalloc + 1);
-        }
+        /* cg_p is not stored in the tpx file, so we need to allocate it */
+        state->cg_p.resize(state->natoms + 1);
     }
 
     state->nnhpres = 0;
