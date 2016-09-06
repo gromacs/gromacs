@@ -168,7 +168,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     gmx_localtop_t *top;
     gmx_groups_t   *groups;
     gmx_enerdata_t *enerd;
-    rvec           *f;
+    PaddedRVecVector f{};
     real            lambda, t, temp, beta, drmax, epot;
     double          embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
     t_trxstatus    *status;
@@ -289,7 +289,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     snew(enerd, 1);
     init_enerdata(groups->grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
-    snew(f, top_global->natoms);
+    f.resize(top_global->natoms + 1);
 
     /* Print to log file  */
     walltime_accounting_start(walltime_accounting);
@@ -321,7 +321,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     }
     bRFExcl = (bCharge && EEL_RF(fr->eeltype));
 
-    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), state_global->x, fr->cg_cm);
+    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), as_rvec_array(state_global->x.data()), fr->cg_cm);
     if (bCavity)
     {
         if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist && fplog)
@@ -629,7 +629,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                     copy_rvec(x_mol[i-a_tp0], state_global->x[i]);
                 }
                 /* Rotate the molecule randomly */
-                rotate_conf(a_tp1-a_tp0, state_global->x+a_tp0, NULL,
+                rotate_conf(a_tp1-a_tp0, as_rvec_array(state_global->x.data())+a_tp0, NULL,
                             2*M_PI*dist(rng),
                             2*M_PI*dist(rng),
                             2*M_PI*dist(rng));
@@ -659,8 +659,8 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             cr->nnodes = 1;
             do_force(fplog, cr, inputrec,
                      step, nrnb, wcycle, top, &top_global->groups,
-                     state_global->box, state_global->x, &state_global->hist,
-                     f, force_vir, mdatoms, enerd, fcd,
+                     state_global->box, &state_global->x, &state_global->hist,
+                     &f, force_vir, mdatoms, enerd, fcd,
                      state_global->lambda,
                      NULL, fr, NULL, mu_tot, t, NULL, NULL, FALSE,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
@@ -782,7 +782,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             {
                 sprintf(str, "t%g_step%d.pdb", t, (int)step);
                 sprintf(str2, "t: %f step %d ener: %f", t, (int)step, epot);
-                write_sto_conf_mtop(str, str2, top_global, state_global->x, state_global->v,
+                write_sto_conf_mtop(str, str2, top_global, as_rvec_array(state_global->x.data()), as_rvec_array(state_global->v.data()),
                                     inputrec->ePBC, state_global->box);
             }
 

@@ -265,7 +265,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      rvec *f_local)
+                                      PaddedRVecVector *f_local)
 {
     rvec *f_global;
 
@@ -279,13 +279,13 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
         {
             if (mdof_flags & (MDOF_X | MDOF_X_COMPRESSED))
             {
-                dd_collect_vec(cr->dd, state_local, state_local->x,
-                               state_global->x);
+                dd_collect_vec(cr->dd, state_local, &state_local->x,
+                               &state_global->x);
             }
             if (mdof_flags & MDOF_V)
             {
-                dd_collect_vec(cr->dd, state_local, state_local->v,
-                               state_global->v);
+                dd_collect_vec(cr->dd, state_local, &state_local->v,
+                               &state_global->v);
             }
         }
         f_global = of->f_global;
@@ -299,7 +299,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
         /* We have the whole state locally: copy the local state pointer */
         state_global = state_local;
 
-        f_global     = f_local;
+        f_global     = as_rvec_array((*f_local).data());
     }
 
     if (MASTER(cr))
@@ -319,13 +319,15 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
         {
+            const rvec *x = (mdof_flags & MDOF_X) ? as_rvec_array(state_global->x.data()) : NULL;
+            const rvec *v = (mdof_flags & MDOF_V) ? as_rvec_array(state_global->v.data()) : NULL;
+            const rvec *f = (mdof_flags & MDOF_F) ? f_global : NULL;
+
             if (of->fp_trn)
             {
                 gmx_trr_write_frame(of->fp_trn, step, t, state_local->lambda[efptFEP],
                                     state_local->box, top_global->natoms,
-                                    (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                                    (mdof_flags & MDOF_V) ? state_global->v : NULL,
-                                    (mdof_flags & MDOF_F) ? f_global : NULL);
+                                    x, v, f);
                 if (gmx_fio_flush(of->fp_trn) != 0)
                 {
                     gmx_file("Cannot write trajectory; maybe you are out of disk space?");
@@ -339,9 +341,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 gmx_fwrite_tng(of->tng, FALSE, step, t, state_local->lambda[efptFEP],
                                state_local->box,
                                top_global->natoms,
-                               (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                               (mdof_flags & MDOF_V) ? state_global->v : NULL,
-                               (mdof_flags & MDOF_F) ? f_global : NULL);
+                               x, v, f);
             }
             /* If only a TNG file is open for compressed coordinate output (no uncompressed
                coordinate output) also write forces and velocities to it. */
@@ -350,9 +350,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 gmx_fwrite_tng(of->tng_low_prec, FALSE, step, t, state_local->lambda[efptFEP],
                                state_local->box,
                                top_global->natoms,
-                               (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                               (mdof_flags & MDOF_V) ? state_global->v : NULL,
-                               (mdof_flags & MDOF_F) ? f_global : NULL);
+                               x, v, f);
             }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
@@ -363,7 +361,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
             {
                 /* We are writing the positions of all of the atoms to
                    the compressed output */
-                xxtc = state_global->x;
+                xxtc = as_rvec_array(state_global->x.data());
             }
             else
             {

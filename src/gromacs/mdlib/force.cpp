@@ -732,7 +732,7 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     }
 }
 
-void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
+void sum_dhdl(gmx_enerdata_t *enerd, const std::vector<real> lambda, t_lambda *fepvals)
 {
     int    i, j, index;
     double dlam;

@@ -1923,12 +1923,12 @@ void do_force(FILE *fplog, t_commrec *cr,
               gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
               gmx_groups_t *groups,
-              matrix box, rvec x[], history_t *hist,
-              rvec f[],
+              matrix box, PaddedRVecVector *coordinates, history_t *hist,
+              PaddedRVecVector *force,
               tensor vir_force,
               t_mdatoms *mdatoms,
               gmx_enerdata_t *enerd, t_fcdata *fcd,
-              real *lambda, t_graph *graph,
+              std::vector<real> lambda, t_graph *graph,
               t_forcerec *fr,
               gmx_vsite_t *vsite, rvec mu_tot,
               double t, FILE *field, gmx_edsam_t ed,
@@ -1941,6 +1941,12 @@ void do_force(FILE *fplog, t_commrec *cr,
         flags &= ~GMX_FORCE_NONBONDED;
     }
 
+    GMX_ASSERT((*coordinates).size() >= static_cast<unsigned int>(fr->natoms_force + 1), "We might need 1 element extra for SIMD");
+    GMX_ASSERT((*force).size() >= static_cast<unsigned int>(fr->natoms_force + 1), "We might need 1 element extra for SIMD");
+
+    rvec *x = as_rvec_array((*coordinates).data());
+    rvec *f = as_rvec_array((*force).data());
+
     switch (inputrec->cutoff_scheme)
     {
         case ecutsVERLET:
@@ -1952,7 +1958,7 @@ void do_force(FILE *fplog, t_commrec *cr,
                                 f, vir_force,
                                 mdatoms,
                                 enerd, fcd,
-                                lambda, graph,
+                                lambda.data(), graph,
                                 fr, fr->ic,
                                 vsite, mu_tot,
                                 t, field, ed,
@@ -1968,7 +1974,7 @@ void do_force(FILE *fplog, t_commrec *cr,
                                f, vir_force,
                                mdatoms,
                                enerd, fcd,
-                               lambda, graph,
+                               lambda.data(), graph,
                                fr, vsite, mu_tot,
                                t, field, ed,
                                bBornRadii,
@@ -2017,7 +2023,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
     /* constrain the current position */
     constrain(NULL, TRUE, FALSE, constr, &(top->idef),
               ir, cr, step, 0, 1.0, md,
-              state->x, state->x, NULL,
+              as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), NULL,
               fr->bMolPBC, state->box,
               state->lambda[efptBONDED], &dvdl_dum,
               NULL, NULL, nrnb, econqCoord);
@@ -2027,7 +2033,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
         constrain(NULL, TRUE, FALSE, constr, &(top->idef),
                   ir, cr, step, 0, 1.0, md,
-                  state->x, state->v, state->v,
+                  as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
                   NULL, NULL, nrnb, econqVeloc);
@@ -2057,10 +2063,10 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
         dvdl_dum = 0;
         constrain(NULL, TRUE, FALSE, constr, &(top->idef),
                   ir, cr, step, -1, 1.0, md,
-                  state->x, savex, NULL,
+                  as_rvec_array(state->x.data()), savex, NULL,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
-                  state->v, NULL, nrnb, econqCoord);
+                  as_rvec_array(state->v.data()), NULL, nrnb, econqCoord);
 
         for (i = start; i < end; i++)
         {
@@ -2648,60 +2654,51 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
     }
 }
 
-extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, real *lambda, double *lam0)
+extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, std::vector<real> *lambda, double *lam0)
 {
     /* this function works, but could probably use a logic rewrite to keep all the different
        types of efep straight. */
 
-    int       i;
-    t_lambda *fep = ir->fepvals;
-
     if ((ir->efep == efepNO) && (ir->bSimTemp == FALSE))
     {
-        for (i = 0; i < efptNR; i++)
-        {
-            lambda[i] = 0.0;
-            if (lam0)
-            {
-                lam0[i] = 0.0;
-            }
-        }
         return;
     }
-    else
+
+    t_lambda *fep = ir->fepvals;
+    *fep_state    = fep->init_fep_state; /* this might overwrite the checkpoint
+                                            if checkpoint is set -- a kludge is in for now
+                                            to prevent this.*/
+    
+    (*lambda).resize(efptNR);
+
+    for (int i = 0; i < efptNR; i++)
     {
-        *fep_state = fep->init_fep_state; /* this might overwrite the checkpoint
-                                             if checkpoint is set -- a kludge is in for now
-                                             to prevent this.*/
-        for (i = 0; i < efptNR; i++)
+        /* overwrite lambda state with init_lambda for now for backwards compatibility */
+        if (fep->init_lambda >= 0) /* if it's -1, it was never initializd */
         {
-            /* overwrite lambda state with init_lambda for now for backwards compatibility */
-            if (fep->init_lambda >= 0) /* if it's -1, it was never initializd */
+            (*lambda)[i] = fep->init_lambda;
+            if (lam0)
             {
-                lambda[i] = fep->init_lambda;
-                if (lam0)
-                {
-                    lam0[i] = lambda[i];
-                }
-            }
-            else
-            {
-                lambda[i] = fep->all_lambda[i][*fep_state];
-                if (lam0)
-                {
-                    lam0[i] = lambda[i];
-                }
+                lam0[i] = (*lambda)[i];
             }
         }
-        if (ir->bSimTemp)
+        else
         {
-            /* need to rescale control temperatures to match current state */
-            for (i = 0; i < ir->opts.ngtc; i++)
+            (*lambda)[i] = fep->all_lambda[i][*fep_state];
+            if (lam0)
             {
-                if (ir->opts.ref_t[i] > 0)
-                {
-                    ir->opts.ref_t[i] = ir->simtempvals->temperatures[*fep_state];
-                }
+                lam0[i] = (*lambda)[i];
+            }
+        }
+    }
+    if (ir->bSimTemp)
+    {
+        /* need to rescale control temperatures to match current state */
+        for (int i = 0; i < ir->opts.ngtc; i++)
+        {
+            if (ir->opts.ref_t[i] > 0)
+            {
+                ir->opts.ref_t[i] = ir->simtempvals->temperatures[*fep_state];
             }
         }
     }
@@ -2710,9 +2707,9 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, real
     if (fplog != NULL)
     {
         fprintf(fplog, "Initial vector of lambda components:[ ");
-        for (i = 0; i < efptNR; i++)
+        for (int i = 0; i < efptNR; i++)
         {
-            fprintf(fplog, "%10.4f ", lambda[i]);
+            fprintf(fplog, "%10.4f ", (*lambda)[i]);
         }
         fprintf(fplog, "]\n");
     }
@@ -2723,7 +2720,7 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, real
 void init_md(FILE *fplog,
              t_commrec *cr, t_inputrec *ir, const gmx_output_env_t *oenv,
              double *t, double *t0,
-             real *lambda, int *fep_state, double *lam0,
+             std::vector<real> *lambda, int *fep_state, double *lam0,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t **upd,
              int nfile, const t_filenm fnm[],

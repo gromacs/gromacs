@@ -102,14 +102,13 @@ typedef struct {
 
 struct gmx_update_t
 {
-    gmx_stochd_t *sd;
+    gmx_stochd_t     *sd;
     /* xprime for constraint algorithms */
-    rvec         *xp;
-    int           xp_nalloc;
+    PaddedRVecVector  xp;
 
     /* Variables for the deform algorithm */
-    gmx_int64_t     deformref_step;
-    matrix          deformref_box;
+    gmx_int64_t       deformref_step;
+    matrix            deformref_box;
 };
 
 
@@ -122,8 +121,8 @@ static void do_update_md(int start, int nrend,
                          real invmass[],
                          unsigned short ptype[], unsigned short cFREEZE[],
                          unsigned short cACC[], unsigned short cTC[],
-                         rvec x[], rvec xprime[], rvec v[],
-                         rvec f[], matrix M,
+                         const rvec x[], rvec xprime[], rvec v[],
+                         const rvec f[], matrix M,
                          gmx_bool bNH, gmx_bool bPR)
 {
     double imass, w_dt;
@@ -261,7 +260,7 @@ static void do_update_md(int start, int nrend,
 static void do_update_vv_vel(int start, int nrend, double dt,
                              rvec accel[], ivec nFreeze[], real invmass[],
                              unsigned short ptype[], unsigned short cFREEZE[],
-                             unsigned short cACC[], rvec v[], rvec f[],
+                             unsigned short cACC[], rvec v[], const rvec f[],
                              gmx_bool bExtended, real veta, real alpha)
 {
     double w_dt;
@@ -309,7 +308,7 @@ static void do_update_vv_vel(int start, int nrend, double dt,
 static void do_update_vv_pos(int start, int nrend, double dt,
                              ivec nFreeze[],
                              unsigned short ptype[], unsigned short cFREEZE[],
-                             rvec x[], rvec xprime[], rvec v[],
+                             const rvec x[], rvec xprime[], rvec v[],
                              gmx_bool bExtended, real veta)
 {
     int    gf = 0;
@@ -357,8 +356,8 @@ static void do_update_visc(int start, int nrend,
                            double nh_vxi[],
                            real invmass[],
                            unsigned short ptype[], unsigned short cTC[],
-                           rvec x[], rvec xprime[], rvec v[],
-                           rvec f[], matrix M, matrix box, real
+                           const rvec x[], rvec xprime[], rvec v[],
+                           const rvec f[], matrix M, matrix box, real
                            cos_accel, real vcos,
                            gmx_bool bNH, gmx_bool bPR)
 {
@@ -550,9 +549,7 @@ void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
 
 gmx_update_t *init_update(const t_inputrec *ir)
 {
-    gmx_update_t *upd;
-
-    snew(upd, 1);
+    gmx_update_t *upd = new(gmx_update_t);
 
     if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc))
     {
@@ -561,22 +558,18 @@ gmx_update_t *init_update(const t_inputrec *ir)
 
     update_temperature_constants(upd, ir);
 
-    upd->xp        = NULL;
-    upd->xp_nalloc = 0;
+    upd->xp.resize(0);
 
     return upd;
 }
 
-void update_realloc(gmx_update_t *upd, int state_nalloc)
+void update_realloc(gmx_update_t *upd, int natoms)
 {
     GMX_ASSERT(upd, "upd must be allocated before its fields can be reallocated");
-    if (state_nalloc > upd->xp_nalloc)
-    {
-        upd->xp_nalloc = state_nalloc;
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries. */
-        srenew(upd->xp, upd->xp_nalloc + 1);
-    }
+
+    /* We need to allocate one element extra, since we might use
+     * (unaligned) 4-wide SIMD loads to access rvec entries. */
+    upd->xp.resize(natoms + 1);
 }
 
 static void do_update_sd1(gmx_stochd_t *sd,
@@ -585,7 +578,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
                           real invmass[], unsigned short ptype[],
                           unsigned short cFREEZE[], unsigned short cACC[],
                           unsigned short cTC[],
-                          rvec x[], rvec xprime[], rvec v[], rvec f[],
+                          const rvec x[], rvec xprime[], rvec v[], const rvec f[],
                           gmx_bool bDoConstr,
                           gmx_bool bFirstHalfConstr,
                           gmx_int64_t step, int seed, int* gatindex)
@@ -728,8 +721,8 @@ static void do_update_bd(int start, int nrend, double dt,
                          ivec nFreeze[],
                          real invmass[], unsigned short ptype[],
                          unsigned short cFREEZE[], unsigned short cTC[],
-                         rvec x[], rvec xprime[], rvec v[],
-                         rvec f[], real friction_coefficient,
+                         const rvec x[], rvec xprime[], rvec v[],
+                         const rvec f[], real friction_coefficient,
                          real *rf, gmx_int64_t step, int seed,
                          int* gatindex)
 {
@@ -791,17 +784,23 @@ static void do_update_bd(int start, int nrend, double dt,
 }
 
 static void dump_it_all(FILE gmx_unused *fp, const char gmx_unused *title,
-                        int gmx_unused natoms, rvec gmx_unused x[], rvec gmx_unused xp[],
-                        rvec gmx_unused v[], rvec gmx_unused f[])
+                        int gmx_unused natoms,
+                        const gmx_unused PaddedRVecVector x,
+                        const gmx_unused PaddedRVecVector xp,
+                        const gmx_unused PaddedRVecVector v,
+                        const gmx_unused PaddedRVecVector *f)
 {
 #ifdef DEBUG
     if (fp)
     {
         fprintf(fp, "%s\n", title);
-        pr_rvecs(fp, 0, "x", x, natoms);
-        pr_rvecs(fp, 0, "xp", xp, natoms);
-        pr_rvecs(fp, 0, "v", v, natoms);
-        pr_rvecs(fp, 0, "f", f, natoms);
+        pr_rvecs(fp, 0, "x", as_rvec_array(x.data()), natoms);
+        pr_rvecs(fp, 0, "xp", as_rvec_array(xp.data()), natoms);
+        pr_rvecs(fp, 0, "v", as_rvec_array(v.data()), natoms);
+        if (f != NULL)
+        {
+            pr_rvecs(fp, 0, "f", as_rvec_array((*f).data()), natoms);
+        }
     }
 #endif
 }
@@ -1000,11 +999,11 @@ void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
 {
     if (ekind->cosacc.cos_accel == 0)
     {
-        calc_ke_part_normal(state->v, opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_normal(as_rvec_array(state->v.data()), opts, md, ekind, nrnb, bEkinAveVel);
     }
     else
     {
-        calc_ke_part_visc(state->box, state->x, state->v, opts, md, ekind, nrnb, bEkinAveVel);
+        calc_ke_part_visc(state->box, as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), opts, md, ekind, nrnb, bEkinAveVel);
     }
 }
 
@@ -1014,9 +1013,9 @@ extern void init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir)
     snew(ekinstate->ekinh, ekinstate->ekin_n);
     snew(ekinstate->ekinf, ekinstate->ekin_n);
     snew(ekinstate->ekinh_old, ekinstate->ekin_n);
-    snew(ekinstate->ekinscalef_nhc, ekinstate->ekin_n);
-    snew(ekinstate->ekinscaleh_nhc, ekinstate->ekin_n);
-    snew(ekinstate->vscale_nhc, ekinstate->ekin_n);
+    ekinstate->ekinscalef_nhc.resize(ekinstate->ekin_n);
+    ekinstate->ekinscaleh_nhc.resize(ekinstate->ekin_n);
+    ekinstate->vscale_nhc.resize(ekinstate->ekin_n);
     ekinstate->dekindl = 0;
     ekinstate->mvcos   = 0;
 }
@@ -1194,17 +1193,17 @@ void update_tcouple(gmx_int64_t       step,
                 break;
             case etcNOSEHOOVER:
                 nosehoover_tcoupl(&(inputrec->opts), ekind, dttc,
-                                  state->nosehoover_xi, state->nosehoover_vxi, MassQ);
+                                  state->nosehoover_xi.data(), state->nosehoover_vxi.data(), MassQ);
                 break;
             case etcVRESCALE:
                 vrescale_tcoupl(inputrec, step, ekind, dttc,
-                                state->therm_integral);
+                                state->therm_integral.data());
                 break;
         }
         /* rescale in place here */
         if (EI_VV(inputrec->eI))
         {
-            rescale_velocities(ekind, md, 0, md->homenr, state->v);
+            rescale_velocities(ekind, md, 0, md->homenr, as_rvec_array(state->v.data()));
         }
     }
     else
@@ -1284,7 +1283,7 @@ void update_constraints(FILE             *fplog,
                         t_state          *state,
                         gmx_bool          bMolPBC,
                         t_graph          *graph,
-                        rvec              force[],   /* forces on home particles */
+                        PaddedRVecVector *force,     /* forces on home particles */
                         t_idef           *idef,
                         tensor            vir_part,
                         t_commrec        *cr,
@@ -1344,7 +1343,7 @@ void update_constraints(FILE             *fplog,
         {
             constrain(NULL, bLog, bEner, constr, idef,
                       inputrec, cr, step, 1, 1.0, md,
-                      state->x, state->v, state->v,
+                      as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
                       NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc);
@@ -1353,10 +1352,10 @@ void update_constraints(FILE             *fplog,
         {
             constrain(NULL, bLog, bEner, constr, idef,
                       inputrec, cr, step, 1, 1.0, md,
-                      state->x, upd->xp, NULL,
+                      as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      state->v, bCalcVir ? &vir_con : NULL, nrnb, econqCoord);
+                      as_rvec_array(state->v.data()), bCalcVir ? &vir_con : NULL, nrnb, econqCoord);
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
@@ -1399,7 +1398,7 @@ void update_constraints(FILE             *fplog,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
-                              state->x, upd->xp, state->v, force,
+                              as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), as_rvec_array(state->v.data()), as_rvec_array((*force).data()),
                               bDoConstr, FALSE,
                               step, inputrec->ld_seed,
                               DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
@@ -1416,10 +1415,10 @@ void update_constraints(FILE             *fplog,
 
             constrain(NULL, bLog, bEner, constr, idef,
                       inputrec, cr, step, 1, 0.5, md,
-                      state->x, upd->xp, NULL,
+                      as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      state->v, NULL, nrnb, econqCoord);
+                      as_rvec_array(state->v.data()), NULL, nrnb, econqCoord);
 
             wallcycle_stop(wcycle, ewcCONSTR);
         }
@@ -1475,7 +1474,7 @@ void update_constraints(FILE             *fplog,
 
         if (graph && (graph->nnodes > 0))
         {
-            unshift_x(graph, state->box, state->x, upd->xp);
+            unshift_x(graph, state->box, as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()));
             if (TRICLINIC(state->box))
             {
                 inc_nrnb(nrnb, eNR_SHIFTX, 2*graph->nnodes);
@@ -1487,6 +1486,8 @@ void update_constraints(FILE             *fplog,
         }
         else
         {
+            /* The copy is performance sensitive, so use a bare pointer */
+            rvec *xp = as_rvec_array(upd->xp.data());
 #ifndef __clang_analyzer__
             // cppcheck-suppress unreadVariable
             nth = gmx_omp_nthreads_get(emntUpdate);
@@ -1495,7 +1496,7 @@ void update_constraints(FILE             *fplog,
             for (i = start; i < nrend; i++)
             {
                 // Trivial statement, does not throw
-                copy_rvec(upd->xp[i], state->x[i]);
+                copy_rvec(xp[i], state->x[i]);
             }
         }
         wallcycle_stop(wcycle, ewcUPDATE);
@@ -1511,7 +1512,6 @@ void update_box(FILE             *fplog,
                 t_inputrec       *inputrec,  /* input record and box stuff	*/
                 t_mdatoms        *md,
                 t_state          *state,
-                rvec              force[],   /* forces on home particles */
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,
                 gmx_update_t     *upd)
@@ -1540,7 +1540,7 @@ void update_box(FILE             *fplog,
             if (inputrec->nstpcouple == 1 || (step % inputrec->nstpcouple == 1))
             {
                 berendsen_pscale(inputrec, pcoupl_mu, state->box, state->box_rel,
-                                 start, homenr, state->x, md->cFREEZE, nrnb);
+                                 start, homenr, as_rvec_array(state->x.data()), md->cFREEZE, nrnb);
             }
             break;
         case (epcPARRINELLORAHMAN):
@@ -1594,11 +1594,11 @@ void update_box(FILE             *fplog,
 
     if (inputrecDeform(inputrec))
     {
-        deform(upd, start, homenr, state->x, state->box, inputrec, step);
+        deform(upd, start, homenr, as_rvec_array(state->x.data()), state->box, inputrec, step);
     }
     where();
     dump_it_all(fplog, "After update",
-                state->natoms, state->x, upd->xp, state->v, force);
+                state->natoms, state->x, upd->xp, state->v, NULL);
 }
 
 void update_coords(FILE             *fplog,
@@ -1606,7 +1606,7 @@ void update_coords(FILE             *fplog,
                    t_inputrec       *inputrec,  /* input record and box stuff	*/
                    t_mdatoms        *md,
                    t_state          *state,
-                   rvec             *f,    /* forces on home particles */
+                   PaddedRVecVector *f,    /* forces on home particles */
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
@@ -1666,6 +1666,11 @@ void update_coords(FILE             *fplog,
             start_th = start + ((nrend-start)* th   )/nth;
             end_th   = start + ((nrend-start)*(th+1))/nth;
 
+            const rvec *x_rvec  = as_rvec_array(state->x.data());
+            rvec       *xp_rvec = as_rvec_array(upd->xp.data());
+            rvec       *v_rvec  = as_rvec_array(state->v.data());
+            const rvec *f_rvec  = as_rvec_array((*f).data());
+
             switch (inputrec->eI)
             {
                 case (eiMD):
@@ -1673,21 +1678,21 @@ void update_coords(FILE             *fplog,
                     {
                         do_update_md(start_th, end_th,
                                      dt, inputrec->nstpcouple,
-                                     ekind->tcstat, state->nosehoover_vxi,
+                                     ekind->tcstat, state->nosehoover_vxi.data(),
                                      ekind->bNEMD, ekind->grpstat, inputrec->opts.acc,
                                      inputrec->opts.nFreeze,
                                      md->invmass, md->ptype,
                                      md->cFREEZE, md->cACC, md->cTC,
-                                     state->x, upd->xp, state->v, f, M,
+                                     x_rvec, xp_rvec, v_rvec, f_rvec, M,
                                      bNH, bPR);
                     }
                     else
                     {
                         do_update_visc(start_th, end_th,
                                        dt, inputrec->nstpcouple,
-                                       ekind->tcstat, state->nosehoover_vxi,
+                                       ekind->tcstat, state->nosehoover_vxi.data(),
                                        md->invmass, md->ptype,
-                                       md->cTC, state->x, upd->xp, state->v, f, M,
+                                       md->cTC, x_rvec, xp_rvec, v_rvec, f_rvec, M,
                                        state->box,
                                        ekind->cosacc.cos_accel,
                                        ekind->cosacc.vcos,
@@ -1701,7 +1706,7 @@ void update_coords(FILE             *fplog,
                                   inputrec->opts.acc, inputrec->opts.nFreeze,
                                   md->invmass, md->ptype,
                                   md->cFREEZE, md->cACC, md->cTC,
-                                  state->x, upd->xp, state->v, f,
+                                  x_rvec, xp_rvec, v_rvec, f_rvec,
                                   bDoConstr, TRUE,
                                   step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
                     break;
@@ -1709,7 +1714,7 @@ void update_coords(FILE             *fplog,
                     do_update_bd(start_th, end_th, dt,
                                  inputrec->opts.nFreeze, md->invmass, md->ptype,
                                  md->cFREEZE, md->cTC,
-                                 state->x, upd->xp, state->v, f,
+                                 x_rvec, xp_rvec, v_rvec, f_rvec,
                                  inputrec->bd_fric,
                                  upd->sd->bd_rf,
                                  step, inputrec->ld_seed, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
@@ -1725,14 +1730,14 @@ void update_coords(FILE             *fplog,
                                              inputrec->opts.acc, inputrec->opts.nFreeze,
                                              md->invmass, md->ptype,
                                              md->cFREEZE, md->cACC,
-                                             state->v, f,
+                                             v_rvec, f_rvec,
                                              (bNH || bPR), state->veta, alpha);
                             break;
                         case etrtPOSITION:
                             do_update_vv_pos(start_th, end_th, dt,
                                              inputrec->opts.nFreeze,
                                              md->ptype, md->cFREEZE,
-                                             state->x, upd->xp, state->v,
+                                             x_rvec, xp_rvec, v_rvec,
                                              (bNH || bPR), state->veta);
                             break;
                     }

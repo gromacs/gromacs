@@ -249,7 +249,7 @@ void dd_bcastc(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
 #endif
 }
 
-void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *src, void *dest)
+void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, const void gmx_unused *src, void *dest)
 {
 #if GMX_MPI
     if (dd->nnodes > 1)
@@ -269,7 +269,7 @@ void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unu
     }
 }
 
-void dd_gather(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *src, void gmx_unused *dest)
+void dd_gather(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, const void gmx_unused *src, void gmx_unused *dest)
 {
 #if GMX_MPI
     MPI_Gather(src, nbytes, MPI_BYTE,
@@ -279,7 +279,7 @@ void dd_gather(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unus
 }
 
 void dd_scatterv(gmx_domdec_t gmx_unused *dd,
-                 int gmx_unused *scounts, int gmx_unused *disps, void *sbuf,
+                 int gmx_unused *scounts, int gmx_unused *disps, const void *sbuf,
                  int rcount, void *rbuf)
 {
 #if GMX_MPI
@@ -308,7 +308,7 @@ void dd_scatterv(gmx_domdec_t gmx_unused *dd,
 }
 
 void dd_gatherv(gmx_domdec_t gmx_unused *dd,
-                int gmx_unused scount, void gmx_unused *sbuf,
+                int gmx_unused scount, const void gmx_unused *sbuf,
                 int gmx_unused *rcounts, int gmx_unused *disps, void gmx_unused *rbuf)
 {
 #if GMX_MPI
