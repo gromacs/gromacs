@@ -542,13 +542,13 @@ static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
     exchange_rvecs(ms, b, state->svir_prev, DIM);
     exchange_rvecs(ms, b, state->fvir_prev, DIM);
     exchange_rvecs(ms, b, state->pres_prev, DIM);
-    exchange_doubles(ms, b, state->nosehoover_xi, ngtc);
-    exchange_doubles(ms, b, state->nosehoover_vxi, ngtc);
-    exchange_doubles(ms, b, state->nhpres_xi, nnhpres);
-    exchange_doubles(ms, b, state->nhpres_vxi, nnhpres);
-    exchange_doubles(ms, b, state->therm_integral, state->ngtc);
-    exchange_rvecs(ms, b, state->x, state->natoms);
-    exchange_rvecs(ms, b, state->v, state->natoms);
+    exchange_doubles(ms, b, state->nosehoover_xi.data(), ngtc);
+    exchange_doubles(ms, b, state->nosehoover_vxi.data(), ngtc);
+    exchange_doubles(ms, b, state->nhpres_xi.data(), nnhpres);
+    exchange_doubles(ms, b, state->nhpres_vxi.data(), nnhpres);
+    exchange_doubles(ms, b, state->therm_integral.data(), state->ngtc);
+    exchange_rvecs(ms, b, as_rvec_array(state->x.data()), state->natoms);
+    exchange_rvecs(ms, b, as_rvec_array(state->v.data()), state->natoms);
 }
 
 static void copy_state_serial(const t_state *src, t_state *dest)
@@ -567,7 +567,7 @@ static void scale_velocities(t_state *state, real fac)
 {
     int i;
 
-    if (state->v)
+    if (as_rvec_array(state->v.data()))
     {
         for (i = 0; i < state->natoms; i++)
         {

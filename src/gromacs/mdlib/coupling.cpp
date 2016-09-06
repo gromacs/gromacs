@@ -822,32 +822,6 @@ void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
     }
 }
 
-t_state *init_bufstate(const t_state *template_state)
-{
-    t_state *state;
-    int      nc = template_state->nhchainlength;
-    snew(state, 1);
-    snew(state->nosehoover_xi, nc*template_state->ngtc);
-    snew(state->nosehoover_vxi, nc*template_state->ngtc);
-    snew(state->therm_integral, template_state->ngtc);
-    snew(state->nhpres_xi, nc*template_state->nnhpres);
-    snew(state->nhpres_vxi, nc*template_state->nnhpres);
-
-    return state;
-}
-
-void destroy_bufstate(t_state *state)
-{
-    sfree(state->x);
-    sfree(state->v);
-    sfree(state->nosehoover_xi);
-    sfree(state->nosehoover_vxi);
-    sfree(state->therm_integral);
-    sfree(state->nhpres_xi);
-    sfree(state->nhpres_vxi);
-    sfree(state);
-}
-
 void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state,
                     tensor vir, t_mdatoms *md,
@@ -917,13 +891,13 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                 break;
             case etrtBARONHC:
             case etrtBARONHC2:
-                NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi,
-                            state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE);
+                NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi.data(),
+                            state->nhpres_vxi.data(), NULL, &(state->veta), MassQ, FALSE);
                 break;
             case etrtNHC:
             case etrtNHC2:
-                NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi,
-                            state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
+                NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi.data(),
+                            state->nosehoover_vxi.data(), scalefac, NULL, MassQ, (ir->eI == eiVV));
                 /* need to rescale the kinetic energies and velocities here.  Could
                    scale the velocities later, but we need them scaled in order to
                    produce the correct outputs, so we'll scale them here. */
