@@ -40,6 +40,7 @@
 #include <cstdio>
 
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_constr;
@@ -71,7 +72,7 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                          gmx_localtop_t *top,
                          gmx_constr *constr,
                          gmx_enerdata_t *enerd, t_fcdata *fcd,
-                         t_state *state, rvec f[],
+                         t_state *state, PaddedRVecVector *f,
                          tensor force_vir,
                          t_mdatoms *md,
                          t_nrnb *nrnb, gmx_wallcycle_t wcycle,

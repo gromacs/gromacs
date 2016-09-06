@@ -461,7 +461,7 @@ int gmx_convert_tpr(int argc, char *argv[])
             {
                 fprintf(stderr, "Will write subset %s of original tpx containing %d "
                         "atoms\n", grpname, gnx);
-                reduce_topology_x(gnx, index, &mtop, state.x, state.v);
+                reduce_topology_x(gnx, index, &mtop, as_rvec_array(state.x.data()), as_rvec_array(state.v.data()));
                 state.natoms = gnx;
             }
             else if (bZeroQ)

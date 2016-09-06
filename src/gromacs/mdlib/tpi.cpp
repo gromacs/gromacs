@@ -165,35 +165,35 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
               unsigned long gmx_unused Flags,
               gmx_walltime_accounting_t walltime_accounting)
 {
-    gmx_localtop_t *top;
-    gmx_groups_t   *groups;
-    gmx_enerdata_t *enerd;
-    rvec           *f;
-    real            lambda, t, temp, beta, drmax, epot;
-    double          embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
-    t_trxstatus    *status;
-    t_trxframe      rerun_fr;
-    gmx_bool        bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
-    tensor          force_vir, shake_vir, vir, pres;
-    int             cg_tp, a_tp0, a_tp1, ngid, gid_tp, nener, e;
-    rvec           *x_mol;
-    rvec            mu_tot, x_init, dx, x_tp;
-    int             nnodes, frame;
-    gmx_int64_t     frame_step_prev, frame_step;
-    gmx_int64_t     nsteps, stepblocksize = 0, step;
-    gmx_int64_t     seed;
-    int             i;
-    FILE           *fp_tpi = NULL;
-    char           *ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
-    double          dbl, dump_ener;
-    gmx_bool        bCavity;
-    int             nat_cavity  = 0, d;
-    real           *mass_cavity = NULL, mass_tot;
-    int             nbin;
-    double          invbinw, *bin, refvolshift, logV, bUlogV;
-    real            prescorr, enercorr, dvdlcorr;
-    gmx_bool        bEnergyOutOfBounds;
-    const char     *tpid_leg[2] = {"direct", "reweighted"};
+    gmx_localtop_t  *top;
+    gmx_groups_t    *groups;
+    gmx_enerdata_t  *enerd;
+    PaddedRVecVector f {};
+    real             lambda, t, temp, beta, drmax, epot;
+    double           embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
+    t_trxstatus     *status;
+    t_trxframe       rerun_fr;
+    gmx_bool         bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS;
+    tensor           force_vir, shake_vir, vir, pres;
+    int              cg_tp, a_tp0, a_tp1, ngid, gid_tp, nener, e;
+    rvec            *x_mol;
+    rvec             mu_tot, x_init, dx, x_tp;
+    int              nnodes, frame;
+    gmx_int64_t      frame_step_prev, frame_step;
+    gmx_int64_t      nsteps, stepblocksize = 0, step;
+    gmx_int64_t      seed;
+    int              i;
+    FILE            *fp_tpi = NULL;
+    char            *ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
+    double           dbl, dump_ener;
+    gmx_bool         bCavity;
+    int              nat_cavity  = 0, d;
+    real            *mass_cavity = NULL, mass_tot;
+    int              nbin;
+    double           invbinw, *bin, refvolshift, logV, bUlogV;
+    real             prescorr, enercorr, dvdlcorr;
+    gmx_bool         bEnergyOutOfBounds;
+    const char      *tpid_leg[2] = {"direct", "reweighted"};
 
     /* Since there is no upper limit to the insertion energies,
      * we need to set an upper limit for the distribution output.
@@ -289,7 +289,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     snew(enerd, 1);
     init_enerdata(groups->grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
-    snew(f, top_global->natoms);
+    f.resize(top_global->natoms + 1);
 
     /* Print to log file  */
     walltime_accounting_start(walltime_accounting);
@@ -321,7 +321,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     }
     bRFExcl = (bCharge && EEL_RF(fr->eeltype));
 
-    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), state_global->x, fr->cg_cm);
+    calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), as_rvec_array(state_global->x.data()), fr->cg_cm);
     if (bCavity)
     {
         if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist && fplog)
@@ -629,7 +629,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                     copy_rvec(x_mol[i-a_tp0], state_global->x[i]);
                 }
                 /* Rotate the molecule randomly */
-                rotate_conf(a_tp1-a_tp0, state_global->x+a_tp0, NULL,
+                rotate_conf(a_tp1-a_tp0, as_rvec_array(state_global->x.data())+a_tp0, NULL,
                             2*M_PI*dist(rng),
                             2*M_PI*dist(rng),
                             2*M_PI*dist(rng));
@@ -659,9 +659,9 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             cr->nnodes = 1;
             do_force(fplog, cr, inputrec,
                      step, nrnb, wcycle, top, &top_global->groups,
-                     state_global->box, state_global->x, &state_global->hist,
-                     f, force_vir, mdatoms, enerd, fcd,
-                     state_global->lambda,
+                     state_global->box, &state_global->x, &state_global->hist,
+                     &f, force_vir, mdatoms, enerd, fcd,
+                     &state_global->lambda,
                      NULL, fr, NULL, mu_tot, t, NULL, NULL, FALSE,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
                      (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS : 0) |
@@ -782,7 +782,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             {
                 sprintf(str, "t%g_step%d.pdb", t, (int)step);
                 sprintf(str2, "t: %f step %d ener: %f", t, (int)step, epot);
-                write_sto_conf_mtop(str, str2, top_global, state_global->x, state_global->v,
+                write_sto_conf_mtop(str, str2, top_global, as_rvec_array(state_global->x.data()), as_rvec_array(state_global->v.data()),
                                     inputrec->ePBC, state_global->box);
             }
 

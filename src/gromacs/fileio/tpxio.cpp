@@ -68,6 +68,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/txtdump.h"
@@ -3068,28 +3069,33 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
 }
 
 static int do_tpx(t_fileio *fio, gmx_bool bRead,
-                  t_inputrec *ir, t_state *state, gmx_mtop_t *mtop,
-                  gmx_bool bXVallocated)
+                  t_inputrec *ir, t_state *state, rvec *x, rvec *v,
+                  gmx_mtop_t *mtop)
 {
     t_tpxheader     tpx;
     gmx_mtop_t      dum_top;
     gmx_bool        TopOnlyOK;
-    rvec           *xptr, *vptr;
     int             ePBC;
     gmx_bool        bPeriodicMols;
 
     if (!bRead)
     {
+        GMX_RELEASE_ASSERT(x == NULL && v == NULL, "Passing separate x and v pointers to do_tpx() is not supported when writing");
+
         tpx.natoms    = state->natoms;
         tpx.ngtc      = state->ngtc;
         tpx.fep_state = state->fep_state;
         tpx.lambda    = state->lambda[efptFEP];
         tpx.bIr       = (ir       != NULL);
         tpx.bTop      = (mtop     != NULL);
-        tpx.bX        = (state->x != NULL);
-        tpx.bV        = (state->v != NULL);
+        tpx.bX        = (state->flags & (1 << estX));
+        tpx.bV        = (state->flags & (1 << estV));
         tpx.bF        = FALSE;
         tpx.bBox      = TRUE;
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(!(x == NULL && v != NULL), "Passing x==NULL and v!=NULL is not supported");
     }
 
     TopOnlyOK = (ir == NULL);
@@ -3101,20 +3107,20 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     if (bRead)
     {
         state->flags  = 0;
-        if (bXVallocated)
+        if (x != NULL)
         {
-            xptr = state->x;
-            vptr = state->v;
             init_state(state, 0, tpx.ngtc, 0, 0, 0);
-            state->natoms = tpx.natoms;
-            state->nalloc = tpx.natoms;
-            state->x      = xptr;
-            state->v      = vptr;
         }
         else
         {
             init_state(state, tpx.natoms, tpx.ngtc, 0, 0, 0);
         }
+    }
+
+    if (x == NULL)
+    {
+        x = as_rvec_array(state->x.data());
+        v = as_rvec_array(state->v.data());
     }
 
 #define do_test(fio, b, p) if (bRead && (p != NULL) && !b) gmx_fatal(FARGS, "No %s in %s",#p, gmx_fio_getname(fio))
@@ -3166,24 +3172,24 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
             done_mtop(&dum_top, TRUE);
         }
     }
-    do_test(fio, tpx.bX, state->x);
+    do_test(fio, tpx.bX, x);
     if (tpx.bX)
     {
         if (bRead)
         {
             state->flags |= (1<<estX);
         }
-        gmx_fio_ndo_rvec(fio, state->x, state->natoms);
+        gmx_fio_ndo_rvec(fio, x, tpx.natoms);
     }
 
-    do_test(fio, tpx.bV, state->v);
+    do_test(fio, tpx.bV, v);
     if (tpx.bV)
     {
         if (bRead)
         {
             state->flags |= (1<<estV);
         }
-        gmx_fio_ndo_rvec(fio, state->v, state->natoms);
+        gmx_fio_ndo_rvec(fio, v, tpx.natoms);
     }
 
     // No need to run do_test when the last argument is NULL
@@ -3191,7 +3197,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     {
         rvec *dummyForces;
         snew(dummyForces, state->natoms);
-        gmx_fio_ndo_rvec(fio, dummyForces, state->natoms);
+        gmx_fio_ndo_rvec(fio, dummyForces, tpx.natoms);
         sfree(dummyForces);
     }
 
@@ -3308,8 +3314,8 @@ void write_tpx_state(const char *fn,
     fio = open_tpx(fn, "w");
     do_tpx(fio, FALSE,
            const_cast<t_inputrec *>(ir),
-           const_cast<t_state *>(state),
-           const_cast<gmx_mtop_t *>(mtop), FALSE);
+           const_cast<t_state *>(state), NULL, NULL,
+           const_cast<gmx_mtop_t *>(mtop));
     close_tpx(fio);
 }
 
@@ -3319,7 +3325,7 @@ void read_tpx_state(const char *fn,
     t_fileio *fio;
 
     fio = open_tpx(fn, "r");
-    do_tpx(fio, TRUE, ir, state, mtop, FALSE);
+    do_tpx(fio, TRUE, ir, state, NULL, NULL, mtop);
     close_tpx(fio);
 }
 
@@ -3328,22 +3334,17 @@ int read_tpx(const char *fn,
              rvec *x, rvec *v, gmx_mtop_t *mtop)
 {
     t_fileio *fio;
-    t_state   state;
+    t_state   state {};
     int       ePBC;
 
-    state.x = x;
-    state.v = v;
     fio     = open_tpx(fn, "r");
-    ePBC    = do_tpx(fio, TRUE, ir, &state, mtop, TRUE);
+    ePBC    = do_tpx(fio, TRUE, ir, &state, x, v, mtop);
     close_tpx(fio);
-    *natoms = state.natoms;
+    *natoms = mtop->natoms;
     if (box)
     {
         copy_mat(state.box, box);
     }
-    state.x = NULL;
-    state.v = NULL;
-    done_state(&state);
 
     return ePBC;
 }

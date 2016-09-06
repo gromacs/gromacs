@@ -946,7 +946,7 @@ static void estimate_PME_error(t_inputinfo *info, const t_state *state,
     }
 
     /* Prepare an x and q array with only the charged atoms */
-    ncharges = prepare_x_q(&q, &x, mtop, state->x, cr);
+    ncharges = prepare_x_q(&q, &x, mtop, as_rvec_array(state->x.data()), cr);
     if (MASTER(cr))
     {
         calc_q2all(mtop, &(info->q2all), &(info->q2allnr));
