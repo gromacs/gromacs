@@ -76,7 +76,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
 {
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
-    t_state       state;
+    t_state       state {};
     t_inputrec   *ir = nullptr;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
@@ -132,11 +132,11 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
             pr_rvecs(stdout, indent, "svir_prev", tpx.bBox ? state.svir_prev : NULL, DIM);
             pr_rvecs(stdout, indent, "fvir_prev", tpx.bBox ? state.fvir_prev : NULL, DIM);
             /* leave nosehoover_xi in for now to match the tpr version */
-            pr_doubles(stdout, indent, "nosehoover_xi", state.nosehoover_xi, state.ngtc);
+            pr_doubles(stdout, indent, "nosehoover_xi", state.nosehoover_xi.data(), state.ngtc);
             /*pr_doubles(stdout,indent,"nosehoover_vxi",state.nosehoover_vxi,state.ngtc);*/
             /*pr_doubles(stdout,indent,"therm_integral",state.therm_integral,state.ngtc);*/
-            pr_rvecs(stdout, indent, "x", tpx.bX ? state.x : NULL, state.natoms);
-            pr_rvecs(stdout, indent, "v", tpx.bV ? state.v : NULL, state.natoms);
+            pr_rvecs(stdout, indent, "x", tpx.bX ? as_rvec_array(state.x.data()) : NULL, state.natoms);
+            pr_rvecs(stdout, indent, "v", tpx.bV ? as_rvec_array(state.v.data()) : NULL, state.natoms);
         }
 
         groups = &mtop.groups;
@@ -169,7 +169,6 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
         }
         sfree(gcount);
     }
-    done_state(&state);
 }
 
 static void list_top(const char *fn)

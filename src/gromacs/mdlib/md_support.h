@@ -115,10 +115,6 @@ void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
 /* Set an appropriate value for n across the whole multi-simulation */
 
-void copy_coupling_state(t_state *statea, t_state *stateb,
-                         gmx_ekindata_t *ekinda, gmx_ekindata_t *ekindb, t_grpopts* opts);
-/* Copy stuff from state A to state B */
-
 void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,
                      t_state *state, t_mdatoms *mdatoms,
