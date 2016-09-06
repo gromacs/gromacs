@@ -48,6 +48,7 @@
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/cstringutil.h"
 
 #include "composition.h"
 #include "gmx_simple_comm.h"
@@ -63,7 +64,6 @@ const char *mpo_unit[MPO_NR] =
 {
     "e/nm", "D", "B", "\\AA$^3$", "kJ/mol", "J/mol K"
 };
-
 
 const char *cs_name(CommunicationStatus cs)
 {
@@ -120,6 +120,36 @@ static CommunicationStatus gmx_recv_data_(t_commrec *cr, int src, int line)
 
 namespace alexandria
 {
+
+static const char *job_name[JOB_NR] = 
+{
+    "Opt", "Pop", "POLAR", "G2", "G3", 
+    "G4", "CBSQB3", "W1U", "W1BD", "SP", "unknown"
+};
+
+const char *jobType2string(jobType jType)
+
+{
+    if (jType < JOB_NR)
+    {
+        return job_name[jType];
+    }
+    return nullptr;
+}
+
+jobType string2jobType(const char *string)
+{
+    int i;
+
+    for (i = 0; (i < JOB_NR); i++)
+    {
+        if (gmx_strcasecmp(string, job_name[i]) == 0)
+        {
+            return static_cast<jobType>(i);
+        }
+    }
+    return JOB_NR;
+}
 
 const char *dataSourceName(DataSource ds)
 {
@@ -391,6 +421,22 @@ void MolProp::DeleteComposition(const std::string &compname)
                    { return (compname.compare(mc.getCompName()) == 0); });
 }
 
+Experiment::Experiment(std::string program, std::string method,
+		       std::string basisset, std::string reference,
+		       std::string conformation, std::string datafile,
+		       std::string jtype) 
+    :
+      dataSource_(dsTheory),
+      reference_(reference), 
+      conformation_(conformation), 
+      _program(program), 
+      _method(method), 
+      _basisset(basisset),
+      _datafile(datafile),
+      jobtype_(string2jobType(jtype.c_str()))
+
+   {}
+
 void Experiment::Dump(FILE *fp)
 {
     if (NULL != fp)
@@ -438,7 +484,7 @@ int Experiment::Merge(std::vector<Experiment>::iterator src)
 {
     int nwarn = 0;
 
-    for (MolecularEnergyIterator mei = src->BeginEnergy(); (mei < src->EndEnergy()); ++mei)
+    for (auto mei = src->BeginEnergy(); (mei < src->EndEnergy()); ++mei)
     {
         alexandria::MolecularEnergy me(mei->getType(),
                                        mei->getUnit(),
@@ -449,7 +495,7 @@ int Experiment::Merge(std::vector<Experiment>::iterator src)
         AddEnergy(me);
     }
 
-    for (MolecularDipoleIterator dpi = src->BeginDipole(); (dpi < src->EndDipole()); ++dpi)
+    for (auto dpi = src->BeginDipole(); (dpi < src->EndDipole()); ++dpi)
     {
         alexandria::MolecularDipole dp(dpi->getType(),
                                        dpi->getUnit(),
@@ -459,7 +505,7 @@ int Experiment::Merge(std::vector<Experiment>::iterator src)
         AddDipole(dp);
     }
 
-    for (alexandria::MolecularPolarizabilityIterator mpi = src->BeginPolar(); (mpi < src->EndPolar()); ++mpi)
+    for (auto mpi = src->BeginPolar(); (mpi < src->EndPolar()); ++mpi)
     {
         alexandria::MolecularPolarizability mp(mpi->getType(),
                                                mpi->getUnit(),
@@ -470,7 +516,7 @@ int Experiment::Merge(std::vector<Experiment>::iterator src)
         AddPolar(mp);
     }
 
-    for (alexandria::MolecularQuadrupoleIterator mqi = src->BeginQuadrupole(); (mqi < src->EndQuadrupole()); ++mqi)
+    for (auto mqi = src->BeginQuadrupole(); (mqi < src->EndQuadrupole()); ++mqi)
     {
         alexandria::MolecularQuadrupole mq(mqi->getType(), mqi->getUnit(),
                                            mqi->getTemperature(),
@@ -479,7 +525,7 @@ int Experiment::Merge(std::vector<Experiment>::iterator src)
         AddQuadrupole(mq);
     }
 
-    for (CalcAtomIterator cai = src->BeginAtom(); (cai < src->EndAtom()); ++cai)
+    for (auto cai = src->BeginAtom(); (cai < src->EndAtom()); ++cai)
     {
         double   x, y, z;
         CalcAtom caa(cai->getName(), cai->getObtype(), cai->getAtomid());
@@ -488,7 +534,7 @@ int Experiment::Merge(std::vector<Experiment>::iterator src)
         caa.SetCoords(x, y, z);
         caa.SetUnit(cai->getUnit());
 
-        for (AtomicChargeIterator aci = cai->BeginQ(); (aci < cai->EndQ()); ++aci)
+        for (auto aci = cai->BeginQ(); (aci < cai->EndQ()); ++aci)
         {
             AtomicCharge aq(aci->getType(), aci->getUnit(),
                             aci->getTemperature(), aci->getQ());
@@ -497,7 +543,7 @@ int Experiment::Merge(std::vector<Experiment>::iterator src)
         AddAtom(caa);
     }
 
-    for (ElectrostaticPotentialIterator mep = src->BeginPotential(); (mep < src->EndPotential()); mep++)
+    for (auto mep = src->BeginPotential(); (mep < src->EndPotential()); mep++)
     {
         alexandria::ElectrostaticPotential ep(mep->getXYZunit(), mep->getVunit(),
                                               mep->getEspid(),
@@ -577,7 +623,7 @@ void MolProp::AddComposition(MolecularComposition mc)
 
 bool MolProp::BondExists(Bond b)
 {
-    for (alexandria::BondIterator bi = BeginBond(); (bi < EndBond()); bi++)
+    for (auto bi = BeginBond(); (bi < EndBond()); bi++)
     {
         if (((bi->getAi() == b.getAi()) && (bi->getAj() == b.getAj())) ||
             ((bi->getAi() == b.getAj()) && (bi->getAj() == b.getAi())))
@@ -594,7 +640,7 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
     std::string stmp, dtmp;
     int         nwarn = 0;
 
-    for (std::vector<std::string>::iterator si = src->BeginCategory(); (si < src->EndCategory()); si++)
+    for (auto si = src->BeginCategory(); (si < src->EndCategory()); si++)
     {
         AddCategory(*si);
     }
@@ -657,7 +703,7 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
     }
     if (NBond() == 0)
     {
-        for (alexandria::BondIterator bi = src->BeginBond(); (bi < src->EndBond()); bi++)
+        for (auto bi = src->BeginBond(); (bi < src->EndBond()); bi++)
         {
             alexandria::Bond bb(bi->getAi(), bi->getAj(), bi->getBondOrder());
             AddBond(bb);
@@ -665,7 +711,7 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
     }
     else
     {
-        for (alexandria::BondIterator bi = src->BeginBond(); (bi < src->EndBond()); bi++)
+        for (auto bi = src->BeginBond(); (bi < src->EndBond()); bi++)
         {
             alexandria::Bond bb(bi->getAi(), bi->getAj(), bi->getBondOrder());
             if (!BondExists(bb))
@@ -677,7 +723,7 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
         }
     }
 
-    for (alexandria::ExperimentIterator ei = src->BeginExperiment(); (ei < src->EndExperiment()); ei++)
+    for (auto ei = src->BeginExperiment(); (ei < src->EndExperiment()); ei++)
     {
         if (dsExperiment == ei->dataSource())
         {
@@ -690,18 +736,18 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
             Experiment ca(ei->getProgram(), ei->getMethod(),
                           ei->getBasisset(), ei->getReference(),
                           ei->getConformation(), ei->getDatafile(),
-                          ei->getJobtype());
+                          jobType2string(ei->getJobtype()));
             nwarn += ca.Merge(ei);
             AddExperiment(ca);
         }
     }
 
-    for (alexandria::MolecularCompositionIterator mci = src->BeginMolecularComposition();
+    for (auto mci = src->BeginMolecularComposition();
          (mci < src->EndMolecularComposition()); mci++)
     {
         alexandria::MolecularComposition mc(mci->getCompName());
 
-        for (alexandria::AtomNumIterator ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
+        for (auto ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
         {
             AtomNum an(ani->getAtom(), ani->getNumber());
             mc.AddAtom(an);
@@ -1071,7 +1117,7 @@ bool MolProp::getOptHF(double *value)
 
     for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
     {
-        if (strcasecmp("Opt", ei->getJobtype().c_str()) == 0)
+        if (ei->getJobtype() == JOB_OPT)
         {
             if (ei->getHF(value))
             {
@@ -1124,21 +1170,21 @@ ExperimentIterator MolProp::getLotPropType(const char       *lot,
                         done = ci->NPotential() > 0;
                         break;
                     case MPO_DIPOLE:
-                        for (MolecularDipoleIterator mdp = ci->BeginDipole(); !done && (mdp < ci->EndDipole()); mdp++)
+                        for (auto mdp = ci->BeginDipole(); !done && (mdp < ci->EndDipole()); mdp++)
                         {
                             done =  ((NULL == type) ||
                                      (strcasecmp(type, mdp->getType().c_str()) == 0));
                         }
                         break;
                     case MPO_QUADRUPOLE:
-                        for (MolecularQuadrupoleIterator mdp = ci->BeginQuadrupole(); !done && (mdp < ci->EndQuadrupole()); mdp++)
+                        for (auto mdp = ci->BeginQuadrupole(); !done && (mdp < ci->EndQuadrupole()); mdp++)
                         {
                             done =  ((NULL == type) ||
                                      (strcasecmp(type, mdp->getType().c_str()) == 0));
                         }
                         break;
                     case MPO_POLARIZABILITY:
-                        for (MolecularPolarizabilityIterator mdp = ci->BeginPolar(); !done && (mdp < ci->EndPolar()); mdp++)
+                        for (auto mdp = ci->BeginPolar(); !done && (mdp < ci->EndPolar()); mdp++)
                         {
                             done =  ((NULL == type) ||
                                      (strcasecmp(type, mdp->getType().c_str()) == 0));
@@ -1146,7 +1192,7 @@ ExperimentIterator MolProp::getLotPropType(const char       *lot,
                         break;
                     case MPO_ENERGY:
                     case MPO_ENTROPY:
-                        for (MolecularEnergyIterator mdp = ci->BeginEnergy(); !done && (mdp < ci->EndEnergy()); mdp++)
+                        for (auto mdp = ci->BeginEnergy(); !done && (mdp < ci->EndEnergy()); mdp++)
                         {
                             done =  ((NULL == type) ||
                                      (strcasecmp(type, mdp->getType().c_str()) == 0));

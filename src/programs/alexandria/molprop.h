@@ -112,6 +112,32 @@ extern const char *cs_name(CommunicationStatus cs);
  */
 namespace alexandria
 {
+
+enum jobType {
+    JOB_OPT       = 0,
+    JOB_POP       = 1,
+    JOB_POLAR     = 2,
+    JOB_G2        = 3,
+    JOB_G3        = 4,
+    JOB_G4        = 5,
+    JOB_CBSQB3    = 6,
+    JOB_W1U       = 7,
+    JOB_W1BD      = 8,
+    JOB_SP        = 9,
+    JOB_UNKNOWN   = 9,
+    JOB_NR        = 11
+};
+
+/*! \brief
+ * Convert job type to string
+ */
+const char *jobType2string(jobType jType);
+
+/*! \brief
+ * Convert string to job type
+ */
+jobType string2jobType(const char *string);
+
 /*! \brief
  * Specifies the name of an atom type and the number in a molecular composition
  *
@@ -934,8 +960,9 @@ class Experiment
 {
     private:
         DataSource                           dataSource_;
-        std::string                          reference_, conformation_, jobtype_;
+        std::string                          reference_, conformation_;
         std::string                          _program, _method, _basisset, _datafile;
+	jobType                              jobtype_;
         std::vector<CalcAtom>                _catom;
         std::vector<ElectrostaticPotential>  _potential;
         std::vector<MolecularDipole>         dipole_;
@@ -957,12 +984,7 @@ class Experiment
         Experiment(std::string program, std::string method,
                    std::string basisset, std::string reference,
                    std::string conformation, std::string datafile,
-                   std::string jobtype) :
-            dataSource_(dsTheory),
-            reference_(reference), conformation_(conformation), jobtype_(jobtype),
-            _program(program), _method(method), _basisset(basisset),
-            _datafile(datafile)
-        {}
+                   std::string jtype);
 
         //! Return the type of data
         DataSource dataSource() const { return dataSource_; }
@@ -1022,7 +1044,7 @@ class Experiment
         const std::string &getReference() const { return reference_; }
 
         //! Return the type of calculation
-        const std::string &getJobtype() const { return jobtype_; }
+        const jobType &getJobtype() const { return jobtype_; }
 
         //! Add a CalcAtom object to the list of atoms
         void AddAtom(CalcAtom ca);

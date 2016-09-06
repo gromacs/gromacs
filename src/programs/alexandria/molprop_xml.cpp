@@ -749,7 +749,7 @@ static void add_xml_molprop(xmlNodePtr                                 parent,
             add_xml_string(child, exml_names[exmlPROGRAM], e_it->getProgram());
             add_xml_string(child, exml_names[exmlMETHOD], e_it->getMethod());
             add_xml_string(child, exml_names[exmlBASISSET], e_it->getBasisset());
-            add_xml_string(child, exml_names[exmlJOBTYPE], e_it->getJobtype());
+            add_xml_string(child, exml_names[exmlJOBTYPE], jobType2string(e_it->getJobtype()));
             add_xml_string(child, exml_names[exmlDATAFILE], e_it->getDatafile());
         }
 

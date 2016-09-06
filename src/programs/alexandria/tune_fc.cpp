@@ -1008,8 +1008,8 @@ double OptPrep::calcDeviation()
 	    for (auto ei = mymol.molProp()->BeginExperiment();
 		 ei < mymol.molProp()->EndExperiment(); ++ei)
 	    {
-	        if (strcasecmp("Opt", ei->getJobtype().c_str()) == 0 ||
-		    strcasecmp("SP", ei->getJobtype().c_str()) == 0)
+	        if (ei->getJobtype() == JOB_OPT ||
+		    ei->getJobtype() == JOB_SP)
 		{
 
 		    ei->getHF(&spHF);
@@ -1031,7 +1031,7 @@ double OptPrep::calcDeviation()
 		    debug         = dbcopy;
 		    mymol.Force2  = 0;
 
-		    if (strcasecmp("Opt", ei->getJobtype().c_str()) == 0)
+		    if (ei->getJobtype() == JOB_OPT)
 		    {	
 		         for (j = 0; (j < mymol.molProp()->NAtom()); j++)
 			 {
