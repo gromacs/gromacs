@@ -355,9 +355,8 @@ AtomNumIterator MolecularComposition::SearchAtom(std::string an)
 
 void MolecularComposition::ReplaceAtom(std::string oldatom, std::string newatom)
 {
-    AtomNumIterator i;
 
-    for (i = BeginAtomNum(); (i < EndAtomNum()); i++)
+    for (auto i = BeginAtomNum(); (i < EndAtomNum()); i++)
     {
         if (oldatom.compare(i->getAtom()) == 0)
         {
@@ -369,7 +368,7 @@ void MolecularComposition::ReplaceAtom(std::string oldatom, std::string newatom)
 
 int MolecularComposition::CountAtoms(std::string atom)
 {
-    for (AtomNumIterator i = BeginAtomNum(); (i < EndAtomNum()); i++)
+    for (auto i = BeginAtomNum(); (i < EndAtomNum()); i++)
     {
         if (atom.compare(i->getAtom()) == 0)
         {
@@ -389,9 +388,8 @@ int MolecularComposition::CountAtoms(const char *atom)
 int MolecularComposition::CountAtoms()
 {
     int             nat = 0;
-    AtomNumIterator i;
 
-    for (i = BeginAtomNum(); (i < EndAtomNum()); i++)
+    for (auto i = BeginAtomNum(); (i < EndAtomNum()); i++)
     {
         nat += i->getNumber();
     }
@@ -852,7 +850,7 @@ bool MolProp::GenerateComposition(const Poldata &pd)
         if (NULL != debug)
         {
             fprintf(debug, "LO_COMP: ");
-            for (AtomNumIterator ani = mci_alexandria.BeginAtomNum(); (ani < mci_alexandria.EndAtomNum()); ani++)
+            for (auto ani = mci_alexandria.BeginAtomNum(); (ani < mci_alexandria.EndAtomNum()); ani++)
             {
                 fprintf(debug, " %s:%d", ani->getAtom().c_str(), ani->getNumber());
             }
@@ -894,7 +892,7 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
     mci        = SearchMolecularComposition("bosque");
     if (mci != EndMolecularComposition())
     {
-        for (alexandria::AtomNumIterator ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
+        for (auto ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
         {
             int         cnumber, an;
             real        value;
@@ -1593,21 +1591,21 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, conformation_.c_str());
 
         //! Send polarizabilities
-        for (MolecularPolarizabilityIterator dpi = BeginPolar(); (CS_OK == cs) && (dpi < EndPolar()); dpi++)
+        for (auto dpi = BeginPolar(); (CS_OK == cs) && (dpi < EndPolar()); dpi++)
         {
             cs = dpi->Send(cr, dest);
         }
         cs = gmx_send_done(cr, dest);
 
         //! Send dipoles
-        for (MolecularDipoleIterator dpi = BeginDipole(); (CS_OK == cs) && (dpi < EndDipole()); dpi++)
+        for (auto dpi = BeginDipole(); (CS_OK == cs) && (dpi < EndDipole()); dpi++)
         {
             cs = dpi->Send(cr, dest);
         }
         cs = gmx_send_done(cr, dest);
 
         //! Send energies
-        for (MolecularEnergyIterator mei = BeginEnergy(); (CS_OK == cs) && (mei < EndEnergy()); mei++)
+        for (auto mei = BeginEnergy(); (CS_OK == cs) && (mei < EndEnergy()); mei++)
         {
             cs = mei->Send(cr, dest);
         }
@@ -1848,7 +1846,7 @@ CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_str(cr, dest, _compname.c_str());
-        for (AtomNumIterator ani = BeginAtomNum(); (CS_OK == cs) && (ani < EndAtomNum()); ani++)
+        for (auto ani = BeginAtomNum(); (CS_OK == cs) && (ani < EndAtomNum()); ani++)
         {
             cs = ani->Send(cr, dest);
         }
