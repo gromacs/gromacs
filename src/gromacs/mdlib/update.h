@@ -38,6 +38,7 @@
 #define GMX_MDLIB_UPDATE_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -70,7 +71,7 @@ void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir);
 
 /* Update the size of per-atom arrays (e.g. after DD re-partitioning,
    which might increase the number of home atoms). */
-void update_realloc(gmx_update_t *upd, int state_nalloc);
+void update_realloc(gmx_update_t *upd, int natoms);
 
 /* Store the box at step step
  * as a reference state for simulations with box deformation.
@@ -99,7 +100,7 @@ void update_coords(FILE              *fplog,
                    t_inputrec        *inputrec, /* input record and box stuff	*/
                    t_mdatoms         *md,
                    t_state           *state,
-                   rvec              *f, /* forces on home particles */
+                   PaddedRVecVector  *f, /* forces on home particles */
                    t_fcdata          *fcd,
                    gmx_ekindata_t    *ekind,
                    matrix             M,
@@ -120,7 +121,7 @@ void update_constraints(FILE              *fplog,
                         t_state           *state,
                         gmx_bool           bMolPBC,
                         t_graph           *graph,
-                        rvec               force[], /* forces on home particles */
+                        PaddedRVecVector  *force, /* forces on home particles */
                         t_idef            *idef,
                         tensor             vir_part,
                         t_commrec         *cr,
@@ -138,7 +139,6 @@ void update_box(FILE             *fplog,
                 t_inputrec       *inputrec, /* input record and box stuff	*/
                 t_mdatoms        *md,
                 t_state          *state,
-                rvec              force[], /* forces on home particles */
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,
                 gmx_update_t     *upd);
@@ -182,10 +182,6 @@ void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
 
 void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
                        double xi[], double vxi[], t_extmass *MassQ);
-
-t_state *init_bufstate(const t_state *template_state);
-
-void destroy_bufstate(t_state *state);
 
 void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state, tensor vir, t_mdatoms *md,
