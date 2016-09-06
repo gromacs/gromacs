@@ -81,10 +81,6 @@ struct gmx_domdec_zones_t;
 struct t_commrec;
 struct t_inputrec;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief Returns the global topology atom number belonging to local atom index i.
  *
  * This function is intended for writing ASCII output
@@ -211,7 +207,11 @@ void dd_setup_dlb_resource_sharing(struct t_commrec           *cr,
 
 /*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
 void dd_collect_vec(struct gmx_domdec_t *dd,
-                    t_state *state_local, rvec *lv, rvec *v);
+                    t_state *state_local, const PaddedRVecVector *lv, rvec *v);
+
+/*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
+void dd_collect_vec(struct gmx_domdec_t *dd,
+                    t_state *state_local, const PaddedRVecVector *lv, PaddedRVecVector *v);
 
 /*! \brief Collects the local state \p state_local to \p state on the master rank */
 void dd_collect_state(struct gmx_domdec_t *dd,
@@ -269,7 +269,7 @@ void dd_partition_system(FILE                *fplog,
                          const gmx_mtop_t    *top_global,
                          const t_inputrec    *ir,
                          t_state             *state_local,
-                         rvec               **f,
+                         PaddedRVecVector    *f,
                          t_mdatoms           *mdatoms,
                          gmx_localtop_t      *top_local,
                          t_forcerec          *fr,
@@ -401,9 +401,5 @@ void set_ddbox_cr(t_commrec *cr, const ivec *dd_nc,
                   const t_inputrec *ir, const matrix box,
                   const t_block *cgs, const rvec *x,
                   gmx_ddbox_t *ddbox);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

@@ -1302,7 +1302,7 @@ gmx_constr_t init_constraints(FILE *fplog,
     constr->ed = ed;
     if (ed != NULL || state->edsamstate != NULL)
     {
-        init_edsam(mtop, ir, cr, ed, state->x, state->box, state->edsamstate);
+        init_edsam(mtop, ir, cr, ed, as_rvec_array(state->x.data()), state->box, state->edsamstate);
     }
 
     constr->warn_mtop = mtop;

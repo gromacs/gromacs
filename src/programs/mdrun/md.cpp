@@ -45,6 +45,7 @@
 #include <stdlib.h>
 
 #include <algorithm>
+#include <memory>
 
 #include "thread_mpi/threads.h"
 
@@ -252,9 +253,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     int               nchkpt  = 1;
     gmx_localtop_t   *top;
     t_mdebin         *mdebin   = NULL;
-    t_state          *state    = NULL;
     gmx_enerdata_t   *enerd;
-    rvec             *f = NULL;
+    PaddedRVecVector  f {};
     gmx_global_stat_t gstat;
     gmx_update_t     *upd   = NULL;
     t_graph          *graph = NULL;
@@ -347,11 +347,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     {
         /* Initialize ion swapping code */
         init_swapcoords(fplog, bVerbose, ir, opt2fn_master("-swap", nfile, fnm, cr),
-                        top_global, state_global->x, state_global->box, &state_global->swapstate, cr, oenv, Flags);
+                        top_global, as_rvec_array(state_global->x.data()), state_global->box, &state_global->swapstate, cr, oenv, Flags);
     }
 
     /* Initial values */
-    init_md(fplog, cr, ir, oenv, &t, &t0, state_global->lambda,
+    init_md(fplog, cr, ir, oenv, &t, &t0, &state_global->lambda,
             &(state_global->fep_state), lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
@@ -363,13 +363,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     snew(enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
                   enerd);
-    if (DOMAINDECOMP(cr))
+    if (!DOMAINDECOMP(cr))
     {
-        f = NULL;
-    }
-    else
-    {
-        snew(f, top_global->natoms);
+        f.resize(top_global->natoms + 1);
     }
 
     /* Kinetic energy data */
@@ -413,11 +409,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         }
     }
 
+    std::unique_ptr<t_state> stateInstance;
+    t_state *                state;
+
     if (DOMAINDECOMP(cr))
     {
         top = dd_init_local_top(top_global);
 
-        snew(state, 1);
+        stateInstance = std::unique_ptr<t_state>(new t_state);
+        state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
     }
     else
@@ -429,11 +429,11 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,
                                   &graph, mdatoms, vsite, shellfc);
 
-        update_realloc(upd, state->nalloc);
+        update_realloc(upd, state->natoms);
     }
 
     /* Set up interactive MD (IMD) */
-    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, state_global->x,
+    init_IMD(ir, cr, top_global, fplog, ir->nstcalcenergy, as_rvec_array(state_global->x.data()),
              nfile, fnm, oenv, imdport, Flags);
 
     if (DOMAINDECOMP(cr))
@@ -445,7 +445,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                             vsite, constr,
                             nrnb, NULL, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
-        update_realloc(upd, state->nalloc);
+        update_realloc(upd, state->natoms);
     }
 
     update_mdatoms(mdatoms, state->lambda[efptMASS]);
@@ -529,7 +529,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         if (vsite)
         {
             /* Construct the virtual sites for the initial configuration */
-            construct_vsites(vsite, state->x, ir->delta_t, NULL,
+            construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t, NULL,
                              top->idef.iparams, top->idef.il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
         }
@@ -885,15 +885,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                     /* Following is necessary because the graph may get out of sync
                      * with the coordinates if we only have every N'th coordinate set
                      */
-                    mk_mshift(fplog, graph, fr->ePBC, state->box, state->x);
-                    shift_self(graph, state->box, state->x);
+                    mk_mshift(fplog, graph, fr->ePBC, state->box, as_rvec_array(state->x.data()));
+                    shift_self(graph, state->box, as_rvec_array(state->x.data()));
                 }
-                construct_vsites(vsite, state->x, ir->delta_t, state->v,
+                construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t, as_rvec_array(state->v.data()),
                                  top->idef.iparams, top->idef.il,
                                  fr->ePBC, fr->bMolPBC, cr, state->box);
                 if (graph)
                 {
-                    unshift_self(graph, state->box, state->x);
+                    unshift_self(graph, state->box, as_rvec_array(state->x.data()));
                 }
             }
         }
@@ -970,7 +970,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                     nrnb, wcycle,
                                     do_verbose && !bPMETunePrinting);
                 shouldCheckNumberOfBondedInteractions = true;
-                update_realloc(upd, state->nalloc);
+                update_realloc(upd, state->natoms);
             }
         }
 
@@ -1064,7 +1064,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             relax_shell_flexcon(fplog, cr, bVerbose, step,
                                 ir, bNS, force_flags, top,
                                 constr, enerd, fcd,
-                                state, f, force_vir, mdatoms,
+                                state, &f, force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, bBornRadii, t, mu_tot,
                                 vsite, mdoutf_get_fp_field(outf));
@@ -1077,9 +1077,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
              * Check comments in sim_util.c
              */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
-                     state->box, state->x, &state->hist,
-                     f, force_vir, mdatoms, enerd, fcd,
-                     state->lambda, graph,
+                     state->box, &state->x, &state->hist,
+                     &f, force_vir, mdatoms, enerd, fcd,
+                     &state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
@@ -1099,7 +1099,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                  * so that the input is actually the initial step.
                  */
                 snew(vbuf, state->natoms);
-                copy_rvecn(state->v, vbuf, 0, state->natoms); /* should make this better for parallelizing? */
+                copy_rvecn(as_rvec_array(state->v.data()), vbuf, 0, state->natoms); /* should make this better for parallelizing? */
             }
             else
             {
@@ -1107,7 +1107,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ1);
             }
 
-            update_coords(fplog, step, ir, mdatoms, state, f, fcd,
+            update_coords(fplog, step, ir, mdatoms, state, &f, fcd,
                           ekind, M, upd, etrtVELOCITY1,
                           cr, constr);
 
@@ -1115,7 +1115,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             {
                 wallcycle_stop(wcycle, ewcUPDATE);
                 update_constraints(fplog, step, NULL, ir, mdatoms,
-                                   state, fr->bMolPBC, graph, f,
+                                   state, fr->bMolPBC, graph, &f,
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
                                    TRUE, bCalcVir);
@@ -1125,7 +1125,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             {
                 /* Need to unshift here if a do_force has been
                    called in the previous step */
-                unshift_self(graph, state->box, state->x);
+                unshift_self(graph, state->box, as_rvec_array(state->x.data()));
             }
             /* if VV, compute the pressure and constraints */
             /* For VV2, we strictly only need this if using pressure
@@ -1206,7 +1206,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             /* if it's the initial step, we performed this first step just to get the constraint virial */
             if (ir->eI == eiVV && bInitStep)
             {
-                copy_rvecn(vbuf, state->v, 0, state->natoms);
+                copy_rvecn(vbuf, as_rvec_array(state->v.data()), 0, state->natoms);
                 sfree(vbuf);
             }
             wallcycle_stop(wcycle, ewcUPDATE);
@@ -1227,7 +1227,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             /* sum up the foreign energy and dhdl terms for vv.  currently done every step so that dhdl is correct in the .edr */
             if (ir->efep != efepNO && !bRerunMD)
             {
-                sum_dhdl(enerd, state->lambda, ir->fepvals);
+                sum_dhdl(enerd, &state->lambda, ir->fepvals);
             }
         }
 
@@ -1240,7 +1240,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                statistics, but if performing simulated tempering, we
                do update the velocities and the tau_t. */
 
-            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, state->dfhist, step, state->v, mdatoms);
+            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, state->dfhist, step, as_rvec_array(state->v.data()), mdatoms);
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
             copy_df_history(state_global->dfhist, state->dfhist);
         }
@@ -1251,12 +1251,12 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
          */
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                                  ir, state, state_global, top_global, fr,
-                                 outf, mdebin, ekind, f,
+                                 outf, mdebin, ekind, &f,
                                  &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
                                  bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
-        bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, state->x, ir, t, wcycle);
+        bIMDstep = do_IMD(ir->bIMD, step, cr, bNS, state->box, as_rvec_array(state->x.data()), ir, t, wcycle);
 
         /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
         if (startingFromCheckpoint && bTrotter)
@@ -1348,7 +1348,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             if (constr && bIfRandomize)
             {
                 update_constraints(fplog, step, NULL, ir, mdatoms,
-                                   state, fr->bMolPBC, graph, f,
+                                   state, fr->bMolPBC, graph, &f,
                                    &top->idef, tmp_vir,
                                    cr, nrnb, wcycle, upd, constr,
                                    TRUE, bCalcVir);
@@ -1385,7 +1385,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             if (EI_VV(ir->eI))
             {
                 /* velocity half-step update */
-                update_coords(fplog, step, ir, mdatoms, state, f, fcd,
+                update_coords(fplog, step, ir, mdatoms, state, &f, fcd,
                               ekind, M, upd, etrtVELOCITY2,
                               cr, constr);
             }
@@ -1403,15 +1403,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                     cbuf_nalloc = state->natoms;
                     srenew(cbuf, cbuf_nalloc);
                 }
-                copy_rvecn(state->x, cbuf, 0, state->natoms);
+                copy_rvecn(as_rvec_array(state->x.data()), cbuf, 0, state->natoms);
             }
 
-            update_coords(fplog, step, ir, mdatoms, state, f, fcd,
+            update_coords(fplog, step, ir, mdatoms, state, &f, fcd,
                           ekind, M, upd, etrtPOSITION, cr, constr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
             update_constraints(fplog, step, &dvdl_constr, ir, mdatoms, state,
-                               fr->bMolPBC, graph, f,
+                               fr->bMolPBC, graph, &f,
                                &top->idef, shake_vir,
                                cr, nrnb, wcycle, upd, constr,
                                FALSE, bCalcVir);
@@ -1429,19 +1429,19 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 wallcycle_start(wcycle, ewcUPDATE);
                 trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
                 /* now we know the scaling, we can compute the positions again again */
-                copy_rvecn(cbuf, state->x, 0, state->natoms);
+                copy_rvecn(cbuf, as_rvec_array(state->x.data()), 0, state->natoms);
 
-                update_coords(fplog, step, ir, mdatoms, state, f, fcd,
+                update_coords(fplog, step, ir, mdatoms, state, &f, fcd,
                               ekind, M, upd, etrtPOSITION, cr, constr);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
-                /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
+                /* do we need an extra constraint here? just need to copy out of as_rvec_array(state->v.data()) to upd->xp? */
                 /* are the small terms in the shake_vir here due
                  * to numerical errors, or are they important
                  * physically? I'm thinking they are just errors, but not completely sure.
                  * For now, will call without actually constraining, constr=NULL*/
                 update_constraints(fplog, step, NULL, ir, mdatoms,
-                                   state, fr->bMolPBC, graph, f,
+                                   state, fr->bMolPBC, graph, &f,
                                    &top->idef, tmp_vir,
                                    cr, nrnb, wcycle, upd, NULL,
                                    FALSE, bCalcVir);
@@ -1472,7 +1472,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         else if (graph)
         {
             /* Need to unshift here */
-            unshift_self(graph, state->box, state->x);
+            unshift_self(graph, state->box, as_rvec_array(state->x.data()));
         }
 
         if (vsite != NULL)
@@ -1480,15 +1480,15 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             wallcycle_start(wcycle, ewcVSITECONSTR);
             if (graph != NULL)
             {
-                shift_self(graph, state->box, state->x);
+                shift_self(graph, state->box, as_rvec_array(state->x.data()));
             }
-            construct_vsites(vsite, state->x, ir->delta_t, state->v,
+            construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t, as_rvec_array(state->v.data()),
                              top->idef.iparams, top->idef.il,
                              fr->ePBC, fr->bMolPBC, cr, state->box);
 
             if (graph != NULL)
             {
-                unshift_self(graph, state->box, state->x);
+                unshift_self(graph, state->box, as_rvec_array(state->x.data()));
             }
             wallcycle_stop(wcycle, ewcVSITECONSTR);
         }
@@ -1545,9 +1545,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         {
             /* Sum up the foreign energy and dhdl terms for md and sd.
                Currently done every step so that dhdl is correct in the .edr */
-            sum_dhdl(enerd, state->lambda, ir->fepvals);
+            sum_dhdl(enerd, &state->lambda, ir->fepvals);
         }
-        update_box(fplog, step, ir, mdatoms, state, f,
+        update_box(fplog, step, ir, mdatoms, state,
                    pcoupl_mu, nrnb, upd);
 
         /* ################# END UPDATE STEP 2 ################# */
@@ -1649,7 +1649,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             do_per_step(step, ir->swap->nstswap))
         {
             bNeedRepartition = do_swapcoords(cr, step, t, ir, wcycle,
-                                             bRerunMD ? rerun_fr.x   : state->x,
+                                             bRerunMD ? rerun_fr.x   : as_rvec_array(state->x.data()),
                                              bRerunMD ? rerun_fr.box : state->box,
                                              top_global, MASTER(cr) && bVerbose, bRerunMD);
 
@@ -1676,7 +1676,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                 vsite, constr,
                                 nrnb, wcycle, FALSE);
             shouldCheckNumberOfBondedInteractions = true;
-            update_realloc(upd, state->nalloc);
+            update_realloc(upd, state->natoms);
         }
 
         bFirstStep             = FALSE;
@@ -1701,7 +1701,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
         if ( (membed != NULL) && (!bLastStep) )
         {
-            rescale_membed(step_rel, membed, state_global->x);
+            rescale_membed(step_rel, membed, as_rvec_array(state_global->x.data()));
         }
 
         if (bRerunMD)
