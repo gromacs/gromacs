@@ -100,7 +100,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      rvec *f_local);
+                                      PaddedRVecVector *f_local);
 
 #define MDOF_X            (1<<0)
 #define MDOF_V            (1<<1)
