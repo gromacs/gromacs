@@ -60,6 +60,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -468,6 +469,28 @@ static int do_cpte_reals(XDR *xd, int cptp, int ecpt, int sflags,
     return do_cpte_reals_low(xd, cptp, ecpt, sflags, n, NULL, v, list, ecprREAL);
 }
 
+/* This function stores n along with the reals for reading,
+ * but on reading it assumes that n matches the value in the checkpoint file,
+ * a fatal error is generated when this is not the case.
+ */
+static int do_cpte_reals(XDR *xd, int cptp, int ecpt, int sflags,
+                         int n, std::vector<real> *v, FILE *list)
+{
+    real *v_real;
+    if (list == NULL)
+    {
+        /* We only need to resize on read, but this does nothing on write */
+        (*v).resize((sflags & (1<<ecpt)) ? n : 0);
+        v_real = v->data();
+    }
+    else
+    {
+        v_real = NULL;
+    }
+
+    return do_cpte_reals_low(xd, cptp, ecpt, sflags, n, NULL, &v_real, list, ecprREAL);
+}
+
 /* This function does the same as do_cpte_reals,
  * except that on reading it ignores the passed value of *n
  * and stored the value read from the checkpoint file in *n.
@@ -612,6 +635,23 @@ static int do_cpte_doubles(XDR *xd, int cptp, int ecpt, int sflags,
     return 0;
 }
 
+static int do_cpte_doubles(XDR *xd, int cptp, int ecpt, int sflags,
+                           int n, std::vector<double> *v, FILE *list)
+{
+    double *v_double;
+    if (list == NULL)
+    {
+        (*v).resize((sflags & (1<<ecpt)) ? n : 0);
+        v_double = v->data();
+    }
+    else
+    {
+        v_double = NULL;
+    }
+
+    return do_cpte_doubles(xd, cptp, ecpt, sflags, n, &v_double, list);
+}
+
 static int do_cpte_double(XDR *xd, int cptp, int ecpt, int sflags,
                           double *r, FILE *list)
 {
@@ -620,10 +660,20 @@ static int do_cpte_double(XDR *xd, int cptp, int ecpt, int sflags,
 
 
 static int do_cpte_rvecs(XDR *xd, int cptp, int ecpt, int sflags,
-                         int n, rvec **v, FILE *list)
+                         int n, std::vector<gmx::RVec> *v, FILE *list)
 {
+    if (list == NULL)
+    {
+        /* We resize the vector here to avoid pointer reallocation in
+         * do_cpte_reals_low. Note the we allocate 1 element extra for SIMD.
+         */
+        v->resize(n + 1);
+    }
+
+    rvec *v_rvec = as_rvec_array(v->data());
+
     return do_cpte_reals_low(xd, cptp, ecpt, sflags,
-                             n*DIM, NULL, (real **)v, list, ecprRVEC);
+                             n*DIM, NULL, (real **)(&v_rvec), list, ecprRVEC);
 }
 
 static int do_cpte_matrix(XDR *xd, int cptp, int ecpt, int sflags,
@@ -2478,14 +2528,12 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
     fr->bX         = (state.flags & (1<<estX));
     if (fr->bX)
     {
-        fr->x     = state.x;
-        state.x   = NULL;
+        fr->x   = convertPaddedRVecVector(state.x, state.natoms);
     }
     fr->bV      = (state.flags & (1<<estV));
     if (fr->bV)
     {
-        fr->v     = state.v;
-        state.v   = NULL;
+        fr->v   = convertPaddedRVecVector(state.v, state.natoms);
     }
     fr->bF      = FALSE;
     fr->bBox    = (state.flags & (1<<estBOX));
@@ -2493,7 +2541,6 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
     {
         copy_mat(state.box, fr->box);
     }
-    done_state(&state);
 }
 
 void list_checkpoint(const char *fn, FILE *out)
@@ -2571,8 +2618,6 @@ void list_checkpoint(const char *fn, FILE *out)
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
-
-    done_state(&state);
 }
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
@@ -2594,5 +2639,4 @@ read_checkpoint_simulation_part_and_filenames(t_fileio             *fp,
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
-    done_state(&state);
 }

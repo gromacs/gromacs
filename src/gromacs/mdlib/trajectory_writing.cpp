@@ -51,28 +51,28 @@
 #include "gromacs/utility/smalloc.h"
 
 void
-do_md_trajectory_writing(FILE           *fplog,
-                         t_commrec      *cr,
-                         int             nfile,
-                         const t_filenm  fnm[],
-                         gmx_int64_t     step,
-                         gmx_int64_t     step_rel,
-                         double          t,
-                         t_inputrec     *ir,
-                         t_state        *state,
-                         t_state        *state_global,
-                         gmx_mtop_t     *top_global,
-                         t_forcerec     *fr,
-                         gmx_mdoutf_t    outf,
-                         t_mdebin       *mdebin,
-                         gmx_ekindata_t *ekind,
-                         rvec           *f,
-                         int            *nchkpt,
-                         gmx_bool        bCPT,
-                         gmx_bool        bRerunMD,
-                         gmx_bool        bLastStep,
-                         gmx_bool        bDoConfOut,
-                         gmx_bool        bSumEkinhOld
+do_md_trajectory_writing(FILE             *fplog,
+                         t_commrec        *cr,
+                         int               nfile,
+                         const t_filenm    fnm[],
+                         gmx_int64_t       step,
+                         gmx_int64_t       step_rel,
+                         double            t,
+                         t_inputrec       *ir,
+                         t_state          *state,
+                         t_state          *state_global,
+                         gmx_mtop_t       *top_global,
+                         t_forcerec       *fr,
+                         gmx_mdoutf_t      outf,
+                         t_mdebin         *mdebin,
+                         gmx_ekindata_t   *ekind,
+                         PaddedRVecVector *f,
+                         int              *nchkpt,
+                         gmx_bool          bCPT,
+                         gmx_bool          bRerunMD,
+                         gmx_bool          bLastStep,
+                         gmx_bool          bDoConfOut,
+                         gmx_bool          bSumEkinhOld
                          )
 {
     int   mdof_flags;
@@ -152,7 +152,7 @@ do_md_trajectory_writing(FILE           *fplog,
             bDoConfOut && MASTER(cr) &&
             !bRerunMD)
         {
-            if (fr->bMolPBC && state->x == state_global->x)
+            if (fr->bMolPBC && as_rvec_array(state->x.data()) == as_rvec_array(state_global->x.data()))
             {
                 /* This (single-rank) run needs to allocate a
                    temporary array of size natoms so that any
@@ -162,13 +162,13 @@ do_md_trajectory_writing(FILE           *fplog,
                    identical, and makes .edr restarts binary
                    identical. */
                 snew(x_for_confout, state_global->natoms);
-                copy_rvecn(state_global->x, x_for_confout, 0, state_global->natoms);
+                copy_rvecn(as_rvec_array(state_global->x.data()), x_for_confout, 0, state_global->natoms);
             }
             else
             {
                 /* With DD, or no bMolPBC, it doesn't matter if
-                   we change state_global->x */
-                x_for_confout = state_global->x;
+                   we change as_rvec_array(state_global->x.data()) */
+                x_for_confout = as_rvec_array(state_global->x.data());
             }
 
             /* x and v have been collected in mdoutf_write_to_trajectory_files,
@@ -183,9 +183,9 @@ do_md_trajectory_writing(FILE           *fplog,
             }
             write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm),
                                 *top_global->name, top_global,
-                                x_for_confout, state_global->v,
+                                x_for_confout, as_rvec_array(state_global->v.data()),
                                 ir->ePBC, state->box);
-            if (fr->bMolPBC && state->x == state_global->x)
+            if (fr->bMolPBC && as_rvec_array(state->x.data()) == as_rvec_array(state_global->x.data()))
             {
                 sfree(x_for_confout);
             }
