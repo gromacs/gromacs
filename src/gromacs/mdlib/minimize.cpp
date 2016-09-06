@@ -549,9 +549,7 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
 
 {
     t_state *s1, *s2;
-    int      i;
     int      start, end;
-    rvec    *x1, *x2;
     real     dvdl_constr;
     int      nthreads gmx_unused;
 
@@ -579,7 +577,7 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     s2->natoms = s1->natoms;
     copy_mat(s1->box, s2->box);
     /* Copy free energy state */
-    for (i = 0; i < efptNR; i++)
+    for (int i = 0; i < efptNR; i++)
     {
         s2->lambda[i] = s1->lambda[i];
     }
@@ -588,24 +586,22 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
     start = 0;
     end   = md->homenr;
 
-    x1 = s1->x;
-    x2 = s2->x;
-
     // cppcheck-suppress unreadVariable
     nthreads = gmx_omp_nthreads_get(emntUpdate);
 #pragma omp parallel num_threads(nthreads)
     {
-        int gf, i, m;
+        rvec *x1 = s1->x;
+        rvec *x2 = s2->x;
 
-        gf = 0;
+        int   gf = 0;
 #pragma omp for schedule(static) nowait
-        for (i = start; i < end; i++)
+        for (int i = start; i < end; i++)
         {
             if (md->cFREEZE)
             {
                 gf = md->cFREEZE[i];
             }
-            for (m = 0; m < DIM; m++)
+            for (int m = 0; m < DIM; m++)
             {
                 if (ir->opts.nFreeze[gf][m])
                 {
@@ -621,12 +617,12 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
         if (s2->flags & (1<<estCGP))
         {
             /* Copy the CG p vector */
-            x1 = s1->cg_p;
-            x2 = s2->cg_p;
+            rvec *p1 = s1->cg_p;
+            rvec *p2 = s2->cg_p;
 #pragma omp for schedule(static) nowait
-            for (i = start; i < end; i++)
+            for (int i = start; i < end; i++)
             {
-                copy_rvec(x1[i], x2[i]);
+                copy_rvec(p1[i], p2[i]);
             }
         }
 
@@ -642,7 +638,7 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
             }
             s2->ncg_gl = s1->ncg_gl;
 #pragma omp for schedule(static) nowait
-            for (i = 0; i < s2->ncg_gl; i++)
+            for (int i = 0; i < s2->ncg_gl; i++)
             {
                 s2->cg_gl[i] = s1->cg_gl[i];
             }
