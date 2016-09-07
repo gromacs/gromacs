@@ -2,7 +2,7 @@
    This source code file is part of thread_mpi.
    Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-   Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+   Copyright (c) 2009,2016, Sander Pronk, Erik Lindahl.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@
 #include "collective.h"
 
 
-int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
+int tMPI_Gather(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                 void* recvbuf, int recvcount, tMPI_Datatype recvtype,
                 int root, tMPI_Comm comm)
 {
@@ -96,7 +96,7 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
             tMPI_Coll_root_xfer(comm, sendtype, recvtype,
                                 sendtype->size*sendcount,
                                 recvtype->size*recvcount,
-                                sendbuf,
+                                (void*)sendbuf,
                                 (char*)recvbuf+myrank*recvcount*recvtype->size,
                                 &ret);
         }
@@ -146,7 +146,7 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
         /* first set up the data just to root. */
         ret = tMPI_Post_multi(cev, myrank, 0, TMPI_GATHER_TAG, sendtype,
-                              sendcount*sendtype->size, sendbuf, 1, synct, root);
+                              sendcount*sendtype->size, (void*)sendbuf, 1, synct, root);
         if (ret != TMPI_SUCCESS)
         {
             return ret;
@@ -165,7 +165,7 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
 
 
-int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
+int tMPI_Gatherv(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                  void* recvbuf, int *recvcounts, int *displs,
                  tMPI_Datatype recvtype, int root, tMPI_Comm comm)
 {
@@ -203,7 +203,7 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
             tMPI_Coll_root_xfer(comm, sendtype, recvtype,
                                 sendtype->size*sendcount,
                                 recvtype->size*recvcounts[myrank],
-                                sendbuf,
+                                (void*)sendbuf,
                                 (char*)recvbuf+displs[myrank]*recvtype->size,
                                 &ret);
         }
@@ -252,7 +252,7 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
         /* first set up the data just to root. */
         ret = tMPI_Post_multi(cev, myrank, 0, TMPI_GATHERV_TAG, sendtype,
-                              sendcount*sendtype->size, sendbuf, 1, synct, root);
+                              sendcount*sendtype->size, (void*)sendbuf, 1, synct, root);
         if (ret != TMPI_SUCCESS)
         {
             return ret;
