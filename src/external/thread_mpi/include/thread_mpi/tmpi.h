@@ -2,7 +2,7 @@
    This source code file is part of thread_mpi.
    Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-   Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+   Copyright (c) 2009,2016, Sander Pronk, Erik Lindahl.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -884,7 +884,7 @@ int tMPI_Type_commit(tMPI_Datatype *datatype);
     \param[in]  comm        The shared communicator.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest,
+int tMPI_Send(const void* buf, int count, tMPI_Datatype datatype, int dest,
               int tag, tMPI_Comm comm);
 
 /** Receive message; blocks until buf is filled.
@@ -919,7 +919,7 @@ int tMPI_Recv(void* buf, int count, tMPI_Datatype datatype, int source,
     \param[out] status      The received message status.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
+int tMPI_Sendrecv(const void *sendbuf, int sendcount, tMPI_Datatype sendtype,
                   int dest, int sendtag, void *recvbuf, int recvcount,
                   tMPI_Datatype recvtype, int source, int recvtag,
                   tMPI_Comm comm, tMPI_Status *status);
@@ -945,7 +945,7 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
                             tMPI_Test, etc.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
+int tMPI_Isend(const void* buf, int count, tMPI_Datatype datatype, int dest,
                int tag, tMPI_Comm comm, tMPI_Request *request);
 
 /** Initiate receiving a message.
@@ -1164,7 +1164,7 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
+int tMPI_Gather(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                 void* recvbuf, int recvcount, tMPI_Datatype recvtype, int root,
                 tMPI_Comm comm);
 
@@ -1189,7 +1189,7 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
+int tMPI_Gatherv(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                  void* recvbuf, int *recvcounts, int *displs,
                  tMPI_Datatype recvtype, int root, tMPI_Comm comm);
 
@@ -1212,7 +1212,7 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
+int tMPI_Scatter(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                  void* recvbuf, int recvcount, tMPI_Datatype recvtype, int root,
                  tMPI_Comm comm);
 
@@ -1237,7 +1237,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
+int tMPI_Scatterv(const void* sendbuf, int *sendcounts, int *displs,
                   tMPI_Datatype sendtype, void* recvbuf, int recvcount,
                   tMPI_Datatype recvtype, int root, tMPI_Comm comm);
 
