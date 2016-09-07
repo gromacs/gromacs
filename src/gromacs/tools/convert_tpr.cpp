@@ -328,56 +328,38 @@ static void zeroq(int index[], gmx_mtop_t *mtop)
 int gmx_convert_tpr(int argc, char *argv[])
 {
     const char       *desc[] = {
-        "[THISMODULE] can edit run input files in four ways.[PAR]",
+        "[THISMODULE] can edit run input files in three ways.[PAR]",
         "[BB]1.[bb] by modifying the number of steps in a run input file",
         "with options [TT]-extend[tt], [TT]-until[tt] or [TT]-nsteps[tt]",
         "(nsteps=-1 means unlimited number of steps)[PAR]",
-        "[BB]2.[bb] (OBSOLETE) by creating a run input file",
-        "for a continuation run when your simulation has crashed due to e.g.",
-        "a full disk, or by making a continuation run input file.",
-        "This option is obsolete, since mdrun now writes and reads",
-        "checkpoint files.",
-        "[BB]Note[bb] that a frame with coordinates and velocities is needed.",
-        "When pressure and/or Nose-Hoover temperature coupling is used",
-        "an energy file can be supplied to get an exact continuation",
-        "of the original run.[PAR]",
-        "[BB]3.[bb] by creating a [REF].tpx[ref] file for a subset of your original",
+        "[BB]2.[bb] by creating a [REF].tpx[ref] file for a subset of your original",
         "tpx file, which is useful when you want to remove the solvent from",
         "your [REF].tpx[ref] file, or when you want to make e.g. a pure C[GRK]alpha[grk] [REF].tpx[ref] file.",
         "Note that you may need to use [TT]-nsteps -1[tt] (or similar) to get",
         "this to work.",
         "[BB]WARNING: this [REF].tpx[ref] file is not fully functional[bb].[PAR]",
-        "[BB]4.[bb] by setting the charges of a specified group",
+        "[BB]3.[bb] by setting the charges of a specified group",
         "to zero. This is useful when doing free energy estimates",
         "using the LIE (Linear Interaction Energy) method."
     };
 
-    const char       *top_fn, *frame_fn;
-    struct t_fileio  *fp;
-    ener_file_t       fp_ener = NULL;
-    gmx_trr_header_t  head;
+    const char       *top_fn;
     int               i;
-    gmx_int64_t       nsteps_req, run_step, frame;
+    gmx_int64_t       nsteps_req, run_step;
     double            run_t, state_t;
-    gmx_bool          bOK, bNsteps, bExtend, bUntil, bTime, bTraj;
-    gmx_bool          bFrame, bUse, bSel, bNeedEner, bReadEner, bScanEner, bFepState;
+    gmx_bool          bSel;
+    gmx_bool          bNsteps, bExtend, bUntil;
     gmx_mtop_t        mtop;
     t_atoms           atoms;
     t_inputrec       *ir;
     t_state           state;
-    rvec             *newx = NULL, *newv = NULL, *tmpx, *tmpv;
-    matrix            newbox;
     int               gnx;
     char             *grpname;
     int              *index = NULL;
-    int               nre;
-    gmx_enxnm_t      *enm     = NULL;
-    t_enxframe       *fr_ener = NULL;
     char              buf[200], buf2[200];
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
         { efTPR, NULL,  NULL,    ffREAD  },
-        { efTRN, "-f",  NULL,    ffOPTRD },
         { efEDR, "-e",  NULL,    ffOPTRD },
         { efNDX, NULL,  NULL,    ffOPTRD },
         { efTPR, "-o",  "tprout", ffWRITE }
@@ -386,9 +368,8 @@ int gmx_convert_tpr(int argc, char *argv[])
 
     /* Command line options */
     static int      nsteps_req_int = 0;
-    static real     start_t        = -1.0, extend_t = 0.0, until_t = 0.0;
-    static int      init_fep_state = 0;
-    static gmx_bool bContinuation  = TRUE, bZeroQ = FALSE, bVel = TRUE;
+    static real     extend_t       = 0.0, until_t = 0.0;
+    static gmx_bool bContinuation  = TRUE, bZeroQ = FALSE;
     static t_pargs  pa[]           = {
         { "-extend",        FALSE, etREAL, {&extend_t},
           "Extend runtime by this amount (ps)" },
@@ -396,16 +377,10 @@ int gmx_convert_tpr(int argc, char *argv[])
           "Extend runtime until this ending time (ps)" },
         { "-nsteps",        FALSE, etINT,  {&nsteps_req_int},
           "Change the number of steps" },
-        { "-time",          FALSE, etREAL, {&start_t},
-          "Continue from frame at this time (ps) instead of the last frame" },
         { "-zeroq",         FALSE, etBOOL, {&bZeroQ},
           "Set the charges of a group (from the index) to zero" },
-        { "-vel",           FALSE, etBOOL, {&bVel},
-          "Require velocities from trajectory" },
         { "-cont",          FALSE, etBOOL, {&bContinuation},
-          "For exact continuation, the constraints should not be applied before the first step" },
-        { "-init_fep_state", FALSE, etINT, {&init_fep_state},
-          "fep state to initialize from" },
+          "For exact continuation, the constraints should not be applied before the first step" }
     };
 
     /* Parse the command line */
@@ -420,9 +395,6 @@ int gmx_convert_tpr(int argc, char *argv[])
     bNsteps    = opt2parg_bSet("-nsteps", asize(pa), pa);
     bExtend    = opt2parg_bSet("-extend", asize(pa), pa);
     bUntil     = opt2parg_bSet("-until", asize(pa), pa);
-    bFepState  = opt2parg_bSet("-init_fep_state", asize(pa), pa);
-    bTime      = opt2parg_bSet("-time", asize(pa), pa);
-    bTraj      = (opt2bSet("-f", NFILE, fnm) || bTime);
 
     top_fn = ftp2fn(efTPR, NFILE, fnm);
     fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
@@ -432,183 +404,6 @@ int gmx_convert_tpr(int argc, char *argv[])
     read_tpx_state(top_fn, ir, &state, &mtop);
     run_step = ir->init_step;
     run_t    = ir->init_step*ir->delta_t + ir->init_t;
-
-    if (!EI_STATE_VELOCITY(ir->eI))
-    {
-        bVel = FALSE;
-    }
-
-    if (bTraj)
-    {
-        fprintf(stderr, "\n"
-                "NOTE: Reading the state from trajectory is an obsolete feature of gmx convert-tpr.\n"
-                "      Continuation should be done by loading a checkpoint file with mdrun -cpi\n"
-                "      This guarantees that all state variables are transferred.\n"
-                "      gmx convert-tpr is now only useful for increasing nsteps,\n"
-                "      but even that can often be avoided by using mdrun -maxh\n"
-                "\n");
-
-        if (ir->bContinuation != bContinuation)
-        {
-            fprintf(stderr, "Modifying ir->bContinuation to %s\n",
-                    gmx::boolToString(bContinuation));
-        }
-        ir->bContinuation = bContinuation;
-
-
-        bNeedEner = (ir->epc == epcPARRINELLORAHMAN || ir->etc == etcNOSEHOOVER);
-        bReadEner = (bNeedEner && ftp2bSet(efEDR, NFILE, fnm));
-        bScanEner = (bReadEner && !bTime);
-
-        if (ir->epc != epcNO || EI_SD(ir->eI) || ir->eI == eiBD)
-        {
-            fprintf(stderr, "NOTE: The simulation uses pressure coupling and/or stochastic dynamics.\n"
-                    "gmx convert-tpr can not provide binary identical continuation.\n"
-                    "If you want that, supply a checkpoint file to mdrun\n\n");
-        }
-
-        if (EI_SD(ir->eI) || ir->eI == eiBD)
-        {
-            fprintf(stderr, "\nChanging ld-seed from %" GMX_PRId64 " ", ir->ld_seed);
-            ir->ld_seed = static_cast<int>(gmx::makeRandomSeed());
-            fprintf(stderr, "to %" GMX_PRId64 "\n\n", ir->ld_seed);
-        }
-
-        frame_fn = ftp2fn(efTRN, NFILE, fnm);
-
-        if (fn2ftp(frame_fn) == efCPT)
-        {
-            int sim_part;
-
-            fprintf(stderr,
-                    "\nREADING STATE FROM CHECKPOINT %s...\n\n",
-                    frame_fn);
-
-            read_checkpoint_state(frame_fn, &sim_part,
-                                  &run_step, &run_t, &state);
-        }
-        else
-        {
-            fprintf(stderr,
-                    "\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",
-                    frame_fn);
-
-            fp = gmx_trr_open(frame_fn, "r");
-            if (bScanEner)
-            {
-                fp_ener = open_enx(ftp2fn(efEDR, NFILE, fnm), "r");
-                do_enxnms(fp_ener, &nre, &enm);
-                snew(fr_ener, 1);
-                fr_ener->t = -1e-12;
-            }
-
-            /* Now scan until the last set of x and v (step == 0)
-             * or the ones at step step.
-             */
-            bFrame = TRUE;
-            frame  = 0;
-            while (bFrame)
-            {
-                bFrame = gmx_trr_read_frame_header(fp, &head, &bOK);
-                if (bOK && frame == 0)
-                {
-                    if (mtop.natoms != head.natoms)
-                    {
-                        gmx_fatal(FARGS, "Number of atoms in Topology (%d) "
-                                  "is not the same as in Trajectory (%d)\n",
-                                  mtop.natoms, head.natoms);
-                    }
-                    snew(newx, head.natoms);
-                    snew(newv, head.natoms);
-                }
-                bFrame = bFrame && bOK;
-                if (bFrame)
-                {
-                    bOK = gmx_trr_read_frame_data(fp, &head, newbox, newx, newv, NULL);
-                }
-                bFrame = bFrame && bOK;
-                bUse   = FALSE;
-                if (bFrame &&
-                    (head.x_size) && (head.v_size || !bVel))
-                {
-                    bUse = TRUE;
-                    if (bScanEner)
-                    {
-                        /* Read until the energy time is >= the trajectory time */
-                        while (fr_ener->t < head.t && do_enx(fp_ener, fr_ener))
-                        {
-                            ;
-                        }
-                        bUse = (fr_ener->t == head.t);
-                    }
-                    if (bUse)
-                    {
-                        tmpx                  = newx;
-                        newx                  = state.x;
-                        state.x               = tmpx;
-                        tmpv                  = newv;
-                        newv                  = state.v;
-                        state.v               = tmpv;
-                        run_t                 = head.t;
-                        run_step              = head.step;
-                        state.fep_state       = head.fep_state;
-                        state.lambda[efptFEP] = head.lambda;
-                        copy_mat(newbox, state.box);
-                    }
-                }
-                if (bFrame || !bOK)
-                {
-                    sprintf(buf, "\r%s %s frame %s%s: step %s%s time %s",
-                            "%s", "%s", "%6", GMX_PRId64, "%6", GMX_PRId64, " %8.3f");
-                    fprintf(stderr, buf,
-                            bUse ? "Read   " : "Skipped", ftp2ext(fn2ftp(frame_fn)),
-                            frame, head.step, head.t);
-                    fflush(stderr);
-                    frame++;
-                    if (bTime && (head.t >= start_t))
-                    {
-                        bFrame = FALSE;
-                    }
-                }
-            }
-            if (bScanEner)
-            {
-                close_enx(fp_ener);
-                free_enxframe(fr_ener);
-                free_enxnms(nre, enm);
-            }
-            gmx_trr_close(fp);
-            fprintf(stderr, "\n");
-
-            if (!bOK)
-            {
-                fprintf(stderr, "%s frame %s (step %s, time %g) is incomplete\n",
-                        ftp2ext(fn2ftp(frame_fn)), gmx_step_str(frame-1, buf2),
-                        gmx_step_str(head.step, buf), head.t);
-            }
-            fprintf(stderr, "\nUsing frame of step %s time %g\n",
-                    gmx_step_str(run_step, buf), run_t);
-
-            if (bNeedEner)
-            {
-                if (bReadEner)
-                {
-                    get_enx_state(ftp2fn(efEDR, NFILE, fnm), run_t, &mtop.groups, ir, &state);
-                }
-                else
-                {
-                    fprintf(stderr, "\nWARNING: The simulation uses %s temperature and/or %s pressure coupling,\n"
-                            "         the continuation will only be exact when an energy file is supplied\n\n",
-                            ETCOUPLTYPE(etcNOSEHOOVER),
-                            EPCOUPLTYPE(epcPARRINELLORAHMAN));
-                }
-            }
-            if (bFepState)
-            {
-                ir->fepvals->init_fep_state = init_fep_state;
-            }
-        }
-    }
 
     if (bNsteps)
     {
@@ -648,7 +443,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         ir->init_step = run_step;
 
         if (ftp2bSet(efNDX, NFILE, fnm) ||
-            !(bNsteps || bExtend || bUntil || bTraj))
+            !(bNsteps || bExtend || bUntil))
         {
             atoms = gmx_mtop_global_atoms(&mtop);
             get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1,
