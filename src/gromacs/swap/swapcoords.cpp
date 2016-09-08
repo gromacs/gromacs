@@ -1459,7 +1459,7 @@ void init_swapcoords(
         gmx_mtop_t             *mtop,
         rvec                    x[],
         matrix                  box,
-        swapstate_t            *swapstate,
+        swapstate_t           **swapstatePtr,
         t_commrec              *cr,
         const gmx_output_env_t *oenv,
         unsigned long           Flags)
@@ -1561,6 +1561,12 @@ void init_swapcoords(
             snew(g->xc_old, g->nat);
         }
     }
+
+    if (*swapstatePtr == NULL)
+    {
+        snew(*swapstatePtr, 1);
+    }
+    swapstate_t *swapstate = *swapstatePtr;
 
     if (MASTER(cr))
     {

@@ -223,9 +223,9 @@ typedef struct t_state
     ekinstate_t             ekinstate;       /* The state of the kinetic energy data      */
 
     struct energyhistory_t *enerhist;        /* Energy history for statistics           */
-    swapstate_t             swapstate;       /* Position swapping                       */
+    swapstate_t            *swapstate;       /* Position swapping                       */
     df_history_t            dfhist;          /*Free energy history for free energy analysis  */
-    edsamstate_t            edsamstate;      /* Essential dynamics / flooding history */
+    edsamstate_t           *edsamstate;      /* Essential dynamics / flooding history */
 
     int                     ddp_count;       /* The DD partitioning count for this state  */
     int                     ddp_count_cg_gl; /* The DD part. count for index_gl     */

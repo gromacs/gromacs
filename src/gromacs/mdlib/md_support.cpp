@@ -734,5 +734,12 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     snew(state->enerhist, 1);
     init_energyhistory(state->enerhist);
     init_df_history(&state->dfhist, ir->fepvals->n_lambda);
-    state->swapstate.eSwapCoords = ir->eSwapCoords;
+    if (ir->eSwapCoords != eswapNO)
+    {
+        if (state->swapstate == NULL)
+        {
+            snew(state->swapstate, 1);
+        }
+        state->swapstate->eSwapCoords = ir->eSwapCoords;
+    }
 }
