@@ -715,57 +715,6 @@
    ND1   NE2   CE1   HE1    improper_Z_CA_X_Y 
 
 
-[ HIS1 ]   ; Identical to HISD
- [ atoms ]
-     N    opls_238   -0.500     1
-     H    opls_241    0.300     1
-    CA    opls_224B   0.140     1
-    HA    opls_140    0.060     1
-    CB    opls_505   -0.297     2 
-   HB1    opls_140    0.060     2 
-   HB2    opls_140    0.060     2 
-    CG    opls_508   -0.261     3
-   ND1    opls_503   -0.291     4
-   HD1    opls_504    0.326     4
-   CD2    opls_507    0.504     5
-   HD2    opls_146    0.183     5
-   CE1    opls_506    0.182     6
-   HE1    opls_146    0.098     6
-   NE2    opls_511   -0.564     7
-     C    opls_235    0.500     8
-     O    opls_236   -0.500     8
- [ bonds ]
-     N     H
-     N    CA
-    CA    HA
-    CA    CB
-    CA     C
-    CB   HB1
-    CB   HB2
-    CB    CG
-    CG   ND1
-    CG   CD2
-   ND1   HD1
-   ND1   CE1
-   CD2   HD2
-   CD2   NE2
-   CE1   HE1
-   CE1   NE2
-     C     O
-    -C     N
- [ dihedrals ] ; override some with residue-specific ones
-     N    CA    CB    CG    dih_HIS_chi1_N_C_C_C
-    CG    CB    CA     C    dih_HIS_chi1_C_C_C_CO
-    CA    CB    CG   ND1    dih_HIS_chi2_C_C_C_N
- [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y  
-    CA    +N     C     O    improper_O_C_X_Y  
-   ND1   CD2    CG    CB    improper_Z_CA_X_Y 
-    CG   CE1   ND1   HD1    improper_Z_N_X_Y  
-    CG   NE2   CD2   HD2    improper_Z_CA_X_Y 
-   ND1   NE2   CE1   HE1    improper_Z_CA_X_Y 
-
-
 [ HISE ] 
  [ atoms ]
      N    opls_238   -0.500     1
