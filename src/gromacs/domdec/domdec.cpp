@@ -1511,7 +1511,11 @@ static void dd_distribute_vec(gmx_domdec_t *dd, t_block *cgs, rvec *v, rvec *lv)
 
 static void dd_distribute_dfhist(gmx_domdec_t *dd, df_history_t *dfhist)
 {
-    int i;
+    if (dfhist == NULL)
+    {
+        return;
+    }
+
     dd_bcast(dd, sizeof(int), &dfhist->bEquil);
     dd_bcast(dd, sizeof(int), &dfhist->nlambda);
     dd_bcast(dd, sizeof(real), &dfhist->wl_delta);
@@ -1526,7 +1530,7 @@ static void dd_distribute_dfhist(gmx_domdec_t *dd, df_history_t *dfhist)
         dd_bcast(dd, sizeof(real)*nlam, dfhist->sum_minvar);
         dd_bcast(dd, sizeof(real)*nlam, dfhist->sum_variance);
 
-        for (i = 0; i < nlam; i++)
+        for (int i = 0; i < nlam; i++)
         {
             dd_bcast(dd, sizeof(real)*nlam, dfhist->accum_p[i]);
             dd_bcast(dd, sizeof(real)*nlam, dfhist->accum_m[i]);
@@ -1560,7 +1564,10 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
         copy_mat(state->boxv, state_local->boxv);
         copy_mat(state->svir_prev, state_local->svir_prev);
         copy_mat(state->fvir_prev, state_local->fvir_prev);
-        copy_df_history(&state_local->dfhist, &state->dfhist);
+        if (state->dfhist != NULL)
+        {
+            copy_df_history(state_local->dfhist, state->dfhist);
+        }
         for (i = 0; i < state_local->ngtc; i++)
         {
             for (j = 0; j < nh; j++)
@@ -1595,7 +1602,7 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
     dd_bcast(dd, ((state_local->nnhpres*nh)*sizeof(double)), state_local->nhpres_vxi);
 
     /* communicate df_history -- required for restarting from checkpoint */
-    dd_distribute_dfhist(dd, &state_local->dfhist);
+    dd_distribute_dfhist(dd, state_local->dfhist);
 
     if (dd->nat_home > state_local->nalloc)
     {

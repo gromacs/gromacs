@@ -453,7 +453,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
     if (ir->bExpanded)
     {
-        init_expanded_ensemble(startingFromCheckpoint, ir, &state->dfhist);
+        init_expanded_ensemble(startingFromCheckpoint, ir, state->dfhist);
     }
 
     if (MASTER(cr))
@@ -1239,9 +1239,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                statistics, but if performing simulated tempering, we
                do update the velocities and the tau_t. */
 
-            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, &state->dfhist, step, state->v, mdatoms);
+            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, state->dfhist, step, state->v, mdatoms);
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
-            copy_df_history(&state_global->dfhist, &state->dfhist);
+            copy_df_history(state_global->dfhist, state->dfhist);
         }
 
         /* Now we have the energies and forces corresponding to the
@@ -1587,7 +1587,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             {
                 /* only needed if doing expanded ensemble */
                 PrintFreeEnergyInfoToFile(fplog, ir->fepvals, ir->expandedvals, ir->bSimTemp ? ir->simtempvals : NULL,
-                                          &state_global->dfhist, state->fep_state, ir->nstlog, step);
+                                          state_global->dfhist, state->fep_state, ir->nstlog, step);
             }
             if (bCalcEner)
             {
