@@ -2272,7 +2272,7 @@ void dd_init_local_state(gmx_domdec_t *dd,
         buf[1] = state_global->ngtc;
         buf[2] = state_global->nnhpres;
         buf[3] = state_global->nhchainlength;
-        buf[4] = state_global->dfhist.nlambda;
+        buf[4] = state_global->dfhist ? state_global->dfhist->nlambda : 0;
     }
     dd_bcast(dd, NITEM_DD_INIT_LOCAL_STATE*sizeof(int), buf);
 
