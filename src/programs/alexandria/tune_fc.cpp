@@ -456,15 +456,17 @@ class OptPrep : public MolDip
         void checkSupport(FILE *fp, bool  bOpt[]);
 
         /*! \brief
-         * Fill parameter list from ForceConstants
+	 *
+         * Fill parameter vector using ForceConstants which
+	 * is built based on Poldata.
          */
-        void opt2List();
+        void polData2TuneFc();
 
         /*! \brief
          *
          * Copy the optimized parameters back to Poldata
          */
-        void list2Opt();
+        void tuneFc2PolData();
 
         /*! \brief
          *
@@ -657,7 +659,7 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
     }
 }
 
-void OptPrep::opt2List()
+void OptPrep::polData2TuneFc()
 {
     param_.clear();
     for (auto &fc : ForceConstants_)
@@ -672,7 +674,7 @@ void OptPrep::opt2List()
     }
 }
 
-void OptPrep::list2Opt()
+void OptPrep::tuneFc2PolData()
 {
     int n = 0;
     std::vector<std::string> atoms;
@@ -804,7 +806,7 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
                           mymol->molProp()->getIupac().c_str());
             }
         }
-        rhs.push_back(-mymol->Emol);
+	rhs.push_back(-mymol->Emol);
     }
 
     char buf[STRLEN];
@@ -872,8 +874,21 @@ void OptPrep::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
         ForceConstants_.push_back(fc);
     }
 
-    getDissociationEnergy(fplog);
-    opt2List();
+    if (ForceConstants_[eitBONDS].nbad() <= _mymol.size())
+    {
+        getDissociationEnergy(fplog);
+    }
+    else
+    {
+	printf("\n"
+	       "WARNING: %zu molecule(s) is (are) not enough to calculate dissociation\n"
+	       "         energy for %zu bond type(s) using linear regression. Defualt\n"
+	       "         values from gentop.dat will be used as the initial guess.\n"
+	       "         Recomendation is to add more molecules having the same bond types.\n\n",
+	       _mymol.size(), ForceConstants_[eitBONDS].nbad());
+    }
+
+    polData2TuneFc();
 
     orig_.resize(param_.size(), 0);
     best_.resize(param_.size(), 0);
@@ -1031,13 +1046,15 @@ double OptPrep::calcDeviation()
 		    debug         = dbcopy;
 		    mymol.Force2  = 0;
 
+		    for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+		    {
+		        mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
+		    }
+
+		    mymol.Force2     /= mymol.molProp()->NAtom();
+
 		    if (ei->getJobtype() == JOB_OPT)
 		    {	
-		         for (j = 0; (j < mymol.molProp()->NAtom()); j++)
-			 {
-			     mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
-			 }
-		         mymol.Force2     /= mymol.molProp()->NAtom();
 			_ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
 		    }
 
@@ -1108,7 +1125,7 @@ double OptPrep::objFunction(double v[])
     {
         param_[i] = v[i];
     }
-    list2Opt(); /* Copy parameters to topologies */
+    tuneFc2PolData(); /* Copy parameters to topologies */
     rms = calcDeviation();
 
     return rms;

@@ -173,7 +173,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bCONECT        = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = FALSE, bEntropy = FALSE;
     static gmx_bool                  bGenVSites     = FALSE, bSkipVSites = TRUE, bDihedral = FALSE, b13 = FALSE;
     static char                     *molnm          = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
-    static char                     *jobtype        = (char *)"";
+    static char                     *jobtype        = (char *)"unknown";
     static int                       maxpot         = 0;
     static int                       seed           = 0;
     static int                       nsymm          = 0;
@@ -439,7 +439,9 @@ int alex_gentop(int argc, char *argv[])
         const char *tabfn = opt2fn_null("-table", NFILE, fnm);
         if (NULL == tabfn && bPolar && iChargeDistributionModel != eqdAXp)
         {
-            gmx_fatal(FARGS, "Cannot generate charges in a polarizable system with the %s charge model without a potential table. Please supply a table file.", getEemtypeName(iChargeDistributionModel));
+            gmx_fatal(FARGS, "Cannot generate charges in a polarizable system with the %s charge "
+		      "model without a potential table. Please supply a table file.", 
+		      getEemtypeName(iChargeDistributionModel));
         }
         imm = mymol.GenerateCharges(pd,
                                     mdlog,
