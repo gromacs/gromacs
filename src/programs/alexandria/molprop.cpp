@@ -47,8 +47,8 @@
 #include <vector>
 
 #include "gromacs/math/utilities.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "composition.h"
 #include "gmx_simple_comm.h"
