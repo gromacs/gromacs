@@ -2,7 +2,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -189,7 +189,7 @@ using gmx::SelectionTreeElementPointer;
 %define api.push-pull push
 %locations
 
-%name-prefix="_gmx_sel_yy"
+%name-prefix "_gmx_sel_yy"
 %parse-param { void *scanner }
 
 %%
@@ -205,8 +205,10 @@ commands:    /* empty */
              {
                  BEGIN_ACTION;
                  set($$, _gmx_sel_append_selection(get($2), get($1), scanner));
-                 if (_gmx_sel_parser_should_finish(scanner))
+                 if (_gmx_sel_parser_should_finish(scanner)) {
+                     delete $$;
                      YYACCEPT;
+                 }
                  END_ACTION_TOPLEVEL;
              }
 ;

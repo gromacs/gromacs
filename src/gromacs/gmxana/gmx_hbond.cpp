@@ -2549,6 +2549,7 @@ int gmx_hbond(int argc, char *argv[])
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, npargs,
                            ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
+        sfree(ppa);
         return 0;
     }
 

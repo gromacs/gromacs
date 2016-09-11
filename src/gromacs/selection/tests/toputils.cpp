@@ -86,6 +86,11 @@ TopologyManager::~TopologyManager()
         sfree(frame_->index);
         sfree(frame_);
     }
+
+    for (char *atomtype : atomtypes_)
+    {
+        sfree(atomtype);
+    }
 }
 
 void TopologyManager::requestFrame()

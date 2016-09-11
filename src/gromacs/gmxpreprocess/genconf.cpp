@@ -313,5 +313,15 @@ int gmx_genconf(int argc, char *argv[])
 
     write_sto_conf(opt2fn("-o", NFILE, fnm), *top->name, atoms, x, v, ePBC, box);
 
+    sfree(x);
+    sfree(v);
+    sfree(xrot);
+    sfree(vrot);
+    sfree(xx);
+    done_top(top);
+    sfree(top);
+    done_filenms(NFILE, fnm);
+    output_env_done(oenv);
+
     return 0;
 }
