@@ -261,6 +261,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
             startingPositions.data(), updatedPositions_.data(), reciprocalTimeStep,
             useVelocities ? velocities_.data() : nullptr,
             calcVirial, virial, &errorOccured);
+    settle_free(settled);
     EXPECT_FALSE(errorOccured) << testDescription;
 
     // The necessary tolerances for the test to pass were determined
