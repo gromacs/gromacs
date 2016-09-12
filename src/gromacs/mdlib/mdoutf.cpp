@@ -267,15 +267,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       t_state *state_local, t_state *state_global,
                                       rvec *f_local)
 {
-    rvec *local_v;
-    rvec *global_v;
     rvec *f_global;
-
-    /* MRS -- defining these variables is to manage the difference
-     * between half step and full step velocities, but there must be a better way . . . */
-
-    local_v  = state_local->v;
-    global_v = state_global->v;
 
     if (DOMAINDECOMP(cr))
     {
@@ -292,8 +284,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
             }
             if (mdof_flags & MDOF_V)
             {
-                dd_collect_vec(cr->dd, state_local, local_v,
-                               global_v);
+                dd_collect_vec(cr->dd, state_local, state_local->v,
+                               state_global->v);
             }
         }
         f_global = of->f_global;
@@ -304,21 +296,10 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
     }
     else
     {
-        if (mdof_flags & MDOF_CPT)
-        {
-            /* All pointers in state_local are equal to state_global,
-             * but we need to copy the non-pointer entries.
-             */
-            state_global->lambda = state_local->lambda;
-            state_global->veta   = state_local->veta;
-            state_global->vol0   = state_local->vol0;
-            copy_mat(state_local->box, state_global->box);
-            copy_mat(state_local->boxv, state_global->boxv);
-            copy_mat(state_local->svir_prev, state_global->svir_prev);
-            copy_mat(state_local->fvir_prev, state_global->fvir_prev);
-            copy_mat(state_local->pres_prev, state_global->pres_prev);
-        }
-        f_global = f_local;
+        /* We have the whole state locally: copy the local state pointer */
+        state_global = state_local;
+
+        f_global     = f_local;
     }
 
     if (MASTER(cr))
@@ -343,7 +324,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 gmx_trr_write_frame(of->fp_trn, step, t, state_local->lambda[efptFEP],
                                     state_local->box, top_global->natoms,
                                     (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                                    (mdof_flags & MDOF_V) ? global_v : NULL,
+                                    (mdof_flags & MDOF_V) ? state_global->v : NULL,
                                     (mdof_flags & MDOF_F) ? f_global : NULL);
                 if (gmx_fio_flush(of->fp_trn) != 0)
                 {
@@ -359,7 +340,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                state_local->box,
                                top_global->natoms,
                                (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                               (mdof_flags & MDOF_V) ? global_v : NULL,
+                               (mdof_flags & MDOF_V) ? state_global->v : NULL,
                                (mdof_flags & MDOF_F) ? f_global : NULL);
             }
             /* If only a TNG file is open for compressed coordinate output (no uncompressed
@@ -370,7 +351,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                state_local->box,
                                top_global->natoms,
                                (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                               (mdof_flags & MDOF_V) ? global_v : NULL,
+                               (mdof_flags & MDOF_V) ? state_global->v : NULL,
                                (mdof_flags & MDOF_F) ? f_global : NULL);
             }
         }

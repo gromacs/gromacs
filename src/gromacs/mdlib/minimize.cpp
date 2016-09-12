@@ -515,17 +515,6 @@ static void swap_em_state(em_state_t *ems1, em_state_t *ems2)
     *ems2 = tmp;
 }
 
-//! Copy coordinate from an EM state to a "normal" state structure
-static void copy_em_coords(em_state_t *ems, t_state *state)
-{
-    int i;
-
-    for (i = 0; (i < state->natoms); i++)
-    {
-        copy_rvec(ems->s.x[i], state->x[i]);
-    }
-}
-
 //! Save the EM trajectory
 static void write_em_traj(FILE *fplog, t_commrec *cr,
                           gmx_mdoutf_t outf,
@@ -535,22 +524,8 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
                           em_state_t *state,
                           t_state *state_global)
 {
-    int      mdof_flags;
-    gmx_bool bIMDout = FALSE;
+    int mdof_flags = 0;
 
-
-    /* Shall we do IMD output? */
-    if (ir->bIMD)
-    {
-        bIMDout = do_per_step(step, IMD_get_step(ir->imd->setup));
-    }
-
-    if ((bX || bF || bIMDout || confout != NULL) && !DOMAINDECOMP(cr))
-    {
-        copy_em_coords(state, state_global);
-    }
-
-    mdof_flags = 0;
     if (bX)
     {
         mdof_flags |= MDOF_X;
