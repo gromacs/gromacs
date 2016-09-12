@@ -422,7 +422,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     }
     else
     {
-        state    = serial_init_local_state(state_global);
+        /* Copy the pointer to the global state */
+        state = state_global;
 
         snew(top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, top, fr,

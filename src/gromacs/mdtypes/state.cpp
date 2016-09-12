@@ -229,25 +229,6 @@ void done_state(t_state *state)
     }
 }
 
-t_state *serial_init_local_state(t_state *state_global)
-{
-    int      i;
-    t_state *state_local;
-
-    snew(state_local, 1);
-
-    /* Copy all the contents */
-    *state_local = *state_global;
-    snew(state_local->lambda, efptNR);
-    /* local storage for lambda */
-    for (i = 0; i < efptNR; i++)
-    {
-        state_local->lambda[i] = state_global->lambda[i];
-    }
-
-    return state_local;
-}
-
 void comp_state(const t_state *st1, const t_state *st2,
                 gmx_bool bRMSD, real ftol, real abstol)
 {

@@ -551,86 +551,9 @@ static void exchange_state(const gmx_multisim_t *ms, int b, t_state *state)
     exchange_rvecs(ms, b, state->v, state->natoms);
 }
 
-static void copy_rvecs(rvec *s, rvec *d, int n)
+static void copy_state_serial(t_state *src, const t_state *dest)
 {
-    int i;
-
-    if (d != NULL)
-    {
-        for (i = 0; i < n; i++)
-        {
-            copy_rvec(s[i], d[i]);
-        }
-    }
-}
-
-static void copy_doubles(const double *s, double *d, int n)
-{
-    int i;
-
-    if (d != NULL)
-    {
-        for (i = 0; i < n; i++)
-        {
-            d[i] = s[i];
-        }
-    }
-}
-
-static void copy_reals(const real *s, real *d, int n)
-{
-    int i;
-
-    if (d != NULL)
-    {
-        for (i = 0; i < n; i++)
-        {
-            d[i] = s[i];
-        }
-    }
-}
-
-static void copy_ints(const int *s, int *d, int n)
-{
-    int i;
-
-    if (d != NULL)
-    {
-        for (i = 0; i < n; i++)
-        {
-            d[i] = s[i];
-        }
-    }
-}
-
-#define scopy_rvecs(v, n)   copy_rvecs(state->v, state_local->v, n);
-#define scopy_doubles(v, n) copy_doubles(state->v, state_local->v, n);
-#define scopy_reals(v, n) copy_reals(state->v, state_local->v, n);
-#define scopy_ints(v, n)   copy_ints(state->v, state_local->v, n);
-
-static void copy_state_nonatomdata(t_state *state, t_state *state_local)
-{
-    /* When t_state changes, this code should be updated. */
-    int ngtc, nnhpres;
-    ngtc    = state->ngtc * state->nhchainlength;
-    nnhpres = state->nnhpres* state->nhchainlength;
-    scopy_rvecs(box, DIM);
-    scopy_rvecs(box_rel, DIM);
-    scopy_rvecs(boxv, DIM);
-    state_local->veta = state->veta;
-    state_local->vol0 = state->vol0;
-    scopy_rvecs(svir_prev, DIM);
-    scopy_rvecs(fvir_prev, DIM);
-    scopy_rvecs(pres_prev, DIM);
-    scopy_doubles(nosehoover_xi, ngtc);
-    scopy_doubles(nosehoover_vxi, ngtc);
-    scopy_doubles(nhpres_xi, nnhpres);
-    scopy_doubles(nhpres_vxi, nnhpres);
-    scopy_doubles(therm_integral, state->ngtc);
-    scopy_rvecs(x, state->natoms);
-    scopy_rvecs(v, state->natoms);
-    copy_ints(&(state->fep_state), &(state_local->fep_state), 1);
-    scopy_reals(lambda, efptNR);
+    GMX_RELEASE_ASSERT(dest == src, "We assume that with domain decomposition the local state pointer points to the global state");
 }
 
 static void scale_velocities(t_state *state, real fac)
@@ -1315,7 +1238,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
         }
         else
         {
-            copy_state_nonatomdata(state_local, state);
+            copy_state_serial(state_local, state);
         }
 
         if (MASTER(cr))
@@ -1351,7 +1274,7 @@ gmx_bool replica_exchange(FILE *fplog, const t_commrec *cr, struct gmx_repl_ex *
         if (!DOMAINDECOMP(cr))
         {
             /* Copy the global state to the local state data structure */
-            copy_state_nonatomdata(state, state_local);
+            copy_state_serial(state, state_local);
         }
     }
 
