@@ -21,7 +21,7 @@ $trans = 1;
 #$res0  = shift;# || die "I need the residue offset\n";
 $pdb   = shift || die "I need the name of the pdb file with correct atom numbers\n";
 $core  = shift || "core.ndx";
-$tbl   = "$ENV{GMXDATA}/gromacs/top/atom_nom.tbl";
+$tbl   = "$ENV{GMXDATA}/top/atom_nom.tbl";
 
 printf "[ distance_restraints ]\n";
 printf "; Read an xplor distance restraint file, and output GROMACS distance restraints.\n";
