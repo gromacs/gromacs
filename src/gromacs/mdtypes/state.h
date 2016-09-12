@@ -257,8 +257,6 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
 
 void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int dfhistNumLambda);
 
-t_state *serial_init_local_state(t_state *state_global);
-
 void done_state(t_state *state);
 
 void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
