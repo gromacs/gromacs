@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Carsten Kutzner <ckutzne@gwdg.de>
+Verified+1: Carsten Kutzner <ckutzne@gwdg.de>
+Code-Review+2: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-by: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-at: Tue, 13 Sep 2016 13:47:33 +0200
+Reviewed-on: https://gerrit.gromacs.org/6178
+Project: gromacs
+Branch: refs/heads/master
