@@ -1311,7 +1311,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
                                   mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
-                                  (Flags & MD_REPRODUCIBLE), nthreads_pme);
+                                  (Flags & MD_REPRODUCIBLE),
+                                  ewaldcoeff_q, ewaldcoeff_lj,
+                                  nthreads_pme);
             if (status != 0)
             {
                 gmx_fatal(FARGS, "Error %d initializing PME", status);

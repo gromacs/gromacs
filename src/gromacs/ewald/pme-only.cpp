@@ -107,6 +107,7 @@ static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
 
 static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
                                ivec grid_size,
+                               real ewaldcoeff_q, real ewaldcoeff_lj,
                                t_commrec *cr, t_inputrec *ir,
                                struct gmx_pme_t **pme_ret)
 {
@@ -133,7 +134,7 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
     srenew(*pmedata, *npmedata);
 
     /* Generate a new PME data structure, copying part of the old pointers */
-    gmx_pme_reinit(&((*pmedata)[ind]), cr, pme, ir, grid_size);
+    gmx_pme_reinit(&((*pmedata)[ind]), cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
 
     *pme_ret = (*pmedata)[ind];
 }
@@ -197,7 +198,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
             if (ret == pmerecvqxSWITCHGRID)
             {
                 /* Switch the PME grid to grid_switch */
-                gmx_pmeonly_switch(&npmedata, &pmedata, grid_switch, cr, ir, &pme);
+                gmx_pmeonly_switch(&npmedata, &pmedata, grid_switch, ewaldcoeff_q, ewaldcoeff_lj, cr, ir, &pme);
             }
 
             if (ret == pmerecvqxRESETCOUNTERS)
@@ -230,7 +231,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         gmx_pme_do(pme, 0, natoms, x_pp, f_pp,
                    chargeA, chargeB, c6A, c6B, sigmaA, sigmaB, box,
                    cr, maxshift_x, maxshift_y, mynrnb, wcycle,
-                   vir_q, ewaldcoeff_q, vir_lj, ewaldcoeff_lj,
+                   vir_q, vir_lj,
                    &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
                    GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
 
