@@ -74,7 +74,9 @@ int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  int nnodes_major, int nnodes_minor,
                  t_inputrec *ir, int homenr,
                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
-                 gmx_bool bReproducible, int nthread);
+                 gmx_bool bReproducible,
+                 real ewaldcoeff_q, real ewaldcoeff_lj,
+                 int nthread);
 
 /*! \brief Destroy the PME data structures respectively.
  *
@@ -113,8 +115,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                matrix box,      t_commrec *cr,
                int  maxshift_x, int maxshift_y,
                t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
-               matrix vir_q,    real ewaldcoeff_q,
-               matrix vir_lj,   real ewaldcoeff_lj,
+               matrix vir_q,    matrix vir_lj,
                real *energy_q,  real *energy_lj,
                real lambda_q,   real lambda_lj,
                real *dvdlambda_q, real *dvdlambda_lj,
