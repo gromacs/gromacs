@@ -94,12 +94,17 @@ static const real lb_scale_factor_symm[] = { 2.0/64, 12.0/64, 30.0/64, 20.0/64 }
  */
 #define PME_ORDER_MAX 12
 
-/*! \brief As gmx_pme_init, but takes most settings, except the grid, from pme_src */
+/*! \brief As gmx_pme_init, but takes most settings, except the grid/Ewald coefficients, from pme_src.
+ * This is only called when the PME cut-off/grid size changes.
+ */
 int gmx_pme_reinit(struct gmx_pme_t **pmedata,
                    t_commrec *        cr,
                    struct gmx_pme_t * pme_src,
                    const t_inputrec * ir,
-                   ivec               grid_size);
+                   ivec               grid_size,
+                   real               ewaldcoeff_q,
+                   real               ewaldcoeff_lj);
+
 
 /* The following three routines are for PME/PP node splitting in pme_pp.c */
 
@@ -250,6 +255,8 @@ typedef struct gmx_pme_t {
     gmx_bool   bFEP_q;
     gmx_bool   bFEP_lj;
     int        nkx, nky, nkz; /* Grid dimensions */
+    real       ewaldcoeff_q;  /* Dependent on the grid dimensions */
+    real       ewaldcoeff_lj; /* Dependent on the grid dimensions */
     gmx_bool   bP3M;          /* Do P3M: optimize the influence function */
     int        pme_order;
     real       epsilon_r;

@@ -479,6 +479,8 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
                  gmx_bool           bFreeEnergy_q,
                  gmx_bool           bFreeEnergy_lj,
                  gmx_bool           bReproducible,
+                 real               ewaldcoeff_q,
+                 real               ewaldcoeff_lj,
                  int                nthread)
 {
     struct gmx_pme_t *pme = NULL;
@@ -609,16 +611,18 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
      * not calculating free-energy for Coulomb and/or LJ while gmx_pme_init()
      * configures with free-energy, but that has never been tested.
      */
-    pme->doCoulomb   = EEL_PME(ir->coulombtype);
-    pme->doLJ        = EVDW_PME(ir->vdwtype);
-    pme->bFEP_q      = ((ir->efep != efepNO) && bFreeEnergy_q);
-    pme->bFEP_lj     = ((ir->efep != efepNO) && bFreeEnergy_lj);
-    pme->bFEP        = (pme->bFEP_q || pme->bFEP_lj);
-    pme->nkx         = ir->nkx;
-    pme->nky         = ir->nky;
-    pme->nkz         = ir->nkz;
-    pme->bP3M        = (ir->coulombtype == eelP3M_AD || getenv("GMX_PME_P3M") != NULL);
-    pme->pme_order   = ir->pme_order;
+    pme->doCoulomb     = EEL_PME(ir->coulombtype);
+    pme->doLJ          = EVDW_PME(ir->vdwtype);
+    pme->bFEP_q        = ((ir->efep != efepNO) && bFreeEnergy_q);
+    pme->bFEP_lj       = ((ir->efep != efepNO) && bFreeEnergy_lj);
+    pme->bFEP          = (pme->bFEP_q || pme->bFEP_lj);
+    pme->nkx           = ir->nkx;
+    pme->nky           = ir->nky;
+    pme->nkz           = ir->nkz;
+    pme->ewaldcoeff_q  = ewaldcoeff_q;
+    pme->ewaldcoeff_lj = ewaldcoeff_lj;
+    pme->bP3M          = (ir->coulombtype == eelP3M_AD || getenv("GMX_PME_P3M") != NULL);
+    pme->pme_order     = ir->pme_order;
 
     /* Always constant electrostatics coefficients */
     pme->epsilon_r   = ir->epsilon_r;
@@ -815,7 +819,9 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
                    t_commrec *        cr,
                    struct gmx_pme_t * pme_src,
                    const t_inputrec * ir,
-                   ivec               grid_size)
+                   ivec               grid_size,
+                   real               ewaldcoeff_q,
+                   real               ewaldcoeff_lj)
 {
     t_inputrec irc;
     int        homenr;
@@ -836,7 +842,7 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
     }
 
     ret = gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
-                       &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, pme_src->nthread);
+                       &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj, pme_src->nthread);
 
     if (ret == 0)
     {
@@ -921,8 +927,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                matrix box,      t_commrec *cr,
                int  maxshift_x, int maxshift_y,
                t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
-               matrix vir_q,    real ewaldcoeff_q,
-               matrix vir_lj,   real ewaldcoeff_lj,
+               matrix vir_q,    matrix vir_lj,
                real *energy_q,  real *energy_lj,
                real lambda_q,   real lambda_lj,
                real *dvdlambda_q, real *dvdlambda_lj,
@@ -1139,7 +1144,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     if (grid_index < DO_Q)
                     {
                         loop_count =
-                            solve_pme_yzx(pme, cfftgrid, ewaldcoeff_q,
+                            solve_pme_yzx(pme, cfftgrid,
                                           box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
                                           bCalcEnerVir,
                                           pme->nthread, thread);
@@ -1147,7 +1152,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     else
                     {
                         loop_count =
-                            solve_pme_lj_yzx(pme, &cfftgrid, FALSE, ewaldcoeff_lj,
+                            solve_pme_lj_yzx(pme, &cfftgrid, FALSE,
                                              box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
                                              bCalcEnerVir,
                                              pme->nthread, thread);
@@ -1418,7 +1423,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         }
 
                         loop_count =
-                            solve_pme_lj_yzx(pme, &pme->cfftgrid[2], TRUE, ewaldcoeff_lj,
+                            solve_pme_lj_yzx(pme, &pme->cfftgrid[2], TRUE,
                                              box[XX][XX]*box[YY][YY]*box[ZZ][ZZ],
                                              bCalcEnerVir,
                                              pme->nthread, thread);
