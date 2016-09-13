@@ -822,7 +822,7 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
              */
             gmx_pme_reinit(&set->pmedata,
                            cr, pme_lb->setup[0].pmedata, ir,
-                           set->grid);
+                           set->grid, set->ewaldcoeff_q, set->ewaldcoeff_lj);
         }
         *pmedata = set->pmedata;
     }
