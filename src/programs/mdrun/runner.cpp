@@ -1240,10 +1240,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             }
         }
 
-        if (EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype))
+        if (EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
         {
-            ewaldcoeff_q  = fr->ewaldcoeff_q;
-            ewaldcoeff_lj = fr->ewaldcoeff_lj;
+            ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
+            ewaldcoeff_lj = fr->ic->ewaldcoeff_lj;
             pmedata       = &fr->pmedata;
         }
         else

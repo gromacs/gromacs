@@ -494,7 +494,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     /* PME tuning is only supported with PME for Coulomb. Is is not supported
      * with only LJ PME, or for reruns.
      */
-    bPMETune = ((Flags & MD_TUNEPME) && EEL_PME(fr->eeltype) && !bRerunMD &&
+    bPMETune = ((Flags & MD_TUNEPME) && EEL_PME(fr->ic->eeltype) && !bRerunMD &&
                 !(Flags & MD_REPRODUCIBLE));
     if (bPMETune)
     {

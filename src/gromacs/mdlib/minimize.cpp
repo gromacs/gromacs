@@ -2834,7 +2834,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
      * will be when we use a cutoff.
      * For small systems (n<1000) it is easier to always use full matrix format, though.
      */
-    if (EEL_FULL(fr->eeltype) || fr->rlist == 0.0)
+    if (EEL_FULL(fr->ic->eeltype) || fr->rlist == 0.0)
     {
         GMX_LOG(mdlog.warning).appendText("Non-cutoff electrostatics used, forcing full Hessian format.");
         bSparse = FALSE;
