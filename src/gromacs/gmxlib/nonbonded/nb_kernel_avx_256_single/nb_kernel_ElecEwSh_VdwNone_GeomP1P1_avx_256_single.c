@@ -109,7 +109,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomP1P1_VF_avx_256_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
+    facel            = _mm256_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
@@ -122,7 +122,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomP1P1_VF_avx_256_single
     ewtabhalfspace   = _mm256_set1_ps(0.5/fr->ic->tabq_scale);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm256_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm256_mul_ps(rcutoff,rcutoff);
 
@@ -489,7 +489,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomP1P1_F_avx_256_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
+    facel            = _mm256_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
@@ -502,7 +502,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomP1P1_F_avx_256_single
     ewtabhalfspace   = _mm256_set1_ps(0.5/fr->ic->tabq_scale);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm256_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm256_mul_ps(rcutoff,rcutoff);
 

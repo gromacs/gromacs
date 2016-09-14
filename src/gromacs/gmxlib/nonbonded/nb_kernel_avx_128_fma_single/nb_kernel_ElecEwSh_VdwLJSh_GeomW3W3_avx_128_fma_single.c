@@ -127,7 +127,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW3W3_VF_avx_128_fma_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_ps(fr->epsfac);
+    facel            = _mm_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
@@ -165,12 +165,12 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW3W3_VF_avx_128_fma_single
     qq22             = _mm_mul_ps(iq2,jq2);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm_set1_ps(fr->ic->sh_invrc6);
-    rvdw             = _mm_set1_ps(fr->rvdw);
+    rvdw             = _mm_set1_ps(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = 0;
@@ -1346,7 +1346,7 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW3W3_F_avx_128_fma_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_ps(fr->epsfac);
+    facel            = _mm_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
@@ -1384,12 +1384,12 @@ nb_kernel_ElecEwSh_VdwLJSh_GeomW3W3_F_avx_128_fma_single
     qq22             = _mm_mul_ps(iq2,jq2);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm_set1_ps(fr->ic->sh_invrc6);
-    rvdw             = _mm_set1_ps(fr->rvdw);
+    rvdw             = _mm_set1_ps(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = 0;

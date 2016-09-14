@@ -124,7 +124,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW3W3_VF_sse4_1_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
+    facel            = _mm_set1_pd(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = _mm_set1_pd(fr->ic->k_rf);
     krf2             = _mm_set1_pd(fr->ic->k_rf*2.0);
@@ -160,7 +160,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW3W3_VF_sse4_1_double
     qq22             = _mm_mul_pd(iq2,jq2);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
@@ -1255,7 +1255,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW3W3_F_sse4_1_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
+    facel            = _mm_set1_pd(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = _mm_set1_pd(fr->ic->k_rf);
     krf2             = _mm_set1_pd(fr->ic->k_rf*2.0);
@@ -1291,7 +1291,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW3W3_F_sse4_1_double
     qq22             = _mm_mul_pd(iq2,jq2);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 

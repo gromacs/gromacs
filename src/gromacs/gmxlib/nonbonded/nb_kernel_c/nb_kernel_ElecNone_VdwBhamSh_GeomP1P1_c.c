@@ -92,11 +92,11 @@ nb_kernel_ElecNone_VdwBhamSh_GeomP1P1_VF_c
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff          = fr->rvdw;
+    rcutoff          = fr->ic->rvdw;
     rcutoff2         = rcutoff*rcutoff;
 
     sh_vdw_invrcut6  = fr->ic->sh_invrc6;
-    rvdw             = fr->rvdw;
+    rvdw             = fr->ic->rvdw;
 
     outeriter        = 0;
     inneriter        = 0;
@@ -281,11 +281,11 @@ nb_kernel_ElecNone_VdwBhamSh_GeomP1P1_F_c
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff          = fr->rvdw;
+    rcutoff          = fr->ic->rvdw;
     rcutoff2         = rcutoff*rcutoff;
 
     sh_vdw_invrcut6  = fr->ic->sh_invrc6;
-    rvdw             = fr->rvdw;
+    rvdw             = fr->ic->rvdw;
 
     outeriter        = 0;
     inneriter        = 0;

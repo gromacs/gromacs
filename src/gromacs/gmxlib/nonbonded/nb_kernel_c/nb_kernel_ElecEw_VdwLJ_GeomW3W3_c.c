@@ -109,7 +109,7 @@ nb_kernel_ElecEw_VdwLJ_GeomW3W3_VF_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
@@ -700,7 +700,7 @@ nb_kernel_ElecEw_VdwLJ_GeomW3W3_F_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;

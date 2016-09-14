@@ -115,7 +115,7 @@ nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_VF_avx_256_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
+    facel            = _mm256_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
@@ -557,7 +557,7 @@ nb_kernel_ElecCSTab_VdwLJ_GeomP1P1_F_avx_256_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
+    facel            = _mm256_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;

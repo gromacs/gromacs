@@ -127,7 +127,7 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW4W4_VF_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = gmx_fjsp_set1_v2r8(fr->ic->k_rf);
     krf2             = gmx_fjsp_set1_v2r8(fr->ic->k_rf*2.0);
@@ -160,12 +160,12 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW4W4_VF_sparc64_hpc_ace_double
     qq33             = _fjsp_mul_v2r8(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = gmx_fjsp_set1_v2r8(fr->ic->sh_invrc6);
-    rvdw             = gmx_fjsp_set1_v2r8(fr->rvdw);
+    rvdw             = gmx_fjsp_set1_v2r8(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;
@@ -1186,7 +1186,7 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW4W4_F_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = gmx_fjsp_set1_v2r8(fr->ic->k_rf);
     krf2             = gmx_fjsp_set1_v2r8(fr->ic->k_rf*2.0);
@@ -1219,12 +1219,12 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW4W4_F_sparc64_hpc_ace_double
     qq33             = _fjsp_mul_v2r8(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = gmx_fjsp_set1_v2r8(fr->ic->sh_invrc6);
-    rvdw             = gmx_fjsp_set1_v2r8(fr->rvdw);
+    rvdw             = gmx_fjsp_set1_v2r8(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;

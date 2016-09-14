@@ -116,7 +116,7 @@ nb_kernel_ElecCoul_VdwNone_GeomW4W4_VF_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     /* Setup water-specific parameters */
@@ -866,7 +866,7 @@ nb_kernel_ElecCoul_VdwNone_GeomW4W4_F_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     /* Setup water-specific parameters */

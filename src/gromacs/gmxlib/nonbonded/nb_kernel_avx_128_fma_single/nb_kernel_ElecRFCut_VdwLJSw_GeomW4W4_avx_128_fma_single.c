@@ -130,7 +130,7 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW4W4_VF_avx_128_fma_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_ps(fr->epsfac);
+    facel            = _mm_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = _mm_set1_ps(fr->ic->k_rf);
     krf2             = _mm_set1_ps(fr->ic->k_rf*2.0);
@@ -163,11 +163,11 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW4W4_VF_avx_128_fma_single
     qq33             = _mm_mul_ps(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rvdw_switch;
+    rswitch_scalar   = fr->ic->rvdw_switch;
     rswitch          = _mm_set1_ps(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;
@@ -1271,7 +1271,7 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW4W4_F_avx_128_fma_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_ps(fr->epsfac);
+    facel            = _mm_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = _mm_set1_ps(fr->ic->k_rf);
     krf2             = _mm_set1_ps(fr->ic->k_rf*2.0);
@@ -1304,11 +1304,11 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW4W4_F_avx_128_fma_single
     qq33             = _mm_mul_ps(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rvdw_switch;
+    rswitch_scalar   = fr->ic->rvdw_switch;
     rswitch          = _mm_set1_ps(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;
