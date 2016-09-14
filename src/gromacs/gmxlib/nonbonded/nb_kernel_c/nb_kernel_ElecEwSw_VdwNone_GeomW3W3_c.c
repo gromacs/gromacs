@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014.2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014.2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,7 +106,7 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_VF_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
 
     sh_ewald         = fr->ic->sh_ewald;
@@ -134,10 +134,10 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_VF_c
     qq22             = iq2*jq2;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
-    rswitch          = fr->rcoulomb_switch;
+    rswitch          = fr->ic->rcoulomb_switch;
     /* Setup switch parameters */
     d                = rcutoff-rswitch;
     swV3             = -10.0/(d*d*d);
@@ -843,7 +843,7 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
 
     sh_ewald         = fr->ic->sh_ewald;
@@ -871,10 +871,10 @@ nb_kernel_ElecEwSw_VdwNone_GeomW3W3_F_c
     qq22             = iq2*jq2;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
-    rswitch          = fr->rcoulomb_switch;
+    rswitch          = fr->ic->rcoulomb_switch;
     /* Setup switch parameters */
     d                = rcutoff-rswitch;
     swV3             = -10.0/(d*d*d);
