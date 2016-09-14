@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,15 +112,15 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_sse2_double
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
     sh_lj_ewald      = _mm_set1_pd(fr->ic->sh_lj_ewald);
-    ewclj            = _mm_set1_pd(fr->ewaldcoeff_lj);
+    ewclj            = _mm_set1_pd(fr->ic->ewaldcoeff_lj);
     ewclj2           = _mm_mul_pd(minus_one,_mm_mul_pd(ewclj,ewclj));
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm_set1_pd(fr->ic->sh_invrc6);
-    rvdw             = _mm_set1_pd(fr->rvdw);
+    rvdw             = _mm_set1_pd(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;
@@ -417,15 +417,15 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_sse2_double
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
     sh_lj_ewald      = _mm_set1_pd(fr->ic->sh_lj_ewald);
-    ewclj            = _mm_set1_pd(fr->ewaldcoeff_lj);
+    ewclj            = _mm_set1_pd(fr->ic->ewaldcoeff_lj);
     ewclj2           = _mm_mul_pd(minus_one,_mm_mul_pd(ewclj,ewclj));
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm_set1_pd(fr->ic->sh_invrc6);
-    rvdw             = _mm_set1_pd(fr->rvdw);
+    rvdw             = _mm_set1_pd(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;

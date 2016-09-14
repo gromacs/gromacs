@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,7 +120,7 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_avx_256_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
+    facel            = _mm256_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
@@ -130,7 +130,7 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_avx_256_single
     dvda             = fr->dvda;
     gbtabscale       = _mm256_set1_ps(fr->gbtab->scale);
     gbtab            = fr->gbtab->data;
-    gbinvepsdiff     = _mm256_set1_ps((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
+    gbinvepsdiff     = _mm256_set1_ps((1.0/fr->ic->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = jnrE = jnrF = jnrG = jnrH = 0;
@@ -629,7 +629,7 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_avx_256_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
+    facel            = _mm256_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
@@ -639,7 +639,7 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_avx_256_single
     dvda             = fr->dvda;
     gbtabscale       = _mm256_set1_ps(fr->gbtab->scale);
     gbtab            = fr->gbtab->data;
-    gbinvepsdiff     = _mm256_set1_ps((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
+    gbinvepsdiff     = _mm256_set1_ps((1.0/fr->ic->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = jnrE = jnrF = jnrG = jnrH = 0;
