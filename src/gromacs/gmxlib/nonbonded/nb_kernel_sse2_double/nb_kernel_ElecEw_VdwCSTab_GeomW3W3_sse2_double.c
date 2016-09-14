@@ -127,7 +127,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_VF_sse2_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
+    facel            = _mm_set1_pd(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
@@ -1360,7 +1360,7 @@ nb_kernel_ElecEw_VdwCSTab_GeomW3W3_F_sse2_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
+    facel            = _mm_set1_pd(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;

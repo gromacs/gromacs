@@ -117,7 +117,7 @@ nb_kernel_ElecRF_VdwCSTab_GeomW4P1_VF_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = gmx_fjsp_set1_v2r8(fr->ic->k_rf);
     krf2             = gmx_fjsp_set1_v2r8(fr->ic->k_rf*2.0);
@@ -668,7 +668,7 @@ nb_kernel_ElecRF_VdwCSTab_GeomW4P1_F_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = gmx_fjsp_set1_v2r8(fr->ic->k_rf);
     krf2             = gmx_fjsp_set1_v2r8(fr->ic->k_rf*2.0);

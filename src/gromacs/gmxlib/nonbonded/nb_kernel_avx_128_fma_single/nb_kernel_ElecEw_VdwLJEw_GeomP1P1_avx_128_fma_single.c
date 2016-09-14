@@ -116,14 +116,14 @@ nb_kernel_ElecEw_VdwLJEw_GeomP1P1_VF_avx_128_fma_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_ps(fr->epsfac);
+    facel            = _mm_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
     sh_lj_ewald	     = _mm_set1_ps(fr->ic->sh_lj_ewald);
-    ewclj            = _mm_set1_ps(fr->ewaldcoeff_lj);
+    ewclj            = _mm_set1_ps(fr->ic->ewaldcoeff_lj);
     ewclj2           = _mm_mul_ps(minus_one,_mm_mul_ps(ewclj,ewclj));
 
     sh_ewald         = _mm_set1_ps(fr->ic->sh_ewald);
@@ -498,14 +498,14 @@ nb_kernel_ElecEw_VdwLJEw_GeomP1P1_F_avx_128_fma_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_ps(fr->epsfac);
+    facel            = _mm_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
     sh_lj_ewald	     = _mm_set1_ps(fr->ic->sh_lj_ewald);
-    ewclj            = _mm_set1_ps(fr->ewaldcoeff_lj);
+    ewclj            = _mm_set1_ps(fr->ic->ewaldcoeff_lj);
     ewclj2           = _mm_mul_ps(minus_one,_mm_mul_ps(ewclj,ewclj));
 
     sh_ewald         = _mm_set1_ps(fr->ic->sh_ewald);

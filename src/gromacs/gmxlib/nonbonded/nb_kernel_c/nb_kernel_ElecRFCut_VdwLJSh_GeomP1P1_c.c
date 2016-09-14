@@ -90,7 +90,7 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_VF_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
     krf              = fr->ic->k_rf;
     krf2             = krf*2.0;
@@ -100,11 +100,11 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_VF_c
     vdwtype          = mdatoms->typeA;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     sh_vdw_invrcut6  = fr->ic->sh_invrc6;
-    rvdw             = fr->rvdw;
+    rvdw             = fr->ic->rvdw;
 
     outeriter        = 0;
     inneriter        = 0;
@@ -294,7 +294,7 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_F_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
     krf              = fr->ic->k_rf;
     krf2             = krf*2.0;
@@ -304,11 +304,11 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_F_c
     vdwtype          = mdatoms->typeA;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     sh_vdw_invrcut6  = fr->ic->sh_invrc6;
-    rvdw             = fr->rvdw;
+    rvdw             = fr->ic->rvdw;
 
     outeriter        = 0;
     inneriter        = 0;

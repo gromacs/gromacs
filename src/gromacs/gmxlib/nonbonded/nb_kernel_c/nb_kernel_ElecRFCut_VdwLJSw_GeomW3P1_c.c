@@ -97,7 +97,7 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
     krf              = fr->ic->k_rf;
     krf2             = krf*2.0;
@@ -114,10 +114,10 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_c
     vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
-    rswitch          = fr->rvdw_switch;
+    rswitch          = fr->ic->rvdw_switch;
     /* Setup switch parameters */
     d                = rcutoff-rswitch;
     swV3             = -10.0/(d*d*d);
@@ -434,7 +434,7 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
     krf              = fr->ic->k_rf;
     krf2             = krf*2.0;
@@ -451,10 +451,10 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_c
     vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
-    rswitch          = fr->rvdw_switch;
+    rswitch          = fr->ic->rvdw_switch;
     /* Setup switch parameters */
     d                = rcutoff-rswitch;
     swV3             = -10.0/(d*d*d);

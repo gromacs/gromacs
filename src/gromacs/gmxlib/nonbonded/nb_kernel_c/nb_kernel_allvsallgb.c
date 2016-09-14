@@ -286,8 +286,8 @@ nb_kernel_allvsallgb(t_nblist gmx_unused *     nlist,
     f                   = ff[0];
     charge              = mdatoms->chargeA;
     type                = mdatoms->typeA;
-    gbfactor            = ((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
-    facel               = fr->epsfac;
+    gbfactor            = ((1.0/fr->ic->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
+    facel               = fr->ic->epsfac;
     GBtab               = fr->gbtab->data;
     gbtabscale          = fr->gbtab->scale;
     invsqrta            = fr->invsqrta;

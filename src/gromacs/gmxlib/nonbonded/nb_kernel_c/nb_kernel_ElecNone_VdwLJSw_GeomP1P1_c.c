@@ -93,10 +93,10 @@ nb_kernel_ElecNone_VdwLJSw_GeomP1P1_VF_c
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff          = fr->rvdw;
+    rcutoff          = fr->ic->rvdw;
     rcutoff2         = rcutoff*rcutoff;
 
-    rswitch          = fr->rvdw_switch;
+    rswitch          = fr->ic->rvdw_switch;
     /* Setup switch parameters */
     d                = rcutoff-rswitch;
     swV3             = -10.0/(d*d*d);
@@ -301,10 +301,10 @@ nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_c
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff          = fr->rvdw;
+    rcutoff          = fr->ic->rvdw;
     rcutoff2         = rcutoff*rcutoff;
 
-    rswitch          = fr->rvdw_switch;
+    rswitch          = fr->ic->rvdw_switch;
     /* Setup switch parameters */
     d                = rcutoff-rswitch;
     swV3             = -10.0/(d*d*d);

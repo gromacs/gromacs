@@ -125,7 +125,7 @@ nb_kernel_ElecRF_VdwLJ_GeomW4W4_VF_avx_128_fma_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
+    facel            = _mm_set1_pd(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = _mm_set1_pd(fr->ic->k_rf);
     krf2             = _mm_set1_pd(fr->ic->k_rf*2.0);
@@ -972,7 +972,7 @@ nb_kernel_ElecRF_VdwLJ_GeomW4W4_F_avx_128_fma_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
+    facel            = _mm_set1_pd(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = _mm_set1_pd(fr->ic->k_rf);
     krf2             = _mm_set1_pd(fr->ic->k_rf*2.0);
