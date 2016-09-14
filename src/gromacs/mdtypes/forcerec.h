@@ -200,10 +200,7 @@ typedef struct t_forcerec {
 
     /* Dielectric constant resp. multiplication factor for charges */
     real zsquare, temp;
-    real epsilon_r, epsilon_rf, epsfac;
-
-    /* Constants for reaction fields */
-    real kappa, k_rf, c_rf;
+    real epsilon_r, epsfac;
 
     /* Charge sum and dipole for topology A/B ([0]/[1]) for Ewald corrections */
     double qsum[2];
@@ -242,17 +239,6 @@ typedef struct t_forcerec {
 
     struct t_forcetable *pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
-    /* PPPM & Shifting stuff */
-    int   coulomb_modifier;
-    real  rcoulomb_switch, rcoulomb;
-    real *phi;
-
-    /* VdW stuff */
-    int    vdw_modifier;
-    double reppow;
-    real   rvdw_switch, rvdw;
-    real   bham_b_max;
-
     /* Free energy */
     int      efep;
     real     sc_alphavdw;
@@ -263,8 +249,6 @@ typedef struct t_forcerec {
     real     sc_sigma6_min;
 
     /* NS Stuff */
-    int  eeltype;
-    int  vdwtype;
     int  cg0, hcg;
     /* solvent_opt contains the enum for the most common solvent
      * in the system, which will be optimized.
@@ -320,9 +304,6 @@ typedef struct t_forcerec {
     tensor            vir_lj_recip;
 
     /* PME/Ewald stuff */
-    gmx_bool                bEwald;
-    real                    ewaldcoeff_q;
-    real                    ewaldcoeff_lj;
     struct gmx_ewald_tab_t *ewald_table;
 
     /* Virial Stuff */

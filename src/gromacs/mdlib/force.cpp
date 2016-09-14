@@ -347,7 +347,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     /* Check whether we need to do listed interactions or correct for exclusions */
     if (fr->bMolPBC &&
         ((flags & GMX_FORCE_LISTED)
-         || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype)))
+         || EEL_RF(fr->ic->eeltype) || EEL_FULL(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)))
     {
         /* TODO There are no electrostatics methods that require this
            transformation, when using the Verlet scheme, so update the
@@ -374,7 +374,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     /* Do long-range electrostatics and/or LJ-PME, including related short-range
      * corrections.
      */
-    if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
+    if (EEL_FULL(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
     {
         int  status            = 0;
         real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
@@ -388,7 +388,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             box_size[ZZ] *= ir->wall_ewald_zfac;
         }
 
-        if (EEL_PME_EWALD(fr->eeltype) || EVDW_PME(fr->vdwtype))
+        if (EEL_PME_EWALD(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
         {
             real dvdl_long_range_correction_q   = 0;
             real dvdl_long_range_correction_lj  = 0;
@@ -477,7 +477,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                 wallcycle_sub_stop(wcycle, ewcsEWALD_CORRECTION);
             }
 
-            if (EEL_PME_EWALD(fr->eeltype) && fr->n_tpi == 0)
+            if (EEL_PME_EWALD(fr->ic->eeltype) && fr->n_tpi == 0)
             {
                 /* This is not in a subcounter because it takes a
                    negligible and constant-sized amount of time */
@@ -489,7 +489,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             enerd->dvdl_lin[efptCOUL] += dvdl_long_range_correction_q;
             enerd->dvdl_lin[efptVDW]  += dvdl_long_range_correction_lj;
 
-            if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)) && (cr->duty & DUTY_PME))
+            if ((EEL_PME(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype)) && (cr->duty & DUTY_PME))
             {
                 /* Do reciprocal PME for Coulomb and/or LJ. */
                 assert(fr->n_tpi >= 0);
@@ -521,8 +521,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
                                         nrnb, wcycle,
-                                        fr->vir_el_recip, fr->ewaldcoeff_q,
-                                        fr->vir_lj_recip, fr->ewaldcoeff_lj,
+                                        fr->vir_el_recip, fr->ic->ewaldcoeff_q,
+                                        fr->vir_lj_recip, fr->ic->ewaldcoeff_lj,
                                         &Vlr_q, &Vlr_lj,
                                         lambda[efptCOUL], lambda[efptVDW],
                                         &dvdl_long_range_q, &dvdl_long_range_lj, pme_flags);
@@ -557,12 +557,12 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             }
         }
 
-        if (!EEL_PME(fr->eeltype) && EEL_PME_EWALD(fr->eeltype))
+        if (!EEL_PME(fr->ic->eeltype) && EEL_PME_EWALD(fr->ic->eeltype))
         {
             Vlr_q = do_ewald(ir, x, fr->f_novirsum,
                              md->chargeA, md->chargeB,
                              box_size, cr, md->homenr,
-                             fr->vir_el_recip, fr->ewaldcoeff_q,
+                             fr->vir_el_recip, fr->ic->ewaldcoeff_q,
                              lambda[efptCOUL], &dvdl_long_range_q, fr->ewald_table);
         }
 
@@ -588,7 +588,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
          * With the Verlet scheme, exclusion forces are calculated
          * in the non-bonded kernel.
          */
-        if (ir->cutoff_scheme != ecutsVERLET && EEL_RF(fr->eeltype))
+        if (ir->cutoff_scheme != ecutsVERLET && EEL_RF(fr->ic->eeltype))
         {
             real dvdl_rf_excl      = 0;
             enerd->term[F_RF_EXCL] =

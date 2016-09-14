@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,7 +110,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_VF_sse2_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_ps(fr->epsfac);
+    facel            = _mm_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     sh_ewald         = _mm_set1_ps(fr->ic->sh_ewald);
@@ -125,7 +125,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_VF_sse2_single
     iq2              = _mm_mul_ps(facel,_mm_set1_ps(charge[inr+2]));
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 
@@ -733,7 +733,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_F_sse2_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_ps(fr->epsfac);
+    facel            = _mm_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     sh_ewald         = _mm_set1_ps(fr->ic->sh_ewald);
@@ -748,7 +748,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_F_sse2_single
     iq2              = _mm_mul_ps(facel,_mm_set1_ps(charge[inr+2]));
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 

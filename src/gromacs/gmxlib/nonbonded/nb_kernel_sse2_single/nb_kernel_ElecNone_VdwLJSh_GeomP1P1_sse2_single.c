@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,12 +109,12 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_sse2_single
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm_set1_ps(fr->ic->sh_invrc6);
-    rvdw             = _mm_set1_ps(fr->rvdw);
+    rvdw             = _mm_set1_ps(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = 0;
@@ -432,12 +432,12 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_F_sse2_single
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm_set1_ps(fr->ic->sh_invrc6);
-    rvdw             = _mm_set1_ps(fr->rvdw);
+    rvdw             = _mm_set1_ps(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = 0;
