@@ -114,7 +114,7 @@ nb_kernel_ElecNone_VdwLJEw_GeomP1P1_VF_sparc64_hpc_ace_double
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
     sh_lj_ewald	     = gmx_fjsp_set1_v2r8(fr->ic->sh_lj_ewald);
-    ewclj            = gmx_fjsp_set1_v2r8(fr->ewaldcoeff_lj);
+    ewclj            = gmx_fjsp_set1_v2r8(fr->ic->ewaldcoeff_lj);
     ewclj2           = _fjsp_mul_v2r8(minus_one,_fjsp_mul_v2r8(ewclj,ewclj));
 
     /* Avoid stupid compiler warnings */
@@ -384,7 +384,7 @@ nb_kernel_ElecNone_VdwLJEw_GeomP1P1_F_sparc64_hpc_ace_double
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
     sh_lj_ewald	     = gmx_fjsp_set1_v2r8(fr->ic->sh_lj_ewald);
-    ewclj            = gmx_fjsp_set1_v2r8(fr->ewaldcoeff_lj);
+    ewclj            = gmx_fjsp_set1_v2r8(fr->ic->ewaldcoeff_lj);
     ewclj2           = _fjsp_mul_v2r8(minus_one,_fjsp_mul_v2r8(ewclj,ewclj));
 
     /* Avoid stupid compiler warnings */

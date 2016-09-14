@@ -223,7 +223,7 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
     ielecmod                 = fr->nbkernel_elec_modifier;
     ivdwmod                  = fr->nbkernel_vdw_modifier;
     type                     = GMX_NBLIST_INTERACTION_STANDARD;
-    bElecAndVdwSwitchDiffers = ( (fr->rcoulomb_switch != fr->rvdw_switch) || (fr->rcoulomb != fr->rvdw));
+    bElecAndVdwSwitchDiffers = ( (fr->ic->rcoulomb_switch != fr->ic->rvdw_switch) || (fr->ic->rcoulomb != fr->ic->rvdw));
 
     fr->ns->bCGlist = (getenv("GMX_NBLISTCG") != nullptr);
     if (!fr->ns->bCGlist)

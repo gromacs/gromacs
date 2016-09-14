@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,7 +123,7 @@ double v_lj_ewald_lr(double beta, double r);
 /*! \brief Return tables for inner loops.
  *
  * \param fp     Log file pointer
- * \param fr     Force record
+ * \param ic     Non-bonded interaction constants
  * \param fn     File name from which to read user tables
  * \param rtab   Largest interaction distance to tabulate
  * \param flags  Flags to select table settings
@@ -131,7 +131,7 @@ double v_lj_ewald_lr(double beta, double r);
  * \return Pointer to inner loop table structure
  */
 t_forcetable *make_tables(FILE *fp,
-                          const t_forcerec *fr,
+                          const interaction_const_t *ic,
                           const char *fn, real rtab, int flags);
 
 /*! \brief Return a table for bonded interactions,
@@ -153,7 +153,7 @@ t_forcetable *make_gb_table(const t_forcerec              *fr);
 /*! \brief Construct and return tabulated dispersion and repulsion interactions
  *
  * This table can be used to compute long-range dispersion corrections */
-t_forcetable *makeDispersionCorrectionTable(FILE *fp, t_forcerec *fr,
+t_forcetable *makeDispersionCorrectionTable(FILE *fp, const interaction_const_t *ic,
                                             real rtab, const char *tabfn);
 
 #endif  /* GMX_TABLES_FORCETABLE_H */

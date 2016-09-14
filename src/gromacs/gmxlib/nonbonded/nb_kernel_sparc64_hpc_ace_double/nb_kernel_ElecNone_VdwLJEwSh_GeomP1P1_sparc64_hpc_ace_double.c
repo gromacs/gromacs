@@ -114,15 +114,15 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_VF_sparc64_hpc_ace_double
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
     sh_lj_ewald	     = gmx_fjsp_set1_v2r8(fr->ic->sh_lj_ewald);
-    ewclj            = gmx_fjsp_set1_v2r8(fr->ewaldcoeff_lj);
+    ewclj            = gmx_fjsp_set1_v2r8(fr->ic->ewaldcoeff_lj);
     ewclj2           = _fjsp_mul_v2r8(minus_one,_fjsp_mul_v2r8(ewclj,ewclj));
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = gmx_fjsp_set1_v2r8(fr->ic->sh_invrc6);
-    rvdw             = gmx_fjsp_set1_v2r8(fr->rvdw);
+    rvdw             = gmx_fjsp_set1_v2r8(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;
@@ -413,15 +413,15 @@ nb_kernel_ElecNone_VdwLJEwSh_GeomP1P1_F_sparc64_hpc_ace_double
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
     sh_lj_ewald	     = gmx_fjsp_set1_v2r8(fr->ic->sh_lj_ewald);
-    ewclj            = gmx_fjsp_set1_v2r8(fr->ewaldcoeff_lj);
+    ewclj            = gmx_fjsp_set1_v2r8(fr->ic->ewaldcoeff_lj);
     ewclj2           = _fjsp_mul_v2r8(minus_one,_fjsp_mul_v2r8(ewclj,ewclj));
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = gmx_fjsp_set1_v2r8(fr->ic->sh_invrc6);
-    rvdw             = gmx_fjsp_set1_v2r8(fr->rvdw);
+    rvdw             = gmx_fjsp_set1_v2r8(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;
