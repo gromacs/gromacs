@@ -319,7 +319,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         bCharge |= (mdatoms->chargeA[i] != 0 ||
                     (mdatoms->chargeB && mdatoms->chargeB[i] != 0));
     }
-    bRFExcl = (bCharge && EEL_RF(fr->eeltype));
+    bRFExcl = (bCharge && EEL_RF(fr->ic->eeltype));
 
     calc_cgcm(fplog, cg_tp, cg_tp+1, &(top->cgs), state_global->x, fr->cg_cm);
     if (bCavity)
@@ -384,7 +384,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         {
             nener += 1;
         }
-        if (EEL_FULL(fr->eeltype))
+        if (EEL_FULL(fr->ic->eeltype))
         {
             nener += 1;
         }
@@ -439,7 +439,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                 sprintf(str, "f. <U\\sRF excl\\Ne\\S-\\betaU\\N>");
                 leg[e++] = gmx_strdup(str);
             }
-            if (EEL_FULL(fr->eeltype))
+            if (EEL_FULL(fr->ic->eeltype))
             {
                 sprintf(str, "f. <U\\sCoul recip\\Ne\\S-\\betaU\\N>");
                 leg[e++] = gmx_strdup(str);
@@ -745,7 +745,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                     {
                         sum_UgembU[e++] += enerd->term[F_RF_EXCL]*embU;
                     }
-                    if (EEL_FULL(fr->eeltype))
+                    if (EEL_FULL(fr->ic->eeltype))
                     {
                         sum_UgembU[e++] += enerd->term[F_COUL_RECIP]*embU;
                     }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,11 +108,11 @@ nb_kernel_ElecNone_VdwLJSw_GeomP1P1_VF_sse4_1_double
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rvdw_switch;
+    rswitch_scalar   = fr->ic->rvdw_switch;
     rswitch          = _mm_set1_pd(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;
@@ -418,11 +418,11 @@ nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_sse4_1_double
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rvdw_switch;
+    rswitch_scalar   = fr->ic->rvdw_switch;
     rswitch          = _mm_set1_pd(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;
