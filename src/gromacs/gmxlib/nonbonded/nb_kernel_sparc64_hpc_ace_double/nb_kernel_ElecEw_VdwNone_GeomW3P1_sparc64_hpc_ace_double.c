@@ -108,7 +108,7 @@ nb_kernel_ElecEw_VdwNone_GeomW3P1_VF_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     sh_ewald         = gmx_fjsp_set1_v2r8(fr->ic->sh_ewald);
@@ -602,7 +602,7 @@ nb_kernel_ElecEw_VdwNone_GeomW3P1_F_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     sh_ewald         = gmx_fjsp_set1_v2r8(fr->ic->sh_ewald);

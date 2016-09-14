@@ -276,7 +276,7 @@ nb_kernel_allvsall(t_nblist gmx_unused *     nlist,
     f                   = ff[0];
     charge              = mdatoms->chargeA;
     type                = mdatoms->typeA;
-    facel               = fr->epsfac;
+    facel               = fr->ic->epsfac;
     natoms              = mdatoms->nr;
     ni0                 = 0;
     ni1                 = mdatoms->homenr;

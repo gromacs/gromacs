@@ -1018,11 +1018,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
                          step);
 
         /* Update constants in forcerec/inputrec to keep them in sync with fr->ic */
-        fr->ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
-        fr->ewaldcoeff_lj = fr->ic->ewaldcoeff_lj;
         fr->rlist         = fr->nbv->listParams->rlistOuter;
-        fr->rcoulomb      = fr->ic->rcoulomb;
-        fr->rvdw          = fr->ic->rvdw;
 
         if (ir->eDispCorr != edispcNO)
         {

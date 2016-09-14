@@ -180,7 +180,7 @@ void
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
     /* #if KERNEL_ELEC != 'None' */
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     /*     #if 'ReactionField' in KERNEL_ELEC */
     krf              = gmx_fjsp_set1_v2r8(fr->ic->k_rf);
@@ -196,7 +196,7 @@ void
     /* #if 'LJEwald' in KERNEL_VDW */
     vdwgridparam     = fr->ljpme_c6grid;
     sh_lj_ewald	     = gmx_fjsp_set1_v2r8(fr->ic->sh_lj_ewald);
-    ewclj            = gmx_fjsp_set1_v2r8(fr->ewaldcoeff_lj);
+    ewclj            = gmx_fjsp_set1_v2r8(fr->ic->ewaldcoeff_lj);
     ewclj2           = _fjsp_mul_v2r8(minus_one,_fjsp_mul_v2r8(ewclj,ewclj));
     /* #endif */
 
@@ -229,7 +229,7 @@ void
     dvda             = fr->dvda;
     gbtabscale       = gmx_fjsp_set1_v2r8(fr->gbtab->scale);
     gbtab            = fr->gbtab->data;
-    gbinvepsdiff     = gmx_fjsp_set1_v2r8((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
+    gbinvepsdiff     = gmx_fjsp_set1_v2r8((1.0/fr->ic->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
     /* #endif */
 
     /* #if 'Water' in GEOMETRY_I */
@@ -270,9 +270,9 @@ void
     /* #if KERNEL_MOD_ELEC!='None' or KERNEL_MOD_VDW!='None' */
     /*     #if KERNEL_ELEC!='None' */
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     /*     #else */
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     /*     #endif */
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
@@ -280,15 +280,15 @@ void
 
     /* #if KERNEL_MOD_VDW=='PotentialShift' */
     sh_vdw_invrcut6  = gmx_fjsp_set1_v2r8(fr->ic->sh_invrc6);
-    rvdw             = gmx_fjsp_set1_v2r8(fr->rvdw);
+    rvdw             = gmx_fjsp_set1_v2r8(fr->ic->rvdw);
     /* #endif */
 
     /* #if 'PotentialSwitch' in [KERNEL_MOD_ELEC,KERNEL_MOD_VDW] */
     /*     #if KERNEL_MOD_ELEC=='PotentialSwitch'  */
-    rswitch_scalar   = fr->rcoulomb_switch;
+    rswitch_scalar   = fr->ic->rcoulomb_switch;
     rswitch          = gmx_fjsp_set1_v2r8(rswitch_scalar);
     /*     #else */
-    rswitch_scalar   = fr->rvdw_switch;
+    rswitch_scalar   = fr->ic->rvdw_switch;
     rswitch          = gmx_fjsp_set1_v2r8(rswitch_scalar);
     /*     #endif */
     /* Setup switch parameters */

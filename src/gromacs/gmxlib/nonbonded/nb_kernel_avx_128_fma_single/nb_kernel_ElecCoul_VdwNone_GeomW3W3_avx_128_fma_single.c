@@ -117,7 +117,7 @@ nb_kernel_ElecCoul_VdwNone_GeomW3W3_VF_avx_128_fma_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_ps(fr->epsfac);
+    facel            = _mm_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     /* Setup water-specific parameters */
@@ -909,7 +909,7 @@ nb_kernel_ElecCoul_VdwNone_GeomW3W3_F_avx_128_fma_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_ps(fr->epsfac);
+    facel            = _mm_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     /* Setup water-specific parameters */
