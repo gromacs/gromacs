@@ -131,7 +131,7 @@ double v_lj_ewald_lr(double beta, double r);
  * \return Pointer to inner loop table structure
  */
 t_forcetable *make_tables(FILE *fp,
-                          const t_forcerec *fr,
+                          const interaction_const_t *ic,
                           const char *fn, real rtab, int flags);
 
 /*! \brief Return a table for bonded interactions,
@@ -153,7 +153,7 @@ t_forcetable *make_gb_table(const t_forcerec              *fr);
 /*! \brief Construct and return tabulated dispersion and repulsion interactions
  *
  * This table can be used to compute long-range dispersion corrections */
-t_forcetable *makeDispersionCorrectionTable(FILE *fp, t_forcerec *fr,
+t_forcetable *makeDispersionCorrectionTable(FILE *fp, const interaction_const_t *ic,
                                             real rtab, const char *tabfn);
 
 #endif  /* GMX_TABLES_FORCETABLE_H */

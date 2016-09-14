@@ -88,7 +88,7 @@ void make_wall_tables(FILE *fplog,
                         *groups->grpname[nm_ind[egp]],
                         *groups->grpname[nm_ind[negp_pp+w]],
                         ftp2ext(efXVG));
-                fr->wall_tab[w][egp] = make_tables(fplog, fr, buf, 0,
+                fr->wall_tab[w][egp] = make_tables(fplog, fr->ic, buf, 0,
                                                    GMX_MAKETABLES_FORCEUSER);
 
                 /* Since wall have no charge, we can compress the table */

@@ -93,7 +93,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomP1P1_VF_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
     krf              = fr->ic->k_rf;
     krf2             = krf*2.0;
@@ -106,7 +106,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomP1P1_VF_c
     vftabscale       = kernel_data->table_vdw->scale;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     outeriter        = 0;
@@ -325,7 +325,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomP1P1_F_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
     krf              = fr->ic->k_rf;
     krf2             = krf*2.0;
@@ -338,7 +338,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomP1P1_F_c
     vftabscale       = kernel_data->table_vdw->scale;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     outeriter        = 0;

@@ -103,7 +103,7 @@ nb_kernel_ElecCoul_VdwNone_GeomP1P1_VF_avx_256_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm256_set1_pd(fr->epsfac);
+    facel            = _mm256_set1_pd(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     /* Avoid stupid compiler warnings */
@@ -383,7 +383,7 @@ nb_kernel_ElecCoul_VdwNone_GeomP1P1_F_avx_256_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm256_set1_pd(fr->epsfac);
+    facel            = _mm256_set1_pd(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     /* Avoid stupid compiler warnings */

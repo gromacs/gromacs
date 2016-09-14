@@ -104,7 +104,7 @@ nb_kernel_ElecRF_VdwNone_GeomP1P1_VF_avx_256_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
+    facel            = _mm256_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = _mm256_set1_ps(fr->ic->k_rf);
     krf2             = _mm256_set1_ps(fr->ic->k_rf*2.0);
@@ -425,7 +425,7 @@ nb_kernel_ElecRF_VdwNone_GeomP1P1_F_avx_256_single
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm256_set1_ps(fr->epsfac);
+    facel            = _mm256_set1_ps(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = _mm256_set1_ps(fr->ic->k_rf);
     krf2             = _mm256_set1_ps(fr->ic->k_rf*2.0);

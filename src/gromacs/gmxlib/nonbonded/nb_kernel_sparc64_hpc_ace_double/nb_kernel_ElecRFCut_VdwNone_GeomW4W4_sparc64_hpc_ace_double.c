@@ -1,7 +1,11 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
+<<<<<<< HEAD
  * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+=======
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+>>>>>>> e0b82a2... Remove nb-parameters from t_forcerec
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,7 +120,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4W4_VF_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = gmx_fjsp_set1_v2r8(fr->ic->k_rf);
     krf2             = gmx_fjsp_set1_v2r8(fr->ic->k_rf*2.0);
@@ -142,7 +146,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4W4_VF_sparc64_hpc_ace_double
     qq33             = _fjsp_mul_v2r8(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 
@@ -1054,7 +1058,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4W4_F_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = gmx_fjsp_set1_v2r8(fr->ic->k_rf);
     krf2             = gmx_fjsp_set1_v2r8(fr->ic->k_rf*2.0);
@@ -1080,7 +1084,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4W4_F_sparc64_hpc_ace_double
     qq33             = _fjsp_mul_v2r8(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 

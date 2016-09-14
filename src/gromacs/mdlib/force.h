@@ -88,7 +88,7 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
 void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf,
                 real Rc, real Temp,
                 real zsq, matrix box,
-                real *kappa, real *krf, real *crf);
+                real *krf, real *crf);
 /* Determine the reaction-field constants */
 
 void init_generalized_rf(FILE *fplog,

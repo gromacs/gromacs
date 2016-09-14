@@ -314,7 +314,7 @@ real ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda,
         /* Apply charge correction */
         vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
 
-        fac = M_PI*ONE_4PI_EPS0/(fr->epsilon_r*2.0*vol*vol*gmx::square(fr->ewaldcoeff_q));
+        fac = M_PI*ONE_4PI_EPS0/(fr->ic->epsilon_r*2.0*vol*vol*gmx::square(fr->ic->ewaldcoeff_q));
 
         qs2A = fr->qsum[0]*fr->qsum[0];
         qs2B = fr->qsum[1]*fr->qsum[1];
