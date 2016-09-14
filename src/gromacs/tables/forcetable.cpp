@@ -790,7 +790,7 @@ static void done_tabledata(t_tabledata *td)
     sfree(td->f);
 }
 
-static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
+static void fill_table(t_tabledata *td, int tp, const interaction_const_t *ic,
                        gmx_bool b14only)
 {
     /* Fill the table according to the formulas in the manual.
@@ -814,8 +814,8 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
     double   ksw, swi, swi1;
     /* Temporary parameters */
     gmx_bool bPotentialSwitch, bForceSwitch, bPotentialShift;
-    double   ewc   = fr->ewaldcoeff_q;
-    double   ewclj = fr->ewaldcoeff_lj;
+    double   ewc   = ic->ewaldcoeff_q;
+    double   ewclj = ic->ewaldcoeff_lj;
     double   Vcut  = 0;
 
     if (b14only)
@@ -829,27 +829,27 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
         bPotentialSwitch = ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) ||
                             (tp == etabCOULSwitch) ||
                             (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch) ||
-                            (tprops[tp].bCoulomb && (fr->coulomb_modifier == eintmodPOTSWITCH)) ||
-                            (!tprops[tp].bCoulomb && (fr->vdw_modifier == eintmodPOTSWITCH)));
+                            (tprops[tp].bCoulomb && (ic->coulomb_modifier == eintmodPOTSWITCH)) ||
+                            (!tprops[tp].bCoulomb && (ic->vdw_modifier == eintmodPOTSWITCH)));
         bForceSwitch  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) ||
                          (tp == etabShift) ||
-                         (tprops[tp].bCoulomb && (fr->coulomb_modifier == eintmodFORCESWITCH)) ||
-                         (!tprops[tp].bCoulomb && (fr->vdw_modifier == eintmodFORCESWITCH)));
-        bPotentialShift = ((tprops[tp].bCoulomb && (fr->coulomb_modifier == eintmodPOTSHIFT)) ||
-                           (!tprops[tp].bCoulomb && (fr->vdw_modifier == eintmodPOTSHIFT)));
+                         (tprops[tp].bCoulomb && (ic->coulomb_modifier == eintmodFORCESWITCH)) ||
+                         (!tprops[tp].bCoulomb && (ic->vdw_modifier == eintmodFORCESWITCH)));
+        bPotentialShift = ((tprops[tp].bCoulomb && (ic->coulomb_modifier == eintmodPOTSHIFT)) ||
+                           (!tprops[tp].bCoulomb && (ic->vdw_modifier == eintmodPOTSHIFT)));
     }
 
-    reppow = fr->reppow;
+    reppow = ic->reppow;
 
     if (tprops[tp].bCoulomb)
     {
-        r1 = fr->rcoulomb_switch;
-        rc = fr->rcoulomb;
+        r1 = ic->rcoulomb_switch;
+        rc = ic->rcoulomb;
     }
     else
     {
-        r1 = fr->rvdw_switch;
-        rc = fr->rvdw;
+        r1 = ic->rvdw_switch;
+        rc = ic->rvdw;
     }
     if (bPotentialSwitch)
     {
@@ -1080,8 +1080,8 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
                 break;
             case etabRF:
             case etabRF_ZERO:
-                Vtab  = 1.0/r      +   fr->k_rf*r2 - fr->c_rf;
-                Ftab  = 1.0/r2     - 2*fr->k_rf*r;
+                Vtab  = 1.0/r      +   ic->k_rf*r2 - ic->c_rf;
+                Ftab  = 1.0/r2     - 2*ic->k_rf*r;
                 if (tp == etabRF_ZERO && r >= rc)
                 {
                     Vtab = 0;
@@ -1180,7 +1180,7 @@ static void fill_table(t_tabledata *td, int tp, const t_forcerec *fr,
     }
 }
 
-static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
+static void set_table_type(int tabsel[], const interaction_const_t *ic, gmx_bool b14only)
 {
     int eltype, vdwtype;
 
@@ -1191,7 +1191,7 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
 
     if (b14only)
     {
-        switch (fr->eeltype)
+        switch (ic->eeltype)
         {
             case eelUSER:
             case eelPMEUSER:
@@ -1204,7 +1204,7 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
     }
     else
     {
-        eltype = fr->eeltype;
+        eltype = ic->eeltype;
     }
 
     switch (eltype)
@@ -1216,7 +1216,7 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
             tabsel[etiCOUL] = etabShift;
             break;
         case eelSHIFT:
-            if (fr->rcoulomb > fr->rcoulomb_switch)
+            if (ic->rcoulomb > ic->rcoulomb_switch)
             {
                 tabsel[etiCOUL] = etabShift;
             }
@@ -1258,20 +1258,20 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
     }
 
     /* Van der Waals time */
-    if (fr->bBHAM && !b14only)
+    if (ic->useBuckingham && !b14only)
     {
         tabsel[etiLJ6]  = etabLJ6;
         tabsel[etiLJ12] = etabEXPMIN;
     }
     else
     {
-        if (b14only && fr->vdwtype != evdwUSER)
+        if (b14only && ic->vdwtype != evdwUSER)
         {
             vdwtype = evdwCUT;
         }
         else
         {
-            vdwtype = fr->vdwtype;
+            vdwtype = ic->vdwtype;
         }
 
         switch (vdwtype)
@@ -1305,10 +1305,10 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
                           __FILE__, __LINE__);
         }
 
-        if (!b14only && fr->vdw_modifier != eintmodNONE)
+        if (!b14only && ic->vdw_modifier != eintmodNONE)
         {
-            if (fr->vdw_modifier != eintmodPOTSHIFT &&
-                fr->vdwtype != evdwCUT)
+            if (ic->vdw_modifier != eintmodPOTSHIFT &&
+                ic->vdwtype != evdwCUT)
             {
                 gmx_incons("Potential modifiers other than potential-shift are only implemented for LJ cut-off");
             }
@@ -1316,9 +1316,9 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
             /* LJ-PME and other (shift-only) modifiers are handled by applying the modifiers
              * to the original interaction forms when we fill the table, so we only check cutoffs here.
              */
-            if (fr->vdwtype == evdwCUT)
+            if (ic->vdwtype == evdwCUT)
             {
-                switch (fr->vdw_modifier)
+                switch (ic->vdw_modifier)
                 {
                     case eintmodNONE:
                     case eintmodPOTSHIFT:
@@ -1342,7 +1342,7 @@ static void set_table_type(int tabsel[], const t_forcerec *fr, gmx_bool b14only)
 }
 
 t_forcetable *make_tables(FILE *out,
-                          const t_forcerec *fr,
+                          const interaction_const_t *ic,
                           const char *fn,
                           real rtab, int flags)
 {
@@ -1364,7 +1364,7 @@ t_forcetable *make_tables(FILE *out,
     }
     else
     {
-        set_table_type(tabsel, fr, b14only);
+        set_table_type(tabsel, ic, b14only);
     }
     snew(td, etiNR);
     table->r         = rtab;
@@ -1430,13 +1430,15 @@ t_forcetable *make_tables(FILE *out,
         if (!ETAB_USER(tabsel[k]))
         {
             real scale = table->scale;
-            if (fr->bBHAM && (fr->bham_b_max != 0) && tabsel[k] == etabEXPMIN)
+            if (ic->useBuckingham &&
+                (ic->buckinghamBMax != 0) &&
+                tabsel[k] == etabEXPMIN)
             {
-                scale /= fr->bham_b_max;
+                scale /= ic->buckinghamBMax;
             }
             init_table(table->n, nx0, scale, &(td[k]), !useUserTable);
 
-            fill_table(&(td[k]), tabsel[k], fr, b14only);
+            fill_table(&(td[k]), tabsel[k], ic, b14only);
             if (out)
             {
                 fprintf(out, "Generated table with %d data points for %s%s.\n"
@@ -1569,9 +1571,10 @@ bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle)
     return tab;
 }
 
-t_forcetable *makeDispersionCorrectionTable(FILE *fp,
-                                            t_forcerec *fr, real rtab,
-                                            const char *tabfn)
+t_forcetable *makeDispersionCorrectionTable(FILE                      *fp,
+                                            const interaction_const_t *ic,
+                                            real                       rtab,
+                                            const char                *tabfn)
 {
     t_forcetable *dispersionCorrectionTable = NULL;
 
@@ -1584,7 +1587,7 @@ t_forcetable *makeDispersionCorrectionTable(FILE *fp,
         return dispersionCorrectionTable;
     }
 
-    t_forcetable *fullTable = make_tables(fp, fr, tabfn, rtab, 0);
+    t_forcetable *fullTable = make_tables(fp, ic, tabfn, rtab, 0);
     /* Copy the contents of the table to one that has just dispersion
      * and repulsion, to improve cache performance. We want the table
      * data to be aligned to 32-byte boundaries. The pointers could be

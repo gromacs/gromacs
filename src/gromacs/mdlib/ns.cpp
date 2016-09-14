@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -223,7 +223,7 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
     ielecmod                 = fr->nbkernel_elec_modifier;
     ivdwmod                  = fr->nbkernel_vdw_modifier;
     type                     = GMX_NBLIST_INTERACTION_STANDARD;
-    bElecAndVdwSwitchDiffers = ( (fr->rcoulomb_switch != fr->rvdw_switch) || (fr->rcoulomb != fr->rvdw));
+    bElecAndVdwSwitchDiffers = ( (fr->ic->rcoulomb_switch != fr->ic->rvdw_switch) || (fr->ic->rcoulomb != fr->ic->rvdw));
 
     fr->ns->bCGlist = (getenv("GMX_NBLISTCG") != 0);
     if (!fr->ns->bCGlist)
