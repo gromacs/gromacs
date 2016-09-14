@@ -126,7 +126,7 @@ nb_kernel_ElecEw_VdwLJEw_GeomW3W3_VF_c
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
-    ewclj            = fr->ewaldcoeff_lj;
+    ewclj            = fr->ic->ewaldcoeff_lj;
     sh_lj_ewald	     = fr->ic->sh_lj_ewald;
     ewclj2           = ewclj*ewclj;
     ewclj6           = ewclj2*ewclj2*ewclj2;
@@ -735,7 +735,7 @@ nb_kernel_ElecEw_VdwLJEw_GeomW3W3_F_c
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
-    ewclj            = fr->ewaldcoeff_lj;
+    ewclj            = fr->ic->ewaldcoeff_lj;
     sh_lj_ewald	     = fr->ic->sh_lj_ewald;
     ewclj2           = ewclj*ewclj;
     ewclj6           = ewclj2*ewclj2*ewclj2;

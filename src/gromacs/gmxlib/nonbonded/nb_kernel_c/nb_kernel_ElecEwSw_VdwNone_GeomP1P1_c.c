@@ -99,10 +99,10 @@ nb_kernel_ElecEwSw_VdwNone_GeomP1P1_VF_c
     ewtabhalfspace   = 0.5/ewtabscale;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
-    rswitch          = fr->rcoulomb_switch;
+    rswitch          = fr->ic->rcoulomb_switch;
     /* Setup switch parameters */
     d                = rcutoff-rswitch;
     swV3             = -10.0/(d*d*d);
@@ -315,10 +315,10 @@ nb_kernel_ElecEwSw_VdwNone_GeomP1P1_F_c
     ewtabhalfspace   = 0.5/ewtabscale;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
-    rswitch          = fr->rcoulomb_switch;
+    rswitch          = fr->ic->rcoulomb_switch;
     /* Setup switch parameters */
     d                = rcutoff-rswitch;
     swV3             = -10.0/(d*d*d);

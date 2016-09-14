@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -145,7 +145,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW4W4_VF_sse2_double
     qq33             = _mm_mul_pd(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
@@ -1464,7 +1464,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW4W4_F_sse2_double
     qq33             = _mm_mul_pd(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 

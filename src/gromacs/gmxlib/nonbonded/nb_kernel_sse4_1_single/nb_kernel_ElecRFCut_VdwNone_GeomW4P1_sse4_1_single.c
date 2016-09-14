@@ -120,7 +120,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4P1_VF_sse4_1_single
     iq3              = _mm_mul_ps(facel,_mm_set1_ps(charge[inr+3]));
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 
@@ -645,7 +645,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4P1_F_sse4_1_single
     iq3              = _mm_mul_ps(facel,_mm_set1_ps(charge[inr+3]));
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 

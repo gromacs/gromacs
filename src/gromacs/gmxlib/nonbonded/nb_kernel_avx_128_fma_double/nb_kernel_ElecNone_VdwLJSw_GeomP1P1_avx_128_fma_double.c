@@ -108,11 +108,11 @@ nb_kernel_ElecNone_VdwLJSw_GeomP1P1_VF_avx_128_fma_double
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rvdw_switch;
+    rswitch_scalar   = fr->ic->rvdw_switch;
     rswitch          = _mm_set1_pd(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;
@@ -414,11 +414,11 @@ nb_kernel_ElecNone_VdwLJSw_GeomP1P1_F_avx_128_fma_double
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rvdw_switch;
+    rswitch_scalar   = fr->ic->rvdw_switch;
     rswitch          = _mm_set1_pd(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;

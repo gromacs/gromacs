@@ -132,11 +132,11 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_VF_sse4_1_single
     vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rvdw_switch;
+    rswitch_scalar   = fr->ic->rvdw_switch;
     rswitch          = _mm_set1_ps(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;
@@ -749,11 +749,11 @@ nb_kernel_ElecRFCut_VdwLJSw_GeomW3P1_F_sse4_1_single
     vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm_mul_ps(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rvdw_switch;
+    rswitch_scalar   = fr->ic->rvdw_switch;
     rswitch          = _mm_set1_ps(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;

@@ -125,7 +125,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_avx_128_fma_double
     dvda             = fr->dvda;
     gbtabscale       = _mm_set1_pd(fr->gbtab->scale);
     gbtab            = fr->gbtab->data;
-    gbinvepsdiff     = _mm_set1_pd((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
+    gbinvepsdiff     = _mm_set1_pd((1.0/fr->ic->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;
@@ -546,7 +546,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_avx_128_fma_double
     dvda             = fr->dvda;
     gbtabscale       = _mm_set1_pd(fr->gbtab->scale);
     gbtab            = fr->gbtab->data;
-    gbinvepsdiff     = _mm_set1_pd((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
+    gbinvepsdiff     = _mm_set1_pd((1.0/fr->ic->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;

@@ -134,7 +134,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW3P1_VF_avx_128_fma_double
     vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
@@ -699,7 +699,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW3P1_F_avx_128_fma_double
     vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 

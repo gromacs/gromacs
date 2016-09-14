@@ -145,7 +145,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW4W4_VF_sse4_1_double
     qq33             = _mm_mul_pd(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
@@ -1464,7 +1464,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW4W4_F_sse4_1_double
     qq33             = _mm_mul_pd(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 

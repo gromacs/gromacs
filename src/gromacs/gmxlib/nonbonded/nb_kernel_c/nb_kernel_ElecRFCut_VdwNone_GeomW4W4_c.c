@@ -128,7 +128,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4W4_VF_c
     qq33             = iq3*jq3;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     outeriter        = 0;
@@ -660,7 +660,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomW4W4_F_c
     qq33             = iq3*jq3;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     outeriter        = 0;

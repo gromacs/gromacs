@@ -114,7 +114,7 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_VF_c
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
-    ewclj            = fr->ewaldcoeff_lj;
+    ewclj            = fr->ic->ewaldcoeff_lj;
     sh_lj_ewald	     = fr->ic->sh_lj_ewald;
     ewclj2           = ewclj*ewclj;
     ewclj6           = ewclj2*ewclj2*ewclj2;
@@ -132,11 +132,11 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_VF_c
     vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     sh_vdw_invrcut6  = fr->ic->sh_invrc6;
-    rvdw             = fr->rvdw;
+    rvdw             = fr->ic->rvdw;
 
     outeriter        = 0;
     inneriter        = 0;
@@ -524,7 +524,7 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_F_c
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
-    ewclj            = fr->ewaldcoeff_lj;
+    ewclj            = fr->ic->ewaldcoeff_lj;
     sh_lj_ewald	     = fr->ic->sh_lj_ewald;
     ewclj2           = ewclj*ewclj;
     ewclj6           = ewclj2*ewclj2*ewclj2;
@@ -542,11 +542,11 @@ nb_kernel_ElecEwSh_VdwLJEwSh_GeomW4P1_F_c
     vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     sh_vdw_invrcut6  = fr->ic->sh_invrc6;
-    rvdw             = fr->rvdw;
+    rvdw             = fr->ic->rvdw;
 
     outeriter        = 0;
     inneriter        = 0;

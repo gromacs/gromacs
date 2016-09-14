@@ -114,12 +114,12 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_VF_sse4_1_double
     vdwtype          = mdatoms->typeA;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm_set1_pd(fr->ic->sh_invrc6);
-    rvdw             = _mm_set1_pd(fr->rvdw);
+    rvdw             = _mm_set1_pd(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;
@@ -417,12 +417,12 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomP1P1_F_sse4_1_double
     vdwtype          = mdatoms->typeA;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm_set1_pd(fr->ic->sh_invrc6);
-    rvdw             = _mm_set1_pd(fr->rvdw);
+    rvdw             = _mm_set1_pd(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;

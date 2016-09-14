@@ -167,7 +167,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW3W3_VF_avx_256_single
     qq22             = _mm256_mul_ps(iq2,jq2);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm256_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm256_mul_ps(rcutoff,rcutoff);
 
@@ -1407,7 +1407,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW3W3_F_avx_256_single
     qq22             = _mm256_mul_ps(iq2,jq2);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm256_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm256_mul_ps(rcutoff,rcutoff);
 

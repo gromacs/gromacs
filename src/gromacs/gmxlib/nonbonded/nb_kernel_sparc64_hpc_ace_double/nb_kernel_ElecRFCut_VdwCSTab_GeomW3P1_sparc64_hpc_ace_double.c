@@ -134,7 +134,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW3P1_VF_sparc64_hpc_ace_double
     vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 
@@ -696,7 +696,7 @@ nb_kernel_ElecRFCut_VdwCSTab_GeomW3P1_F_sparc64_hpc_ace_double
     vdwioffset0      = 2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 

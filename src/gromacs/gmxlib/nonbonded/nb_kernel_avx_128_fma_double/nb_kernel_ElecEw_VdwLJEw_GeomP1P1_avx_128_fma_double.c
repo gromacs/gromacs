@@ -119,7 +119,7 @@ nb_kernel_ElecEw_VdwLJEw_GeomP1P1_VF_avx_128_fma_double
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
     sh_lj_ewald	     = _mm_set1_pd(fr->ic->sh_lj_ewald);
-    ewclj            = _mm_set1_pd(fr->ewaldcoeff_lj);
+    ewclj            = _mm_set1_pd(fr->ic->ewaldcoeff_lj);
     ewclj2           = _mm_mul_pd(minus_one,_mm_mul_pd(ewclj,ewclj));
 
     sh_ewald         = _mm_set1_pd(fr->ic->sh_ewald);
@@ -457,7 +457,7 @@ nb_kernel_ElecEw_VdwLJEw_GeomP1P1_F_avx_128_fma_double
     vdwtype          = mdatoms->typeA;
     vdwgridparam     = fr->ljpme_c6grid;
     sh_lj_ewald	     = _mm_set1_pd(fr->ic->sh_lj_ewald);
-    ewclj            = _mm_set1_pd(fr->ewaldcoeff_lj);
+    ewclj            = _mm_set1_pd(fr->ic->ewaldcoeff_lj);
     ewclj2           = _mm_mul_pd(minus_one,_mm_mul_pd(ewclj,ewclj));
 
     sh_ewald         = _mm_set1_pd(fr->ic->sh_ewald);

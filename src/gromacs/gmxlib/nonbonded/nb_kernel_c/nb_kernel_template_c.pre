@@ -2,7 +2,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -202,7 +202,7 @@ void
     /* #endif */
     /* #if 'LJEwald' in KERNEL_VDW */
     vdwgridparam     = fr->ljpme_c6grid;
-    ewclj            = fr->ewaldcoeff_lj;
+    ewclj            = fr->ic->ewaldcoeff_lj;
     sh_lj_ewald	     = fr->ic->sh_lj_ewald;
     ewclj2           = ewclj*ewclj;
     ewclj6           = ewclj2*ewclj2*ewclj2;
@@ -237,7 +237,7 @@ void
     dvda             = fr->dvda;
     gbtabscale       = fr->gbtab->scale;
     gbtab            = fr->gbtab->data;
-    gbinvepsdiff     = (1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent);
+    gbinvepsdiff     = (1.0/fr->ic->epsilon_r) - (1.0/fr->gb_epsilon_solvent);
     /* #endif */
 
     /* #if 'Water' in GEOMETRY_I */
@@ -282,23 +282,23 @@ void
     /* #if KERNEL_MOD_ELEC!='None' or KERNEL_MOD_VDW!='None' */
     /*     #if KERNEL_ELEC!='None' */
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     /*     #else */
-    rcutoff          = fr->rvdw;
+    rcutoff          = fr->ic->rvdw;
     /*     #endif */
     rcutoff2         = rcutoff*rcutoff;
     /* #endif */
 
     /* #if KERNEL_MOD_VDW=='PotentialShift' */
     sh_vdw_invrcut6  = fr->ic->sh_invrc6;
-    rvdw             = fr->rvdw;
+    rvdw             = fr->ic->rvdw;
     /* #endif */
 
     /* #if 'PotentialSwitch' in [KERNEL_MOD_ELEC,KERNEL_MOD_VDW] */
     /*     #if KERNEL_MOD_ELEC=='PotentialSwitch'  */
-    rswitch          = fr->rcoulomb_switch;
+    rswitch          = fr->ic->rcoulomb_switch;
     /*     #else */
-    rswitch          = fr->rvdw_switch;
+    rswitch          = fr->ic->rvdw_switch;
     /*     #endif */
     /* Setup switch parameters */
     d                = rcutoff-rswitch;

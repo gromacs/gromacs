@@ -116,11 +116,11 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_VF_c
     vdwioffset0      = 3*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     sh_vdw_invrcut6  = fr->ic->sh_invrc6;
-    rvdw             = fr->rvdw;
+    rvdw             = fr->ic->rvdw;
 
     outeriter        = 0;
     inneriter        = 0;
@@ -482,11 +482,11 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4P1_F_c
     vdwioffset0      = 3*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     sh_vdw_invrcut6  = fr->ic->sh_invrc6;
-    rvdw             = fr->rvdw;
+    rvdw             = fr->ic->rvdw;
 
     outeriter        = 0;
     inneriter        = 0;

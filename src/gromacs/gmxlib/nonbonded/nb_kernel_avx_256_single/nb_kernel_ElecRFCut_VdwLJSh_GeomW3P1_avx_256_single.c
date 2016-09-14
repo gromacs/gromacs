@@ -133,12 +133,12 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW3P1_VF_avx_256_single
     vdwioffsetptr0   = vdwparam+2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm256_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm256_mul_ps(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm256_set1_ps(fr->ic->sh_invrc6);
-    rvdw             = _mm256_set1_ps(fr->rvdw);
+    rvdw             = _mm256_set1_ps(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = jnrE = jnrF = jnrG = jnrH = 0;
@@ -775,12 +775,12 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW3P1_F_avx_256_single
     vdwioffsetptr0   = vdwparam+2*nvdwtype*vdwtype[inr+0];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm256_set1_ps(rcutoff_scalar);
     rcutoff2         = _mm256_mul_ps(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm256_set1_ps(fr->ic->sh_invrc6);
-    rvdw             = _mm256_set1_ps(fr->rvdw);
+    rvdw             = _mm256_set1_ps(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = jnrE = jnrF = jnrG = jnrH = 0;

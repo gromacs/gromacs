@@ -93,7 +93,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_VF_c
     crf              = fr->ic->c_rf;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     outeriter        = 0;
@@ -272,7 +272,7 @@ nb_kernel_ElecRFCut_VdwNone_GeomP1P1_F_c
     crf              = fr->ic->c_rf;
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     outeriter        = 0;
