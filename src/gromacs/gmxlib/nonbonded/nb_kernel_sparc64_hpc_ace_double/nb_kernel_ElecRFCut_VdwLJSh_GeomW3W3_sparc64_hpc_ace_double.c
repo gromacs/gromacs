@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -122,7 +122,7 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW3W3_VF_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = gmx_fjsp_set1_v2r8(fr->ic->k_rf);
     krf2             = gmx_fjsp_set1_v2r8(fr->ic->k_rf*2.0);
@@ -155,12 +155,12 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW3W3_VF_sparc64_hpc_ace_double
     qq22             = _fjsp_mul_v2r8(iq2,jq2);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = gmx_fjsp_set1_v2r8(fr->ic->sh_invrc6);
-    rvdw             = gmx_fjsp_set1_v2r8(fr->rvdw);
+    rvdw             = gmx_fjsp_set1_v2r8(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;
@@ -1101,7 +1101,7 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW3W3_F_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     krf              = gmx_fjsp_set1_v2r8(fr->ic->k_rf);
     krf2             = gmx_fjsp_set1_v2r8(fr->ic->k_rf*2.0);
@@ -1134,12 +1134,12 @@ nb_kernel_ElecRFCut_VdwLJSh_GeomW3W3_F_sparc64_hpc_ace_double
     qq22             = _fjsp_mul_v2r8(iq2,jq2);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = gmx_fjsp_set1_v2r8(fr->ic->sh_invrc6);
-    rvdw             = gmx_fjsp_set1_v2r8(fr->rvdw);
+    rvdw             = gmx_fjsp_set1_v2r8(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = 0;

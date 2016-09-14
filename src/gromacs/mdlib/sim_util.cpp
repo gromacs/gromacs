@@ -448,12 +448,12 @@ static void post_process_forces(t_commrec *cr,
                 sum_forces(0, mdatoms->homenr,
                            f, fr->f_novirsum);
             }
-            if (EEL_FULL(fr->eeltype))
+            if (EEL_FULL(fr->ic->eeltype))
             {
                 /* Add the mesh contribution to the virial */
                 m_add(vir_force, fr->vir_el_recip, vir_force);
             }
-            if (EVDW_PME(fr->vdwtype))
+            if (EVDW_PME(fr->ic->vdwtype))
             {
                 /* Add the mesh contribution to the virial */
                 m_add(vir_force, fr->vir_lj_recip, vir_force);
@@ -1845,7 +1845,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
              * When we do not calculate the virial, fr->f_novirsum = f,
              * so we have already communicated these forces.
              */
-            if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
+            if (EEL_FULL(fr->ic->eeltype) && cr->dd->n_intercg_excl &&
                 (flags & GMX_FORCE_VIRIAL))
             {
                 dd_move_f(cr->dd, fr->f_novirsum, NULL);
@@ -2157,6 +2157,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
     fr->virdiffsix      = 0;
     fr->virdifftwelve   = 0;
 
+    const interaction_const_t *ic = fr->ic;
+
     if (eDispCorr != edispcNO)
     {
         for (i = 0; i < 2; i++)
@@ -2164,19 +2166,19 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             eners[i] = 0;
             virs[i]  = 0;
         }
-        if ((fr->vdw_modifier == eintmodPOTSHIFT) ||
-            (fr->vdw_modifier == eintmodPOTSWITCH) ||
-            (fr->vdw_modifier == eintmodFORCESWITCH) ||
-            (fr->vdwtype == evdwSHIFT) ||
-            (fr->vdwtype == evdwSWITCH))
+        if ((ic->vdw_modifier == eintmodPOTSHIFT) ||
+            (ic->vdw_modifier == eintmodPOTSWITCH) ||
+            (ic->vdw_modifier == eintmodFORCESWITCH) ||
+            (ic->vdwtype == evdwSHIFT) ||
+            (ic->vdwtype == evdwSWITCH))
         {
-            if (((fr->vdw_modifier == eintmodPOTSWITCH) ||
-                 (fr->vdw_modifier == eintmodFORCESWITCH) ||
-                 (fr->vdwtype == evdwSWITCH)) && fr->rvdw_switch == 0)
+            if (((ic->vdw_modifier == eintmodPOTSWITCH) ||
+                 (ic->vdw_modifier == eintmodFORCESWITCH) ||
+                 (ic->vdwtype == evdwSWITCH)) && ic->rvdw_switch == 0)
             {
                 gmx_fatal(FARGS,
                           "With dispersion correction rvdw-switch can not be zero "
-                          "for vdw-type = %s", evdw_names[fr->vdwtype]);
+                          "for vdw-type = %s", evdw_names[ic->vdwtype]);
             }
 
             /* TODO This code depends on the logic in tables.c that
@@ -2188,8 +2190,8 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             vdwtab = fr->dispersionCorrectionTable->data;
 
             /* Round the cut-offs to exact table values for precision */
-            ri0  = static_cast<int>(floor(fr->rvdw_switch*scale));
-            ri1  = static_cast<int>(ceil(fr->rvdw*scale));
+            ri0  = static_cast<int>(floor(ic->rvdw_switch*scale));
+            ri1  = static_cast<int>(ceil(ic->rvdw*scale));
 
             /* The code below has some support for handling force-switching, i.e.
              * when the force (instead of potential) is switched over a limited
@@ -2207,14 +2209,14 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * we need to calculate the constant shift up to the point where we
              * start modifying the potential.
              */
-            ri0  = (fr->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
+            ri0  = (ic->vdw_modifier == eintmodPOTSHIFT) ? ri1 : ri0;
 
             r0   = ri0/scale;
             rc3  = r0*r0*r0;
             rc9  = rc3*rc3*rc3;
 
-            if ((fr->vdw_modifier == eintmodFORCESWITCH) ||
-                (fr->vdwtype == evdwSHIFT))
+            if ((ic->vdw_modifier == eintmodFORCESWITCH) ||
+                (ic->vdwtype == evdwSHIFT))
             {
                 /* Determine the constant energy shift below rvdw_switch.
                  * Table has a scale factor since we have scaled it down to compensate
@@ -2223,7 +2225,7 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                 fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
                 fr->enershifttwelve = (real)( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
             }
-            else if (fr->vdw_modifier == eintmodPOTSHIFT)
+            else if (ic->vdw_modifier == eintmodPOTSHIFT)
             {
                 fr->enershiftsix    = (real)(-1.0/(rc3*rc3));
                 fr->enershifttwelve = (real)( 1.0/(rc9*rc3));
@@ -2263,11 +2265,11 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             virs[0]  +=  8.0*M_PI/rc3;
             virs[1]  += -16.0*M_PI/(3.0*rc9);
         }
-        else if (fr->vdwtype == evdwCUT ||
-                 EVDW_PME(fr->vdwtype) ||
-                 fr->vdwtype == evdwUSER)
+        else if (ic->vdwtype == evdwCUT ||
+                 EVDW_PME(ic->vdwtype) ||
+                 ic->vdwtype == evdwUSER)
         {
-            if (fr->vdwtype == evdwUSER && fplog)
+            if (ic->vdwtype == evdwUSER && fplog)
             {
                 fprintf(fplog,
                         "WARNING: using dispersion correction with user tables\n");
@@ -2280,12 +2282,12 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * can be used here.
              */
 
-            rc3  = fr->rvdw*fr->rvdw*fr->rvdw;
+            rc3  = ic->rvdw*ic->rvdw*ic->rvdw;
             rc9  = rc3*rc3*rc3;
             /* Contribution beyond the cut-off */
             eners[0] += -4.0*M_PI/(3.0*rc3);
             eners[1] +=  4.0*M_PI/(9.0*rc9);
-            if (fr->vdw_modifier == eintmodPOTSHIFT)
+            if (ic->vdw_modifier == eintmodPOTSHIFT)
             {
                 /* Contribution within the cut-off */
                 eners[0] += -4.0*M_PI/(3.0*rc3);
@@ -2299,20 +2301,20 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
         {
             gmx_fatal(FARGS,
                       "Dispersion correction is not implemented for vdw-type = %s",
-                      evdw_names[fr->vdwtype]);
+                      evdw_names[ic->vdwtype]);
         }
 
         /* When we deprecate the group kernels the code below can go too */
-        if (fr->vdwtype == evdwPME && fr->cutoff_scheme == ecutsGROUP)
+        if (ic->vdwtype == evdwPME && fr->cutoff_scheme == ecutsGROUP)
         {
             /* Calculate self-interaction coefficient (assuming that
              * the reciprocal-space contribution is constant in the
              * region that contributes to the self-interaction).
              */
-            fr->enershiftsix = gmx::power6(fr->ewaldcoeff_lj) / 6.0;
+            fr->enershiftsix = gmx::power6(ic->ewaldcoeff_lj) / 6.0;
 
-            eners[0] += -gmx::power3(std::sqrt(M_PI)*fr->ewaldcoeff_lj)/3.0;
-            virs[0]  +=  gmx::power3(std::sqrt(M_PI)*fr->ewaldcoeff_lj);
+            eners[0] += -gmx::power3(std::sqrt(M_PI)*ic->ewaldcoeff_lj)/3.0;
+            virs[0]  +=  gmx::power3(std::sqrt(M_PI)*ic->ewaldcoeff_lj);
         }
 
         fr->enerdiffsix    = eners[0];
