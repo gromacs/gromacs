@@ -644,7 +644,7 @@ do_pairs(int ftype, int nbonds,
          int *global_atom_index)
 {
     if (ftype == F_LJ14 &&
-        fr->vdwtype != evdwUSER && !EEL_USER(fr->eeltype) &&
+        fr->ic->vdwtype != evdwUSER && !EEL_USER(fr->ic->eeltype) &&
         !bCalcEnergyAndVirial && fr->efep == efepNO)
     {
         /* We use a fast code-path for plain LJ 1-4 without FEP.

@@ -35,6 +35,7 @@
 #ifndef GMX_MDTYPES_INTERACTION_CONST_H
 #define GMX_MDTYPES_INTERACTION_CONST_H
 
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
@@ -75,11 +76,14 @@ struct interaction_const_t
     /* VdW */
     int                    vdwtype;
     int                    vdw_modifier;
+    double                 reppow;
     real                   rvdw;
     real                   rvdw_switch;
     struct shift_consts_t  dispersion_shift;
     struct shift_consts_t  repulsion_shift;
     struct switch_consts_t vdw_switch;
+    gmx_bool               useBuckingham;
+    real                   buckinghamBMax;
     /* TODO: remove this variable, used for not modyfing the group kernels,
      * it is equal to -dispersion_shift->cpot
      */
@@ -91,6 +95,7 @@ struct interaction_const_t
 
     /* Coulomb */
     real rcoulomb;
+    real rcoulomb_switch;
 
     /* PME/Ewald */
     real ewaldcoeff_q;

@@ -210,8 +210,8 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
 
                             case 2:
                                 /* Reaction-field */
-                                krsq             = fr->k_rf*rsq;
-                                vcoul            = qq*(rinv+krsq-fr->c_rf);
+                                krsq             = fr->ic->k_rf*rsq;
+                                vcoul            = qq*(rinv + krsq - fr->ic->c_rf);
                                 fscal            = qq*(rinv-2.0*krsq)*rinvsq;
                                 break;
 
