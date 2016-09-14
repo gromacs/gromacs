@@ -111,12 +111,12 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_VF_avx_256_double
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = _mm256_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm256_mul_pd(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm256_set1_pd(fr->ic->sh_invrc6);
-    rvdw             = _mm256_set1_pd(fr->rvdw);
+    rvdw             = _mm256_set1_pd(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = 0;
@@ -441,12 +441,12 @@ nb_kernel_ElecNone_VdwLJSh_GeomP1P1_F_avx_256_double
     vdwparam         = fr->nbfp;
     vdwtype          = mdatoms->typeA;
 
-    rcutoff_scalar   = fr->rvdw;
+    rcutoff_scalar   = fr->ic->rvdw;
     rcutoff          = _mm256_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm256_mul_pd(rcutoff,rcutoff);
 
     sh_vdw_invrcut6  = _mm256_set1_pd(fr->ic->sh_invrc6);
-    rvdw             = _mm256_set1_pd(fr->rvdw);
+    rvdw             = _mm256_set1_pd(fr->ic->rvdw);
 
     /* Avoid stupid compiler warnings */
     jnrA = jnrB = jnrC = jnrD = 0;

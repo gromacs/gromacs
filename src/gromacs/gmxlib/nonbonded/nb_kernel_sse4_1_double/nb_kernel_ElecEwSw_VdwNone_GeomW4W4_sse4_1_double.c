@@ -119,7 +119,7 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4W4_VF_sse4_1_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
+    facel            = _mm_set1_pd(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     sh_ewald         = _mm_set1_pd(fr->ic->sh_ewald);
@@ -147,11 +147,11 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4W4_VF_sse4_1_double
     qq33             = _mm_mul_pd(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rcoulomb_switch;
+    rswitch_scalar   = fr->ic->rcoulomb_switch;
     rswitch          = _mm_set1_pd(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;
@@ -1650,7 +1650,7 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4W4_F_sse4_1_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = _mm_set1_pd(fr->epsfac);
+    facel            = _mm_set1_pd(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
 
     sh_ewald         = _mm_set1_pd(fr->ic->sh_ewald);
@@ -1678,11 +1678,11 @@ nb_kernel_ElecEwSw_VdwNone_GeomW4W4_F_sse4_1_double
     qq33             = _mm_mul_pd(iq3,jq3);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = _mm_set1_pd(rcutoff_scalar);
     rcutoff2         = _mm_mul_pd(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rcoulomb_switch;
+    rswitch_scalar   = fr->ic->rcoulomb_switch;
     rswitch          = _mm_set1_pd(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;

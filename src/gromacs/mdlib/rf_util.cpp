@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,8 +79,8 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
         start = mdatoms->nr - fr->n_tpi;
     }
 
-    ek      = fr->epsfac*fr->k_rf;
-    ec      = fr->epsfac*fr->c_rf;
+    ek      = fr->ic->epsfac*fr->ic->k_rf;
+    ec      = fr->ic->epsfac*fr->ic->c_rf;
     chargeA = mdatoms->chargeA;
     chargeB = mdatoms->chargeB;
     AA      = excl->a;
@@ -209,14 +209,14 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
 
 void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Temp,
                 real zsq, matrix box,
-                real *kappa, real *krf, real *crf)
+                real *krf, real *crf)
 {
     /* Compute constants for Generalized reaction field */
-    real   k1, k2, I, vol, rmin;
+    real   kappa, k1, k2, I, rmin;
+    real   vol = 0;
 
     if (EEL_RF(eel))
     {
-        vol     = det(box);
         if (eel == eelGRF)
         {
             /* Consistency check */
@@ -226,13 +226,14 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
                           " Generalized Reaction Field\n", Temp);
             }
             /* Ionic strength (only needed for eelGRF */
+            vol     = det(box);
             I       = 0.5*zsq/vol;
-            *kappa  = std::sqrt(2*I/(EPSILON0*eps_rf*BOLTZ*Temp));
+            kappa   = std::sqrt(2*I/(EPSILON0*eps_rf*BOLTZ*Temp));
         }
         else
         {
             I      = 0;
-            *kappa = 0;
+            kappa  = 0;
         }
 
         /* eps == 0 signals infinite dielectric */
@@ -242,8 +243,8 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
         }
         else
         {
-            k1   = 1 + *kappa*Rc;
-            k2   = eps_rf*gmx::square((real)(*kappa*Rc));
+            k1   = 1 + kappa*Rc;
+            k2   = eps_rf*gmx::square((real)(kappa*Rc));
 
             *krf = ((eps_rf - eps_r)*k1 + 0.5*k2)/((2*eps_rf + eps_r)*k1 + k2)/(Rc*Rc*Rc);
         }
@@ -259,7 +260,7 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
                 fprintf(fplog, "%s:\n"
                         "epsRF = %10g, I   = %10g, volume = %10g, kappa  = %10g\n"
                         "rc    = %10g, krf = %10g, crf    = %10g, epsfac = %10g\n",
-                        eel_names[eel], eps_rf, I, vol, *kappa, Rc, *krf, *crf,
+                        eel_names[eel], eps_rf, I, vol, kappa, Rc, *krf, *crf,
                         ONE_4PI_EPS0/eps_r);
             }
             else

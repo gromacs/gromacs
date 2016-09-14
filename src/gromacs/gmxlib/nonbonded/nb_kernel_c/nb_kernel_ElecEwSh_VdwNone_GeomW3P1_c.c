@@ -95,7 +95,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_VF_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
 
     sh_ewald         = fr->ic->sh_ewald;
@@ -110,7 +110,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_VF_c
     iq2              = facel*charge[inr+2];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     outeriter        = 0;
@@ -417,7 +417,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_F_c
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = fr->epsfac;
+    facel            = fr->ic->epsfac;
     charge           = mdatoms->chargeA;
 
     sh_ewald         = fr->ic->sh_ewald;
@@ -432,7 +432,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW3P1_F_c
     iq2              = facel*charge[inr+2];
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff          = fr->rcoulomb;
+    rcutoff          = fr->ic->rcoulomb;
     rcutoff2         = rcutoff*rcutoff;
 
     outeriter        = 0;

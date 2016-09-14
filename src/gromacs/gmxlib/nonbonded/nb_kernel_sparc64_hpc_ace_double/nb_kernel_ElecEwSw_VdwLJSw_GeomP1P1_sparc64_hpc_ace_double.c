@@ -110,7 +110,7 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
@@ -122,11 +122,11 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_VF_sparc64_hpc_ace_double
     ewtabhalfspace   = gmx_fjsp_set1_v2r8(0.5/fr->ic->tabq_scale);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rcoulomb_switch;
+    rswitch_scalar   = fr->ic->rcoulomb_switch;
     rswitch          = gmx_fjsp_set1_v2r8(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;
@@ -479,7 +479,7 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_sparc64_hpc_ace_double
     gid              = nlist->gid;
     shiftvec         = fr->shift_vec[0];
     fshift           = fr->fshift[0];
-    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    facel            = gmx_fjsp_set1_v2r8(fr->ic->epsfac);
     charge           = mdatoms->chargeA;
     nvdwtype         = fr->ntype;
     vdwparam         = fr->nbfp;
@@ -491,11 +491,11 @@ nb_kernel_ElecEwSw_VdwLJSw_GeomP1P1_F_sparc64_hpc_ace_double
     ewtabhalfspace   = gmx_fjsp_set1_v2r8(0.5/fr->ic->tabq_scale);
 
     /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
-    rcutoff_scalar   = fr->rcoulomb;
+    rcutoff_scalar   = fr->ic->rcoulomb;
     rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
     rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
 
-    rswitch_scalar   = fr->rcoulomb_switch;
+    rswitch_scalar   = fr->ic->rcoulomb_switch;
     rswitch          = gmx_fjsp_set1_v2r8(rswitch_scalar);
     /* Setup switch parameters */
     d_scalar         = rcutoff_scalar-rswitch_scalar;
