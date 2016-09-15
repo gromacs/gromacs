@@ -367,9 +367,6 @@
 /* Define if we have feenableexcept */
 #cmakedefine01 HAVE_FEENABLEEXCEPT
 
-/* Define if we have zlib */
-#cmakedefine01 HAVE_ZLIB
-
 /*! \endcond */
 
 #endif

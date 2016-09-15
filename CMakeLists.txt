@@ -454,11 +454,6 @@ include(gmxManageSharedLibraries)
 # Find external packages                                               #
 ########################################################################
 
-# TNG wants zlib if it is available. And static libxml2 might have a dependency
-find_package(ZLIB QUIET)
-include(gmxTestZLib)
-gmx_test_zlib(HAVE_ZLIB)
-
 # Unconditionally find the package, as it is also required for unit
 # tests. This exports LIBXML2_FOUND, which we should not use because
 # it does not tell us that linking will succeed. Instead, we test that
@@ -553,7 +548,6 @@ if (TMPI_ATOMICS_DISABLED)
    add_definitions(-DTMPI_ATOMICS_DISABLED)
 endif()
 
-# Note this relies on zlib detection having already run
 include(gmxManageTNG)
 
 include(gmxManageLmfit)
