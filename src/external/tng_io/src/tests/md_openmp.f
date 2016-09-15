@@ -10,7 +10,7 @@ c    The program implements a simple molecular dynamics simulation.
 c
 c    The program uses Open MP directives to allow parallel computation.
 c
-c    The velocity Verlet time integration scheme is used. 
+c    The velocity Verlet time integration scheme is used.
 c
 c    The particles interact with a central pair potential.
 c
@@ -19,7 +19,7 @@ c    code is included in the TNG API release.
 c
 c  Licensing:
 c
-c    This code is distributed under the GNU LGPL license. 
+c    This code is distributed under the GNU LGPL license.
 c
 c  Modified:
 c
@@ -142,26 +142,26 @@ c
       write ( *, '(a)' ) ' '
       write ( *, '(a)' ) '  A molecular dynamics program.'
       write ( *, '(a)' ) ' '
-      write ( *, '(a,i8)' ) 
+      write ( *, '(a,i8)' )
      &  '  NP, the number of particles in the simulation is ', np
-      write ( *, '(a,i8)' ) 
+      write ( *, '(a,i8)' )
      &  '  STEP_NUM, the number of time steps, is ', step_num
-      write ( *, '(a,g14.6)' ) 
+      write ( *, '(a,g14.6)' )
      &  '  DT, the size of each time step, is ', dt
       write ( *, '(a)' ) ' '
-      write ( *, '(a,i8)' ) 
+      write ( *, '(a,i8)' )
      &  '  The number of processors = ', omp_get_num_procs ( )
-      write ( *, '(a,i8)' ) 
+      write ( *, '(a,i8)' )
      &  '  The number of threads    = ', omp_get_max_threads ( )
 
-      write ( *, '(a)' ) ' '     
+      write ( *, '(a)' ) ' '
       write ( *, '(a)' ) '  Initializing trajectory storage.'
       call tng_trajectory_init(traj_p)
 
 c
 c  N.B. The TNG output file should be modified according to needs
-c      
-      call tng_output_file_set(traj, TNG_EXAMPLE_FILES_DIR "tng_md_out_f77.tng")
+c
+      call tng_output_file_set(traj, TNG_EXAMPLE_FILES_DIR"tng_md_out_f77.tng")
 
       write ( *, '(a)' ) '  Creating molecules in trajectory.'
       tng_n_particles = np
@@ -183,20 +183,20 @@ c
 
 c
 c  Add the box shape data block
-c     
+c
       call tng_data_block_add(traj, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
      &  TNG_DOUBLE_DATA, TNG_NON_TRAJECTORY_BLOCK, int(1, 8),
      &  int(9, 8), int(1, 8), TNG_UNCOMPRESSED, box_shape)
 
 c
 c  Write the file headers
-c    
+c
       call tng_file_headers_write(traj, TNG_USE_HASH)
-      
+
 c
 c  Set initial positions, velocities, and accelerations.
-c      
-      write ( *, '(a)' ) 
+c
+      write ( *, '(a)' )
      &  '  Initializing positions, velocities, and accelerations.'
       seed = 123456789
       call initialize ( np, nd, box, seed, pos, vel, acc )
@@ -206,7 +206,7 @@ c
       write ( *, '(a)' ) ' '
       write ( *, '(a)' ) '  Computing initial forces and energies.'
 
-      call compute ( np, nd, pos, vel, mass, force, potential, 
+      call compute ( np, nd, pos, vel, mass, force, potential,
      &  kinetic )
 
       e0 = potential + kinetic
@@ -215,7 +215,7 @@ c
 c  Saving frequency
 c
       step_save = 5
-      
+
       step_print = 0
       step_print_index = 0
       step_print_num = 10
@@ -230,29 +230,29 @@ c
      &  ' steps particle positions, velocities and forces are'
       write ( *, '(a)' ) '  saved to a TNG trajectory file.'
       write ( *, '(a)' )
-      write ( *, '(a)' ) 
+      write ( *, '(a)' )
      &  '  At each step, we report the potential and kinetic energies.'
-      write ( *, '(a)' ) 
+      write ( *, '(a)' )
      &  '  The sum of these energies should be a constant.'
-      write ( *, '(a)' ) 
+      write ( *, '(a)' )
      &  '  As an accuracy check, we also print the relative error'
       write ( *, '(a)' ) '  in the total energy.'
       write ( *, '(a)' ) ' '
-      write ( *, '(a)' ) 
+      write ( *, '(a)' )
      &  '      Step      Potential       Kinetic        (P+K-E0)/E0'
-      write ( *, '(a)' ) 
+      write ( *, '(a)' )
      &  '                Energy P        Energy K       ' //
      &  'Relative Energy Error'
       write ( *, '(a)' ) ' '
 
       step = 0
-      write ( *, '(2x,i8,2x,g14.6,2x,g14.6,2x,g14.6)' ) 
+      write ( *, '(2x,i8,2x,g14.6,2x,g14.6,2x,g14.6)' )
      &  step, potential, kinetic, ( potential + kinetic - e0 ) / e0
       step_print_index = step_print_index + 1
       step_print = ( step_print_index * step_num ) / step_print_num
 
-c      
-c  Create a frame set for writing data      
+c
+c  Create a frame set for writing data
 c
       call tng_num_frames_per_frame_set_get(traj,
      &  n_frames_per_frame_set)
@@ -265,12 +265,12 @@ c
      &  "POSITIONS", TNG_DOUBLE_DATA, TNG_TRAJECTORY_BLOCK,
      &  n_frames_per_frame_set, int(3, 8), int(1, 8), int(0, 8),
      &  tng_n_particles, TNG_UNCOMPRESSED, %VAL(int(0, 8)))
-      
+
       call tng_particle_data_block_add(traj, TNG_TRAJ_VELOCITIES,
      &  "VELOCITIES", TNG_DOUBLE_DATA, TNG_TRAJECTORY_BLOCK,
      &  n_frames_per_frame_set, int(3, 8), int(1, 8), int(0, 8),
      &  tng_n_particles, TNG_UNCOMPRESSED, %VAL(int(0, 8)))
-      
+
       call tng_particle_data_block_add(traj, TNG_TRAJ_FORCES,
      &  "FORCES", TNG_DOUBLE_DATA, TNG_TRAJECTORY_BLOCK,
      &  n_frames_per_frame_set, int(3, 8), int(1, 8), int(0, 8),
@@ -278,28 +278,28 @@ c
 
 c
 c  The potential energy data block is saved sparsely.
-c     
+c
       call tng_data_block_add(traj, int(10101, 8),
      &  "POTENTIAL ENERGY", TNG_DOUBLE_DATA, TNG_TRAJECTORY_BLOCK,
      &  n_frames_per_frame_set, int(1, 8), sparse_save,
      &  TNG_UNCOMPRESSED, %VAL(int(0, 8)))
-     
+
 
 c
 c  Write the frame set to disk
 c
       call tng_frame_set_write(traj, TNG_USE_HASH)
-      
+
       wtime = omp_get_wtime ( )
 
       do step = 1, step_num
 
-        call compute ( np, nd, pos, vel, mass, force, potential, 
+        call compute ( np, nd, pos, vel, mass, force, potential,
      &    kinetic )
 
         if ( step .eq. step_print ) then
 
-          write ( *, '(2x,i8,2x,g14.6,2x,g14.6,2x,g14.6)' ) 
+          write ( *, '(2x,i8,2x,g14.6,2x,g14.6,2x,g14.6)' )
      &      step, potential, kinetic, ( potential + kinetic - e0 ) / e0
 
           step_print_index = step_print_index + 1
@@ -321,12 +321,12 @@ c
      &    TNG_TRAJ_FORCES, int(0, 8), tng_n_particles, force,
      &    TNG_USE_HASH)
           frames_saved_cnt = frames_saved_cnt + 1
-          
+
           if (mod(step, step_save * sparse_save) .EQ. 0) then
             call tng_frame_data_write(traj, frames_saved_cnt,
      &      int(10101, 8), potential, TNG_USE_HASH)
           end if
-          
+
         end if
 
         call update ( np, nd, pos, vel, force, acc, mass, dt )
@@ -336,7 +336,7 @@ c
       wtime = omp_get_wtime ( ) - wtime
 
       write ( *, '(a)' ) ' '
-      write ( *, '(a)' ) 
+      write ( *, '(a)' )
      &  '  Elapsed time for main computation:'
       write ( *, '(2x,g14.6,a)' ) wtime, ' seconds'
 c
@@ -365,7 +365,7 @@ c    The computation of forces and energies is fully parallel.
 c
 c  Licensing:
 c
-c    This code is distributed under the GNU LGPL license. 
+c    This code is distributed under the GNU LGPL license.
 c
 c  Modified:
 c
@@ -413,9 +413,9 @@ c
       pot = 0.0D+00
       kin = 0.0D+00
 
-c$omp parallel 
-c$omp& shared ( f, nd, np, pos, vel ) 
-c$omp& private ( d, d2, i, j, k, rij ) 
+c$omp parallel
+c$omp& shared ( f, nd, np, pos, vel )
+c$omp& private ( d, d2, i, j, k, rij )
 
 c$omp do reduction ( + : pot, kin )
       do i = 1, np
@@ -458,7 +458,7 @@ c$omp end do
 c$omp end parallel
 
       kin = kin * 0.5D+00 * mass
-      
+
       return
       end
       subroutine dist ( nd, r1, r2, dr, d )
@@ -469,7 +469,7 @@ cc DIST computes the displacement (and its norm) between two particles.
 c
 c  Licensing:
 c
-c    This code is distributed under the GNU LGPL license. 
+c    This code is distributed under the GNU LGPL license.
 c
 c  Modified:
 c
@@ -520,7 +520,7 @@ cc INITIALIZE initializes the positions, velocities, and accelerations.
 c
 c  Licensing:
 c
-c    This code is distributed under the GNU LGPL license. 
+c    This code is distributed under the GNU LGPL license.
 c
 c  Modified:
 c
@@ -570,7 +570,7 @@ c
         end do
       end do
 
-c$omp parallel 
+c$omp parallel
 c$omp& shared ( acc, box, nd, np, pos, vel )
 c$omp& private ( i, j )
 
@@ -615,7 +615,7 @@ c    1790989824  2035175616  0.947702
 c
 c  Licensing:
 c
-c    This code is distributed under the GNU LGPL license. 
+c    This code is distributed under the GNU LGPL license.
 c
 c  Modified:
 c
@@ -693,7 +693,7 @@ cc TIMESTAMP prints out the current YMDHMS date as a timestamp.
 c
 c  Licensing:
 c
-c    This code is distributed under the GNU LGPL license. 
+c    This code is distributed under the GNU LGPL license.
 c
 c  Modified:
 c
@@ -724,8 +724,8 @@ c
       save month
 
       data month /
-     &  'January  ', 'February ', 'March    ', 'April    ', 
-     &  'May      ', 'June     ', 'July     ', 'August   ', 
+     &  'January  ', 'February ', 'March    ', 'April    ',
+     &  'May      ', 'June     ', 'July     ', 'August   ',
      &  'September', 'October  ', 'November ', 'December ' /
 
       call date_and_time ( date, time )
@@ -754,8 +754,8 @@ c
         end if
       end if
 
-      write ( *, 
-     &  '(i2,1x,a,1x,i4,2x,i2,a1,i2.2,a1,i2.2,a1,i3.3,1x,a)' ) 
+      write ( *,
+     &  '(i2,1x,a,1x,i4,2x,i2,a1,i2.2,a1,i2.2,a1,i3.3,1x,a)' )
      &  d, month(m), y, h, ':', n, ':', s, '.', mm, ampm
 
       return
@@ -772,7 +772,7 @@ c    The time integration is fully parallel.
 c
 c  Licensing:
 c
-c    This code is distributed under the GNU LGPL license. 
+c    This code is distributed under the GNU LGPL license.
 c
 c  Modified:
 c
@@ -815,7 +815,7 @@ c
 
       rmass = 1.0D+00 / mass
 
-c$omp parallel 
+c$omp parallel
 c$omp& shared ( acc, dt, f, nd, np, pos, rmass, vel )
 c$omp& private ( i, j )
 
@@ -823,10 +823,10 @@ c$omp do
       do j = 1, np
         do i = 1, nd
 
-          pos(i,j) = pos(i,j) 
+          pos(i,j) = pos(i,j)
      &      + vel(i,j) * dt + 0.5D+00 * acc(i,j) * dt * dt
 
-          vel(i,j) = vel(i,j) 
+          vel(i,j) = vel(i,j)
      &      + 0.5D+00 * dt * ( f(i,j) * rmass + acc(i,j) )
 
           acc(i,j) = f(i,j) * rmass
