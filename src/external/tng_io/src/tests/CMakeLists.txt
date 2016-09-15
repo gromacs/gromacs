@@ -2,8 +2,6 @@ if(TNG_BUILD_COMPRESSION_TESTS)
   add_subdirectory(compression)
 endif()
 
-link_directories(${TNG_IO_BINARY_DIR}/src/lib)
-
 add_definitions(-DTNG_EXAMPLE_FILES_DIR="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests/example_files/") # Directory where to find input test files and save output files.
 
 if(TNG_BUILD_TEST)
@@ -80,7 +78,7 @@ if(TNG_BUILD_EXAMPLES)
         if(${CMAKE_Fortran_COMPILER_WORKS})
             get_filename_component (Fortran_COMPILER_NAME ${CMAKE_Fortran_COMPILER} NAME)
             if (Fortran_COMPILER_NAME STREQUAL "gfortran")
-                set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fcray-pointer ${OpenMP_C_FLAGS} -std=legacy")
+                set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fcray-pointer ${OpenMP_C_FLAGS} -std=legacy -cpp -ffixed-line-length-none")
             endif()
             if(OPENMP_FOUND)
                 add_executable(md_openmp_f md_openmp.f)
