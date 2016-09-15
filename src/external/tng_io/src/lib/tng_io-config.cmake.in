@@ -1,13 +1,15 @@
 # - Config file for the TNG_IO package
-# It defines the following variables
-#  TNG_IO_INCLUDE_DIRS - include directories for TNG_IO
-#  TNG_IO_LIBRARIES    - libraries to link against
-#  TNG_IO_DEFINITIONS - definitions used when compiling
 
-# Compute paths
-get_filename_component(TNG_IO_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-set(TNG_IO_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
-set(TNG_IO_DEFINITIONS "@TNG_COMPILE_DEFS@")
+include(${CMAKE_CURRENT_LIST_DIR}/tng_io.cmake)
 
-set(TNG_IO_LIBRARIES tng_io)
+get_target_property(_libs tng_io::tng_io INTERFACE_LINK_LIBRARIES)
+if (_libs MATCHES "ZLIB::")
+    include(CMakeFindDependencyMacro)
+    find_dependency(ZLIB)
+endif()
+unset(_libs)
 
+# Provide information in variables as well for backwards compatibility
+set(TNG_IO_LIBRARIES tng_io::tng_io)
+get_target_property(TNG_IO_INCLUDE_DIRS tng_io::tng_io INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(TNG_IO_DEFINITIONS tng_io::tng_io INTERFACE_COMPILE_DEFINITIONS)
