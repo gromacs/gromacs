@@ -72,13 +72,6 @@ GLUP    5
 GLY     2       
 1	1	HN	N	-C	CA
 2	6	HA	CA	C	N
-HIS1    6       
-1	1	HN	N	-C	CA
-1	5	HA	CA	N	C	CB
-2	6	HB	CB	CG	CA
-1	1	HD2	CD2	CG	NE2
-1	1	HE1	CE1	ND1	NE2
-1	1	HD1	ND1	CG	CE1
 HSD     6       
 1	1	HN	N	-C	CA
 1	5	HA	CA	N	C	CB

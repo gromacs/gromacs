@@ -204,7 +204,7 @@ static void check_viol(FILE *log,
         while (((i+n) < disres->nr) &&
                (forceparams[forceatoms[i+n]].disres.label == label));
 
-        calc_disres_R_6(n, &forceatoms[i], forceparams,
+        calc_disres_R_6(NULL, n, &forceatoms[i],
                         (const rvec*)x, pbc, fcd, NULL);
 
         if (fcd->disres.Rt_6[0] <= 0)

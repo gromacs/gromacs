@@ -202,6 +202,12 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_CYCLE_SUBCOUNTERS
 
+   If set to ``ON``, enables performance subcounters that offer more
+   fine-grained mdrun performance measurement and evaluation than the default
+   counters. See :doc:`/user-guide/mdrun-performance` for the description of
+   subcounters which are available.
+   Defaults to ``OFF``.
+
 .. cmake:: GMX_DATA_INSTALL_DIR
 
    Sets the directory under :file:`share/` where data files are installed.
