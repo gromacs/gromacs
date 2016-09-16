@@ -528,7 +528,7 @@ void nosehoover_KE(t_inputrec *ir, t_commrec *cr, t_idef *idef, t_mdatoms *md, t
     t_grpopts      *opts;
     t_ilist        *ilist;
     t_iatom        *iatoms;
-    int             flocal[] = { F_BONDS, F_POLARIZATION }; /* local interactions */
+    int             flocal[] = { F_DRUDEBONDS, F_POLARIZATION }; /* local interactions */
     int             nrlocal = asize(flocal);
     int             nral;
 
@@ -758,7 +758,7 @@ static void drude_tstat_for_particles(t_commrec *cr, t_inputrec *ir, real dt, t_
     t_grpopts      *opts;
     t_ilist        *ilist;
     t_iatom        *iatoms;
-    int             flocal[] = { F_BONDS, F_POLARIZATION };
+    int             flocal[] = { F_DRUDEBONDS, F_POLARIZATION };
     int             nrlocal = asize(flocal);
     int             nral;
 

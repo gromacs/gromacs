@@ -280,7 +280,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc,
     int                       i, j, type, mb, a_offset, cg, mol, ftype, nra;
     real                      qS, alpha;
     int                       aS, aN = 0; /* Shell and nucleus */
-    int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_HYPER_POL, F_ANHARM_POL, F_ANISO_POL, F_WATER_POL };
+    int                       bondtypes[] = { F_BONDS, F_DRUDEBONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_HYPER_POL, F_ANHARM_POL, F_ANISO_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
     t_iatom                  *ia;
     gmx_mtop_atomloop_all_t   aloop;
@@ -383,6 +383,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc,
                     switch (bondtypes[j])
                     {
                         case F_BONDS:
+                        case F_DRUDEBONDS:
                         case F_HARMONIC:
                         case F_CUBICBONDS:
                         case F_POLARIZATION:
@@ -405,7 +406,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc,
                             break;
                         case F_ANISO_POL:
                             /* we don't need to do any special assignment in this case, since
-                             * anisotropy will be a subset of either F_BONDS or F_POLARIZATION */
+                             * anisotropy will be a subset of either F_BONDS, F_DRUDEBONDS, or F_POLARIZATION */
                             break;
                         default:
                             gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
@@ -461,6 +462,7 @@ void init_shell_flexcon(FILE *fplog, gmx_shellfc_t shfc,
                         switch (bondtypes[j])
                         {
                             case F_BONDS:
+                            case F_DRUDEBONDS:
                             case F_HARMONIC:
                                 shell[nsi].k    += ffparams->iparams[type].harmonic.krA;
                                 if (debug)
@@ -992,8 +994,8 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
     t_pbc  *pbc;
     t_ilist    *ilist;
     t_iatom    *iatoms;
-    int         flocal[] = { F_BONDS, F_POLARIZATION }; /* local interactions subject to hardwall constraint */
-    int         nrlocal = 2;        /* size of flocal[] array */
+    int         flocal[] = { F_DRUDEBONDS, F_POLARIZATION }; /* local interactions subject to hardwall constraint */
+    int         nrlocal = asize(flocal);        /* size of flocal[] array */
     int         nral;
 
     char    buf[22];
@@ -1011,13 +1013,6 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
     if (debug)
     {
         fprintf(debug, "HARDWALL: rwall = %f  rwall2 = %f\n", rwall, rwall2);
-    }
-
-    /* communicate velocities in the case of non-local interactions */
-    /* NOTE: additional x comm had no effect, still crashed */
-    if (DOMAINDECOMP(cr))
-    {
-        dd_move_v(cr->dd, state->v);
     }
 
     /* Here, we get the local bonded interactions that will be used for searching.

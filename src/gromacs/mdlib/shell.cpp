@@ -340,7 +340,7 @@ static int count_intercg_shells(const gmx_mtop_t *mtop,
         a2cg = atom2cg(&molt->cgs);
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            if (ftype == F_BONDS || ftype == F_POLARIZATION)
+            if (ftype == F_DRUDEBONDS || ftype == F_POLARIZATION)
             {
                 nral = NRAL(ftype);
                 il   = &molt->ilist[ftype];
@@ -395,14 +395,14 @@ static int **get_shell_pbc(t_ilist *ilist,
     }
 
     /* There are several possible interactions for shells/Drudes, including
-     * F_BONDS, which is why we allocate an extra +2 here instead of +1 
-     *(F_BONDS plus everything from F_POLARIZATION..F_HYPER_POL, inclusive) */
+     * F_DRUDEBONDS, which is why we allocate an extra +2 here instead of +1
+     *(F_DRUDEBONDS plus everything from F_POLARIZATION..F_HYPER_POL, inclusive) */
     snew(shell_pbc, F_HYPER_POL-F_POLARIZATION+2);
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
         /* TODO: it would probably be useful to have an IF_SHELL flag or something... */
-        if (ftype == F_BONDS || ftype == F_POLARIZATION || ftype == F_ANISO_POL ||
+        if (ftype == F_DRUDEBONDS || ftype == F_POLARIZATION || ftype == F_ANISO_POL ||
             ftype == F_WATER_POL || ftype == F_THOLE_POL || ftype == F_ANHARM_POL ||
             ftype == F_HYPER_POL)
         {
@@ -410,7 +410,7 @@ static int **get_shell_pbc(t_ilist *ilist,
             il   = &ilist[ftype];
             ia   = il->iatoms;
 
-            if (ftype == F_BONDS)
+            if (ftype == F_DRUDEBONDS)
             {
                 snew(shell_pbc[0], il->nr/(1+nral));
                 shell_pbc_f = shell_pbc[0];

@@ -312,6 +312,9 @@ void dd_move_x_constraints(struct gmx_domdec_t *dd, matrix box,
 /*! \brief Communicates the coordinates involved in virtual sites */
 void dd_move_x_vsites(struct gmx_domdec_t *dd, matrix box, rvec *x);
 
+/*! \brief Communicates the coordinates involved in shells/Drudes */
+void dd_move_x_shells(gmx_domdec_t *dd, matrix box, rvec *x);
+
 /*! \brief Returns the local atom count array for all constraints
  *
  * The local atom count for a constraint, possible values 2/1/0, is needed

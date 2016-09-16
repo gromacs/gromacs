@@ -86,6 +86,7 @@
 const t_interaction_function interaction_function[F_NRE] =
 {
     def_bond    ("BONDS",    "Bond",            2, 2, 2,  eNR_BONDS,  bonds         ),
+    def_bond    ("DRUDEBONDS", "Drude Bond",    2, 2, 2,  eNR_BONDS,  bonds         ),
     def_bond    ("G96BONDS", "G96Bond",         2, 2, 2,  eNR_BONDS,  g96bonds      ),
     def_bond    ("MORSE",    "Morse",           2, 3, 3,  eNR_MORSE,  morse_bonds   ),
     def_bond    ("CUBICBONDS", "Cubic Bonds",    2, 3, 0,  eNR_CUBICBONDS, cubic_bonds),

@@ -58,6 +58,7 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
     switch (ftype)
     {
         case F_BONDS:
+        case F_DRUDEBONDS:
         case F_G96BONDS:
         case F_HARMONIC:
         case F_ANGLES:

@@ -57,6 +57,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -104,8 +105,8 @@ int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil)
     gmx_hash_t                 *ga2la_specat;
     int                         ftype, nral, i, j, a;
     int                         at_end;
-    int                         flocal[] = { F_POLARIZATION };
-    int                         nrloc = 1;  /* number of elements in flocal[] array */
+    int                         flocal[] = { F_DRUDEBONDS, F_HYPER_POL, F_POLARIZATION };
+    int                         nrloc = asize(flocal);  /* number of elements in flocal[] array */
     t_ilist                    *lilf;
     t_iatom                    *iatoms;
 
@@ -115,7 +116,6 @@ int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil)
 
     ireq->n = 0;
 
-    /* TODO: remove loop? */
     for (ftype = 0; ftype < nrloc; ftype++)
     {
         /* we only care about Drudes/shells within this loop, and

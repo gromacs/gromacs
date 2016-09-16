@@ -493,6 +493,79 @@ static void add_hyperpol(gmx_mtop_t *mtop, t_molinfo mols[], t_inputrec *ir)
     }
 }
 
+static void make_drude_bonds(gmx_mtop_t *mtop, t_molinfo mols[])
+{
+    t_atom         *atom;
+    gmx_moltype_t  *moltype;
+    int             i, j, k, ai, aj, molt, ftype, nrdbond, nrbond, last;
+    real            b0, kb;
+    gmx_bool       *bRemoveHarm;
+
+    /* loop over bonded interactions of all molecules
+     * and replace F_BONDS with F_DRUDEBONDS if there are bonds to Drudes */
+    for (molt = 0; molt < mtop->nmoltype; molt++)
+    {
+        nrdbond = mols[molt].plist[F_DRUDEBONDS].nr;
+        moltype = &mtop->moltype[molt];
+        atom    = moltype->atoms.atom;
+
+        for (ftype = 0; ftype < F_NRE; ftype++)
+        {
+            if ((ftype == F_BONDS) || (ftype == F_HARMONIC))
+            {
+                nrbond = mols[molt].plist[ftype].nr;
+                pr_alloc(nrbond, &(mols[molt].plist[F_DRUDEBONDS]));
+                snew(bRemoveHarm, nrbond);
+
+                for (i = 0; (i < nrbond); i++)
+                {
+                    ai = mols[molt].plist[ftype].param[i].ai();
+                    aj = mols[molt].plist[ftype].param[i].aj();
+                    /* If the bond involves a Drude, add it to the list */
+                    if ((atom[ai].ptype == eptShell) || (atom[aj].ptype == eptShell))
+                    {
+                        b0 = mols[molt].plist[ftype].param[i].c[0];
+                        kb = mols[molt].plist[ftype].param[i].c[1];
+                        mols[molt].plist[F_DRUDEBONDS].param[nrdbond].a[0] = ai;
+                        mols[molt].plist[F_DRUDEBONDS].param[nrdbond].a[1] = aj;
+                        mols[molt].plist[F_DRUDEBONDS].param[nrdbond].c[0] = b0;
+                        mols[molt].plist[F_DRUDEBONDS].param[nrdbond].c[1] = kb;
+                        nrdbond++;
+                        bRemoveHarm[i] = TRUE;
+                    }
+                }
+                mols[molt].plist[F_DRUDEBONDS].nr = nrdbond;
+
+                /* Remove harmonic bonds */
+                for (j = last = 0; (j < nrbond); j++)
+                {
+                    if (!bRemoveHarm[j])
+                    {
+                        /* copy it */
+                        for (k = 0; (k < MAXATOMLIST); k++)
+                        {
+                            mols[molt].plist[ftype].param[last].a[k] =
+                                mols[molt].plist[ftype].param[j].a[k];
+                        }
+                        for (k = 0; (k < MAXFORCEPARAM); k++)
+                        {
+                            mols[molt].plist[ftype].param[last].c[k] =
+                                mols[molt].plist[ftype].param[j].c[k];
+                        }
+                        last++;
+                    }
+                }
+                sfree(bRemoveHarm);
+                if (nrbond > 0)
+                {
+                    fprintf(stderr, "Added %d out of %d bonds to the Drude bond list for mol %d\n", nrdbond, nrbond, molt);
+                }
+                mols[molt].plist[ftype].nr = last;
+            }
+        }
+    }
+}
+
 /* TODO Decide whether this function can be consolidated with
  * gmx_mtop_ftype_count */
 static gmx_bool nint_ftype(gmx_mtop_t *mtop, t_molinfo *mi, int ftype)
@@ -1852,10 +1925,21 @@ int gmx_grompp(int argc, char *argv[])
             }
         }
 
+        /* Drude-atom connections are treated either harmonically (normal bonds)
+           or via a quartic potential (hyperpolarization). Either way, we make
+           a list of these interactions as special entries in ilist for ease of
+           use later, particularly in DD special atom communication, the Drude
+           thermostat, and the hardwall constraint. */
         if (ir->drude->bHyper)
         {
             fprintf(stderr, "Constructing hyperpolarization list...\n");
             add_hyperpol(sys, mi, ir);
+        }
+        else
+        {
+            /* separate bonds involving Drudes - this makes everything during MD easier */
+            fprintf(stderr, "Separating bonds involving Drudes...\n");
+            make_drude_bonds(sys, mi);
         }
 
         if (ir->drude->drudemode == edrudeSCF)
