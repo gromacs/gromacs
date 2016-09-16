@@ -310,7 +310,7 @@ TEST(FunctionTest, ErfInvFloat)
 
     for (int i = 0; i < npoints; i++)
     {
-        float r = -1.0 + 2.0 * (float(i) + 0.5) / npoints;
+        float r = float(2*i - npoints + 1) / npoints;
 
         result.push_back(gmx::erfinv(r));
     }
@@ -326,7 +326,7 @@ TEST(FunctionTest, ErfInvDouble)
 
     for (int i = 0; i < npoints; i++)
     {
-        double r = -1.0 + 2.0 * (double(i) + 0.5) / npoints;
+        double r = double(2*i - npoints + 1) / npoints;
 
         result.push_back(gmx::erfinv(r));
     }
@@ -339,7 +339,7 @@ TEST(FunctionTest, ErfAndErfInvAreInversesFloat)
 
     for (int i = 0; i < npoints; i++)
     {
-        float r = -1.0 + 2.0 * (float(i) + 0.5) / npoints;
+        float r = float(2*i - npoints + 1) / npoints;
         EXPECT_FLOAT_EQ_TOL(r, std::erf(gmx::erfinv(r)), gmx::test::ulpTolerance(10));
     }
 }
@@ -350,7 +350,7 @@ TEST(FunctionTest, ErfAndErfInvAreInversesDouble)
 
     for (int i = 0; i < npoints; i++)
     {
-        double r = -1.0 + 2.0 * (double(i) + 0.5) / npoints;
+        double r = double(2*i - npoints + 1) / npoints;
         EXPECT_DOUBLE_EQ_TOL(r, std::erf(gmx::erfinv(r)), gmx::test::ulpTolerance(10));
     }
 }
