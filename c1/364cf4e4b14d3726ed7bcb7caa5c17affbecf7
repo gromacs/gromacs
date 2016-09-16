@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Verified+1: Berk Hess <hess@kth.se>
+Code-Review+2: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-by: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-at: Fri, 16 Sep 2016 10:04:45 +0200
+Reviewed-on: https://gerrit.gromacs.org/6108
+Project: gromacs
+Branch: refs/heads/release-2016
