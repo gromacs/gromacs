@@ -239,7 +239,7 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     bfac_min = 1e10;
     for (i = 0; (i < n_bfac); i++)
     {
-        if (bfac_nr[i] - 1 >= atoms->nres)
+        if (bfac_nr[i] - 1 >= atoms->resinfo[atoms->atom[natoms - 1].resind].nr)
         {
             peratom = TRUE;
         }
@@ -577,7 +577,7 @@ int gmx_editconf(int argc, char *argv[])
         "from a file with with following format: first line states number of",
         "entries in the file, next lines state an index",
         "followed by a B-factor. The B-factors will be attached per residue",
-        "unless an index is larger than the number of residues or unless the",
+        "unless an index is larger than the index of the last residue or unless the",
         "[TT]-atom[tt] option is set. Obviously, any type of numeric data can",
         "be added instead of B-factors. [TT]-legend[tt] will produce",
         "a row of CA atoms with B-factors ranging from the minimum to the",
