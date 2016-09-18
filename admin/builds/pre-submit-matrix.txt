@@ -2,12 +2,12 @@ gcc-4.6 gpu cuda-5.0 mpi openmp x11 cmake-2.8.8
 gcc-4.8 gpu cuda-7.5 openmp release
 gcc-4.9 tsan fftpack simd=avx2_256
 gcc-6.1 double
-clang-3.4 double no-openmp fftpack asan
+clang-3.4 double no-openmp fftpack asan stdlib=4.8
 # TODO move mdrun-only config to post-submit matrix
-clang-3.7 double mpi no-openmp fftpack mdrun-only
+clang-3.7 double mpi no-openmp fftpack mdrun-only stdlib=4.9
 msvc-2015 openmp release
 icc-16.0 msvc-2015 fftpack
-icc-16.0 no-thread-mpi openmp mkl cmake-3.3.2 simd=avx_256
+icc-16.0 no-thread-mpi openmp mkl cmake-3.3.2 simd=avx_256 stdlib=5.2
 gcc-5.2 mpi openmp simd=avx_128_fma
 gcc-4.8 openmp opencl cuda-7.5 mpi release
 gcc-5.2 openmp opencl amdappsdk-3.0
