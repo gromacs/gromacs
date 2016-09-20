@@ -430,7 +430,7 @@ static void updatePlist(const Poldata             &pd,
                     {
                         b->c[n++] = convert2gmx(value, lu);
                         ptr       = gmx::splitString(params);
-                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
                             b->c[n++] = atof(pi->c_str());
                         }
@@ -460,7 +460,7 @@ static void updatePlist(const Poldata             &pd,
 
                         b->c[n++] = value;
                         ptr       = gmx::splitString(params);
-                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
                             b->c[n++] = atof(pi->c_str());
                             if (n == 2)
@@ -493,9 +493,19 @@ static void updatePlist(const Poldata             &pd,
                     {
                         b->c[n++] = value;
                         ptr       = gmx::splitString(params);
-                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+			int n = 0;
+                        for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
-                            b->c[n++] = atof(pi->c_str());
+			  if (n == 0)
+			  {
+                              b->c[n++] = atof(pi->c_str());
+			  }
+			  else
+			  {
+			      /*Multiplicity for Proper Dihedral must be integer
+			       This assumes that the second paramter is Multiplicity*/
+			      b->c[n++] = atoi(pi->c_str());
+			  }
                         }
                     }
                 }
@@ -710,7 +720,9 @@ static void do_init_mtop(const Poldata            &pd,
                          gmx_mtop_t               *mtop_,
                          char                    **molname,
                          t_atoms                  *atoms,
-                         std::vector<PlistWrapper> plist)
+                         std::vector<PlistWrapper> plist,
+			 t_inputrec               *ir,
+			 t_symtab                 *symtab)
 {
 
     init_mtop(mtop_);
@@ -743,31 +755,38 @@ static void do_init_mtop(const Poldata            &pd,
         }
     }
 
-    char **atypes[ntype];
-    for (int i = 0; (i < ntype); i++)
+    snew(mtop_->groups.grpname, ntype);
+    snew(mtop_->groups.grps[egcENER].nm_ind, ntype);
+
+    int  ind = 0;
+    for (int i = 0; i < atoms->nr; i++)
     {
-        char **atp   = atoms->atomtype[i];
+        char  *atp   = *atoms->atomtype[i];
         bool   found = false;
         for (int j = 0; !found && (j < i); j++)
         {
-            found = (atp == atoms->atomtype[j]);
+	   found = (strcmp(atp, *atoms->atomtype[j]) == 0);
         }
         if (!found)
         {
-            atypes[i] = atp;
+	    mtop_->groups.grpname[ind] = put_symtab(symtab, atp);
+	    mtop_->groups.grps[egcENER].nm_ind[ind] = ind;
+	    ind++;
         }
     }
 
-    mtop_->groups.grpname          = atypes;
-    mtop_->groups.grps[egcENER].nr = ntype*ntype;
+    mtop_->groups.grps[egcENER].nr = 
+      ir->opts.ngener              = ntype;
+     mtop_->ffparams.ntypes        = ntype*ntype;
     mtop_->ffparams.atnr           = ntype;
-    mtop_->ffparams.ntypes         = ntype*ntype;
     mtop_->ffparams.reppow         = 12;
 
     int vdw_type = pd.getVdwFtype();
 
+    snew(ir->opts.egp_flags, ir->opts.ngener*ir->opts.ngener);
     snew(mtop_->ffparams.functype, mtop_->ffparams.ntypes);
     snew(mtop_->ffparams.iparams, mtop_->ffparams.ntypes);
+
     for (int i = 0; (i < ntype); i++)
     {
         for (int j = 0; (j < ntype); j++)
@@ -923,25 +942,7 @@ bool MyMol::IsSymmetric(real toler)
     return bSymmAll;
 }
 
-static void fill_inputrec(t_inputrec *ir)
-{
-    ir->cutoff_scheme    = ecutsGROUP;
-    ir->tabext           = 0; /* nm */
-    ir->ePBC             = epbcNONE;
-    ir->ns_type          = ensSIMPLE;
-    ir->epsilon_r        = 1;
-    ir->vdwtype          = evdwCUT;
-    ir->coulombtype      = eelCUT;
-    ir->coulomb_modifier = eintmodNONE;
-    ir->eDispCorr        = edispcNO;
-    ir->vdw_modifier     = eintmodNONE;
-    ir->niter            = 25;
-    ir->em_stepsize      = 1e-2; // nm
-    ir->em_tol           = 1e-2;
-    snew(ir->opts.egp_flags, 1);
-    ir->opts.ngener = 1;
-    snew(ir->fepvals, 1);
-}
+
 
 MyMol::MyMol() : gvt_(egvtALL)
 {
@@ -964,11 +965,7 @@ MyMol::MyMol() : gvt_(egvtALL)
     mp_         = new MolProp;
     state_      = nullptr;
     snew(enerd_, 1);
-    init_enerdata(1, 0, enerd_);
-
-    /* Inputrec parameters */
-    snew(inputrec_, 1);
-    fill_inputrec(inputrec_);
+    init_enerdata(1, 0, enerd_);    
 }
 
 immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
@@ -1197,7 +1194,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     {
         char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());
 
-        do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms, plist_);
+        do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms, plist_, inputrec_, symtab_);
 
         excls_to_blocka(topology_->atoms.nr, excls_,
                         &(mtop_->moltype[0].excls));
@@ -2377,7 +2374,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     std::string  myref, mylot;
     int          ia;
 
-    if (molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
+    if (! molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
                               lot, "", (char *)"elec",
                               &value, &error, &T, myref, mylot,
                               vec, quadrupole))
@@ -2507,9 +2504,9 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     std::string              aai, aaj, aak, aal, params;
     std::vector<std::string> atoms, ptr;
     int                      lu, n;
-    double                   value, sigma, r13;
-    size_t                   ntrain;
-    double                   relative_position = 0;
+    size_t                   ntrain = 0;
+    double                   value = 0.0, sigma = 0.0, r13 = 0.0;
+    double                   relative_position = 0.0;
 
     switch (iType)
     {
@@ -2537,7 +2534,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                         mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value, lu);
                         ptr = gmx::splitString(params);
                         n   = 0;
-                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
                             if (pi->length() > 0)
                             {
@@ -2590,7 +2587,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
 
                         ptr = gmx::splitString(params);
                         n   = 0;
-                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
                             if (pi->length() > 0)
                             {
@@ -2620,7 +2617,6 @@ void MyMol::UpdateIdef(const Poldata   &pd,
         case eitLINEAR_ANGLES:
         {
             auto fs  = pd.findForces(iType);
-            lu       = string2unit(fs->unit().c_str());
             int  fta = fs->fType();
             for (int i = 0; (i < ltop_->idef.il[fta].nr); i += interaction_function[fta].nratoms+1)
             {
@@ -2647,7 +2643,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
 
                         ptr = gmx::splitString(params);
 			n = 0;
-                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
                             if (pi->length() > 0)
                             {
@@ -2691,13 +2687,13 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[al], aal))
                 {
                     atoms = {aai, aaj, aak, aal};
-                    if ((pd.searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
                     {
                         mtop_->ffparams.iparams[tp].pdihs.phiA     =
                             mtop_->ffparams.iparams[tp].pdihs.phiB = value;
                         ptr = gmx::splitString(params);
                         n   = 0;
-                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
                             if (pi->length() > 0)
                             {
@@ -2708,7 +2704,9 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 }
                                 else
                                 {
-                                    mtop_->ffparams.iparams[tp].pdihs.mult = atof(pi->c_str());
+				    /*Multiplicity for Proper Dihedral must be integer
+				      This assumes that the second paramter is Multiplicity*/
+                                    mtop_->ffparams.iparams[tp].pdihs.mult = atoi(pi->c_str());
                                 }
                                 n++;
                             }
@@ -2722,6 +2720,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 }
             }
         }
+	break;
         case eitIMPROPER_DIHEDRALS:
         {
             auto fs  = pd.findForces(iType);
@@ -2739,14 +2738,14 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[al], aal))
                 {
                     atoms = {aai, aaj, aak, aal};
-                    if ((pd.searchForce(atoms, params, &value, &sigma, &ntrain)) != 0)
+                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
                     {
                         mtop_->ffparams.iparams[tp].harmonic.rA     =
                             mtop_->ffparams.iparams[tp].harmonic.rB = value;
 
                         ptr = gmx::splitString(params);
                         n   = 0;
-                        for (auto pi = ptr.begin(); (pi < ptr.end()); ++pi)
+                        for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
                             if (pi->length() > 0)
                             {

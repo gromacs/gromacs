@@ -47,6 +47,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 
+
 #include "gauss_io.h"
 #include "gentop_core.h"
 #include "gentop_vsite.h"
@@ -115,7 +116,9 @@ class MyMol
         double           ref_enthalpy_, mutot_;
         double           polarizability_, sig_pol_;
         double           EspRms_;
-        bool IsSymmetric(real toler);
+
+
+	bool             IsSymmetric(real toler);
 
         /*! \brief
          * Generate Atoms based on quantum calculation with specified level of theory
@@ -409,6 +412,11 @@ class MyMol
          * \param[in] fn A File pointer opened previously.
          */
         void PrintConformation(const char *fn);
+
+	void setInputrec(t_inputrec  *ir)
+	{
+	    inputrec_ = ir;
+	}
 };
 
 const char *immsg(immStatus imm);

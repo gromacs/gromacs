@@ -496,7 +496,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         gmx_stats_get_average(i.lsq, &av);
         gmx_stats_get_sigma(i.lsq, &sig);
         gmx_stats_get_npoints(i.lsq, &N);
-        sprintf(pbuf, "%g  1", kp);
+        sprintf(pbuf, "%g  6", kp);
         round_numbers(&av, &sig);
         atoms = {i.a1, i.a2, i.a3, i.a4};
         proper_dihedral->addForce(atoms, pbuf, av, sig, N);
@@ -510,7 +510,7 @@ void update_pd(FILE *fp, t_bonds *b, Poldata &pd,
         gmx_stats_get_average(i.lsq, &av);
         gmx_stats_get_sigma(i.lsq, &sig);
         gmx_stats_get_npoints(i.lsq, &N);
-        sprintf(pbuf, "%g  1", kimp);
+        sprintf(pbuf, "%g", kimp);
         round_numbers(&av, &sig);
         atoms = {i.a1, i.a2, i.a3, i.a4};
         improper_dihedral->addForce(atoms, pbuf, av, sig, N);
@@ -747,9 +747,6 @@ int alex_bastat(int argc, char *argv[])
 
                         if ( (refValue > 175) || (refValue < 5))
                         {
-			  //double b0  = norm(dx);
-			  //double b1  = norm(dx2);
-			  //refValue   = 1000*(b1/(b0+b1));
                             linear     = true;
                         }
 

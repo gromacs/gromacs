@@ -634,8 +634,8 @@ bool MolProp::BondExists(Bond b)
 
 int MolProp::Merge(std::vector<MolProp>::iterator src)
 {
-    double      q, sq;
-    std::string stmp, dtmp;
+    double      q = 0, sq = 0;
+    std::string stmp, dtmp, jtype;
     int         nwarn = 0;
 
     for (auto si = src->BeginCategory(); (si < src->EndCategory()); si++)
@@ -731,10 +731,11 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
         }
         else
         {
+	    jtype = jobType2string(ei->getJobtype());
             Experiment ca(ei->getProgram(), ei->getMethod(),
                           ei->getBasisset(), ei->getReference(),
                           ei->getConformation(), ei->getDatafile(),
-                          jobType2string(ei->getJobtype()));
+                          jtype);
             nwarn += ca.Merge(ei);
             AddExperiment(ca);
         }

@@ -124,8 +124,8 @@ enum jobType {
     JOB_W1U       = 7,
     JOB_W1BD      = 8,
     JOB_SP        = 9,
-    JOB_UNKNOWN   = 9,
-    JOB_NR        = 11
+    JOB_UNKNOWN   = 10,
+    JOB_NR        = 11,
 };
 
 /*! \brief

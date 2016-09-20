@@ -39,6 +39,7 @@
 #ifndef MOLDIP_H
 #define MOLDIP_H
 
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/utility/real.h"
 
 #include "mymol.h"
@@ -157,6 +158,8 @@ class MolDip
         Poldata                        pd_;
         gmx_atomprop_t                 _atomprop;
         t_commrec                     *_cr;
+	gmx::MDModules                 mdModules_;
+	t_inputrec                     *inputrec_;
 
         //! Constructor
         MolDip();

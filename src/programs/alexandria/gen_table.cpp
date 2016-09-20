@@ -998,7 +998,7 @@ static void gen_alexandria_rho(Poldata &pd, const char *fn,
 static void gen_alexandria_tables(Poldata &pd, const char *fn, ChargeDistributionModel iDistributionModel,
                                   real rcut, real spacing, const gmx_output_env_t *oenv)
 {
-    FILE                      *fp;
+    FILE                      *fp, *fp2;
     int                        i, j, k, l, n, nmax, bi, bk;
     ChargeDistributionModel    eqg_model;
     gmx_bool                  *bSplit;
@@ -1007,7 +1007,7 @@ static void gen_alexandria_tables(Poldata &pd, const char *fn, ChargeDistributio
     int                      **row, *nzeta;
     int                        natypemax = 32, natype = 0;
     int                        nzi0, nzi1, nzk0, nzk1;
-    char                       buf[STRLEN], fnbuf[STRLEN];
+    char                       buf[STRLEN], buf2[STRLEN], fnbuf[STRLEN];
     const char                *ns[2] = {"", "_s"};
 
     gen_alexandria_rho(pd, "rho.xvg", iDistributionModel, rcut, spacing, oenv);
@@ -1089,9 +1089,14 @@ static void gen_alexandria_tables(Poldata &pd, const char *fn, ChargeDistributio
                     }
                     strncpy(fnbuf, fn, strlen(fn)-4);
                     fnbuf[strlen(fn)-4] = '\0';
-                    sprintf(buf, "%s_%s%s_%s%s.xvg", fnbuf, name[i].c_str(), ns[bi],
-                            name[k].c_str(), ns[bk]);
+                    sprintf(buf, "%s_%s%s_%s%s.xvg", fnbuf, name[k].c_str(), ns[bk], 
+			    name[i].c_str(), ns[bi]);
+		    sprintf(buf2, "%s_%s%s_%s%s.xvg", fnbuf, name[i].c_str(), ns[bi],
+			    name[k].c_str(), ns[bk]);
+
                     fp = xvgropen(buf, buf, "r (nm)", "V (kJ/mol e)", oenv);
+		    fp2 = xvgropen(buf2, buf2, "r (nm)", "V (kJ/mol e)", oenv);
+
                     for (n = 0; (n <= nmax); n++)
                     {
                         rr = n*spacing;
@@ -1151,8 +1156,10 @@ static void gen_alexandria_tables(Poldata &pd, const char *fn, ChargeDistributio
                             vc = fc = vd = fd = vr = fr = 0;
                         }
                         fprintf(fp, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, V, Vp, vd, fd, vr, fr);
+			fprintf(fp2, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, V, Vp, vd, fd, vr, fr);
                     }
                     fclose(fp);
+		    fclose(fp2);
                 }
             }
         }

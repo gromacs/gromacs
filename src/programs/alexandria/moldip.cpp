@@ -50,13 +50,16 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/smalloc.h"
 
 // Alexandria stuff
 #include "getmdlogger.h"
@@ -378,6 +381,27 @@ static int check_data_sufficiency(FILE                           *fp,
     return nsupported;
 }
 
+static void fill_inputrec(t_inputrec *ir)
+{
+    ir->bAdress          = FALSE;
+    ir->cutoff_scheme    = ecutsGROUP;
+    ir->tabext           = 0; /* nm */
+    ir->ePBC             = epbcNONE;
+    ir->ns_type          = ensSIMPLE;
+    ir->epsilon_r        = 1;
+    ir->vdwtype          = evdwCUT;
+    ir->coulombtype      = eelCUT;
+    ir->coulomb_modifier = eintmodNONE;
+    ir->eDispCorr        = edispcNO;
+    ir->vdw_modifier     = eintmodNONE;
+    ir->niter            = 25;
+    ir->em_stepsize      = 1e-2; // nm
+    ir->em_tol           = 1e-2;
+    snew(ir->opts.egp_flags, 1);
+    ir->opts.ngener = 1;
+    snew(ir->fepvals, 1);
+}
+
 MolDip::MolDip()
 {
     _cr     = NULL;
@@ -387,6 +411,9 @@ MolDip::MolDip()
         _fc[i]   = 0;
         _ener[i] = 0;
     }
+
+    inputrec_ = mdModules_.inputrec();
+    fill_inputrec(inputrec_);
 }
 
 void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
@@ -510,6 +537,8 @@ void MolDip::Read(FILE            *fp,
                 printf("%s\n", mpi->getMolname().c_str());
                 mpnew.molProp()->Merge(mpi);
 
+		mpnew.setInputrec(inputrec_);
+
                 imm = mpnew.GenerateTopology(_atomprop, pd_, lot,
                                              _iChargeDistributionModel,
                                              false, bPairs, bDihedral, bPolar);
@@ -580,7 +609,7 @@ void MolDip::Read(FILE            *fp,
                     }
                     if (immOK == imm)
                     {
-                        _mymol.push_back(mpnew);
+		       _mymol.push_back(std::move(mpnew));
                         ntopol++;
                         if (NULL != debug)
                         {
@@ -636,6 +665,8 @@ void MolDip::Read(FILE            *fp,
                 fflush(debug);
             }
 
+	    mpnew.setInputrec(inputrec_);
+
             imm = mpnew.GenerateTopology(_atomprop, pd_, lot, _iChargeDistributionModel,
                                          false, false, bDihedral, bPolar);
 
@@ -661,7 +692,7 @@ void MolDip::Read(FILE            *fp,
             imm_count[imm]++;
             if (immOK == imm)
             {
-                _mymol.push_back(mpnew);
+	        _mymol.push_back(std::move(mpnew));
                 if (NULL != debug)
                 {
                     fprintf(debug, "Added molecule %s\n", mpnew.molProp()->getMolname().c_str());
