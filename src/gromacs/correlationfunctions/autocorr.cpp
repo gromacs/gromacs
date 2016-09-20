@@ -87,42 +87,36 @@ enum {
 };
 
 /*! \brief Routine to compute ACF using FFT. */
-static void low_do_four_core(int nframes, real c1[], real cfour[],
+static void low_do_four_core(int nfour, int nframes, real c1[], real cfour[],
                              int nCos)
 {
     int  i = 0;
-    std::vector<std::vector<real> > data;
-    data.resize(1);
-    data[0].resize(nframes, 0);
+
     switch (nCos)
     {
         case enNorm:
             for (i = 0; (i < nframes); i++)
             {
-                data[0][i] = c1[i];
+                cfour[i] = c1[i];
             }
             break;
         case enCos:
             for (i = 0; (i < nframes); i++)
             {
-                data[0][i] = cos(c1[i]);
+                cfour[i] = cos(c1[i]);
             }
             break;
         case enSin:
             for (i = 0; (i < nframes); i++)
             {
-                data[0][i] = sin(c1[i]);
+                cfour[i] = sin(c1[i]);
             }
             break;
         default:
             gmx_fatal(FARGS, "nCos = %d, %s %d", nCos, __FILE__, __LINE__);
     }
 
-    many_auto_correl(&data);
-    for (i = 0; (i < nframes); i++)
-    {
-        cfour[i] = data[0][i];
-    }
+    many_auto_correl(1, nframes, nfour, &cfour);
 }
 
 /*! \brief Routine to comput ACF without FFT. */
@@ -338,22 +332,22 @@ static void dump_tmp(char *s, int n, real c[])
 }
 
 /*! \brief High level ACF routine. */
-static void do_four_core(unsigned long mode, int nframes,
-                         real c1[], real csum[], real ctmp[])
+void do_four_core(unsigned long mode, int nfour, int nf2, int nframes,
+                  real c1[], real csum[], real ctmp[])
 {
     real   *cfour;
     char    buf[32];
     real    fac;
     int     j, m, m1;
 
-    snew(cfour, nframes);
+    snew(cfour, nfour);
 
     if (MODE(eacNormal))
     {
         /********************************************
          *  N O R M A L
          ********************************************/
-        low_do_four_core(nframes, c1, csum, enNorm);
+        low_do_four_core(nfour, nf2, c1, csum, enNorm);
     }
     else if (MODE(eacCos))
     {
@@ -363,21 +357,21 @@ static void do_four_core(unsigned long mode, int nframes,
         /* Copy the data to temp array. Since we need it twice
          * we can't overwrite original.
          */
-        for (j = 0; (j < nframes); j++)
+        for (j = 0; (j < nf2); j++)
         {
             ctmp[j] = c1[j];
         }
 
         /* Cosine term of AC function */
-        low_do_four_core(nframes, ctmp, cfour, enCos);
-        for (j = 0; (j < nframes); j++)
+        low_do_four_core(nfour, nf2, ctmp, cfour, enCos);
+        for (j = 0; (j < nf2); j++)
         {
             c1[j]  = cfour[j];
         }
 
         /* Sine term of AC function */
-        low_do_four_core(nframes, ctmp, cfour, enSin);
-        for (j = 0; (j < nframes); j++)
+        low_do_four_core(nfour, nf2, ctmp, cfour, enSin);
+        for (j = 0; (j < nf2); j++)
         {
             c1[j]  += cfour[j];
             csum[j] = c1[j];
@@ -424,34 +418,34 @@ static void do_four_core(unsigned long mode, int nframes,
         /* Because of normalization the number of -0.5 to subtract
          * depends on the number of data points!
          */
-        for (j = 0; (j < nframes); j++)
+        for (j = 0; (j < nf2); j++)
         {
-            csum[j]  = -0.5*(nframes-j);
+            csum[j]  = -0.5*(nf2-j);
         }
 
         /***** DIAGONAL ELEMENTS ************/
         for (m = 0; (m < DIM); m++)
         {
             /* Copy the vector data in a linear array */
-            for (j = 0; (j < nframes); j++)
+            for (j = 0; (j < nf2); j++)
             {
                 ctmp[j]  = gmx::square(c1[DIM*j+m]);
             }
             if (debug)
             {
                 sprintf(buf, "c1diag%d.xvg", m);
-                dump_tmp(buf, nframes, ctmp);
+                dump_tmp(buf, nf2, ctmp);
             }
 
-            low_do_four_core(nframes, ctmp, cfour, enNorm);
+            low_do_four_core(nfour, nf2, ctmp, cfour, enNorm);
 
             if (debug)
             {
                 sprintf(buf, "c1dfout%d.xvg", m);
-                dump_tmp(buf, nframes, cfour);
+                dump_tmp(buf, nf2, cfour);
             }
             fac = 1.5;
-            for (j = 0; (j < nframes); j++)
+            for (j = 0; (j < nf2); j++)
             {
                 csum[j] += fac*(cfour[j]);
             }
@@ -461,7 +455,7 @@ static void do_four_core(unsigned long mode, int nframes,
         {
             /* Copy the vector data in a linear array */
             m1 = (m+1) % DIM;
-            for (j = 0; (j < nframes); j++)
+            for (j = 0; (j < nf2); j++)
             {
                 ctmp[j] = c1[DIM*j+m]*c1[DIM*j+m1];
             }
@@ -469,16 +463,16 @@ static void do_four_core(unsigned long mode, int nframes,
             if (debug)
             {
                 sprintf(buf, "c1off%d.xvg", m);
-                dump_tmp(buf, nframes, ctmp);
+                dump_tmp(buf, nf2, ctmp);
             }
-            low_do_four_core(nframes, ctmp, cfour, enNorm);
+            low_do_four_core(nfour, nf2, ctmp, cfour, enNorm);
             if (debug)
             {
                 sprintf(buf, "c1ofout%d.xvg", m);
-                dump_tmp(buf, nframes, cfour);
+                dump_tmp(buf, nf2, cfour);
             }
             fac = 3.0;
-            for (j = 0; (j < nframes); j++)
+            for (j = 0; (j < nf2); j++)
             {
                 csum[j] += fac*cfour[j];
             }
@@ -499,19 +493,19 @@ static void do_four_core(unsigned long mode, int nframes,
          * First for XX, then for YY, then for ZZ
          * After that we sum them and normalise
          */
-        for (j = 0; (j < nframes); j++)
+        for (j = 0; (j < nf2); j++)
         {
             csum[j] = 0.0;
         }
         for (m = 0; (m < DIM); m++)
         {
             /* Copy the vector data in a linear array */
-            for (j = 0; (j < nframes); j++)
+            for (j = 0; (j < nf2); j++)
             {
                 ctmp[j] = c1[DIM*j+m];
             }
-            low_do_four_core(nframes, ctmp, cfour, enNorm);
-            for (j = 0; (j < nframes); j++)
+            low_do_four_core(nfour, nf2, ctmp, cfour, enNorm);
+            for (j = 0; (j < nf2); j++)
             {
                 csum[j] += cfour[j];
             }
@@ -523,7 +517,7 @@ static void do_four_core(unsigned long mode, int nframes,
     }
 
     sfree(cfour);
-    for (j = 0; (j < nframes); j++)
+    for (j = 0; (j < nf2); j++)
     {
         c1[j] = csum[j]/(real)(nframes-j);
     }
@@ -537,7 +531,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
                      int eFitFn)
 {
     FILE       *fp, *gp = NULL;
-    int         i;
+    int         i, nfour;
     real       *csum;
     real       *ctmp, *fit;
     real        sum, Ct2av, Ctav;
@@ -582,9 +576,30 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
                gmx::boolToString(bNormalize));
         printf("mode = %lu, dt = %g, nrestart = %d\n", mode, dt, nrestart);
     }
-    /* Allocate temp arrays */
-    snew(csum, nframes);
-    snew(ctmp, nframes);
+    if (bFour)
+    {
+        /* For FTT corr., we need to pad the data with at least nframes zeros */
+        nfour = 2;
+        while (2*nframes > nfour)
+        {
+            nfour *= 2;
+        }
+        if (debug)
+        {
+            fprintf(debug, "Using FFT to calculate %s, #points for FFT = %d\n",
+                    title, nfour);
+        }
+
+        /* Allocate temp arrays */
+        snew(csum, nfour);
+        snew(ctmp, nfour);
+    }
+    else
+    {
+        nfour = 0; /* To keep the compiler happy */
+        snew(csum, nframes);
+        snew(ctmp, nframes);
+    }
 
     /* Loop over items (e.g. molecules or dihedrals)
      * In this loop the actual correlation functions are computed, but without
@@ -600,7 +615,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
 
         if (bFour)
         {
-            do_four_core(mode, nframes, c1[i], csum, ctmp);
+            do_four_core(mode, nfour, nframes, nframes, c1[i], csum, ctmp);
         }
         else
         {
