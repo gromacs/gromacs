@@ -50,7 +50,6 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/exceptions.h"
-//#include "gromacs/utility/gmxassert.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -72,12 +71,14 @@ TEST_F (ManyAutocorrelationTest, Empty)
 
 TEST_F (ManyAutocorrelationTest, DifferentLength)
 {
+#ifndef NDEBUG
     std::vector<std::vector<real> > c;
     c.resize(3);
     c[0].resize(10);
     c[1].resize(10);
     c[2].resize(8);
     EXPECT_THROW_GMX(many_auto_correl(&c), gmx::InconsistentInputError);
+#endif
 }
 
 }
