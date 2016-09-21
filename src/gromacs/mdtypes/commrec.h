@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,10 +98,16 @@ struct t_commrec {
     MPI_Comm mpi_comm_mygroup;
 
     /* MPI ranks within a physical node for hardware access */
-    int            nrank_intranode;    /* nr of ranks on this physical node */
-    int            rank_intranode;     /* our rank on this physical node */
-    int            nrank_pp_intranode; /* as nrank_intranode, for particle-particle only */
-    int            rank_pp_intranode;  /* as rank_intranode, for particle-particle only */
+    int            nrank_intranode;     /* nr of ranks on this physical node */
+    int            rank_intranode;      /* our rank on this physical node */
+    int            nrank_pp_intranode;  /* as nrank_intranode, for particle-particle only */
+    int            rank_pp_intranode;   /* as rank_intranode, for particle-particle only */
+                                        /* TODO: replace all usage of this as GPU index with dev_use_index */
+
+    /* These are for accessing GPU assignments per rank */
+    int            dev_use_index;      /* index into gpu_opt->dev_use GPU id array */
+    int            dev_use_count;      /* count of GPUs used by this rank for accessing gpu_opt->dev_use */
+    int            dev_use_count_node; /* total intranode count of GPUs used - sum of dev_use_count */
 
     gmx_nodecomm_t nc;
 

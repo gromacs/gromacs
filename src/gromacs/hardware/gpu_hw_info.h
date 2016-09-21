@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,7 +78,11 @@ typedef struct gmx_gpu_opt_t
     int       n_dev_compatible; /* number of compatible GPU devices that could be used */
     int      *dev_compatible;   /* array of compatible GPU device IDs, from which automatic selection occurs */
     int       n_dev_use;        /* number of GPU devices selected to be used, either by the user or automatically */
-    int      *dev_use;          /* array mapping from PP rank index to GPU device ID; GPU IDs can be listed multiple times when ranks share them */
+    int      *dev_use;          /* array of GPU device IDs, sorted by ranks on this node.
+                                 * GPU IDs can be listed multiple times when ranks share them.
+                                 * Each rank gets its ids by dev_use[cr->dev_use_index; cr->dev_use_index + cr->dev_use_count)
+                                 * This is initialized by gmx_select_rank_gpu_ids().
+                                 */
 } gmx_gpu_opt_t;
 
 #ifdef __cplusplus

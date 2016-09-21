@@ -221,22 +221,27 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
     nc->rank_intra = cr->nodeid;
 #endif
 }
-
 void gmx_init_intranode_counters(t_commrec *cr)
 {
     /* counters for PP+PME and PP-only processes on my physical node */
     int nrank_intranode, rank_intranode;
     int nrank_pp_intranode, rank_pp_intranode;
+    /* rank-local index into dev_use array. */
+    int dev_use_index;
+    int dev_use_count_node;
+    int dev_use_count = cr->dev_use_count;
+
+    /* Get a (hopefully unique) hash that identifies our physical node */
+    int myhash = gmx_physicalnode_id_hash();
+
     /* thread-MPI is not initialized when not running in parallel */
 #if GMX_MPI && !GMX_THREAD_MPI
+
     int nrank_world, rank_world;
-    int i, myhash, *hash, *hash_s, *hash_pp, *hash_pp_s;
+    int i, *hash, *hash_s, *hash_pp, *hash_pp_s;
 
     MPI_Comm_size(MPI_COMM_WORLD, &nrank_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_world);
-
-    /* Get a (hopefully unique) hash that identifies our physical node */
-    myhash = gmx_physicalnode_id_hash();
 
     /* We can't rely on MPI_IN_PLACE, so we need send and receive buffers */
     snew(hash,   nrank_world);
@@ -277,12 +282,30 @@ void gmx_init_intranode_counters(t_commrec *cr)
     sfree(hash_s);
     sfree(hash_pp);
     sfree(hash_pp_s);
+
 #else
     /* Serial or thread-MPI code: we run within a single physical node */
     nrank_intranode    = cr->nnodes;
     rank_intranode     = cr->sim_nodeid;
     nrank_pp_intranode = cr->nnodes - cr->npmenodes;
     rank_pp_intranode  = cr->nodeid;
+#endif
+
+    /* Counting which process wants to use how many GPUs, to get the gpu_opt->dev_use array index */
+#if GMX_MPI
+    MPI_Comm physicalnode_comm;
+    MPI_Comm_split(MPI_COMM_WORLD, myhash, rank_intranode, &physicalnode_comm);
+    /* Prefix sums of the per-rank device counts */
+    MPI_Scan(&dev_use_count, &dev_use_index, 1, MPI_INT, MPI_SUM, physicalnode_comm);
+    /* Getting total amount of devices on this node - the last prefix sum is full sum */
+    dev_use_count_node = dev_use_index;
+    MPI_Bcast(&dev_use_count_node, sizeof(int), MPI_INT, nrank_intranode - 1, physicalnode_comm);
+    /* MPI_Scan is inclusive prefix sum, we need exclusive for the starting indices */
+    dev_use_index -= dev_use_count;
+    MPI_Comm_free(&physicalnode_comm);
+#else
+    dev_use_index      = 0;
+    dev_use_count_node = dev_use_count;
 #endif
 
     if (debug)
@@ -297,18 +320,21 @@ void gmx_init_intranode_counters(t_commrec *cr)
             sprintf(sbuf, "%s", (cr->duty & DUTY_PP) ? "PP" : "PME");
         }
         fprintf(debug, "On %3s rank %d: nrank_intranode=%d, rank_intranode=%d, "
-                "nrank_pp_intranode=%d, rank_pp_intranode=%d\n",
+                "nrank_pp_intranode=%d, rank_pp_intranode=%d, \n"
+                "dev_use_index=%d, dev_use_count=%d, dev_use_count_node=%d\n",
                 sbuf, cr->sim_nodeid,
                 nrank_intranode, rank_intranode,
-                nrank_pp_intranode, rank_pp_intranode);
+                nrank_pp_intranode, rank_pp_intranode,
+                dev_use_index, dev_use_count, dev_use_count_node);
     }
 
     cr->nrank_intranode    = nrank_intranode;
     cr->rank_intranode     = rank_intranode;
     cr->nrank_pp_intranode = nrank_pp_intranode;
     cr->rank_pp_intranode  = rank_pp_intranode;
+    cr->dev_use_index      = dev_use_index;
+    cr->dev_use_count_node = dev_use_count_node;
 }
-
 
 void gmx_barrier(const t_commrec gmx_unused *cr)
 {
