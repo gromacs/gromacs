@@ -83,12 +83,13 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
+/* This parses the user input for manual GPU selection;
+ * allocates gpu_opt->dev_use and sets gpu_opt->bUserSet.
+ * TODO: it has nothing to do with the GPU detection, should be moved, but where?
+ */
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 
-void gmx_select_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
-                        const gmx_gpu_info_t *gpu_info,
-                        gmx_bool bForceUseGPU,
-                        gmx_gpu_opt_t *gpu_opt);
+void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info);
 
 /* Check the consistency of hw_opt with hwinfo.
    This function should be called once on each MPI rank. */
