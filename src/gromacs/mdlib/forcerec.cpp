@@ -1793,20 +1793,18 @@ static void pick_nbnxn_kernel(FILE                *fp,
     }
 }
 
-static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
-                                 const t_commrec     *cr,
-                                 const gmx_hw_info_t *hwinfo,
-                                 gmx_bool             bDoNonbonded,
+static void pick_nbnxn_resources(gmx_bool             bDoNonbonded,
                                  gmx_bool            *bUseGPU,
                                  gmx_bool            *bEmulateGPU,
                                  const gmx_gpu_opt_t *gpu_opt)
 {
-    gmx_bool bEmulateGPUEnvVarSet;
-    char     gpu_err_str[STRLEN];
+    /* After moving the init_gpu() to gmx_select_gpu_ids(),
+     * this whole function is somewhat redundant, and comments below are out of date...
+     */
 
     *bUseGPU = FALSE;
 
-    bEmulateGPUEnvVarSet = (getenv("GMX_EMULATE_GPU") != NULL);
+    const gmx_bool bEmulateGPUEnvVarSet = (getenv("GMX_EMULATE_GPU") != NULL);
 
     /* Run GPU emulation mode if GMX_EMULATE_GPU is defined. Because
      * GPUs (currently) only handle non-bonded calculations, we will
@@ -1826,23 +1824,6 @@ static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
      */
     if (gpu_opt->n_dev_use > 0 && !(*bEmulateGPU))
     {
-        /* Each PP node will use the intra-node id-th device from the
-         * list of detected/selected GPUs. */
-        if (!init_gpu(mdlog, cr->rank_pp_intranode, gpu_err_str,
-                      &hwinfo->gpu_info, gpu_opt))
-        {
-            /* At this point the init should never fail as we made sure that
-             * we have all the GPUs we need. If it still does, we'll bail. */
-            /* TODO the decorating of gpu_err_str is nicer if it
-               happens inside init_gpu. Out here, the decorating with
-               the MPI rank makes sense. */
-            gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
-                      cr->nodeid,
-                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
-                                        cr->rank_pp_intranode),
-                      gpu_err_str);
-        }
-
         /* Here we actually turn on hardware GPU acceleration */
         *bUseGPU = TRUE;
     }
@@ -2130,8 +2111,7 @@ static void init_nb_verlet(FILE                *fp,
 
     snew(nbv, 1);
 
-    pick_nbnxn_resources(mdlog, cr, fr->hwinfo,
-                         fr->bNonbonded,
+    pick_nbnxn_resources(fr->bNonbonded,
                          &nbv->bUseGPU,
                          &bEmulateGPU,
                          fr->gpu_opt);
