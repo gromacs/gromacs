@@ -1368,6 +1368,8 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
 void gmx_select_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
                         const gmx_gpu_info_t *gpu_info,
                         gmx_bool bForceUseGPU,
+                        gmx_bool bNBUseGPU,
+                        gmx_bool bPMEUseGPU,
                         gmx_gpu_opt_t *gpu_opt)
 {
     int              i;
@@ -1422,7 +1424,48 @@ void gmx_select_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
     else if (getenv("GMX_EMULATE_GPU") == NULL)
     {
         pick_compatible_gpus(&hwinfo_g->gpu_info, gpu_opt);
-        set_gpu_ids(gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);
+
+        /* The following code computes the GPU index and count on this node, depending on NB and PME running on GPU or on CPU.
+         * Before the PME on GPU is introduced, the GPU indexing within the node (gpu_opt->dev_use) is an array,
+         * mapping from the PP rank index to the CUDA device ID.
+         * The easiest thing to do with the addition of PME on GPU is to slap the PME rank index -> CUDA device ID
+         * mapping at the end of the same array. Hence, the cr->nrank_pp_intranode offset.
+         * Can this turn ugly with addition of other GPU tasks?
+         */
+        int GPURankCount = 0;
+        int GPURankIndex = 0;
+        bNBUseGPU  = bNBUseGPU && (cr->duty & DUTY_PP);
+        bPMEUseGPU = bPMEUseGPU && (cr->duty & DUTY_PME);
+        if (bNBUseGPU)
+        {
+            GPURankCount += cr->nrank_pp_intranode;
+            GPURankIndex  = cr->rank_pp_intranode;
+        }
+        if (bPMEUseGPU)
+        {
+            GPURankCount += cr->nrank_pme_intranode;
+            GPURankIndex  = cr->rank_pme_intranode;
+            if (bNBUseGPU)
+            {
+                GPURankIndex += cr->nrank_pp_intranode;
+            }
+        }
+        set_gpu_ids(gpu_opt, GPURankCount, GPURankIndex);
+
+        /* Here the GPU is initialized */
+        char     gpu_err_str[STRLEN];
+        if (!init_gpu(mdlog, GPURankIndex, gpu_err_str, gpu_info, gpu_opt))
+        {
+            /* At this point the init should never fail as we made sure that
+             * we have all the GPUs we need. If it still does, we'll bail. */
+            /* TODO the decorating of gpu_err_str is nicer if it
+               happens inside init_gpu. Out here, the decorating with
+               the MPI rank makes sense. */
+            gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
+                      cr->nodeid,
+                      get_gpu_device_id(gpu_info, gpu_opt, GPURankIndex),
+                      gpu_err_str);
+        }
     }
 
     /* If the user asked for a GPU, check whether we have a GPU */
@@ -1434,7 +1477,7 @@ void gmx_select_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
 
 /* Select the GPUs we will use. This is an operation local to each physical
  * node. If we have less MPI ranks than GPUs, we will waste some GPUs.
- * nrank and rank are the rank count and id for PP processes in our node.
+ * nrank and rank are the rank count and id for GPU-using processes in our node.
  */
 static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
 {

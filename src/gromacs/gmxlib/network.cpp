@@ -224,13 +224,14 @@ void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 
 void gmx_init_intranode_counters(t_commrec *cr)
 {
-    /* counters for PP+PME and PP-only processes on my physical node */
+    /* counters for PP+PME, PP-only and PME-only processes on my physical node */
     int nrank_intranode, rank_intranode;
     int nrank_pp_intranode, rank_pp_intranode;
+    int nrank_pme_intranode, rank_pme_intranode;
     /* thread-MPI is not initialized when not running in parallel */
 #if GMX_MPI && !GMX_THREAD_MPI
     int nrank_world, rank_world;
-    int i, myhash, *hash, *hash_s, *hash_pp, *hash_pp_s;
+    int i, myhash, *hash, *hash_s, *hash_pp, *hash_pp_s, *hash_pme, *hash_pme_s;
 
     MPI_Comm_size(MPI_COMM_WORLD, &nrank_world);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_world);
@@ -243,17 +244,23 @@ void gmx_init_intranode_counters(t_commrec *cr)
     snew(hash_s, nrank_world);
     snew(hash_pp,   nrank_world);
     snew(hash_pp_s, nrank_world);
+    snew(hash_pme,   nrank_world);
+    snew(hash_pme_s, nrank_world);
 
-    hash_s[rank_world]    = myhash;
-    hash_pp_s[rank_world] = (cr->duty & DUTY_PP) ? myhash : -1;
+    hash_s[rank_world]     = myhash;
+    hash_pp_s[rank_world]  = (cr->duty & DUTY_PP) ? myhash : -1;
+    hash_pme_s[rank_world] = (cr->duty & DUTY_PME) ? myhash : -1;
 
-    MPI_Allreduce(hash_s,    hash,    nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    MPI_Allreduce(hash_pp_s, hash_pp, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(hash_s,     hash,     nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(hash_pp_s,  hash_pp,  nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(hash_pme_s, hash_pme, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
-    nrank_intranode    = 0;
-    rank_intranode     = 0;
-    nrank_pp_intranode = 0;
-    rank_pp_intranode  = 0;
+    nrank_intranode     = 0;
+    rank_intranode      = 0;
+    nrank_pp_intranode  = 0;
+    rank_pp_intranode   = 0;
+    nrank_pme_intranode = 0;
+    rank_pme_intranode  = 0;
     for (i = 0; i < nrank_world; i++)
     {
         if (hash[i] == myhash)
@@ -272,17 +279,29 @@ void gmx_init_intranode_counters(t_commrec *cr)
                 rank_pp_intranode++;
             }
         }
+        if (hash_pme[i] == myhash)
+        {
+            nrank_pme_intranode++;
+            if ((cr->duty & DUTY_PME) && i < rank_world)
+            {
+                rank_pme_intranode++;
+            }
+        }
     }
     sfree(hash);
     sfree(hash_s);
     sfree(hash_pp);
     sfree(hash_pp_s);
+    sfree(hash_pme);
+    sfree(hash_pme_s);
 #else
     /* Serial or thread-MPI code: we run within a single physical node */
-    nrank_intranode    = cr->nnodes;
-    rank_intranode     = cr->sim_nodeid;
-    nrank_pp_intranode = cr->nnodes - cr->npmenodes;
-    rank_pp_intranode  = cr->nodeid;
+    nrank_intranode     = cr->nnodes;
+    rank_intranode      = cr->sim_nodeid;
+    nrank_pp_intranode  = cr->nnodes - cr->npmenodes;
+    rank_pp_intranode   = cr->nodeid;
+    nrank_pme_intranode = cr->npmenodes;
+    rank_pme_intranode  = cr->nodeid;
 #endif
 
     if (debug)
@@ -303,10 +322,12 @@ void gmx_init_intranode_counters(t_commrec *cr)
                 nrank_pp_intranode, rank_pp_intranode);
     }
 
-    cr->nrank_intranode    = nrank_intranode;
-    cr->rank_intranode     = rank_intranode;
-    cr->nrank_pp_intranode = nrank_pp_intranode;
-    cr->rank_pp_intranode  = rank_pp_intranode;
+    cr->nrank_intranode     = nrank_intranode;
+    cr->rank_intranode      = rank_intranode;
+    cr->nrank_pp_intranode  = nrank_pp_intranode;
+    cr->rank_pp_intranode   = rank_pp_intranode;
+    cr->nrank_pme_intranode = nrank_pme_intranode;
+    cr->rank_pme_intranode  = rank_pme_intranode;
 }
 
 
