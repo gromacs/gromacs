@@ -88,6 +88,8 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 void gmx_select_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
                         const gmx_gpu_info_t *gpu_info,
                         gmx_bool bForceUseGPU,
+                        gmx_bool bNBUseGPU,
+                        gmx_bool bPMEUseGPU,
                         gmx_gpu_opt_t *gpu_opt);
 
 /* Check the consistency of hw_opt with hwinfo.
