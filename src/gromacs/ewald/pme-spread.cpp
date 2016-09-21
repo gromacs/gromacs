@@ -41,6 +41,7 @@
 #include "config.h"
 
 #include <assert.h>
+#include <cmath>
 
 #include <algorithm>
 
@@ -105,6 +106,10 @@ static void calc_interpolation_idx(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
         xptr   = atc->x[i];
         idxptr = atc->idx[i];
         fptr   = atc->fractx[i];
+        if (std::isnan(xptr[XX]) || std::isnan(xptr[YY]) || std::isnan(xptr[ZZ]))
+        {
+            gmx_fatal(FARGS, "Bug in GROMACS's PME code. Please report if reproducible");
+        }
 
         /* Fractional coordinates along box vectors, add 2.0 to make 100% sure we are positive for triclinic boxes */
         tx = nx * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx + 2.0 );
