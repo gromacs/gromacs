@@ -57,6 +57,7 @@
 #include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/listed-forces/pairs.h"
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
@@ -1793,12 +1794,10 @@ static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
                                  gmx_bool            *bEmulateGPU,
                                  const gmx_gpu_opt_t *gpu_opt)
 {
-    gmx_bool bEmulateGPUEnvVarSet;
     char     gpu_err_str[STRLEN];
-
     *bUseGPU = FALSE;
 
-    bEmulateGPUEnvVarSet = (getenv("GMX_EMULATE_GPU") != NULL);
+    const gmx_bool bEmulateGPUEnvVarSet = (getenv("GMX_EMULATE_GPU") != NULL);
 
     /* Run GPU emulation mode if GMX_EMULATE_GPU is defined. Because
      * GPUs (currently) only handle non-bonded calculations, we will
@@ -1814,24 +1813,20 @@ static void pick_nbnxn_resources(const gmx::MDLogger &mdlog,
     *bEmulateGPU = (bEmulateGPUEnvVarSet ||
                     (!bDoNonbonded && gpu_opt->n_dev_use > 0));
 
-    /* Enable GPU mode when GPUs are available or no GPU emulation is requested.
+    /* Enable GPU mode when GPUs are available and no GPU emulation is requested.
      */
     if (gpu_opt->n_dev_use > 0 && !(*bEmulateGPU))
     {
-        /* Each PP node will use the intra-node id-th device from the
-         * list of detected/selected GPUs. */
-        if (!init_gpu(mdlog, cr->rank_pp_intranode, gpu_err_str,
-                      &hwinfo->gpu_info, gpu_opt))
+        const int gpuIndex = g_GpuTasks.gpuIndex(GpuTask::NB);
+        if (!switch_gpu(mdlog, gpuIndex, gpu_err_str,
+                        &hwinfo->gpu_info, gpu_opt))
         {
-            /* At this point the init should never fail as we made sure that
-             * we have all the GPUs we need. If it still does, we'll bail. */
             /* TODO the decorating of gpu_err_str is nicer if it
                happens inside init_gpu. Out here, the decorating with
                the MPI rank makes sense. */
-            gmx_fatal(FARGS, "On rank %d failed to initialize GPU #%d: %s",
+            gmx_fatal(FARGS, "On rank %d failed to switch to the GPU #%d: %s",
                       cr->nodeid,
-                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt,
-                                        cr->rank_pp_intranode),
+                      get_gpu_device_id(&hwinfo->gpu_info, gpu_opt, gpuIndex),
                       gpu_err_str);
         }
 
@@ -2122,7 +2117,9 @@ static void init_nb_verlet(FILE                *fp,
 
     snew(nbv, 1);
 
-    pick_nbnxn_resources(mdlog, cr, fr->hwinfo,
+    pick_nbnxn_resources(mdlog,
+                         cr,
+                         fr->hwinfo,
                          fr->bNonbonded,
                          &nbv->bUseGPU,
                          &bEmulateGPU,
@@ -2245,7 +2242,7 @@ static void init_nb_verlet(FILE                *fp,
                        fr->gpu_opt,
                        fr->ic,
                        nbv->grp,
-                       cr->rank_pp_intranode,
+                       g_GpuTasks.gpuIndex(GpuTask::NB),
                        cr->nodeid,
                        (nbv->ngrp > 1) && !bHybridGPURun);
 
@@ -3264,6 +3261,10 @@ void free_gpu_resources(const t_forcerec     *fr,
     {
         /* free nbnxn data in GPU memory */
         nbnxn_gpu_free(fr->nbv->gpu_nbv);
+    }
+
+    if (gpu_opt->dev_use_count > 0)
+    {
         /* stop the GPU profiler (only CUDA) */
         stopGpuProfiler();
 
@@ -3273,9 +3274,6 @@ void free_gpu_resources(const t_forcerec     *fr,
          *
          * This is not a concern in OpenCL where we use one context per rank which
          * is freed in nbnxn_gpu_free().
-         *
-         * Note: as only PP ranks need to free GPU resources, so it is safe to
-         * not call the barrier on PME ranks.
          */
 #if GMX_THREAD_MPI
         if (PAR(cr))
@@ -3284,11 +3282,14 @@ void free_gpu_resources(const t_forcerec     *fr,
         }
 #endif  /* GMX_THREAD_MPI */
 
-        /* uninitialize GPU (by destroying the context) */
-        if (!free_cuda_gpu(cr->rank_pp_intranode, gpu_err_str, gpu_info, gpu_opt))
+        /* uninitialize GPUs (by destroying the context) */
+        for (int gpuIndex = gpu_opt->dev_use_index; gpuIndex < gpu_opt->dev_use_index + gpu_opt->dev_use_count; gpuIndex++)
         {
-            gmx_warning("On rank %d failed to free GPU #%d: %s",
-                        cr->nodeid, get_current_cuda_gpu_device_id(), gpu_err_str);
+            if (!free_cuda_gpu(gpuIndex, gpu_err_str, gpu_info, gpu_opt))
+            {
+                gmx_warning("On rank %d failed to free GPU #%d: %s",
+                            cr->nodeid, get_current_cuda_gpu_device_id(), gpu_err_str);
+            }
         }
     }
 }

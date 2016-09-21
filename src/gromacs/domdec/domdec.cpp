@@ -57,6 +57,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed-forces/manage-threading.h"
@@ -5434,7 +5435,7 @@ void dd_setup_dlb_resource_sharing(t_commrec           gmx_unused *cr,
 
     physicalnode_id_hash = gmx_physicalnode_id_hash();
 
-    gpu_id = get_gpu_device_id(&hwinfo->gpu_info, &hw_opt->gpu_opt, cr->rank_pp_intranode);
+    gpu_id = get_gpu_device_id(&hwinfo->gpu_info, &hw_opt->gpu_opt, g_GpuTasks.gpuIndex(GpuTask::NB));
 
     dd = cr->dd;
 
