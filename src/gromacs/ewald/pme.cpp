@@ -859,6 +859,12 @@ void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V
     /* We only use the A-charges grid */
     grid = &pme->pmegrid[PME_GRID_QA];
 
+    /* NaN values for x are invalid here and will make PME code fail */
+    for(int i = 0; i < n; i++)
+    {
+        assert(!std::isnan(x[i][XX]) && !std::isnan(x[i][YY]) && !std::isnan(x[i][ZZ]));
+    }
+
     /* Only calculate the spline coefficients, don't actually spread */
     spread_on_grid(pme, atc, NULL, TRUE, FALSE, pme->fftgrid[PME_GRID_QA], FALSE, PME_GRID_QA);
 
