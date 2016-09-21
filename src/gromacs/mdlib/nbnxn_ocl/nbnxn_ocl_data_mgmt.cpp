@@ -53,6 +53,7 @@
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -692,7 +693,6 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
                     const gmx_gpu_opt_t       *gpu_opt,
                     const interaction_const_t *ic,
                     nonbonded_verlet_group_t  *nbv_grp,
-                    int                        my_gpu_index,
                     int                        rank,
                     gmx_bool                   bLocalAndNonlocal)
 {
@@ -724,6 +724,7 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     snew(nb->timings, 1);
 
     /* set device info, just point it to the right GPU among the detected ones */
+    const int my_gpu_index = gpu_opt->gpuTasks.get()->gpuIndex(GpuTask::NB);
     nb->dev_info = gpu_info->gpu_dev + gpu_opt->dev_use[my_gpu_index];
     snew(nb->dev_rundata, 1);
 

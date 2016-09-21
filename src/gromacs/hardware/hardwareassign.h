@@ -35,6 +35,8 @@
 #ifndef GMX_HARDWARE_HARDWAREASSIGN_H
 #define GMX_HARDWARE_HARDWAREASSIGN_H
 
+#include <map>
+
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_gpu_info_t;
@@ -46,9 +48,50 @@ namespace gmx
 class MDLogger;
 }
 
+/*! \brief
+ * Assigns GPUs to this rank (or checks the manually selected GPU IDs); fills in gpu_opt->dev_use array;
+ * initializes all the GPUs of this rank.
+ */
 void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
                              const gmx_gpu_info_t *gpu_info,
-                             gmx_bool bForceUseGPU,
+                             bool forceUseGPU, bool useGpuNB, bool useGpuPME,
                              gmx_gpu_opt_t *gpu_opt);
+
+/*! \brief
+ * Assigns GPUs of this rank to the tasks.
+ * Should be called after gmx_select_rank_gpu_ids.
+ */
+void gmx_select_tasks_gpu_ids(const t_commrec     *cr,
+                              gmx_gpu_opt_t       *gpu_opt,
+                              bool                 useGpuNB,
+                              bool                 useGpuPME);
+
+//! Tasks that can be run on a GPU
+enum class GpuTask
+{
+    NB, PME
+};
+
+#define INVALID_GPU_INDEX -1
+
+/*! \internal \brief
+ *  Storage of a rank-local information on GPUs assignment to tasks. This stores indices into gpu_opt->dev_use.
+ */
+class GpuTaskManager
+{
+    private:
+        std::map<GpuTask, int> GpuIndicesByTasks_; /* The assumption is max 1 GPU per task on a single rank. */
+    public:
+        //! Returns the GPU index into gpu_opt->dev_use for the given GPU task (INVALID_GPU_INDEX if it is not set).
+        int gpuIndex(GpuTask task)
+        {
+            return GpuIndicesByTasks_.count(task) ? GpuIndicesByTasks_[task] : INVALID_GPU_INDEX;
+        }
+        //! Sets the GPU index into gpu_opt->dev_use for the given GPU task.
+        void setGpuIndex(GpuTask task, int gpuIndex)
+        {
+            GpuIndicesByTasks_[task] = gpuIndex;
+        }
+};
 
 #endif
