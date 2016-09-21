@@ -60,6 +60,7 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/readinp.h"
+#include "gromacs/hardware/hardwareassign.h" //for TaskPreferences
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/mdrun.h"
@@ -312,8 +313,7 @@ int gmx_mdrun(int argc, char *argv[])
      * since declarations follow below.
      */
     gmx_hw_opt_t    hw_opt = {
-        0, 0, 0, 0, threadaffSEL, 0, 0,
-        { NULL, FALSE, 0, NULL }
+        0, 0, 0, 0, threadaffSEL, 0, 0, {} // this init is wonky, won't complain if you add members to the structure
     };
 
     t_pargs         pa[] = {
@@ -460,6 +460,9 @@ int gmx_mdrun(int argc, char *argv[])
 
     hw_opt.thread_affinity = nenum(thread_aff_opt);
 
+    hw_opt.gpu_opt.taskPreferences.reset(new TaskPreferences);
+    hw_opt.gpu_opt.taskPreferences->set(GpuTask::NB, static_cast<DevicePreference>(nenum(nbpu_opt)));
+
     /* now check the -multi and -multidir option */
     if (opt2bSet("-multidir", NFILE, fnm))
     {
@@ -546,7 +549,7 @@ int gmx_mdrun(int argc, char *argv[])
     rc = gmx::mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose,
                        nstglobalcomm, ddxyz, dd_rank_order, npme, rdd, rconstr,
                        dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
-                       nbpu_opt[0], nstlist,
+                       nstlist,
                        nsteps, nstepout, resetstep,
                        nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
                        pforce, cpt_period, max_hours, imdport, Flags);

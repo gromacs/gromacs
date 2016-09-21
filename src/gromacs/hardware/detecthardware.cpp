@@ -56,6 +56,7 @@
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/hardware/taskpreferences.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/simd/support.h"
@@ -299,8 +300,7 @@ check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger   &mdlog,
 void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
-                                      const gmx_hw_opt_t  *hw_opt,
-                                      gmx_bool             bUseGPU)
+                                      const gmx_hw_opt_t  *hw_opt)
 {
     int      npppn;
     char     th_or_proc[STRLEN], th_or_proc_plural[STRLEN], pernode[STRLEN];
@@ -384,7 +384,8 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
         sprintf(th_or_proc, "process");
     }
 
-    if (bUseGPU && hwinfo->gpu_info.n_dev_compatible > 0 &&
+    if (hw_opt->gpu_opt.taskPreferences->definitelyUseGpuForSomething() &&
+        hwinfo->gpu_info.n_dev_compatible > 0 &&
         !bEmulateGPU)
     {
         int  ngpu_comp, ngpu_use;
@@ -543,8 +544,8 @@ int gmx_count_gpu_dev_shared(const gmx_gpu_opt_t *gpu_opt)
 
 /* Count and return the number of unique GPUs (per node) selected.
  *
- * As sharing GPUs among multiple PP ranks is possible when the user passes
- * GPU IDs, the number of GPUs user (per node) can be different from the
+ * As sharing GPUs among multiple ranks is possible when the user passes
+ * GPU IDs, the number of GPUs used (per node) can be different from the
  * number of GPU IDs selected.
  */
 static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
@@ -568,7 +569,7 @@ static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
     {
         int device_id;
 
-        device_id           = gmx_gpu_sharing_supported() ? get_gpu_device_id(gpu_info, gpu_opt, i) : i;
+        device_id           = get_gpu_device_id(gpu_info, gpu_opt, i);
         uniq_ids[device_id] = 1;
     }
     /* Count the devices used. */
@@ -1301,11 +1302,11 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
 
         if (!gmx_multiple_gpu_per_node_supported() && 1 < gpu_opt->n_dev_use)
         {
-            gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per node", getGpuImplementationString());
+            gmx_fatal(FARGS, "The %s implementation only supports using exactly one GPU rank per node", getGpuImplementationString());
         }
         if (!gmx_gpu_sharing_supported() && anyGpuIdIsRepeated(gpu_opt))
         {
-            gmx_fatal(FARGS, "The %s implementation only supports using exactly one PP rank per GPU", getGpuImplementationString());
+            gmx_fatal(FARGS, "The %s implementation only supports using exactly one rank per GPU", getGpuImplementationString());
         }
         if (gpu_opt->n_dev_use == 0)
         {

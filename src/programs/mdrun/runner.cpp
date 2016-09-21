@@ -157,7 +157,6 @@ struct mdrunner_arglist
     const char             *ddcsx;
     const char             *ddcsy;
     const char             *ddcsz;
-    const char             *nbpu_opt;
     int                     nstlist_cmdline;
     gmx_int64_t             nsteps_cmdline;
     int                     nstepout;
@@ -204,7 +203,7 @@ static void mdrunner_start_fn(void *arg)
                       mc.ddxyz, mc.dd_rank_order, mc.npme, mc.rdd,
                       mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                       mc.ddcsx, mc.ddcsy, mc.ddcsz,
-                      mc.nbpu_opt, mc.nstlist_cmdline,
+                      mc.nstlist_cmdline,
                       mc.nsteps_cmdline, mc.nstepout, mc.resetstep,
                       mc.nmultisim, mc.repl_ex_nst, mc.repl_ex_nex, mc.repl_ex_seed, mc.pforce,
                       mc.cpt_period, mc.max_hours, mc.imdport, mc.Flags);
@@ -225,7 +224,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
-                                         const char *nbpu_opt, int nstlist_cmdline,
+                                         int nstlist_cmdline,
                                          gmx_int64_t nsteps_cmdline,
                                          int nstepout, int resetstep,
                                          int nmultisim, int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
@@ -244,7 +243,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     }
 
     /* a few small, one-time, almost unavoidable memory leaks: */
-    snew(mda, 1);
+    mda = new mdrunner_arglist {};
     fnmn = dup_tfn(nfile, fnm);
 
     /* fill the data structure to pass as void pointer to thread start fn */
@@ -269,7 +268,6 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->ddcsx           = ddcsx;
     mda->ddcsy           = ddcsy;
     mda->ddcsz           = ddcsz;
-    mda->nbpu_opt        = nbpu_opt;
     mda->nstlist_cmdline = nstlist_cmdline;
     mda->nsteps_cmdline  = nsteps_cmdline;
     mda->nstepout        = nstepout;
@@ -699,14 +697,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int nstglobalcomm,
              ivec ddxyz, int dd_rank_order, int npme, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
-             const char *ddcsx, const char *ddcsy, const char *ddcsz,
-             const char *nbpu_opt, int nstlist_cmdline,
+             const char *ddcsx, const char *ddcsy, const char *ddcsz, int nstlist_cmdline,
              gmx_int64_t nsteps_cmdline, int nstepout, int resetstep,
              int gmx_unused nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              int imdport, unsigned long Flags)
 {
-    gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD;
+    gmx_bool                  bRerunMD;
     t_inputrec               *inputrec;
     matrix                    box;
     gmx_ddbox_t               ddbox = {0};
@@ -730,8 +727,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int                       nthreads_pme = 1;
     gmx_membed_t *            membed       = NULL;
     gmx_hw_info_t            *hwinfo       = NULL;
-    /* The master rank decides early on bUseGPU and broadcasts this later */
-    gmx_bool                  bUseGPU            = FALSE;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -746,8 +741,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     bool doMembed = opt2bSet("-membed", nfile, fnm);
     bRerunMD     = (Flags & MD_RERUN);
-    bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
-    bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
+
+    hw_opt->gpu_opt.taskPreferences->set(GpuTask::PME, DevicePreference::Cpu); // should it live in gpu_info?
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -756,7 +751,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     /* Detect hardware, gather information. This is an operation that is
      * global for this process (MPI rank). */
-    hwinfo = gmx_detect_hardware(mdlog, cr, bTryUseGPU);
+    const bool tryToUseGpu = hw_opt->gpu_opt.taskPreferences->maybeUseGpuForSomething();
+    hwinfo = gmx_detect_hardware(mdlog, cr, tryToUseGpu);
 
     gmx_print_detected_hardware(fplog, cr, mdlog, hwinfo);
 
@@ -783,28 +779,36 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
             /* Here the master rank decides if all ranks will use GPUs */
-            bUseGPU = (hwinfo->gpu_info.n_dev_compatible > 0 ||
-                       getenv("GMX_EMULATE_GPU") != NULL);
+            bool bNBUseGPU = hw_opt->gpu_opt.taskPreferences->maybeUseGpu(GpuTask::NB) &&
+                (hwinfo->gpu_info.n_dev_compatible > 0 ||
+                 getenv("GMX_EMULATE_GPU") != NULL);
 
             /* TODO add GPU kernels for this and replace this check by:
-             * (bUseGPU && (ir->vdwtype == evdwPME &&
+             * (bNBUseGPU && (ir->vdwtype == evdwPME &&
              *               ir->ljpme_combination_rule == eljpmeLB))
              * update the message text and the content of nbnxn_acceleration_supported.
              */
-            if (bUseGPU &&
+            if (bNBUseGPU &&
                 !nbnxn_gpu_acceleration_supported(mdlog, inputrec, bRerunMD))
             {
                 /* Fallback message printed by nbnxn_acceleration_supported */
-                if (bForceUseGPU)
+                if (hw_opt->gpu_opt.taskPreferences->definitelyUseGpu(GpuTask::NB))
                 {
                     gmx_fatal(FARGS, "GPU acceleration requested, but not supported with the given input settings");
                 }
-                bUseGPU = FALSE;
+                bNBUseGPU = false;
+                hw_opt->gpu_opt.taskPreferences->set(GpuTask::NB, DevicePreference::Cpu);
             }
+            if (bNBUseGPU && hw_opt->gpu_opt.taskPreferences->get(GpuTask::NB) == DevicePreference::Auto)
+            {
+                hw_opt->gpu_opt.taskPreferences->set(GpuTask::NB, DevicePreference::Gpu);
+            }
+            /* hw_opt->gpu_opt.devicePreferences is now final on SIMMASTER */
+            // TODO: switch?
 
             prepare_verlet_scheme(fplog, cr,
                                   inputrec, nstlist_cmdline, mtop, state->box,
-                                  bUseGPU, *hwinfo->cpuInfo);
+                                  bNBUseGPU, *hwinfo->cpuInfo);
         }
         else
         {
@@ -820,7 +824,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                         "      To use a GPU, set the mdp option: cutoff-scheme = Verlet");
             }
 
-            if (bForceUseGPU)
+            if (hw_opt->gpu_opt.taskPreferences->definitelyUseGpuForSomething())
             {
                 gmx_fatal(FARGS, "GPU requested, but can't be used without cutoff-scheme=Verlet");
             }
@@ -859,7 +863,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         hw_opt->nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                  hw_opt,
                                                  inputrec, mtop,
-                                                 mdlog, bUseGPU,
+                                                 mdlog,
+                                                 hw_opt->gpu_opt.taskPreferences->maybeUseGpuForSomething(),
                                                  doMembed);
 
         if (hw_opt->nthreads_tmpi > 1)
@@ -870,7 +875,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                         oenv, bVerbose, nstglobalcomm,
                                         ddxyz, dd_rank_order, npme, rdd, rconstr,
                                         dddlb_opt, dlb_scale, ddcsx, ddcsy, ddcsz,
-                                        nbpu_opt, nstlist_cmdline,
+                                        nstlist_cmdline,
                                         nsteps_cmdline, nstepout, resetstep, nmultisim,
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed, pforce,
                                         cpt_period, max_hours,
@@ -890,12 +895,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         /* now broadcast everything to the non-master nodes/threads: */
         init_parallel(cr, inputrec, mtop);
-
-        /* The master rank decided on the use of GPUs,
-         * broadcast this information to all ranks.
-         */
-        gmx_bcast_sim(sizeof(bUseGPU), &bUseGPU, cr);
     }
+    /* The master rank decided on the use of GPUs, broadcast this information to all ranks. */
+    hw_opt->gpu_opt.taskPreferences->finalize(cr);
 
     if (fplog != NULL)
     {
@@ -948,7 +950,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         npme = 0;
     }
 
-    if (bUseGPU && npme < 0)
+    if (hw_opt->gpu_opt.taskPreferences->definitelyUseGpu(GpuTask::NB) && (npme < 0)) //?!bPMEUseGPU &&
     {
         /* With GPUs we don't automatically use PME-only ranks. PME ranks can
          * improve performance with many threads per GPU, since our OpenMP
@@ -1134,21 +1136,15 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    if (bUseGPU)
-    {
-        /* Select GPU id's to use */
-        gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info, bForceUseGPU,
-                                &hw_opt->gpu_opt);
-    }
-    else
-    {
-        /* Ignore (potentially) manually selected GPUs */
-        hw_opt->gpu_opt.n_dev_use = 0;
-    }
+    /* This chooses node-local GPU ids, also initializes all the rank local GPUs which might be used later */
+    gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info, &hw_opt->gpu_opt);
 
-    /* check consistency across ranks of things like SIMD
+    /* This sorts out the rank-local GPU to task assignment */
+    gmx_select_tasks_gpu_ids(cr, &hw_opt->gpu_opt);
+
+    /* Check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
-    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, bUseGPU);
+    gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt);
 
     /* Now that we know the setup is consistent, check for efficiency */
     check_resource_division_efficiency(hwinfo, hw_opt, Flags & MD_NTOMPSET,
@@ -1203,7 +1199,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
                       getFilenm("-tableb", nfile, fnm),
-                      nbpu_opt,
                       FALSE,
                       pforce);
 
@@ -1294,7 +1289,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                 nthread_local, nullptr);
     }
 
-    /* Initiate PME if necessary,
+    /* Initialize PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
     if (EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype))
     {
