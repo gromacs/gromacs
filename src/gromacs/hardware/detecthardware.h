@@ -89,6 +89,9 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
+/* This parses the user input for manual GPU selection;
+ * allocates gpu_opt->dev_use and sets gpu_opt->bUserSet.
+ */
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 
 /* Check the consistency of hw_opt with hwinfo.

@@ -244,7 +244,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     }
 
     /* a few small, one-time, almost unavoidable memory leaks: */
-    snew(mda, 1);
+    mda = new mdrunner_arglist {};
     fnmn = dup_tfn(nfile, fnm);
 
     /* fill the data structure to pass as void pointer to thread start fn */
@@ -706,7 +706,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              int imdport, unsigned long Flags)
 {
-    gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD;
+    gmx_bool                  bRerunMD;
     t_inputrec               *inputrec;
     matrix                    box;
     gmx_ddbox_t               ddbox = {0};
@@ -730,8 +730,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     int                       nthreads_pme = 1;
     gmx_membed_t *            membed       = NULL;
     gmx_hw_info_t            *hwinfo       = NULL;
-    /* The master rank decides early on bUseGPU and broadcasts this later */
-    gmx_bool                  bUseGPU            = FALSE;
+    /* The master rank decides early on bNBUseGPU and bPMEUseGPU, and broadcasts this later */
+    gmx_bool                  bNBUseGPU             = FALSE;
+    gmx_bool                  bPMEUseGPU            = FALSE;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -746,8 +747,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     bool doMembed = opt2bSet("-membed", nfile, fnm);
     bRerunMD     = (Flags & MD_RERUN);
-    bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
-    bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
+
+    const gmx_bool bNBForceUseGPU  = (strncmp(nbpu_opt, "gpu", 3) == 0);
+    const gmx_bool bPMEForceUseGPU = FALSE;
+    const gmx_bool bForceUseGPU    = bNBForceUseGPU | bPMEForceUseGPU; /* FIXME: this should be a ||, but clang complains about constants */
+    const gmx_bool bNBTryUseGPU    = (strncmp(nbpu_opt, "auto", 4) == 0) || bNBForceUseGPU;
+    const gmx_bool bPMETryUseGPU   = bPMEForceUseGPU;
+    const gmx_bool bTryUseGPU      = bNBTryUseGPU | bPMETryUseGPU; /* FIXME: this should be a ||, but clang complains about constants*/
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -783,28 +789,29 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
             /* Here the master rank decides if all ranks will use GPUs */
-            bUseGPU = (hwinfo->gpu_info.n_dev_compatible > 0 ||
-                       getenv("GMX_EMULATE_GPU") != NULL);
+            bNBUseGPU = (hwinfo->gpu_info.n_dev_compatible > 0 ||
+                         getenv("GMX_EMULATE_GPU") != NULL);
 
             /* TODO add GPU kernels for this and replace this check by:
              * (bUseGPU && (ir->vdwtype == evdwPME &&
              *               ir->ljpme_combination_rule == eljpmeLB))
              * update the message text and the content of nbnxn_acceleration_supported.
              */
-            if (bUseGPU &&
+            if (bNBUseGPU &&
                 !nbnxn_gpu_acceleration_supported(mdlog, inputrec, bRerunMD))
             {
                 /* Fallback message printed by nbnxn_acceleration_supported */
-                if (bForceUseGPU)
+                if (bNBForceUseGPU)
                 {
                     gmx_fatal(FARGS, "GPU acceleration requested, but not supported with the given input settings");
                 }
-                bUseGPU = FALSE;
+                bNBUseGPU = FALSE;
             }
+            bPMEUseGPU  = FALSE;
 
             prepare_verlet_scheme(fplog, cr,
                                   inputrec, nstlist_cmdline, mtop, state->box,
-                                  bUseGPU, *hwinfo->cpuInfo);
+                                  bNBUseGPU, *hwinfo->cpuInfo);
         }
         else
         {
@@ -859,7 +866,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         hw_opt->nthreads_tmpi = get_nthreads_mpi(hwinfo,
                                                  hw_opt,
                                                  inputrec, mtop,
-                                                 mdlog, bUseGPU,
+                                                 mdlog, bNBUseGPU || bPMEUseGPU,
                                                  doMembed);
 
         if (hw_opt->nthreads_tmpi > 1)
@@ -894,8 +901,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* The master rank decided on the use of GPUs,
          * broadcast this information to all ranks.
          */
-        gmx_bcast_sim(sizeof(bUseGPU), &bUseGPU, cr);
+        gmx_bcast_sim(sizeof(bNBUseGPU), &bNBUseGPU, cr);
+        gmx_bcast_sim(sizeof(bPMEUseGPU), &bPMEUseGPU, cr);
     }
+    const gmx_bool bUseGPU = bNBUseGPU || bPMEUseGPU;
 
     if (fplog != NULL)
     {
@@ -948,7 +957,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         npme = 0;
     }
 
-    if (bUseGPU && npme < 0)
+    if (bNBUseGPU && !bPMEUseGPU && (npme < 0))
     {
         /* With GPUs we don't automatically use PME-only ranks. PME ranks can
          * improve performance with many threads per GPU, since our OpenMP
@@ -1135,19 +1144,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 #endif
 
-    if (bUseGPU)
-    {
-        /* Select GPU id's to use */
-        gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info, bForceUseGPU,
-                                &hw_opt->gpu_opt);
-    }
-    else
-    {
-        /* Ignore (potentially) manually selected GPUs */
-        hw_opt->gpu_opt.n_dev_use = 0;
-    }
+    /* This chooses node-local GPU ids, also initializes all the rank local GPUs which might be used later */
+    gmx_select_rank_gpu_ids(mdlog, cr, &hwinfo->gpu_info, bForceUseGPU, bNBUseGPU, bPMEUseGPU, &hw_opt->gpu_opt);
 
-    /* check consistency across ranks of things like SIMD
+    /* This sorts out the rank-local GPU to task assignment */
+    gmx_select_tasks_gpu_ids(cr, &hw_opt->gpu_opt, bNBUseGPU, bPMEUseGPU);
+
+    /* Check consistency across ranks of things like SIMD
      * support and number of GPUs selected */
     gmx_check_hw_runconf_consistency(mdlog, hwinfo, cr, hw_opt, bUseGPU);
 
@@ -1295,7 +1298,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                 nthread_local, nullptr);
     }
 
-    /* Initiate PME if necessary,
+    /* Initialize PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
     if (EEL_PME(inputrec->coulombtype) || EVDW_PME(inputrec->vdwtype))
     {

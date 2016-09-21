@@ -81,12 +81,12 @@ class ThreadAffinityTestHelper
         }
         void setAffinityOption(int affinityOption)
         {
-            hwOpt_->thread_affinity = affinityOption;
+            hwOpt_.get()->thread_affinity = affinityOption;
         }
         void setOffsetAndStride(int offset, int stride)
         {
-            hwOpt_->core_pinning_offset = offset;
-            hwOpt_->core_pinning_stride = stride;
+            hwOpt_.get()->core_pinning_offset = offset;
+            hwOpt_.get()->core_pinning_stride = stride;
         }
 
         void setLogicalProcessorCount(int logicalProcessorCount);
@@ -116,13 +116,13 @@ class ThreadAffinityTestHelper
                 setLogicalProcessorCount(1);
             }
             MDLogger mdlog;
-            gmx_set_thread_affinity(nullptr, mdlog, cr_, hwOpt_, *hwTop_,
+            gmx_set_thread_affinity(nullptr, mdlog, cr_, hwOpt_.get(), *hwTop_,
                                     nthread_local, &affinityAccess_);
         }
 
     private:
         t_commrec                         *cr_;
-        gmx_hw_opt_t                      *hwOpt_;
+        std::unique_ptr<gmx_hw_opt_t>      hwOpt_;
         std::unique_ptr<HardwareTopology>  hwTop_;
         MockThreadAffinityAccess           affinityAccess_;
 };
