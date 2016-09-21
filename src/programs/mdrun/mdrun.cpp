@@ -312,8 +312,7 @@ int gmx_mdrun(int argc, char *argv[])
      * since declarations follow below.
      */
     gmx_hw_opt_t    hw_opt = {
-        0, 0, 0, 0, threadaffSEL, 0, 0,
-        { NULL, FALSE, 0, NULL }
+        0, 0, 0, 0, threadaffSEL, 0, 0, {} // this init is wonky, won't complain if you add members to the structure
     };
 
     t_pargs         pa[] = {
