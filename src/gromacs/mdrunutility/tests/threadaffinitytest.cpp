@@ -65,7 +65,8 @@ MockThreadAffinityAccess::~MockThreadAffinityAccess()
 }
 
 
-ThreadAffinityTestHelper::ThreadAffinityTestHelper()
+ThreadAffinityTestHelper::ThreadAffinityTestHelper() : hwOpt_(new gmx_hw_opt_t {}
+                                                              )
 {
     snew(cr_, 1);
     cr_->nnodes         = gmx_node_num();
@@ -75,14 +76,12 @@ ThreadAffinityTestHelper::ThreadAffinityTestHelper()
 #if GMX_MPI
     cr_->mpi_comm_mysim = MPI_COMM_WORLD;
 #endif
-    snew(hwOpt_, 1);
     hwOpt_->thread_affinity = threadaffAUTO;
 }
 
 ThreadAffinityTestHelper::~ThreadAffinityTestHelper()
 {
     sfree(cr_);
-    sfree(hwOpt_);
 }
 
 void ThreadAffinityTestHelper::setLogicalProcessorCount(int logicalProcessorCount)
