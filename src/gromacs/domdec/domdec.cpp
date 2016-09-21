@@ -5403,11 +5403,9 @@ void dd_setup_dlb_resource_sharing(t_commrec           gmx_unused *cr,
     gmx_domdec_t *dd;
     MPI_Comm      mpi_comm_pp_physicalnode;
 
-    if (!(cr->duty & DUTY_PP) || hw_opt->gpu_opt.n_dev_use == 0)
+    if (hw_opt->gpu_opt.n_dev_use == 0)
     {
-        /* Only PP nodes (currently) use GPUs.
-         * If we don't have GPUs, there are no resources to share.
-         */
+        /* If we don't have GPUs, there are no resources to share.*/
         return;
     }
 
