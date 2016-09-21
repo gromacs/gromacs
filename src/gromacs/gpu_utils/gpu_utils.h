@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,11 +77,11 @@ int detect_gpus(struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info), char *GPU_FU
 /*! \brief Select the compatible GPUs
  *
  * This function selects the compatible gpus and initializes
- * gpu_info->dev_use and gpu_info->n_dev_use.
+ * gpu_info->dev_compatible and gpu_info->n_dev_compatible.
  *
  * Given the list of GPUs available in the system check each device in
  * gpu_info->gpu_dev and place the indices of the compatible GPUs into
- * dev_use with this marking the respective GPUs as "available for use."
+ * dev_compatible with this marking the respective GPUs as "available for use."
  * Note that \p detect_gpus must have been called before.
  *
  * \param[in]     gpu_info    pointer to structure holding GPU information
@@ -108,7 +108,7 @@ gmx_bool check_selected_gpus(int *GPU_FUNC_ARGUMENT(checkres),
                              const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
                              gmx_gpu_opt_t *GPU_FUNC_ARGUMENT(gpu_opt)) GPU_FUNC_TERM_WITH_RETURN(-1)
 
-/*! \brief Frees the gpu_dev and dev_use array fields of \p gpu_info.
+/*! \brief Frees the gpu_dev array fields of \p gpu_info.
  *
  * \param[in]    gpu_info    pointer to structure holding GPU information
  */
@@ -117,7 +117,7 @@ void free_gpu_info(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info)) GPU
 
 /*! \brief Initializes the GPU with the given index.
  *
- * The varible \p mygpu is the index of the GPU to initialize in the
+ * The variable \p mygpu is the index of the GPU to initialize in the
  * gpu_info.gpu_dev array.
  *
  * \param      mdlog        log file to write to
@@ -134,6 +134,27 @@ gmx_bool init_gpu(const gmx::MDLogger &GPU_FUNC_ARGUMENT(mdlog),
                   char *GPU_FUNC_ARGUMENT(result_str),
                   const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
                   const gmx_gpu_opt_t *GPU_FUNC_ARGUMENT(gpu_opt)) GPU_FUNC_TERM_WITH_RETURN(-1)
+
+/*! \brief Switches to the already initialized GPU context with the given index.
+ *
+ * This does nothing on OpenCL builds as there is only a single context.
+ * The variable \p mygpu is the index of the GPU to switch to in the
+ * gpu_info.gpu_dev array.
+ *
+ * \param      mdlog        log file to write to
+ * \param[in]  mygpu        index of the GPU to switch to
+ * \param[out] result_str   the message related to the error that occurred
+ *                          during the switching (if there was any).
+ * \param[in] gpu_info      GPU info of all detected devices in the system.
+ * \param[in] gpu_opt       options for using the GPUs in gpu_info
+ * \returns                 true if no error occurs during the switching
+ */
+CUDA_FUNC_QUALIFIER
+gmx_bool switch_gpu(const gmx::MDLogger &CUDA_FUNC_ARGUMENT(mdlog),
+                    int CUDA_FUNC_ARGUMENT(mygpu),
+                    char *CUDA_FUNC_ARGUMENT(result_str),
+                    const struct gmx_gpu_info_t *CUDA_FUNC_ARGUMENT(gpu_info),
+                    const gmx_gpu_opt_t *CUDA_FUNC_ARGUMENT(gpu_opt)) CUDA_FUNC_TERM_WITH_RETURN(-1)
 
 /*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
  *
@@ -165,8 +186,7 @@ int get_current_cuda_gpu_device_id(void) CUDA_FUNC_TERM_WITH_RETURN(-1)
 /*! \brief Returns an identifier for the GPU with a given index into the array of used GPUs.
  *
  * Getter function which, given an index into the array of GPUs in use
- * (dev_use) -- typically an MPI rank --, returns an identifier of the
- * respective GPU.
+ * (dev_use), returns an identifier of the respective GPU.
  *
  * \param[in]    gpu_info   Pointer to structure holding GPU information
  * \param[in]    gpu_opt    Pointer to structure holding GPU options
@@ -181,8 +201,7 @@ int get_gpu_device_id(const struct gmx_gpu_info_t *GPU_FUNC_ARGUMENT(gpu_info),
 /*! \brief Returns the name for the OpenCL GPU with a given index into the array of used GPUs.
  *
  * Getter function which, given an index into the array of GPUs in use
- * (dev_use) -- typically a tMPI/MPI rank --, returns the device name for the
- * respective OpenCL GPU.
+ * (dev_use), returns the device name for the respective OpenCL GPU.
  *
  * \param[in]    gpu_info   Pointer to structure holding GPU information
  * \param[in]    gpu_opt    Pointer to structure holding GPU options

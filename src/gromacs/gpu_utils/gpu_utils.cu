@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -448,7 +448,6 @@ gmx_bool init_gpu(const gmx::MDLogger &mdlog, int mygpu, char *result_str,
                   const struct gmx_gpu_info_t *gpu_info,
                   const struct gmx_gpu_opt_t *gpu_opt)
 {
-    cudaError_t stat;
     char        sbuf[STRLEN];
     int         gpuid;
 
@@ -465,8 +464,7 @@ gmx_bool init_gpu(const gmx::MDLogger &mdlog, int mygpu, char *result_str,
 
     gpuid = gpu_info->gpu_dev[gpu_opt->dev_use[mygpu]].id;
 
-    stat = cudaSetDevice(gpuid);
-    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
+    gmx_bool res = switch_gpu(mdlog, mygpu, result_str, gpu_info, gpu_opt);
 
     if (debug)
     {
@@ -474,10 +472,29 @@ gmx_bool init_gpu(const gmx::MDLogger &mdlog, int mygpu, char *result_str,
     }
 
     //Ignoring return value as NVML errors should be treated not critical.
-    if (stat == cudaSuccess)
+    if (res)
     {
         init_gpu_application_clocks(mdlog, gpuid, gpu_info);
     }
+    return res;
+}
+
+gmx_bool switch_gpu(const gmx::MDLogger gmx_unused &mdlog, int mygpu, char *result_str,
+                    const struct gmx_gpu_info_t *gpu_info,
+                    const struct gmx_gpu_opt_t *gpu_opt)
+{
+    cudaError_t stat;
+    int         gpuid;
+
+    assert(gpu_info);
+    assert(result_str);
+    assert(mygpu >= 0 && mygpu < gpu_opt->n_dev_use);
+
+    gpuid = gpu_info->gpu_dev[gpu_opt->dev_use[mygpu]].id;
+
+    stat = cudaSetDevice(gpuid);
+    strncpy(result_str, cudaGetErrorString(stat), STRLEN);
+
     return (stat == cudaSuccess);
 }
 

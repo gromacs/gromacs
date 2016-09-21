@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include "gromacs/gpu_utils/pmalloc_cuda.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/hardware/hardwareassign.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/nb_verlet.h"
@@ -580,7 +581,6 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
                     const gmx_gpu_opt_t       *gpu_opt,
                     const interaction_const_t *ic,
                     nonbonded_verlet_group_t  *nbv_grp,
-                    int                        my_gpu_index,
                     int                        /*rank*/,
                     gmx_bool                   bLocalAndNonlocal)
 {
@@ -616,6 +616,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
     init_plist(nb->plist[eintLocal]);
 
     /* set device info, just point it to the right GPU among the detected ones */
+    const int my_gpu_index = gpu_opt->gpuTasks->gpuIndex(GpuTask::NB);
     nb->dev_info = &gpu_info->gpu_dev[get_gpu_device_id(gpu_info, gpu_opt, my_gpu_index)];
 
     /* local/non-local GPU streams */
