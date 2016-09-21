@@ -106,10 +106,10 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  tabfn       Table potential file for non-bonded interactions
  * \param[in]  tabpfn      Table potential file for pair interactions
  * \param[in]  tabbfnm     Table potential files for bonded interactions
- * \param[in]  nbpu_opt    Nonbonded Processing Unit (GPU/CPU etc.)
  * \param[in]  bNoSolvOpt  Do not use solvent optimization
  * \param[in]  print_force Print forces for atoms with force >= print_force
  */
+enum class DevicePreference;
 void init_forcerec(FILE                   *fplog,
                    const gmx::MDLogger    &mdlog,
                    t_forcerec             *fr,
@@ -121,7 +121,6 @@ void init_forcerec(FILE                   *fplog,
                    const char             *tabfn,
                    const char             *tabpfn,
                    const t_filenm         *tabbfnm,
-                   const char             *nbpu_opt,
                    gmx_bool                bNoSolvOpt,
                    real                    print_force);
 

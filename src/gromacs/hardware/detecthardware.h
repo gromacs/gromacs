@@ -90,6 +90,9 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
+/* This parses the user input for manual GPU selection;
+ * allocates gpu_opt->dev_use and sets gpu_opt->bUserSet.
+ */
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 
 /* Check the consistency of hw_opt with hwinfo.
@@ -97,8 +100,7 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
 void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
                                       const gmx_hw_info_t *hwinfo,
                                       const t_commrec     *cr,
-                                      const gmx_hw_opt_t  *hw_opt,
-                                      gmx_bool             bUseGPU);
+                                      const gmx_hw_opt_t  *hw_opt);
 
 /* Check whether a GPU is shared among ranks, and return the number of shared
    gpus

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,8 @@
 #ifndef GMX_HARDWARE_GPU_HW_INFO_H
 #define GMX_HARDWARE_GPU_HW_INFO_H
 
+#include <memory>
+
 #include "gromacs/utility/basedefinitions.h"
 
 #ifdef __cplusplus
@@ -45,6 +47,8 @@ extern "C" {
 #endif
 
 struct gmx_device_info_t;
+class GpuTaskManager;
+class TaskPreferences;
 
 /* Possible results of the GPU detection/check.
  *
@@ -70,7 +74,7 @@ struct gmx_gpu_info_t
 };
 
 /* GPU device selection information -- includes either CUDA or OpenCL devices */
-typedef struct gmx_gpu_opt_t
+struct gmx_gpu_opt_t
 {
     char     *gpu_id;           /* GPU id's to use, each specified as chars */
     gmx_bool  bUserSet;         /* true if the GPUs in dev_use are manually provided by the user */
@@ -78,8 +82,21 @@ typedef struct gmx_gpu_opt_t
     int       n_dev_compatible; /* number of compatible GPU devices that could be used */
     int      *dev_compatible;   /* array of compatible GPU device IDs, from which automatic selection occurs */
     int       n_dev_use;        /* number of GPU devices selected to be used, either by the user or automatically */
-    int      *dev_use;          /* array mapping from PP rank index to GPU device ID; GPU IDs can be listed multiple times when ranks share them */
-} gmx_gpu_opt_t;
+    int      *dev_use;          /* array of GPU device IDs, sorted by ranks on this node.
+                                 * GPU IDs can be listed multiple times when ranks share them.
+                                 * Each rank gets its ids by dev_use[dev_use_index; dev_use_index + dev_use_count)
+                                 * This is initialized by gmx_select_rank_gpu_ids().
+                                 */
+
+    std::shared_ptr<TaskPreferences> taskPreferences;
+
+
+    /* This is rank-local information on GPU-to-rank assignment */
+    int                             dev_use_index;      /* rank-local index into gpu_opt->dev_use GPU id array */
+    int                             dev_use_count;      /* rank-local count of this rank's GPU tasks for accessing gpu_opt->dev_use */
+    int                             dev_use_count_node; /* node-local total intranode count of GPU tasks used - sum of dev_use_count */
+    std::shared_ptr<GpuTaskManager> gpuTasks;           /* assignment of GPUs to tasks */
+};
 
 #ifdef __cplusplus
 }
