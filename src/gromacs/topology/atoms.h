@@ -49,12 +49,6 @@ enum {
     eptAtom, eptNucleus, eptShell, eptBond, eptVSite, eptNR
 };
 
-/* Flags for optional entries in the t_atoms struct */
-#define T_ATOMS_MASS       (1 << 0)
-#define T_ATOMS_ATOMTYPE   (1 << 1)
-#define T_ATOMS_ATOMTYPEB  (1 << 2)
-#define T_ATOMS_PDBINFO    (1 << 3)
-
 /* The particle type names */
 extern const char *ptype_str[eptNR+1];
 
@@ -109,7 +103,6 @@ typedef struct t_grps
 
 typedef struct t_atoms
 {
-    int          flags;         /* Flags using the T_ATOMS bit above    */
     int          nr;            /* Nr of atoms                          */
     t_atom      *atom;          /* Array of atoms (dim: nr)             */
                                 /* The following entries will not       */
@@ -123,6 +116,12 @@ typedef struct t_atoms
     int          nres;          /* The number of resinfo entries        */
     t_resinfo   *resinfo;       /* Array of residue names and numbers   */
     t_pdbinfo   *pdbinfo;       /* PDB Information, such as aniso. Bfac */
+
+    gmx_bool     haveMass;      /* Mass available for all atoms         */
+    gmx_bool     haveCharge;    /* Charge available for all atoms       */
+    gmx_bool     haveType;      /* Atom type available for all atoms    */
+    gmx_bool     haveBState;    /* B-state parameters set for all atoms */
+    gmx_bool     havePdbInfo;   /* pdbinfo available                    */
 } t_atoms;
 
 typedef struct t_atomtypes
@@ -168,5 +167,11 @@ void pr_atomtypes(FILE *fp, int indent, const char *title,
                   const t_atomtypes *atomtypes, gmx_bool bShowNumbers);
 
 void cmp_atoms(FILE *fp, const t_atoms *a1, const t_atoms *a2, real ftol, real abstol);
+
+/*! \brief Set mass for each atom using the atom and residue names using a database
+ *
+ * If atoms->haveMass = TRUE does nothing.
+ */
+void atomsSetMassesBasedOnNames(t_atoms *atoms);
 
 #endif

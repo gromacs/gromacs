@@ -646,7 +646,7 @@ check_atomtype(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */
 {
     bool bOk;
 
-    bOk = (top != NULL && (top->atoms.flags & T_ATOMS_ATOMTYPE));
+    bOk = (top != NULL && (top->atoms.haveType));
     if (!bOk)
     {
         GMX_THROW(gmx::InconsistentInputError("Atom types not available in topology"));

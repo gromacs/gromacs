@@ -2414,11 +2414,15 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
     }
     if (bRead)
     {
-        atoms->flags = T_ATOMS_MASS;
-        if (file_version > 20)
-        {
-            atoms->flags |= (T_ATOMS_ATOMTYPE | T_ATOMS_ATOMTYPEB);
-        }
+        /* Since we have always written all t_atom properties in the tpr file
+         * (at least for all backward compatible versions), we don't store
+         * but simple set the booleans here.
+         */
+        atoms->haveMass    = TRUE;
+        atoms->haveCharge  = TRUE;
+        atoms->haveType    = TRUE;
+        atoms->haveBState  = TRUE;
+        atoms->havePdbInfo = FALSE;
 
         snew(atoms->atom, atoms->nr);
         snew(atoms->atomname, atoms->nr);
@@ -2433,8 +2437,7 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
     }
     else
     {
-        int tprRequiredBits = (T_ATOMS_MASS | T_ATOMS_ATOMTYPE | T_ATOMS_ATOMTYPEB);
-        GMX_RELEASE_ASSERT((atoms->flags & tprRequiredBits) == tprRequiredBits, "Mass, atomtype and atomtypeB should be present in t_atoms when writing a tpr file");
+        GMX_RELEASE_ASSERT(atoms->haveMass && atoms->haveCharge && atoms->haveType && atoms->haveBState, "Mass, charge, atomtype and B-state parameters should be present in t_atoms when writing a tpr file");
     }
     for (i = 0; (i < atoms->nr); i++)
     {
@@ -2443,11 +2446,8 @@ static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *sy
     do_strstr(fio, atoms->nr, atoms->atomname, bRead, symtab);
     do_strstr(fio, atoms->nr, atoms->atomtype, bRead, symtab);
     do_strstr(fio, atoms->nr, atoms->atomtypeB, bRead, symtab);
-    if (atoms->flags & T_ATOMS_ATOMTYPE)
-    {
-        do_strstr(fio, atoms->nr, atoms->atomtype, bRead, symtab);
-        do_strstr(fio, atoms->nr, atoms->atomtypeB, bRead, symtab);
-    }
+    do_strstr(fio, atoms->nr, atoms->atomtype, bRead, symtab);
+    do_strstr(fio, atoms->nr, atoms->atomtypeB, bRead, symtab);
     do_resinfo(fio, atoms->nres, atoms->resinfo, bRead, symtab, file_version);
 
     if (file_version < 57)

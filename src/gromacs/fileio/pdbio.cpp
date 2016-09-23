@@ -870,11 +870,11 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
         clear_mat(box);
     }
 
-    atoms->flags = 0;
-    if (atoms->pdbinfo)
-    {
-        atoms->flags |= T_ATOMS_PDBINFO;
-    }
+    atoms->haveMass    = FALSE;
+    atoms->haveCharge  = FALSE;
+    atoms->haveType    = FALSE;
+    atoms->haveBState  = FALSE;
+    atoms->havePdbInfo = (atoms->pdbinfo != NULL);
 
     bCOMPND  = FALSE;
     title[0] = '\0';

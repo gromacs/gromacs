@@ -779,22 +779,37 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
     int srcnr  = src->nr;
     int destnr = dest->nr;
 
-    dest->flags = src->flags;
+    if (src->nr == 0)
+    {
+        dest->haveMass    = src->haveMass;
+        dest->haveType    = src->haveType;
+        dest->haveCharge  = src->haveCharge;
+        dest->haveBState  = src->haveBState;
+        dest->havePdbInfo = src->havePdbInfo;
+    }
+    else
+    {
+        dest->haveMass    = dest->haveMass    || src->haveMass;
+        dest->haveType    = dest->haveType    || src->haveType;
+        dest->haveCharge  = dest->haveCharge  || src->haveCharge;
+        dest->haveBState  = dest->haveBState  || src->haveBState;
+        dest->havePdbInfo = dest->havePdbInfo || src->havePdbInfo;
+    }
 
     if (srcnr)
     {
         size = destnr+copies*srcnr;
         srenew(dest->atom, size);
         srenew(dest->atomname, size);
-        if (dest->flags & T_ATOMS_ATOMTYPE)
+        if (dest->haveType)
         {
             srenew(dest->atomtype, size);
+            if (dest->haveBState)
+            {
+                srenew(dest->atomtypeB, size);
+            }
         }
-        if (dest->flags & T_ATOMS_ATOMTYPEB)
-        {
-            srenew(dest->atomtypeB, size);
-        }
-        if (dest->flags & T_ATOMS_PDBINFO)
+        if (dest->havePdbInfo)
         {
             srenew(dest->pdbinfo, size);
         }
@@ -818,17 +833,17 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
                (size_t)(srcnr*sizeof(src->atom[0])));
         memcpy((char *) &(dest->atomname[l]), (char *) &(src->atomname[0]),
                (size_t)(srcnr*sizeof(src->atomname[0])));
-        if (dest->flags & T_ATOMS_ATOMTYPE)
+        if (dest->haveType)
         {
             memcpy((char *) &(dest->atomtype[l]), (char *) &(src->atomtype[0]),
                    (size_t)(srcnr*sizeof(src->atomtype[0])));
+            if (dest->haveBState)
+            {
+                memcpy((char *) &(dest->atomtypeB[l]), (char *) &(src->atomtypeB[0]),
+                       (size_t)(srcnr*sizeof(src->atomtypeB[0])));
+            }
         }
-        if (dest->flags & T_ATOMS_ATOMTYPEB)
-        {
-            memcpy((char *) &(dest->atomtypeB[l]), (char *) &(src->atomtypeB[0]),
-                   (size_t)(srcnr*sizeof(src->atomtypeB[0])));
-        }
-        if (dest->flags & T_ATOMS_PDBINFO)
+        if (dest->havePdbInfo)
         {
             memcpy((char *) &(dest->pdbinfo[l]), (char *) &(src->pdbinfo[0]),
                    (size_t)(srcnr*sizeof(src->pdbinfo[0])));

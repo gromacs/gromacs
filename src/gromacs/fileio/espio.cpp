@@ -179,7 +179,11 @@ void gmx_espresso_read_conf(const char *infile,
 
     clear_mat(box);
 
-    atoms->flags = 0;
+    atoms->haveMass    = FALSE;
+    atoms->haveCharge  = FALSE;
+    atoms->haveType    = FALSE;
+    atoms->haveBState  = FALSE;
+    atoms->havePdbInfo = FALSE;
 
     fp = gmx_fio_fopen(infile, "r");
 
