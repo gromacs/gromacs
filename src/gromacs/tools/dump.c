@@ -257,6 +257,7 @@ static void list_trn(const char *fn)
             {
                 pr_rvecs(stdout, indent, "f", f, trn.natoms);
                 pr_rvecs(stdout, indent, "vir", vir, trn.natoms);
+		pr_reals_of_dim(stdout, indent, "ener", pener, trn.natoms,1); 
             }
         }
         else
