@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -113,57 +113,11 @@ class ObsoleteToolModule : public gmx::ICommandLineModule
         const char             *name_;
 };
 
-// TODO: Consider removing duplication with CMainCommandLineModule from
-// cmdlinemodulemanager.cpp.
-class NoNiceModule : public gmx::ICommandLineModule
+//! Initializer for a module that defaults to nice level zero.
+void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
 {
-    public:
-        //! \copydoc gmx::CommandLineModuleManager::CMainFunction
-        typedef gmx::CommandLineModuleManager::CMainFunction CMainFunction;
-
-        /*! \brief
-         * Creates a wrapper module for the given main function.
-         *
-         * \param[in] name             Name for the module.
-         * \param[in] shortDescription One-line description for the module.
-         * \param[in] mainFunction     Main function to wrap.
-         *
-         * Does not throw.
-         */
-        NoNiceModule(const char *name, const char *shortDescription,
-                     CMainFunction mainFunction)
-            : name_(name), shortDescription_(shortDescription),
-              mainFunction_(mainFunction)
-        {
-        }
-
-        virtual const char *name() const
-        {
-            return name_;
-        }
-        virtual const char *shortDescription() const
-        {
-            return shortDescription_;
-        }
-
-        virtual void init(gmx::CommandLineModuleSettings *settings)
-        {
-            settings->setDefaultNiceLevel(0);
-        }
-        virtual int run(int argc, char *argv[])
-        {
-            return mainFunction_(argc, argv);
-        }
-        virtual void writeHelp(const gmx::CommandLineHelpContext &context) const
-        {
-            writeCommandLineHelpCMain(context, name_, mainFunction_);
-        }
-
-    private:
-        const char             *name_;
-        const char             *shortDescription_;
-        CMainFunction           mainFunction_;
-};
+    settings->setDefaultNiceLevel(0);
+}
 
 /*! \brief
  * Convenience function for creating and registering a module.
@@ -193,9 +147,8 @@ void registerModuleNoNice(gmx::CommandLineModuleManager                *manager,
                           gmx::CommandLineModuleManager::CMainFunction  mainFunction,
                           const char *name, const char *shortDescription)
 {
-    gmx::CommandLineModulePointer module(
-            new NoNiceModule(name, shortDescription, mainFunction));
-    manager->addModule(std::move(module));
+    manager->addModuleCMainWithSettings(name, shortDescription, mainFunction,
+                                        &initSettingsNoNice);
 }
 
 /*! \brief

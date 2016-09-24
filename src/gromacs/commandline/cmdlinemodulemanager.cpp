@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,6 +90,8 @@ class CMainCommandLineModule : public ICommandLineModule
     public:
         //! \copydoc gmx::CommandLineModuleManager::CMainFunction
         typedef CommandLineModuleManager::CMainFunction CMainFunction;
+        //! \copydoc gmx::CommandLineModuleManager::InitSettingsFunction
+        typedef CommandLineModuleManager::InitSettingsFunction InitSettingsFunction;
 
         /*! \brief
          * Creates a wrapper module for the given main function.
@@ -97,14 +99,16 @@ class CMainCommandLineModule : public ICommandLineModule
          * \param[in] name             Name for the module.
          * \param[in] shortDescription One-line description for the module.
          * \param[in] mainFunction     Main function to wrap.
+         * \param[in] settingsFunction Initializer for settings (can be null).
          *
          * Does not throw.  This is essential for correct implementation of
          * CommandLineModuleManager::runAsMainCMain().
          */
         CMainCommandLineModule(const char *name, const char *shortDescription,
-                               CMainFunction mainFunction)
+                               CMainFunction mainFunction,
+                               InitSettingsFunction settingsFunction)
             : name_(name), shortDescription_(shortDescription),
-              mainFunction_(mainFunction)
+              mainFunction_(mainFunction), settingsFunction_(settingsFunction)
         {
         }
 
@@ -117,8 +121,12 @@ class CMainCommandLineModule : public ICommandLineModule
             return shortDescription_;
         }
 
-        virtual void init(CommandLineModuleSettings * /*settings*/)
+        virtual void init(CommandLineModuleSettings *settings)
         {
+            if (settingsFunction_ != nullptr)
+            {
+                settingsFunction_(settings);
+            }
         }
         virtual int run(int argc, char *argv[])
         {
@@ -133,6 +141,7 @@ class CMainCommandLineModule : public ICommandLineModule
         const char             *name_;
         const char             *shortDescription_;
         CMainFunction           mainFunction_;
+        InitSettingsFunction    settingsFunction_;
 };
 
 //! \}
@@ -467,7 +476,18 @@ void CommandLineModuleManager::addModuleCMain(
         CMainFunction mainFunction)
 {
     CommandLineModulePointer module(
-            new CMainCommandLineModule(name, shortDescription, mainFunction));
+            new CMainCommandLineModule(name, shortDescription, mainFunction,
+                                       nullptr));
+    addModule(std::move(module));
+}
+
+void CommandLineModuleManager::addModuleCMainWithSettings(
+        const char *name, const char *shortDescription,
+        CMainFunction mainFunction, InitSettingsFunction settingsFunction)
+{
+    CommandLineModulePointer module(
+            new CMainCommandLineModule(name, shortDescription, mainFunction,
+                                       settingsFunction));
     addModule(std::move(module));
 }
 
@@ -593,7 +613,16 @@ int CommandLineModuleManager::runAsMainSingleModule(
 int CommandLineModuleManager::runAsMainCMain(
         int argc, char *argv[], CMainFunction mainFunction)
 {
-    CMainCommandLineModule module(argv[0], NULL, mainFunction);
+    CMainCommandLineModule module(argv[0], nullptr, mainFunction, nullptr);
+    return runAsMainSingleModule(argc, argv, &module);
+}
+
+// static
+int CommandLineModuleManager::runAsMainCMainWithSettings(
+        int argc, char *argv[], CMainFunction mainFunction,
+        InitSettingsFunction settingsFunction)
+{
+    CMainCommandLineModule module(argv[0], nullptr, mainFunction, settingsFunction);
     return runAsMainSingleModule(argc, argv, &module);
 }
 
