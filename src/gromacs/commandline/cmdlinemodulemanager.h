@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@ namespace gmx
 
 class CommandLineModuleGroup;
 class CommandLineModuleGroupData;
+class CommandLineModuleSettings;
 class CommandLineProgramContext;
 class ICommandLineModule;
 class IFileOutputRedirector;
@@ -96,6 +97,8 @@ class CommandLineModuleManager
     public:
         //! Function pointer type for a C main function.
         typedef int (*CMainFunction)(int argc, char *argv[]);
+        //! Function pointer to a settings provider.
+        typedef void (*InitSettingsFunction)(CommandLineModuleSettings *settings);
 
         /*! \brief
          * Implements a main() method that runs a single module.
@@ -160,6 +163,17 @@ class CommandLineModuleManager
          */
         static int runAsMainCMain(int argc, char *argv[],
                                   CMainFunction mainFunction);
+        /*! \brief
+         * Implements a main() method that runs a given function with custom
+         * settings.
+         *
+         * This method does the same as runAsMainCMain(), but additionally
+         * calls \p settingsFunction to initialize CommandLineModuleSettings.
+         * This allows specifying, e.g., a different default nice level.
+         */
+        static int runAsMainCMainWithSettings(int argc, char *argv[],
+                                              CMainFunction mainFunction,
+                                              InitSettingsFunction settingsFunction);
 
         /*! \brief
          * Initializes a command-line module manager.
@@ -260,6 +274,17 @@ class CommandLineModuleManager
          */
         void addModuleCMain(const char *name, const char *shortDescription,
                             CMainFunction mainFunction);
+        /*! \brief
+         * Adds a module that runs a given main()-like function with custom
+         * settings.
+         *
+         * This method does the same as runAsMainCMain(), but additionally
+         * calls \p settingsFunction to initialize CommandLineModuleSettings.
+         * This allows specifying, e.g., a different default nice level.
+         */
+        void addModuleCMainWithSettings(const char *name, const char *shortDescription,
+                                        CMainFunction mainFunction,
+                                        InitSettingsFunction settingsFunction);
         /*! \brief
          * Registers a module of a certain type to this manager.
          *
