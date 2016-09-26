@@ -56,6 +56,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
@@ -815,7 +816,14 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     if (!pme_lb->bSepPMERanks)
     {
-        if (pme_lb->setup[pme_lb->cur].pmedata == NULL)
+        /* FIXME:
+         * CPU PME keeps a list of allocated pmedata's, that's why pme_lb->setup[pme_lb->cur].pmedata is not always NULL.
+         * GPU PME, however, currently needs the gmx_pme_reinit always called on load balancing
+         * (pme_gpu_reinit might be not sufficiently decoupled from gmx_pme_init).
+         * This can lead to a lot of reallocations for PME GPU.
+         * Would be nicer if the allocated grid list was hidden within a single pmedata structure.
+         */
+        if ((pme_lb->setup[pme_lb->cur].pmedata == NULL) || pme_gpu_enabled(pme_lb->setup[pme_lb->cur].pmedata))
         {
             /* Generate a new PME data structure,
              * copying part of the old pointers.

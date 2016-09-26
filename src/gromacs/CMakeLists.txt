@@ -154,6 +154,7 @@ if (GMX_USE_CUDA)
     # with keywords otherwise...
     set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
     cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
+    cuda_add_cufft_to_target(libgromacs)
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
