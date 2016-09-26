@@ -75,6 +75,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
+#include "pme.h"
 
 /*! \brief Parameters and settings for one PP-PME setup */
 struct pme_setup_t {
@@ -815,7 +816,14 @@ pme_load_balance(pme_load_balancing_t      *pme_lb,
 
     if (!pme_lb->bSepPMERanks)
     {
-        if (pme_lb->setup[pme_lb->cur].pmedata == NULL)
+        /* FIXME:
+         * CPU PME keeps a list of allocated pmedata's, that's why pme_lb->setup[pme_lb->cur].pmedata is not always NULL.
+         * GPU PME, however, currently needs the gmx_pme_reinit always called on load balancing
+         * (pme_gpu_reinit might be not sufficiently decoupled from gmx_pme_init).
+         * This can lead to a lot of reallocations for PME GPU.
+         * Would be nicer if the allocated grid list was hidden within a single pmedata structure.
+         */
+        if ((pme_lb->setup[pme_lb->cur].pmedata == NULL) || pme_gpu_enabled(pme_lb->setup[pme_lb->cur].pmedata))
         {
             /* Generate a new PME data structure,
              * copying part of the old pointers.

@@ -159,7 +159,8 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
                                gmx_int64_t *step_rel, t_inputrec *ir,
                                gmx_wallcycle_t wcycle, t_nrnb *nrnb,
                                gmx_walltime_accounting_t walltime_accounting,
-                               struct nonbonded_verlet_t *nbv)
+                               struct nonbonded_verlet_t *nbv,
+                               struct gmx_pme_t *pme)
 {
     char sbuf[STEPSTRSIZE];
 
@@ -171,6 +172,15 @@ static void reset_all_counters(FILE *fplog, const gmx::MDLogger &mdlog, t_commre
     if (use_GPU(nbv))
     {
         nbnxn_gpu_reset_timings(nbv);
+    }
+
+    if (pme_gpu_enabled(pme))
+    {
+        pme_gpu_reset_timings(pme);
+    }
+
+    if (use_GPU(nbv) || pme_gpu_enabled(pme))
+    {
         resetGpuProfiler();
     }
 
@@ -1754,7 +1764,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                           "mdrun -resetstep.", step);
             }
             reset_all_counters(fplog, mdlog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
-                               use_GPU(fr->nbv) ? fr->nbv : NULL);
+                               use_GPU(fr->nbv) ? fr->nbv : NULL, fr->pmedata);
             wcycle_set_reset_counters(wcycle, -1);
             if (!(cr->duty & DUTY_PME))
             {
