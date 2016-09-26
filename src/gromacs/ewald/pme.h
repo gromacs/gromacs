@@ -59,6 +59,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+#include "pme-gpu.h"
+
 struct t_commrec;
 struct t_inputrec;
 
@@ -76,7 +78,11 @@ int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                  gmx_bool bReproducible,
                  real ewaldcoeff_q, real ewaldcoeff_lj,
-                 int nthread);
+                 int nthread,
+                 gmx_bool bPMEGPU,
+                 gmx_pme_gpu_t *pmeGPU,
+                 const gmx_hw_info_t *hwinfo = NULL,
+                 const gmx_gpu_opt_t *gpu_opt = NULL);
 
 /*! \brief Destroy the PME data structures respectively.
  *
@@ -99,10 +105,11 @@ int gmx_pme_destroy(struct gmx_pme_t **pmedata);
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 //@}
 
-/*! \brief Do a PME calculation for the long range electrostatics and/or LJ.
+/*! \brief Do a PME calculation on a CPU for the long range electrostatics and/or LJ.
  *
  * The meaning of \p flags is defined above, and determines which
  * parts of the calculation are performed.
+ * Does nothing if pme_gpu_enabled(pme) returns TRUE.
  *
  * \return 0 indicates all well, non zero is an error code.
  */
