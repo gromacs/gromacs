@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@ extern "C" {
 struct nonbonded_verlet_group_t;
 struct nbnxn_pairlist_t;
 struct nbnxn_atomdata_t;
-struct gmx_wallclock_gpu_t;
+struct gmx_wallclock_gpu_nbnxn_t;
 struct gmx_gpu_info_t;
 struct gmx_gpu_opt_t;
 
@@ -104,7 +104,8 @@ void nbnxn_gpu_free(gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM
 
 /** Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
 GPU_FUNC_QUALIFIER
-struct gmx_wallclock_gpu_t * nbnxn_gpu_get_timings(gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM_WITH_RETURN(NULL)
+void nbnxn_gpu_get_timings(gmx_nbnxn_gpu_t gmx_unused           *nb,
+                           gmx_wallclock_gpu_nbnxn_t gmx_unused *timings) GPU_FUNC_TERM
 
 /** Resets nonbonded GPU timings. */
 GPU_FUNC_QUALIFIER

@@ -65,6 +65,7 @@
 
 struct t_commrec;
 struct t_inputrec;
+struct pme_gpu_t;
 
 //@{
 //! Grid indices for A state for charge and Lennard-Jones C6
@@ -164,7 +165,7 @@ typedef struct {
 } splinedata_t;
 
 /*! \brief Data structure for coordinating transfer between PP and PME ranks*/
-typedef struct {
+struct pme_atomcomm_t{
     int      dimind;        /* The index of the dimension, 0=x, 1=y */
     int      nslab;
     int      nodeid;
@@ -200,20 +201,20 @@ typedef struct {
     int            *thread_idx; /* Which thread should spread which coefficient */
     thread_plist_t *thread_plist;
     splinedata_t   *spline;
-} pme_atomcomm_t;
+};
 
 /*! \brief Data structure for a single PME grid */
-typedef struct {
+struct pmegrid_t{
     ivec  ci;     /* The spatial location of this grid         */
     ivec  n;      /* The used size of *grid, including order-1 */
     ivec  offset; /* The grid offset from the full node grid   */
     int   order;  /* PME spreading order                       */
     ivec  s;      /* The allocated size of *grid, s >= n       */
     real *grid;   /* The grid local thread, size n             */
-} pmegrid_t;
+};
 
 /*! \brief Data structures for PME grids */
-typedef struct {
+struct pmegrids_t{
     pmegrid_t  grid;         /* The full node grid (non thread-local)            */
     int        nthread;      /* The number of threads operating on this grid     */
     ivec       nc;           /* The local spatial decomposition over the threads */
@@ -221,7 +222,7 @@ typedef struct {
     real      *grid_all;     /* Allocated array for the grids in *grid_th        */
     int      **g2t;          /* The grid to thread index                         */
     ivec       nthread_comm; /* The number of threads to communicate with        */
-} pmegrids_t;
+};
 
 /*! \brief Data structure for spline-interpolation working buffers */
 struct pme_spline_work;
@@ -230,7 +231,7 @@ struct pme_spline_work;
 struct pme_solve_work_t;
 
 /*! \brief Master PME data structure */
-typedef struct gmx_pme_t {
+struct gmx_pme_t {
     int           ndecompdim; /* The number of decomposition dimensions */
     int           nodeid;     /* Our nodeid in mpi->mpi_comm */
     int           nodeid_major;
@@ -245,35 +246,47 @@ typedef struct gmx_pme_t {
     MPI_Datatype  rvec_mpi;      /* the pme vector's MPI type */
 #endif
 
-    gmx_bool   bUseThreads;   /* Does any of the PME ranks have nthread>1 ?  */
-    int        nthread;       /* The number of threads doing PME on our rank */
+    gmx_bool       bUseThreads; /* Does any of the PME ranks have nthread>1 ?  */
+    int            nthread;     /* The number of threads doing PME on our rank */
 
-    gmx_bool   bPPnode;       /* Node also does particle-particle forces */
-    bool       doCoulomb;     /* Apply PME to electrostatics */
-    bool       doLJ;          /* Apply PME to Lennard-Jones r^-6 interactions */
-    gmx_bool   bFEP;          /* Compute Free energy contribution */
-    gmx_bool   bFEP_q;
-    gmx_bool   bFEP_lj;
-    int        nkx, nky, nkz; /* Grid dimensions */
-    gmx_bool   bP3M;          /* Do P3M: optimize the influence function */
-    int        pme_order;
-    real       ewaldcoeff_q;  /* Ewald splitting coefficient for Coulomb */
-    real       ewaldcoeff_lj; /* Ewald splitting coefficient for r^-6 */
-    real       epsilon_r;
+    gmx_bool       bPPnode;     /* Node also does particle-particle forces */
+    bool           doCoulomb;   /* Apply PME to electrostatics */
+    bool           doLJ;        /* Apply PME to Lennard-Jones r^-6 interactions */
+    gmx_bool       bFEP;        /* Compute Free energy contribution */
+    gmx_bool       bFEP_q;
+    gmx_bool       bFEP_lj;
+    int            nkx, nky, nkz; /* Grid dimensions */
+    gmx_bool       bP3M;          /* Do P3M: optimize the influence function */
+    int            pme_order;
+    real           ewaldcoeff_q;  /* Ewald splitting coefficient for Coulomb */
+    real           ewaldcoeff_lj; /* Ewald splitting coefficient for r^-6 */
+    real           epsilon_r;
 
-    int        ljpme_combination_rule;  /* Type of combination rule in LJ-PME */
+    bool           useGPU;                  /* Are we using the GPU acceleration for PME purposes?
+                                             * A permanent variable, should be read using pme_gpu_enabled inside the module.
+                                             * FIXME: this is the information that should be owned by the task scheduler,
+                                             * and ideally not be duplicated here.
+                                             */
 
-    int        ngrids;                  /* number of grids we maintain for pmegrid, (c)fftgrid and pfft_setups*/
+    pme_gpu_t     *gpu;                     /* A pointer to the GPU data.
+                                             * This should be std::shared_ptr since GPU structure is unique
+                                             * while the CPU structures might theoretically be many
+                                             */
 
-    pmegrids_t pmegrid[DO_Q_AND_LJ_LB]; /* Grids on which we do spreading/interpolation,
-                                         * includes overlap Grid indices are ordered as
-                                         * follows:
-                                         * 0: Coloumb PME, state A
-                                         * 1: Coloumb PME, state B
-                                         * 2-8: LJ-PME
-                                         * This can probably be done in a better way
-                                         * but this simple hack works for now
-                                         */
+    int            ljpme_combination_rule;  /* Type of combination rule in LJ-PME */
+
+    int            ngrids;                  /* number of grids we maintain for pmegrid, (c)fftgrid and pfft_setups*/
+
+    pmegrids_t     pmegrid[DO_Q_AND_LJ_LB]; /* Grids on which we do spreading/interpolation,
+                                             * includes overlap Grid indices are ordered as
+                                             * follows:
+                                             * 0: Coloumb PME, state A
+                                             * 1: Coloumb PME, state B
+                                             * 2-8: LJ-PME
+                                             * This can probably be done in a better way
+                                             * but this simple hack works for now
+                                             */
+
     /* The PME coefficient spreading grid sizes/strides, includes pme_order-1 */
     int        pmegrid_nx, pmegrid_ny, pmegrid_nz;
     /* pmegrid_nz might be larger than strictly necessary to ensure
@@ -324,9 +337,21 @@ typedef struct gmx_pme_t {
     /* Work data for sum_qgrid */
     real *   sum_qgrid_tmp;
     real *   sum_qgrid_dd_tmp;
-} t_gmx_pme_t;
+};
 
 //! @endcond
+
+/*! \brief
+ * Finds out if PME is currently running on GPU.
+ * TODO: remove this entirely with introduction of task/hardware scheduler.
+ *
+ * \param[in] pme  The PME structure.
+ * \returns        True if PME runs on GPU currently, false otherwise.
+ */
+inline bool pme_gpu_active(const gmx_pme_t *pme)
+{
+    return (pme != NULL) && pme->useGPU;
+}
 
 /*! \brief Check restrictions on pme_order and the PME grid nkx,nky,nkz.
  *
@@ -361,11 +386,33 @@ enum {
 
 /*! \brief Called by PME-only ranks to receive coefficients and coordinates
  *
- * The return value is used to control further processing, with meanings:
- * pmerecvqxX:             all parameters set, chargeA and chargeB can be NULL
- * pmerecvqxFINISH:        no parameters set
- * pmerecvqxSWITCHGRID:    only grid_size and *ewaldcoeff are set
- * pmerecvqxRESETCOUNTERS: *step is set
+ * \param[in,out] pme_pp    PME-PP communication structure.
+ * \param[out] natoms       Number of received atoms.
+ * \param[out] chargeA      State A charges, if received.
+ * \param[out] chargeB      State B charges, if received.
+ * \param[out] sqrt_c6A     State A coefficients, if received.
+ * \param[out] sqrt_c6B     State B coefficients, if received.
+ * \param[out] sigmaA     State A coefficients, if received.
+ * \param[out] sigmaB     State B coefficients, if received.
+ * \param[out] box        System box, if received.
+ * \param[out] x        Atoms' coordinates, if received.
+ * \param[out] f        Atoms' PME forces, if received.
+ * \param[out] maxshift_x        Maximum shift in X direction, if received.
+ * \param[out] maxshift_y        Maximum shift in Y direction, if received.
+ * \param[out] lambda_q         Free-energy lambda for electrostatics, if received.
+ * \param[out] lambda_lj         Free-energy lambda for Lennard-Jones, if received.
+ * \param[out] bEnerVir          Set to true if this is an energy/virial calculation step, otherwise set to false.
+ * \param[out] step              MD integration step number.
+ * \param[out] grid_size         PME grid size, if received.
+ * \param[out] ewaldcoeff_q         Ewald cut-off parameter for electrostatics, if received.
+ * \param[out] ewaldcoeff_lj         Ewald cut-off parameter for Lennard-Jones, if received.
+ * \param[out] atomSetChanged    Set to true only if the local domain atom data (charges/coefficients)
+ *                               has been received (after DD) and should be reinitialized. Otherwise not changed.
+ *
+ * \retval pmerecvqxX             All parameters were set, chargeA and chargeB can be NULL.
+ * \retval pmerecvqxFINISH        No parameters were set.
+ * \retval pmerecvqxSWITCHGRID    Only grid_size and *ewaldcoeff were set.
+ * \retval pmerecvqxRESETCOUNTERS *step was set.
  */
 int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
                                int *natoms,
@@ -377,7 +424,10 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
                                real *lambda_q, real *lambda_lj,
                                gmx_bool *bEnerVir,
                                gmx_int64_t *step,
-                               ivec grid_size, real *ewaldcoeff_q, real *ewaldcoeff_lj);
+                               ivec grid_size,
+                               real *ewaldcoeff_q,
+                               real *ewaldcoeff_lj,
+                               bool *atomSetChanged);
 
 /*! \brief Send the PME mesh force, virial and energy to the PP-only nodes */
 void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
