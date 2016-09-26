@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -253,9 +253,9 @@ struct gmx_nbnxn_cuda_t
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.
      * Timer init/uninit is still done even with timing off so only the condition
      * setting bDoTime needs to be change if this CUDA "feature" gets fixed. */
-    bool                 bDoTime;   /**< True if event-based timing is enabled.               */
-    cu_timers_t         *timers;    /**< CUDA event-based timers.                             */
-    gmx_wallclock_gpu_t *timings;   /**< Timing data.                                         */
+    bool                       bDoTime; /**< True if event-based timing is enabled.               */
+    cu_timers_t               *timers;  /**< CUDA event-based timers.                             */
+    gmx_wallclock_gpu_nbnxn_t *timings; /**< Timing data.                                         */
 };
 
 #ifdef __cplusplus
