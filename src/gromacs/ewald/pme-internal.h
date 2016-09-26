@@ -65,6 +65,7 @@
 
 struct t_commrec;
 struct t_inputrec;
+struct pme_gpu_t;
 
 //@{
 //! Grid indices for A state for charge and Lennard-Jones C6
@@ -245,35 +246,42 @@ typedef struct gmx_pme_t {
     MPI_Datatype  rvec_mpi;      /* the pme vector's MPI type */
 #endif
 
-    gmx_bool   bUseThreads;   /* Does any of the PME ranks have nthread>1 ?  */
-    int        nthread;       /* The number of threads doing PME on our rank */
+    gmx_bool       bUseThreads; /* Does any of the PME ranks have nthread>1 ?  */
+    int            nthread;     /* The number of threads doing PME on our rank */
 
-    gmx_bool   bPPnode;       /* Node also does particle-particle forces */
-    bool       doCoulomb;     /* Apply PME to electrostatics */
-    bool       doLJ;          /* Apply PME to Lennard-Jones r^-6 interactions */
-    gmx_bool   bFEP;          /* Compute Free energy contribution */
-    gmx_bool   bFEP_q;
-    gmx_bool   bFEP_lj;
-    int        nkx, nky, nkz; /* Grid dimensions */
-    gmx_bool   bP3M;          /* Do P3M: optimize the influence function */
-    int        pme_order;
-    real       ewaldcoeff_q;  /* Ewald splitting coefficient for Coulomb */
-    real       ewaldcoeff_lj; /* Ewald splitting coefficient for r^-6 */
-    real       epsilon_r;
+    gmx_bool       bPPnode;     /* Node also does particle-particle forces */
+    gmx_bool       doCoulomb;   /* Apply PME to electrostatics */
+    gmx_bool       doLJ;        /* Apply PME to Lennard-Jones r^-6 interactions */
+    gmx_bool       bFEP;        /* Compute Free energy contribution */
+    gmx_bool       bFEP_q;
+    gmx_bool       bFEP_lj;
+    int            nkx, nky, nkz; /* Grid dimensions */
+    gmx_bool       bP3M;          /* Do P3M: optimize the influence function */
+    int            pme_order;
+    real           ewaldcoeff_q;  /* Ewald splitting coefficient for Coulomb */
+    real           ewaldcoeff_lj; /* Ewald splitting coefficient for r^-6 */
+    real           epsilon_r;
 
-    int        ljpme_combination_rule;  /* Type of combination rule in LJ-PME */
+    gmx_bool       bGPU;                    /* Are we using the GPU acceleration for PME purposes?
+                                             * A permanent variable, should be read using pme_gpu_enabled.
+                                             */
 
-    int        ngrids;                  /* number of grids we maintain for pmegrid, (c)fftgrid and pfft_setups*/
+    pme_gpu_t     *gpu;                     /* A pointer to the GPU data */
 
-    pmegrids_t pmegrid[DO_Q_AND_LJ_LB]; /* Grids on which we do spreading/interpolation,
-                                         * includes overlap Grid indices are ordered as
-                                         * follows:
-                                         * 0: Coloumb PME, state A
-                                         * 1: Coloumb PME, state B
-                                         * 2-8: LJ-PME
-                                         * This can probably be done in a better way
-                                         * but this simple hack works for now
-                                         */
+    int            ljpme_combination_rule;  /* Type of combination rule in LJ-PME */
+
+    int            ngrids;                  /* number of grids we maintain for pmegrid, (c)fftgrid and pfft_setups*/
+
+    pmegrids_t     pmegrid[DO_Q_AND_LJ_LB]; /* Grids on which we do spreading/interpolation,
+                                             * includes overlap Grid indices are ordered as
+                                             * follows:
+                                             * 0: Coloumb PME, state A
+                                             * 1: Coloumb PME, state B
+                                             * 2-8: LJ-PME
+                                             * This can probably be done in a better way
+                                             * but this simple hack works for now
+                                             */
+
     /* The PME coefficient spreading grid sizes/strides, includes pme_order-1 */
     int        pmegrid_nx, pmegrid_ny, pmegrid_nz;
     /* pmegrid_nz might be larger than strictly necessary to ensure
@@ -377,7 +385,10 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
                                real *lambda_q, real *lambda_lj,
                                gmx_bool *bEnerVir,
                                gmx_int64_t *step,
-                               ivec grid_size, real *ewaldcoeff_q, real *ewaldcoeff_lj);
+                               ivec grid_size,
+                               real *ewaldcoeff_q,
+                               real *ewaldcoeff_lj,
+                               gmx_bool *atomSetChanged);
 
 /*! \brief Send the PME mesh force, virial and energy to the PP-only nodes */
 void gmx_pme_send_force_vir_ener(struct gmx_pme_pp *pme_pp,
