@@ -53,7 +53,8 @@ class MDLogger;
 //! Tasks that can be run on a GPU
 enum class GpuTask
 {
-    NB
+    NB,
+    PME
 };
 
 /*! \libinternal \brief
