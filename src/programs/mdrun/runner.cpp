@@ -1322,7 +1322,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
                                       (Flags & MD_REPRODUCIBLE),
                                       ewaldcoeff_q, ewaldcoeff_lj,
-                                      nthreads_pme);
+                                      nthreads_pme,
+                                      false, NULL, hwinfo, &hw_opt->gpu_opt);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             if (status != 0)
@@ -1418,6 +1419,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     finish_run(fplog, mdlog, cr,
                inputrec, nrnb, wcycle, walltime_accounting,
                fr ? fr->nbv : nullptr,
+               fr ? fr->pmedata : nullptr,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
     // Free PME data
