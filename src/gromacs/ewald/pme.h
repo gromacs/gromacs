@@ -50,6 +50,7 @@
 
 #include <stdio.h>
 
+#include "gromacs/ewald/pme-gpu.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -76,7 +77,11 @@ int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                  gmx_bool bReproducible,
                  real ewaldcoeff_q, real ewaldcoeff_lj,
-                 int nthread);
+                 int nthread,
+                 gmx_bool bPMEGPU,
+                 pme_gpu_t *pmeGPU,
+                 const gmx_hw_info_t *hwinfo = NULL,
+                 const gmx_gpu_opt_t *gpu_opt = NULL);
 
 /*! \brief Destroy the PME data structures respectively.
  *
@@ -99,7 +104,7 @@ int gmx_pme_destroy(struct gmx_pme_t **pmedata);
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 //@}
 
-/*! \brief Do a PME calculation for the long range electrostatics and/or LJ.
+/*! \brief Do a PME calculation on a CPU for the long range electrostatics and/or LJ.
  *
  * The meaning of \p flags is defined above, and determines which
  * parts of the calculation are performed.
@@ -166,5 +171,16 @@ void gmx_pme_receive_f(struct t_commrec *cr,
                        matrix vir_lj, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles);
+
+/*! \brief
+ * This function should manage the local atoms data update after the DD (charges, coordinates, etc.).
+ * Currently it only manages the PME on GPU, as the PME CPU call gmx_pme_do() gets passed the input pointers each step.
+ * It also isn't but should be called during the initial setup, before the first MD step.
+ *
+ * \param[in] pme            The PME structure.
+ * \param[in] nAtoms         The number of particles.
+ * \param[in] coefficients   The pointer to the array of particle charges.
+ */
+void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, real *coefficients);
 
 #endif
