@@ -54,7 +54,7 @@ extern "C" {
 struct nonbonded_verlet_group_t;
 struct nbnxn_pairlist_t;
 struct nbnxn_atomdata_t;
-struct gmx_wallclock_gpu_t;
+struct gmx_wallclock_gpu_nbnxn_t;
 struct gmx_device_info_t;
 
 /** Initializes the data structures related to GPU nonbonded calculations. */
@@ -99,9 +99,10 @@ void nbnxn_gpu_clear_outputs(gmx_nbnxn_gpu_t gmx_unused *nb,
 GPU_FUNC_QUALIFIER
 void nbnxn_gpu_free(gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM
 
-/** Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
+/** Fills the GPU timings structure if GPU is used and timing is on. */
 GPU_FUNC_QUALIFIER
-struct gmx_wallclock_gpu_t * nbnxn_gpu_get_timings(gmx_nbnxn_gpu_t gmx_unused *nb) GPU_FUNC_TERM_WITH_RETURN(NULL)
+void nbnxn_gpu_get_timings(gmx_nbnxn_gpu_t gmx_unused           *nb,
+                           gmx_wallclock_gpu_nbnxn_t gmx_unused *timings) GPU_FUNC_TERM
 
 /** Resets nonbonded GPU timings. */
 GPU_FUNC_QUALIFIER
