@@ -110,6 +110,7 @@
 
 #include "calculate-spline-moduli.h"
 #include "pme-gather.h"
+#include "pme-gpu-internal.h"
 #include "pme-grid.h"
 #include "pme-internal.h"
 #include "pme-redistribute.h"
@@ -511,18 +512,22 @@ static int div_round_up(int enumerator, int denominator)
     return (enumerator + denominator - 1)/denominator;
 }
 
-int gmx_pme_init(struct gmx_pme_t **pmedata,
-                 t_commrec *        cr,
-                 int                nnodes_major,
-                 int                nnodes_minor,
-                 const t_inputrec * ir,
-                 int                homenr,
-                 gmx_bool           bFreeEnergy_q,
-                 gmx_bool           bFreeEnergy_lj,
-                 gmx_bool           bReproducible,
-                 real               ewaldcoeff_q,
-                 real               ewaldcoeff_lj,
-                 int                nthread)
+int gmx_pme_init(struct gmx_pme_t   **pmedata,
+                 t_commrec   *        cr,
+                 int                  nnodes_major,
+                 int                  nnodes_minor,
+                 const t_inputrec   * ir,
+                 int                  homenr,
+                 gmx_bool             bFreeEnergy_q,
+                 gmx_bool             bFreeEnergy_lj,
+                 gmx_bool             bReproducible,
+                 real                 ewaldcoeff_q,
+                 real                 ewaldcoeff_lj,
+                 int                  nthread,
+                 bool                 bPMEGPU,
+                 pme_gpu_t           *pmeGPU,
+                 const gmx_hw_info_t *hwinfo,
+                 const gmx_gpu_opt_t *gpu_opt)
 {
     int               use_threads, sum_use_threads, i;
     ivec              ndata;
@@ -749,6 +754,10 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     snew(pme->bsp_mod[YY], pme->nky);
     snew(pme->bsp_mod[ZZ], pme->nkz);
 
+    pme->gpu    = pmeGPU; /* Carrying over the single GPU structure */
+    pme->useGPU = bPMEGPU;
+    GMX_ASSERT(!bPMEGPU, "PME GPU is disabled for now");
+
     /* The required size of the interpolation grid, including overlap.
      * The allocated size (pmegrid_n?) might be slightly larger.
      */
@@ -759,7 +768,6 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     pme->pmegrid_nz_base = pme->nkz;
     pme->pmegrid_nz      = pme->pmegrid_nz_base + pme->pme_order - 1;
     set_grid_alignment(&pme->pmegrid_nz, pme->pme_order);
-
     pme->pmegrid_start_ix = pme->overlap[0].s2g0[pme->nodeid_major];
     pme->pmegrid_start_iy = pme->overlap[1].s2g0[pme->nodeid_minor];
     pme->pmegrid_start_iz = 0;
@@ -850,6 +858,8 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     pme->lb_buf2       = nullptr;
     pme->lb_buf_nalloc = 0;
 
+    pme_gpu_reinit(pme.get(), hwinfo, gpu_opt);
+
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
 
     // no exception was thrown during the init, so we hand over the PME structure handle
@@ -887,7 +897,8 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
     try
     {
         ret = gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
-                           &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj, pme_src->nthread);
+                           &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj,
+                           pme_src->nthread, pme_gpu_active(pme_src), pme_src->gpu);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -980,6 +991,8 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                real *dvdlambda_q, real *dvdlambda_lj,
                int flags)
 {
+    GMX_ASSERT(!pme->useGPU, "gmx_pme_do should not be called on the GPU PME run.");
+
     int                  d, i, j, npme, grid_index, max_grid_index;
     int                  n_d;
     pme_atomcomm_t      *atc        = nullptr;
@@ -1728,5 +1741,20 @@ void gmx_pme_destroy(gmx_pme_t *pme)
     sfree(pme->sum_qgrid_tmp);
     sfree(pme->sum_qgrid_dd_tmp);
 
+    if (pme_gpu_active(pme))
+    {
+        pme_gpu_destroy(pme->gpu);
+    }
+
     sfree(pme);
+}
+
+void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *coefficients)
+{
+    if (pme_gpu_active(pme))
+    {
+        pme_gpu_reinit_atoms(pme->gpu, nAtoms, coefficients);
+    }
+    // TODO: handle the CPU case here
+    // TODO: call this during the initial MD setup
 }

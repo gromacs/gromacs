@@ -70,7 +70,7 @@ static PmeSafePointer pmeInitInternal(const t_inputrec *inputRec, size_t atomCou
 {
     gmx_pme_t *pmeDataRaw = nullptr;
     gmx_pme_init(&pmeDataRaw, nullptr, 1, 1, inputRec,
-                 atomCount, false, false, true, ewaldCoeff_q, ewaldCoeff_lj, 1);
+                 atomCount, false, false, true, ewaldCoeff_q, ewaldCoeff_lj, 1, false, nullptr);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
