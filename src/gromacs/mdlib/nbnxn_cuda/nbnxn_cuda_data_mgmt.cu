@@ -545,7 +545,7 @@ static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
 }
 
 /*! Initializes the timings data structure. */
-static void init_timings(gmx_wallclock_gpu_t *t)
+static void init_timings(gmx_wallclock_gpu_nbnxn_t *t)
 {
     int i, j;
 
@@ -1027,9 +1027,13 @@ void nbnxn_gpu_free(gmx_nbnxn_cuda_t *nb)
     }
 }
 
-gmx_wallclock_gpu_t * nbnxn_gpu_get_timings(gmx_nbnxn_cuda_t *nb)
+//! This function is documented in the header file
+void nbnxn_gpu_get_timings(gmx_nbnxn_cuda_t *nb, gmx_wallclock_gpu_nbnxn_t *timings)
 {
-    return (nb != NULL && nb->bDoTime) ? nb->timings : NULL;
+    if (nb != NULL && nb->bDoTime)
+    {
+        *timings = *nb->timings;  // struct POD copy
+    }
 }
 
 void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
