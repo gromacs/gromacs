@@ -102,10 +102,11 @@ typedef struct gmx_wallcycle
 static const char *wcn[ewcNR] =
 {
     "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load",
-    "DD comm. bounds", "Vsite constr.", "Send X to PME", "Neighbor search", "Launch GPU ops.",
+    "DD comm. bounds", "Vsite constr.", "Send X to PME", "Neighbor search", "Launch PME GPU",
+    "Launch GPU ops.",
     "Comm. coord.", "Born radii", "Force", "Wait + Comm. F", "PME mesh",
     "PME redist. X/F", "PME spread/gather", "PME 3D-FFT", "PME 3D-FFT Comm.", "PME solve LJ", "PME solve Elec",
-    "PME wait for PP", "Wait + Recv. PME F", "Wait GPU nonlocal", "Wait GPU local", "NB X/F buffer ops.",
+    "PME wait for PP", "Wait + Recv. PME F", "Wait PME GPU", "Wait GPU nonlocal", "Wait GPU local", "NB X/F buffer ops.",
     "Vsite spread", "COM pull force",
     "Write traj.", "Update", "Constraints", "Comm. energies",
     "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test"
@@ -124,6 +125,27 @@ static const char *wcsn[ewcsNR] =
     "Ewald F correction",
     "NB X buffer ops.",
     "NB F buffer ops.",
+    "Launch GPU PME",
+    "GPU PME H2D",
+    "GPU PME spread",
+    "GPU PME FFT",
+    "GPU PME solve",
+    "GPU PME gather",
+    "Wait GPU PME"
+};
+
+/* PME GPU timing events' names - correspond to the enum in the gpu_timing.h */
+static const char *PMEStageNames[] =
+{
+    "Spline",
+    "Spread",
+    "Spline/spread",
+    "Wrap",
+    "FFT r2c",
+    "Solve",
+    "FFT c2r",
+    "Unwrap",
+    "Gather",
 };
 
 gmx_bool wallcycle_have_counter(void)
@@ -890,6 +912,10 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                 tot_k += gpu_t->ktime[i][j].t;
             }
         }
+        for (size_t k = 0; k < gtPME_EVENT_COUNT; k++)
+        {
+            tot_k += gpu_t->pme.timing[k].t;
+        }
         tot_gpu += tot_k;
 
         tot_cpu_overlap = wc->wcc[ewcFORCE].c;
@@ -918,6 +944,17 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                 }
             }
         }
+        for (size_t k = 0; k < gtPME_EVENT_COUNT; k++)
+        {
+            if (gpu_t->pme.timing[k].c)
+            {
+                print_gputimes(fplog, PMEStageNames[k],
+                               gpu_t->pme.timing[k].c,
+                               gpu_t->pme.timing[k].t,
+                               tot_gpu);
+            }
+        }
+
 
         print_gputimes(fplog, "F D2H",  gpu_t->nb_c, gpu_t->nb_d2h_t, tot_gpu);
         fprintf(fplog, "%s\n", hline);
