@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -606,13 +606,13 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_cuda_t *nb,
         gmx_incons(stmp);
     }
 
-    cu_plist_t                 *plist    = nb->plist[iloc];
-    cu_timers_t                *timers   = nb->timers;
-    struct gmx_wallclock_gpu_t *timings  = nb->timings;
-    nb_staging                  nbst     = nb->nbst;
+    cu_plist_t                       *plist    = nb->plist[iloc];
+    cu_timers_t                      *timers   = nb->timers;
+    struct gmx_wallclock_gpu_nbnxn_t *timings  = nb->timings;
+    nb_staging                        nbst     = nb->nbst;
 
-    bool                        bCalcEner   = flags & GMX_FORCE_ENERGY;
-    bool                        bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool                              bCalcEner   = flags & GMX_FORCE_ENERGY;
+    bool                              bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;

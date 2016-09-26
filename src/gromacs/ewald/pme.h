@@ -61,6 +61,14 @@
 
 struct t_commrec;
 struct t_inputrec;
+struct pme_gpu_t;
+struct gmx_wallclock_gpu_pme_t;
+struct gmx_device_info_t;
+
+namespace gmx
+{
+class MDLogger;
+}
 
 enum {
     GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
@@ -80,7 +88,11 @@ int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                  gmx_bool bReproducible,
                  real ewaldcoeff_q, real ewaldcoeff_lj,
-                 int nthread);
+                 int nthread,
+                 bool bPMEGPU,
+                 pme_gpu_t *pmeGPU,
+                 gmx_device_info_t *gpuInfo,
+                 const gmx::MDLogger &mdlog);
 
 /*! \brief Destroys the PME data structure.*/
 void gmx_pme_destroy(gmx_pme_t *pme);
@@ -100,7 +112,7 @@ void gmx_pme_destroy(gmx_pme_t *pme);
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 //@}
 
-/*! \brief Do a PME calculation for the long range electrostatics and/or LJ.
+/*! \brief Do a PME calculation on a CPU for the long range electrostatics and/or LJ.
  *
  * The meaning of \p flags is defined above, and determines which
  * parts of the calculation are performed.
@@ -167,5 +179,62 @@ void gmx_pme_receive_f(struct t_commrec *cr,
                        matrix vir_lj, real *energy_lj,
                        real *dvdlambda_q, real *dvdlambda_lj,
                        float *pme_cycles);
+
+/*! \brief
+ * This function updates the local atom data on GPU after DD (charges, coordinates, etc.).
+ * TODO: it should update the PME CPU atom data as well
+ * (currently PME CPU call gmx_pme_do() gets passed the input pointers each step).
+ * TODO: it should be called during the initial simulation setup, before the first MD step.
+ *
+ * \param[in] pme            The PME structure.
+ * \param[in] nAtoms         The number of particles.
+ * \param[in] coefficients   The pointer to the array of particle charges.
+ */
+void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *coefficients);
+
+/* A block of PME GPU functions */
+
+/*! \brief
+ * Tells if PME is enabled to run on GPU (not necessarily active at the moment).
+ * For now, this decision is stored in the PME structure itself.
+ * FIXME: this is an information that should be managed by the task scheduler.
+ * As soon as such functionality appears, this function should be removed from this module.
+ *
+ * \param[in]  pme            The PME data structure.
+ * \returns true if PME can run on GPU, false otherwise.
+ */
+bool pme_gpu_task_enabled(const gmx_pme_t *pme);
+
+/*! \brief
+ * Resets the PME GPU timings. To be called at the reset step.
+ *
+ * \param[in] pme            The PME structure.
+ */
+void pme_gpu_reset_timings(const gmx_pme_t *pme);
+
+/*! \brief
+ * Copies the PME GPU timings to the gmx_wallclock_gpu_pme_t structure (for log output). To be called at the run end.
+ *
+ * \param[in] pme               The PME structure.
+ * \param[in] timings           The gmx_wallclock_gpu_pme_t structure.
+ */
+void pme_gpu_get_timings(const gmx_pme_t         *pme,
+                         gmx_wallclock_gpu_pme_t *timings);
+
+/* The main PME GPU functions */
+
+/*! \brief
+ * Gets the output forces and virial/energy if corresponding flags are (were?) passed in.
+ *
+ * \param[in]  pme            The PME data structure.
+ * \param[in]  wcycle         The wallclock counter.
+ * \param[out] vir_q          The output virial matrix.
+ * \param[out] energy_q       The output energy.
+ */
+void pme_gpu_get_results(const gmx_pme_t *pme,
+                         gmx_wallcycle_t  wcycle,
+                         matrix           vir_q,
+                         real            *energy_q);
+
 
 #endif
