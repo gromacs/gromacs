@@ -1071,11 +1071,14 @@ int Mdrunner::mdrunner()
         {
             try
             {
+                gmx_device_info_t *pmeGpuInfo = nullptr;
+                auto               runMode    = PmeRunMode::CPU;
                 status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
                                       mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
                                       (Flags & MD_REPRODUCIBLE),
                                       ewaldcoeff_q, ewaldcoeff_lj,
-                                      nthreads_pme);
+                                      nthreads_pme,
+                                      runMode, nullptr, pmeGpuInfo, mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             if (status != 0)
@@ -1177,6 +1180,7 @@ int Mdrunner::mdrunner()
     finish_run(fplog, mdlog, cr,
                inputrec, nrnb, wcycle, walltime_accounting,
                fr ? fr->nbv : nullptr,
+               fr ? fr->pmedata : nullptr,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
     // Free PME data
