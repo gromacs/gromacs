@@ -554,7 +554,7 @@ static void init_timers(cl_timers_t *t,
 
 /*! \brief Initializes the timings data structure.
  */
-static void init_timings(gmx_wallclock_gpu_t *t)
+static void init_timings(gmx_wallclock_gpu_nbnxn_t *t)
 {
     int i, j;
 
@@ -1216,11 +1216,10 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
     }
 }
 
-
 //! This function is documented in the header file
-gmx_wallclock_gpu_t * nbnxn_gpu_get_timings(gmx_nbnxn_ocl_t *nb)
+gmx_wallclock_gpu_nbnxn_t *nbnxn_gpu_get_timings(gmx_nbnxn_ocl_t *nb)
 {
-    return (nb != NULL && nb->bDoTime) ? nb->timings : NULL;
+    return (nb != nullptr && nb->bDoTime) ? nb->timings : nullptr;
 }
 
 //! This function is documented in the header file

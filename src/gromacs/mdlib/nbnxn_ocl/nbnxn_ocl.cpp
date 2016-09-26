@@ -970,9 +970,9 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
  * \param[inout] timings  GPU task timing data
  * \param[in] iloc        interaction locality
  */
-static void countPruneKernelTime(cl_timers_t         *timers,
-                                 gmx_wallclock_gpu_t *timings,
-                                 const int            iloc)
+static void countPruneKernelTime(cl_timers_t               *timers,
+                                 gmx_wallclock_gpu_nbnxn_t *timings,
+                                 const int                  iloc)
 {
     // We might have not done any pruning (e.g. if we skipped with empty domains).
     if (!timers->didPrune[iloc] && !timers->didRollingPrune[iloc])
@@ -1022,13 +1022,13 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
         gmx_incons(stmp);
     }
 
-    cl_plist_t                 *plist    = nb->plist[iloc];
-    cl_timers_t                *timers   = nb->timers;
-    struct gmx_wallclock_gpu_t *timings  = nb->timings;
-    cl_nb_staging               nbst     = nb->nbst;
+    cl_plist_t                       *plist    = nb->plist[iloc];
+    cl_timers_t                      *timers   = nb->timers;
+    struct gmx_wallclock_gpu_nbnxn_t *timings  = nb->timings;
+    cl_nb_staging                     nbst     = nb->nbst;
 
-    bool                        bCalcEner   = flags & GMX_FORCE_ENERGY;
-    int                         bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool                              bCalcEner   = flags & GMX_FORCE_ENERGY;
+    int                               bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;
