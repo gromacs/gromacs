@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,41 +32,43 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_TIMING_WALLCYCLEREPORTING_H
-#define GMX_TIMING_WALLCYCLEREPORTING_H
 
-/* NOTE: None of the routines here are safe to call within an OpenMP
- * region */
+/*! \libinternal \file
+ *  \brief Defines the CUDA 3D-FFT functions for PME.
+ *
+ *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ */
 
-#include <stdio.h>
+#ifndef GMX_EWALD_PME_3DFFT_CUH
+#define GMX_EWALD_PME_3DFFT_CUH
 
-#include <array>
+#include <cufft.h>                  // for the cufft types
 
-#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/fft/fft.h"        // for the enum gmx_fft_direction
 
-struct t_commrec;
+struct pme_gpu_t;
 
-namespace gmx
+/*! \brief \internal A 3D FFT class for performing R2C/C2R transforms
+ * \todo Make this class actually parallel over multiple GPUs
+ */
+class GpuParallel3dFft
 {
-class MDLogger;
-}
+    cufftHandle   planR2C_;
+    cufftHandle   planC2R_;
+    cufftReal    *realGrid_;
+    cufftComplex *complexGrid_;
 
-typedef struct gmx_wallcycle *gmx_wallcycle_t;
-struct gmx_wallclock_gpu_nbnxn_t;
-struct gmx_wallclock_gpu_pme_t;
-
-typedef std::array<double, ewcNR+ewcsNR> WallcycleCounts;
-/* Convenience typedef */
-
-WallcycleCounts wallcycle_sum(struct t_commrec *cr, gmx_wallcycle_t wc);
-/* Return a vector of the sum of cycle counts over the nodes in
-   cr->mpi_comm_mysim. */
-
-void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int npme,
-                     int nth_pp, int nth_pme, double realtime,
-                     gmx_wallcycle_t wc, const WallcycleCounts &cyc_sum,
-                     const gmx_wallclock_gpu_nbnxn_t *gpu_nbnxn_t,
-                     const gmx_wallclock_gpu_pme_t *gpu_pme_t);
-/* Print the cycle and time accounting */
+    public:
+        /*! \brief
+         * Constructs CUDA FFT plans for performing 3D FFT on a PME grid.
+         *
+         * \param[in] pmeGPU                  The PME GPU structure.
+         */
+        GpuParallel3dFft(const pme_gpu_t *pmeGPU);
+        /*! \brief Destroys CUDA FFT plans. */
+        ~GpuParallel3dFft();
+        /*! \brief Performs the FFT transform in given direction */
+        void perform3dFft(gmx_fft_direction dir);
+};
 
 #endif
