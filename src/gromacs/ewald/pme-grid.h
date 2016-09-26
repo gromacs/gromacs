@@ -41,9 +41,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#include "pme-internal.h"
-
-
 /*! \brief
  * We allow coordinates to be out the unit-cell by up to 2 box lengths,
  * which might be needed along dimension x for a very skewed unit-cell.
@@ -56,6 +53,8 @@ constexpr int c_pmeMaxUnitcellShift = 2;
  */
 constexpr int c_pmeNeighborUnitcellCount = 2*c_pmeMaxUnitcellShift + 1;
 
+struct pmegrid_t;
+struct pmegrids_t;
 
 #if GMX_MPI
 void

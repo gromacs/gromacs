@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -541,7 +541,7 @@ static void init_timers(cl_timers_t gmx_unused *t, bool gmx_unused bUseTwoStream
 
 /*! \brief Initializes the timings data structure.
  */
-static void init_timings(gmx_wallclock_gpu_t *t)
+static void init_timings(gmx_wallclock_gpu_nbnxn_t *t)
 {
     int i, j;
 
@@ -1176,11 +1176,13 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
     }
 }
 
-
 //! This function is documented in the header file
-gmx_wallclock_gpu_t * nbnxn_gpu_get_timings(gmx_nbnxn_ocl_t *nb)
+void nbnxn_gpu_get_timings(gmx_nbnxn_ocl_t *nb, gmx_wallclock_gpu_nbnxn_t *timings)
 {
-    return (nb != NULL && nb->bDoTime) ? nb->timings : NULL;
+    if (nb != NULL && nb->bDoTime)
+    {
+        *timings = *nb->timings;  // struct POD copy
+    }
 }
 
 //! This function is documented in the header file
