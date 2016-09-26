@@ -436,7 +436,8 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
                                gmx_int64_t       *step,
                                ivec               grid_size,
                                real              *ewaldcoeff_q,
-                               real              *ewaldcoeff_lj)
+                               real              *ewaldcoeff_lj,
+                               bool              *atomSetChanged)
 {
     int status = -1;
     int nat    = 0;
@@ -493,6 +494,8 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
 
         if (cnb.flags & (PP_PME_CHARGE | PP_PME_SQRTC6 | PP_PME_SIGMA))
         {
+            *atomSetChanged = true;
+
             /* Receive the send counts from the other PP nodes */
             for (int sender = 0; sender < pme_pp->nnode; sender++)
             {
@@ -644,6 +647,7 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
     GMX_UNUSED_VALUE(grid_size);
     GMX_UNUSED_VALUE(ewaldcoeff_q);
     GMX_UNUSED_VALUE(ewaldcoeff_lj);
+    GMX_UNUSED_VALUE(atomSetChanged);
 
     status = pmerecvqxX;
 #endif
