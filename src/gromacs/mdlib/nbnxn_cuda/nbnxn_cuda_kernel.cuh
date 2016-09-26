@@ -96,12 +96,12 @@
 /* NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
  * warp-pairs per block.
  *
- * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
+ * - On CC 2.0-3.5, and >=5.0 NTHREAD_Z == 1, translating to 64 th/block with 16
  * blocks/multiproc, is the fastest even though this setup gives low occupancy.
  * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
  * per multiprocessor is reduced proportionally to get the original number of max
  * threads in flight (and slightly lower performance).
- * - On CC 3.7 and 6.0 there are enough registers to double the number of threads; using
+ * - On CC 3.7 there are enough registers to double the number of threads; using
  * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
  * with low-register use).
  *
@@ -115,7 +115,7 @@
  *
  * Note: convenience macros, need to be undef-ed at the end of the file.
  */
-#if __CUDA_ARCH__ == 370 || __CUDA_ARCH__ == 600
+#if __CUDA_ARCH__ == 370
 #define NTHREAD_Z           (2)
 #define MIN_BLOCKS_PER_MP   (16)
 #else
