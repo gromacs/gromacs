@@ -155,6 +155,7 @@ list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
 if (GMX_USE_CUDA)
     cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
+    cuda_add_cufft_to_target(libgromacs)
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
