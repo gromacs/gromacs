@@ -136,6 +136,10 @@ template <GpuFramework framework> class GpuRegionTimerWrapper
             reset();
         }
         ~GpuRegionTimerWrapper() = default;
+        GpuRegionTimerWrapper(const GpuRegionTimerWrapper &)       = delete;
+        GpuRegionTimerWrapper &operator=(GpuRegionTimerWrapper &&) = delete;
+        GpuRegionTimerWrapper(GpuRegionTimerWrapper &&)            = delete;
+
         /*! \brief
          * To be called before the region start.
          *

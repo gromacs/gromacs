@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,41 +32,35 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_TIMING_WALLCYCLEREPORTING_H
-#define GMX_TIMING_WALLCYCLEREPORTING_H
 
-/* NOTE: None of the routines here are safe to call within an OpenMP
- * region */
+/*! \libinternal \file
+ *  \brief Defines PME GPU timing functions.
+ *
+ *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ */
 
-#include <stdio.h>
+#ifndef GMX_EWALD_PME_TIMINGS_CUH
+#define GMX_EWALD_PME_TIMINGS_CUH
 
-#include <array>
+#include "gromacs/gpu_utils/gpuregiontimer.cuh"
+#include "gromacs/timing/gpu_timing.h"       // TODO: move include to the source files
 
-#include "gromacs/utility/basedefinitions.h"
+struct pme_gpu_t;
 
-struct t_commrec;
+/*! \libinternal \brief
+ * Starts timing the certain PME GPU stage during a single step (if timings are enabled).
+ *
+ * \param[in] pmeGPU         The PME GPU data structure.
+ * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
+ */
+void pme_gpu_start_timing(const pme_gpu_t *pmeGPU, size_t PMEStageId);
 
-namespace gmx
-{
-class MDLogger;
-}
-
-typedef struct gmx_wallcycle *gmx_wallcycle_t;
-struct gmx_wallclock_gpu_nbnxn_t;
-struct gmx_wallclock_gpu_pme_t;
-
-typedef std::array<double, ewcNR+ewcsNR> WallcycleCounts;
-/* Convenience typedef */
-
-WallcycleCounts wallcycle_sum(struct t_commrec *cr, gmx_wallcycle_t wc);
-/* Return a vector of the sum of cycle counts over the nodes in
-   cr->mpi_comm_mysim. */
-
-void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int npme,
-                     int nth_pp, int nth_pme, double realtime,
-                     gmx_wallcycle_t wc, const WallcycleCounts &cyc_sum,
-                     const gmx_wallclock_gpu_nbnxn_t *gpu_nbnxn_t,
-                     const gmx_wallclock_gpu_pme_t *gpu_pme_t);
-/* Print the cycle and time accounting */
+/*! \libinternal \brief
+ * Stops timing the certain PME GPU stage during a single step (if timings are enabled).
+ *
+ * \param[in] pmeGPU         The PME GPU data structure.
+ * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
+ */
+void pme_gpu_stop_timing(const pme_gpu_t *pmeGPU, size_t PMEStageId);
 
 #endif
