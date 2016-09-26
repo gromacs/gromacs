@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -122,8 +122,13 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
             pme->nky == grid_size[YY] &&
             pme->nkz == grid_size[ZZ])
         {
+            /* Here we have found an existing PME data structure that suits us.
+             * However, in the GPU case, we have to reinitialize it - there's only one GPU structure.
+             * This should not cause actual GPU reallocations, at least (the allocated buffers are never shrunk).
+             * So, just some grid size updates in the GPU kernel parameters.
+             */
+            gmx_pme_reinit(&((*pmedata)[ind]), cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
             *pme_ret = pme;
-
             return;
         }
 
@@ -183,6 +188,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         do
         {
             /* Domain decomposition */
+            bool atomSetChanged = FALSE;
             ret = gmx_pme_recv_coeffs_coords(pme_pp,
                                              &natoms,
                                              &chargeA, &chargeB,
@@ -193,12 +199,20 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                                              &lambda_q, &lambda_lj,
                                              &bEnerVir,
                                              &step,
-                                             grid_switch, &ewaldcoeff_q, &ewaldcoeff_lj);
+                                             grid_switch,
+                                             &ewaldcoeff_q,
+                                             &ewaldcoeff_lj,
+                                             &atomSetChanged);
 
             if (ret == pmerecvqxSWITCHGRID)
             {
                 /* Switch the PME grid to grid_switch */
                 gmx_pmeonly_switch(&npmedata, &pmedata, grid_switch, ewaldcoeff_q, ewaldcoeff_lj, cr, ir, &pme);
+            }
+
+            if (atomSetChanged)
+            {
+                gmx_pme_reinit_atoms(pme, natoms, chargeA);
             }
 
             if (ret == pmerecvqxRESETCOUNTERS)
