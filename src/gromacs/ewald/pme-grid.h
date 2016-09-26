@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,9 +41,6 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#include "pme-internal.h"
-
-
 /*! \brief
  * We allow coordinates to be out the unit-cell by up to 2 box lengths,
  * which might be needed along dimension x for a very skewed unit-cell.
@@ -56,6 +53,8 @@ constexpr int c_pmeMaxUnitcellShift = 2;
  */
 constexpr int c_pmeNeighborUnitcellCount = 2*c_pmeMaxUnitcellShift + 1;
 
+struct pmegrid_t;
+struct pmegrids_t;
 
 #if GMX_MPI
 void
