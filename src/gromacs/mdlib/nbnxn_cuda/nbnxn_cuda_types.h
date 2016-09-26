@@ -253,9 +253,9 @@ struct gmx_nbnxn_cuda_t
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.
      * Timer init/uninit is still done even with timing off so only the condition
      * setting bDoTime needs to be change if this CUDA "feature" gets fixed. */
-    bool                 bDoTime;   /**< True if event-based timing is enabled.               */
-    cu_timers_t         *timers;    /**< CUDA event-based timers.                             */
-    gmx_wallclock_gpu_t *timings;   /**< Timing data.                                         */
+    bool                       bDoTime; /**< True if event-based timing is enabled.               */
+    cu_timers_t               *timers;  /**< CUDA event-based timers.                             */
+    gmx_wallclock_gpu_nbnxn_t *timings; /**< Timing data.                                         */
 };
 
 #ifdef __cplusplus

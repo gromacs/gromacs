@@ -49,6 +49,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "pme-internal.h"
+
 #ifdef DEBUG_PME
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/utility/cstringutil.h"

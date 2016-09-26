@@ -804,13 +804,13 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
         gmx_incons(stmp);
     }
 
-    cl_plist_t                 *plist    = nb->plist[iloc];
-    cl_timers_t                *timers   = nb->timers;
-    struct gmx_wallclock_gpu_t *timings  = nb->timings;
-    cl_nb_staging               nbst     = nb->nbst;
+    cl_plist_t                       *plist    = nb->plist[iloc];
+    cl_timers_t                      *timers   = nb->timers;
+    struct gmx_wallclock_gpu_nbnxn_t *timings  = nb->timings;
+    cl_nb_staging                     nbst     = nb->nbst;
 
-    bool                        bCalcEner   = flags & GMX_FORCE_ENERGY;
-    int                         bCalcFshift = flags & GMX_FORCE_VIRIAL;
+    bool                              bCalcEner   = flags & GMX_FORCE_ENERGY;
+    int                               bCalcFshift = flags & GMX_FORCE_VIRIAL;
 
     /* turn energy calculation always on/off (for debugging/testing only) */
     bCalcEner = (bCalcEner || always_ener) && !never_ener;

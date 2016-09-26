@@ -66,7 +66,7 @@ WallcycleCounts wallcycle_sum(struct t_commrec *cr, gmx_wallcycle_t wc);
 void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int npme,
                      int nth_pp, int nth_pme, double realtime,
                      gmx_wallcycle_t wc, const WallcycleCounts &cyc_sum,
-                     struct gmx_wallclock_gpu_t *gpu_t);
+                     const gmx_wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
 #endif
