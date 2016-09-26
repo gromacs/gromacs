@@ -75,8 +75,7 @@ template <> class GpuRegionTimerImpl<GpuFramework::OpenCL>
     size_t                   currentEvent_ = 0;
 
     public:
-        GpuRegionTimerImpl()  = default;
-        ~GpuRegionTimerImpl() = default;
+
         inline void openTimingRegion(CommandStream){}
         inline void closeTimingRegion(CommandStream){}
 

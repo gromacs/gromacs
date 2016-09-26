@@ -77,6 +77,7 @@ template <GpuFramework> struct GpuTraits
 /*! \libinternal \brief
  * This is a GPU region timing implementation interface.
  * It should provide methods for measuring the last timespan.
+ * Copying/assignment is disabled since the underlying timing events are owned by this.
  */
 template <GpuFramework framework> class GpuRegionTimerImpl
 {
@@ -85,8 +86,15 @@ template <GpuFramework framework> class GpuRegionTimerImpl
     using CommandEvent  = typename GpuTraits<framework>::CommandEvent;
 
     public:
+
         GpuRegionTimerImpl()  = default;
         ~GpuRegionTimerImpl() = default;
+        //! No copying
+        GpuRegionTimerImpl(const GpuRegionTimerImpl &)       = delete;
+        //! No assignment
+        GpuRegionTimerImpl &operator=(GpuRegionTimerImpl &&) = delete;
+        //! Moving is disabled but can be considered in the future if needed
+        GpuRegionTimerImpl(GpuRegionTimerImpl &&)            = delete;
 
         /*! \brief Will be called before the region start. */
         inline void openTimingRegion(CommandStream) = 0;
@@ -121,21 +129,17 @@ template <GpuFramework framework> class GpuRegionTimerWrapper
         Idle,
         Recording,
         Stopped
-    } debugState_;
+    } debugState_ = TimerState::Idle;
 
     //! The number of times the timespan has been measured
-    unsigned int                  callCount_;
+    unsigned int                  callCount_ = 0;
     //! The accumulated duration of the timespans measured (milliseconds)
-    double                        totalMilliseconds_;
+    double                        totalMilliseconds_ = 0.0;
     //! The underlying region timer implementation
     GpuRegionTimerImpl<framework> impl_;
 
     public:
-        GpuRegionTimerWrapper() : impl_()
-        {
-            reset();
-        }
-        ~GpuRegionTimerWrapper() = default;
+
         /*! \brief
          * To be called before the region start.
          *
