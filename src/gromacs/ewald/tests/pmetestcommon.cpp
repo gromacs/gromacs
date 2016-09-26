@@ -53,9 +53,11 @@
 #include "gromacs/ewald/pme-spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/invertmatrix.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -71,9 +73,12 @@ static PmeSafePointer pmeInitInternal(const t_inputrec         *inputRec,
                                       real                      ewaldCoeff_lj = 1.0f
                                       )
 {
-    gmx_pme_t *pmeDataRaw = nullptr;
-    gmx_pme_init(&pmeDataRaw, nullptr, 1, 1, inputRec,
-                 atomCount, false, false, true, ewaldCoeff_q, ewaldCoeff_lj, 1);
+    gmx_pme_t     *pmeDataRaw = nullptr;
+    const MDLogger dummyLogger;
+    const auto     runMode       = PmeRunMode::CPU;
+    t_commrec      dummyCommrec  = {0};
+    gmx_pme_init(&pmeDataRaw, &dummyCommrec, 1, 1, inputRec, atomCount, false, false, true,
+                 ewaldCoeff_q, ewaldCoeff_lj, 1, runMode, nullptr, nullptr, dummyLogger);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
