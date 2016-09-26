@@ -2550,6 +2550,7 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 nonbonded_verlet_t *nbv,
+                gmx_pme_t *pme,
                 gmx_bool bWriteStat)
 {
     t_nrnb *nrnb_tot = NULL;
@@ -2621,6 +2622,10 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
     if (SIMMASTER(cr))
     {
         struct gmx_wallclock_gpu_t* gputimes = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : NULL;
+        if (gmx_pme_gpu_enabled(pme))
+        {
+            gmx_pme_gpu_get_timings(pme, &gputimes);
+        }
 
         wallcycle_print(fplog, mdlog, cr->nnodes, cr->npmenodes, nthreads_pp, nthreads_pme,
                         elapsed_time_over_all_ranks,
