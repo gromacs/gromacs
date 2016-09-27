@@ -1650,7 +1650,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             bNeedRepartition = do_swapcoords(cr, step, t, ir, wcycle,
                                              bRerunMD ? rerun_fr.x   : state->x,
                                              bRerunMD ? rerun_fr.box : state->box,
-                                             top_global, MASTER(cr) && bVerbose, bRerunMD);
+                                             MASTER(cr) && bVerbose, bRerunMD);
 
             if (bNeedRepartition && DOMAINDECOMP(cr))
             {
