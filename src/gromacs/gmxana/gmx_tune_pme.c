@@ -2214,9 +2214,9 @@ int gmx_tune_pme(int argc, char *argv[])
     real            rcoulomb       = -1.0;            /* Coulomb radius as set in .tpr file */
     gmx_bool        bScaleRvdw     = TRUE;
     gmx_int64_t     bench_nsteps   = BENCHSTEPS;
-    gmx_int64_t     new_sim_nsteps = -1;  /* -1 indicates: not set by the user */
-    gmx_int64_t     cpt_steps      = 0;   /* Step counter in .cpt input file   */
-    int             presteps       = 100; /* Do a full cycle reset after presteps steps */
+    gmx_int64_t     new_sim_nsteps = -1;   /* -1 indicates: not set by the user */
+    gmx_int64_t     cpt_steps      = 0;    /* Step counter in .cpt input file   */
+    int             presteps       = 1500; /* Do a full cycle reset after presteps steps */
     gmx_bool        bOverwrite     = FALSE, bKeepTPR;
     gmx_bool        bLaunch        = FALSE;
     char           *ExtraArgs      = NULL;
