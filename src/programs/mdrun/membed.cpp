@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,17 +106,14 @@ static int get_mol_id(int at, gmx_mtop_t  *mtop, int *type, int *block)
     int                   mol_id = 0;
     int                   i;
     int                   atnr_mol;
-    gmx_mtop_atomlookup_t alook;
 
-    alook = gmx_mtop_atomlookup_settle_init(mtop);
-    gmx_mtop_atomnr_to_molblock_ind(alook, at, block, &mol_id, &atnr_mol);
+    *block = 0;
+    gmx_mtop_atomnr_to_molblock_ind(mtop, at, block, &mol_id, &atnr_mol);
     for (i = 0; i < *block; i++)
     {
         mol_id += mtop->molblock[i].nmol;
     }
     *type = mtop->molblock[*block].type;
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     return mol_id;
 }
