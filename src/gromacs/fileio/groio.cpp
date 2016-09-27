@@ -507,7 +507,7 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop,
 {
     int                     i, resnr;
     gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
+    const t_atom           *atom;
     char                   *atomname, *resname;
 
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());

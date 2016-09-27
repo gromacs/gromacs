@@ -92,6 +92,7 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -1753,7 +1754,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
     char          fname[STRLEN], buf[22];
     FILE         *out;
     int           i, ii, resnr, c;
-    char         *atomname, *resname;
+    const char   *atomname, *resname;
     real          b;
     gmx_domdec_t *dd;
 
@@ -1772,7 +1773,7 @@ void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
     for (i = 0; i < natoms; i++)
     {
         ii = dd->gatindex[i];
-        gmx_mtop_atominfo_global(mtop, ii, &atomname, &resnr, &resname);
+        mtopGetAtomAndResidueName(mtop, ii, &atomname, &resnr, &resname, NULL);
         if (i < dd->comm->nat[ddnatZONE])
         {
             c = 0;

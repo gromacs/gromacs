@@ -61,7 +61,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1367,22 +1367,20 @@ static void init_edi(const gmx_mtop_t *mtop, t_edpar *edi)
     int                   i;
     real                  totalmass = 0.0;
     rvec                  com;
-    gmx_mtop_atomlookup_t alook = NULL;
-    t_atom               *atom;
 
     /* NOTE Init_edi is executed on the master process only
      * The initialized data sets are then transmitted to the
      * other nodes in broadcast_ed_data */
 
-    alook = gmx_mtop_atomlookup_init(mtop);
-
     /* evaluate masses (reference structure) */
     snew(edi->sref.m, edi->sref.nr);
+    int molb = 0;
     for (i = 0; i < edi->sref.nr; i++)
     {
         if (edi->fitmas)
         {
-            gmx_mtop_atomnr_to_atom(alook, edi->sref.anrs[i], &atom);
+            const t_atom *atom;
+            mtopGetAtomParameters(mtop, edi->sref.anrs[i], &molb, &atom);
             edi->sref.m[i] = atom->m;
         }
         else
@@ -1410,7 +1408,8 @@ static void init_edi(const gmx_mtop_t *mtop, t_edpar *edi)
     snew(edi->sav.m, edi->sav.nr );
     for (i = 0; i < edi->sav.nr; i++)
     {
-        gmx_mtop_atomnr_to_atom(alook, edi->sav.anrs[i], &atom);
+        const t_atom *atom;
+        mtopGetAtomParameters(mtop, edi->sav.anrs[i], &molb, &atom);
         edi->sav.m[i] = atom->m;
         if (edi->pcamas)
         {
@@ -1431,8 +1430,6 @@ static void init_edi(const gmx_mtop_t *mtop, t_edpar *edi)
                       i, edi->sav.anrs[i]+1, atom->m);
         }
     }
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     /* put reference structure in origin */
     get_center(edi->sref.x, edi->sref.m, edi->sref.nr, com);

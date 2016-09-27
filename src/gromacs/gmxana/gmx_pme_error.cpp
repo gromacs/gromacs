@@ -818,7 +818,6 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
     int                     i;
     int                     nq; /* number of charged particles */
     gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
 
 
     if (MASTER(cr))
@@ -828,7 +827,7 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
         nq = 0;
 
         aloop = gmx_mtop_atomloop_all_init(mtop);
-
+        const t_atom *atom;
         while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
             if (is_charge(atom->q))

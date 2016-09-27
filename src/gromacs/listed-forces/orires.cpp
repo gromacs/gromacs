@@ -76,7 +76,6 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     gmx_mtop_ilistloop_t    iloop;
     t_ilist                *il;
     gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
     const gmx_multisim_t   *ms;
 
     od->nr = gmx_mtop_ftype_count(mtop, F_ORIRES);
@@ -209,6 +208,7 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
     mtot  = 0.0;
     j     = 0;
     aloop = gmx_mtop_atomloop_all_init(mtop);
+    const t_atom *atom;
     while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
     {
         if (mtop->groups.grpnr[egcORFIT] == NULL ||
