@@ -62,7 +62,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -975,17 +975,16 @@ static int get_group_apm_check(
         int                         igroup,
         t_swap                     *s,
         gmx_bool                    bVerbose,
-        const gmx_mtop_atomlookup_t alook,
         gmx_mtop_t                 *mtop)
 {
-    int        molb, molnr, atnr_mol;
     t_swapgrp *g   = &s->group[igroup];
     int       *ind = s->group[igroup].ind;
     int        nat = s->group[igroup].nat;
 
     /* Determine the number of solvent atoms per solvent molecule from the
      * first solvent atom: */
-    gmx_mtop_atomnr_to_molblock_ind(alook, ind[0], &molb, &molnr, &atnr_mol);
+    int molb = 0;
+    mtopGetMolblockIndex(mtop, ind[0], &molb, NULL, NULL);
     int apm = mtop->molblock[molb].natoms_mol;
 
     if (bVerbose)
@@ -997,7 +996,7 @@ static int get_group_apm_check(
     /* Check whether this is also true for all other solvent atoms */
     for (int i = 1; i < nat; i++)
     {
-        gmx_mtop_atomnr_to_molblock_ind(alook, ind[i], &molb, &molnr, &atnr_mol);
+        mtopGetMolblockIndex(mtop, ind[i], &molb, NULL, NULL);
         if (apm != mtop->molblock[molb].natoms_mol)
         {
             gmx_fatal(FARGS, "Not all molecules of swap group %d consist of %d atoms.",
@@ -1388,8 +1387,6 @@ void convertOldToNewGroupFormat(
         gmx_bool      bVerbose,
         t_commrec    *cr)
 {
-    t_atom                *atom;
-    gmx_mtop_atomlookup_t  alook = gmx_mtop_atomlookup_init(mtop);
     t_swapGroup           *g     = &sc->grp[3];
 
     /* Loop through the atom indices of group #3 (anions) and put all indices
@@ -1402,9 +1399,11 @@ void convertOldToNewGroupFormat(
     snew(indAnions, g->nat);
     snew(indCations, g->nat);
 
+    int molb = 0;
     for (int i = 0; i < g->nat; i++)
     {
-        gmx_mtop_atomnr_to_atom(alook, g->ind[i], &atom);
+        const t_atom *atom;
+        mtopGetAtomParameters(mtop, g->ind[i], &molb, &atom);
         if (atom->q < 0)
         {
             // This is an anion, add it to the list of anions
@@ -1466,15 +1465,12 @@ void init_swapcoords(
 {
     t_swapcoords          *sc;
     t_swap                *s;
-    t_atom                *atom;
+    const t_atom          *atom;
     t_swapgrp             *g;
     swapstateIons_t       *gs;
     gmx_bool               bAppend, bStartFromCpt, bRerun;
-    gmx_mtop_atomlookup_t  alook = NULL;
     matrix                 boxCopy;
 
-
-    alook = gmx_mtop_atomlookup_init(mtop);
 
     if ( (PAR(cr)) && !DOMAINDECOMP(cr) )
     {
@@ -1591,15 +1587,16 @@ void init_swapcoords(
         real charge;
 
         g      = &(s->group[ig]);
-        g->apm = get_group_apm_check(ig, s, MASTER(cr) && bVerbose, alook, mtop);
+        g->apm = get_group_apm_check(ig, s, MASTER(cr) && bVerbose, mtop);
 
         /* Since all molecules of a group are equal, we only need enough space
          * to determine properties of a single molecule at at time */
         snew(g->m, g->apm);  /* For the center of mass */
         charge = 0;          /* To determine the charge imbalance */
+        int molb = 0;
         for (int j = 0; j < g->apm; j++)
         {
-            gmx_mtop_atomnr_to_atom(alook, g->ind[j], &atom);
+            mtopGetAtomParameters(mtop, g->ind[j], &molb, &atom);
             g->m[j] = atom->m;
             charge += atom->q;
         }
@@ -1616,9 +1613,10 @@ void init_swapcoords(
         {
             /* Save the split group masses if mass-weighting is requested */
             snew(g->m, g->nat);
+            int molb = 0;
             for (int i = 0; i < g->nat; i++)
             {
-                gmx_mtop_atomnr_to_atom(alook, g->ind[i], &atom);
+                mtopGetAtomParameters(mtop, g->ind[i], &molb, &atom);
                 g->m[i] = atom->m;
             }
         }
@@ -1997,7 +1995,6 @@ gmx_bool do_swapcoords(
         gmx_wallcycle_t   wcycle,
         rvec              x[],
         matrix            box,
-        gmx_mtop_t       *mtop,
         gmx_bool          bVerbose,
         gmx_bool          bRerun)
 {
@@ -2009,7 +2006,6 @@ gmx_bool do_swapcoords(
     t_swapgrp            *g, *gsol;
     int                   isol, iion;
     rvec                  com_solvent, com_particle; /* solvent and swap molecule's center of mass */
-    gmx_mtop_atomlookup_t alook = NULL;
 
 
     wallcycle_start(wcycle, ewcSWAP);
@@ -2089,7 +2085,6 @@ gmx_bool do_swapcoords(
         }
 
         /* Now actually perform the particle exchanges, one swap group after another */
-        alook  = gmx_mtop_atomlookup_init(mtop);
         gsol   = &s->group[eGrpSolvent];
         for (ig = eSwapFixedGrpNR; ig < s->ngrp; ig++)
         {
@@ -2151,7 +2146,6 @@ gmx_bool do_swapcoords(
                         SwS, nswaps, nswaps > 1 ? "s" : "", step, g->molname);
             }
         }
-        gmx_mtop_atomlookup_destroy(alook);
 
         if (s->fpout != NULL)
         {

@@ -2735,7 +2735,6 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     double                 *nrdf_tc, *nrdf_vcm, nrdf_uc, *nrdf_vcm_sub;
     ivec                   *dof_vcm;
     gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
     int                     mb, mol, ftype, as;
     gmx_molblock_t         *molb;
     gmx_moltype_t          *molt;
@@ -2776,6 +2775,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 
     snew(nrdf2, natoms);
     aloop = gmx_mtop_atomloop_all_init(mtop);
+    const t_atom *atom;
     while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
     {
         nrdf2[i] = 0;
@@ -4007,7 +4007,6 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
     rvec                      acc;
     gmx_mtop_atomloop_block_t aloopb;
     gmx_mtop_atomloop_all_t   aloop;
-    t_atom                   *atom;
     ivec                      AbsRef;
     char                      warn_buf[STRLEN];
 
@@ -4104,6 +4103,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 
     bCharge = FALSE;
     aloopb  = gmx_mtop_atomloop_block_init(sys);
+    const t_atom *atom;
     while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
     {
         if (atom->q != 0 || atom->qB != 0)
@@ -4172,6 +4172,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
         clear_rvec(acc);
         snew(mgrp, sys->groups.grps[egcACC].nr);
         aloop = gmx_mtop_atomloop_all_init(sys);
+        const t_atom *atom;
         while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
             mgrp[ggrpnr(&sys->groups, egcACC, i)] += atom->m;

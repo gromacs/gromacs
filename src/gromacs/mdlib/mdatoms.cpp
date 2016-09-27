@@ -45,6 +45,7 @@
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
@@ -56,7 +57,7 @@ t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
 {
     int                     a;
     double                  tmA, tmB;
-    t_atom                 *atom;
+    const t_atom           *atom;
     t_mdatoms              *md;
     gmx_mtop_atomloop_all_t aloop;
 
@@ -117,8 +118,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
               t_mdatoms *md)
 {
     gmx_bool              bLJPME;
-    gmx_mtop_atomlookup_t alook;
-    int                   i;
     const t_grpopts      *opts;
     const gmx_groups_t   *groups;
     int                   nthreads gmx_unused;
@@ -219,19 +218,18 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
     }
 
-    alook = gmx_mtop_atomlookup_init(mtop);
+    int molb = 0;
 
     // cppcheck-suppress unreadVariable
     nthreads = gmx_omp_nthreads_get(emntDefault);
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (i = 0; i < md->nr; i++)
+#pragma omp parallel for num_threads(nthreads) schedule(static) firstprivate(molb)
+    for (int i = 0; i < md->nr; i++)
     {
         try
         {
             int      g, ag;
             real     mA, mB, fac;
             real     c6, c12;
-            t_atom  *atom;
 
             if (index == NULL)
             {
@@ -239,9 +237,10 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             }
             else
             {
-                ag   = index[i];
+                ag = index[i];
             }
-            gmx_mtop_atomnr_to_atom(alook, ag, &atom);
+            const t_atom *atom;
+            mtopGetAtomParameters(mtop, ag, &molb, &atom);
 
             if (md->cFREEZE)
             {
@@ -398,8 +397,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     md->homenr = homenr;
     md->lambda = 0;
