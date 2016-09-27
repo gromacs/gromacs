@@ -3393,7 +3393,6 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
     t_atom               *atom;
     gmx_enfrotgrp_t       erg; /* Pointer to enforced rotation group data */
     int                   ref_firstindex, ref_lastindex;
-    gmx_mtop_atomlookup_t alook = NULL;
     real                  mass, totalmass;
     real                  start = 0.0;
     double                t_start;
@@ -3461,10 +3460,6 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
 
     /* Copy the masses so that the center can be determined. For all types of
      * enforced rotation, we store the masses in the erg->mc array. */
-    if (rotg->bMassW)
-    {
-        alook = gmx_mtop_atomlookup_init(mtop);
-    }
     snew(erg->mc, rotg->nat);
     if (bFlex)
     {
@@ -3475,11 +3470,12 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
         snew(erg->m_loc, rotg->nat);
     }
     totalmass = 0.0;
+    int molb  = 0;
     for (i = 0; i < rotg->nat; i++)
     {
         if (rotg->bMassW)
         {
-            gmx_mtop_atomnr_to_atom(alook, rotg->ind[i], &atom);
+            gmx_mtop_atomnr_to_atom(mtop, rotg->ind[i], &molb, &atom);
             mass = atom->m;
         }
         else
@@ -3490,11 +3486,6 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
         totalmass += mass;
     }
     erg->invmass = 1.0/totalmass;
-
-    if (rotg->bMassW)
-    {
-        gmx_mtop_atomlookup_destroy(alook);
-    }
 
     /* Set xc_ref_center for any rotation potential */
     if ((rotg->eType == erotgISO) || (rotg->eType == erotgPM) || (rotg->eType == erotgRM) || (rotg->eType == erotgRM2))

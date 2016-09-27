@@ -135,7 +135,6 @@ gmx_bool do_swapcoords(
         gmx_wallcycle_t   wcycle,
         rvec              x[],
         matrix            box,
-        gmx_mtop_t       *mtop,
         gmx_bool          bVerbose,
         gmx_bool          bRerun);
 

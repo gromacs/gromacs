@@ -85,7 +85,6 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     gmx_mtop_t           *mtop = NULL;
     int                   ePBC = -1;
     t_block              *mols = NULL;
-    gmx_mtop_atomlookup_t alook;
     t_atom               *atom;
     int                   ii, jj;
     real                  temp, tfac;
@@ -157,8 +156,6 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         rd_index(ndx, 1, &nindex, &index, &gname);
     }
 
-    alook = gmx_mtop_atomlookup_init(mtop);
-
     snew(clust_index, nindex);
     snew(clust_size, nindex);
     cut2   = cut*cut;
@@ -171,6 +168,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     max_clust_size = 1;
     max_clust_ind  = -1;
+    int molb       = 0;
     do
     {
         if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0)))
@@ -324,7 +322,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                         if (clust_index[i] == max_clust_ind)
                         {
                             ai    = index[i];
-                            gmx_mtop_atomnr_to_atom(alook, ai, &atom);
+                            gmx_mtop_atomnr_to_atom(mtop, ai, &molb, &atom);
                             ekin += 0.5*atom->m*iprod(v[ai], v[ai]);
                         }
                     }
@@ -341,8 +339,6 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     xvgrclose(gp);
     xvgrclose(hp);
     xvgrclose(tp);
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     if (max_clust_ind >= 0)
     {
