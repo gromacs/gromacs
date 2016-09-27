@@ -762,16 +762,12 @@ static void bc_moltype(const t_commrec *cr, t_symtab *symtab,
 
 static void bc_molblock(const t_commrec *cr, gmx_molblock_t *molb)
 {
-    block_bc(cr, molb->type);
-    block_bc(cr, molb->nmol);
-    block_bc(cr, molb->natoms_mol);
-    block_bc(cr, molb->nposres_xA);
+    block_bc(cr, *molb);
     if (molb->nposres_xA > 0)
     {
         snew_bc(cr, molb->posres_xA, molb->nposres_xA);
         nblock_bc(cr, molb->nposres_xA*DIM, molb->posres_xA[0]);
     }
-    block_bc(cr, molb->nposres_xB);
     if (molb->nposres_xB > 0)
     {
         snew_bc(cr, molb->posres_xB, molb->nposres_xB);

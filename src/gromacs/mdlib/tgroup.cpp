@@ -74,7 +74,7 @@ static void init_grpstat(gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
     gmx_groups_t           *groups;
     gmx_mtop_atomloop_all_t aloop;
     int                     i, grp;
-    t_atom                 *atom;
+    const t_atom           *atom;
 
     if (ngacc > 0)
     {

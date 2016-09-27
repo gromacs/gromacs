@@ -64,6 +64,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
@@ -150,13 +151,7 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     int                   i, m, s1, n1, n2, n3;
     real                  dt_1, fudge, tm, m1, m2, m3;
     rvec                 *ptr;
-    gmx_mtop_atomlookup_t alook = NULL;
-    t_atom               *atom;
-
-    if (mass == NULL)
-    {
-        alook = gmx_mtop_atomlookup_init(mtop);
-    }
+    const t_atom         *atom;
 
     /* We introduce a fudge factor for performance reasons: with this choice
      * the initial force on the shells is about a factor of two lower than
@@ -179,6 +174,7 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
         dt_1 = fudge*dt;
     }
 
+    int molb = 0;
     for (i = 0; (i < ns); i++)
     {
         s1 = s[i].shell;
@@ -206,9 +202,9 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                 else
                 {
                     /* Not the correct masses with FE, but it is just a prediction... */
-                    gmx_mtop_atomnr_to_atom(alook, n1, &atom);
+                    mtopGetAtomParameters(mtop, n1, &molb, &atom);
                     m1 = atom->m;
-                    gmx_mtop_atomnr_to_atom(alook, n2, &atom);
+                    mtopGetAtomParameters(mtop, n2, &molb, &atom);
                     m2 = atom->m;
                 }
                 tm = dt_1/(m1+m2);
@@ -230,11 +226,11 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                 else
                 {
                     /* Not the correct masses with FE, but it is just a prediction... */
-                    gmx_mtop_atomnr_to_atom(alook, n1, &atom);
+                    mtopGetAtomParameters(mtop, n1, &molb, &atom);
                     m1 = atom->m;
-                    gmx_mtop_atomnr_to_atom(alook, n2, &atom);
+                    mtopGetAtomParameters(mtop, n2, &molb, &atom);
                     m2 = atom->m;
-                    gmx_mtop_atomnr_to_atom(alook, n3, &atom);
+                    mtopGetAtomParameters(mtop, n3, &molb, &atom);
                     m3 = atom->m;
                 }
                 tm = dt_1/(m1+m2+m3);
@@ -246,11 +242,6 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
             default:
                 gmx_fatal(FARGS, "Shell %d has %d nuclei!", i, s[i].nnucl);
         }
-    }
-
-    if (mass == NULL)
-    {
-        gmx_mtop_atomlookup_destroy(alook);
     }
 }
 
@@ -274,7 +265,7 @@ static std::array<int, eptNR> countPtypes(FILE       *fplog,
 
     gmx_mtop_atomloop_block_t  aloopb = gmx_mtop_atomloop_block_init(mtop);
     int                        nmol;
-    t_atom                    *atom;
+    const t_atom              *atom;
     while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
     {
         switch (atom->ptype)
@@ -313,7 +304,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     gmx_shellfc_t            *shfc;
     t_shell                  *shell;
     int                      *shell_index = NULL, *at2cg;
-    t_atom                   *atom;
+    const t_atom             *atom;
 
     int                       ns, nshell, nsi;
     int                       i, j, type, mb, a_offset, cg, mol, ftype, nra;
