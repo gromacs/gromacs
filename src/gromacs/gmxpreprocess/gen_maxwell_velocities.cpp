@@ -57,7 +57,7 @@ static void low_mspeed(real tempi,
     real                                    boltz, sd;
     real                                    ekin, temp, mass, scal;
     gmx_mtop_atomloop_all_t                 aloop;
-    t_atom                                 *atom;
+    const t_atom                           *atom;
     gmx::TabulatedNormalDistribution<real>  normalDist;
 
     boltz = BOLTZ*tempi;

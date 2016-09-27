@@ -66,7 +66,7 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull_internal.h"
-#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -1920,8 +1920,6 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
     real                  m, w, mbd;
     double                tmass, wmass, wwmass;
     const gmx_groups_t   *groups;
-    gmx_mtop_atomlookup_t alook;
-    t_atom               *atom;
 
     if (EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD)
     {
@@ -1959,16 +1957,16 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
 
     groups = &mtop->groups;
 
-    alook = gmx_mtop_atomlookup_init(mtop);
-
-    nfrozen = 0;
-    tmass   = 0;
-    wmass   = 0;
-    wwmass  = 0;
+    nfrozen  = 0;
+    tmass    = 0;
+    wmass    = 0;
+    wwmass   = 0;
+    int molb = 0;
     for (i = 0; i < pg->params.nat; i++)
     {
         ii = pg->params.ind[i];
-        gmx_mtop_atomnr_to_atom(alook, ii, &atom);
+        const t_atom *atom;
+        mtopGetAtomParameters(mtop, ii, &molb, &atom);
         if (bConstraint && ir->opts.nFreeze)
         {
             for (d = 0; d < DIM; d++)
@@ -2028,8 +2026,6 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
         wmass  += m*w;
         wwmass += m*w*w;
     }
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     if (wmass == 0)
     {

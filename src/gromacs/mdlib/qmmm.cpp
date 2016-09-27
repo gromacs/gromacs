@@ -65,6 +65,7 @@
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
@@ -315,31 +316,25 @@ static void init_QMrec(int grpnr, t_QMrec *qm, int nr, int *atomarray,
 {
     /* fills the t_QMrec struct of QM group grpnr
      */
-    int                   i;
-    gmx_mtop_atomlookup_t alook;
-    t_atom               *atom;
-
 
     qm->nrQMatoms = nr;
     snew(qm->xQM, nr);
     snew(qm->indexQM, nr);
     snew(qm->shiftQM, nr); /* the shifts */
-    for (i = 0; i < nr; i++)
+    for (int i = 0; i < nr; i++)
     {
         qm->indexQM[i] = atomarray[i];
     }
 
-    alook = gmx_mtop_atomlookup_init(mtop);
-
     snew(qm->atomicnumberQM, nr);
-    for (i = 0; i < qm->nrQMatoms; i++)
+    int molb = 0;
+    for (int i = 0; i < qm->nrQMatoms; i++)
     {
-        gmx_mtop_atomnr_to_atom(alook, qm->indexQM[i], &atom);
+        const t_atom *atom;
+        mtopGetAtomParameters(mtop, qm->indexQM[i], &molb, &atom);
         qm->nelectrons       += mtop->atomtypes.atomnumber[atom->type];
         qm->atomicnumberQM[i] = mtop->atomtypes.atomnumber[atom->type];
     }
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     qm->QMcharge       = ir->opts.QMcharge[grpnr];
     qm->multiplicity   = ir->opts.QMmult[grpnr];
@@ -468,11 +463,9 @@ void init_QMMMrec(t_commrec  *cr,
     t_iatom                 *iatoms;
     real                     c12au, c6au;
     gmx_mtop_atomloop_all_t  aloop;
-    t_atom                  *atom;
     gmx_mtop_ilistloop_all_t iloop;
     int                      a_offset;
     t_ilist                 *ilist_mol;
-    gmx_mtop_atomlookup_t    alook;
 
     if (ir->cutoff_scheme != ecutsGROUP)
     {
@@ -535,6 +528,7 @@ void init_QMMMrec(t_commrec  *cr,
     {
         /* new layer */
         aloop = gmx_mtop_atomloop_all_init(mtop);
+        const t_atom *atom;
         while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
             if (qm_nr >= qm_max)
@@ -661,15 +655,17 @@ void init_QMMMrec(t_commrec  *cr,
 
         /* standard QMMM, all layers are merged together so there is one QM
          * subsystem and one MM subsystem.
-         * Also we set the charges to zero in the md->charge arrays to prevent
-         * the innerloops from doubly counting the electostatic QM MM interaction
+         * Also we set the charges to zero in mtop to prevent the innerloops
+         * from doubly counting the electostatic QM MM interaction
+         * TODO: Consider doing this in grompp instead.
          */
 
-        alook = gmx_mtop_atomlookup_init(mtop);
-
+        int molb = 0;
         for (k = 0; k < qm_nr; k++)
         {
-            gmx_mtop_atomnr_to_atom(alook, qm_arr[k], &atom);
+            int indexInMolecule;
+            mtopGetMolblockIndex(mtop, qm_arr[k], &molb, NULL, &indexInMolecule);
+            t_atom *atom = &mtop->moltype[mtop->molblock[molb].type].atoms.atom[indexInMolecule];
             atom->q  = 0.0;
             atom->qB = 0.0;
         }
@@ -681,7 +677,8 @@ void init_QMMMrec(t_commrec  *cr,
         {
             for (i = 0; i < qm_nr; i++)
             {
-                gmx_mtop_atomnr_to_atom(alook, qm_arr[i], &atom);
+                const t_atom *atom;
+                mtopGetAtomParameters(mtop, qm_arr[i], &molb, &atom);
                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
                 qr->qm[0]->c6[i]  =  C6(fr->nbfp, mtop->ffparams.atnr, atom->type, atom->type)/c6au/6.0;
                 qr->qm[0]->c12[i] = C12(fr->nbfp, mtop->ffparams.atnr, atom->type, atom->type)/c12au/12.0;
@@ -692,9 +689,10 @@ void init_QMMMrec(t_commrec  *cr,
          */
         for (i = 0; i < qm_nr; i++)
         {
-            gmx_mtop_atomnr_to_ilist(alook, qm_arr[i], &ilist_mol, &a_offset);
-            nrvsite2 = ilist_mol[F_VSITE2].nr;
-            iatoms   = ilist_mol[F_VSITE2].iatoms;
+            mtopGetMolblockIndex(mtop, qm_arr[i], &molb, NULL, &a_offset);
+            ilist_mol = mtop->moltype[mtop->molblock[molb].type].ilist;
+            nrvsite2  = ilist_mol[F_VSITE2].nr;
+            iatoms    = ilist_mol[F_VSITE2].iatoms;
 
             for (k = 0; k < nrvsite2; k += 4)
             {
@@ -721,8 +719,6 @@ void init_QMMMrec(t_commrec  *cr,
                 }
             }
         }
-
-        gmx_mtop_atomlookup_destroy(alook);
 
         /* MM rec creation */
         mm               = mk_MMrec();
