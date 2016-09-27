@@ -121,7 +121,6 @@ void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *si_pub);
  * \param[in] wcycle   Count wallcycles of swap routines for diagnostic output.
  * \param[in] x        Positions of home particles this node owns.
  * \param[in] box      The simulation box.
- * \param[in] mtop     Molecular topology.
  * \param[in] bVerbose Should we be quiet or verbose?
  * \param[in] bRerun   Are we doing a rerun?
  *
@@ -135,7 +134,6 @@ gmx_bool do_swapcoords(
         gmx_wallcycle_t   wcycle,
         rvec              x[],
         matrix            box,
-        gmx_mtop_t       *mtop,
         gmx_bool          bVerbose,
         gmx_bool          bRerun);
 

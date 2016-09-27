@@ -188,7 +188,7 @@ static void tpx2system(FILE *fp, const gmx_mtop_t *mtop)
 {
     int                       nmol, nvsite = 0;
     gmx_mtop_atomloop_block_t aloop;
-    t_atom                   *atom;
+    const t_atom             *atom;
 
     fprintf(fp, "\\subsection{Simulation system}\n");
     aloop = gmx_mtop_atomloop_block_init(mtop);

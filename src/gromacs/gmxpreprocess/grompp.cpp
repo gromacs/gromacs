@@ -363,7 +363,7 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
 static void check_vel(gmx_mtop_t *mtop, rvec v[])
 {
     gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
+    const t_atom           *atom;
     int                     a;
 
     aloop = gmx_mtop_atomloop_all_init(mtop);
@@ -383,7 +383,7 @@ static void check_shells_inputrec(gmx_mtop_t *mtop,
                                   warninp_t   wi)
 {
     gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
+    const t_atom           *atom;
     int                     a, nshells = 0;
     char                    warn_buf[STRLEN];
 
@@ -670,7 +670,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     {
         real                   *mass;
         gmx_mtop_atomloop_all_t aloop;
-        t_atom                 *atom;
+        const t_atom           *atom;
 
         snew(mass, state->natoms);
         aloop = gmx_mtop_atomloop_all_init(sys);
@@ -1326,7 +1326,7 @@ static real calc_temp(const gmx_mtop_t *mtop,
                       rvec             *v)
 {
     gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
+    const t_atom           *atom;
     int                     a;
 
     double                  sum_mv2 = 0;
