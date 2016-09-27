@@ -316,7 +316,6 @@ static void init_QMrec(int grpnr, t_QMrec *qm, int nr, int *atomarray,
     /* fills the t_QMrec struct of QM group grpnr
      */
     int                   i;
-    gmx_mtop_atomlookup_t alook;
     t_atom               *atom;
 
 
@@ -329,17 +328,14 @@ static void init_QMrec(int grpnr, t_QMrec *qm, int nr, int *atomarray,
         qm->indexQM[i] = atomarray[i];
     }
 
-    alook = gmx_mtop_atomlookup_init(mtop);
-
     snew(qm->atomicnumberQM, nr);
+    int molb = 0;
     for (i = 0; i < qm->nrQMatoms; i++)
     {
-        gmx_mtop_atomnr_to_atom(alook, qm->indexQM[i], &atom);
+        gmx_mtop_atomnr_to_atom(mtop, qm->indexQM[i], &molb, &atom);
         qm->nelectrons       += mtop->atomtypes.atomnumber[atom->type];
         qm->atomicnumberQM[i] = mtop->atomtypes.atomnumber[atom->type];
     }
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     qm->QMcharge       = ir->opts.QMcharge[grpnr];
     qm->multiplicity   = ir->opts.QMmult[grpnr];
@@ -472,7 +468,6 @@ void init_QMMMrec(t_commrec  *cr,
     gmx_mtop_ilistloop_all_t iloop;
     int                      a_offset;
     t_ilist                 *ilist_mol;
-    gmx_mtop_atomlookup_t    alook;
 
     if (ir->cutoff_scheme != ecutsGROUP)
     {
@@ -665,11 +660,10 @@ void init_QMMMrec(t_commrec  *cr,
          * the innerloops from doubly counting the electostatic QM MM interaction
          */
 
-        alook = gmx_mtop_atomlookup_init(mtop);
-
+        int molb = 0;
         for (k = 0; k < qm_nr; k++)
         {
-            gmx_mtop_atomnr_to_atom(alook, qm_arr[k], &atom);
+            gmx_mtop_atomnr_to_atom(mtop, qm_arr[k], &molb, &atom);
             atom->q  = 0.0;
             atom->qB = 0.0;
         }
@@ -681,7 +675,7 @@ void init_QMMMrec(t_commrec  *cr,
         {
             for (i = 0; i < qm_nr; i++)
             {
-                gmx_mtop_atomnr_to_atom(alook, qm_arr[i], &atom);
+                gmx_mtop_atomnr_to_atom(mtop, qm_arr[i], &molb, &atom);
                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
                 qr->qm[0]->c6[i]  =  C6(fr->nbfp, mtop->ffparams.atnr, atom->type, atom->type)/c6au/6.0;
                 qr->qm[0]->c12[i] = C12(fr->nbfp, mtop->ffparams.atnr, atom->type, atom->type)/c12au/12.0;
@@ -692,9 +686,10 @@ void init_QMMMrec(t_commrec  *cr,
          */
         for (i = 0; i < qm_nr; i++)
         {
-            gmx_mtop_atomnr_to_ilist(alook, qm_arr[i], &ilist_mol, &a_offset);
-            nrvsite2 = ilist_mol[F_VSITE2].nr;
-            iatoms   = ilist_mol[F_VSITE2].iatoms;
+            gmx_mtop_atomnr_to_molblock_ind(mtop, qm_arr[i], &molb, NULL, &a_offset);
+            ilist_mol = mtop->moltype[mtop->molblock[molb].type].ilist;
+            nrvsite2  = ilist_mol[F_VSITE2].nr;
+            iatoms    = ilist_mol[F_VSITE2].iatoms;
 
             for (k = 0; k < nrvsite2; k += 4)
             {
@@ -721,8 +716,6 @@ void init_QMMMrec(t_commrec  *cr,
                 }
             }
         }
-
-        gmx_mtop_atomlookup_destroy(alook);
 
         /* MM rec creation */
         mm               = mk_MMrec();

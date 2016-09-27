@@ -110,6 +110,14 @@ void gmx_mtop_finalize(gmx_mtop_t *mtop)
     }
 
     mtop->maxresnr = gmx_mtop_maxresnr(mtop, mtop->maxres_renum);
+
+    int atomIndex = 0;
+    for (int mb = 0; mb < mtop->nmolblock; mb++)
+    {
+        mtop->molblock[mb].globalAtomStart  = atomIndex;
+        atomIndex                          += mtop->molblock[mb].nmol*mtop->molblock[mb].natoms_mol;
+        mtop->molblock[mb].globalAtomEnd    = atomIndex;
+    }
 }
 
 void gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[])
@@ -177,267 +185,32 @@ void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop)
     }
 }
 
-
-typedef struct
-{
-    int a_start;
-    int a_end;
-    int na_mol;
-} mb_at_t;
-
-typedef struct gmx_mtop_atomlookup
-{
-    const gmx_mtop_t *mtop;
-    int               nmb;
-    int               mb_start;
-    mb_at_t          *mba;
-} t_gmx_mtop_atomlookup;
-
-
-gmx_mtop_atomlookup_t
-gmx_mtop_atomlookup_init(const gmx_mtop_t *mtop)
-{
-    t_gmx_mtop_atomlookup *alook;
-    int                    mb;
-    int                    a_start, a_end, na, na_start = -1;
-
-    snew(alook, 1);
-
-    alook->mtop     = mtop;
-    alook->nmb      = mtop->nmolblock;
-    alook->mb_start = 0;
-    snew(alook->mba, alook->nmb);
-
-    a_start = 0;
-    for (mb = 0; mb < mtop->nmolblock; mb++)
-    {
-        na    = mtop->molblock[mb].nmol*mtop->molblock[mb].natoms_mol;
-        a_end = a_start + na;
-
-        alook->mba[mb].a_start = a_start;
-        alook->mba[mb].a_end   = a_end;
-        alook->mba[mb].na_mol  = mtop->molblock[mb].natoms_mol;
-
-        /* We start the binary search with the largest block */
-        if (mb == 0 || na > na_start)
-        {
-            alook->mb_start = mb;
-            na_start        = na;
-        }
-
-        a_start = a_end;
-    }
-
-    return alook;
-}
-
-gmx_mtop_atomlookup_t
-gmx_mtop_atomlookup_settle_init(const gmx_mtop_t *mtop)
-{
-    t_gmx_mtop_atomlookup *alook;
-    int                    mb;
-    int                    na, na_start = -1;
-
-    alook = gmx_mtop_atomlookup_init(mtop);
-
-    /* Check if the starting molblock has settle */
-    if (mtop->moltype[mtop->molblock[alook->mb_start].type].ilist[F_SETTLE].nr  == 0)
-    {
-        /* Search the largest molblock with settle */
-        alook->mb_start = -1;
-        for (mb = 0; mb < mtop->nmolblock; mb++)
-        {
-            if (mtop->moltype[mtop->molblock[mb].type].ilist[F_SETTLE].nr > 0)
-            {
-                na = alook->mba[mb].a_end - alook->mba[mb].a_start;
-                if (alook->mb_start == -1 || na > na_start)
-                {
-                    alook->mb_start = mb;
-                    na_start        = na;
-                }
-            }
-        }
-
-        if (alook->mb_start == -1)
-        {
-            gmx_incons("gmx_mtop_atomlookup_settle_init called without settles");
-        }
-    }
-
-    return alook;
-}
-
-void
-gmx_mtop_atomlookup_destroy(gmx_mtop_atomlookup_t alook)
-{
-    sfree(alook->mba);
-    sfree(alook);
-}
-
-void gmx_mtop_atomnr_to_atom(const gmx_mtop_atomlookup_t alook,
-                             int                         atnr_global,
-                             t_atom                    **atom)
-{
-    int mb0, mb1, mb;
-    int a_start, atnr_mol;
-
-#ifdef DEBUG_MTOP
-    if (atnr_global < 0 || atnr_global >= mtop->natoms)
-    {
-        gmx_fatal(FARGS, "gmx_mtop_atomnr_to_moltype was called with atnr_global=%d which is not in the atom range of this system (%d-%d)",
-                  atnr_global, 0, mtop->natoms-1);
-    }
-#endif
-
-    mb0 = -1;
-    mb1 = alook->nmb;
-    mb  = alook->mb_start;
-
-    while (TRUE)
-    {
-        a_start = alook->mba[mb].a_start;
-        if (atnr_global < a_start)
-        {
-            mb1 = mb;
-        }
-        else if (atnr_global >= alook->mba[mb].a_end)
-        {
-            mb0 = mb;
-        }
-        else
-        {
-            break;
-        }
-        mb = ((mb0 + mb1 + 1)>>1);
-    }
-
-    atnr_mol = (atnr_global - a_start) % alook->mba[mb].na_mol;
-
-    *atom = &alook->mtop->moltype[alook->mtop->molblock[mb].type].atoms.atom[atnr_mol];
-}
-
-void gmx_mtop_atomnr_to_ilist(const gmx_mtop_atomlookup_t alook,
-                              int atnr_global,
-                              t_ilist **ilist_mol, int *atnr_offset)
-{
-    int mb0, mb1, mb;
-    int a_start, atnr_local;
-
-#ifdef DEBUG_MTOP
-    if (atnr_global < 0 || atnr_global >= mtop->natoms)
-    {
-        gmx_fatal(FARGS, "gmx_mtop_atomnr_to_moltype was called with atnr_global=%d which is not in the atom range of this system (%d-%d)",
-                  atnr_global, 0, mtop->natoms-1);
-    }
-#endif
-
-    mb0 = -1;
-    mb1 = alook->nmb;
-    mb  = alook->mb_start;
-
-    while (TRUE)
-    {
-        a_start = alook->mba[mb].a_start;
-        if (atnr_global < a_start)
-        {
-            mb1 = mb;
-        }
-        else if (atnr_global >= alook->mba[mb].a_end)
-        {
-            mb0 = mb;
-        }
-        else
-        {
-            break;
-        }
-        mb = ((mb0 + mb1 + 1)>>1);
-    }
-
-    *ilist_mol = alook->mtop->moltype[alook->mtop->molblock[mb].type].ilist;
-
-    atnr_local = (atnr_global - a_start) % alook->mba[mb].na_mol;
-
-    *atnr_offset = atnr_global - atnr_local;
-}
-
-void gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_atomlookup_t alook,
-                                     int atnr_global,
-                                     int *molb, int *molnr, int *atnr_mol)
-{
-    int mb0, mb1, mb;
-    int a_start;
-
-#ifdef DEBUG_MTOP
-    if (atnr_global < 0 || atnr_global >= mtop->natoms)
-    {
-        gmx_fatal(FARGS, "gmx_mtop_atomnr_to_moltype was called with atnr_global=%d which is not in the atom range of this system (%d-%d)",
-                  atnr_global, 0, mtop->natoms-1);
-    }
-#endif
-
-    mb0 = -1;
-    mb1 = alook->nmb;
-    mb  = alook->mb_start;
-
-    while (TRUE)
-    {
-        a_start = alook->mba[mb].a_start;
-        if (atnr_global < a_start)
-        {
-            mb1 = mb;
-        }
-        else if (atnr_global >= alook->mba[mb].a_end)
-        {
-            mb0 = mb;
-        }
-        else
-        {
-            break;
-        }
-        mb = ((mb0 + mb1 + 1)>>1);
-    }
-
-    *molb     = mb;
-    *molnr    = (atnr_global - a_start) / alook->mba[mb].na_mol;
-    *atnr_mol = atnr_global - a_start - (*molnr)*alook->mba[mb].na_mol;
-}
-
 void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
                               char **atomname, int *resnr, char **resname)
 {
-    int             mb, a_start, a_end, maxresnr, at_loc;
-    t_atoms        *atoms = NULL;
-
     if (atnr_global < 0 || atnr_global >= mtop->natoms)
     {
         gmx_fatal(FARGS, "gmx_mtop_atominfo_global was called with atnr_global=%d which is not in the atom range of this system (%d-%d)",
                   atnr_global, 0, mtop->natoms-1);
     }
 
-    mb       = -1;
-    a_end    = 0;
-    maxresnr = mtop->maxresnr;
-    do
+    int mb       = 0;
+    int maxresnr = mtop->maxresnr;
+    while (atnr_global >= mtop->molblock[mb].globalAtomEnd)
     {
-        if (mb >= 0)
+        int nres = mtop->moltype[mtop->molblock[mb].type].atoms.nres;
+        if (nres <= mtop->maxres_renum)
         {
-            /* cppcheck-suppress nullPointer #6330 will be fixed in cppcheck 1.73 */
-            if (atoms->nres <= mtop->maxres_renum)
-            {
-                /* Single residue molecule, keep counting */
-                /* cppcheck-suppress nullPointer #6330 will be fixed in cppcheck 1.73 */
-                maxresnr += mtop->molblock[mb].nmol*atoms->nres;
-            }
+            /* Single residue molecule, keep counting */
+            maxresnr += mtop->molblock[mb].nmol*nres;
         }
         mb++;
-        atoms   = &mtop->moltype[mtop->molblock[mb].type].atoms;
-        a_start = a_end;
-        a_end   = a_start + mtop->molblock[mb].nmol*atoms->nr;
     }
-    while (atnr_global >= a_end);
 
-    at_loc    = (atnr_global - a_start) % atoms->nr;
-    *atomname = *(atoms->atomname[at_loc]);
+    int            a_start = mtop->molblock[mb].globalAtomStart;
+    const t_atoms *atoms   = &mtop->moltype[mtop->molblock[mb].type].atoms;
+    int            at_loc  = (atnr_global - a_start) % atoms->nr;
+    *atomname              = *(atoms->atomname[at_loc]);
     if (atoms->nres > mtop->maxres_renum)
     {
         *resnr = atoms->resinfo[atoms->atom[at_loc].resind].nr;
