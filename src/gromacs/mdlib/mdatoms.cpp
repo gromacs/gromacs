@@ -117,8 +117,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
               t_mdatoms *md)
 {
     gmx_bool              bLJPME;
-    gmx_mtop_atomlookup_t alook;
-    int                   i;
     const t_grpopts      *opts;
     const gmx_groups_t   *groups;
     int                   nthreads gmx_unused;
@@ -219,12 +217,12 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
     }
 
-    alook = gmx_mtop_atomlookup_init(mtop);
+    int molb = 0;
 
     // cppcheck-suppress unreadVariable
     nthreads = gmx_omp_nthreads_get(emntDefault);
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (i = 0; i < md->nr; i++)
+#pragma omp parallel for num_threads(nthreads) schedule(static) firstprivate(molb)
+    for (int i = 0; i < md->nr; i++)
     {
         try
         {
@@ -239,9 +237,9 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             }
             else
             {
-                ag   = index[i];
+                ag = index[i];
             }
-            gmx_mtop_atomnr_to_atom(alook, ag, &atom);
+            gmx_mtop_atomnr_to_atom(mtop, ag, &molb, &atom);
 
             if (md->cFREEZE)
             {
@@ -398,8 +396,6 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     md->homenr = homenr;
     md->lambda = 0;

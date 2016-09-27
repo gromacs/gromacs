@@ -41,17 +41,16 @@
 
 #include <vector>
 
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 
 struct gmx_localtop_t;
-struct gmx_moltype_t;
-struct gmx_mtop_t;
 struct t_atom;
 struct t_atoms;
 struct t_block;
 struct t_ilist;
 struct t_symtab;
-struct t_topology;
 
 /* Should be called after generating or reading mtop,
  * to set some compute intesive variables to avoid
@@ -74,52 +73,98 @@ ncg_mtop(const gmx_mtop_t *mtop);
 /* Removes the charge groups, i.e. makes single atom charge groups, in mtop */
 void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop);
 
+/*! \brief Look up the molecule block and other indices of a global atom index
+ *
+ * The input index has to be in range: 0 <= \p globalAtomIndex \p mtop->natoms.
+ * The input value of moleculeBlock should be in range. Use 0 as starting value.
+ * For subsequent calls to this function, e.g. in a loop, pass in the previously
+ * returned value for best performance. Atoms in a group tend to be in the same
+ * molecule(block), so this minimizes the search time.
+ *
+ * \param[in]     mtop                 The molecule topology
+ * \param[in]     globalAtomIndex      The global atom index to look up
+ * \param[in,out] moleculeBlock        The molecule block index in \p mtop
+ * \param[out]    moleculeIndex        The index of the molecule in the block, can be NULL
+ * \param[out]    atomIndexInMolecule  The atom index in the molecule, can be NULL
+ */
+static void
+gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_t *mtop,
+                                int               globalAtomIndex,
+                                int              *moleculeBlock,
+                                int              *moleculeIndex,
+                                int              *atomIndexInMolecule)
+{
+    GMX_ASSERT(globalAtomIndex >= 0 && globalAtomIndex < mtop->natoms, "The atom number to look up should be within range");
+    GMX_ASSERT(moleculeBlock != nullptr, "molBlock can not be NULL");
+    GMX_ASSERT(*moleculeBlock >= 0 && *moleculeBlock < mtop->nmolblock, "The starting molecule block index for the search should be within range");
 
-/* Abstract data type for looking up atoms by global atom number */
-typedef struct gmx_mtop_atomlookup *gmx_mtop_atomlookup_t;
+    /* Search the molecue block index using bisection */
+    int molBlock0 = -1;
+    int molBlock1 = mtop->nmolblock;
 
-/* Initialize atom lookup by global atom number */
-gmx_mtop_atomlookup_t
-gmx_mtop_atomlookup_init(const gmx_mtop_t *mtop);
+    int globalAtomStart;
+    while (TRUE)
+    {
+        globalAtomStart = mtop->molblock[*moleculeBlock].globalAtomStart;
+        if (globalAtomIndex < globalAtomStart)
+        {
+            molBlock1 = *moleculeBlock;
+        }
+        else if (globalAtomIndex >= mtop->molblock[*moleculeBlock].globalAtomEnd)
+        {
+            molBlock0 = *moleculeBlock;
+        }
+        else
+        {
+            break;
+        }
+        *moleculeBlock = ((molBlock0 + molBlock1 + 1) >> 1);
+    }
 
-/* As gmx_mtop_atomlookup_init, but optimized for atoms involved in settle */
-gmx_mtop_atomlookup_t
-gmx_mtop_atomlookup_settle_init(const gmx_mtop_t *mtop);
+    int molIndex = (globalAtomIndex - globalAtomStart) / mtop->molblock[*moleculeBlock].natoms_mol;
+    if (moleculeIndex != nullptr)
+    {
+        *moleculeIndex = molIndex;
+    }
+    if (atomIndexInMolecule != nullptr)
+    {
+        *atomIndexInMolecule = globalAtomIndex - globalAtomStart - molIndex*mtop->molblock[*moleculeBlock].natoms_mol;
+    }
+}
 
-/* Destroy a gmx_mtop_atomlookup_t data structure */
-void
-gmx_mtop_atomlookup_destroy(gmx_mtop_atomlookup_t alook);
-
+/*! \brief Look up the molecule block and atom data of a global atom index
+ *
+ * The input index has to be in range: 0 <= \p globalAtomIndex \p mtop->natoms.
+ * The input value of moleculeBlock should be in range. Use 0 as starting value.
+ * For subsequent calls to this function, e.g. in a loop, pass in the previously
+ * returned value for best performance. Atoms in a group tend to be in the same
+ * molecule(block), so this minimizes the search time.
+ *
+ * \param[in]     mtop                 The molecule topology
+ * \param[in]     globalAtomIndex      The global atom index to look up
+ * \param[in,out] moleculeBlock        The molecule block index in \p mtop
+ * \param[out]    atom                 Atom data of the global atom index
+ */
+static void
+gmx_mtop_atomnr_to_atom(const gmx_mtop_t  *mtop,
+                        int                globalAtomIndex,
+                        int               *moleculeBlock,
+                        t_atom           **atom)
+{
+    int atomIndexInMolecule;
+    gmx_mtop_atomnr_to_molblock_ind(mtop, globalAtomIndex, moleculeBlock,
+                                    NULL, &atomIndexInMolecule);
+    *atom = &mtop->moltype[mtop->molblock[*moleculeBlock].type].atoms.atom[atomIndexInMolecule];
+}
 
 /* Returns a pointer to the t_atom struct belonging to atnr_global.
  * This can be an expensive operation, so if possible use
  * one of the atom loop constructs below.
  */
-void
-gmx_mtop_atomnr_to_atom(const gmx_mtop_atomlookup_t alook,
-                        int                         atnr_global,
-                        t_atom                    **atom);
-
-
-/* Returns a pointer to the molecule interaction array ilist_mol[F_NRE]
- * and the local atom number in the molecule belonging to atnr_global.
- */
-void
-gmx_mtop_atomnr_to_ilist(const gmx_mtop_atomlookup_t alook,
-                         int atnr_global,
-                         t_ilist **ilist_mol, int *atnr_offset);
-
-
-/* Returns the molecule block index
- * and the molecule number in the block
- * and the atom number offset for the atom indices in moltype
- * belonging to atnr_global.
- */
-void
-gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_atomlookup_t alook,
-                                int atnr_global,
-                                int *molb, int *molnr, int *atnr_mol);
-
+void gmx_mtop_atomnr_to_atom(const gmx_mtop_t  *mtop,
+                             int                globalAtomIndex,
+                             int               *moleculeBlock,
+                             t_atom           **atom);
 
 /* Returns atom name, global resnr and residue name  of atom atnr_global */
 void
