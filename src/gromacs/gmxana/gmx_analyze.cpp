@@ -40,6 +40,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <vector>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/correlationfunctions/autocorr.h"
@@ -53,6 +55,8 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/random/threefry.h"
+#include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
@@ -803,10 +807,15 @@ static void do_fit(FILE *out, int n, gmx_bool bYdy,
     real   *c1 = NULL, *sig = NULL;
     double *fitparm;
     real    tendfit, tbeginfit;
-    int     i, efitfn, nparm;
+    int     i, efitfn, nparm, bootstrap;
 
     efitfn = get_acffitfn();
-    nparm  = effnNparams(efitfn);
+    if (!(efitfn > effnNONE && efitfn < effnNR))
+    {
+        gmx_fatal(FARGS, "No function to fit to given. Please use option -fitfn.\n");
+    }
+    nparm     = effnNparams(efitfn);
+    bootstrap = opt2parg_int("-bootstrap", npargs, ppa);
     fprintf(out, "Will fit to the following function:\n");
     fprintf(out, "%s\n", effnDescription(efitfn));
     c1 = val[n];
@@ -883,15 +892,68 @@ static void do_fit(FILE *out, int n, gmx_bool bYdy,
     fprintf(out, "Starting parameters:\n");
     for (i = 0; (i < nparm); i++)
     {
-        fprintf(out, "a%-2d = %12.5e\n", i+1, fitparm[i]);
+        fprintf(out, "a%-2d = %12.5e\n", i, fitparm[i]);
     }
     if (do_lmfit(ny, c1, sig, 0, x0, tbeginfit, tendfit,
                  oenv, bDebugMode(), efitfn, fitparm, 0,
                  fn_fitted) > 0)
     {
-        for (i = 0; (i < nparm); i++)
+        if (bootstrap > 1)
         {
-            fprintf(out, "a%-2d = %12.5e\n", i+1, fitparm[i]);
+            gmx::DefaultRandomEngine           rng;
+            rng.seed(0);
+            gmx::UniformRealDistribution<real> dist;
+            std::vector<real>                  xtmp, ytmp;
+            xtmp.resize(ny);
+            ytmp.resize(ny);
+            std::vector<gmx_stats_t> lsq;
+            lsq.resize(nparm);
+            for (int i = 0; i < nparm; i++)
+            {
+                lsq[i] = gmx_stats_init();
+            }
+            for (int i = 0; i < bootstrap; i++)
+            {
+                for (int j = 0; j < ny; j++)
+                {
+                    int index = dist(rng)*ny;
+                    xtmp[j] = x0[index];
+                    ytmp[j] = c1[index];
+                }
+                real integral = do_lmfit(ny, ytmp.data(), sig, 0,
+                                         xtmp.data(),
+                                         tbeginfit, tendfit,
+                                         oenv, bDebugMode(),
+                                         efitfn, fitparm, 0,
+                                         NULL);
+                if (integral > 0)
+                {
+                    for (int k = 0; k < nparm; k++)
+                    {
+                        gmx_stats_add_point(lsq[k], i, fitparm[k], 0, 0);
+                    }
+                }
+                else
+                {
+                    printf("Problem fitting iteration %d integral %f\n",
+                           i, integral);
+                }
+            }
+            for (int i = 0; (i < nparm); i++)
+            {
+                real aver, sigma, error;
+                gmx_stats_get_ase(lsq[i], &aver, &sigma, &error);
+                fprintf(out, "a%-2d = %12.5e +/- %12.5e\n",
+                        i, aver, sigma);
+                gmx_stats_free(lsq[i]);
+            }
+        }
+        else
+        {
+            for (int i = 0; (i < nparm); i++)
+            {
+                fprintf(out, "a%-2d = %12.5e\n", i, fitparm[i]);
+            }
         }
     }
     else
@@ -919,7 +981,7 @@ static void print_fitted_function(const char       *fitfile,
     }
     else
     {
-        char *buf2 = NULL;
+        char *buf2      = NULL;
         int   s, buflen = 0;
         if (NULL != fn_fitted)
         {
@@ -1016,7 +1078,8 @@ int gmx_analyze(int argc, char *argv[])
         "This filter reduces oscillations with period len/2 and len by a factor",
         "of 0.79 and 0.33 respectively.[PAR]",
 
-        "Option [TT]-g[tt] fits the data to the function given with option",
+        "If either option [TT]-g[tt] or [TT]-fitfn[tt] is set, the data",
+        "in the input data set is fitten to the function given with option",
         "[TT]-fitfn[tt].[PAR]",
 
         "Option [TT]-power[tt] fits the data to [MATH]b t^a[math], which is accomplished",
@@ -1031,13 +1094,17 @@ int gmx_analyze(int argc, char *argv[])
         "exponential curves. More information is in the manual. To check the output",
         "of the fitting procedure the option [TT]-fitted[tt] will print both the",
         "original data and the fitted function to a new data file. The fitting",
-        "parameters are stored as comment in the output file."
+        "parameters are stored in the log file.",
+        "In order to compute robust standard deviations on the fitted",
+        "parameters when using option [TT]-fit[tt] bootstrapping can be",
+        "used, option [TT]-bootstrap[tt]. 100 is a reasonable value."
     };
     static real        tb         = -1, te = -1, frac = 0.5, filtlen = 0, binwidth = 0.1, aver_start = 0;
     static gmx_bool    bHaveT     = TRUE, bDer = FALSE, bSubAv = TRUE, bAverCorr = FALSE, bXYdy = FALSE;
     static gmx_bool    bEESEF     = FALSE, bEENLC = FALSE, bEeFitAc = FALSE, bPower = FALSE;
     static gmx_bool    bIntegrate = FALSE, bRegression = FALSE, bLuzar = FALSE;
     static int         nsets_in   = 1, d = 1, nb_min = 4, resol = 10;
+    static int         bootstrap  = 1;
     static real        temp       = 298.15, fit_start = 1, fit_end = 60;
 
     /* must correspond to enum avbar* declared at beginning of file */
@@ -1081,6 +1148,8 @@ int gmx_analyze(int argc, char *argv[])
           "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" },
         { "-fitend", FALSE, etREAL, {&fit_end},
           "Time (ps) where to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. Only with [TT]-gem[tt]" },
+        { "-bootstrap", FALSE, etINT, {&bootstrap},
+          "Number of iterations for bootstrapping the function fit" },
         { "-nbmin",   FALSE, etINT, {&nb_min},
           "HIDDENMinimum number of blocks for block averaging" },
         { "-resol", FALSE, etINT, {&resol},
