@@ -64,6 +64,7 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -183,7 +184,7 @@ static void write_constr_pdb(const char *fn, const char *title,
     FILE         *out;
     int           dd_ac0 = 0, dd_ac1 = 0, i, ii, resnr;
     gmx_domdec_t *dd;
-    char         *anm, *resnm;
+    const char   *anm, *resnm;
 
     dd = NULL;
     if (DOMAINDECOMP(cr))
@@ -221,7 +222,7 @@ static void write_constr_pdb(const char *fn, const char *title,
         {
             ii = i;
         }
-        gmx_mtop_atominfo_global(mtop, ii, &anm, &resnr, &resnm);
+        mtopGetAtomAndResidueName(mtop, ii, &anm, &resnr, &resnm, NULL);
         gmx_fprintf_pdb_atomline(out, epdbATOM, ii+1, anm, ' ', resnm, ' ', resnr, ' ',
                                  10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 0.0, "");
     }

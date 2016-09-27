@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -242,51 +242,37 @@ static void atoms_to_settles(gmx_domdec_t *dd,
                              t_ilist *ils_local,
                              ind_req_t *ireq)
 {
-    gmx_ga2la_t            *ga2la;
-    gmx_mtop_atomlookup_t   alook;
-    int                     settle;
-    int                     nral, sa;
-    int                     cg, a, a_gl, a_glsa, a_gls[3], a_locs[3];
-    int                     mb, molnr, a_mol, offset;
-    const gmx_molblock_t   *molb;
-    const t_iatom          *ia1;
-    gmx_bool                a_home[3];
-    int                     nlocal;
-    gmx_bool                bAssign;
+    gmx_ga2la_t *ga2la = dd->ga2la;
+    int          nral  = NRAL(F_SETTLE);
 
-    ga2la  = dd->ga2la;
-
-    alook = gmx_mtop_atomlookup_settle_init(mtop);
-
-    nral = NRAL(F_SETTLE);
-
-    for (cg = cg_start; cg < cg_end; cg++)
+    int          mb    = 0;
+    for (int cg = cg_start; cg < cg_end; cg++)
     {
         if (GET_CGINFO_SETTLE(cginfo[cg]))
         {
-            for (a = dd->cgindex[cg]; a < dd->cgindex[cg+1]; a++)
+            for (int a = dd->cgindex[cg]; a < dd->cgindex[cg+1]; a++)
             {
-                a_gl = dd->gatindex[a];
+                int a_gl = dd->gatindex[a];
+                int a_mol;
+                mtopGetMolblockIndex(mtop, a_gl, &mb, NULL, &a_mol);
 
-                gmx_mtop_atomnr_to_molblock_ind(alook, a_gl, &mb, &molnr, &a_mol);
-                molb = &mtop->molblock[mb];
-
-                settle = at2settle_mt[molb->type][a_mol];
+                const gmx_molblock_t *molb   = &mtop->molblock[mb];
+                int                   settle = at2settle_mt[molb->type][a_mol];
 
                 if (settle >= 0)
                 {
-                    offset = a_gl - a_mol;
+                    int      offset  = a_gl - a_mol;
 
-                    ia1 = mtop->moltype[molb->type].ilist[F_SETTLE].iatoms;
+                    t_iatom *ia1     = mtop->moltype[molb->type].ilist[F_SETTLE].iatoms;
 
-                    bAssign = FALSE;
-                    nlocal  = 0;
-                    for (sa = 0; sa < nral; sa++)
+                    int      a_gls[3], a_locs[3];
+                    gmx_bool bAssign = FALSE;
+                    int      nlocal  = 0;
+                    for (int sa = 0; sa < nral; sa++)
                     {
-                        a_glsa     = offset + ia1[settle*(1+nral)+1+sa];
+                        int a_glsa = offset + ia1[settle*(1+nral)+1+sa];
                         a_gls[sa]  = a_glsa;
-                        a_home[sa] = ga2la_get_home(ga2la, a_glsa, &a_locs[sa]);
-                        if (a_home[sa])
+                        if (ga2la_get_home(ga2la, a_glsa, &a_locs[sa]))
                         {
                             if (nlocal == 0 && a_gl == a_glsa)
                             {
@@ -306,7 +292,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
                         ils_local->iatoms[ils_local->nr++] = ia1[settle*4];
 
-                        for (sa = 0; sa < nral; sa++)
+                        for (int sa = 0; sa < nral; sa++)
                         {
                             if (ga2la_get_home(ga2la, a_gls[sa], &a_locs[sa]))
                             {
@@ -332,8 +318,6 @@ static void atoms_to_settles(gmx_domdec_t *dd,
             }
         }
     }
-
-    gmx_mtop_atomlookup_destroy(alook);
 }
 
 /*! \brief Looks up constraint for the local atoms */
@@ -345,33 +329,28 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                                  ind_req_t *ireq)
 {
     const t_blocka             *at2con;
-    gmx_ga2la_t                *ga2la;
-    gmx_mtop_atomlookup_t       alook;
     int                         ncon1;
-    gmx_molblock_t             *molb;
     t_iatom                    *ia1, *ia2, *iap;
-    int                         nhome, cg, a, a_gl, a_mol, a_loc, b_lo, offset, mb, molnr, b_mol, i, con, con_offset;
-    gmx_domdec_constraints_t   *dc;
-    gmx_domdec_specat_comm_t   *dcc;
+    int                         a_loc, b_lo, offset, b_mol, i, con, con_offset;
 
-    dc  = dd->constraints;
-    dcc = dd->constraint_comm;
+    gmx_domdec_constraints_t   *dc     = dd->constraints;
+    gmx_domdec_specat_comm_t   *dcc    = dd->constraint_comm;
 
-    ga2la  = dd->ga2la;
+    gmx_ga2la_t                *ga2la  = dd->ga2la;
 
-    alook = gmx_mtop_atomlookup_init(mtop);
-
-    nhome = 0;
-    for (cg = 0; cg < dd->ncg_home; cg++)
+    int mb    = 0;
+    int nhome = 0;
+    for (int cg = 0; cg < dd->ncg_home; cg++)
     {
         if (GET_CGINFO_CONSTR(cginfo[cg]))
         {
-            for (a = dd->cgindex[cg]; a < dd->cgindex[cg+1]; a++)
+            for (int a = dd->cgindex[cg]; a < dd->cgindex[cg+1]; a++)
             {
-                a_gl = dd->gatindex[a];
+                int a_gl = dd->gatindex[a];
+                int molnr, a_mol;
+                mtopGetMolblockIndex(mtop, a_gl, &mb, &molnr, &a_mol);
 
-                gmx_mtop_atomnr_to_molblock_ind(alook, a_gl, &mb, &molnr, &a_mol);
-                molb = &mtop->molblock[mb];
+                const gmx_molblock_t *molb = &mtop->molblock[mb];
 
                 ncon1 = mtop->moltype[molb->type].ilist[F_CONSTR].nr/NRAL(F_SETTLE);
 
@@ -442,8 +421,6 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
             }
         }
     }
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     if (debug)
     {

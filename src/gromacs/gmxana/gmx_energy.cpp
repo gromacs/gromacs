@@ -60,6 +60,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -2013,7 +2014,7 @@ int gmx_energy(int argc, char *argv[])
     gmx_bool          *bIsEner = NULL;
     char             **pairleg, **odtleg, **otenleg;
     char             **leg = NULL;
-    char              *anm_j, *anm_k, *resnm_j, *resnm_k;
+    const char        *anm_j, *anm_k, *resnm_j, *resnm_k;
     int                resnr_j, resnr_k;
     const char        *orinst_sub = "@ subtitle \"instantaneous\"\n";
     char               buf[256];
@@ -2481,8 +2482,8 @@ int gmx_energy(int argc, char *argv[])
                     snew(pairleg[i], 30);
                     j = fa[3*i+1];
                     k = fa[3*i+2];
-                    gmx_mtop_atominfo_global(&mtop, j, &anm_j, &resnr_j, &resnm_j);
-                    gmx_mtop_atominfo_global(&mtop, k, &anm_k, &resnr_k, &resnm_k);
+                    mtopGetAtomAndResidueName(&mtop, j, &anm_j, &resnr_j, &resnm_j, NULL);
+                    mtopGetAtomAndResidueName(&mtop, k, &anm_k, &resnr_k, &resnm_k, NULL);
                     sprintf(pairleg[i], "%d %s %d %s (%d)",
                             resnr_j, anm_j, resnr_k, anm_k,
                             ip[fa[3*i]].disres.label);
