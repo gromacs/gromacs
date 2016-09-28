@@ -581,7 +581,8 @@ static char **read_topol(const char *infile, const char *outfile,
                          gmx_bool        bFEP,
                          gmx_bool        bGenborn,
                          gmx_bool        bZero,
-                         warninp_t   wi)
+                         const t_inputrec *ir,
+                         warninp_t         wi)
 {
     FILE           *out;
     int             i, sl, nb_funct;
@@ -1096,6 +1097,12 @@ static char **read_topol(const char *infile, const char *outfile,
         sprintf(warn_buf, "State B has non-zero total charge: %.6f\n%s\n", qBt, floating_point_arithmetic_tip);
         warning_note(wi, warn_buf);
     }
+    if ((fabs(qt) > 1e-4 || fabs(qBt) > 1e-4) && EEL_FULL(ir->coulombtype))
+    {
+        const char *chargeMessage = "You are using Ewald electrostatics with a net charge, this will most likely lead to severe artifacts in inhomogenous Systems.";
+        warning(wi, chargeMessage);
+    }
+
     DS_Done (&DS);
     for (i = 0; i < nmol; i++)
     {
@@ -1160,7 +1167,8 @@ char **do_top(gmx_bool          bVerbose,
                        nrmols, molinfo, intermolecular_interactions,
                        plist, combination_rule, repulsion_power,
                        opts, fudgeQQ, nmolblock, molblock,
-                       ir->efep != efepNO, bGenborn, bZero, wi);
+                       ir->efep != efepNO, bGenborn, bZero, ir, wi);
+
     if ((*combination_rule != eCOMB_GEOMETRIC) &&
         (ir->vdwtype == evdwUSER))
     {
