@@ -55,6 +55,37 @@
 #include "stringutil.h"
 #include "xml_util.h"
 
+
+static const char *job_name[alexandria::JOB_NR] = 
+{
+    "Opt", "Pop", "POLAR", "G2", "G3", 
+    "G4", "CBSQB3", "W1U", "W1BD", "SP", "unknown"
+};
+
+const char *jobType2string(alexandria::jobType jType)
+
+{
+    if (jType < alexandria::JOB_NR)
+    {
+        return job_name[jType];
+    }
+    return nullptr;
+}
+
+alexandria::jobType alexandria::string2jobType(const std::string &str)
+{
+    int i;
+
+    for (i = 0; (i < alexandria::JOB_NR); i++)
+    {
+        if (str.compare(job_name[i]) == 0)
+        {
+            return static_cast<alexandria::jobType>(i);
+        }
+    }
+    return alexandria::JOB_NR;
+}
+
 static bool NN(const std::string &s)
 {
     return s.size() > 0;
@@ -504,7 +535,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                     alexandria::Experiment mycalc(xbuf[exmlPROGRAM], xbuf[exmlMETHOD],
                                                                   xbuf[exmlBASISSET], xbuf[exmlREFERENCE],
                                                                   xbuf[exmlCONFORMATION], xbuf[exmlDATAFILE],
-                                                                  xbuf[exmlJOBTYPE]);
+                                                                  alexandria::string2jobType(xbuf[exmlJOBTYPE]));
                                     mpt->AddExperiment(mycalc);
                                 }
                                 else if (ds == alexandria::dsExperiment)

@@ -76,7 +76,7 @@ static void calc_frag_miller(alexandria::Poldata              &pd,
 
     iMolSelect                   ims;
     char                        *null    = (char *)"0", *empirical = (char *)"empirical", *minimum = (char *)"minimum", *minus = (char *)"-", *nofile = (char *)"none";
-    char                        *jobtype = (char *)"unknown";
+    alexandria::jobType          jobtype = alexandria::JOB_UNKNOWN;
     const char                  *program = "alexandria";
     const char                  *ang3;
     alexandria::CompositionSpecs cs;

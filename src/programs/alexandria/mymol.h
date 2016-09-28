@@ -172,7 +172,8 @@ class MyMol
     public:
         rvec                     *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
         matrix                    box_;
-        real                      dip_exp, mu_exp2, dip_err, dip_weight, dip_calc, chieq, Hform, Emol, Ecalc, Force2;
+        real                      dip_exp, mu_exp2, dip_err, dip_weight, dip_calc, chieq;
+	real                      Hform, Emol, Ecalc, optEcalc, Force2;
         real                     *qESP;
         tensor                    Q_exp, Q_calc, Q_esp;
         eSupport                  eSupp;

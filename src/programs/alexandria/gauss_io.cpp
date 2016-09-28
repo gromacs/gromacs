@@ -172,7 +172,7 @@ static void gmx_molprop_read_babel(const char          *g98,
                                    int                  maxpot,
                                    int                  nsymm,
                                    const char          *forcefield,
-                                   const char          *jobtype)
+                                   alexandria::jobType  jobtype)
 {
     /* Read a gaussian log file */
     OpenBabel::OBMol           mol;
@@ -291,7 +291,8 @@ static void gmx_molprop_read_babel(const char          *g98,
     }
 
     alexandria::Experiment ca(program, method, basis, reference,
-                              conformation, g98ptr, jobtype);
+                              conformation, g98ptr, 
+                              jobtype);
     mpt.AddExperiment(ca);
     mpt.SetCharge(mol.GetTotalCharge());
     mpt.SetMass(mol.GetMolWt());
@@ -549,7 +550,8 @@ void ReadGauss(const char          *g98,
 {
 #if HAVE_LIBOPENBABEL2
     gmx_molprop_read_babel(g98, mp, molnm, iupac, conf, basis,
-                           maxpot, nsymm, forcefield, jobtype);
+                           maxpot, nsymm, forcefield, 
+                           alexandria::string2jobType(jobtype));
 #else
     gmx_fatal(FARGS, "For reading Gaussian input you need to link to OpenBabel");
 #endif

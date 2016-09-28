@@ -129,14 +129,9 @@ enum jobType {
 };
 
 /*! \brief
- * Convert job type to string
- */
-const char *jobType2string(jobType jType);
-
-/*! \brief
  * Convert string to job type
  */
-jobType string2jobType(const char *string);
+jobType string2jobType(const std::string &str);
 
 /*! \brief
  * Specifies the name of an atom type and the number in a molecular composition
@@ -962,7 +957,7 @@ class Experiment
         DataSource                           dataSource_;
         std::string                          reference_, conformation_;
         std::string                          _program, _method, _basisset, _datafile;
-	jobType                              jobtype_;
+	    jobType                              jobtype_;
         std::vector<CalcAtom>                _catom;
         std::vector<ElectrostaticPotential>  _potential;
         std::vector<MolecularDipole>         dipole_;
@@ -977,14 +972,14 @@ class Experiment
         //! Constructor initiating an Experiment with reference and conformation
         Experiment(std::string reference, std::string conformation) :
             dataSource_(dsExperiment), reference_(reference),
-            conformation_(conformation)
+            conformation_(conformation), jobtype_(JOB_UNKNOWN)
         {}
 
         //! Constructor initiating a Calculation
         Experiment(std::string program, std::string method,
                    std::string basisset, std::string reference,
                    std::string conformation, std::string datafile,
-                   std::string jtype);
+                   jobType jtype);
 
         //! Return the type of data
         DataSource dataSource() const { return dataSource_; }

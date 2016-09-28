@@ -121,36 +121,6 @@ static CommunicationStatus gmx_recv_data_(t_commrec *cr, int src, int line)
 namespace alexandria
 {
 
-static const char *job_name[JOB_NR] = 
-{
-    "Opt", "Pop", "POLAR", "G2", "G3", 
-    "G4", "CBSQB3", "W1U", "W1BD", "SP", "unknown"
-};
-
-const char *jobType2string(jobType jType)
-
-{
-    if (jType < JOB_NR)
-    {
-        return job_name[jType];
-    }
-    return nullptr;
-}
-
-jobType string2jobType(const char *string)
-{
-    int i;
-
-    for (i = 0; (i < JOB_NR); i++)
-    {
-        if (gmx_strcasecmp(string, job_name[i]) == 0)
-        {
-            return static_cast<jobType>(i);
-        }
-    }
-    return JOB_NR;
-}
-
 const char *dataSourceName(DataSource ds)
 {
     switch (ds)
@@ -422,7 +392,7 @@ void MolProp::DeleteComposition(const std::string &compname)
 Experiment::Experiment(std::string program, std::string method,
 		       std::string basisset, std::string reference,
 		       std::string conformation, std::string datafile,
-		       std::string jtype) 
+		       jobType jtype) 
     :
       dataSource_(dsTheory),
       reference_(reference), 
@@ -431,7 +401,7 @@ Experiment::Experiment(std::string program, std::string method,
       _method(method), 
       _basisset(basisset),
       _datafile(datafile),
-      jobtype_(string2jobType(jtype.c_str()))
+      jobtype_(jtype)
 
    {}
 
@@ -635,7 +605,7 @@ bool MolProp::BondExists(Bond b)
 int MolProp::Merge(std::vector<MolProp>::iterator src)
 {
     double      q = 0, sq = 0;
-    std::string stmp, dtmp, jtype;
+    std::string stmp;
     int         nwarn = 0;
 
     for (auto si = src->BeginCategory(); (si < src->EndCategory()); si++)
@@ -731,16 +701,18 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
         }
         else
         {
-	    jtype = jobType2string(ei->getJobtype());
-            Experiment ca(ei->getProgram(), ei->getMethod(),
-                          ei->getBasisset(), ei->getReference(),
-                          ei->getConformation(), ei->getDatafile(),
-                          jtype);
-            nwarn += ca.Merge(ei);
-            AddExperiment(ca);
+            auto jtype = ei->getJobtype();
+            if (jtype != JOB_NR)
+            {
+                Experiment ca(ei->getProgram(), ei->getMethod(),
+                              ei->getBasisset(), ei->getReference(),
+                              ei->getConformation(), ei->getDatafile(),
+                              jtype);
+                nwarn += ca.Merge(ei);
+                AddExperiment(ca);
+            }
         }
     }
-
     for (auto mci = src->BeginMolecularComposition();
          (mci < src->EndMolecularComposition()); mci++)
     {

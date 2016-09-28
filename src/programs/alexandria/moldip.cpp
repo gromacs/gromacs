@@ -397,7 +397,6 @@ static void fill_inputrec(t_inputrec *ir)
     ir->niter            = 25;
     ir->em_stepsize      = 1e-2; // nm
     ir->em_tol           = 1e-2;
-    snew(ir->opts.egp_flags, 1);
     ir->opts.ngener = 1;
     snew(ir->fepvals, 1);
 }
@@ -449,7 +448,7 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
     _fc[ermsESP]                = fc_esp;
     _fc[ermsForce2]             = fc_force;
     _fc[ermsEPOT]               = fc_epot;
-    _fixchi                     = strdup(fixchi);
+    _fixchi                     = fixchi;
     _hfac                       = hfac;
     _hfac0                      = hfac;
     _bOptHfac                   = bOptHfac;

@@ -971,7 +971,8 @@ double OptPrep::calcDeviation()
     rvec    mu_tot;
     int     j;
     FILE   *dbcopy;
-    double  ener = 0, optHF = 0, spHF = 0, deltaEn = 0, Emol = 0;
+    double  ener = 0, optHF = 0, spHF = 0;
+    double  deltaEn = 0, Emol = 0;
 
     if (PAR(_cr))
     {
@@ -1012,20 +1013,20 @@ double OptPrep::calcDeviation()
 	       /* Update topology for this molecule */
 	       for (const auto fc : ForceConstants_)
 	       {
-		   if (fc.nbad() > 0)
-		   {
-		       mymol.UpdateIdef(pd_, fc.interactionType());
-		   }
+               if (fc.nbad() > 0)
+               {
+                   mymol.UpdateIdef(pd_, fc.interactionType());
+               }
 	       }
 
 	       atoms2md(mymol.mtop_, mymol.inputrec_, 0, NULL, 0, mymol.mdatoms_);
 
 	       for (auto ei = mymol.molProp()->BeginExperiment();
-		    ei < mymol.molProp()->EndExperiment(); ++ei)
+                ei < mymol.molProp()->EndExperiment(); ++ei)
 	       {
-		   auto jtype = ei->getJobtype();
+               auto jtype = ei->getJobtype();
 
-		   if (jtype == JOB_OPT || jtype == JOB_SP)
+               if (jtype == JOB_OPT || jtype == JOB_SP)
 		   {
 		     
 		       nconfs++;
@@ -1059,6 +1060,7 @@ double OptPrep::calcDeviation()
 		       if (jtype == JOB_OPT)
 		       {	
 			   _ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
+			   mymol.optEcalc     = mymol.enerd_->term[F_EPOT];
 		       }
 
 		       mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
@@ -1279,6 +1281,7 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
     }
 }
 
+
 void OptPrep::printSpecs(FILE *fp, char *title,
                          const char *xvg, const gmx_output_env_t *oenv,
                          bool bCheckOutliers)
@@ -1301,14 +1304,14 @@ void OptPrep::printSpecs(FILE *fp, char *title,
     i   = 0;
     for (auto mi = _mymol.begin(); (mi < _mymol.end()); mi++, i++)
     {
-        real DeltaE = mi->Ecalc - mi->Emol;
+        real DeltaE = mi->optEcalc - mi->Emol;
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
                 i,
                 mi->molProp()->getMolname().c_str(),
                 mi->Hform, mi->Emol, DeltaE,
                 sqrt(mi->Force2),
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
-        msd += gmx::square(mi->Emol-mi->Ecalc);
+        msd += gmx::square(mi->Emol-mi->optEcalc);
         gmx_stats_add_point(gst, mi->Hform, mi->Hform + DeltaE, 0, 0);
         if (NULL != xvg)
         {

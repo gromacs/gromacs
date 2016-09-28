@@ -1972,6 +1972,8 @@ void MyMol::PrintTopology(FILE                   *fp,
             printf("%s\n", i->c_str());
         }
     }
+    
+    sfree(printmol.name);
 }
 
 static void add_excl(t_excls *excls, int e)
