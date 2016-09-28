@@ -2753,6 +2753,9 @@ void init_forcerec(FILE                *fp,
         fr->bcoultab = FALSE;
     }
 
+    /* This now calculates sum for q and C6 */
+    set_chargesum(fp, fr, mtop);
+
     /* Tables are used for direct ewald sum */
     if (fr->bEwald)
     {
@@ -2774,11 +2777,18 @@ void init_forcerec(FILE                *fp,
 
             if (ir->ewald_geometry == eewg3DC)
             {
+                bool haveNetCharge = (fabs(fr->qsum[0]) > 1e-4 ||
+                                      fabs(fr->qsum[1]) > 1e-4);
                 if (fp)
                 {
-                    fprintf(fp, "Using the Ewald3DC correction for systems with a slab geometry.\n");
+                    fprintf(fp, "Using the Ewald3DC correction for systems with a slab geometry%s.\n",
+                            haveNetCharge ? " and net charge" : "");
                 }
                 please_cite(fp, "In-Chul99a");
+                if (haveNetCharge)
+                {
+                    please_cite(fp, "Ballenegger2009");
+                }
             }
         }
         fr->ewaldcoeff_q = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
@@ -2978,9 +2988,6 @@ void init_forcerec(FILE                *fp,
                    fr->rcoulomb, fr->temp, fr->zsquare, box,
                    &fr->kappa, &fr->k_rf, &fr->c_rf);
     }
-
-    /*This now calculates sum for q and c6*/
-    set_chargesum(fp, fr, mtop);
 
     /* Construct tables for the group scheme. A little unnecessary to
      * make both vdw and coul tables sometimes, but what the

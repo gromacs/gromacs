@@ -366,6 +366,11 @@ void please_cite(FILE *fp, const char *key)
           "GROMACS: High performance molecular simulations through multi-level parallelism from laptops to supercomputers",
           "SoftwareX",
           1, 2015, "19-25" },
+        { "Ballenegger2009",
+          "V. Ballenegge, A. Arnold, J. J. Cerdà",
+          "Simulations of non-neutral slab systems with long-range electrostatic interactions in two-dimensional periodic boundary conditions",
+          "J. Chem. Phys",
+          131, 2009, "094107" },
     };
 #define NSTR (int)asize(citedb)
 
