@@ -65,6 +65,7 @@
 #include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
@@ -73,6 +74,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 #define OPENDIR     '[' /* starting sign for directive */
@@ -581,7 +583,8 @@ static char **read_topol(const char *infile, const char *outfile,
                          gmx_bool        bFEP,
                          gmx_bool        bGenborn,
                          gmx_bool        bZero,
-                         warninp_t   wi)
+                         gmx_bool        usingFullRangeElectrostatics,
+                         warninp_t       wi)
 {
     FILE           *out;
     int             i, sl, nb_funct;
@@ -1091,6 +1094,7 @@ static char **read_topol(const char *infile, const char *outfile,
     {
         title = put_symtab(symtab, "");
     }
+
     if (fabs(qt) > 1e-4)
     {
         sprintf(warn_buf, "System has non-zero total charge: %.6f\n%s\n", qt, floating_point_arithmetic_tip);
@@ -1101,6 +1105,12 @@ static char **read_topol(const char *infile, const char *outfile,
         sprintf(warn_buf, "State B has non-zero total charge: %.6f\n%s\n", qBt, floating_point_arithmetic_tip);
         warning_note(wi, warn_buf);
     }
+    if (usingFullRangeElectrostatics && (fabs(qt) > 1e-4 || fabs(qBt) > 1e-4))
+    {
+        warning(wi, "You are using Ewald electrostatics in a system with net charge. This can lead to severe artifacts, such as ions moving into regions with low dielectric, due to the uniform background charge. We suggest to neutralize your system with counter ions, possibly in combination with a physiological salt concentration.");
+        please_cite(stdout, "Hub2014a");
+    }
+
     DS_Done (&DS);
     for (i = 0; i < nmol; i++)
     {
@@ -1165,7 +1175,9 @@ char **do_top(gmx_bool          bVerbose,
                        nrmols, molinfo, intermolecular_interactions,
                        plist, combination_rule, repulsion_power,
                        opts, fudgeQQ, nmolblock, molblock,
-                       ir->efep != efepNO, bGenborn, bZero, wi);
+                       ir->efep != efepNO, bGenborn, bZero,
+                       EEL_FULL(ir->coulombtype), wi);
+
     if ((*combination_rule != eCOMB_GEOMETRIC) &&
         (ir->vdwtype == evdwUSER))
     {
