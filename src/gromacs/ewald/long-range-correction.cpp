@@ -330,6 +330,10 @@ void ewald_LRcorrection(int numAtomsLocal,
                 {
                     f[i][j] -= dipcorrA[j]*chargeA[i];
                 }
+                if (ewald_geometry == eewg3DC)
+                {
+                    f[i][ZZ] += 2*dipole_coeff*fr->qsum[0]*chargeA[i]*x[i][ZZ];
+                }
             }
         }
     }
@@ -478,6 +482,11 @@ void ewald_LRcorrection(int numAtomsLocal,
                     f[i][j] -= L1_q*dipcorrA[j]*chargeA[i]
                         + lambda_q*dipcorrB[j]*chargeB[i];
                 }
+                if (ewald_geometry == eewg3DC)
+                {
+                    f[i][ZZ] += 2*dipole_coeff*(L1_q*fr->qsum[0]*chargeA[i]
+                        + lambda_q*fr->qsum[1]*chargeB[i])*x[i][ZZ];
+                }
             }
         }
     }
@@ -510,8 +519,9 @@ void ewald_LRcorrection(int numAtomsLocal,
                 }
             }
 
-            /* Apply surface dipole correction:
-             * correction = dipole_coeff * (dipole)^2
+             /* Apply surface and charged surface dipole correction:
+             * correction = dipole_coeff * ( (dipole)^2
+             *               - qsum*sum_i q_i z_i^2 - qsum^2 * box_z^2 / 12 )
              */
             if (dipole_coeff != 0)
             {
@@ -522,6 +532,22 @@ void ewald_LRcorrection(int numAtomsLocal,
                 else if (ewald_geometry == eewg3DC)
                 {
                     Vdipole[q] = dipole_coeff*mutot[q][ZZ]*mutot[q][ZZ];
+                    real qzs2 = 0;
+                    for (i = start; (i < end); i++)
+                    {
+                        if (i < numAtomsLocal)
+                        {
+                            if (q == 0)
+                            {
+                                qzs2 += chargeA[i]*x[i][ZZ]*x[i][ZZ];
+                              }
+                            else if (q == 1)
+                            {
+                                qzs2 += chargeB[i]*x[i][ZZ]*x[i][ZZ];
+                            }
+                        }
+                    }
+                    Vdipole[q] -= dipole_coeff*(fr->qsum[q]*qzs2+fr->qsum[q]*fr->qsum[q]*box[ZZ][ZZ]*box[ZZ][ZZ]/12.);
                 }
             }
         }
