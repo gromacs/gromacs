@@ -57,9 +57,9 @@
 #include "poscalc.h"
 #include "selelem.h"
 
+struct gmx_mtop_t;
 struct gmx_sel_mempool_t;
 struct t_pbc;
-struct t_topology;
 struct t_trxframe;
 
 namespace gmx
@@ -100,7 +100,7 @@ struct gmx_ana_selcollection_t
     char                         **varstrs;
 
     /** Topology for the collection. */
-    t_topology                                        *top;
+    const gmx_mtop_t                                  *top;
     /** Index group that contains all the atoms. */
     gmx_ana_index_t                                    gall;
     /** Memory pool used for selection evaluation. */

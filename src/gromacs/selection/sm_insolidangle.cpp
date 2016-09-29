@@ -257,7 +257,7 @@ init_data_insolidangle(int npar, gmx_ana_selparam_t *param);
  * and allocates memory for the bins used during the evaluation.
  */
 static void
-init_insolidangle(t_topology * top, int npar, gmx_ana_selparam_t * param, void *data);
+init_insolidangle(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t * param, void *data);
 /** Frees the data allocated for the \p insolidangle selection method. */
 static void
 free_data_insolidangle(void *data);
@@ -402,7 +402,7 @@ init_data_insolidangle(int /* npar */, gmx_ana_selparam_t *param)
 }
 
 static void
-init_insolidangle(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
+init_insolidangle(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
 {
     t_methoddata_insolidangle *surf = (t_methoddata_insolidangle *)data;
     int                        i, c;

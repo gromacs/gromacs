@@ -1829,7 +1829,7 @@ store_param_val(const SelectionTreeElementPointer &sel)
  * is prevented by using \ref SEL_METHODINIT and \ref SEL_OUTINIT flags.
  */
 static void
-init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
+init_method(const SelectionTreeElementPointer &sel, const gmx_mtop_t *top, int isize)
 {
     /* Find out whether there are any atom-valued parameters */
     bool bAtomVal                     = false;
