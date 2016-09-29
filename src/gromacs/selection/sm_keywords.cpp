@@ -104,7 +104,7 @@ init_data_kwstr(int npar, gmx_ana_selparam_t * param);
  * \param[in] data  Should point to \ref t_methoddata_kwint.
  */
 static void
-init_kwint(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_kwint(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /*! \brief
  * Initializes data for real keyword evaluation.
  *
@@ -115,7 +115,7 @@ init_kwint(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
  * \returns   0 (the initialization always succeeds).
  */
 static void
-init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_kwreal(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /*! \brief
  * Initializes data for string keyword evaluation.
  *
@@ -125,7 +125,7 @@ init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
  * \param[in] data  Should point to t_methoddata_kwstr.
  */
 static void
-init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_kwstr(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the memory allocated for string keyword evaluation. */
 static void
 free_data_kwstr(void *data);
@@ -347,7 +347,7 @@ gmx_ana_selmethod_t sm_keyword_str = {
  * Calls the initialization method of the wrapped keyword.
  */
 static void
-init_kweval(t_topology *top, int npar, gmx_ana_selparam_t * param, void *data);
+init_kweval(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t * param, void *data);
 /*! \brief
  * Initializes output for keyword evaluation in an arbitrary group.
  *
@@ -357,7 +357,7 @@ init_kweval(t_topology *top, int npar, gmx_ana_selparam_t * param, void *data);
  * \returns       0 for success.
  */
 static void
-init_output_kweval(t_topology *top, gmx_ana_selvalue_t *out, void *data);
+init_output_kweval(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the data allocated for keyword evaluation in an arbitrary group. */
 static void
 free_data_kweval(void *data);
@@ -441,7 +441,7 @@ init_data_kwint(int  /* npar */, gmx_ana_selparam_t * /* param */)
 }
 
 static void
-init_kwint(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+init_kwint(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kwint *d = (t_methoddata_kwint *)data;
 
@@ -516,7 +516,7 @@ init_data_kwreal(int /* npar */, gmx_ana_selparam_t * /* param */)
 }
 
 static void
-init_kwreal(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+init_kwreal(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
 
@@ -610,7 +610,7 @@ _gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer &sel,
 }
 
 static void
-init_kwstr(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+init_kwstr(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_kwstr *d = static_cast<t_methoddata_kwstr *>(data);
 
@@ -674,7 +674,7 @@ evaluate_keyword_str(const gmx::SelMethodEvalContext & /*context*/,
  ********************************************************************/
 
 static void
-init_kweval(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
+init_kweval(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
 {
     t_methoddata_kweval *d = static_cast<t_methoddata_kweval *>(data);
 
@@ -682,7 +682,7 @@ init_kweval(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, v
 }
 
 static void
-init_output_kweval(t_topology * /* top */, gmx_ana_selvalue_t *out, void *data)
+init_output_kweval(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_kweval *d = static_cast<t_methoddata_kweval *>(data);
 

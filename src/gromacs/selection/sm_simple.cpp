@@ -44,9 +44,11 @@
 #include <cctype>
 
 #include "gromacs/selection/position.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "selmethod.h"
 
@@ -82,7 +84,7 @@ evaluate_resindex(const gmx::SelMethodEvalContext &context,
  * If molecule information is not found, also prints an error message.
  */
 static void
-check_molecules(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+check_molecules(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p molindex selection keyword. */
 static void
 evaluate_molindex(const gmx::SelMethodEvalContext &context,
@@ -104,7 +106,7 @@ evaluate_pdbatomname(const gmx::SelMethodEvalContext &context,
  * \param     data Not used.
  */
 static void
-check_atomtype(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+check_atomtype(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p atomtype selection keyword. */
 static void
 evaluate_atomtype(const gmx::SelMethodEvalContext &context,
@@ -130,7 +132,7 @@ evaluate_mass(const gmx::SelMethodEvalContext &context,
  * \param     data Not used.
  */
 static void
-check_charge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+check_charge(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p charge selection keyword. */
 static void
 evaluate_charge(const gmx::SelMethodEvalContext &context,
@@ -147,7 +149,7 @@ evaluate_charge(const gmx::SelMethodEvalContext &context,
  * If PDB info is not found, also prints an error message.
  */
 static void
-check_pdbinfo(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+check_pdbinfo(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Evaluates the \p altloc selection keyword. */
 static void
 evaluate_altloc(const gmx::SelMethodEvalContext &context,
@@ -540,14 +542,11 @@ static void
 evaluate_resnr(const gmx::SelMethodEvalContext &context,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-    int  resind;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    for (int i = 0; i < g->isize; ++i)
     {
-        resind      = context.top->atoms.atom[g->index[i]].resind;
-        out->u.i[i] = context.top->atoms.resinfo[resind].nr;
+        gmx_mtop_atominfo_global(context.top, g->index[i], nullptr,
+                                 &out->u.i[i], nullptr, nullptr);
     }
 }
 
@@ -561,17 +560,18 @@ static void
 evaluate_resindex(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    for (int i = 0; i < g->isize; ++i)
     {
-        out->u.i[i] = context.top->atoms.atom[g->index[i]].resind + 1;
+        int resind;
+        gmx_mtop_atominfo_global(context.top, g->index[i], nullptr,
+                                 nullptr, nullptr, &resind);
+        out->u.i[i] = resind + 1;
     }
 }
 
 static void
-check_molecules(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+check_molecules(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
 {
     bool bOk;
 
@@ -615,12 +615,15 @@ static void
 evaluate_atomname(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    int molb = 0;
+    for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i] = *context.top->atoms.atomname[g->index[i]];
+        int atomIndexInMolecule;
+        gmx_mtop_atomnr_to_molblock_ind(context.top, g->index[i], &molb,
+                                        nullptr, &atomIndexInMolecule);
+        const gmx_moltype_t &moltype = context.top->moltype[context.top->molblock[molb].type];
+        out->u.s[i] = *moltype.atoms.atomname[atomIndexInMolecule];
     }
 }
 
@@ -634,27 +637,23 @@ static void
 evaluate_pdbatomname(const gmx::SelMethodEvalContext &context,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    int molb = 0;
+    for (int i = 0; i < g->isize; ++i)
     {
-        char *s = context.top->atoms.pdbinfo[g->index[i]].atomnm;
+        const char *s = gmx_mtop_atomnr_to_pdbinfo(context.top, g->index[i], &molb).atomnm;
         while (std::isspace(*s))
         {
             ++s;
         }
-        out->u.s[i] = s;
+        out->u.s[i] = const_cast<char *>(s);
     }
 }
 
 static void
-check_atomtype(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+check_atomtype(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
 {
-    bool bOk;
-
-    bOk = (top != NULL && (top->atoms.haveType));
-    if (!bOk)
+    if (!gmx_mtop_has_atomtypes(top))
     {
         GMX_THROW(gmx::InconsistentInputError("Atom types not available in topology"));
     }
@@ -671,12 +670,15 @@ static void
 evaluate_atomtype(const gmx::SelMethodEvalContext &context,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    int molb = 0;
+    for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i] = *context.top->atoms.atomtype[g->index[i]];
+        int atomIndexInMolecule;
+        gmx_mtop_atomnr_to_molblock_ind(context.top, g->index[i], &molb,
+                                        nullptr, &atomIndexInMolecule);
+        const gmx_moltype_t &moltype = context.top->moltype[context.top->molblock[molb].type];
+        out->u.s[i] = *moltype.atoms.atomtype[atomIndexInMolecule];
     }
 }
 
@@ -690,14 +692,11 @@ static void
 evaluate_resname(const gmx::SelMethodEvalContext &context,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-    int  resind;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    int molb = 0;
+    for (int i = 0; i < g->isize; ++i)
     {
-        resind      = context.top->atoms.atom[g->index[i]].resind;
-        out->u.s[i] = *context.top->atoms.resinfo[resind].name;
+        out->u.s[i] = *gmx_mtop_atomnr_to_resinfo(context.top, g->index[i], &molb).name;
     }
 }
 
@@ -711,14 +710,11 @@ static void
 evaluate_insertcode(const gmx::SelMethodEvalContext &context,
                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-    int  resind;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    int molb = 0;
+    for (int i = 0; i < g->isize; ++i)
     {
-        resind         = context.top->atoms.atom[g->index[i]].resind;
-        out->u.s[i][0] = context.top->atoms.resinfo[resind].ic;
+        out->u.s[i][0] = gmx_mtop_atomnr_to_resinfo(context.top, g->index[i], &molb).ic;
     }
 }
 
@@ -732,14 +728,11 @@ static void
 evaluate_chain(const gmx::SelMethodEvalContext &context,
                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-    int  resind;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    int molb = 0;
+    for (int i = 0; i < g->isize; ++i)
     {
-        resind         = context.top->atoms.atom[g->index[i]].resind;
-        out->u.s[i][0] = context.top->atoms.resinfo[resind].chainid;
+        out->u.s[i][0] = gmx_mtop_atomnr_to_resinfo(context.top, g->index[i], &molb).chainid;
     }
 }
 
@@ -753,23 +746,23 @@ static void
 evaluate_mass(const gmx::SelMethodEvalContext &context,
               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    GMX_RELEASE_ASSERT(context.top != nullptr && context.top->atoms.haveMass,
+    GMX_RELEASE_ASSERT(gmx_mtop_has_masses(context.top),
                        "Masses not available for evaluation");
     out->nr = g->isize;
+    int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = context.top->atoms.atom[g->index[i]].m;
+        t_atom *atom;
+        gmx_mtop_atomnr_to_atom(context.top, g->index[i], &molb, &atom);
+        out->u.r[i] = atom->m;
     }
 }
 
 
 static void
-check_charge(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+check_charge(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
 {
-    bool bOk;
-
-    bOk = (top != NULL && top->atoms.haveCharge);
-    if (!bOk)
+    if (!gmx_mtop_has_charges(top))
     {
         GMX_THROW(gmx::InconsistentInputError("Charges not available in topology"));
     }
@@ -785,22 +778,20 @@ static void
 evaluate_charge(const gmx::SelMethodEvalContext &context,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    int molb = 0;
+    for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = context.top->atoms.atom[g->index[i]].q;
+        t_atom *atom;
+        gmx_mtop_atomnr_to_atom(context.top, g->index[i], &molb, &atom);
+        out->u.r[i] = atom->q;
     }
 }
 
 static void
-check_pdbinfo(t_topology *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+check_pdbinfo(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
 {
-    bool bOk;
-
-    bOk = (top != NULL && top->atoms.havePdbInfo);
-    if (!bOk)
+    if (!gmx_mtop_has_pdbinfo(top))
     {
         GMX_THROW(gmx::InconsistentInputError("PDB info not available in topology"));
     }
@@ -816,12 +807,11 @@ static void
 evaluate_altloc(const gmx::SelMethodEvalContext &context,
                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    int molb = 0;
+    for (int i = 0; i < g->isize; ++i)
     {
-        out->u.s[i][0] = context.top->atoms.pdbinfo[g->index[i]].altloc;
+        out->u.s[i][0] = gmx_mtop_atomnr_to_pdbinfo(context.top, g->index[i], &molb).altloc;
     }
 }
 
@@ -836,12 +826,11 @@ static void
 evaluate_occupancy(const gmx::SelMethodEvalContext &context,
                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    int molb = 0;
+    for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = context.top->atoms.pdbinfo[g->index[i]].occup;
+        out->u.r[i] = gmx_mtop_atomnr_to_pdbinfo(context.top, g->index[i], &molb).occup;
     }
 }
 
@@ -856,12 +845,11 @@ static void
 evaluate_betafactor(const gmx::SelMethodEvalContext &context,
                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
 {
-    int  i;
-
     out->nr = g->isize;
-    for (i = 0; i < g->isize; ++i)
+    int molb = 0;
+    for (int i = 0; i < g->isize; ++i)
     {
-        out->u.r[i] = context.top->atoms.pdbinfo[g->index[i]].bfac;
+        out->u.r[i] = gmx_mtop_atomnr_to_pdbinfo(context.top, g->index[i], &molb).bfac;
     }
 }
 

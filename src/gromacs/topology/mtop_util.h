@@ -160,6 +160,32 @@ gmx_mtop_atomnr_to_atom(const gmx_mtop_t  *mtop,
     *atom = &mtop->moltype[mtop->molblock[*moleculeBlock].type].atoms.atom[atomIndexInMolecule];
 }
 
+static inline const t_resinfo &
+gmx_mtop_atomnr_to_resinfo(const gmx_mtop_t  *mtop,
+                           int                globalAtomIndex,
+                           int               *moleculeBlock)
+{
+    int atomIndexInMolecule;
+    gmx_mtop_atomnr_to_molblock_ind(mtop, globalAtomIndex, moleculeBlock,
+                                    NULL, &atomIndexInMolecule);
+    const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
+    const int            resind  = moltype.atoms.atom[atomIndexInMolecule].resind;
+    return moltype.atoms.resinfo[resind];
+}
+
+static inline const t_pdbinfo &
+gmx_mtop_atomnr_to_pdbinfo(const gmx_mtop_t  *mtop,
+                           int                globalAtomIndex,
+                           int               *moleculeBlock)
+{
+    int atomIndexInMolecule;
+    gmx_mtop_atomnr_to_molblock_ind(mtop, globalAtomIndex, moleculeBlock,
+                                    NULL, &atomIndexInMolecule);
+    const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
+    GMX_ASSERT(moltype.atoms.havePdbInfo, "PDB information not present when requested");
+    return moltype.atoms.pdbinfo[atomIndexInMolecule];
+}
+
 /* Returns a pointer to the t_atom struct belonging to atnr_global.
  * This can be an expensive operation, so if possible use
  * one of the atom loop constructs below.

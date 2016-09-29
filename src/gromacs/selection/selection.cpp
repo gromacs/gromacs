@@ -47,6 +47,7 @@
 
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -160,13 +161,14 @@ namespace
  *
  * Does not throw if enough space has been reserved for the output vectors.
  */
-void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
+void computeMassesAndCharges(const gmx_mtop_t *top, const gmx_ana_pos_t &pos,
                              std::vector<real> *masses,
                              std::vector<real> *charges)
 {
     GMX_ASSERT(top != NULL, "Should not have been called with NULL topology");
     masses->clear();
     charges->clear();
+    int molb = 0;
     for (int b = 0; b < pos.count(); ++b)
     {
         real mass   = 0.0;
@@ -174,8 +176,10 @@ void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
         for (int i = pos.m.mapb.index[b]; i < pos.m.mapb.index[b+1]; ++i)
         {
             const int index = pos.m.mapb.a[i];
-            mass   += top->atoms.atom[index].m;
-            charge += top->atoms.atom[index].q;
+            t_atom   *atom;
+            gmx_mtop_atomnr_to_atom(top, index, &molb, &atom);
+            mass   += atom->m;
+            charge += atom->q;
         }
         masses->push_back(mass);
         charges->push_back(charge);
@@ -200,7 +204,7 @@ SelectionData::refreshName()
 }
 
 void
-SelectionData::initializeMassesAndCharges(const t_topology *top)
+SelectionData::initializeMassesAndCharges(const gmx_mtop_t *top)
 {
     GMX_ASSERT(posMass_.empty() && posCharge_.empty(),
                "Should not be called more than once");
@@ -219,7 +223,7 @@ SelectionData::initializeMassesAndCharges(const t_topology *top)
 
 
 void
-SelectionData::refreshMassesAndCharges(const t_topology *top)
+SelectionData::refreshMassesAndCharges(const gmx_mtop_t *top)
 {
     if (top != NULL && isDynamic() && !hasFlag(efSelection_DynamicMask))
     {
@@ -251,7 +255,7 @@ SelectionData::computeAverageCoveredFraction(int nframes)
 
 
 void
-SelectionData::restoreOriginalPositions(const t_topology *top)
+SelectionData::restoreOriginalPositions(const gmx_mtop_t *top)
 {
     if (isDynamic())
     {
