@@ -87,7 +87,7 @@ init_data_permute(int npar, gmx_ana_selparam_t *param);
  * \returns   0 if the input permutation is valid, -1 on error.
  */
 static void
-init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_permute(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /*! \brief
  * Initializes output for the \p permute selection modifier.
  *
@@ -96,7 +96,7 @@ init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
  * \param[in,out] data  Should point to \c t_methoddata_permute.
  */
 static void
-init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data);
+init_output_permute(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the memory allocated for the \p permute selection modifier. */
 static void
 free_data_permute(void *data);
@@ -168,7 +168,7 @@ init_data_permute(int /* npar */, gmx_ana_selparam_t *param)
 }
 
 static void
-init_permute(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+init_permute(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
     int                   i;
@@ -201,7 +201,7 @@ init_permute(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, 
 }
 
 static void
-init_output_permute(t_topology * /* top */, gmx_ana_selvalue_t *out, void *data)
+init_output_permute(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
     int                   i, j, b;

@@ -306,8 +306,8 @@
 struct gmx_ana_index_t;
 struct gmx_ana_pos_t;
 struct gmx_ana_selcollection_t;
+struct gmx_mtop_t;
 struct t_pbc;
-struct t_topology;
 struct t_trxframe;
 
 namespace gmx
@@ -328,7 +328,7 @@ class SelectionParserSymbolTable;
 struct SelMethodEvalContext
 {
     //! Initializes the context with given values.
-    SelMethodEvalContext(const t_topology *top, t_trxframe *fr, const t_pbc *pbc)
+    SelMethodEvalContext(const gmx_mtop_t *top, t_trxframe *fr, const t_pbc *pbc)
         : top(top), fr(fr), pbc(pbc)
     {
     }
@@ -339,7 +339,7 @@ struct SelMethodEvalContext
      * Can be NULL if \ref SMETH_REQTOP or \ref SMETH_REQMASS is not set for
      * the method.
      */
-    const t_topology *top;
+    const gmx_mtop_t *top;
     /*! \brief
      * Trajectory frame.
      *
@@ -501,7 +501,7 @@ typedef void  (*sel_posfunc)(gmx::PositionCalculationCollection *pcc, void *data
  * This function may be called multiple times for the same method if the
  * method takes parameters with \ref SPAR_ATOMVAL set.
  */
-typedef void  (*sel_initfunc)(t_topology *top, int npar,
+typedef void  (*sel_initfunc)(const gmx_mtop_t *top, int npar,
                               gmx_ana_selparam_t *param, void *data);
 /*! \brief
  * Initializes output data structure.
@@ -530,7 +530,7 @@ typedef void  (*sel_initfunc)(t_topology *top, int npar,
  * This function may be called multiple times for the same method if the
  * method takes parameters with \ref SPAR_ATOMVAL set.
  */
-typedef void  (*sel_outinitfunc)(t_topology *top, gmx_ana_selvalue_t *out,
+typedef void  (*sel_outinitfunc)(const gmx_mtop_t *top, gmx_ana_selvalue_t *out,
                                  void *data);
 /*! \brief
  * Frees the internal data.
