@@ -119,7 +119,7 @@ init_data_same(int npar, gmx_ana_selparam_t *param);
  * \returns 0 on success, -1 on failure.
  */
 static void
-init_same(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_same(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the data allocated for the \p same selection method. */
 static void
 free_data_same(void *data);
@@ -281,7 +281,7 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **me
 }
 
 static void
-init_same(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+init_same(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
 
