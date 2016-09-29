@@ -124,7 +124,7 @@ init_data_compare(int npar, gmx_ana_selparam_t *param);
  * \returns   0 if the input data is valid, -1 on error.
  */
 static void
-init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_compare(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the memory allocated for comparison expression evaluation. */
 static void
 free_data_compare(void *data);
@@ -416,7 +416,7 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, bool bRight)
 }
 
 static void
-init_compare(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+init_compare(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_compare *d = (t_methoddata_compare *)data;
     int                   n1, n2;

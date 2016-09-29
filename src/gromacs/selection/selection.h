@@ -53,7 +53,6 @@
 #include "gromacs/utility/gmxassert.h"
 
 struct gmx_mtop_t;
-struct t_topology;
 
 namespace gmx
 {
@@ -151,7 +150,7 @@ class SelectionData
          *
          * Strong exception safety guarantee.
          */
-        void initializeMassesAndCharges(const t_topology *top);
+        void initializeMassesAndCharges(const gmx_mtop_t *top);
         /*! \brief
          * Updates masses and charges after dynamic selection has been
          * evaluated.
@@ -160,7 +159,7 @@ class SelectionData
          *
          * Called by SelectionEvaluator.
          */
-        void refreshMassesAndCharges(const t_topology *top);
+        void refreshMassesAndCharges(const gmx_mtop_t *top);
         /*! \brief
          * Updates the covered fraction after a selection has been evaluated.
          *
@@ -186,7 +185,7 @@ class SelectionData
          * \a rootElement_ object.
          * Called by SelectionEvaluator::evaluateFinal().
          */
-        void restoreOriginalPositions(const t_topology *top);
+        void restoreOriginalPositions(const gmx_mtop_t *top);
 
     private:
         //! Name of the selection.
