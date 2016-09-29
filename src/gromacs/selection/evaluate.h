@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,9 +52,9 @@
 #include "selelem.h"
 
 struct gmx_ana_index_t;
+struct gmx_mtop_t;
 struct gmx_sel_mempool_t;
 struct t_pbc;
-struct t_topology;
 struct t_trxframe;
 
 /*! \internal \brief
@@ -67,7 +67,7 @@ struct gmx_sel_evaluate_t
     /** Index group that contains all the atoms. */
     gmx_ana_index_t          *gall;
     /** Topology information. */
-    t_topology               *top;
+    const gmx_mtop_t         *top;
     /** Current frame. */
     t_trxframe               *fr;
     /** PBC data. */
@@ -81,7 +81,7 @@ struct gmx_sel_evaluate_t
 void
 _gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
                        gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
-                       t_topology *top, t_trxframe *fr, t_pbc *pbc);
+                       const gmx_mtop_t *top, t_trxframe *fr, t_pbc *pbc);
 /** Evaluates the children of a general selection element. */
 void
 _gmx_sel_evaluate_children(gmx_sel_evaluate_t                     *data,

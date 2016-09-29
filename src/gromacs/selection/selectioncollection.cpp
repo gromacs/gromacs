@@ -451,7 +451,7 @@ void checkExternalGroups(const SelectionTreeElementPointer &root,
 }
 
 //! Checks whether the given topology properties are available.
-void checkTopologyProperties(const t_topology                  *top,
+void checkTopologyProperties(const gmx_mtop_t                  *top,
                              const SelectionTopologyProperties &props)
 {
     if (top == NULL)
@@ -462,7 +462,7 @@ void checkTopologyProperties(const t_topology                  *top,
         }
         return;
     }
-    if (props.needsMasses && !top->atoms.haveMass)
+    if (props.needsMasses && !gmx_mtop_has_masses(top))
     {
         GMX_THROW(InconsistentInputError("Selection requires mass information, but it is not available in the topology"));
     }
@@ -616,6 +616,7 @@ SelectionCollection::setTopology(gmx_mtop_t *top, int natoms)
 {
     GMX_RELEASE_ASSERT(natoms > 0 || top != NULL,
                        "The number of atoms must be given if there is no topology");
+    checkTopologyProperties(top, requiredTopologyProperties());
     // Get the number of atoms from the topology if it is not given.
     if (natoms <= 0)
     {
@@ -638,17 +639,7 @@ SelectionCollection::setTopology(gmx_mtop_t *top, int natoms)
     gmx_ana_selcollection_t *sc = &impl_->sc_;
     // Do this first, as it allocates memory, while the others don't throw.
     gmx_ana_index_init_simple(&sc->gall, natoms);
-    // TODO: Adapt to use mtop throughout.
-    if (top != nullptr)
-    {
-        snew(sc->top, 1);
-        *sc->top = gmx_mtop_t_to_t_topology(top, false);
-        checkTopologyProperties(sc->top, requiredTopologyProperties());
-    }
-    else
-    {
-        checkTopologyProperties(nullptr, requiredTopologyProperties());
-    }
+    sc->top = top;
     sc->pcc.setTopology(top);
 }
 

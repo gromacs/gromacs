@@ -186,6 +186,24 @@ bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
     return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveCharge;
 }
 
+bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop)
+{
+    if (mtop == nullptr)
+    {
+        return false;
+    }
+    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveType;
+}
+
+bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
+{
+    if (mtop == nullptr)
+    {
+        return false;
+    }
+    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.havePdbInfo;
+}
+
 static void pr_grps(FILE *fp, const char *title, const t_grps grps[], char **grpname[])
 {
     int i, j;

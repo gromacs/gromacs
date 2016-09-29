@@ -369,7 +369,7 @@ _gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc)
 void
 _gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
                        gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
-                       t_topology *top, t_trxframe *fr, t_pbc *pbc)
+                       const gmx_mtop_t *top, t_trxframe *fr, t_pbc *pbc)
 {
     data->mp   = mp;
     data->gall = gall;

@@ -76,13 +76,13 @@ init_data_merge(int npar, gmx_ana_selparam_t *param);
  * \returns   0 if everything is successful, -1 on error.
  */
 static void
-init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_merge(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes output for the \p merge selection modifier. */
 static void
-init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data);
+init_output_merge(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data);
 /** Initializes output for the \p plus selection modifier. */
 static void
-init_output_plus(t_topology *top, gmx_ana_selvalue_t *out, void *data);
+init_output_plus(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the memory allocated for the merging selection modifiers. */
 static void
 free_data_merge(void *data);
@@ -197,7 +197,7 @@ init_data_merge(int npar, gmx_ana_selparam_t *param)
 }
 
 static void
-init_merge(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
+init_merge(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
 
@@ -224,7 +224,7 @@ init_merge(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t * /* param
  * \param[in,out] data  Should point to \c t_methoddata_merge.
  */
 static void
-init_output_common(t_topology *top, gmx_ana_selvalue_t *out, void *data)
+init_output_common(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
 
@@ -250,7 +250,7 @@ init_output_common(t_topology *top, gmx_ana_selvalue_t *out, void *data)
  * \param[in,out] data  Should point to \c t_methoddata_merge.
  */
 static void
-init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data)
+init_output_merge(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
     int                 i, j;
@@ -272,7 +272,7 @@ init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data)
  * \param[in,out] data  Should point to \c t_methoddata_merge.
  */
 static void
-init_output_plus(t_topology *top, gmx_ana_selvalue_t *out, void *data)
+init_output_plus(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
     int                 i;

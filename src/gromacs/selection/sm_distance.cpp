@@ -108,7 +108,7 @@ init_data_common(int npar, gmx_ana_selparam_t *param);
  * Also checks that the cutoff is valid.
  */
 static void
-init_common(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_common(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the data allocated for a distance-based selection method. */
 static void
 free_data_common(void *data);
@@ -232,7 +232,7 @@ init_data_common(int /* npar */, gmx_ana_selparam_t *param)
 }
 
 static void
-init_common(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+init_common(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_distance *d = static_cast<t_methoddata_distance *>(data);
 

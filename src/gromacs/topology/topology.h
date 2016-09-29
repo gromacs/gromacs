@@ -152,6 +152,8 @@ void done_top(t_topology *top);
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop);
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop);
+bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop);
+bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop);
 
 void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
              gmx_bool bShowNumbers);
