@@ -372,15 +372,15 @@ static real calc_r13(const Poldata     &pd,
 }
 
 static real calc_relposition(const Poldata     &pd,
-			      const std::string  aai,
-			      const std::string  aaj,
-			      const std::string  aak)
+                             const std::string  aai,
+                             const std::string  aaj,
+                             const std::string  aak)
 {
     std::string              params;
     size_t                   ntrain;
     double                   sigma;
-    real                     rij = 0, rjk = 0;
-    real                     b0 = 0, b1 = 0;
+    real                     rij               = 0, rjk = 0;
+    real                     b0                = 0, b1 = 0;
     real                     relative_position = 0;
 
     std::vector<std::string> aij = {aai, aaj};
@@ -444,7 +444,7 @@ static void updatePlist(const Poldata             &pd,
             }
         }
         else if (eitANGLES == iType ||
-		 eitLINEAR_ANGLES == iType)
+                 eitLINEAR_ANGLES == iType)
         {
             for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
             {
@@ -493,19 +493,19 @@ static void updatePlist(const Poldata             &pd,
                     {
                         b->c[n++] = value;
                         ptr       = gmx::splitString(params);
-			int n = 0;
+                        int n = 0;
                         for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
-			  if (n == 0)
-			  {
-                              b->c[n++] = atof(pi->c_str());
-			  }
-			  else
-			  {
-			      /*Multiplicity for Proper Dihedral must be integer
-			       This assumes that the second paramter is Multiplicity*/
-			      b->c[n++] = atoi(pi->c_str());
-			  }
+                            if (n == 0)
+                            {
+                                b->c[n++] = atof(pi->c_str());
+                            }
+                            else
+                            {
+                                /*Multiplicity for Proper Dihedral must be integer
+                                   This assumes that the second paramter is Multiplicity*/
+                                b->c[n++] = atoi(pi->c_str());
+                            }
                         }
                     }
                 }
@@ -721,8 +721,8 @@ static void do_init_mtop(const Poldata            &pd,
                          char                    **molname,
                          t_atoms                  *atoms,
                          std::vector<PlistWrapper> plist,
-			 t_inputrec               *ir,
-			 t_symtab                 *symtab)
+                         t_inputrec               *ir,
+                         t_symtab                 *symtab)
 {
 
     init_mtop(mtop_);
@@ -769,17 +769,17 @@ static void do_init_mtop(const Poldata            &pd,
         }
         if (!found)
         {
-            mtop_->groups.grpname[ind] = put_symtab(symtab, atp);
+            mtop_->groups.grpname[ind]              = put_symtab(symtab, atp);
             mtop_->groups.grps[egcENER].nm_ind[ind] = ind;
             ind++;
         }
     }
 
-    mtop_->groups.grps[egcENER].nr = 
-      ir->opts.ngener              = ntype;
-     mtop_->ffparams.ntypes        = ntype*ntype;
-    mtop_->ffparams.atnr           = ntype;
-    mtop_->ffparams.reppow         = 12;
+    mtop_->groups.grps[egcENER].nr   =
+        ir->opts.ngener              = ntype;
+    mtop_->ffparams.ntypes           = ntype*ntype;
+    mtop_->ffparams.atnr             = ntype;
+    mtop_->ffparams.reppow           = 12;
 
     int vdw_type = pd.getVdwFtype();
 
@@ -965,7 +965,7 @@ MyMol::MyMol() : gvt_(egvtALL)
     mp_         = new MolProp;
     state_      = nullptr;
     snew(enerd_, 1);
-    init_enerdata(1, 0, enerd_);    
+    init_enerdata(1, 0, enerd_);
 }
 
 immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
@@ -1512,7 +1512,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
         //inputrec_->vdwtype   = evdwUSER;
         inputrec_->coulombtype = eelUSER;
     }
-    
+
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, nullptr, nullptr, TRUE, -1);
     snew(state_, 1);
@@ -1973,7 +1973,7 @@ void MyMol::PrintTopology(FILE                   *fp,
             printf("%s\n", i->c_str());
         }
     }
-    
+
     sfree(printmol.name);
 }
 
@@ -2377,10 +2377,10 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     std::string  myref, mylot;
     int          ia;
 
-    if (! molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
-                              lot, "", (char *)"elec",
-                              &value, &error, &T, myref, mylot,
-                              vec, quadrupole))
+    if (!molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
+                               lot, "", (char *)"elec",
+                               &value, &error, &T, myref, mylot,
+                               vec, quadrupole))
     {
         if (!bZero)
         {
@@ -2507,8 +2507,8 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     std::string              aai, aaj, aak, aal, params;
     std::vector<std::string> atoms, ptr;
     int                      lu, n;
-    size_t                   ntrain = 0;
-    double                   value = 0.0, sigma = 0.0, r13 = 0.0;
+    size_t                   ntrain            = 0;
+    double                   value             = 0.0, sigma = 0.0, r13 = 0.0;
     double                   relative_position = 0.0;
 
     switch (iType)
@@ -2634,33 +2634,33 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     atoms = {aai, aaj, aak};
                     if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
                     {
-		        r13 = calc_r13(pd, aai, aaj, aak, value);
+                        r13 = calc_r13(pd, aai, aaj, aak, value);
 
-			relative_position = calc_relposition(pd, aai, aaj, aak);
+                        relative_position = calc_relposition(pd, aai, aaj, aak);
 
                         mtop_->ffparams.iparams[tp].linangle.aA     =
                             mtop_->ffparams.iparams[tp].linangle.aB = relative_position;
 
-			mtop_->ffparams.iparams[tp].linangle.r13A     =
+                        mtop_->ffparams.iparams[tp].linangle.r13A     =
                             mtop_->ffparams.iparams[tp].linangle.r13B = r13;
 
                         ptr = gmx::splitString(params);
-			n = 0;
+                        n   = 0;
                         for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
                         {
                             if (pi->length() > 0)
                             {
-			      if (n == 0)
-			      {
-                                  mtop_->ffparams.iparams[tp].linangle.klinA     =
-				    mtop_->ffparams.iparams[tp].linangle.klinB = atof(pi->c_str());
-			      }
-			      else
-                              {
-				  mtop_->ffparams.iparams[tp].linangle.kUBA     =
-				    mtop_->ffparams.iparams[tp].linangle.kUBB = atof(pi->c_str());
-			      }
-			      n++;
+                                if (n == 0)
+                                {
+                                    mtop_->ffparams.iparams[tp].linangle.klinA     =
+                                        mtop_->ffparams.iparams[tp].linangle.klinB = atof(pi->c_str());
+                                }
+                                else
+                                {
+                                    mtop_->ffparams.iparams[tp].linangle.kUBA     =
+                                        mtop_->ffparams.iparams[tp].linangle.kUBB = atof(pi->c_str());
+                                }
+                                n++;
                             }
                         }
                     }
@@ -2707,8 +2707,8 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 }
                                 else
                                 {
-				    /*Multiplicity for Proper Dihedral must be integer
-				      This assumes that the second paramter is Multiplicity*/
+                                    /*Multiplicity for Proper Dihedral must be integer
+                                       This assumes that the second paramter is Multiplicity*/
                                     mtop_->ffparams.iparams[tp].pdihs.mult = atoi(pi->c_str());
                                 }
                                 n++;
@@ -2723,7 +2723,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                 }
             }
         }
-	break;
+        break;
         case eitIMPROPER_DIHEDRALS:
         {
             auto fs  = pd.findForces(iType);

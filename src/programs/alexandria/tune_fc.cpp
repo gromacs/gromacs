@@ -369,10 +369,10 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                 {
                     auto c = std::find_if(bn_.begin(), bn_.end(),
                                           [buf, buf_reverse](const BondNames &bn)
-                                          {
-                                              return (bn.name().compare(buf) == 0 ||
-                                                      bn.name().compare(buf_reverse) == 0);
-                                          });
+                        {
+                            return (bn.name().compare(buf) == 0 ||
+                                    bn.name().compare(buf_reverse) == 0);
+                        });
                     if (c != bn_.end())
                     {
                         c->inc();
@@ -456,9 +456,9 @@ class OptPrep : public MolDip
         void checkSupport(FILE *fp, bool  bOpt[]);
 
         /*! \brief
-	 *
+         *
          * Fill parameter vector using ForceConstants which
-	 * is built based on Poldata.
+         * is built based on Poldata.
          */
         void polData2TuneFc();
 
@@ -481,7 +481,7 @@ class OptPrep : public MolDip
          */
         void getDissociationEnergy(FILE *fplog);
         void InitOpt(FILE *fplog, bool bOpt[eitNR], real factor);
-        
+
 
         void optRun(FILE *fp, FILE *fplog, int maxiter,
                     int nrun, real stepsize, int seed,
@@ -806,7 +806,7 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
                           mymol->molProp()->getIupac().c_str());
             }
         }
-	rhs.push_back(-mymol->Emol);
+        rhs.push_back(-mymol->Emol);
     }
 
     char buf[STRLEN];
@@ -814,9 +814,9 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     GMX_RELEASE_ASSERT(static_cast<int>(rhs.size()) == nMol, buf);
 
     int nzero = std::count_if(ntest.begin(), ntest.end(), [](const int n)
-                              {
-                                  return n == 0;
-                              });
+        {
+            return n == 0;
+        });
 
     GMX_RELEASE_ASSERT(nzero == 0, "Inconsistency in the number of bonds in poldata and ForceConstants_");
 
@@ -880,12 +880,12 @@ void OptPrep::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
     }
     else
     {
-	printf("\n"
-	       "WARNING: %zu molecule(s) is (are) not enough to calculate dissociation\n"
-	       "         energy for %zu bond type(s) using linear regression. Defualt\n"
-	       "         values from gentop.dat will be used as the initial guess.\n"
-	       "         Recomendation is to add more molecules having the same bond types.\n\n",
-	       _mymol.size(), ForceConstants_[eitBONDS].nbad());
+        printf("\n"
+               "WARNING: %zu molecule(s) is (are) not enough to calculate dissociation\n"
+               "         energy for %zu bond type(s) using linear regression. Defualt\n"
+               "         values from gentop.dat will be used as the initial guess.\n"
+               "         Recomendation is to add more molecules having the same bond types.\n\n",
+               _mymol.size(), ForceConstants_[eitBONDS].nbad());
     }
 
     polData2TuneFc();
@@ -971,7 +971,7 @@ double OptPrep::calcDeviation()
     rvec    mu_tot;
     int     j;
     FILE   *dbcopy;
-    double  ener = 0, optHF = 0, spHF = 0;
+    double  ener    = 0, optHF = 0, spHF = 0;
     double  deltaEn = 0, Emol = 0;
 
     if (PAR(_cr))
@@ -1005,88 +1005,88 @@ double OptPrep::calcDeviation()
     for (auto &mymol : _mymol)
     {
         if (mymol.molProp()->getOptHF(&optHF))
-	{
-	   int nconfs = 0;
-	   if ((mymol.eSupp == eSupportLocal) ||
-	       (_bFinal && (mymol.eSupp == eSupportRemote)))
-	   {
-	       /* Update topology for this molecule */
-	       for (const auto fc : ForceConstants_)
-	       {
-               if (fc.nbad() > 0)
-               {
-                   mymol.UpdateIdef(pd_, fc.interactionType());
-               }
-	       }
+        {
+            int nconfs = 0;
+            if ((mymol.eSupp == eSupportLocal) ||
+                (_bFinal && (mymol.eSupp == eSupportRemote)))
+            {
+                /* Update topology for this molecule */
+                for (const auto fc : ForceConstants_)
+                {
+                    if (fc.nbad() > 0)
+                    {
+                        mymol.UpdateIdef(pd_, fc.interactionType());
+                    }
+                }
 
-	       for (auto ei = mymol.molProp()->BeginExperiment();
-                ei < mymol.molProp()->EndExperiment(); ++ei)
-	       {
-               auto jtype = ei->getJobtype();
-               
-               if (jtype == JOB_OPT || jtype == JOB_SP)
-               {
-                   
-                   nconfs++;
-                   
-                   ei->getHF(&spHF);
-                   
-                   deltaEn = spHF - optHF;
-                   Emol    = mymol.Emol + deltaEn;
-		       
-                   dbcopy = debug;
-                   debug  = nullptr;
+                for (auto ei = mymol.molProp()->BeginExperiment();
+                     ei < mymol.molProp()->EndExperiment(); ++ei)
+                {
+                    auto jtype = ei->getJobtype();
 
-                   for (j = 0; (j < mymol.molProp()->NAtom()); j++)
-                   {
-                       clear_rvec(mymol.f_[j]);
-                   }
-                   
-                   mymol.changeCoordinate(ei);
-                   mymol.computeForces(debug, _cr, mu_tot);
-                   
-                   debug         = dbcopy;
-                   mymol.Force2  = 0;
-                   
-                   for (j = 0; (j < mymol.molProp()->NAtom()); j++)
-                   {
-                       mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
-                   }
-                   
-                   mymol.Force2     /= mymol.molProp()->NAtom();
-                   
-                   if (jtype == JOB_OPT)
-                   {	
-                       _ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
-                       mymol.optEcalc     = mymol.enerd_->term[F_EPOT];
-                   }
-                   
-                   mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
-                   ener               = gmx::square(mymol.Ecalc-Emol);
-                   _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
-                   
-                   if (nullptr != debug)
-                   {
-                       fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
-                       
-                       fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  "  
-                               "Hangle %g Langle %g  PDIHS  %g  Coul %g  LJ  %g  BHAM  %g  Force2 %g\n",
-                               mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, Emol, mymol.Ecalc, 
-                               mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY], 
-                               mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS], 
-                               mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ], 
-                               mymol.enerd_->term[F_BHAM], mymol.Force2);
-                   }
-               }
-	       }
-	       _ener[ermsEPOT]   /= nconfs;
-	   }
-	}
-	else
-	{
-	    gmx_fatal(FARGS, "No optimized structure for %s\n",
-		      mymol.molProp()->getMolname().c_str());
-	}
+                    if (jtype == JOB_OPT || jtype == JOB_SP)
+                    {
+
+                        nconfs++;
+
+                        ei->getHF(&spHF);
+
+                        deltaEn = spHF - optHF;
+                        Emol    = mymol.Emol + deltaEn;
+
+                        dbcopy = debug;
+                        debug  = nullptr;
+
+                        for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+                        {
+                            clear_rvec(mymol.f_[j]);
+                        }
+
+                        mymol.changeCoordinate(ei);
+                        mymol.computeForces(debug, _cr, mu_tot);
+
+                        debug         = dbcopy;
+                        mymol.Force2  = 0;
+
+                        for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+                        {
+                            mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
+                        }
+
+                        mymol.Force2     /= mymol.molProp()->NAtom();
+
+                        if (jtype == JOB_OPT)
+                        {
+                            _ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
+                            mymol.optEcalc     = mymol.enerd_->term[F_EPOT];
+                        }
+
+                        mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
+                        ener               = gmx::square(mymol.Ecalc-Emol);
+                        _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
+
+                        if (nullptr != debug)
+                        {
+                            fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
+
+                            fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  "
+                                    "Hangle %g Langle %g  PDIHS  %g  Coul %g  LJ  %g  BHAM  %g  Force2 %g\n",
+                                    mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, Emol, mymol.Ecalc,
+                                    mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY],
+                                    mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS],
+                                    mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ],
+                                    mymol.enerd_->term[F_BHAM], mymol.Force2);
+                        }
+                    }
+                }
+                _ener[ermsEPOT]   /= nconfs;
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "No optimized structure for %s\n",
+                      mymol.molProp()->getMolname().c_str());
+        }
     }
 
     /* Compute E-bounds */

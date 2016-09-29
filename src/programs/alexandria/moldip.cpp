@@ -78,7 +78,9 @@ void IndexCount::addName(const std::string &name,
 {
     auto ai = std::find_if(atomIndex_.begin(), atomIndex_.end(),
                            [name](const AtomIndex a)
-                           { return a.name().compare(name) == 0; });
+        {
+            return a.name().compare(name) == 0;
+        });
     if (atomIndex_.end() == ai)
     {
         AtomIndex aaa(name, bConst);
