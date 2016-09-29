@@ -765,13 +765,13 @@ static void do_init_mtop(const Poldata            &pd,
         bool   found = false;
         for (int j = 0; !found && (j < i); j++)
         {
-	   found = (strcmp(atp, *atoms->atomtype[j]) == 0);
+            found = (strcmp(atp, *atoms->atomtype[j]) == 0);
         }
         if (!found)
         {
-	    mtop_->groups.grpname[ind] = put_symtab(symtab, atp);
-	    mtop_->groups.grps[egcENER].nm_ind[ind] = ind;
-	    ind++;
+            mtop_->groups.grpname[ind] = put_symtab(symtab, atp);
+            mtop_->groups.grps[egcENER].nm_ind[ind] = ind;
+            ind++;
         }
     }
 
@@ -1512,6 +1512,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
         //inputrec_->vdwtype   = evdwUSER;
         inputrec_->coulombtype = eelUSER;
     }
+    
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, nullptr, nullptr, TRUE, -1);
     snew(state_, 1);

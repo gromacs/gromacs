@@ -1019,67 +1019,65 @@ double OptPrep::calcDeviation()
                }
 	       }
 
-	       atoms2md(mymol.mtop_, mymol.inputrec_, 0, NULL, 0, mymol.mdatoms_);
-
 	       for (auto ei = mymol.molProp()->BeginExperiment();
                 ei < mymol.molProp()->EndExperiment(); ++ei)
 	       {
                auto jtype = ei->getJobtype();
-
+               
                if (jtype == JOB_OPT || jtype == JOB_SP)
-		   {
-		     
-		       nconfs++;
+               {
+                   
+                   nconfs++;
+                   
+                   ei->getHF(&spHF);
+                   
+                   deltaEn = spHF - optHF;
+                   Emol    = mymol.Emol + deltaEn;
+		       
+                   dbcopy = debug;
+                   debug  = nullptr;
 
-		       ei->getHF(&spHF);
-		       
-		       deltaEn = spHF - optHF;
-		       Emol    = mymol.Emol + deltaEn;
-		       
-		       dbcopy = debug;
-		       debug  = nullptr;
-
-		       for (j = 0; (j < mymol.molProp()->NAtom()); j++)
-		       {
-			   clear_rvec(mymol.f_[j]);
-		       }
-
-		       mymol.changeCoordinate(ei);
-		       mymol.computeForces(debug, _cr, mu_tot);
-		       
-		       debug         = dbcopy;
-		       mymol.Force2  = 0;
-		       
-		       for (j = 0; (j < mymol.molProp()->NAtom()); j++)
-		       {
-			   mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
-		       }
-		       
-		       mymol.Force2     /= mymol.molProp()->NAtom();
-		       
-		       if (jtype == JOB_OPT)
-		       {	
-			   _ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
-			   mymol.optEcalc     = mymol.enerd_->term[F_EPOT];
-		       }
-
-		       mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
-		       ener               = gmx::square(mymol.Ecalc-Emol);
-		       _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
-		       
-		       if (nullptr != debug)
-		       {
-			   fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
-			   
-			   fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  "  
-				   "Hangle %g Langle %g  PDIHS  %g  Coul %g  LJ  %g  BHAM  %g  Force2 %g\n",
-				   mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, Emol, mymol.Ecalc, 
-				   mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY], 
-				   mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS], 
-				   mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ], 
-				   mymol.enerd_->term[F_BHAM], mymol.Force2);
-		       }
-		   }
+                   for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+                   {
+                       clear_rvec(mymol.f_[j]);
+                   }
+                   
+                   mymol.changeCoordinate(ei);
+                   mymol.computeForces(debug, _cr, mu_tot);
+                   
+                   debug         = dbcopy;
+                   mymol.Force2  = 0;
+                   
+                   for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+                   {
+                       mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
+                   }
+                   
+                   mymol.Force2     /= mymol.molProp()->NAtom();
+                   
+                   if (jtype == JOB_OPT)
+                   {	
+                       _ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
+                       mymol.optEcalc     = mymol.enerd_->term[F_EPOT];
+                   }
+                   
+                   mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
+                   ener               = gmx::square(mymol.Ecalc-Emol);
+                   _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
+                   
+                   if (nullptr != debug)
+                   {
+                       fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
+                       
+                       fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  "  
+                               "Hangle %g Langle %g  PDIHS  %g  Coul %g  LJ  %g  BHAM  %g  Force2 %g\n",
+                               mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, Emol, mymol.Ecalc, 
+                               mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY], 
+                               mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS], 
+                               mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ], 
+                               mymol.enerd_->term[F_BHAM], mymol.Force2);
+                   }
+               }
 	       }
 	       _ener[ermsEPOT]   /= nconfs;
 	   }

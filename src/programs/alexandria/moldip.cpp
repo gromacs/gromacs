@@ -397,7 +397,7 @@ static void fill_inputrec(t_inputrec *ir)
     ir->niter            = 25;
     ir->em_stepsize      = 1e-2; // nm
     ir->em_tol           = 1e-2;
-    ir->opts.ngener = 1;
+    ir->opts.ngener      = 1;
     snew(ir->fepvals, 1);
 }
 
@@ -536,7 +536,7 @@ void MolDip::Read(FILE            *fp,
                 printf("%s\n", mpi->getMolname().c_str());
                 mpnew.molProp()->Merge(mpi);
 
-		mpnew.setInputrec(inputrec_);
+                mpnew.setInputrec(inputrec_);
 
                 imm = mpnew.GenerateTopology(_atomprop, pd_, lot,
                                              _iChargeDistributionModel,
@@ -608,7 +608,7 @@ void MolDip::Read(FILE            *fp,
                     }
                     if (immOK == imm)
                     {
-		       _mymol.push_back(std::move(mpnew));
+                        _mymol.push_back(std::move(mpnew));
                         ntopol++;
                         if (NULL != debug)
                         {
@@ -664,7 +664,7 @@ void MolDip::Read(FILE            *fp,
                 fflush(debug);
             }
 
-	    mpnew.setInputrec(inputrec_);
+            mpnew.setInputrec(inputrec_);
 
             imm = mpnew.GenerateTopology(_atomprop, pd_, lot, _iChargeDistributionModel,
                                          false, false, bDihedral, bPolar);
@@ -691,7 +691,7 @@ void MolDip::Read(FILE            *fp,
             imm_count[imm]++;
             if (immOK == imm)
             {
-	        _mymol.push_back(std::move(mpnew));
+                _mymol.push_back(std::move(mpnew));
                 if (NULL != debug)
                 {
                     fprintf(debug, "Added molecule %s\n", mpnew.molProp()->getMolname().c_str());
