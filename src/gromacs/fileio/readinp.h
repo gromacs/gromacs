@@ -42,6 +42,11 @@
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+class KeyValueTreeObject;
+}
+
 typedef struct t_inpfile {
     int      count;     /* sort order for output  */
     gmx_bool bObsolete; /* whether it is an obsolete param value */
@@ -62,6 +67,8 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
    ninp = the number of read parameters
    cppopts = the cpp-style options for #include paths and #defines */
 
+gmx::KeyValueTreeObject flatKeyValueTreeFromInpFile(int ninp, t_inpfile inp[]);
+
 void write_inpfile(const char *fn, int ninp, t_inpfile inp[],
                    gmx_bool bHaltOnUnknown,
                    warninp_t wi);
@@ -72,6 +79,7 @@ void replace_inp_entry(int ninp, t_inpfile *inp,
 int search_einp(int ninp, const t_inpfile *inp, const char *name);
 /* Return the index of an .mdp field with the given name within the
  * inp array, if it exists. Return -1 if it does not exist. */
+void mark_einp_set(int ninp, t_inpfile *inp, const char *name);
 
 int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,
              warninp_t wi);
