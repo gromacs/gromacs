@@ -65,6 +65,9 @@ struct warninp;
 namespace gmx
 {
 
+class IKeyValueTreeTransformRules;
+class IOptionsContainerWithSections;
+
 /*! \libinternal \brief
  * Inputrec extension interface for a mdrun module.
  *
@@ -97,14 +100,11 @@ class IInputRecExtension
          */
         virtual void doTpxIO(t_fileio *fio, bool bRead) = 0;
 
+        virtual void initMdpTransform(IKeyValueTreeTransformRules *transform) = 0;
         /*! \brief
          * Extracts parameters from mdp file.
-         *
-         * \param[inout] ninp_p Number of inpfile elements before and after processing
-         * \param[inout] inp_p  The inpfile elements corresponding to lines in the mdp
-         * \param[inout] wi     Structure for managing warnings in grompp
          */
-        virtual void readMdp(int *ninp_p, t_inpfile **inp_p, warninp *wi) = 0;
+        virtual void initMdpOptions(IOptionsContainerWithSections *options) = 0;
 
         /*! \brief * Broadcast local information
          *

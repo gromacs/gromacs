@@ -45,8 +45,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/fileio/readinp.h"
-#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -54,9 +52,14 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/utility/cstringutil.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/treesupport.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringcompare.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"
 
@@ -83,39 +86,25 @@ class ElectricFieldTest : public ::testing::Test
                     gmx::test::relativeToleranceAsFloatingPoint(1.0, 0.005));
             gmx::MDModules                    module;
             t_inputrec *inputrec = module.inputrec();
+
             // Prepare MDP inputs
-            int         ninp = 0;
-            t_inpfile  *inp  = NULL;
-            char        name[128];
-            char        value[128];
-            const char *dimXYZ[3] = { "X", "Y", "Z" };
+            const char *dimXYZ[3] = { "x", "y", "z" };
             GMX_RELEASE_ASSERT((dim >= 0 && dim < 3), "Dimension should be 0, 1 or 2");
-            t_inpfile   tmp;
-            tmp.bObsolete = FALSE;
-            tmp.bSet      = TRUE;
-            tmp.inp_count = 0;
-            tmp.count     = 0;
-            tmp.name      = NULL;
-            tmp.value     = NULL;
 
-            ninp = 2;
-            snew(inp, ninp);
-            inp[0] = tmp;
-            snprintf(name, sizeof(name), "E%s", dimXYZ[dim]);
-            snprintf(value, sizeof(value), "1 %g 0", E0);
-            inp[0].name      = gmx_strdup(name);
-            inp[0].value     = gmx_strdup(value);
+            gmx::KeyValueTreeBuilder     mdpValues;
+            mdpValues.rootObject().addValue(gmx::formatString("E%s", dimXYZ[dim]),
+                                            gmx::formatString("1 %g 0", E0));
+            mdpValues.rootObject().addValue(gmx::formatString("E%s-t", dimXYZ[dim]),
+                                            gmx::formatString("3 %g 0 %g 0 %g 0", omega, t0, sigma));
 
-            inp[1]       = tmp;
-            inp[1].count = 1;
-            snprintf(name, sizeof(name), "E%s-t", dimXYZ[dim]);
-            snprintf(value, sizeof(value), "3 %g 0 %g 0 %g 0", omega, t0, sigma);
-            inp[1].name      = gmx_strdup(name);
-            inp[1].value     = gmx_strdup(value);
+            gmx::KeyValueTreeTransformer transform;
+            transform.rules()->addRule()
+                .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+            inputrec->efield->initMdpTransform(transform.rules());
+            gmx::Options                 options;
+            inputrec->efield->initMdpOptions(&options);
+            gmx::assignOptionsFromKeyValueTree(&options, transform.transform(mdpValues.build()));
 
-            warninp_t  wi = init_warning(TRUE, 0);
-
-            inputrec->efield->readMdp(&ninp, &inp, wi);
             t_mdatoms md;
             rvec      f[1];
             clear_rvec(f[0]);
@@ -129,12 +118,6 @@ class ElectricFieldTest : public ::testing::Test
             forcerec->efield->calculateForces(cr, &md, f, 0);
 
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
-            for (int i = 0; i < ninp; i++)
-            {
-                sfree(inp[i].name);
-                sfree(inp[i].value);
-            }
-            done_warning(wi, 0, "no file", 0);
         }
 };
 
