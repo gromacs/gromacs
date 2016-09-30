@@ -58,6 +58,8 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
@@ -67,7 +69,10 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringcompare.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -2185,7 +2190,21 @@ void get_ir(const char *mdparin, const char *mdparout,
     }
 
     /* Electric fields */
-    ir->efield->readMdp(&ninp, &inp, wi);
+    {
+        gmx::KeyValueTreeObject      convertedValues = flatKeyValueTreeFromInpFile(ninp, inp);
+        gmx::KeyValueTreeTransformer transform;
+        transform.rules()->addRule()
+            .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+        ir->efield->initMdpTransform(transform.rules());
+        for (const std::string &path : transform.mappedPaths())
+        {
+            mark_einp_set(ninp, inp, path.c_str() + 1);
+        }
+        gmx::Options                 options;
+        ir->efield->initMdpOptions(&options);
+        auto                         result = transform.transform(convertedValues);
+        gmx::assignOptionsFromKeyValueTree(&options, result.object());
+    }
 
     /* Ion/water position swapping ("computational electrophysiology") */
     CCTYPE("Ion/water position swapping for computational electrophysiology setups");
