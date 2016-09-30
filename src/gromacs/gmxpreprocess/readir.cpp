@@ -58,6 +58,8 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
@@ -66,8 +68,15 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/ikeyvaluetreeerror.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringcompare.h"
+#include "gromacs/utility/stringutil.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -1757,6 +1766,50 @@ static gmx_bool couple_lambda_has_vdw_on(int couple_lambda_value)
             couple_lambda_value == ecouplamVDWQ);
 }
 
+namespace
+{
+
+class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
+{
+    public:
+        explicit MdpErrorHandler(warninp_t wi)
+            : wi_(wi), mapping_(nullptr)
+        {
+        }
+
+        void setBackMapping(const gmx::IKeyValueTreeBackMapping &mapping)
+        {
+            mapping_ = &mapping;
+        }
+
+        virtual bool onError(gmx::UserInputError *ex, const gmx::KeyValueTreePath &context)
+        {
+            ex->prependContext(gmx::formatString("Error in mdp option \"%s\":",
+                                                 getOptionName(context).c_str()));
+            std::string message = gmx::formatExceptionMessageToString(*ex);
+            warning_error(wi_, message.c_str());
+            return true;
+        }
+
+    private:
+        std::string getOptionName(const gmx::KeyValueTreePath &context)
+        {
+            if (mapping_ != nullptr)
+            {
+                gmx::KeyValueTreePath path = mapping_->originalPath(context);
+                GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
+                return path[0];
+            }
+            GMX_ASSERT(context.size() == 1, "Inconsistent context for mdp option parsing");
+            return context[0];
+        }
+
+        warninp_t                            wi_;
+        const gmx::IKeyValueTreeBackMapping *mapping_;
+};
+
+} // namespace
+
 void get_ir(const char *mdparin, const char *mdparout,
             t_inputrec *ir, t_gromppopts *opts,
             warninp_t wi)
@@ -2185,7 +2238,26 @@ void get_ir(const char *mdparin, const char *mdparout,
     }
 
     /* Electric fields */
-    ir->efield->readMdp(&ninp, &inp, wi);
+    {
+        gmx::KeyValueTreeObject      convertedValues = flatKeyValueTreeFromInpFile(ninp, inp);
+        gmx::KeyValueTreeTransformer transform;
+        transform.rules()->addRule()
+            .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+        ir->efield->initMdpTransform(transform.rules());
+        for (const auto &path : transform.mappedPaths())
+        {
+            GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
+            mark_einp_set(ninp, inp, path[0].c_str());
+        }
+        gmx::Options                 options;
+        ir->efield->initMdpOptions(&options);
+        MdpErrorHandler              errorHandler(wi);
+        auto                         result
+            = transform.transform(convertedValues, &errorHandler);
+        errorHandler.setBackMapping(result.backMapping());
+        gmx::assignOptionsFromKeyValueTree(&options, result.object(),
+                                           &errorHandler);
+    }
 
     /* Ion/water position swapping ("computational electrophysiology") */
     CCTYPE("Ion/water position swapping for computational electrophysiology setups");
