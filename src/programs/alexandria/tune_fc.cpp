@@ -1174,9 +1174,9 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
             }
 
             TuneFc.simulate();
-            optx = TuneFc.getBestParam();
-            opts = TuneFc.getPsigma();
-            optm = TuneFc.getPmean();
+            TuneFc.getBestParam(optx);
+            TuneFc.getPsigma(opts);
+            TuneFc.getPmean(optm);
 
             if (chi2 < chi2_min)
             {
@@ -1202,6 +1202,7 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
                         n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
                 fflush(fplog);
             }
+            
             TuneFc.setParam(best_);
         }
 

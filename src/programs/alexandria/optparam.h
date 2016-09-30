@@ -151,17 +151,17 @@ template <class T> class Bayes : public OptParam
         /*! \brief
          * Returns the vecor of best found value for each parameter.
          */
-        parm_t getBestParam();
+        void getBestParam(parm_t &bestParam);
 
         /*! \brief
          * Returns the vecor of mean value calculated for each parameter.
          */
-        parm_t getPmean();
+        void getPmean(parm_t &pmean);
 
         /*! \brief
          * Returns the vecor of standard deviation calculated for each parameter.
          */
-        parm_t getPsigma();
+        void getPsigma(parm_t &psigma);
 
         /*! \brief
          * Run the Bayesian Monte carlo (BMC) simulation
@@ -196,21 +196,21 @@ void Bayes<T>::setUpperBound(parm_t upperBound)
 }
 
 template <class T>
-typename Bayes<T>::parm_t Bayes<T>::getBestParam()
+void Bayes<T>::getBestParam(parm_t &bestParam)
 {
-    return bestParam_;
+    bestParam = bestParam_;
 }
 
 template <class T>
-typename Bayes<T>::parm_t Bayes<T>::getPmean()
+void Bayes<T>::getPmean(parm_t &pmean)
 {
-    return pmean_;
+    pmean = pmean_;
 }
 
 template <class T>
-typename Bayes<T>::parm_t Bayes<T>::getPsigma()
+void Bayes<T>::getPsigma(parm_t &psigma)
 {
-    return psigma_;
+    psigma = psigma_;
 }
 
 template <class T>
