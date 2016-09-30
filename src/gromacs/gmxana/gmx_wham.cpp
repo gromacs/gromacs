@@ -60,6 +60,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
@@ -2048,57 +2049,57 @@ void read_pdo_files(char **fn, int nfiles, t_UmbrellaHeader* header,
 //! Read pull groups from a tpr file (including position, force const, geometry, number of groups)
 void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions *opt, t_coordselection *coordsel)
 {
-    t_inputrec  ir;
-    int         i;
-    t_state     state;
-    static int  first = 1;
+    gmx::MDModules  mdModules;
+    t_inputrec     *ir = mdModules.inputrec();
+    t_state         state;
+    static int      first = 1;
 
     /* printf("Reading %s \n",fn); */
-    read_tpx_state(fn, &ir, &state, NULL);
+    read_tpx_state(fn, ir, &state, NULL);
 
-    if (!ir.bPull)
+    if (!ir->bPull)
     {
         gmx_fatal(FARGS, "This is not a tpr with COM pulling");
     }
-    if (ir.pull->ncoord == 0)
+    if (ir->pull->ncoord == 0)
     {
         gmx_fatal(FARGS, "No pull coordinates found in %s", fn);
     }
 
     /* Read overall pull info */
-    header->npullcrds     = ir.pull->ncoord;
+    header->npullcrds     = ir->pull->ncoord;
     header->nCOMGrpsPullx = 0;
-    if (ir.pull->bPrintCOM)
+    if (ir->pull->bPrintCOM)
     {
-        header->nCOMGrpsPullx += ir.pull->ngroup;
+        header->nCOMGrpsPullx += ir->pull->ngroup;
     }
-    header->bPrintRefValue = ir.pull->bPrintRefValue;
-    header->bPrintComp     = ir.pull->bPrintComp;
+    header->bPrintRefValue = ir->pull->bPrintRefValue;
+    header->bPrintComp     = ir->pull->bPrintComp;
 
     /* Read pull coordinates */
     snew(header->pcrd, header->npullcrds);
-    for (i = 0; i < ir.pull->ncoord; i++)
+    for (int i = 0; i < ir->pull->ncoord; i++)
     {
-        header->pcrd[i].pull_type     = ir.pull->coord[i].eType;
-        header->pcrd[i].geometry      = ir.pull->coord[i].eGeom;
-        header->pcrd[i].k             = ir.pull->coord[i].k;
-        header->pcrd[i].init_dist     = ir.pull->coord[i].init;
+        header->pcrd[i].pull_type     = ir->pull->coord[i].eType;
+        header->pcrd[i].geometry      = ir->pull->coord[i].eGeom;
+        header->pcrd[i].k             = ir->pull->coord[i].k;
+        header->pcrd[i].init_dist     = ir->pull->coord[i].init;
 
-        copy_ivec(ir.pull->coord[i].dim, header->pcrd[i].dim);
+        copy_ivec(ir->pull->coord[i].dim, header->pcrd[i].dim);
         header->pcrd[i].ndim         = header->pcrd[i].dim[XX] + header->pcrd[i].dim[YY] + header->pcrd[i].dim[ZZ];
 
         std::strcpy(header->pcrd[i].coord_unit,
-                    pull_coordinate_units(&ir.pull->coord[i]));
+                    pull_coordinate_units(&ir->pull->coord[i]));
 
-        if (ir.efep != efepNO && ir.pull->coord[i].k != ir.pull->coord[i].kB)
+        if (ir->efep != efepNO && ir->pull->coord[i].k != ir->pull->coord[i].kB)
         {
             gmx_fatal(FARGS, "Seems like you did free-energy perturbation, and you perturbed the force constant."
                       " This is not supported.\n");
         }
-        if (coordsel && (coordsel->n != ir.pull->ncoord))
+        if (coordsel && (coordsel->n != ir->pull->ncoord))
         {
             gmx_fatal(FARGS, "Found %d pull coordinates in %s, but %d columns in the respective line\n"
-                      "coordinate selection file (option -is)\n", ir.pull->ncoord, fn, coordsel->n);
+                      "coordinate selection file (option -is)\n", ir->pull->ncoord, fn, coordsel->n);
         }
     }
 
@@ -2106,7 +2107,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     int  geom          = -1;
     ivec thedim        = { 0, 0, 0 };
     bool geometryIsSet = false;
-    for (i = 0; i < ir.pull->ncoord; i++)
+    for (int i = 0; i < ir->pull->ncoord; i++)
     {
         if (coordsel == NULL || coordsel->bUse[i])
         {
@@ -2158,7 +2159,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     {
         printf("\nFile %s, %d coordinates, with these options:\n", fn, header->npullcrds);
         int maxlen = 0;
-        for (i = 0; i < ir.pull->ncoord; i++)
+        for (int i = 0; i < ir->pull->ncoord; i++)
         {
             int lentmp = strlen(epullg_names[header->pcrd[i].geometry]);
             maxlen     = (lentmp > maxlen) ? lentmp : maxlen;
@@ -2166,7 +2167,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
         char fmt[STRLEN];
         sprintf(fmt, "\tGeometry %%-%ds  k = %%-8g  position = %%-8g  dimensions [%%s %%s %%s] (%%d dimensions). Used: %%s\n",
                 maxlen+1);
-        for (i = 0; i < ir.pull->ncoord; i++)
+        for (int i = 0; i < ir->pull->ncoord; i++)
         {
             bool use = (coordsel == NULL || coordsel->bUse[i]);
             printf(fmt,

@@ -59,6 +59,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/ifunc.h"
@@ -2509,7 +2510,6 @@ int gmx_hbond(int argc, char *argv[])
     t_trxstatus          *status;
     int                   trrStatus = 1;
     t_topology            top;
-    t_inputrec            ir;
     t_pargs              *ppa;
     int                   npargs, natoms, nframes = 0, shatom;
     int                  *isize;
@@ -2586,7 +2586,9 @@ int gmx_hbond(int argc, char *argv[])
     hb = mk_hbdata(bHBmap, opt2bSet("-dan", NFILE, fnm), bMerge || bContact);
 
     /* get topology */
-    read_tpx_top(ftp2fn(efTPR, NFILE, fnm), &ir, box, &natoms, NULL, NULL, &top);
+    gmx::MDModules  mdModules;
+    t_inputrec     *ir = mdModules.inputrec();
+    read_tpx_top(ftp2fn(efTPR, NFILE, fnm), ir, box, &natoms, NULL, NULL, &top);
 
     snew(grpnames, grNR);
     snew(index, grNR);
@@ -2764,7 +2766,7 @@ int gmx_hbond(int argc, char *argv[])
                   top.atoms.nr, natoms);
     }
 
-    bBox  = ir.ePBC != epbcNONE;
+    bBox  = (ir->ePBC != epbcNONE);
     grid  = init_grid(bBox, box, (rcut > r2cut) ? rcut : r2cut, ngrid);
     nabin = static_cast<int>(acut/abin);
     nrbin = static_cast<int>(rcut/rbin);
