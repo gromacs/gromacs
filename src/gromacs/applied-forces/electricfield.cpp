@@ -58,9 +58,14 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/optionsection.h"
+#include "gromacs/options/ioptionscontainerwithsections.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
@@ -80,6 +85,15 @@ class ElectricFieldData
     public:
         ElectricFieldData() : a_(0), omega_(0), t0_(0), sigma_(0)
         {
+        }
+
+        void initMdpOptions(IOptionsContainerWithSections *options, const char *sectionName)
+        {
+            auto section = options->addSection(OptionSection(sectionName));
+            section.addOption(RealOption("E0").store(&a_));
+            section.addOption(RealOption("omega").store(&omega_));
+            section.addOption(RealOption("t0").store(&t0_));
+            section.addOption(RealOption("sigma").store(&sigma_));
         }
 
         /*! \brief Evaluates this field component at given time.
@@ -149,7 +163,8 @@ class ElectricField : public IInputRecExtension, public IForceProvider
 
         // From IInputRecExtension
         virtual void doTpxIO(t_fileio *fio, bool bRead);
-        virtual void readMdp(int *ninp_p, t_inpfile **inp_p, warninp *wi);
+        virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
+        virtual void initMdpOptions(IOptionsContainerWithSections *options);
         virtual void broadCast(const t_commrec *cr);
         virtual void compare(FILE                     *fp,
                              const IInputRecExtension *field2,
@@ -167,19 +182,6 @@ class ElectricField : public IInputRecExtension, public IForceProvider
                                      rvec f[], double t);
 
     private:
-        /*! \brief Extract relevant fields from an mdp file
-         *
-         * \todo Remove this when new tests are in place.
-         * \param[in] dim          The direction XX, YY, or ZZ
-         * \param[in] staticField  Static components of the field
-         * \param[in] dynamicField Dynamic components of the field
-         * \param[in] wi           Warning control structure
-         */
-        void decodeMdp(int         dim,
-                       const char *staticField,
-                       const char *dynamicField,
-                       warninp    *wi);
-
         //! Return whether or not to apply a field
         bool isActive() const;
 
@@ -289,106 +291,86 @@ void ElectricField::doTpxIO(t_fileio *fio, bool bRead)
     }
 }
 
-void ElectricField::readMdp(int *ninp_p, t_inpfile **inp_p, warninp_t wi)
+real convertStaticParameters(const std::string &value)
 {
-    // Old style MDP. Will be removed later.
-    char        efield_x[STRLEN], efield_xt[STRLEN], efield_y[STRLEN],
-                efield_yt[STRLEN], efield_z[STRLEN], efield_zt[STRLEN];
-    efield_x[0]  = '\0';
-    efield_xt[0] = '\0';
-    efield_y[0]  = '\0';
-    efield_yt[0] = '\0';
-    efield_z[0]  = '\0';
-    efield_zt[0] = '\0';
-
-    const char *tmp;
-    int         ninp = *ninp_p;
-    t_inpfile  *inp  = *inp_p;
-
-    CCTYPE("Electric fields");
-    // Old style inputs for backward compatibility
-    STYPE ("E-x",     efield_x,   NULL);
-    STYPE ("E-xt",    efield_xt,  NULL);
-    STYPE ("E-y",     efield_y,   NULL);
-    STYPE ("E-yt",    efield_yt,  NULL);
-    STYPE ("E-z",     efield_z,   NULL);
-    STYPE ("E-zt",    efield_zt,  NULL);
-
-    *ninp_p = ninp;
-    *inp_p  = inp;
-
-    // Extract mdp parameters
-    decodeMdp(XX, efield_x, efield_xt, wi);
-    decodeMdp(YY, efield_y, efield_yt, wi);
-    decodeMdp(ZZ, efield_z, efield_zt, wi);
-}
-
-void ElectricField::decodeMdp(int         dim,
-                              const char *staticField,
-                              const char *dynamicField,
-                              warninp_t   wi)
-{
-    char warn_buf[STRLEN];
-    // TODO: Better context for the exceptions from the converters (possibly
-    // also convert them to warning_errors).
-    std::vector<std::string> sx  = splitString(staticField);
+    // TODO: Better context for the exceptions here (possibly
+    // also convert them to warning_errors or such).
+    const std::vector<std::string> sx = splitString(value);
     if (sx.empty())
     {
-        return;
+        return 0.0;
     }
-    // Old style for backwards compatibility
-    int   n  = fromString<int>(sx[0]);
+    const int n = fromString<int>(sx[0]);
     if (n <= 0)
     {
-        return;
+        return 0.0;
     }
     if (n != 1)
     {
-        sprintf(warn_buf, "Only one electric field term supported for each dimension");
-        warning_error(wi, warn_buf);
+        GMX_THROW(InvalidInputError("Only one electric field term supported for each dimension"));
     }
     if (sx.size() != 3)
     {
-        sprintf(warn_buf, "Expected exactly one electric field amplitude value");
-        warning_error(wi, warn_buf);
+        GMX_THROW(InvalidInputError("Expected exactly one electric field amplitude value"));
     }
-    real                     E0 = fromString<real>(sx[1]);
+    return fromString<real>(sx[1]);
+}
 
-    std::vector<std::string> sxt = splitString(dynamicField);
-    if (!sxt.empty())
+void convertDynamicParameters(gmx::KeyValueTreeObjectBuilder *builder,
+                              const std::string &value)
+{
+    const std::vector<std::string> sxt = splitString(value);
+    if (sxt.empty())
     {
-        real  omega = 0, t0 = 0, sigma = 0;
-        int   n     = fromString<int>(sxt[0]);
-        switch (n)
-        {
-            case 1:
-                if (sxt.size() != 3)
-                {
-                    sprintf(warn_buf, "Please specify 1 omega 0 for non-pulsed fields");
-                    warning_error(wi, warn_buf);
-                }
-                omega = fromString<real>(sxt[1]);
-                break;
-            case 3:
-                if (sxt.size() != 7)
-                {
-                    sprintf(warn_buf, "Please specify 1 omega 0 t0 0 sigma 0 for pulsed fields");
-                    warning_error(wi, warn_buf);
-                }
-                omega = fromString<real>(sxt[1]);
-                t0    = fromString<real>(sxt[3]);
-                sigma = fromString<real>(sxt[5]);
-                break;
-            default:
-                sprintf(warn_buf, "Incomprehensible input for electric field");
-                warning_error(wi, warn_buf);
-        }
-        setFieldTerm(dim, E0, omega, t0, sigma);
+        return;
     }
-    else
+    const int n = fromString<int>(sxt[0]);
+    switch (n)
     {
-        setFieldTerm(dim, E0, 0, 0, 0);
+        case 1:
+            if (sxt.size() != 3)
+            {
+                GMX_THROW(InvalidInputError("Please specify 1 omega 0 for non-pulsed fields"));
+            }
+            builder->addValue<real>("omega", fromString<real>(sxt[1]));
+            break;
+        case 3:
+            if (sxt.size() != 7)
+            {
+                GMX_THROW(InvalidInputError("Please specify 1 omega 0 t0 0 sigma 0 for pulsed fields"));
+            }
+            builder->addValue<real>("omega", fromString<real>(sxt[1]));
+            builder->addValue<real>("t0", fromString<real>(sxt[3]));
+            builder->addValue<real>("sigma", fromString<real>(sxt[5]));
+            break;
+        default:
+            GMX_THROW(InvalidInputError("Incomprehensible input for electric field"));
     }
+}
+
+void ElectricField::initMdpTransform(IKeyValueTreeTransformRules *rules)
+{
+    rules->addRule().from<std::string>("/Ex").to<real>("/electric-field/x/E0")
+            .transformWith(&convertStaticParameters);
+    rules->addRule().from<std::string>("/Ex-t").toObject("/electric-field/x")
+            .transformWith(&convertDynamicParameters);
+    rules->addRule().from<std::string>("/Ey").to<real>("/electric-field/y/E0")
+            .transformWith(&convertStaticParameters);
+    rules->addRule().from<std::string>("/Ey-t").toObject("/electric-field/y")
+            .transformWith(&convertDynamicParameters);
+    rules->addRule().from<std::string>("/Ez").to<real>("/electric-field/z/E0")
+            .transformWith(&convertStaticParameters);
+    rules->addRule().from<std::string>("/Ez-t").toObject("/electric-field/z")
+            .transformWith(&convertDynamicParameters);
+}
+
+void ElectricField::initMdpOptions(IOptionsContainerWithSections *options)
+{
+    //CTYPE ("Format is E0 (V/nm), omega (1/ps), t0 (ps), sigma (ps) ");
+    auto section = options->addSection(OptionSection("electric-field"));
+    efield_[XX].initMdpOptions(&section, "x");
+    efield_[YY].initMdpOptions(&section, "y");
+    efield_[ZZ].initMdpOptions(&section, "z");
 }
 
 void ElectricField::broadCast(const t_commrec *cr)

@@ -52,6 +52,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/smalloc.h"
@@ -226,7 +227,17 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
     return inp;
 }
 
-
+gmx::KeyValueTreeObject flatKeyValueTreeFromInpFile(int ninp, t_inpfile inp[])
+{
+    gmx::KeyValueTreeBuilder  builder;
+    auto                      root = builder.rootObject();
+    for (int i = 0; i < ninp; ++i)
+    {
+        const char *value = inp[i].value;
+        root.addValue<std::string>(inp[i].name, value != nullptr ? value : "");
+    }
+    return builder.build();
+}
 
 
 static int inp_comp(const void *a, const void *b)

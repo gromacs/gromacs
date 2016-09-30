@@ -42,6 +42,11 @@
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/utility/basedefinitions.h"
 
+namespace gmx
+{
+class KeyValueTreeObject;
+}
+
 typedef struct t_inpfile {
     int      count;     /* sort order for output  */
     gmx_bool bObsolete; /* whether it is an obsolete param value */
@@ -61,6 +66,8 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
    fn = the file name
    ninp = the number of read parameters
    cppopts = the cpp-style options for #include paths and #defines */
+
+gmx::KeyValueTreeObject flatKeyValueTreeFromInpFile(int ninp, t_inpfile inp[]);
 
 void write_inpfile(const char *fn, int ninp, t_inpfile inp[],
                    gmx_bool bHaltOnUnknown,
