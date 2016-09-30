@@ -388,13 +388,14 @@ void init_em(FILE *fplog, const char *title,
         }
 
         atoms2md(top_global, ir, 0, NULL, top_global->natoms, mdatoms);
-        update_mdatoms(mdatoms, state_global->lambda[efptFEP]);
 
         if (vsite)
         {
             set_vsite_top(vsite, *top, mdatoms, cr);
         }
     }
+
+    update_mdatoms(mdatoms, state_global->lambda[efptMASS]);
 
     if (constr)
     {
