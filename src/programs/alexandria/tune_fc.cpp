@@ -406,7 +406,7 @@ void ForceConstants::makeReverseIndex()
 void ForceConstants::dump(FILE *fp) const
 {
     const char  *btsnames[ebtsNR] =
-    { "bond", "angle", "proper", "improper", NULL, NULL };
+    { "bond", "angle", "proper", "improper", nullptr, nullptr };
 
     if (bOpt_)
     {
@@ -652,7 +652,7 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
     {
         gmx_sumi(1, &nlocal, _cr);
     }
-    if (NULL != fp)
+    if (nullptr != fp)
     {
         fprintf(fp, "%d out of %d molecules have support in the force field.\n",
                 nlocal, ntotal);
@@ -691,10 +691,8 @@ void OptPrep::tuneFc2PolData()
                 strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
             }
             b->setParamString(buf);
-            const std::vector<std::string> bondtypes =
-                gmx::splitString(b->name());
-
-            auto iType = fc.interactionType();
+            const auto bondtypes = gmx::splitString(b->name());
+            const auto iType     = fc.interactionType();
             switch (iType)
             {
                 case eitBONDS:
@@ -840,12 +838,12 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     for (auto b = ForceConstants_[eitBONDS].beginBN();
          b < ForceConstants_[eitBONDS].endBN(); ++b)
     {
-        std::vector<std::string> atoms    = gmx::splitString(b->name());
-        auto                     fs       = pd_.findForces(eitBONDS);
-        auto                     f        = fs->findForce(atoms);
+        const auto atoms = gmx::splitString(b->name());
+        auto       fs    = pd_.findForces(eitBONDS);
+        auto       f     = fs->findForce(atoms);
         GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
-        std::vector<std::string> pp = gmx::splitString(b->paramString());
-        char                     buf[256];
+        const auto pp    = gmx::splitString(b->paramString());
+        char             buf[256];
         // Here we use the "knowledge" that the energy is the second parameter in
         // the Morse description. Not good!
         snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[i], pp[1].c_str());
@@ -946,7 +944,7 @@ static void print_lsq_set(FILE *fp, gmx_stats_t lsq)
     real   x, y;
 
     fprintf(fp, "@type xy\n");
-    while (gmx_stats_get_point(lsq, &x, &y, NULL, NULL, 0) == estatsOK)
+    while (gmx_stats_get_point(lsq, &x, &y, nullptr, nullptr, 0) == estatsOK)
     {
         fprintf(fp, "%10g  %10g\n", x, y);
     }
@@ -983,7 +981,7 @@ double OptPrep::calcDeviation()
     {
         return _ener[ermsTOT];
     }
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Begin communicating force parameters\n");
         fflush(debug);
@@ -992,7 +990,7 @@ double OptPrep::calcDeviation()
     {
         pd_.broadcast(_cr);
     }
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Done communicating force parameters\n");
         fflush(debug);
@@ -1002,11 +1000,14 @@ double OptPrep::calcDeviation()
     {
         _ener[j] = 0;
     }
+    
     for (auto &mymol : _mymol)
     {
         if (mymol.molProp()->getOptHF(&optHF))
         {
             int nconfs = 0;
+            int natoms = mymol.molProp()->NAtom();
+            
             if ((mymol.eSupp == eSupportLocal) ||
                 (_bFinal && (mymol.eSupp == eSupportRemote)))
             {
@@ -1037,7 +1038,7 @@ double OptPrep::calcDeviation()
                         dbcopy = debug;
                         debug  = nullptr;
 
-                        for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+                        for (j = 0; (j < natoms); j++)
                         {
                             clear_rvec(mymol.f_[j]);
                         }
@@ -1048,12 +1049,12 @@ double OptPrep::calcDeviation()
                         debug         = dbcopy;
                         mymol.Force2  = 0;
 
-                        for (j = 0; (j < mymol.molProp()->NAtom()); j++)
+                        for (j = 0; (j < natoms); j++)
                         {
                             mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
                         }
 
-                        mymol.Force2     /= mymol.molProp()->NAtom();
+                        mymol.Force2     /= natoms;
 
                         if (jtype == JOB_OPT)
                         {
@@ -1151,24 +1152,26 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
 
     std::vector<double>              optx, opts, optm;
     double                           chi2, chi2_min;
-    gmx_bool                         bMinimum = FALSE;
+    gmx_bool                         bMinimum = false;
     std::random_device               rd;
     std::mt19937                     gen;
     std::uniform_real_distribution<> dis;
 
-    auto func = [&] (double v[]) {
-            return objFunction(v);
-        };
+    auto func = [&] (double v[]) 
+    {
+        return objFunction(v);
+    };
 
     if (MASTER(_cr))
     {
         chi2 = chi2_min  = GMX_REAL_MAX;
         Bayes <double> TuneFc(func, param_, lower_, upper_, &chi2);
-        TuneFc.Init(xvgconv, xvgepot, oenv, seed, stepsize, maxiter, nprint,
+        TuneFc.Init(xvgconv, xvgepot, oenv, seed, 
+                    stepsize, maxiter, nprint,
                     temperature, bBound);
         for (int n = 0; (n < nrun); n++)
         {
-            if ((NULL != fp) && (0 == n))
+            if ((nullptr != fp) && (0 == n))
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
@@ -1180,8 +1183,7 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
 
             if (chi2 < chi2_min)
             {
-                bMinimum = TRUE;
-                /* Print convergence if needed */
+                bMinimum = true;
                 for (size_t k = 0; (k < param_.size()); k++)
                 {
                     best_[k]   = optx[k];
@@ -1191,12 +1193,12 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
                 chi2_min = chi2;
             }
 
-            if (NULL != fp)
+            if (nullptr != fp)
             {
                 fprintf(fp, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n",
                         n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
             }
-            if (NULL != fplog)
+            if (nullptr != fplog)
             {
                 fprintf(fplog, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n",
                         n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
@@ -1244,7 +1246,7 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
 {
     int j, k;
 
-    for (std::vector<alexandria::MyMol>::iterator mi = mol.begin(); (mi < mol.end()); mi++)
+    for (auto mi = mol.begin(); (mi < mol.end()); mi++)
     {
         fprintf(fp, "%-30s  %d\n", mi->molProp()->getMolname().c_str(), mi->molProp()->NAtom());
         for (j = 0; (j < mi->molProp()->NAtom()); j++)
@@ -1282,7 +1284,8 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
 
 
 void OptPrep::printSpecs(FILE *fp, char *title,
-                         const char *xvg, const gmx_output_env_t *oenv,
+                         const char *xvg, 
+                         const gmx_output_env_t *oenv,
                          bool bCheckOutliers)
 {
     FILE       *xfp;
@@ -1291,7 +1294,7 @@ void OptPrep::printSpecs(FILE *fp, char *title,
     gmx_stats_t gst;
 
     gst = gmx_stats_init();
-    if (NULL != xvg)
+    if (nullptr != xvg)
     {
         xfp = xvgropen(xvg, "Entalpy of Formation", "Experiment (kJ/mol)", "Calculated (kJ/mol)",
                        oenv);
@@ -1312,7 +1315,7 @@ void OptPrep::printSpecs(FILE *fp, char *title,
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
         msd += gmx::square(mi->Emol-mi->optEcalc);
         gmx_stats_add_point(gst, mi->Hform, mi->Hform + DeltaE, 0, 0);
-        if (NULL != xvg)
+        if (nullptr != xvg)
         {
             fprintf(xfp, "%10g  %10g\n", mi->Hform, mi->Hform + DeltaE);
         }
@@ -1321,10 +1324,10 @@ void OptPrep::printSpecs(FILE *fp, char *title,
     fprintf(fp, "RMSD is %g kJ/mol for %d molecules.\n\n",
             sqrt(msd/_mymol.size()), static_cast<int>(_mymol.size()));
     fflush(fp);
-    if (NULL != xvg)
+    if (nullptr != xvg)
     {
         xvgrclose(xfp);
-        do_view(oenv, xvg, NULL);
+        do_view(oenv, xvg, nullptr);
     }
     //! Do statistics
     real a, b, da, db, chi2, Rfit;

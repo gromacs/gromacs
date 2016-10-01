@@ -134,7 +134,7 @@ static bool is_linear(rvec xi, rvec xj, rvec xk, t_pbc *pbc,
     th = fabs(RAD2DEG*bond_angle(xi, xj, xk, pbc, r_ij, r_kj, &costh, &t1, &t2));
     if ((th > th_toler) || (th < 180-th_toler))
     {
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "Angle is %g, th_toler is %g\n", th, th_toler);
         }
@@ -596,7 +596,7 @@ static void getBhamParams(const Poldata     &pd,
 {
     std::vector<double> vdwi, vdwj;
 
-    auto                fai = pd.findAtype(ai);
+    auto fai = pd.findAtype(ai);
     if (fai != pd.getAtypeEnd())
     {
         vdwi  = getDoubles(fai->getVdwparams());
@@ -676,8 +676,7 @@ static void plist_to_mtop(const Poldata             &pd,
         }
         snew(mtop_->moltype[0].ilist[ftype].iatoms, nratot);
         int k = 0;
-        for (ParamIterator j = pw.beginParam();
-             (j < pw.endParam()); ++j)
+        for (auto j = pw.beginParam();(j < pw.endParam()); ++j)
         {
             std::vector<real> c;
             c.resize(MAXFORCEPARAM, 0);
@@ -948,7 +947,7 @@ MyMol::MyMol() : gvt_(egvtALL)
 {
     bHaveShells_       = false;
     bHaveVSites_       = false;
-    cgnr_              = NULL;
+    cgnr_              = nullptr;
     immAtoms_          = immOK;
     immTopology_       = immOK;
     immCharges_        = immOK;
@@ -1071,8 +1070,8 @@ immStatus MyMol::checkAtoms(const Poldata &pd)
 
     for (int i = 0; i < topology_->atoms.nr; i++)
     {
-        const std::string    atype(*topology_->atoms.atomtype[i]);
-        FfatypeConstIterator fa = pd.findAtype(atype);
+        const auto atype(*topology_->atoms.atomtype[i]);
+        auto       fa = pd.findAtype(atype);
         if (fa == pd.getAtypeEnd())
         {
             printf("Could not find a force field entry for atomtype %s atom %d\n",
@@ -1138,7 +1137,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                     gmx_fatal(FARGS, "No such length unit '%s' for bonds", fs->unit().c_str());
                 }
                 memset(&b, 0, sizeof(b));
-                for (alexandria::BondIterator bi = molProp()->BeginBond(); (bi < molProp()->EndBond()); bi++)
+                for (auto bi = molProp()->BeginBond(); (bi < molProp()->EndBond()); bi++)
                 {
                     b.a[0] = bi->getAi() - 1;
                     b.a[1] = bi->getAj() - 1;
@@ -1289,12 +1288,12 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
         do_force(fplog, cr, inputrec_, 0,
                  &my_nrnb, wcycle, ltop_,
                  &(mtop_->groups),
-                 box_, x_, NULL,
+                 box_, x_, nullptr,
                  f_, force_vir, mdatoms_,
-                 enerd_, NULL,
-                 state_->lambda, NULL,
+                 enerd_, nullptr,
+                 state_->lambda, nullptr,
                  fr_,
-                 NULL, mu_tot, t, NULL, NULL, FALSE,
+                 nullptr, mu_tot, t, nullptr, nullptr, FALSE,
                  flags);
     }
     for (int i = 0; i < mtop_->natoms; i++)
@@ -2143,7 +2142,7 @@ void MyMol::addShells(const Poldata          &pd,
     }
     renum.resize(1+topology_->atoms.nr, 0);
     renum[topology_->atoms.nr] = topology_->atoms.nr + nshell;
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "added %d shells\n", nshell);
     }
@@ -2168,14 +2167,12 @@ void MyMol::addShells(const Poldata          &pd,
         auto pw = SearchPlist(plist_, F_POLARIZATION);
         if (plist_.end() != pw)
         {
-            for (ParamIterator j = pw->beginParam();
-                 (j < pw->endParam()); ++j)
+            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
             {
                 // Exclude nucleus and shell from each other
                 add_excl_pair(newexcls, j->a[0], j->a[1]);
             }
-            for (ParamIterator j = pw->beginParam();
-                 (j < pw->endParam()); ++j)
+            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
             {
                 // Now add the exclusions from the nucleus to the shell.
                 // We know that the nuclues is 0 since we just made the list
@@ -2191,8 +2188,7 @@ void MyMol::addShells(const Poldata          &pd,
                     add_excl_pair(newexcls, j->a[1], renum[excls_[i0].e[j0]]);
                 }
             }
-            for (ParamIterator j = pw->beginParam();
-                 (j < pw->endParam()); ++j)
+            for (auto j = pw->beginParam();(j < pw->endParam()); ++j)
             {
                 for (int j0 = 0; (j0 < newexcls[j->a[0]].nr); j0++)
                 {
@@ -2508,7 +2504,8 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     std::vector<std::string> atoms, ptr;
     int                      lu, n;
     size_t                   ntrain            = 0;
-    double                   value             = 0.0, sigma = 0.0, r13 = 0.0;
+    double                   value             = 0.0;
+    double                   sigma = 0.0,  r13 = 0.0;
     double                   relative_position = 0.0;
 
     switch (iType)

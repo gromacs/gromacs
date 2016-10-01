@@ -237,8 +237,7 @@ template <class T>
 void Bayes<T>::simulate()
 {
 
-    std::vector<T>                   sum, sum_of_sq;
-
+    parm_t                           sum, sum_of_sq;
     int                              iter, j, nsum = 0;
     T                                storeParam;
     double                           currEval = 0.0;
@@ -248,18 +247,18 @@ void Bayes<T>::simulate()
     double                           mcProbability;
     double                           beta;
 
-    FILE                            *fpc = NULL, *fpe = NULL;
+    FILE                            *fpc = nullptr, *fpe = nullptr;
     std::random_device               rd;
     std::mt19937                     gen(rd());
     std::uniform_real_distribution<> dis(0, 1);
 
     beta = 1/(BOLTZ*temperature_);
 
-    if (NULL != xvgconv_)
+    if (nullptr != xvgconv_)
     {
         fpc = xvgropen(xvgconv_, "Parameter convergence", "iteration", "", oenv_);
     }
-    if (NULL != xvgepot_)
+    if (nullptr != xvgepot_)
     {
         fpe = xvgropen(xvgepot_, "Parameter energy", "iteration", "kT", oenv_);
     }
@@ -274,7 +273,7 @@ void Bayes<T>::simulate()
 
     for (j = iter = 0; (iter < maxiter_); iter++)
     {
-        if ((NULL != fpc) && ((j % nprint_) == 0))
+        if ((nullptr != fpc) && ((j % nprint_) == 0))
         {
             fprintf(fpc, "%5d", iter);
             for (auto value : param_)
@@ -283,7 +282,7 @@ void Bayes<T>::simulate()
             }
             fprintf(fpc, "\n");
         }
-        if ((NULL != fpe) && ((j % nprint_) == 0))
+        if ((nullptr != fpe) && ((j % nprint_) == 0))
         {
             fprintf(fpe, "%5d  %10g\n", iter, prevEval);
         }
@@ -295,7 +294,7 @@ void Bayes<T>::simulate()
         mcProbability   = exp(-beta*deltaEval);
         if ((deltaEval < 0) || (mcProbability > randProbability))
         {
-            if (NULL != debug)
+            if (nullptr != debug)
             {
                 fprintf(debug, "Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
                         j, storeParam, param_[j], beta*deltaEval);
@@ -334,12 +333,12 @@ void Bayes<T>::simulate()
     }
 
 
-    if (NULL != fpc)
+    if (nullptr != fpc)
     {
         xvgrclose(fpc);
     }
 
-    if (NULL != fpe)
+    if (nullptr != fpe)
     {
         xvgrclose(fpe);
     }
