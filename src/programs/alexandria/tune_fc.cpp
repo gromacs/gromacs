@@ -838,11 +838,11 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     for (auto b = ForceConstants_[eitBONDS].beginBN();
          b < ForceConstants_[eitBONDS].endBN(); ++b)
     {
-        const auto atoms = gmx::splitString(b->name());
-        auto       fs    = pd_.findForces(eitBONDS);
-        auto       f     = fs->findForce(atoms);
+        const auto       atoms = gmx::splitString(b->name());
+        auto             fs    = pd_.findForces(eitBONDS);
+        auto             f     = fs->findForce(atoms);
         GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
-        const auto pp    = gmx::splitString(b->paramString());
+        const auto       pp    = gmx::splitString(b->paramString());
         char             buf[256];
         // Here we use the "knowledge" that the energy is the second parameter in
         // the Morse description. Not good!
@@ -1000,14 +1000,14 @@ double OptPrep::calcDeviation()
     {
         _ener[j] = 0;
     }
-    
+
     for (auto &mymol : _mymol)
     {
         if (mymol.molProp()->getOptHF(&optHF))
         {
             int nconfs = 0;
             int natoms = mymol.molProp()->NAtom();
-            
+
             if ((mymol.eSupp == eSupportLocal) ||
                 (_bFinal && (mymol.eSupp == eSupportRemote)))
             {
@@ -1157,16 +1157,16 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
     std::mt19937                     gen;
     std::uniform_real_distribution<> dis;
 
-    auto func = [&] (double v[]) 
-    {
-        return objFunction(v);
-    };
+    auto func = [&] (double v[])
+        {
+            return objFunction(v);
+        };
 
     if (MASTER(_cr))
     {
         chi2 = chi2_min  = GMX_REAL_MAX;
         Bayes <double> TuneFc(func, param_, lower_, upper_, &chi2);
-        TuneFc.Init(xvgconv, xvgepot, oenv, seed, 
+        TuneFc.Init(xvgconv, xvgepot, oenv, seed,
                     stepsize, maxiter, nprint,
                     temperature, bBound);
         for (int n = 0; (n < nrun); n++)
@@ -1204,7 +1204,7 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
                         n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
                 fflush(fplog);
             }
-            
+
             TuneFc.setParam(best_);
         }
 
@@ -1284,7 +1284,7 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
 
 
 void OptPrep::printSpecs(FILE *fp, char *title,
-                         const char *xvg, 
+                         const char *xvg,
                          const gmx_output_env_t *oenv,
                          bool bCheckOutliers)
 {

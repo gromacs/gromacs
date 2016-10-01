@@ -255,34 +255,34 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         case exmlGT_BONDS:
-            if (NN(xbuf[exmlINTERACTION]) && 
-		NN(xbuf[exmlFUNCTION])    && 
-		NN(xbuf[exmlUNIT]))
+            if (NN(xbuf[exmlINTERACTION]) &&
+                NN(xbuf[exmlFUNCTION])    &&
+                NN(xbuf[exmlUNIT]))
             {
-                ListedForces bonds (xbuf[exmlINTERACTION], 
-                                    xbuf[exmlFUNCTION], 
+                ListedForces bonds (xbuf[exmlINTERACTION],
+                                    xbuf[exmlFUNCTION],
                                     xbuf[exmlUNIT]);
                 pd.addForces(bonds);
             }
             break;
         case exmlGT_ANGLES:
-            if (NN(xbuf[exmlINTERACTION]) && 
-		NN(xbuf[exmlFUNCTION])    && 
-		NN(xbuf[exmlUNIT]))
+            if (NN(xbuf[exmlINTERACTION]) &&
+                NN(xbuf[exmlFUNCTION])    &&
+                NN(xbuf[exmlUNIT]))
             {
-                ListedForces angles (xbuf[exmlINTERACTION], 
-                                     xbuf[exmlFUNCTION], 
+                ListedForces angles (xbuf[exmlINTERACTION],
+                                     xbuf[exmlFUNCTION],
                                      xbuf[exmlUNIT]);
                 pd.addForces(angles);
             }
             break;
         case exmlGT_DIHEDRALS:
-            if (NN(xbuf[exmlINTERACTION]) && 
-		NN(xbuf[exmlFUNCTION])    && 
-		NN(xbuf[exmlUNIT]))
+            if (NN(xbuf[exmlINTERACTION]) &&
+                NN(xbuf[exmlFUNCTION])    &&
+                NN(xbuf[exmlUNIT]))
             {
-                ListedForces dihedrals (xbuf[exmlINTERACTION], 
-                                        xbuf[exmlFUNCTION], 
+                ListedForces dihedrals (xbuf[exmlINTERACTION],
+                                        xbuf[exmlFUNCTION],
                                         xbuf[exmlUNIT]);
                 pd.addForces(dihedrals);
             }
@@ -343,36 +343,40 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             break;
         case exmlGT_BOND:
             if (NN(xbuf[exmlATOM1])    && NN(xbuf[exmlATOM2]) &&
-                NN(xbuf[exmlREFVALUE]) && NN(xbuf[exmlSIGMA]) && 
-		NN(xbuf[exmlNTRAIN]))
+                NN(xbuf[exmlREFVALUE]) && NN(xbuf[exmlSIGMA]) &&
+                NN(xbuf[exmlNTRAIN]))
             {
 
-                const std::vector<std::string>& atoms = {xbuf[exmlATOM1].c_str(),
-                                                         xbuf[exmlATOM2].c_str()};
+                const std::vector<std::string> &atoms = {
+                    xbuf[exmlATOM1].c_str(),
+                    xbuf[exmlATOM2].c_str()
+                };
 
-                auto& force = pd.lastForces();
-		
+                auto &force = pd.lastForces();
+
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
-			       my_atof(xbuf[exmlREFVALUE].c_str()),
-			       my_atof(xbuf[exmlSIGMA].c_str()),
-			       atoi(xbuf[exmlNTRAIN].c_str()));
+                               my_atof(xbuf[exmlREFVALUE].c_str()),
+                               my_atof(xbuf[exmlSIGMA].c_str()),
+                               atoi(xbuf[exmlNTRAIN].c_str()));
             }
             break;
         case exmlGT_ANGLE:
             if (NN(xbuf[exmlATOM1]) && NN(xbuf[exmlATOM2])    &&
-                NN(xbuf[exmlATOM3]) && NN(xbuf[exmlREFVALUE]) && 
-		NN(xbuf[exmlSIGMA]) && NN(xbuf[exmlNTRAIN]))
+                NN(xbuf[exmlATOM3]) && NN(xbuf[exmlREFVALUE]) &&
+                NN(xbuf[exmlSIGMA]) && NN(xbuf[exmlNTRAIN]))
             {
-                const std::vector<std::string>& atoms = {xbuf[exmlATOM1].c_str(),
-                                                         xbuf[exmlATOM2].c_str(),
-                                                         xbuf[exmlATOM3].c_str()};
+                const std::vector<std::string> &atoms = {
+                    xbuf[exmlATOM1].c_str(),
+                    xbuf[exmlATOM2].c_str(),
+                    xbuf[exmlATOM3].c_str()
+                };
 
-                auto& force  = pd.lastForces();
+                auto &force  = pd.lastForces();
 
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
-			       my_atof(xbuf[exmlREFVALUE].c_str()),
-			       my_atof(xbuf[exmlSIGMA].c_str()), 
-			       atoi(xbuf[exmlNTRAIN].c_str()));
+                               my_atof(xbuf[exmlREFVALUE].c_str()),
+                               my_atof(xbuf[exmlSIGMA].c_str()),
+                               atoi(xbuf[exmlNTRAIN].c_str()));
             }
             break;
         case exmlGT_DIHEDRAL:
@@ -381,17 +385,19 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlREFVALUE]) && NN(xbuf[exmlSIGMA]) &&
                 NN(xbuf[exmlNTRAIN]))
             {
-                const std::vector<std::string>& atoms = {xbuf[exmlATOM1].c_str(),
-                                                         xbuf[exmlATOM2].c_str(),
-                                                         xbuf[exmlATOM3].c_str(),
-                                                         xbuf[exmlATOM4].c_str()};
+                const std::vector<std::string> &atoms = {
+                    xbuf[exmlATOM1].c_str(),
+                    xbuf[exmlATOM2].c_str(),
+                    xbuf[exmlATOM3].c_str(),
+                    xbuf[exmlATOM4].c_str()
+                };
 
-                auto& force = pd.lastForces();
+                auto &force = pd.lastForces();
 
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
-			       my_atof(xbuf[exmlREFVALUE].c_str()),
-			       my_atof(xbuf[exmlSIGMA].c_str()), 
-			       atoi(xbuf[exmlNTRAIN].c_str()));
+                               my_atof(xbuf[exmlREFVALUE].c_str()),
+                               my_atof(xbuf[exmlSIGMA].c_str()),
+                               atoi(xbuf[exmlNTRAIN].c_str()));
             }
             break;
         case exmlSYM_CHARGE:
@@ -605,99 +611,99 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
 
     for (auto fs = pd.forcesBegin(); fs != pd.forcesEnd(); fs++)
     {
-      if (eitBONDS == fs->iType())
-	{
-	  child = add_xml_child(parent, exml_names[exmlGT_BONDS]);
-	  blu   = fs->unit();
-	  if (blu.size() != 0)
-	    {
-	      add_xml_char(child, exml_names[exmlUNIT], blu.c_str());
-	    }
+        if (eitBONDS == fs->iType())
+        {
+            child = add_xml_child(parent, exml_names[exmlGT_BONDS]);
+            blu   = fs->unit();
+            if (blu.size() != 0)
+            {
+                add_xml_char(child, exml_names[exmlUNIT], blu.c_str());
+            }
 
-	  add_xml_char(child, exml_names[exmlINTERACTION], iType2string(fs->iType()));
+            add_xml_char(child, exml_names[exmlINTERACTION], iType2string(fs->iType()));
 
-	  func = fs->function();
-	  if (func.size() != 0)
-	    {
-	      add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
-	    }
-	  for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
-	    {
-	      const std::vector<std::string> atoms = f->atoms();
+            func = fs->function();
+            if (func.size() != 0)
+            {
+                add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
+            }
+            for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
+            {
+                const std::vector<std::string> atoms = f->atoms();
 
-	      grandchild = add_xml_child(child, exml_names[exmlGT_BOND]);
-	      add_xml_char(grandchild, exml_names[exmlATOM1], atoms[0].c_str());
-	      add_xml_char(grandchild, exml_names[exmlATOM2], atoms[1].c_str());
-	      add_xml_double(grandchild, exml_names[exmlREFVALUE], f->refValue());
-	      add_xml_double(grandchild, exml_names[exmlSIGMA], f->sigma());
-	      add_xml_int(grandchild, exml_names[exmlNTRAIN], f->ntrain());
-	      add_xml_char(grandchild, exml_names[exmlPARAMS], f->params().c_str());
-	    }
-	}
-      else if (eitANGLES == fs->iType() || 
-	       eitLINEAR_ANGLES == fs->iType())
-	{
-	  child = add_xml_child(parent, exml_names[exmlGT_ANGLES]);
-	  blu   = fs->unit();
-	  if (blu.size() != 0)
-	    {
-	      add_xml_char(child, exml_names[exmlUNIT], blu.c_str());
-	    }
+                grandchild = add_xml_child(child, exml_names[exmlGT_BOND]);
+                add_xml_char(grandchild, exml_names[exmlATOM1], atoms[0].c_str());
+                add_xml_char(grandchild, exml_names[exmlATOM2], atoms[1].c_str());
+                add_xml_double(grandchild, exml_names[exmlREFVALUE], f->refValue());
+                add_xml_double(grandchild, exml_names[exmlSIGMA], f->sigma());
+                add_xml_int(grandchild, exml_names[exmlNTRAIN], f->ntrain());
+                add_xml_char(grandchild, exml_names[exmlPARAMS], f->params().c_str());
+            }
+        }
+        else if (eitANGLES == fs->iType() ||
+                 eitLINEAR_ANGLES == fs->iType())
+        {
+            child = add_xml_child(parent, exml_names[exmlGT_ANGLES]);
+            blu   = fs->unit();
+            if (blu.size() != 0)
+            {
+                add_xml_char(child, exml_names[exmlUNIT], blu.c_str());
+            }
 
-	  add_xml_char(child, exml_names[exmlINTERACTION], iType2string(fs->iType()));
+            add_xml_char(child, exml_names[exmlINTERACTION], iType2string(fs->iType()));
 
-	  func = fs->function();
-	  if (func.size() != 0)
-	    {
-	      add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
-	    }
-	  for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
-	    {
-	      const std::vector<std::string> atoms = f->atoms();
+            func = fs->function();
+            if (func.size() != 0)
+            {
+                add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
+            }
+            for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
+            {
+                const std::vector<std::string> atoms = f->atoms();
 
-	      grandchild = add_xml_child(child, exml_names[exmlGT_ANGLE]);
-	      add_xml_char(grandchild, exml_names[exmlATOM1], atoms[0].c_str());
-	      add_xml_char(grandchild, exml_names[exmlATOM2], atoms[1].c_str());
-	      add_xml_char(grandchild, exml_names[exmlATOM3], atoms[2].c_str());
-	      add_xml_double(grandchild, exml_names[exmlREFVALUE], f->refValue());
-	      add_xml_double(grandchild, exml_names[exmlSIGMA], f->sigma());
-	      add_xml_int(grandchild, exml_names[exmlNTRAIN], f->ntrain());
-	      add_xml_char(grandchild, exml_names[exmlPARAMS], f->params().c_str());
-	    }
-	}
-      else if (eitPROPER_DIHEDRALS   == fs->iType()|| 
-	       eitIMPROPER_DIHEDRALS == fs->iType())
-	{
-	  child = add_xml_child(parent, exml_names[exmlGT_DIHEDRALS]);
-	  blu   = fs->unit();
-	  if (blu.size() != 0)
-	    {
-	      add_xml_char(child, exml_names[exmlUNIT], blu.c_str());
-	    }
+                grandchild = add_xml_child(child, exml_names[exmlGT_ANGLE]);
+                add_xml_char(grandchild, exml_names[exmlATOM1], atoms[0].c_str());
+                add_xml_char(grandchild, exml_names[exmlATOM2], atoms[1].c_str());
+                add_xml_char(grandchild, exml_names[exmlATOM3], atoms[2].c_str());
+                add_xml_double(grandchild, exml_names[exmlREFVALUE], f->refValue());
+                add_xml_double(grandchild, exml_names[exmlSIGMA], f->sigma());
+                add_xml_int(grandchild, exml_names[exmlNTRAIN], f->ntrain());
+                add_xml_char(grandchild, exml_names[exmlPARAMS], f->params().c_str());
+            }
+        }
+        else if (eitPROPER_DIHEDRALS   == fs->iType() ||
+                 eitIMPROPER_DIHEDRALS == fs->iType())
+        {
+            child = add_xml_child(parent, exml_names[exmlGT_DIHEDRALS]);
+            blu   = fs->unit();
+            if (blu.size() != 0)
+            {
+                add_xml_char(child, exml_names[exmlUNIT], blu.c_str());
+            }
 
-	  add_xml_char(child, exml_names[exmlINTERACTION], iType2string(fs->iType()));
+            add_xml_char(child, exml_names[exmlINTERACTION], iType2string(fs->iType()));
 
-	  func = fs->function();
-	  if (func.size() != 0)
-	    {
-	      add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
-	    }
-	  
-	  for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
-	    {
-	      const std::vector<std::string> atoms = f->atoms();
+            func = fs->function();
+            if (func.size() != 0)
+            {
+                add_xml_char(child, exml_names[exmlFUNCTION], func.c_str());
+            }
 
-	      grandchild = add_xml_child(child, exml_names[exmlGT_DIHEDRAL]);
-	      add_xml_char(grandchild, exml_names[exmlATOM1], atoms[0].c_str());
-	      add_xml_char(grandchild, exml_names[exmlATOM2], atoms[1].c_str());
-	      add_xml_char(grandchild, exml_names[exmlATOM3], atoms[2].c_str());
-	      add_xml_char(grandchild, exml_names[exmlATOM4], atoms[3].c_str());
-	      add_xml_double(grandchild, exml_names[exmlREFVALUE], f->refValue());
-	      add_xml_double(grandchild, exml_names[exmlSIGMA], f->sigma());
-	      add_xml_int(grandchild, exml_names[exmlNTRAIN], f->ntrain());
-	      add_xml_char(grandchild, exml_names[exmlPARAMS], f->params().c_str());
-	    }
-	}
+            for (auto f = fs->forceBegin(); f != fs->forceEnd(); f++)
+            {
+                const std::vector<std::string> atoms = f->atoms();
+
+                grandchild = add_xml_child(child, exml_names[exmlGT_DIHEDRAL]);
+                add_xml_char(grandchild, exml_names[exmlATOM1], atoms[0].c_str());
+                add_xml_char(grandchild, exml_names[exmlATOM2], atoms[1].c_str());
+                add_xml_char(grandchild, exml_names[exmlATOM3], atoms[2].c_str());
+                add_xml_char(grandchild, exml_names[exmlATOM4], atoms[3].c_str());
+                add_xml_double(grandchild, exml_names[exmlREFVALUE], f->refValue());
+                add_xml_double(grandchild, exml_names[exmlSIGMA], f->sigma());
+                add_xml_int(grandchild, exml_names[exmlNTRAIN], f->ntrain());
+                add_xml_char(grandchild, exml_names[exmlPARAMS], f->params().c_str());
+            }
+        }
     }
 
     child = add_xml_child(parent, exml_names[exmlBSATOMS]);
