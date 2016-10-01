@@ -1035,13 +1035,13 @@ double OptPrep::calcDeviation()
                         deltaEn = spHF - optHF;
                         Emol    = mymol.Emol + deltaEn;
 
-                        dbcopy = debug;
-                        debug  = nullptr;
-
                         for (j = 0; (j < natoms); j++)
                         {
                             clear_rvec(mymol.f_[j]);
                         }
+
+                        dbcopy = debug;
+                        debug  = nullptr;
 
                         mymol.changeCoordinate(ei);
                         mymol.computeForces(debug, _cr, mu_tot);

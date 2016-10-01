@@ -164,9 +164,9 @@ static void sp(int n, char buf[], int maxindent)
 
 static double my_atof(const char *str)
 {
-    char   *ptr = NULL;
+    char   *ptr = nullptr;
     double  d   = strtod(str, &ptr);
-    GMX_RELEASE_ASSERT(ptr == NULL || strcmp(ptr, str) != 0, "Could not read double precision number");
+    GMX_RELEASE_ASSERT(ptr == nullptr || strcmp(ptr, str) != 0, "Could not read double precision number");
     return d;
 }
 
@@ -182,12 +182,12 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
     {
         xbuf[i] = "";
     }
-    while (attr != NULL)
+    while (attr != nullptr)
     {
         attrname.assign((char *)attr->name);
         attrval.assign((char *)attr->children->content);
 
-#define atest(s) ((strcasecmp(attrname, s) == 0) && (attrval != NULL))
+#define atest(s) ((strcasecmp(attrname, s) == 0) && (attrval != nullptr))
         kkk = find_elem((char *)attrname.c_str(), exmlNR, exml_names);
         if (-1 != kkk)
         {
@@ -196,7 +196,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 xbuf[kkk] = attrval;
             }
 
-            if (NULL != fp)
+            if (nullptr != fp)
             {
                 sp(indent, buf, 99);
                 fprintf(fp, "%sProperty: '%s' Value: '%s'\n", buf, attrname.c_str(), attrval.c_str());
@@ -259,9 +259,9 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
 		NN(xbuf[exmlFUNCTION])    && 
 		NN(xbuf[exmlUNIT]))
             {
-	        ListedForces bonds (xbuf[exmlINTERACTION], 
-				    xbuf[exmlFUNCTION], 
-				    xbuf[exmlUNIT]);
+                ListedForces bonds (xbuf[exmlINTERACTION], 
+                                    xbuf[exmlFUNCTION], 
+                                    xbuf[exmlUNIT]);
                 pd.addForces(bonds);
             }
             break;
@@ -271,8 +271,8 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
 		NN(xbuf[exmlUNIT]))
             {
                 ListedForces angles (xbuf[exmlINTERACTION], 
-				     xbuf[exmlFUNCTION], 
-				     xbuf[exmlUNIT]);
+                                     xbuf[exmlFUNCTION], 
+                                     xbuf[exmlUNIT]);
                 pd.addForces(angles);
             }
             break;
@@ -282,8 +282,8 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
 		NN(xbuf[exmlUNIT]))
             {
                 ListedForces dihedrals (xbuf[exmlINTERACTION], 
-					xbuf[exmlFUNCTION], 
-					xbuf[exmlUNIT]);
+                                        xbuf[exmlFUNCTION], 
+                                        xbuf[exmlUNIT]);
                 pd.addForces(dihedrals);
             }
             break;
@@ -347,10 +347,10 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
 		NN(xbuf[exmlNTRAIN]))
             {
 
-	        const std::vector<std::string>& atoms = {xbuf[exmlATOM1].c_str(),
-							 xbuf[exmlATOM2].c_str()};
+                const std::vector<std::string>& atoms = {xbuf[exmlATOM1].c_str(),
+                                                         xbuf[exmlATOM2].c_str()};
 
-                auto& force                = pd.lastForces();
+                auto& force = pd.lastForces();
 		
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
 			       my_atof(xbuf[exmlREFVALUE].c_str()),
@@ -363,11 +363,11 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlATOM3]) && NN(xbuf[exmlREFVALUE]) && 
 		NN(xbuf[exmlSIGMA]) && NN(xbuf[exmlNTRAIN]))
             {
-	        const std::vector<std::string>& atoms = {xbuf[exmlATOM1].c_str(),
-							 xbuf[exmlATOM2].c_str(),
-							 xbuf[exmlATOM3].c_str()};
+                const std::vector<std::string>& atoms = {xbuf[exmlATOM1].c_str(),
+                                                         xbuf[exmlATOM2].c_str(),
+                                                         xbuf[exmlATOM3].c_str()};
 
-                auto& force                = pd.lastForces();
+                auto& force  = pd.lastForces();
 
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
 			       my_atof(xbuf[exmlREFVALUE].c_str()),
@@ -381,12 +381,12 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
                 NN(xbuf[exmlREFVALUE]) && NN(xbuf[exmlSIGMA]) &&
                 NN(xbuf[exmlNTRAIN]))
             {
-	        const std::vector<std::string>& atoms = {xbuf[exmlATOM1].c_str(),
-							 xbuf[exmlATOM2].c_str(),
-							 xbuf[exmlATOM3].c_str(),
-							 xbuf[exmlATOM4].c_str()};
+                const std::vector<std::string>& atoms = {xbuf[exmlATOM1].c_str(),
+                                                         xbuf[exmlATOM2].c_str(),
+                                                         xbuf[exmlATOM3].c_str(),
+                                                         xbuf[exmlATOM4].c_str()};
 
-                auto& force                = pd.lastForces();
+                auto& force = pd.lastForces();
 
                 force.addForce(atoms, xbuf[exmlPARAMS].c_str(),
 			       my_atof(xbuf[exmlREFVALUE].c_str()),
@@ -426,7 +426,7 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             }
             break;
         default:
-            if (NULL != debug)
+            if (nullptr != debug)
             {
                 fprintf(debug, "Unknown combination of attributes:\n");
                 for (i = 0; (i < exmlNR); i++)
@@ -446,7 +446,7 @@ static void processTree(FILE *fp, xmlNodePtr tree, int indent,
     int           elem;
     char          buf[100];
 
-    while (tree != NULL)
+    while (tree != nullptr)
     {
         if (fp)
         {
@@ -496,7 +496,7 @@ void readPoldata(const std::string &fileName,
     if (fileName.size() > 0)
     {
         const char *f = low_gmxlibfn(fileName.c_str(), TRUE, FALSE);
-        if (NULL != f)
+        if (nullptr != f)
         {
             fn2.assign(f);
         }
@@ -506,13 +506,13 @@ void readPoldata(const std::string &fileName,
         fn2 = gmxlibfn("alexandria.ff/gentop.dat");
     }
 
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Opening library file %s\n", fn2.c_str());
     }
     xmlDoValidityCheckingDefaultValue = 0;
     doc = xmlParseFile(fn2.c_str());
-    if (doc == NULL)
+    if (doc == nullptr)
     {
         char buf[256];
         snprintf(buf, sizeof(buf),
@@ -526,7 +526,7 @@ void readPoldata(const std::string &fileName,
 
     xmlFreeDoc(doc);
 
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         writePoldata("pdout.dat", pd, false);
     }
@@ -566,7 +566,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     fudgeLJ = pd.getFudgeLJ();
     add_xml_double(child, exml_names[exmlFUDGELJ], fudgeLJ);
     {
-        for (FfatypeConstIterator aType = pd.getAtypeBegin();
+        for (auto aType = pd.getAtypeBegin();
              aType != pd.getAtypeEnd(); aType++)
         {
             grandchild = add_xml_child(child, exml_names[exmlATOMTYPE]);
@@ -591,7 +591,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
         add_xml_char(child, exml_names[exmlREFERENCE], tmp.c_str());
     }
     {
-        for (PtypeConstIterator pType = pd.getPtypeBegin();
+        for (auto pType = pd.getPtypeBegin();
              pType != pd.getPtypeEnd(); pType++)
         {
             grandchild = add_xml_child(child, exml_names[exmlPOLTYPE]);
@@ -706,7 +706,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     add_xml_char(child, exml_names[exmlPOLAR_UNIT], tmp.c_str());
     add_xml_char(child, exml_names[exmlREFERENCE], ref.c_str());
 
-    for (BosqueConstIterator bosque = pd.getBosqueBegin();
+    for (auto bosque = pd.getBosqueBegin();
          bosque != pd.getBosqueEnd(); bosque++)
     {
         grandchild = add_xml_child(child, exml_names[exmlBSATOM]);
@@ -719,7 +719,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     add_xml_char(child, exml_names[exmlTAU_UNIT], tau_unit.c_str());
     add_xml_char(child, exml_names[exmlAHP_UNIT], ahp_unit.c_str());
     add_xml_char(child, exml_names[exmlREFERENCE], milref.c_str());
-    for (MillerConstIterator miller = pd.getMillerBegin();
+    for (auto miller = pd.getMillerBegin();
          miller != pd.getMillerEnd(); miller++)
     {
         grandchild = add_xml_child(child, exml_names[exmlMILATOM]);
@@ -735,7 +735,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
     }
 
     child = add_xml_child(parent, exml_names[exmlSYMMETRIC_CHARGES]);
-    for (SymchargesConstIterator symcharges = pd.getSymchargesBegin();
+    for (auto symcharges = pd.getSymchargesBegin();
          symcharges != pd.getSymchargesEnd(); symcharges++)
     {
         grandchild = add_xml_child(child, exml_names[exmlSYM_CHARGE]);
@@ -746,7 +746,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata &pd)
 
     child = add_xml_child(parent, exml_names[exmlEEMPROPS]);
 
-    for (EempropsConstIterator eep = pd.BeginEemprops();
+    for (auto eep = pd.BeginEemprops();
          eep != pd.EndEemprops(); eep++)
     {
         ChargeDistributionModel model = eep->getEqdModel();
@@ -781,17 +781,17 @@ void writePoldata(const std::string &fileName,
     dtdname    = (xmlChar *) "gentop.dtd";
     libdtdname = dtdname;
 
-    if ((doc = xmlNewDoc((xmlChar *)"1.0")) == NULL)
+    if ((doc = xmlNewDoc((xmlChar *)"1.0")) == nullptr)
     {
         gmx_fatal(FARGS, "Creating XML document", "");
     }
 
-    if ((dtd = xmlCreateIntSubset(doc, dtdname, libdtdname, dtdname)) == NULL)
+    if ((dtd = xmlCreateIntSubset(doc, dtdname, libdtdname, dtdname)) == nullptr)
     {
         gmx_fatal(FARGS, "Creating XML DTD", "");
     }
 
-    if ((myroot = xmlNewDocNode(doc, NULL, gmx, NULL)) == NULL)
+    if ((myroot = xmlNewDocNode(doc, nullptr, gmx, nullptr)) == nullptr)
     {
         gmx_fatal(FARGS, "Creating root element", "");
     }
