@@ -44,6 +44,7 @@
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
@@ -78,6 +79,24 @@ TEST_F(TreeValueTransformTest, SimpleTransforms)
         .from<std::string>("/a").to<int>("/i").transformWith(&gmx::fromStdString<int>);
     transform.rules()->addRule()
         .from<std::string>("/b").to<int>("/j").transformWith(&gmx::fromStdString<int>);
+
+    testTransform(input, transform);
+}
+
+TEST_F(TreeValueTransformTest, SimpleTransformsCaseAndDashInsensitive)
+{
+    gmx::KeyValueTreeBuilder     builder;
+    builder.rootObject().addValue<std::string>("a-x", "1");
+    builder.rootObject().addValue<std::string>("by", "2");
+    gmx::KeyValueTreeObject      input = builder.build();
+
+    gmx::KeyValueTreeTransformer transform;
+    transform.rules()->addRule()
+        .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+    transform.rules()->addRule()
+        .from<std::string>("/Ax").to<int>("/i").transformWith(&gmx::fromStdString<int>);
+    transform.rules()->addRule()
+        .from<std::string>("/B-Y").to<int>("/j").transformWith(&gmx::fromStdString<int>);
 
     testTransform(input, transform);
 }

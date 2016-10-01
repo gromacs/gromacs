@@ -55,6 +55,8 @@ namespace gmx
 class KeyValueTreeObject;
 class KeyValueTreeObjectBuilder;
 
+enum class StringCompareType;
+
 class KeyValueTreeTransformRuleBuilder;
 
 namespace internal
@@ -171,10 +173,16 @@ class KeyValueTreeTransformRuleBuilder
             setFromPath(path);
             return AfterFrom<FromType>(this);
         }
+        void keyMatchType(const std::string &path, StringCompareType keyMatchType)
+        {
+            setFromPath(path);
+            setKeyMatchType(keyMatchType);
+        }
 
     private:
         void setFromPath(const std::string &path);
         void setToPath(const std::string &path);
+        void setKeyMatchType(StringCompareType keyMatchType);
         void addTransformToVariant(std::function<Variant(const Variant &)> transform);
         void addTransformToObject(std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> transform);
 
