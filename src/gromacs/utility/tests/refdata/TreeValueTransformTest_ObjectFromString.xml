@@ -4,6 +4,10 @@
   <Object Name="Input">
     <String Name="a">1 2</String>
   </Object>
+  <Sequence Name="MappedPaths">
+    <Int Name="Length">1</Int>
+    <String>/a</String>
+  </Sequence>
   <Object Name="Tree">
     <Object Name="foo">
       <Int Name="a">1</Int>
