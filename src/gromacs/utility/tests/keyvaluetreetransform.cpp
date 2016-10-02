@@ -63,6 +63,8 @@ class TreeValueTransformTest : public ::testing::Test
             gmx::test::TestReferenceData    data;
             gmx::test::TestReferenceChecker checker(data.rootChecker());
             checker.checkKeyValueTreeObject(input, "Input");
+            auto mappedPaths = transform.mappedPaths();
+            checker.checkSequence(mappedPaths.begin(), mappedPaths.end(), "MappedPaths");
             checker.checkKeyValueTreeObject(result, "Tree");
         }
 };
