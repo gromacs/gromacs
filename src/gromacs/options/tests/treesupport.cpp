@@ -51,6 +51,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/repeatingsection.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 
@@ -77,7 +78,7 @@ TEST(TreeValueSupportTest, AssignsFromTree)
     obj.addValue<std::string>("b", "foo");
     gmx::KeyValueTreeObject  tree = builder.build();
 
-    ASSERT_NO_THROW_GMX(gmx::assignOptionsFromKeyValueTree(&options, tree));
+    ASSERT_NO_THROW_GMX(gmx::assignOptionsFromKeyValueTree(&options, tree, nullptr));
     EXPECT_NO_THROW_GMX(options.finish());
 
     EXPECT_EQ(2, a0);
@@ -111,7 +112,7 @@ TEST(TreeValueSupportTest, AssignsFromTreeWithArrays)
     obj2.addValue<int>("a", 4);
     gmx::KeyValueTreeObject  tree = builder.build();
 
-    ASSERT_NO_THROW_GMX(gmx::assignOptionsFromKeyValueTree(&options, tree));
+    ASSERT_NO_THROW_GMX(gmx::assignOptionsFromKeyValueTree(&options, tree, nullptr));
     EXPECT_NO_THROW_GMX(options.finish());
 
     ASSERT_EQ(2U, a0.size());
@@ -120,6 +121,23 @@ TEST(TreeValueSupportTest, AssignsFromTreeWithArrays)
     ASSERT_EQ(2U, s.size());
     EXPECT_EQ(3, s[0].a);
     EXPECT_EQ(4, s[1].a);
+}
+
+TEST(TreeValueSupportErrorTest, HandlesInvalidValue)
+{
+    int                      a1 = 0;
+
+    gmx::Options             options;
+    auto                     sec = options.addSection(gmx::OptionSection("s"));
+    sec.addOption(gmx::IntegerOption("a").store(&a1));
+
+    gmx::KeyValueTreeBuilder builder;
+    auto                     obj = builder.rootObject().addObject("s");
+    obj.addValue<std::string>("a", "foo");
+    gmx::KeyValueTreeObject  tree = builder.build();
+
+    EXPECT_THROW_GMX(gmx::assignOptionsFromKeyValueTree(&options, tree, nullptr),
+                     gmx::InvalidInputError);
 }
 
 } // namespace
