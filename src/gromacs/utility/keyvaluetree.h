@@ -58,6 +58,32 @@ namespace gmx
 class KeyValueTreeArray;
 class KeyValueTreeObject;
 
+class KeyValueTreePath
+{
+    public:
+        KeyValueTreePath() = default;
+        KeyValueTreePath(const std::string &path);
+
+        void append(const std::string &key) { path_.push_back(key); }
+        void pop_back() { return path_.pop_back(); }
+        std::string pop_last()
+        {
+            std::string result = std::move(path_.back());
+            path_.pop_back();
+            return result;
+        }
+
+        bool empty() const { return path_.empty(); }
+        size_t size() const { return path_.size(); }
+        const std::string &operator[](int i) const { return path_[i]; }
+        const std::vector<std::string> &elements() const { return path_; }
+
+        std::string toString() const;
+
+    private:
+        std::vector<std::string> path_;
+};
+
 class KeyValueTreeValue
 {
     public:
