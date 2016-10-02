@@ -44,6 +44,8 @@
 #include "treesupport.h"
 
 #include "gromacs/options/optionsassigner.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetree.h"
 
 namespace gmx
@@ -52,78 +54,100 @@ namespace gmx
 namespace
 {
 
-void assignSubTree(OptionsAssigner          *assigner,
-                   const KeyValueTreeObject &tree);
-
-/*! \brief
- * Helper function for assigning from a KeyValueTreeArray.
- *
- * \ingroup module_options
- */
-void assignArray(OptionsAssigner         *assigner,
-                 const std::string       &key,
-                 const KeyValueTreeArray &array)
+class TreeAssignHelper
 {
-    if (array.isObjectArray())
-    {
-        for (const KeyValueTreeValue &value : array.values())
+    public:
+        TreeAssignHelper(Options *options, IKeyValueTreeErrorHandler *errorHandler)
+            : assigner_(options), errorHandler_(errorHandler)
         {
-            assigner->startSection(key.c_str());
-            assignSubTree(assigner, value.asObject());
-            assigner->finishSection();
+            if (errorHandler_ == nullptr)
+            {
+                errorHandler_ = defaultKeyValueTreeErrorHandler();
+            }
         }
-    }
-    else
-    {
-        assigner->startOption(key.c_str());
-        for (const KeyValueTreeValue &value : array.values())
-        {
-            assigner->appendValue(value.asVariant());
-        }
-        assigner->finishOption();
-    }
-}
 
-/*! \brief
- * Helper function for assigning from a KeyValueTreeObject subtree.
- *
- * \ingroup module_options
- */
-void assignSubTree(OptionsAssigner          *assigner,
-                   const KeyValueTreeObject &tree)
-{
-    for (const KeyValueTreeProperty &prop : tree.properties())
-    {
-        if (prop.value().isArray())
+        void assignAll(const KeyValueTreeObject &root)
         {
-            assignArray(assigner, prop.key(), prop.value().asArray());
+            assigner_.start();
+            assignSubTree(root);
+            assigner_.finish();
         }
-        else if (prop.value().isObject())
+
+    private:
+        void assignSubTree(const KeyValueTreeObject &tree)
         {
-            assigner->startSection(prop.key().c_str());
-            assignSubTree(assigner, prop.value().asObject());
-            assigner->finishSection();
+            // TODO: Use the error handler also in other case.
+            for (const KeyValueTreeProperty &prop : tree.properties())
+            {
+                context_.append(prop.key());
+                if (prop.value().isArray())
+                {
+                    assignArray(prop.key(), prop.value().asArray());
+                }
+                else if (prop.value().isObject())
+                {
+                    assigner_.startSection(prop.key().c_str());
+                    assignSubTree(prop.value().asObject());
+                    assigner_.finishSection();
+                }
+                else
+                {
+                    assigner_.startOption(prop.key().c_str());
+                    try
+                    {
+                        assigner_.appendValue(prop.value().asVariant());
+                    }
+                    catch (UserInputError &ex)
+                    {
+                        if (!errorHandler_->onError(&ex, context_))
+                        {
+                            throw;
+                        }
+                    }
+                    assigner_.finishOption();
+                }
+                context_.pop_back();
+            }
         }
-        else
+
+        void assignArray(const std::string       &key,
+                         const KeyValueTreeArray &array)
         {
-            assigner->startOption(prop.key().c_str());
-            assigner->appendValue(prop.value().asVariant());
-            assigner->finishOption();
+            if (array.isObjectArray())
+            {
+                for (const KeyValueTreeValue &value : array.values())
+                {
+                    assigner_.startSection(key.c_str());
+                    assignSubTree(value.asObject());
+                    assigner_.finishSection();
+                }
+            }
+            else
+            {
+                assigner_.startOption(key.c_str());
+                for (const KeyValueTreeValue &value : array.values())
+                {
+                    assigner_.appendValue(value.asVariant());
+                }
+                assigner_.finishOption();
+            }
         }
-    }
-}
+
+        OptionsAssigner            assigner_;
+        IKeyValueTreeErrorHandler *errorHandler_;
+        KeyValueTreePath           context_;
+};
 
 }   // namespace
 
 //! \cond libapi
 
-void assignOptionsFromKeyValueTree(Options                  *options,
-                                   const KeyValueTreeObject &tree)
+void assignOptionsFromKeyValueTree(Options                   *options,
+                                   const KeyValueTreeObject  &tree,
+                                   IKeyValueTreeErrorHandler *errorHandler)
 {
-    OptionsAssigner assigner(options);
-    assigner.start();
-    assignSubTree(&assigner, tree);
-    assigner.finish();
+    TreeAssignHelper helper(options, errorHandler);
+    helper.assignAll(tree);
 }
 
 //! \endcond

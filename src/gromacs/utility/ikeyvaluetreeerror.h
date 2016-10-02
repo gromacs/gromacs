@@ -34,37 +34,37 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares functions for using keyvaluetree.h with Options.
+ * Declares an error handling interface for key-value tree operations.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
- * \ingroup module_options
+ * \ingroup module_utility
  */
-#ifndef GMX_OPTIONS_TREESUPPORT_H
-#define GMX_OPTIONS_TREESUPPORT_H
+#ifndef GMX_UTILITY_KEYVALUETREEERROR_H
+#define GMX_UTILITY_KEYVALUETREEERROR_H
 
 namespace gmx
 {
 
-class IKeyValueTreeErrorHandler;
-class KeyValueTreeObject;
-class Options;
+class KeyValueTreePath;
+class UserInputError;
+
+class IKeyValueTreeErrorHandler
+{
+    public:
+        virtual bool onError(UserInputError *ex, const KeyValueTreePath &context) = 0;
+
+    protected:
+        ~IKeyValueTreeErrorHandler();
+};
 
 //! \cond libapi
-
-/*! \libinternal \brief
- * Assigns option values from a given KeyValueTreeObject.
+/*! \brief
+ * Returns a default IKeyValueTreeErrorHandler that throws on first exception.
  *
- * Each property with a simple value (or an array of simple values) is assigned
- * to an option with the same name.  Objects and arrays of objects are assigned
- * to sections with the same name.
- *
- * \ingroup module_options
+ * \ingroup module_utility
  */
-void assignOptionsFromKeyValueTree(Options                   *options,
-                                   const KeyValueTreeObject  &tree,
-                                   IKeyValueTreeErrorHandler *errorHandler);
-
+IKeyValueTreeErrorHandler *defaultKeyValueTreeErrorHandler();
 //! \endcond
 
 } // namespace gmx

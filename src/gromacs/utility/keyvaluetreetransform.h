@@ -54,6 +54,7 @@
 namespace gmx
 {
 
+class IKeyValueTreeErrorHandler;
 class KeyValueTreeObjectBuilder;
 
 enum class StringCompareType;
@@ -79,8 +80,8 @@ class IKeyValueTreeBackMapping
     public:
         virtual ~IKeyValueTreeBackMapping();
 
-        virtual std::vector<std::string>
-        originalPath(const std::vector<std::string> &path) const = 0;
+        virtual KeyValueTreePath
+        originalPath(const KeyValueTreePath &path) const = 0;
 };
 
 class KeyValueTreeTransformResult
@@ -112,9 +113,11 @@ class KeyValueTreeTransformer
 
         IKeyValueTreeTransformRules *rules();
 
-        std::vector<std::string> mappedPaths() const;
+        std::vector<KeyValueTreePath> mappedPaths() const;
 
-        KeyValueTreeTransformResult transform(const KeyValueTreeObject &tree) const;
+        KeyValueTreeTransformResult
+        transform(const KeyValueTreeObject  &tree,
+                  IKeyValueTreeErrorHandler *errorHandler) const;
 
     private:
         PrivateImplPointer<internal::KeyValueTreeTransformerImpl> impl_;
