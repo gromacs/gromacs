@@ -58,14 +58,47 @@ class TreeValueTransformTest : public ::testing::Test
         void testTransform(const gmx::KeyValueTreeObject      &input,
                            const gmx::KeyValueTreeTransformer &transform)
         {
-            gmx::KeyValueTreeObject         result = transform.transform(input);
+            gmx::KeyValueTreeTransformResult  result = transform.transform(input);
+            gmx::KeyValueTreeObject           object = result.object();
 
-            gmx::test::TestReferenceData    data;
-            gmx::test::TestReferenceChecker checker(data.rootChecker());
+            gmx::test::TestReferenceData      data;
+            gmx::test::TestReferenceChecker   checker(data.rootChecker());
             checker.checkKeyValueTreeObject(input, "Input");
             auto mappedPaths = transform.mappedPaths();
             checker.checkSequence(mappedPaths.begin(), mappedPaths.end(), "MappedPaths");
-            checker.checkKeyValueTreeObject(result, "Tree");
+            checker.checkKeyValueTreeObject(object, "Tree");
+            checkBackMapping(&checker, object, result.backMapping());
+        }
+
+    private:
+        void checkBackMapping(gmx::test::TestReferenceChecker     *checker,
+                              const gmx::KeyValueTreeObject       &object,
+                              const gmx::IKeyValueTreeBackMapping &mapping)
+        {
+            auto compound(checker->checkCompound("BackMapping", "Mapping"));
+            checkBackMappingImpl(&compound, object, mapping, std::vector<std::string>());
+        }
+
+        void checkBackMappingImpl(gmx::test::TestReferenceChecker     *checker,
+                                  const gmx::KeyValueTreeObject       &object,
+                                  const gmx::IKeyValueTreeBackMapping &mapping,
+                                  const std::vector<std::string>      &prefix)
+        {
+            for (const auto &prop : object.properties())
+            {
+                std::vector<std::string> path = prefix;
+                path.push_back(prop.key());
+                if (prop.value().isObject())
+                {
+                    checkBackMappingImpl(checker, prop.value().asObject(), mapping, path);
+                }
+                else
+                {
+                    std::string strPath = "/" + gmx::joinStrings(path, "/");
+                    std::string orgPath = "/" + gmx::joinStrings(mapping.originalPath(path), "/");
+                    checker->checkString(orgPath, strPath.c_str());
+                }
+            }
         }
 };
 
