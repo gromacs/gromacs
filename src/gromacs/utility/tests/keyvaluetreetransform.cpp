@@ -58,14 +58,44 @@ class TreeValueTransformTest : public ::testing::Test
         void testTransform(const gmx::KeyValueTreeObject      &input,
                            const gmx::KeyValueTreeTransformer &transform)
         {
-            gmx::KeyValueTreeObject         result = transform.transform(input);
+            gmx::KeyValueTreeTransformResult  result = transform.transform(input);
+            gmx::KeyValueTreeObject           object = result.object();
 
-            gmx::test::TestReferenceData    data;
-            gmx::test::TestReferenceChecker checker(data.rootChecker());
+            gmx::test::TestReferenceData      data;
+            gmx::test::TestReferenceChecker   checker(data.rootChecker());
             checker.checkKeyValueTreeObject(input, "Input");
             auto mappedPaths = transform.mappedPaths();
             checker.checkSequence(mappedPaths.begin(), mappedPaths.end(), "MappedPaths");
-            checker.checkKeyValueTreeObject(result, "Tree");
+            checker.checkKeyValueTreeObject(object, "Tree");
+            checkBackMapping(&checker, object, result.backMapping());
+        }
+
+    private:
+        void checkBackMapping(gmx::test::TestReferenceChecker     *checker,
+                              const gmx::KeyValueTreeObject       &object,
+                              const gmx::IKeyValueTreeBackMapping &mapping)
+        {
+            auto compound(checker->checkCompound("BackMapping", "Mapping"));
+            checkBackMappingImpl(&compound, object, mapping, "");
+        }
+
+        void checkBackMappingImpl(gmx::test::TestReferenceChecker     *checker,
+                                  const gmx::KeyValueTreeObject       &object,
+                                  const gmx::IKeyValueTreeBackMapping &mapping,
+                                  const std::string                   &prefix)
+        {
+            for (const auto &prop : object.properties())
+            {
+                std::string path = prefix + "/" + prop.key();
+                if (prop.value().isObject())
+                {
+                    checkBackMappingImpl(checker, prop.value().asObject(), mapping, path);
+                }
+                else
+                {
+                    checker->checkString(mapping.originalPath(path), path.c_str());
+                }
+            }
         }
 };
 

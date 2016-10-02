@@ -48,12 +48,12 @@
 #include <vector>
 
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/variant.h"
 
 namespace gmx
 {
 
-class KeyValueTreeObject;
 class KeyValueTreeObjectBuilder;
 
 enum class StringCompareType;
@@ -74,6 +74,35 @@ class IKeyValueTreeTransformRules
         ~IKeyValueTreeTransformRules();
 };
 
+class IKeyValueTreeBackMapping
+{
+    public:
+        virtual ~IKeyValueTreeBackMapping();
+
+        virtual std::string originalPath(const std::string &path) const = 0;
+};
+
+class KeyValueTreeTransformResult
+{
+    public:
+        KeyValueTreeObject object() { return std::move(object_); }
+        const IKeyValueTreeBackMapping &backMapping() const { return *mapping_; }
+
+    private:
+        typedef std::unique_ptr<IKeyValueTreeBackMapping> MappingPointer;
+
+        KeyValueTreeTransformResult(KeyValueTreeObject &&object,
+                                    MappingPointer &&mapping)
+            : object_(std::move(object)), mapping_(std::move(mapping))
+        {
+        }
+
+        KeyValueTreeObject                         object_;
+        std::unique_ptr<IKeyValueTreeBackMapping>  mapping_;
+
+        friend class internal::KeyValueTreeTransformerImpl;
+};
+
 class KeyValueTreeTransformer
 {
     public:
@@ -84,7 +113,7 @@ class KeyValueTreeTransformer
 
         std::vector<std::string> mappedPaths() const;
 
-        KeyValueTreeObject transform(const KeyValueTreeObject &tree) const;
+        KeyValueTreeTransformResult transform(const KeyValueTreeObject &tree) const;
 
     private:
         PrivateImplPointer<internal::KeyValueTreeTransformerImpl> impl_;
