@@ -32,41 +32,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief
- * Declares functions for using keyvaluetree.h with Options.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inlibraryapi
- * \ingroup module_options
- */
-#ifndef GMX_OPTIONS_TREESUPPORT_H
-#define GMX_OPTIONS_TREESUPPORT_H
+#include "gmxpre.h"
+
+#include "keyvaluetree.h"
+
+#include <string>
+
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
 
-class IKeyValueTreeErrorHandler;
-class KeyValueTreeObject;
-class Options;
-
-//! \cond libapi
-
-/*! \libinternal \brief
- * Assigns option values from a given KeyValueTreeObject.
- *
- * Each property with a simple value (or an array of simple values) is assigned
- * to an option with the same name.  Objects and arrays of objects are assigned
- * to sections with the same name.
- *
- * \ingroup module_options
+/********************************************************************
+ * KeyValueTreePath
  */
-void assignOptionsFromKeyValueTree(Options                   *options,
-                                   const KeyValueTreeObject  &tree,
-                                   IKeyValueTreeErrorHandler *errorHandler);
 
-//! \endcond
+KeyValueTreePath::KeyValueTreePath(const std::string &path)
+{
+    path_ = splitDelimitedString(path.substr(1), '/');
+}
+
+std::string KeyValueTreePath::toString() const
+{
+    return "/" + joinStrings(path_, "/");
+}
 
 } // namespace gmx
-
-#endif

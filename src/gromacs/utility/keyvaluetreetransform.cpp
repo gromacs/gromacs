@@ -41,6 +41,8 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
@@ -74,7 +76,7 @@ class KeyValueTreeBackMapping : public IKeyValueTreeBackMapping
         {
             public:
                 Entry() = default;
-                explicit Entry(const std::vector<std::string> &path) : sourcePath_(path) {}
+                explicit Entry(const KeyValueTreePath &path) : sourcePath_(path) {}
 
                 Entry *getOrCreateChildEntry(const std::string &key)
                 {
@@ -85,8 +87,8 @@ class KeyValueTreeBackMapping : public IKeyValueTreeBackMapping
                     }
                     return &iter->second;
                 }
-                void setMapping(const std::vector<std::string> &path,
-                                const KeyValueTreeValue        &value)
+                void setMapping(const KeyValueTreePath  &path,
+                                const KeyValueTreeValue &value)
                 {
                     if (value.isObject())
                     {
@@ -102,15 +104,15 @@ class KeyValueTreeBackMapping : public IKeyValueTreeBackMapping
                     }
                 }
 
-                std::vector<std::string>     sourcePath_;
+                KeyValueTreePath             sourcePath_;
                 std::map<std::string, Entry> childEntries_;
         };
 
-        virtual std::vector<std::string>
-        originalPath(const std::vector<std::string> &path) const
+        virtual KeyValueTreePath
+        originalPath(const KeyValueTreePath &path) const
         {
             const Entry *entry = &rootEntry_;
-            for (const auto &element : path)
+            for (const auto &element : path.elements())
             {
                 auto iter = entry->childEntries_.find(element);
                 if (iter == entry->childEntries_.end())
@@ -182,13 +184,14 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
                     return &result.first->second;
                 }
 
-                void collectMappedPaths(const std::string        &prefix,
-                                        std::vector<std::string> *result) const
+                void collectMappedPaths(const KeyValueTreePath        &prefix,
+                                        std::vector<KeyValueTreePath> *result) const
                 {
                     for (const auto &value : childRules_)
                     {
-                        std::string path = prefix + "/" + value.first;
-                        const Rule &rule = value.second;
+                        KeyValueTreePath path = prefix;
+                        path.append(value.first);
+                        const Rule      &rule = value.second;
                         if (rule.transform_)
                         {
                             result->push_back(path);
@@ -200,7 +203,7 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
                     }
                 }
 
-                std::vector<std::string>    targetPath_;
+                KeyValueTreePath            targetPath_;
                 std::string                 targetKey_;
                 TransformFunction           transform_;
                 ChildRuleMap                childRules_;
@@ -209,14 +212,22 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
         class Transformer
         {
             public:
-                Transformer(const KeyValueTreeTransformerImpl &impl)
-                    : impl_(impl), backMapping_(new KeyValueTreeBackMapping)
+                explicit Transformer(IKeyValueTreeErrorHandler *errorHandler)
+                    : errorHandler_(errorHandler),
+                      backMapping_(new KeyValueTreeBackMapping)
                 {
+                    if (errorHandler_ == nullptr)
+                    {
+                        errorHandler_ = defaultKeyValueTreeErrorHandler();
+                    }
                 }
 
-                void transform(const KeyValueTreeObject &tree)
+                void transform(const Rule *rootRule, const KeyValueTreeObject &tree)
                 {
-                    doChildTransforms(impl_.rootRule_.get(), tree);
+                    if (rootRule != nullptr)
+                    {
+                        doChildTransforms(rootRule, tree);
+                    }
                 }
 
                 KeyValueTreeTransformResult result()
@@ -230,10 +241,10 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
                 void doChildTransforms(const Rule *rule, const KeyValueTreeObject &object);
                 void applyTransformedValue(const Rule *rule, KeyValueTreeValue &&value);
 
-                const KeyValueTreeTransformerImpl       &impl_;
+                IKeyValueTreeErrorHandler               *errorHandler_;
                 KeyValueTreeBuilder                      builder_;
                 std::unique_ptr<KeyValueTreeBackMapping> backMapping_;
-                std::vector<std::string>                 context_;
+                KeyValueTreePath                         context_;
         };
 
         virtual KeyValueTreeTransformRuleBuilder addRule()
@@ -269,7 +280,18 @@ void KeyValueTreeTransformerImpl::Transformer::doTransform(
     if (rule->transform_)
     {
         KeyValueTreeValueBuilder valueBuilder;
-        rule->transform_(&valueBuilder, value);
+        try
+        {
+            rule->transform_(&valueBuilder, value);
+        }
+        catch (UserInputError &ex)
+        {
+            if (!errorHandler_->onError(&ex, context_))
+            {
+                throw;
+            }
+            return;
+        }
         applyTransformedValue(rule, valueBuilder.build());
         return;
     }
@@ -287,7 +309,7 @@ void KeyValueTreeTransformerImpl::Transformer::doChildTransforms(
         const Rule *childRule = rule->findMatchingChildRule(prop.key());
         if (childRule != nullptr)
         {
-            context_.push_back(prop.key());
+            context_.append(prop.key());
             doTransform(childRule, prop.value());
             context_.pop_back();
         }
@@ -299,7 +321,7 @@ void KeyValueTreeTransformerImpl::Transformer::applyTransformedValue(
 {
     KeyValueTreeObjectBuilder       objBuilder = builder_.rootObject();
     KeyValueTreeBackMapping::Entry *mapEntry   = backMapping_->rootEntry();
-    for (const std::string &key : rule->targetPath_)
+    for (const std::string &key : rule->targetPath_.elements())
     {
         if (objBuilder.keyExists(key))
         {
@@ -343,21 +365,22 @@ IKeyValueTreeTransformRules *KeyValueTreeTransformer::rules()
     return impl_.get();
 }
 
-std::vector<std::string> KeyValueTreeTransformer::mappedPaths() const
+std::vector<KeyValueTreePath> KeyValueTreeTransformer::mappedPaths() const
 {
-    std::vector<std::string> result;
+    std::vector<KeyValueTreePath> result;
     if (impl_->rootRule_)
     {
-        impl_->rootRule_->collectMappedPaths("", &result);
+        impl_->rootRule_->collectMappedPaths(KeyValueTreePath(), &result);
     }
     return result;
 }
 
 KeyValueTreeTransformResult
-KeyValueTreeTransformer::transform(const KeyValueTreeObject &tree) const
+KeyValueTreeTransformer::transform(const KeyValueTreeObject  &tree,
+                                   IKeyValueTreeErrorHandler *errorHandler) const
 {
-    internal::KeyValueTreeTransformerImpl::Transformer transformer(*impl_);
-    transformer.transform(tree);
+    internal::KeyValueTreeTransformerImpl::Transformer transformer(errorHandler);
+    transformer.transform(impl_->rootRule_.get(), tree);
     return transformer.result();
 }
 
@@ -379,32 +402,27 @@ class KeyValueTreeTransformRuleBuilder::Data
                 createRuleWithKeyMatchType(impl);
                 return;
             }
-            std::vector<std::string>  from = splitDelimitedString(fromPath_.substr(1), '/');
-            std::vector<std::string>  to   = splitDelimitedString(toPath_.substr(1), '/');
-            Rule                     *rule = impl->getOrCreateRootRule();
-            for (const std::string &key : from)
+            Rule *rule = impl->getOrCreateRootRule();
+            for (const std::string &key : fromPath_.elements())
             {
                 rule = rule->getOrCreateChildRule(key);
             }
-            rule->targetKey_  = to.back();
-            to.pop_back();
-            rule->targetPath_ = std::move(to);
+            rule->targetKey_  = toPath_.pop_last();
+            rule->targetPath_ = std::move(toPath_);
             rule->transform_  = transform_;
         }
 
         void createRuleWithKeyMatchType(internal::KeyValueTreeTransformerImpl *impl)
         {
-            std::vector<std::string> from = splitDelimitedString(fromPath_.substr(1), '/');
-            if (from.empty())
+            if (fromPath_.empty())
             {
                 impl->createRootRule(keyMatchType_);
             }
             else
             {
-                std::string lastKey = from.back();
-                from.pop_back();
-                Rule       *rule = impl->getOrCreateRootRule();
-                for (const std::string &key : from)
+                std::string lastKey = fromPath_.pop_last();
+                Rule       *rule    = impl->getOrCreateRootRule();
+                for (const std::string &key : fromPath_.elements())
                 {
                     rule = rule->getOrCreateChildRule(key);
                 }
@@ -412,8 +430,8 @@ class KeyValueTreeTransformRuleBuilder::Data
             }
         }
 
-        std::string              fromPath_;
-        std::string              toPath_;
+        KeyValueTreePath         fromPath_;
+        KeyValueTreePath         toPath_;
         Rule::TransformFunction  transform_;
         StringCompareType        keyMatchType_;
 };
