@@ -14,4 +14,8 @@
     <Int Name="i">1</Int>
     <Int Name="j">2</Int>
   </Object>
+  <BackMapping Name="Mapping">
+    <String Name="/i">/a</String>
+    <String Name="/j">/b</String>
+  </BackMapping>
 </ReferenceData>
