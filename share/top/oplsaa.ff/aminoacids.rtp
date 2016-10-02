@@ -722,13 +722,13 @@
     CA    opls_224B   0.140     1
     HA    opls_140    0.060     1
     CB    opls_505   -0.005     2
-   HB1    opls_140    0.060	2
-   HB2    opls_140    0.060	2
+   HB1    opls_140    0.060	    2
+   HB2    opls_140    0.060	    2
     CG    opls_507   -0.015     3
    ND1    opls_511   -0.490     3
    CD2    opls_508    0.015     4
    HD2    opls_146    0.115     4 
-   CE1    opls_506    0.182     5
+   CE1    opls_506    0.295     5
    HE1    opls_146    0.115     5
    NE2    opls_503   -0.570     6
    HE2    opls_504    0.420     6
