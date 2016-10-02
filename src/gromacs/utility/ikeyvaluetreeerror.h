@@ -34,38 +34,33 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares functions for using keyvaluetree.h with Options.
+ * Declares an error handling interface for key-value tree operations.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
- * \ingroup module_options
+ * \ingroup module_utility
  */
-#ifndef GMX_OPTIONS_TREESUPPORT_H
-#define GMX_OPTIONS_TREESUPPORT_H
+#ifndef GMX_UTILITY_KEYVALUETREEERROR_H
+#define GMX_UTILITY_KEYVALUETREEERROR_H
+
+#include <string>
+#include <vector>
 
 namespace gmx
 {
 
-class IKeyValueTreeErrorHandler;
-class KeyValueTreeObject;
-class Options;
+class UserInputError;
 
-//! \cond libapi
+class IKeyValueTreeErrorHandler
+{
+    public:
+        virtual bool onError(UserInputError *ex, const std::vector<std::string> &context) = 0;
 
-/*! \libinternal \brief
- * Assigns option values from a given KeyValueTreeObject.
- *
- * Each property with a simple value (or an array of simple values) is assigned
- * to an option with the same name.  Objects and arrays of objects are assigned
- * to sections with the same name.
- *
- * \ingroup module_options
- */
-void assignOptionsFromKeyValueTree(Options                   *options,
-                                   const KeyValueTreeObject  &tree,
-                                   IKeyValueTreeErrorHandler *errorHandler);
+    protected:
+        ~IKeyValueTreeErrorHandler();
+};
 
-//! \endcond
+IKeyValueTreeErrorHandler *defaultKeyValueTreeErrorHandler();
 
 } // namespace gmx
 

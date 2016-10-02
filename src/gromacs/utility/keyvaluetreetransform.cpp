@@ -41,6 +41,8 @@
 #include <memory>
 #include <vector>
 
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
@@ -209,14 +211,22 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
         class Transformer
         {
             public:
-                Transformer(const KeyValueTreeTransformerImpl &impl)
-                    : impl_(impl), backMapping_(new KeyValueTreeBackMapping)
+                explicit Transformer(IKeyValueTreeErrorHandler *errorHandler)
+                    : errorHandler_(errorHandler),
+                      backMapping_(new KeyValueTreeBackMapping)
                 {
+                    if (errorHandler_ == nullptr)
+                    {
+                        errorHandler_ = defaultKeyValueTreeErrorHandler();
+                    }
                 }
 
-                void transform(const KeyValueTreeObject &tree)
+                void transform(const Rule *rootRule, const KeyValueTreeObject &tree)
                 {
-                    doChildTransforms(impl_.rootRule_.get(), tree);
+                    if (rootRule != nullptr)
+                    {
+                        doChildTransforms(rootRule, tree);
+                    }
                 }
 
                 KeyValueTreeTransformResult result()
@@ -230,7 +240,7 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
                 void doChildTransforms(const Rule *rule, const KeyValueTreeObject &object);
                 void applyTransformedValue(const Rule *rule, KeyValueTreeValue &&value);
 
-                const KeyValueTreeTransformerImpl       &impl_;
+                IKeyValueTreeErrorHandler               *errorHandler_;
                 KeyValueTreeBuilder                      builder_;
                 std::unique_ptr<KeyValueTreeBackMapping> backMapping_;
                 std::vector<std::string>                 context_;
@@ -269,7 +279,18 @@ void KeyValueTreeTransformerImpl::Transformer::doTransform(
     if (rule->transform_)
     {
         KeyValueTreeValueBuilder valueBuilder;
-        rule->transform_(&valueBuilder, value);
+        try
+        {
+            rule->transform_(&valueBuilder, value);
+        }
+        catch (UserInputError &ex)
+        {
+            if (!errorHandler_->onError(&ex, context_))
+            {
+                throw;
+            }
+            return;
+        }
         applyTransformedValue(rule, valueBuilder.build());
         return;
     }
@@ -354,10 +375,11 @@ std::vector<std::string> KeyValueTreeTransformer::mappedPaths() const
 }
 
 KeyValueTreeTransformResult
-KeyValueTreeTransformer::transform(const KeyValueTreeObject &tree) const
+KeyValueTreeTransformer::transform(const KeyValueTreeObject  &tree,
+                                   IKeyValueTreeErrorHandler *errorHandler) const
 {
-    internal::KeyValueTreeTransformerImpl::Transformer transformer(*impl_);
-    transformer.transform(tree);
+    internal::KeyValueTreeTransformerImpl::Transformer transformer(errorHandler);
+    transformer.transform(impl_->rootRule_.get(), tree);
     return transformer.result();
 }
 

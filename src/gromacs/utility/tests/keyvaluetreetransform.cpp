@@ -41,6 +41,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/strconvert.h"
@@ -48,6 +49,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 
 namespace
 {
@@ -58,7 +60,7 @@ class TreeValueTransformTest : public ::testing::Test
         void testTransform(const gmx::KeyValueTreeObject      &input,
                            const gmx::KeyValueTreeTransformer &transform)
         {
-            gmx::KeyValueTreeTransformResult  result = transform.transform(input);
+            gmx::KeyValueTreeTransformResult  result = transform.transform(input, nullptr);
             gmx::KeyValueTreeObject           object = result.object();
 
             gmx::test::TestReferenceData      data;
@@ -192,6 +194,23 @@ TEST_F(TreeValueTransformTest, ObjectFromMultipleStrings)
             });
 
     testTransform(input, transform);
+}
+
+/********************************************************************
+ * Tests for errors
+ */
+
+TEST(TreeValueTransformErrorTest, ConversionError)
+{
+    gmx::KeyValueTreeBuilder     builder;
+    builder.rootObject().addValue<std::string>("a", "foo");
+    gmx::KeyValueTreeObject      input = builder.build();
+
+    gmx::KeyValueTreeTransformer transform;
+    transform.rules()->addRule()
+        .from<std::string>("/a").to<int>("/i").transformWith(&gmx::fromStdString<int>);
+
+    EXPECT_THROW_GMX(transform.transform(input, nullptr), gmx::InvalidInputError);
 }
 
 } // namespace
