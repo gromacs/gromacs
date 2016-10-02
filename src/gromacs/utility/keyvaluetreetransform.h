@@ -45,6 +45,7 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/variant.h"
@@ -80,6 +81,8 @@ class KeyValueTreeTransformer
         ~KeyValueTreeTransformer();
 
         IKeyValueTreeTransformRules *rules();
+
+        std::vector<std::string> mappedPaths() const;
 
         KeyValueTreeObject transform(const KeyValueTreeObject &tree) const;
 

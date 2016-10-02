@@ -112,6 +112,24 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
                     return &result.first->second;
                 }
 
+                void collectMappedPaths(const std::string        &prefix,
+                                        std::vector<std::string> *result) const
+                {
+                    for (const auto &value : childRules_)
+                    {
+                        std::string path = prefix + "/" + value.first;
+                        const Rule &rule = value.second;
+                        if (rule.transform_)
+                        {
+                            result->push_back(path);
+                        }
+                        else
+                        {
+                            rule.collectMappedPaths(path, result);
+                        }
+                    }
+                }
+
                 std::vector<std::string>    targetPath_;
                 std::string                 targetKey_;
                 TransformFunction           transform_;
@@ -217,6 +235,16 @@ KeyValueTreeTransformer::~KeyValueTreeTransformer()
 IKeyValueTreeTransformRules *KeyValueTreeTransformer::rules()
 {
     return impl_.get();
+}
+
+std::vector<std::string> KeyValueTreeTransformer::mappedPaths() const
+{
+    std::vector<std::string> result;
+    if (impl_->rootRule_)
+    {
+        impl_->rootRule_->collectMappedPaths("", &result);
+    }
+    return result;
 }
 
 KeyValueTreeObject KeyValueTreeTransformer::transform(const KeyValueTreeObject &tree) const

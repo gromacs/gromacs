@@ -5,6 +5,11 @@
     <String Name="a-x">1</String>
     <String Name="by">2</String>
   </Object>
+  <Sequence Name="MappedPaths">
+    <Int Name="Length">2</Int>
+    <String>/Ax</String>
+    <String>/B-Y</String>
+  </Sequence>
   <Object Name="Tree">
     <Int Name="i">1</Int>
     <Int Name="j">2</Int>
