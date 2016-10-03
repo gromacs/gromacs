@@ -781,10 +781,17 @@ files. These strings are copied to the topology file and can be
 replaced by force-field parameters by the C-preprocessor in {\tt grompp}
 using {\tt \#define} statements.
 
-{\tt pdb2gmx} automatically generates all angles. This means that for 
-most force fields the {\tt [~angles~]} field is only useful for overriding 
-{\tt .itp} parameters. For the \gromosv{96} force field the interaction 
-number of all angles needs to be specified.
+{\tt pdb2gmx} automatically generates all angles based on the information given 
+in the {\tt [~bonds~]} field.  This means that for most force fields the {\tt 
+[~angles~]} field is only useful for overriding {\tt .itp} parameters. For the 
+\gromosv{96} force field the interaction number of all angles needs to be 
+specified. Additionally a plus ({\tt +}) or minus ({\tt -}) in the {\tt 
+[~bonds~]} field indicate that the atom is in another residue. In the example 
+above the nitrogen atom in residue GLY will be bonded to a carbon atom in 
+another residue in the {\tt .pdb} file. The minus indicates the carbon belongs 
+to a residue preceding GLY in the {\tt .pdb} file; a plus would indicate the 
+corresponding atom belongs to a residue proceeding after GLY in the {\tt .pdb} 
+file.
 
 {\tt pdb2gmx} automatically generates one proper dihedral for every rotatable
 bond, preferably on heavy atoms. When the {\tt [~dihedrals~]} field is used,
