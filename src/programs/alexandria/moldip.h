@@ -143,22 +143,22 @@ class MolDip
 {
     private:
     public:
-        bool                           _bDone, _bFinal, _bGaussianBug;
-        bool                           _bFitZeta;
-        std::vector<alexandria::MyMol> _mymol;
-        int                            _nmol_support;
-        ChargeDistributionModel        _iChargeDistributionModel;
-        ChargeGenerationAlgorithm      _iChargeGenerationAlgorithm;
-        IndexCount                     indexCount_;
-        real                           _J0_0, _Chi0_0, _w_0, _J0_1, _Chi0_1, _w_1;
-        real                           _hfac, _hfac0, _decrzeta;
-        real                           _ener[ermsNR], _fc[ermsNR];
-        gmx_bool                       _bOptHfac, _bPol, _bQM;
-        char                          *_fixchi;
-        Poldata                        pd_;
-        gmx_atomprop_t                 _atomprop;
-        t_commrec                     *_cr;
-        gmx::MDModules                 mdModules_;
+        bool                            _bDone, _bFinal, _bGaussianBug;
+        bool                            _bFitZeta;
+        std::vector<alexandria::MyMol>  _mymol;
+        int                             _nmol_support;
+        ChargeDistributionModel         _iChargeDistributionModel;
+        ChargeGenerationAlgorithm       _iChargeGenerationAlgorithm;
+        IndexCount                      indexCount_;
+        real                            _J0_0, _Chi0_0, _w_0, _J0_1, _Chi0_1, _w_1;
+        real                            _hfac, _hfac0, _decrzeta;
+        real                            _ener[ermsNR], _fc[ermsNR];
+        gmx_bool                        _bOptHfac, _bPol, _bQM;
+        char                           *_fixchi;
+        Poldata                         pd_;
+        gmx_atomprop_t                  _atomprop;
+        t_commrec                      *_cr;
+        gmx::MDModules                  mdModules_;
         t_inputrec                     *inputrec_;
 
         //! Constructor

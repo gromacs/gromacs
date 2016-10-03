@@ -844,7 +844,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
         GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
         const auto       pp    = gmx::splitString(b->paramString());
         char             buf[256];
-        
+
         /*De is assumed to be the first parameter. Not good!*/
         snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[i], pp[1].c_str());
         f->setParams(buf);
@@ -1030,9 +1030,9 @@ double Optimization::calcDeviation()
                                 mymol.OptForce2 += iprod(mymol.f_[j], mymol.f_[j]);
                                 copy_rvec(mymol.optf_[j], mymol.f_[j]);
                             }
-                            
+
                             mymol.OptForce2 /= natoms;
-                            
+
                             _ener[ermsForce2] += _fc[ermsForce2]*mymol.OptForce2;
                             mymol.OptEcalc     = mymol.enerd_->term[F_EPOT];
                         }
@@ -1280,15 +1280,15 @@ void Optimization::printSpecs(FILE *fp, char *title,
     for (auto mi = _mymol.begin(); (mi < _mymol.end()); mi++, i++)
     {
         real DeltaE = mi->OptEcalc - mi->Emol;
-        
+
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
                 i, mi->molProp()->getMolname().c_str(),
                 mi->Hform, mi->Emol, DeltaE,
                 sqrt(mi->OptForce2), (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
-                
+
         msd += gmx::square(DeltaE);
         gmx_stats_add_point(gst, mi->Hform, mi->Hform + DeltaE, 0, 0);
-        
+
         if (nullptr != xvg)
         {
             fprintf(xfp, "%10g  %10g\n", mi->Hform, mi->Hform + DeltaE);
@@ -1498,10 +1498,10 @@ int alex_tune_fc(int argc, char *argv[])
     }
 
     alexandria::Optimization       opt;
-    ChargeDistributionModel   iChargeDistributionModel   = name2eemtype(cqdist[0]);
-    ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
+    ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
+    ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
 
-    const char               *tabfn = opt2fn_null("-table", NFILE, fnm);
+    const char                    *tabfn = opt2fn_null("-table", NFILE, fnm);
 
     if (iChargeDistributionModel != eqdAXp && nullptr == tabfn)
     {
@@ -1551,7 +1551,7 @@ int alex_tune_fc(int argc, char *argv[])
     if (MASTER(cr))
     {
         print_moldip_mols(fp, opt._mymol, true, false);
-        
+
         opt.printSpecs(fp, (char *)"After optimization", opt2fn("-x", NFILE, fnm), oenv, true);
 
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, compress);

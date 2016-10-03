@@ -596,7 +596,7 @@ static void getBhamParams(const Poldata     &pd,
 {
     std::vector<double> vdwi, vdwj;
 
-    auto fai = pd.findAtype(ai);
+    auto                fai = pd.findAtype(ai);
     if (fai != pd.getAtypeEnd())
     {
         vdwi  = getDoubles(fai->getVdwparams());
@@ -676,7 +676,7 @@ static void plist_to_mtop(const Poldata             &pd,
         }
         snew(mtop_->moltype[0].ilist[ftype].iatoms, nratot);
         int k = 0;
-        for (auto j = pw.beginParam();(j < pw.endParam()); ++j)
+        for (auto j = pw.beginParam(); (j < pw.endParam()); ++j)
         {
             std::vector<real> c;
             c.resize(MAXFORCEPARAM, 0);
@@ -1257,7 +1257,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
 
     init_nrnb(&my_nrnb);
     clear_mat (force_vir);
-    
+
     for (int i = 0; i < mtop_->natoms; i++)
     {
         mdatoms_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
@@ -1266,7 +1266,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
             fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms_->chargeA[i]);
         }
     }
-    
+
     ltop_->idef.nthreads = 1;
     setup_bonded_threading(fr_, &ltop_->idef);
 
@@ -1281,7 +1281,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
                             &(mtop_->groups),
                             shellfc_, fr_, false, t, mu_tot,
                             nullptr, nullptr);
-                            
+
         for (int i = 0; i < mtop_->natoms; i++)
         {
             copy_rvec(state_->x[i], x_[i]);
@@ -1301,7 +1301,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
                  nullptr, nullptr, false,
                  flags);
     }
-    
+
 }
 
 
@@ -2191,7 +2191,7 @@ void MyMol::addShells(const Poldata          &pd,
                     add_excl_pair(newexcls, j->a[1], renum[excls_[i0].e[j0]]);
                 }
             }
-            for (auto j = pw->beginParam();(j < pw->endParam()); ++j)
+            for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
             {
                 for (int j0 = 0; (j0 < newexcls[j->a[0]].nr); j0++)
                 {
@@ -2508,7 +2508,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     int                      lu, n;
     size_t                   ntrain            = 0;
     double                   value             = 0.0;
-    double                   sigma = 0.0,  r13 = 0.0;
+    double                   sigma             = 0.0,  r13 = 0.0;
     double                   relative_position = 0.0;
 
     switch (iType)
@@ -2535,8 +2535,8 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
                     {
                         mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value, lu);
-                        ltop_->idef.iparams[tp].morse.b0A = convert2gmx(value, lu);
-                        
+                        ltop_->idef.iparams[tp].morse.b0A     = convert2gmx(value, lu);
+
                         ptr = gmx::splitString(params);
                         n   = 0;
                         for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
@@ -2546,12 +2546,12 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 if (n == 0)
                                 {
                                     mtop_->ffparams.iparams[tp].morse.cbA = atof(pi->c_str());
-                                    ltop_->idef.iparams[tp].morse.cbA = atof(pi->c_str());
+                                    ltop_->idef.iparams[tp].morse.cbA     = atof(pi->c_str());
                                 }
                                 else
                                 {
                                     mtop_->ffparams.iparams[tp].morse.betaA = atof(pi->c_str());
-                                    ltop_->idef.iparams[tp].morse.betaA = atof(pi->c_str());
+                                    ltop_->idef.iparams[tp].morse.betaA     = atof(pi->c_str());
                                 }
                                 n++;
                             }
@@ -2588,14 +2588,14 @@ void MyMol::UpdateIdef(const Poldata   &pd,
 
                         mtop_->ffparams.iparams[tp].u_b.thetaA     =
                             mtop_->ffparams.iparams[tp].u_b.thetaB = value;
-                            
-                        ltop_->idef.iparams[tp].u_b.thetaA =
+
+                        ltop_->idef.iparams[tp].u_b.thetaA     =
                             ltop_->idef.iparams[tp].u_b.thetaB = value;
 
                         mtop_->ffparams.iparams[tp].u_b.r13A     =
                             mtop_->ffparams.iparams[tp].u_b.r13B = r13;
-                            
-                        ltop_->idef.iparams[tp].u_b.r13A =
+
+                        ltop_->idef.iparams[tp].u_b.r13A     =
                             ltop_->idef.iparams[tp].u_b.r13B = r13;
 
                         ptr = gmx::splitString(params);
@@ -2608,15 +2608,15 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 {
                                     mtop_->ffparams.iparams[tp].u_b.kthetaA     =
                                         mtop_->ffparams.iparams[tp].u_b.kthetaB = atof(pi->c_str());
-                                   
-                                    ltop_->idef.iparams[tp].u_b.kthetaA =
+
+                                    ltop_->idef.iparams[tp].u_b.kthetaA     =
                                         ltop_->idef.iparams[tp].u_b.kthetaA = atof(pi->c_str());
                                 }
                                 else
                                 {
                                     mtop_->ffparams.iparams[tp].u_b.kUBA     =
                                         mtop_->ffparams.iparams[tp].u_b.kUBB = atof(pi->c_str());
-                                        
+
                                     ltop_->idef.iparams[tp].u_b.kUBA     =
                                         ltop_->idef.iparams[tp].u_b.kUBB = atof(pi->c_str());
                                 }
@@ -2656,13 +2656,13 @@ void MyMol::UpdateIdef(const Poldata   &pd,
 
                         mtop_->ffparams.iparams[tp].linangle.aA     =
                             mtop_->ffparams.iparams[tp].linangle.aB = relative_position;
-                            
+
                         ltop_->idef.iparams[tp].linangle.aA     =
                             ltop_->idef.iparams[tp].linangle.aB = relative_position;
 
                         mtop_->ffparams.iparams[tp].linangle.r13A     =
                             mtop_->ffparams.iparams[tp].linangle.r13B = r13;
-                            
+
                         ltop_->idef.iparams[tp].linangle.r13A     =
                             ltop_->idef.iparams[tp].linangle.r13B = r13;
 
@@ -2676,7 +2676,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 {
                                     mtop_->ffparams.iparams[tp].linangle.klinA     =
                                         mtop_->ffparams.iparams[tp].linangle.klinB = atof(pi->c_str());
-                                        
+
                                     ltop_->idef.iparams[tp].linangle.klinA     =
                                         ltop_->idef.iparams[tp].linangle.klinB = atof(pi->c_str());
                                 }
@@ -2684,7 +2684,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 {
                                     mtop_->ffparams.iparams[tp].linangle.kUBA     =
                                         mtop_->ffparams.iparams[tp].linangle.kUBB = atof(pi->c_str());
-                                        
+
                                     ltop_->idef.iparams[tp].linangle.kUBA     =
                                         ltop_->idef.iparams[tp].linangle.kUBB = atof(pi->c_str());
                                 }
@@ -2722,10 +2722,10 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     {
                         mtop_->ffparams.iparams[tp].pdihs.phiA     =
                             mtop_->ffparams.iparams[tp].pdihs.phiB = value;
-                            
+
                         ltop_->idef.iparams[tp].pdihs.phiA     =
                             ltop_->idef.iparams[tp].pdihs.phiB = value;
-                            
+
                         ptr = gmx::splitString(params);
                         n   = 0;
                         for (auto pi = ptr.begin(); pi < ptr.end(); ++pi)
@@ -2736,7 +2736,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 {
                                     mtop_->ffparams.iparams[tp].pdihs.cpA     =
                                         mtop_->ffparams.iparams[tp].pdihs.cpB = atof(pi->c_str());
-                                        
+
                                     ltop_->idef.iparams[tp].pdihs.cpA     =
                                         ltop_->idef.iparams[tp].pdihs.cpB = atof(pi->c_str());
                                 }
@@ -2745,7 +2745,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                     /*Multiplicity for Proper Dihedral must be integer
                                        This assumes that the second paramter is Multiplicity*/
                                     mtop_->ffparams.iparams[tp].pdihs.mult = atoi(pi->c_str());
-                                    
+
                                     ltop_->idef.iparams[tp].pdihs.mult = atoi(pi->c_str());
                                 }
                                 n++;
@@ -2782,7 +2782,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     {
                         mtop_->ffparams.iparams[tp].harmonic.rA     =
                             mtop_->ffparams.iparams[tp].harmonic.rB = value;
-                            
+
                         ltop_->idef.iparams[tp].harmonic.rA     =
                             ltop_->idef.iparams[tp].harmonic.rB = value;
 
@@ -2796,7 +2796,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                                 {
                                     mtop_->ffparams.iparams[tp].harmonic.krA     =
                                         mtop_->ffparams.iparams[tp].harmonic.krB = atof(pi->c_str());
-                                        
+
                                     ltop_->idef.iparams[tp].harmonic.krA     =
                                         ltop_->idef.iparams[tp].harmonic.krB = atof(pi->c_str());
                                 }

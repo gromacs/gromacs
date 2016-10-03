@@ -413,10 +413,10 @@ class MyMol
          */
         void PrintConformation(const char *fn);
 
-	void setInputrec(t_inputrec  *ir)
-	{
-	    inputrec_ = ir;
-	}
+        void setInputrec(t_inputrec  *ir)
+        {
+            inputrec_ = ir;
+        }
 };
 
 const char *immsg(immStatus imm);
