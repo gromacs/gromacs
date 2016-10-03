@@ -423,7 +423,7 @@ void ForceConstants::dump(FILE *fp) const
     }
 }
 
-class OptPrep : public MolDip
+class Optimization : public MolDip
 {
     using param_type = std::vector<double>;
 
@@ -437,13 +437,13 @@ class OptPrep : public MolDip
          *
          * Constructor
          */
-        OptPrep() {};
+        Optimization() {};
 
         /*! \brief
          *
          * Destructor
          */
-        ~OptPrep() {};
+        ~Optimization() {};
 
         /*! \brief
          *
@@ -497,7 +497,7 @@ class OptPrep : public MolDip
         double objFunction(double v[]);
 };
 
-void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
+void Optimization::checkSupport(FILE *fp, bool  bOpt[])
 {
     int ntotal  = _mymol.size();
     int nlocal  = 0;
@@ -659,7 +659,7 @@ void OptPrep::checkSupport(FILE *fp, bool  bOpt[])
     }
 }
 
-void OptPrep::polData2TuneFc()
+void Optimization::polData2TuneFc()
 {
     param_.clear();
     for (auto &fc : ForceConstants_)
@@ -674,7 +674,7 @@ void OptPrep::polData2TuneFc()
     }
 }
 
-void OptPrep::tuneFc2PolData()
+void Optimization::tuneFc2PolData()
 {
     int n = 0;
     std::vector<std::string> atoms;
@@ -738,7 +738,7 @@ void OptPrep::tuneFc2PolData()
     }
 }
 
-void OptPrep::getDissociationEnergy(FILE *fplog)
+void Optimization::getDissociationEnergy(FILE *fplog)
 {
     double                    **a;
     std::vector<double>         rhs;
@@ -844,8 +844,8 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
         GMX_RELEASE_ASSERT(fs->forceEnd() != f, "Cannot find my bonds");
         const auto       pp    = gmx::splitString(b->paramString());
         char             buf[256];
-        // Here we use the "knowledge" that the energy is the second parameter in
-        // the Morse description. Not good!
+        
+        /*De is assumed to be the first parameter. Not good!*/
         snprintf(buf, sizeof(buf), "%.2f  %s", Edissoc[i], pp[1].c_str());
         f->setParams(buf);
         b->setParamString(buf);
@@ -853,7 +853,7 @@ void OptPrep::getDissociationEnergy(FILE *fplog)
     }
 }
 
-void OptPrep::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
+void Optimization::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
 {
     std::vector<unsigned int> fts;
 
@@ -907,7 +907,7 @@ void OptPrep::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
     }
 }
 
-void OptPrep::Print(FILE *fp)
+void Optimization::Print(FILE *fp)
 {
     fprintf(fp, "Param        Orig        Best\n");
     for (size_t k = 0; (k < param_.size()); k++)
@@ -915,40 +915,6 @@ void OptPrep::Print(FILE *fp)
         fprintf(fp, "%-5d  %10g  %10g\n", static_cast<int>(k),
                 orig_[k], best_[k]);
     }
-}
-
-static void print_stats(FILE *fp, const char *prop,
-                        gmx_stats_t lsq, gmx_bool bHeader,
-                        char *xaxis, char *yaxis)
-{
-    real a, da, b, db, chi2, rmsd, Rfit;
-    int  n;
-
-    if (bHeader)
-    {
-        fprintf(fp, "Fitting data to y = ax+b, where x = %s and y = %s\n",
-                xaxis, yaxis);
-        fprintf(fp, "%-12s %5s %13s %13s %8s %8s\n",
-                "Property", "N", "a", "b", "R", "RMSD");
-        fprintf(fp, "---------------------------------------------------------------\n");
-    }
-    gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
-    gmx_stats_get_rmsd(lsq, &rmsd);
-    gmx_stats_get_npoints(lsq, &n);
-    fprintf(fp, "%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f%% %8.4f\n",
-            prop, n, a, da, b, db, Rfit*100, rmsd);
-}
-
-static void print_lsq_set(FILE *fp, gmx_stats_t lsq)
-{
-    real   x, y;
-
-    fprintf(fp, "@type xy\n");
-    while (gmx_stats_get_point(lsq, &x, &y, nullptr, nullptr, 0) == estatsOK)
-    {
-        fprintf(fp, "%10g  %10g\n", x, y);
-    }
-    fprintf(fp, "&\n");
 }
 
 static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
@@ -964,7 +930,7 @@ static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
     }
 }
 
-double OptPrep::calcDeviation()
+double Optimization::calcDeviation()
 {
     rvec    mu_tot;
     int     j;
@@ -1046,8 +1012,9 @@ double OptPrep::calcDeviation()
                         mymol.changeCoordinate(ei);
                         mymol.computeForces(debug, _cr, mu_tot);
 
-                        debug         = dbcopy;
-                        mymol.Force2  = 0;
+                        debug           = dbcopy;
+                        mymol.Force2    = 0;
+                        mymol.OptForce2 = 0;
 
                         for (j = 0; (j < natoms); j++)
                         {
@@ -1058,8 +1025,16 @@ double OptPrep::calcDeviation()
 
                         if (jtype == JOB_OPT)
                         {
-                            _ener[ermsForce2] += _fc[ermsForce2]*mymol.Force2;
-                            mymol.optEcalc     = mymol.enerd_->term[F_EPOT];
+                            for (j = 0; (j < natoms); j++)
+                            {
+                                mymol.OptForce2 += iprod(mymol.f_[j], mymol.f_[j]);
+                                copy_rvec(mymol.optf_[j], mymol.f_[j]);
+                            }
+                            
+                            mymol.OptForce2 /= natoms;
+                            
+                            _ener[ermsForce2] += _fc[ermsForce2]*mymol.OptForce2;
+                            mymol.OptEcalc     = mymol.enerd_->term[F_EPOT];
                         }
 
                         mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
@@ -1080,7 +1055,7 @@ double OptPrep::calcDeviation()
                         }
                     }
                 }
-                _ener[ermsEPOT]   /= nconfs;
+                _ener[ermsEPOT] /= nconfs;
             }
         }
         else
@@ -1129,7 +1104,7 @@ double OptPrep::calcDeviation()
     return _ener[ermsTOT];
 }
 
-double OptPrep::objFunction(double v[])
+double Optimization::objFunction(double v[])
 {
     double rms = 0;
     for (size_t i = 0; (i < param_.size()); i++)
@@ -1143,11 +1118,11 @@ double OptPrep::objFunction(double v[])
 }
 
 
-void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
-                     int nrun, real stepsize, int seed,
-                     const gmx_output_env_t *oenv,
-                     int nprint, const char *xvgconv, const char *xvgepot,
-                     real temperature, bool bBound)
+void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
+                          int nrun, real stepsize, int seed,
+                          const gmx_output_env_t *oenv,
+                          int nprint, const char *xvgconv, const char *xvgepot,
+                          real temperature, bool bBound)
 {
 
     std::vector<double>              optx, opts, optm;
@@ -1215,8 +1190,6 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
             if (fplog)
             {
                 fprintf(fplog, "\nMinimum chi^2 value during optimization: %.3f.\n",
-                        chi2_min);
-                fprintf(fplog, "\nMinimum RMSD value during optimization: %.3f (kJ/mol).\n",
                         emin);
                 fprintf(fplog, "Average and standard deviation of parameters\n");
                 for (size_t k = 0; (k < param_.size()); k++)
@@ -1227,7 +1200,7 @@ void OptPrep::optRun(FILE *fp, FILE *fplog, int maxiter,
             }
         }
         calcDeviation();
-        _bDone = TRUE;
+        _bDone = true;
     }
     else
     {
@@ -1256,9 +1229,9 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
             if (bForce)
             {
                 fprintf(fp, "   f = %8.3f  %8.3f  %8.3f",
-                        mi->f_[j][XX],
-                        mi->f_[j][YY],
-                        mi->f_[j][ZZ]);
+                        mi->optf_[j][XX],
+                        mi->optf_[j][YY],
+                        mi->optf_[j][ZZ]);
             }
             fprintf(fp, "\n");
         }
@@ -1277,16 +1250,16 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
         }
         if (bMtop)
         {
-            pr_mtop(fp, 0, mi->molProp()->getMolname().c_str(), mi->mtop_, TRUE);
+            pr_mtop(fp, 0, mi->molProp()->getMolname().c_str(), mi->mtop_, true);
         }
     }
 }
 
 
-void OptPrep::printSpecs(FILE *fp, char *title,
-                         const char *xvg,
-                         const gmx_output_env_t *oenv,
-                         bool bCheckOutliers)
+void Optimization::printSpecs(FILE *fp, char *title,
+                              const char *xvg,
+                              const gmx_output_env_t *oenv,
+                              bool bCheckOutliers)
 {
     FILE       *xfp;
     int         i;
@@ -1306,15 +1279,16 @@ void OptPrep::printSpecs(FILE *fp, char *title,
     i   = 0;
     for (auto mi = _mymol.begin(); (mi < _mymol.end()); mi++, i++)
     {
-        real DeltaE = mi->optEcalc - mi->Emol;
+        real DeltaE = mi->OptEcalc - mi->Emol;
+        
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
-                i,
-                mi->molProp()->getMolname().c_str(),
+                i, mi->molProp()->getMolname().c_str(),
                 mi->Hform, mi->Emol, DeltaE,
-                sqrt(mi->Force2),
-                (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
-        msd += gmx::square(mi->Emol-mi->optEcalc);
+                sqrt(mi->OptForce2), (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
+                
+        msd += gmx::square(DeltaE);
         gmx_stats_add_point(gst, mi->Hform, mi->Hform + DeltaE, 0, 0);
+        
         if (nullptr != xvg)
         {
             fprintf(xfp, "%10g  %10g\n", mi->Hform, mi->Hform + DeltaE);
@@ -1396,20 +1370,20 @@ int alex_tune_fc(int argc, char *argv[])
     static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
     static int            minimum_data  = 3, compress = 0;
     static real           tol           = 1e-3, stol = 1e-6, watoms = 0;
-    static gmx_bool       bBound        = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE;
-    static gmx_bool       bQM           = FALSE, bGaussianBug = TRUE, bPolar = FALSE, bFitZeta = TRUE, bZPE = FALSE;
+    static gmx_bool       bBound        = false, bZero = true, bWeighted = false, bOptHfac = false;
+    static gmx_bool       bQM           = false, bGaussianBug = true, bPolar = false, bFitZeta = false, bZPE = false;
     static real           J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
     static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50;
     static real           fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0, fc_epot = 1, fc_force = 0.001;
     static real           factor        = 0.8;
-    static char          *opt_elem      = NULL, *const_elem = NULL, *fixchi = (char *)"H";
+    static char          *opt_elem      = nullptr, *const_elem = nullptr, *fixchi = (char *)"H";
     static char          *lot           = (char *)"B3LYP/aug-cc-pVTZ";
     static const char    *cqdist[]      = {
-        NULL, "AXp", "AXg", "AXs",
-        "Yang", "Bultinck", "Rappe", NULL
+        nullptr, "AXp", "AXg", "AXs",
+        "Yang", "Bultinck", "Rappe", nullptr
     };
     static const char    *cqgen[]      = {
-        NULL, "None", "EEM", "ESP", "RESP", NULL
+        nullptr, "None", "EEM", "ESP", "RESP", nullptr
     };
     static bool           bOpt[eitNR]  = { true, false, false, false, false, false, false, false, false};
     static real           beta0        = 0, D0 = 0, beta_min = 10, D0_min = 50, temperature;
@@ -1498,7 +1472,7 @@ int alex_tune_fc(int argc, char *argv[])
                            NFILE, fnm,
                            sizeof(pa)/sizeof(pa[0]), pa,
                            sizeof(desc)/sizeof(desc[0]), desc,
-                           0, NULL, &oenv))
+                           0, nullptr, &oenv))
     {
         return 0;
     }
@@ -1514,7 +1488,7 @@ int alex_tune_fc(int argc, char *argv[])
     }
     else
     {
-        fp = NULL;
+        fp = nullptr;
     }
 
     MolSelect gms;
@@ -1523,13 +1497,13 @@ int alex_tune_fc(int argc, char *argv[])
         gms.read(opt2fn_null("-sel", NFILE, fnm));
     }
 
-    alexandria::OptPrep       opt;
+    alexandria::Optimization       opt;
     ChargeDistributionModel   iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
 
     const char               *tabfn = opt2fn_null("-table", NFILE, fnm);
 
-    if (iChargeDistributionModel != eqdAXp && NULL == tabfn)
+    if (iChargeDistributionModel != eqdAXp && nullptr == tabfn)
     {
         gmx_fatal(FARGS, "Cannot generate charges with the %s charge model without a potential table. Please supply a table file.", getEemtypeName(iChargeDistributionModel));
     }
@@ -1541,12 +1515,12 @@ int alex_tune_fc(int argc, char *argv[])
              fc_esp, fc_epot, fc_force, fixchi,
              bOptHfac, hfac, bPolar, bFitZeta);
 
-    opt.Read(fp ? fp : (debug ? debug : NULL),
+    opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              minimum_data, bZero,
              opt_elem, const_elem,
-             lot, gms, watoms, FALSE,
+             lot, gms, watoms, false,
              bOpt[eitLJ14], bOpt[eitPROPER_DIHEDRALS],
              bPolar, bZPE, tabfn);
 
@@ -1558,16 +1532,16 @@ int alex_tune_fc(int argc, char *argv[])
 
     opt.InitOpt(fp, bOpt, factor);
 
-    print_moldip_mols(fp, opt._mymol, FALSE, FALSE);
+    print_moldip_mols(fp, opt._mymol, false, false);
 
     opt.calcDeviation();
 
     if (MASTER(cr))
     {
-        opt.printSpecs(fp, (char *)"Before optimization", NULL, oenv, false);
+        opt.printSpecs(fp, (char *)"Before optimization", nullptr, oenv, false);
     }
 
-    opt.optRun(MASTER(cr) ? stderr : NULL, fp,
+    opt.optRun(MASTER(cr) ? stderr : nullptr, fp,
                maxiter, nrun, step, seed,
                oenv, nprint,
                opt2fn("-conv", NFILE, fnm),
@@ -1576,9 +1550,9 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (MASTER(cr))
     {
-        print_moldip_mols(fp, opt._mymol, TRUE, FALSE);
-        opt.printSpecs(fp, (char *)"After optimization",
-                       opt2fn("-x", NFILE, fnm), oenv, true);
+        print_moldip_mols(fp, opt._mymol, true, false);
+        
+        opt.printSpecs(fp, (char *)"After optimization", opt2fn("-x", NFILE, fnm), oenv, true);
 
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, compress);
 

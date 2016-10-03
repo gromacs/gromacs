@@ -158,8 +158,8 @@ class MolDip
         Poldata                        pd_;
         gmx_atomprop_t                 _atomprop;
         t_commrec                     *_cr;
-	gmx::MDModules                 mdModules_;
-	t_inputrec                     *inputrec_;
+        gmx::MDModules                 mdModules_;
+        t_inputrec                     *inputrec_;
 
         //! Constructor
         MolDip();

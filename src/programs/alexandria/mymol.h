@@ -117,7 +117,7 @@ class MyMol
         double           EspRms_;
 
 
-	bool             IsSymmetric(real toler);
+        bool             IsSymmetric(real toler);
 
         /*! \brief
          * Generate Atoms based on quantum calculation with specified level of theory
@@ -169,10 +169,10 @@ class MyMol
          */
         //void getForceConstants(const Poldata &pd);
     public:
-        rvec                     *x_, *f_, *buf, mu_exp, mu_calc, mu_esp, coq;
+        rvec                     *x_, *f_, *optf_, *buf, mu_exp, mu_calc, mu_esp, coq;
         matrix                    box_;
         real                      dip_exp, mu_exp2, dip_err, dip_weight, dip_calc, chieq;
-	real                      Hform, Emol, Ecalc, optEcalc, Force2;
+        real                      Hform, Emol, Ecalc, OptEcalc, Force2, OptForce2;
         real                     *qESP;
         tensor                    Q_exp, Q_calc, Q_esp;
         eSupport                  eSupp;
