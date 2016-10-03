@@ -54,6 +54,10 @@ namespace gmx
 /*! \libinternal \brief
  * Lists files in a directory.
  *
+ * If multiple threads share the same DirectoryEnumerator, they must
+ * take responsibility for their mutual synchronization, particularly
+ * with regard to calling nextFile().
+ *
  * \inlibraryapi
  * \ingroup module_utility
  */
@@ -108,6 +112,10 @@ class DirectoryEnumerator
          * If `bThrow` passed to the constructor was `false` and the directory
          * was not successfully opened, the first call to this function will
          * return `false`.
+         *
+         * This method is not thread safe when called on the same
+         * object by multiple threads. Such use requires external
+         * synchronization.
          */
         bool nextFile(std::string *filename);
 
