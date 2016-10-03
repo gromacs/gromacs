@@ -68,6 +68,9 @@ OW_tip4p     8      16.00    0.0000  A   3.15365e-01  6.48520e-01
 ;tip5p
 HW_tip5p     1       1.008   0.0000  A   0.00000e+00  0.00000e+00
 OW_tip5p     8      16.00    0.0000  A   3.12000e-01  6.69440e-01
+; tip4p2005
+HW_tip4p2005 1      1.0080   0.0000  A   0.00000e+00  0.00000e+00
+OW_tip4p2005 8     15.9994   0.0000  A   3.15890e-01  7.74908e-01
 ; dummy defs
 ; MW=Dummy mass for tip4p/EW/5p water extra point charge
 MW           0       0.0000  0.0000  D   0.00000e+00  0.00000e+00

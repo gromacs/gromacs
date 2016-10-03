@@ -1,0 +1,54 @@
+; TIP4P/2005 Water Model
+
+; J. L. F. Abascal and C. Vega, J. Chem. Phys 123 234505 (2005)
+; http://dx.doi.org/10.1063/1.2121687
+
+
+[ moleculetype ]
+; molname    nrexcl
+  SOL        2
+
+[ atoms ]
+; nr type           resnr residu atom cgnr  charge    mass
+  1  OW_tip4p2005   1     SOL    OW   1     0.0000   15.9994 
+  2  HW_tip4p2005   1     SOL    HW1  1     0.5564    1.0080
+  3  HW_tip4p2005   1     SOL    HW2  1     0.5564    1.0080
+  4  MW             1     SOL    MW   1    -1.1128    0.0000
+
+#ifndef FLEXIBLE
+[ settles ]
+; i  funct   doh       dhh
+  1  1       0.09572   0.15139
+#else
+[ bonds ]
+; i     j     funct   length  force.c.
+  1     2     1       0.09572 502416.0
+  1     3     1       0.09572 502416.0
+        
+[ angles ]
+; i   j   k   funct   angle   force.c.
+  2   1   3   1       104.52  628.02
+#endif
+
+[ exclusions ]
+1     2     3     4
+2     1     3     4
+3     1     2     4
+4     1     2     3
+
+; The position of the dummy is computed as follows:
+;
+;         O
+;         
+;         D
+;     
+;   H           H
+;
+; a = b = (1/2) * (distance(OD)  / [ cos (angle(DOH)) * distance(OH) ] )
+;       = (1/2) * (0.01546 nm    / [ cos (52.26 deg)  * 0.09572 nm   ] )
+;       = 0.13193777
+; Dummy pos x4 = x1 + a*(x2-x1) + b*(x3-x1)
+
+[ virtual_sites3 ]
+; Vsite from                    funct   a               b
+  4     1       2       3       1       0.13193777      0.13193777 

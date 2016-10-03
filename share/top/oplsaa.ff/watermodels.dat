@@ -1,7 +1,7 @@
-tip4p   TIP4P  TIP 4-point, recommended
-tip4pew TIP4PEW TIP 4-point with Ewald
-tip3p   TIP3P  TIP 3-point
-tip5p   TIP5P  TIP 5-point (see http://redmine.gromacs.org/issues/1348 for issues)
-tip5pe  TIP5P  TIP 5-point improved for Ewald sums
-spc     SPC    simple point charge
-spce    SPC/E  extended simple point charge
+tip3p     TIP3P      TIP 3-point, recommended
+tip4p     TIP4P      TIP 4-point
+tip4pew   TIP4P-Ew   TIP 4-point optimized with Ewald
+tip4p2005 TIP4P/2005 TIP 4-point 2005 model
+tip5p     TIP5P      TIP 5-point (see http://redmine.gromacs.org/issues/1348 for issues)
+spc       SPC        simple point charge
+spce      SPC/E      extended simple point charge
