@@ -1,3 +1,9 @@
+; TIP4P Water Model
+
+; W. L. Jorgensen, J. Chandrasekhar, J. D. Madura, R. W.
+; Impey and M. L. Klein, J. Chem. Phys. 79 926 (1983)
+; http://dx.doi.org/10.1063/1.445869
+
 [ moleculetype ]
 ; molname	nrexcl
 SOL		2
