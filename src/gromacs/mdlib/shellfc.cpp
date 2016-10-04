@@ -910,7 +910,8 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
                       rvec *f, rvec *acc_dir,
                       gmx_bool bMolPBC, matrix box,
                       const std::vector<real> *lambda, real *dvdlambda,
-                      t_nrnb *nrnb)
+                      t_nrnb *nrnb,
+                      DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion)
 {
     rvec           *xnold, *xnew;
     double          dt, w_dt;
@@ -960,11 +961,13 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x, xnold, NULL, bMolPBC, box,
               (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord);
+              NULL, NULL, nrnb, econqCoord,
+              DdReOpenBalanceRegionAfterCommunication::no);
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x, xnew, NULL, bMolPBC, box,
               (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord);
+              NULL, NULL, nrnb, econqCoord,
+              DdReOpenBalanceRegionAfterCommunication::no);
 
     for (n = 0; n < end; n++)
     {
@@ -981,7 +984,8 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x_old, xnew, acc_dir, bMolPBC, box,
               (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqDeriv_FlexCon);
+              NULL, NULL, nrnb, econqDeriv_FlexCon,
+              ddReOpenBalanceRegion);
 }
 
 void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
@@ -1001,7 +1005,9 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                          gmx_bool bBornRadii,
                          double t, rvec mu_tot,
                          gmx_vsite_t *vsite,
-                         FILE *fp_field)
+                         FILE *fp_field,
+                         DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion,
+                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
     int        nshell;
     t_shell   *shell;
@@ -1129,7 +1135,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              force[Min], force_vir, md, enerd, fcd,
              &state->lambda, graph,
              fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
-             (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
+             (bDoNS ? GMX_FORCE_NS : 0) | force_flags,
+             ddReOpenBalanceRegion, ddCloseBalanceRegion);
 
     sf_dir = 0;
     if (nflexcon)
@@ -1138,7 +1145,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                   constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
                   shfc->x_old, as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), as_rvec_array(force[Min]->data()),
                   shfc->acc_dir,
-                  fr->bMolPBC, state->box, &state->lambda, &dum, nrnb);
+                  fr->bMolPBC, state->box, &state->lambda, &dum, nrnb,
+                  ddReOpenBalanceRegion);
 
         for (i = 0; i < end; i++)
         {
@@ -1206,7 +1214,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             init_adir(fplog, shfc,
                       constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
                       x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Min]->data()), as_rvec_array(force[Min]->data()), acc_dir,
-                      fr->bMolPBC, state->box, &state->lambda, &dum, nrnb);
+                      fr->bMolPBC, state->box, &state->lambda, &dum, nrnb,
+                      ddReOpenBalanceRegion);
 
             directional_sd(pos[Min], pos[Try], acc_dir, end, fr->fc_stepsize);
         }
@@ -1231,7 +1240,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                  force[Try], force_vir,
                  md, enerd, fcd, &state->lambda, graph,
                  fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,
-                 force_flags);
+                 force_flags,
+                 ddReOpenBalanceRegion, ddCloseBalanceRegion);
 
         if (gmx_debug_at)
         {
@@ -1244,7 +1254,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             init_adir(fplog, shfc,
                       constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
                       x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Try]->data()), as_rvec_array(force[Try]->data()), acc_dir,
-                      fr->bMolPBC, state->box, &state->lambda, &dum, nrnb);
+                      fr->bMolPBC, state->box, &state->lambda, &dum, nrnb,
+                      ddReOpenBalanceRegion);
 
             for (i = 0; i < end; i++)
             {

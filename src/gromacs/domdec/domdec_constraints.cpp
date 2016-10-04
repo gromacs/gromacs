@@ -89,11 +89,17 @@ struct gmx_domdec_constraints_t {
 };
 
 void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
-                           rvec *x0, rvec *x1, gmx_bool bX1IsCoord)
+                           rvec *x0, rvec *x1, gmx_bool bX1IsCoord,
+                           DdReOpenBalanceRegionAfterCommunication reOpenBalanceRegion)
 {
     if (dd->constraint_comm)
     {
         dd_move_x_specat(dd, dd->constraint_comm, box, x0, x1, bX1IsCoord);
+
+        if (reOpenBalanceRegion == DdReOpenBalanceRegionAfterCommunication::yes)
+        {
+            dd_reOpenBalanceRegion(dd);
+        }
     }
 }
 

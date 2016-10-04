@@ -48,6 +48,7 @@
 #ifndef GMX_PULLING_PULL_ROTATION_H
 #define GMX_PULLING_PULL_ROTATION_H
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 
@@ -112,13 +113,13 @@ extern void dd_make_local_rotation_groups(struct gmx_domdec_t *dd, t_rot *rot);
  * \param x       The positions of all the local particles.
  * \param t       Time.
  * \param step    The time step.
- * \param wcycle  During the potential calculation the wallcycles are
- *                counted. Later they enter the dynamic load balancing.
  * \param bNS     After domain decomposition / neighbor searching several
  *                local arrays have to be updated (masses, shifts)
+ * \param ddReOpenBalanceRegion Tells if to (Re)Open the balancing region after MPI communication
  */
 extern void do_rotation(struct t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], real t,
-                        gmx_int64_t step, gmx_wallcycle_t wcycle, gmx_bool bNS);
+                        gmx_int64_t step, gmx_bool bNS,
+                        DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion);
 
 
 /*! \brief Add the enforced rotation forces to the official force array.

@@ -37,6 +37,7 @@
 #ifndef GMX_MDLIB_UPDATE_H
 #define GMX_MDLIB_UPDATE_H
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
@@ -130,7 +131,8 @@ void update_constraints(FILE              *fplog,
                         gmx_update_t      *upd,
                         gmx_constr        *constr,
                         gmx_bool           bFirstHalf,
-                        gmx_bool           bCalcVir);
+                        gmx_bool           bCalcVir,
+                        DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
