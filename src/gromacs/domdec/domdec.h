@@ -63,7 +63,6 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -80,6 +79,43 @@ struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
 struct t_commrec;
 struct t_inputrec;
+
+enum class DdReOpenBalanceRegionAfterCommunication
+{
+    no,
+    yes
+};
+
+enum class DdCloseBalanceRegionAfterForceComputation
+{
+    no,
+    yes
+};
+
+enum class DdBalanceRegionUsingGpu
+{
+    no,
+    yes
+};
+
+enum class DdBalanceRegionWaitedForGpu
+{
+    no,
+    yes
+};
+
+
+
+void dd_reOpenBalanceRegion(const gmx_domdec_t *dd);
+
+void dd_closeBalanceRegionCpu(const gmx_domdec_t      *dd,
+                              float                    cyclesToSubtract,
+                              DdBalanceRegionUsingGpu  usingGpu);
+
+void dd_closeBalanceRegionGpu(const gmx_domdec_t          *dd,
+                              float                        waitCyclesToAdd,
+                              DdBalanceRegionWaitedForGpu  waitedForGpu);
+
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
  *
@@ -223,7 +259,7 @@ enum {
 };
 
 /*! \brief Add the wallcycle count to the DD counter */
-void dd_cycles_add(struct gmx_domdec_t *dd, float cycles, int ddCycl);
+void dd_cycles_add(const gmx_domdec_t *dd, float cycles, int ddCycl);
 
 /*! \brief Start the force flop count */
 void dd_force_flop_start(struct gmx_domdec_t *dd, t_nrnb *nrnb);
@@ -274,7 +310,7 @@ void dd_partition_system(FILE                *fplog,
                          gmx_localtop_t      *top_local,
                          t_forcerec          *fr,
                          gmx_vsite_t         *vsite,
-                         gmx_constr_t         constr,
+                         struct gmx_constr   *constr,
                          t_nrnb              *nrnb,
                          gmx_wallcycle_t      wcycle,
                          gmx_bool             bVerbose);
@@ -295,7 +331,8 @@ void dd_clear_f_vsites(struct gmx_domdec_t *dd, rvec *f);
 
 /*! \brief Move x0 and also x1 if x1!=NULL. bX1IsCoord tells if to do PBC on x1 */
 void dd_move_x_constraints(struct gmx_domdec_t *dd, matrix box,
-                           rvec *x0, rvec *x1, gmx_bool bX1IsCoord);
+                           rvec *x0, rvec *x1, gmx_bool bX1IsCoord,
+                           DdReOpenBalanceRegionAfterCommunication reOpenRegion);
 
 /*! \brief Communicates the coordinates involved in virtual sites */
 void dd_move_x_vsites(struct gmx_domdec_t *dd, matrix box, rvec *x);

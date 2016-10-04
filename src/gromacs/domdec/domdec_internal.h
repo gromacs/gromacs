@@ -48,6 +48,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
 
 /*! \cond INTERNAL */
@@ -344,7 +345,12 @@ struct gmx_domdec_comm_t
     /** Maximum DLB scaling per load balancing step in percent */
     int dlb_scale_lim;
 
-    /* Cycle counters */
+    /* Cycle counter for force region we can balance over */
+    bool         balanceRegionStarted;       /**< Have we enterted the region? */
+    gmx_cycles_t balanceRegionCyclesStart;   /**< Cycle count at the start of the region */
+    gmx_cycles_t balanceRegionCyclesStopCpu; /**< Cycle count at the stop of the CPU force computation region */
+
+    /* Cycle counters over nstlist steps */
     float  cycl[ddCyclNr];             /**< Total cycles counted */
     int    cycl_n[ddCyclNr];           /**< The number of cycle recordings */
     float  cycl_max[ddCyclNr];         /**< The maximum cycle count */

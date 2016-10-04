@@ -275,13 +275,64 @@ static void vec_rvec_check_alloc(vec_rvec_t *v, int n)
     }
 }
 
+void dd_reOpenBalanceRegion(const gmx_domdec_t *dd)
+{
+    if (dd->comm->bRecordLoad)
+    {
+        dd->comm->balanceRegionCyclesStart = gmx_cycles_read();
+        dd->comm->balanceRegionStarted     = true;
+    }
+}
+
+void dd_closeBalanceRegionCpu(const gmx_domdec_t      *dd,
+                              float                    cyclesToSubtract,
+                              DdBalanceRegionUsingGpu  usingGpu)
+{
+    if (dd->comm->bRecordLoad)
+    {
+        GMX_ASSERT(dd->comm->balanceRegionStarted, "Attempt to close balancing region without opening it");
+        dd->comm->balanceRegionCyclesStopCpu = gmx_cycles_read();
+        if (usingGpu == DdBalanceRegionUsingGpu::no)
+        {
+            dd_cycles_add(dd, dd->comm->balanceRegionCyclesStopCpu - dd->comm->balanceRegionCyclesStart - cyclesToSubtract, ddCyclF);
+
+            dd->comm->balanceRegionStarted   = false;
+        }
+    }
+}
+
+void dd_closeBalanceRegionGpu(const gmx_domdec_t          *dd,
+                              float                        waitCyclesToAdd,
+                              DdBalanceRegionWaitedForGpu  waitedForGpu)
+{
+    if (dd->comm->bRecordLoad)
+    {
+        GMX_ASSERT(dd->comm->balanceRegionStarted, "Attempt to close balancing region without opening it");
+        float waitCyclesEstimate = gmx_cycles_read() - dd->comm->balanceRegionCyclesStopCpu;
+        if (waitedForGpu == DdBalanceRegionWaitedForGpu::no)
+        {
+            /* The actual time could be anywhere between 0 and
+             * waitCyclesEstimate. Using half is the best we can do.
+             */
+            waitCyclesEstimate *= 0.5;
+        }
+        /* Register the total force time we measured/esimated */
+#warning "Need to take care of subtracting PME cycles"
+        dd_cycles_add(dd, dd->comm->balanceRegionCyclesStopCpu - dd->comm->balanceRegionCyclesStart + waitCyclesEstimate, ddCyclF);
+        /* Register the GPU wait time, need to rebalance with GPU sharing */
+        dd_cycles_add(dd, waitCyclesToAdd + waitCyclesEstimate, ddCyclWaitGPU);
+
+        dd->comm->balanceRegionStarted     = false;
+    }
+}
+
 void dd_store_state(gmx_domdec_t *dd, t_state *state)
 {
     int i;
 
     if (state->ddp_count != dd->ddp_count)
     {
-        gmx_incons("The state does not the domain decomposition state");
+        gmx_incons("The MD state does not match the domain decomposition state");
     }
 
     state->cg_gl.resize(dd->ncg_home);
@@ -4873,7 +4924,7 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     }
 }
 
-void dd_cycles_add(gmx_domdec_t *dd, float cycles, int ddCycl)
+void dd_cycles_add(const gmx_domdec_t *dd, float cycles, int ddCycl)
 {
     /* Note that the cycles value can be incorrect, either 0 or some
      * extremely large value, when our thread migrated to another core

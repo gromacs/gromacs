@@ -438,7 +438,8 @@ void init_em(FILE *fplog, const char *title,
                       NULL,
                       fr->bMolPBC, ems->s.box,
                       ems->s.lambda[efptFEP], &dvdl_constr,
-                      NULL, NULL, nrnb, econqCoord);
+                      NULL, NULL, nrnb, econqCoord,
+                      DdReOpenBalanceRegionAfterCommunication::no);
         }
     }
 
@@ -665,7 +666,8 @@ static bool do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                       as_rvec_array(s1->x.data()), as_rvec_array(s2->x.data()),
                       NULL, bMolPBC, s2->box,
                       s2->lambda[efptBONDED], &dvdl_constr,
-                      NULL, NULL, nrnb, econqCoord);
+                      NULL, NULL, nrnb, econqCoord,
+                      DdReOpenBalanceRegionAfterCommunication::yes);
         wallcycle_stop(wcycle, ewcCONSTR);
 
         // We should move this check to the different minimizers
@@ -760,7 +762,9 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              &ems->s.lambda, graph, fr, vsite, mu_tot, t, NULL, NULL, TRUE,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
-             (bNS ? GMX_FORCE_NS : 0));
+             (bNS ? GMX_FORCE_NS : 0),
+             DdReOpenBalanceRegionAfterCommunication::yes,
+             DdCloseBalanceRegionAfterForceComputation::yes);
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);
@@ -802,7 +806,8 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                   as_rvec_array(ems->s.x.data()), f_rvec, f_rvec,
                   fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdl_constr,
-                  NULL, &shake_vir, nrnb, econqForceDispl);
+                  NULL, &shake_vir, nrnb, econqForceDispl,
+                  DdReOpenBalanceRegionAfterCommunication::yes);
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
         wallcycle_stop(wcycle, ewcCONSTR);
@@ -2857,7 +2862,9 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                                &state_work.s, &state_work.f, vir, mdatoms,
                                                nrnb, wcycle, graph, &top_global->groups,
                                                shellfc, fr, bBornRadii, t, mu_tot,
-                                               vsite, NULL);
+                                               vsite, NULL,
+                                               DdReOpenBalanceRegionAfterCommunication::no,
+                                               DdCloseBalanceRegionAfterForceComputation::no);
                     bNS = false;
                     step++;
                 }

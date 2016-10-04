@@ -890,7 +890,8 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                      gmx_bool bCalcDHDL,
                      real wangle, gmx_bool *bWarn,
                      real invdt, rvec * gmx_restrict v,
-                     gmx_bool bCalcVir, tensor vir_r_m_dr)
+                     gmx_bool bCalcVir, tensor vir_r_m_dr,
+                     DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion)
 {
     int      b0, b1, b, i, j, n, iter;
     int     *bla, *blnr, *blbnb;
@@ -1042,7 +1043,8 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                 /* Communicate the corrected non-local coordinates */
                 if (DOMAINDECOMP(cr))
                 {
-                    dd_move_x_constraints(cr->dd, box, xp, NULL, FALSE);
+                    dd_move_x_constraints(cr->dd, box, xp, NULL, FALSE,
+                                          ddReOpenBalanceRegion);
                 }
             }
 #pragma omp barrier
@@ -2333,7 +2335,8 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          gmx_bool bCalcVir, tensor vir_r_m_dr,
                          int econq,
                          t_nrnb *nrnb,
-                         int maxwarn, int *warncount)
+                         int maxwarn, int *warncount,
+                         DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion)
 {
     gmx_bool  bCalcDHDL;
     char      buf[STRLEN], buf2[22], buf3[STRLEN];
@@ -2433,7 +2436,8 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          bCalcDHDL,
                          ir->LincsWarnAngle, &bWarn,
                          invdt, v, bCalcVir,
-                         th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
+                         th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr,
+                         ddReOpenBalanceRegion);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
