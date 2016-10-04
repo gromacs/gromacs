@@ -63,7 +63,6 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -223,7 +222,7 @@ enum {
 };
 
 /*! \brief Add the wallcycle count to the DD counter */
-void dd_cycles_add(struct gmx_domdec_t *dd, float cycles, int ddCycl);
+void dd_cycles_add(const gmx_domdec_t *dd, float cycles, int ddCycl);
 
 /*! \brief Start the force flop count */
 void dd_force_flop_start(struct gmx_domdec_t *dd, t_nrnb *nrnb);
@@ -274,7 +273,7 @@ void dd_partition_system(FILE                *fplog,
                          gmx_localtop_t      *top_local,
                          t_forcerec          *fr,
                          gmx_vsite_t         *vsite,
-                         gmx_constr_t         constr,
+                         struct gmx_constr   *constr,
                          t_nrnb              *nrnb,
                          gmx_wallcycle_t      wcycle,
                          gmx_bool             bVerbose);
