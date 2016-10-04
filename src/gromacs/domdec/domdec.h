@@ -63,7 +63,6 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -80,6 +79,7 @@ struct gmx_domdec_zones_t;
 struct t_commrec;
 struct t_inputrec;
 class t_state;
+
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
  *
@@ -223,7 +223,86 @@ enum {
 };
 
 /*! \brief Add the wallcycle count to the DD counter */
-void dd_cycles_add(struct gmx_domdec_t *dd, float cycles, int ddCycl);
+void dd_cycles_add(const gmx_domdec_t *dd, float cycles, int ddCycl);
+
+/*! \brief Tells if we should open the balancing region */
+enum class DdOpenBalanceRegionBeforeForceComputation
+{
+    no,  //!< Do not open a balancing region
+    yes  //!< Open the balancing region before update or after pair-search
+};
+
+/*! \brief Tells if we should close the balancing region after the force computation has completed */
+enum class DdCloseBalanceRegionAfterForceComputation
+{
+    no,  //!< Do not close a balancing region
+    yes  //!< Close the balancing region after for computation completed
+};
+
+/*! \brief Tells if we are using a GPU in the balancing region */
+enum class DdBalanceRegionUsingGpu
+{
+    no,  //!< We are not using a GPU in the balancing region
+    yes  //!< We are using a GPU in the balancing region
+};
+
+/*! \brief Tells if we had to wait for a GPU to finish computation */
+enum class DdBalanceRegionWaitedForGpu
+{
+    no,  //!< The GPU finished computation before the CPU needed the result
+    yes  //!< We had to wait for the GPU to finish computation
+};
+
+/*! \brief Open the load balance timing region
+ *
+ * Opens the balancing region for timing how much time it takes to perform
+ * the (balancable part of) the MD step. This should be called right after
+ * the last communication during the previous step to maximize the region.
+ * In practice this means right after the force communication finished
+ * or just before neighbor search at search steps.
+ * It is assumed that computation done in the region either scales along
+ * with the domain size or takes constant time.
+ *
+ * \param[in,out] dd           The domain decomposition struct
+ * \param[in]     usingGpu     Tells if we will be using a GPU in this region
+ * \param[in]     allowReopen  Allows calling with a potentially already opened region
+ */
+void dd_openBalanceRegion(const gmx_domdec_t      *dd,
+                          DdBalanceRegionUsingGpu  usingGpu,
+                          bool                     allowReopen);
+
+/*! \brief Re-open the, already opened, load balance timing region
+ *
+ * This function should be called after every MPI communication that occurs
+ * in the main MD loop.
+ * Note that the current setup assumes that all MPI communication acts like
+ * a global barrier. But if some ranks don't participate in communication
+ * or if some ranks communicate faster with neighbors than others,
+ * the obtained timings might not accurately reflect the computation time.
+ *
+ * \param[in,out] dd  The domain decomposition struct
+ */
+void dd_reopenBalanceRegion(const gmx_domdec_t *dd);
+
+/*! \brief Close the load balance timing region on the CPU side
+ *
+ * \param[in,out] dd  The domain decomposition struct
+ */
+void dd_closeBalanceRegionCpu(const gmx_domdec_t *dd);
+
+/*! \brief Close the load balance timing region on the GPU side
+ *
+ * This should be called after the CPU receives the last (local) results
+ * from the GPU. The wait time for these results is estimated, depending
+ * on the \p waitedForGpu parameter.
+ *
+ * \param[in,out] dd               The domain decomposition struct
+ * \param[in]     waitCyclesToAdd  The time we waited for the GPU earlier during this step
+ * \param[in]     waitedForGpu     Tells if we waited for the GPU to finish now
+ */
+void dd_closeBalanceRegionGpu(const gmx_domdec_t          *dd,
+                              float                        waitCyclesToAdd,
+                              DdBalanceRegionWaitedForGpu  waitedForGpu);
 
 /*! \brief Start the force flop count */
 void dd_force_flop_start(struct gmx_domdec_t *dd, t_nrnb *nrnb);
@@ -274,7 +353,7 @@ void dd_partition_system(FILE                *fplog,
                          gmx_localtop_t      *top_local,
                          t_forcerec          *fr,
                          gmx_vsite_t         *vsite,
-                         gmx_constr_t         constr,
+                         struct gmx_constr   *constr,
                          t_nrnb              *nrnb,
                          gmx_wallcycle_t      wcycle,
                          gmx_bool             bVerbose);

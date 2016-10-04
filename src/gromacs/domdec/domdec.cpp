@@ -300,7 +300,7 @@ void dd_store_state(gmx_domdec_t *dd, t_state *state)
 
     if (state->ddp_count != dd->ddp_count)
     {
-        gmx_incons("The state does not the domain decomposition state");
+        gmx_incons("The MD state does not match the domain decomposition state");
     }
 
     state->cg_gl.resize(dd->ncg_home);
@@ -4785,7 +4785,7 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     }
 }
 
-void dd_cycles_add(gmx_domdec_t *dd, float cycles, int ddCycl)
+void dd_cycles_add(const gmx_domdec_t *dd, float cycles, int ddCycl)
 {
     /* Note that the cycles value can be incorrect, either 0 or some
      * extremely large value, when our thread migrated to another core
@@ -4802,6 +4802,86 @@ void dd_cycles_add(gmx_domdec_t *dd, float cycles, int ddCycl)
     if (cycles > dd->comm->cycl_max[ddCycl])
     {
         dd->comm->cycl_max[ddCycl] = cycles;
+    }
+}
+
+void dd_openBalanceRegion(const gmx_domdec_t      *dd,
+                          DdBalanceRegionUsingGpu  usingGpu,
+                          bool gmx_unused          allowReopen)
+{
+    GMX_ASSERT(dd != NULL, "Balance regions should only be used with DD");
+    BalanceRegion &reg = dd->comm->balanceRegion;
+    GMX_ASSERT(allowReopen || !reg.isOpen, "Should not open an already opened region");
+    if (dd->comm->bRecordLoad)
+    {
+        reg.cyclesOpen  = gmx_cycles_read();
+        reg.usingGpu    = usingGpu;
+        reg.isOpen      = true;
+        reg.isOpenOnCpu = true;
+    }
+}
+
+void dd_reopenBalanceRegion(const gmx_domdec_t *dd)
+{
+    GMX_ASSERT(dd != NULL, "Balance regions should only be used with DD");
+    BalanceRegion &reg = dd->comm->balanceRegion;
+    if (reg.isOpen)
+    {
+        reg.cyclesOpen = gmx_cycles_read();
+    }
+}
+
+void dd_closeBalanceRegionCpu(const gmx_domdec_t *dd)
+{
+    GMX_ASSERT(dd != NULL, "Balance regions should only be used with DD");
+    BalanceRegion &reg = dd->comm->balanceRegion;
+    if (reg.isOpen)
+    {
+        gmx_cycles_t cycles   = gmx_cycles_read();
+
+        if (reg.isOpenOnCpu)
+        {
+            reg.isOpenOnCpu   = false;
+            float cyclesCpu   = cycles - reg.cyclesOpen;
+            dd_cycles_add(dd, cyclesCpu, ddCyclF);
+        }
+
+        if (dd->comm->balanceRegion.usingGpu == DdBalanceRegionUsingGpu::yes)
+        {
+            /* Store the cycles for estimating the GPU/CPU overlap time */
+            reg.cyclesLastCpu = cycles;
+        }
+        else
+        {
+            /* We can close the region */
+            reg.isOpen        = false;
+        }
+    }
+}
+
+void dd_closeBalanceRegionGpu(const gmx_domdec_t          *dd,
+                              float                        waitCyclesToAdd,
+                              DdBalanceRegionWaitedForGpu  waitedForGpu)
+{
+    GMX_ASSERT(dd != NULL, "Balance regions should only be used with DD");
+    BalanceRegion &reg = dd->comm->balanceRegion;
+    GMX_ASSERT(reg.usingGpu == DdBalanceRegionUsingGpu::yes, "The close GPU region function should only be called when we registered the use of a GPU");
+    if (reg.isOpen)
+    {
+        GMX_ASSERT(!reg.isOpenOnCpu, "The GPU region should be closed after closing the CPU region");
+        float waitCyclesEstimate = gmx_cycles_read() - reg.cyclesLastCpu;
+        if (waitedForGpu == DdBalanceRegionWaitedForGpu::no)
+        {
+            /* The actual time could be anywhere between 0 and
+             * waitCyclesEstimate. Using half is the best we can do.
+             */
+            waitCyclesEstimate *= 0.5f;
+        }
+        waitCyclesToAdd += waitCyclesEstimate;
+        /* Register the GPU wait time, need to rebalance with GPU sharing */
+        dd_cycles_add(dd, waitCyclesToAdd, ddCyclWaitGPU);
+        /* Close the region */
+        reg.isOpen = false;
     }
 }
 
