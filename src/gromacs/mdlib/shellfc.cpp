@@ -986,7 +986,9 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                          t_forcerec *fr,
                          gmx_bool bBornRadii,
                          double t, rvec mu_tot,
-                         gmx_vsite_t *vsite)
+                         gmx_vsite_t *vsite,
+                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
     int        nshell;
     t_shell   *shell;
@@ -1116,7 +1118,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              force[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
              fr, vsite, mu_tot, t, nullptr, bBornRadii,
-             (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
+             (bDoNS ? GMX_FORCE_NS : 0) | force_flags,
+             ddOpenBalanceRegion, ddCloseBalanceRegion);
 
     sf_dir = 0;
     if (nflexcon)
@@ -1218,7 +1221,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                  force[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
                  fr, vsite, mu_tot, t, nullptr, bBornRadii,
-                 force_flags);
+                 force_flags,
+                 ddOpenBalanceRegion, ddCloseBalanceRegion);
 
         if (gmx_debug_at)
         {
