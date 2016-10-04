@@ -1161,22 +1161,13 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (inputrec->bRot)
     {
-        /* Enforced rotation has its own cycle counter that starts after the collective
-         * coordinates have been communicated. It is added to ddCyclF to allow
-         * for proper load-balancing */
         wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, inputrec, box, x, t, step, wcycle, bNS);
+        do_rotation(cr, inputrec, box, x, t, step, bNS, ddReOpenBalanceRegion);
         wallcycle_stop(wcycle, ewcROT);
-        if (ddReOpenBalanceRegion == DdReOpenBalanceRegionAfterCommunication::yes)
-        {
-            dd_reOpenBalanceRegion(cr->dd);
-        }
     }
 
     /* Start the force cycle counter.
-     * This counter is stopped after do_force_lowlevel.
-     * No parallel communication should occur while this counter is running,
-     * since that will interfere with the dynamic load balancing.
+     * Note that a different counter is used for dynamic load balancing.
      */
     wallcycle_start(wcycle, ewcFORCE);
     if (bDoForces)
@@ -1722,18 +1713,13 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (inputrec->bRot)
     {
-        /* Enforced rotation has its own cycle counter that starts after the collective
-         * coordinates have been communicated. It is added to ddCyclF to allow
-         * for proper load-balancing */
         wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, inputrec, box, x, t, step, wcycle, bNS);
+        do_rotation(cr, inputrec, box, x, t, step, bNS, ddReOpenBalanceRegion);
         wallcycle_stop(wcycle, ewcROT);
     }
 
     /* Start the force cycle counter.
-     * This counter is stopped after do_force_lowlevel.
-     * No parallel communication should occur while this counter is running,
-     * since that will interfere with the dynamic load balancing.
+     * Note that a different counter is used for dynamic load balancing.
      */
     wallcycle_start(wcycle, ewcFORCE);
 

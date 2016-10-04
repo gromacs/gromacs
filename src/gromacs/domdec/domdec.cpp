@@ -275,57 +275,6 @@ static void vec_rvec_check_alloc(vec_rvec_t *v, int n)
     }
 }
 
-void dd_reOpenBalanceRegion(const gmx_domdec_t *dd)
-{
-    if (dd->comm->bRecordLoad)
-    {
-        dd->comm->balanceRegionCyclesStart = gmx_cycles_read();
-        dd->comm->balanceRegionStarted     = true;
-    }
-}
-
-void dd_closeBalanceRegionCpu(const gmx_domdec_t      *dd,
-                              float                    cyclesToSubtract,
-                              DdBalanceRegionUsingGpu  usingGpu)
-{
-    if (dd->comm->bRecordLoad)
-    {
-        GMX_ASSERT(dd->comm->balanceRegionStarted, "Attempt to close balancing region without opening it");
-        dd->comm->balanceRegionCyclesStopCpu = gmx_cycles_read();
-        if (usingGpu == DdBalanceRegionUsingGpu::no)
-        {
-            dd_cycles_add(dd, dd->comm->balanceRegionCyclesStopCpu - dd->comm->balanceRegionCyclesStart - cyclesToSubtract, ddCyclF);
-
-            dd->comm->balanceRegionStarted   = false;
-        }
-    }
-}
-
-void dd_closeBalanceRegionGpu(const gmx_domdec_t          *dd,
-                              float                        waitCyclesToAdd,
-                              DdBalanceRegionWaitedForGpu  waitedForGpu)
-{
-    if (dd->comm->bRecordLoad)
-    {
-        GMX_ASSERT(dd->comm->balanceRegionStarted, "Attempt to close balancing region without opening it");
-        float waitCyclesEstimate = gmx_cycles_read() - dd->comm->balanceRegionCyclesStopCpu;
-        if (waitedForGpu == DdBalanceRegionWaitedForGpu::no)
-        {
-            /* The actual time could be anywhere between 0 and
-             * waitCyclesEstimate. Using half is the best we can do.
-             */
-            waitCyclesEstimate *= 0.5;
-        }
-        /* Register the total force time we measured/esimated */
-#warning "Need to take care of subtracting PME cycles"
-        dd_cycles_add(dd, dd->comm->balanceRegionCyclesStopCpu - dd->comm->balanceRegionCyclesStart + waitCyclesEstimate, ddCyclF);
-        /* Register the GPU wait time, need to rebalance with GPU sharing */
-        dd_cycles_add(dd, waitCyclesToAdd + waitCyclesEstimate, ddCyclWaitGPU);
-
-        dd->comm->balanceRegionStarted     = false;
-    }
-}
-
 void dd_store_state(gmx_domdec_t *dd, t_state *state)
 {
     int i;
@@ -4941,6 +4890,64 @@ void dd_cycles_add(const gmx_domdec_t *dd, float cycles, int ddCycl)
     if (cycles > dd->comm->cycl_max[ddCycl])
     {
         dd->comm->cycl_max[ddCycl] = cycles;
+    }
+}
+
+/*! \brief Closes the load balancing region and registers the measured cycles */
+static void closeBalancingRegion(const gmx_domdec_t *dd, float cyclesGpuWait)
+{
+    BalanceRegion *reg       = &dd->comm->balanceRegion;
+    float          cyclesCpu = reg->cyclesStopCpu - reg->cyclesStart;
+    dd_cycles_add(dd, cyclesCpu + cyclesGpuWait - reg->cyclesSubtract, ddCyclF);
+
+    reg->started = false;
+}
+
+void dd_reOpenBalanceRegion(const gmx_domdec_t *dd)
+{
+    if (dd->comm->bRecordLoad)
+    {
+        dd->comm->balanceRegion.cyclesStart = gmx_cycles_read();
+        dd->comm->balanceRegion.started     = true;
+    }
+}
+
+void dd_closeBalanceRegionCpu(const gmx_domdec_t      *dd,
+                              float                    cyclesToSubtract,
+                              DdBalanceRegionUsingGpu  usingGpu)
+{
+    if (dd->comm->bRecordLoad)
+    {
+        GMX_ASSERT(dd->comm->balanceRegion.started, "Attempt to close balancing region without opening it");
+        dd->comm->balanceRegion.cyclesStopCpu  = gmx_cycles_read();
+        dd->comm->balanceRegion.cyclesSubtract = cyclesToSubtract;
+        if (usingGpu == DdBalanceRegionUsingGpu::no)
+        {
+            closeBalancingRegion(dd, 0);
+        }
+    }
+}
+
+void dd_closeBalanceRegionGpu(const gmx_domdec_t          *dd,
+                              float                        waitCyclesToAdd,
+                              DdBalanceRegionWaitedForGpu  waitedForGpu)
+{
+    if (dd->comm->bRecordLoad)
+    {
+        GMX_ASSERT(dd->comm->balanceRegion.started, "Attempt to close balancing region without opening it");
+        float waitCyclesEstimate = gmx_cycles_read() - dd->comm->balanceRegion.cyclesStopCpu;
+        if (waitedForGpu == DdBalanceRegionWaitedForGpu::no)
+        {
+            /* The actual time could be anywhere between 0 and
+             * waitCyclesEstimate. Using half is the best we can do.
+             */
+            waitCyclesEstimate *= 0.5;
+        }
+        waitCyclesToAdd += waitCyclesEstimate;
+        /* Register the total force time we measured/esimated */
+        closeBalancingRegion(dd, waitCyclesToAdd);
+        /* Register the GPU wait time, need to rebalance with GPU sharing */
+        dd_cycles_add(dd, waitCyclesToAdd, ddCyclWaitGPU);
     }
 }
 

@@ -667,7 +667,9 @@ static bool do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                       NULL, bMolPBC, s2->box,
                       s2->lambda[efptBONDED], &dvdl_constr,
                       NULL, NULL, nrnb, econqCoord,
-                      DdReOpenBalanceRegionAfterCommunication::yes);
+                      DOMAINDECOMP(cr) ?
+                      DdReOpenBalanceRegionAfterCommunication::yes :
+                      DdReOpenBalanceRegionAfterCommunication::no);
         wallcycle_stop(wcycle, ewcCONSTR);
 
         // We should move this check to the different minimizers
@@ -763,8 +765,12 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0),
-             DdReOpenBalanceRegionAfterCommunication::yes,
-             DdCloseBalanceRegionAfterForceComputation::yes);
+             DOMAINDECOMP(cr) ?
+             DdReOpenBalanceRegionAfterCommunication::yes :
+             DdReOpenBalanceRegionAfterCommunication::no,
+             DOMAINDECOMP(cr) ?
+             DdCloseBalanceRegionAfterForceComputation::yes :
+             DdCloseBalanceRegionAfterForceComputation::no);
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);
@@ -807,7 +813,9 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                   fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdl_constr,
                   NULL, &shake_vir, nrnb, econqForceDispl,
-                  DdReOpenBalanceRegionAfterCommunication::yes);
+                  DOMAINDECOMP(cr) ?
+                  DdReOpenBalanceRegionAfterCommunication::yes :
+                  DdReOpenBalanceRegionAfterCommunication::no);
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
         wallcycle_stop(wcycle, ewcCONSTR);

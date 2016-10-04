@@ -63,8 +63,6 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/timing/cyclecounter.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
@@ -3899,8 +3897,8 @@ extern void do_rotation(
         rvec            x[],
         real            t,
         gmx_int64_t     step,
-        gmx_wallcycle_t wcycle,
-        gmx_bool        bNS)
+        gmx_bool        bNS,
+        DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion)
 {
     int             g, i, ii;
     t_rot          *rot;
@@ -3912,11 +3910,6 @@ extern void do_rotation(
     rvec            transvec;
     t_gmx_potfit   *fit = NULL; /* For fit type 'potential' determine the fit
                                    angle via the potential minimum            */
-
-    /* Enforced rotation cycle counting: */
-    gmx_cycles_t cycles_comp;   /* Cycles for the enf. rotation computation
-                                   only, does not count communication. This
-                                   counter is used for load-balancing         */
 
 #ifdef TAKETIME
     double t0;
@@ -3990,8 +3983,10 @@ extern void do_rotation(
 
     /**************************************************************************/
     /* Done communicating, we can start to count cycles for the load balancing now ... */
-    cycles_comp = gmx_cycles_read();
-
+    if (ddReOpenBalanceRegion == DdReOpenBalanceRegionAfterCommunication::yes)
+    {
+        dd_reOpenBalanceRegion(cr->dd);
+    }
 
 #ifdef TAKETIME
     t0 = MPI_Wtime();
@@ -4072,13 +4067,4 @@ extern void do_rotation(
         fprintf(stderr, "%s calculation (step %d) took %g seconds.\n", RotStr, step, MPI_Wtime()-t0);
     }
 #endif
-
-    /* Stop the enforced rotation cycle counter and add the computation-only
-     * cycles to the force cycles for load balancing */
-    cycles_comp  = gmx_cycles_read() - cycles_comp;
-
-    if (DOMAINDECOMP(cr) && wcycle)
-    {
-        dd_cycles_add(cr->dd, cycles_comp, ddCyclF);
-    }
 }

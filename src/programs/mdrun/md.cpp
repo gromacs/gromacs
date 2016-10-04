@@ -755,8 +755,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         signals[eglsRESETCOUNTERS] = SimulationSignal(resetCountersIsLocal);
     }
 
-    DdReOpenBalanceRegionAfterCommunication   ddReOpenBalanceRegion = DdReOpenBalanceRegionAfterCommunication::yes;
-    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = DdCloseBalanceRegionAfterForceComputation::yes;
+    DdReOpenBalanceRegionAfterCommunication   ddReOpenBalanceRegion = (DOMAINDECOMP(cr) ? DdReOpenBalanceRegionAfterCommunication::yes : DdReOpenBalanceRegionAfterCommunication::no);
+    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
 
     step     = ir->init_step;
     step_rel = 0;
