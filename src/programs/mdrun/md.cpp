@@ -755,6 +755,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         signals[eglsRESETCOUNTERS] = SimulationSignal(resetCountersIsLocal);
     }
 
+    DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion = (DOMAINDECOMP(cr) ? DdOpenBalanceRegionBeforeForceComputation::yes : DdOpenBalanceRegionBeforeForceComputation::no);
+    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
+
     step     = ir->init_step;
     step_rel = 0;
 
@@ -1067,7 +1070,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                 state, &f, force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, bBornRadii, t, mu_tot,
-                                vsite, mdoutf_get_fp_field(outf));
+                                vsite, mdoutf_get_fp_field(outf),
+                                ddOpenBalanceRegion, ddCloseBalanceRegion);
         }
         else
         {
@@ -1081,7 +1085,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                      &f, force_vir, mdatoms, enerd, fcd,
                      &state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
-                     (bNS ? GMX_FORCE_NS : 0) | force_flags);
+                     (bNS ? GMX_FORCE_NS : 0) | force_flags,
+                     ddOpenBalanceRegion, ddCloseBalanceRegion);
         }
 
         if (EI_VV(ir->eI) && !startingFromCheckpoint && !bRerunMD)

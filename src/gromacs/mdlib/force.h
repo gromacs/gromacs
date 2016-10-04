@@ -37,6 +37,7 @@
 #ifndef GMX_MDLIB_FORCE_H
 #define GMX_MDLIB_FORCE_H
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/fcdata.h"
@@ -172,7 +173,9 @@ void do_force(FILE *log, t_commrec *cr,
               gmx_vsite_t *vsite, rvec mu_tot,
               double t, FILE *field, struct gmx_edsam *ed,
               gmx_bool bBornRadii,
-              int flags);
+              int flags,
+              DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+              DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
 
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
