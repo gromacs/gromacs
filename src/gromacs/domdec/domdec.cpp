@@ -300,7 +300,7 @@ void dd_store_state(gmx_domdec_t *dd, t_state *state)
 
     if (state->ddp_count != dd->ddp_count)
     {
-        gmx_incons("The state does not the domain decomposition state");
+        gmx_incons("The MD state does not match the domain decomposition state");
     }
 
     state->cg_gl.resize(dd->ncg_home);
@@ -4787,7 +4787,7 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
     }
 }
 
-void dd_cycles_add(gmx_domdec_t *dd, float cycles, int ddCycl)
+void dd_cycles_add(const gmx_domdec_t *dd, float cycles, int ddCycl)
 {
     /* Note that the cycles value can be incorrect, either 0 or some
      * extremely large value, when our thread migrated to another core

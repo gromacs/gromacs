@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
 
 /*! \cond INTERNAL */
@@ -195,6 +196,16 @@ typedef struct
     int              nat;
     int              nsend_zone;
 } dd_comm_setup_work_t;
+
+/*! \brief Struct for timing the region for dynamic load balancing */
+struct BalanceRegion
+{
+    bool                    isOpen;         /**< Are we in an open balancing region? */
+    bool                    isOpenOnCpu;    /**< Is the, currently open, region still open on the CPU side? */
+    bool                    isOpenOnGpu;    /**< Is the, currently open, region open on the GPU side? */
+    gmx_cycles_t            cyclesOpenCpu;  /**< Cycle count when opening the CPU region */
+    gmx_cycles_t            cyclesLastCpu;  /**< Cycle count at the last call to \p dd_closeBalanceRegionCpu() */
+};
 
 /*! \brief Struct for domain decomposition communication
  *
@@ -346,9 +357,11 @@ struct gmx_domdec_comm_t
 #endif
 
     /** Maximum DLB scaling per load balancing step in percent */
-    int dlb_scale_lim;
+    int           dlb_scale_lim;
 
-    /* Cycle counters */
+    BalanceRegion balanceRegion;       /**< Struct for timing the force load balancing region */
+
+    /* Cycle counters over nstlist steps */
     float  cycl[ddCyclNr];             /**< Total cycles counted */
     int    cycl_n[ddCyclNr];           /**< The number of cycle recordings */
     float  cycl_max[ddCyclNr];         /**< The maximum cycle count */
