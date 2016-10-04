@@ -729,7 +729,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          gmx_vsite_t *vsite, rvec mu_tot,
                          double t, gmx_edsam_t ed,
                          gmx_bool bBornRadii,
-                         int flags)
+                         int flags,
+                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
     int                 cg1, i, j;
     double              mu[2*DIM];
@@ -737,14 +739,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     gmx_bool            bDoForces, bUseGPU, bUseOrEmulGPU;
     gmx_bool            bDiffKernels = FALSE;
     rvec                vzero, box_diag;
-    float               cycles_pme, cycles_force, cycles_wait_gpu;
-    /* TODO To avoid loss of precision, float can't be used for a
-     * cycle count. Build an object that can do this right and perhaps
-     * also be used by gmx_wallcycle_t */
-    gmx_cycles_t        cycleCountBeforeLocalWorkCompletes = 0;
+    float               cycles_pme, cycles_wait_gpu;
     nonbonded_verlet_t *nbv;
 
-    cycles_force    = 0;
     cycles_wait_gpu = 0;
     nbv             = fr->nbv;
 
@@ -1004,6 +1001,15 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                         eintNonlocal);
             }
             wallcycle_stop(wcycle, ewcNS);
+
+            /* At a search step we need to start the first balancing region
+             * somewhere inside the step (and not during the previous step).
+             * We do it after search, but it could also be done before search.
+             */
+            if (ddOpenBalanceRegion == DdOpenBalanceRegionBeforeForceComputation::yes)
+            {
+                dd_openBalanceRegion(cr->dd);
+            }
         }
         else
         {
@@ -1016,7 +1022,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs, eatNonlocal, FALSE, x,
                                             nbv->grp[eintNonlocal].nbat);
             wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
-            cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
 
         if (bUseGPU && !bDiffKernels)
@@ -1025,7 +1031,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             /* launch non-local nonbonded F on GPU */
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
                          nrnb, wcycle);
-            cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+            wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
     }
 
@@ -1040,7 +1046,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
         nbnxn_gpu_launch_cpyback(nbv->gpu_nbv, nbv->grp[eintLocal].nbat,
                                  flags, eatLocal);
-        cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
     if (bStateChanged && inputrecNeedMutot(inputrec))
@@ -1048,6 +1054,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (PAR(cr))
         {
             gmx_sumd(2*DIM, mu, cr);
+            dd_reopenBalanceRegion(cr->dd);
         }
 
         for (i = 0; i < 2; i++)
@@ -1084,11 +1091,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (inputrec->bRot)
     {
-        /* Enforced rotation has its own cycle counter that starts after the collective
-         * coordinates have been communicated. It is added to ddCyclF to allow
-         * for proper load-balancing */
         wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, inputrec, box, x, t, step, wcycle, bNS);
+        do_rotation(cr, inputrec, box, x, t, step, bNS);
         wallcycle_stop(wcycle, ewcROT);
     }
 
@@ -1096,9 +1100,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     rvec *f = as_rvec_array(force->data());
 
     /* Start the force cycle counter.
-     * This counter is stopped after do_force_lowlevel.
-     * No parallel communication should occur while this counter is running,
-     * since that will interfere with the dynamic load balancing.
+     * Note that a different counter is used for dynamic load balancing.
      */
     wallcycle_start(wcycle, ewcFORCE);
     if (bDoForces)
@@ -1203,12 +1205,12 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
          * This can be split into a local and a non-local part when overlapping
          * communication with calculation with domain decomposition.
          */
-        cycles_force += wallcycle_stop(wcycle, ewcFORCE);
+        wallcycle_stop(wcycle, ewcFORCE);
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
         nbnxn_atomdata_add_nbat_f_to_f(nbv->nbs, eatAll, nbv->grp[aloc].nbat, f);
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-        cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+        wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
         /* if there are multiple fshift output buffers reduce them */
@@ -1236,7 +1238,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
 
-    cycles_force += wallcycle_stop(wcycle, ewcFORCE);
+    wallcycle_stop(wcycle, ewcFORCE);
 
     if (ed)
     {
@@ -1250,23 +1252,19 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             if (bUseGPU)
             {
-                float cycles_tmp;
-
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
                 nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
                                        flags, eatNonlocal,
                                        enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                        fr->fshift);
-                cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
-                cycles_wait_gpu += cycles_tmp;
-                cycles_force    += cycles_tmp;
+                cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
             }
             else
             {
                 wallcycle_start_nocount(wcycle, ewcFORCE);
                 do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFYes,
                              nrnb, wcycle);
-                cycles_force += wallcycle_stop(wcycle, ewcFORCE);
+                wallcycle_stop(wcycle, ewcFORCE);
             }
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
             wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
@@ -1277,26 +1275,27 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                                nbv->grp[eintNonlocal].nbat, f);
             }
             wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
-            cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
+            wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
     }
 
-    if (bDoForces && DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(cr))
     {
-        if (bUseGPU)
+        /* We are done with the CPU compute.
+         * We will now communicate the non-local forces.
+         * If we use a GPU this will overlap with GPU work, so in that case
+         * we do not close the DD force balancing region here.
+         */
+        if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
         {
-            /* We are done with the CPU compute, but the GPU local non-bonded
-             * kernel can still be running while we communicate the forces.
-             * We start a counter here, so we can, hopefully, time the rest
-             * of the GPU kernel execution and data transfer.
-             */
-            cycleCountBeforeLocalWorkCompletes = gmx_cycles_read();
+            dd_closeBalanceRegionCpu(cr->dd, cycles_pme, bUseGPU ? DdBalanceRegionUsingGpu::yes : DdBalanceRegionUsingGpu::no);
         }
-
-        /* Communicate the forces */
-        wallcycle_start(wcycle, ewcMOVEF);
-        dd_move_f(cr->dd, f, fr->fshift);
-        wallcycle_stop(wcycle, ewcMOVEF);
+        if (bDoForces)
+        {
+            wallcycle_start(wcycle, ewcMOVEF);
+            dd_move_f(cr->dd, f, fr->fshift);
+            wallcycle_stop(wcycle, ewcMOVEF);
+        }
     }
 
     if (bUseOrEmulGPU)
@@ -1304,7 +1303,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* wait for local forces (or calculate in emulation mode) */
         if (bUseGPU)
         {
-            float       cycles_tmp, cycles_wait_est;
             /* Measured overhead on CUDA and OpenCL with(out) GPU sharing
              * is between 0.5 and 1.5 Mcycles. So 2 MCycles is an overestimate,
              * but even with a step of 0.1 ms the difference is less than 1%
@@ -1317,35 +1315,23 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                    flags, eatLocal,
                                    enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                    fr->fshift);
-            cycles_tmp      = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+            float cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
-            if (bDoForces && DOMAINDECOMP(cr))
+            if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
             {
-                cycles_wait_est = gmx_cycles_read() - cycleCountBeforeLocalWorkCompletes;
-
-                if (cycles_tmp < gpuWaitApiOverheadMargin)
+                DdBalanceRegionWaitedForGpu waitedForGpu = DdBalanceRegionWaitedForGpu::yes;
+                if (bDoForces && cycles_tmp <= gpuWaitApiOverheadMargin)
                 {
                     /* We measured few cycles, it could be that the kernel
                      * and transfer finished earlier and there was no actual
                      * wait time, only API call overhead.
                      * Then the actual time could be anywhere between 0 and
-                     * cycles_wait_est. As a compromise, we use half the time.
+                     * cycles_wait_est. We will use half of cycles_wait_est.
                      */
-                    cycles_wait_est *= 0.5f;
+                    waitedForGpu = DdBalanceRegionWaitedForGpu::no;
                 }
+                dd_closeBalanceRegionGpu(cr->dd, cycles_wait_gpu, waitedForGpu);
             }
-            else
-            {
-                /* No force communication so we actually timed the wait */
-                cycles_wait_est = cycles_tmp;
-            }
-            /* Even though this is after dd_move_f, the actual task we are
-             * waiting for runs asynchronously with dd_move_f and we usually
-             * have nothing to balance it with, so we can and should add
-             * the time to the force time for load balancing.
-             */
-            cycles_force    += cycles_wait_est;
-            cycles_wait_gpu += cycles_wait_est;
 
             /* now clear the GPU outputs while we finish the step on the CPU */
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
@@ -1371,14 +1357,6 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     if (DOMAINDECOMP(cr))
     {
         dd_force_flop_stop(cr->dd, nrnb);
-        if (wcycle)
-        {
-            dd_cycles_add(cr->dd, cycles_force-cycles_pme, ddCyclF);
-            if (bUseGPU)
-            {
-                dd_cycles_add(cr->dd, cycles_wait_gpu, ddCyclWaitGPU);
-            }
-        }
     }
 
     if (bDoForces)
@@ -1470,13 +1448,15 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                         t_forcerec *fr, gmx_vsite_t *vsite, rvec mu_tot,
                         double t, gmx_edsam_t ed,
                         gmx_bool bBornRadii,
-                        int flags)
+                        int flags,
+                        DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+                        DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
     int        cg0, cg1, i, j;
     double     mu[2*DIM];
     gmx_bool   bStateChanged, bNS, bFillGrid, bCalcCGCM;
     gmx_bool   bDoForces;
-    float      cycles_pme, cycles_force;
+    float      cycles_pme;
 
     const int  start  = 0;
     const int  homenr = mdatoms->homenr;
@@ -1588,6 +1568,11 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcMOVEX);
         dd_move_x(cr->dd, box, x);
         wallcycle_stop(wcycle, ewcMOVEX);
+        /* No GPU support, no move_x overlap, so open the balance region here */
+        if (ddOpenBalanceRegion == DdOpenBalanceRegionBeforeForceComputation::yes)
+        {
+            dd_openBalanceRegion(cr->dd);
+        }
     }
 
     if (inputrecNeedMutot(inputrec))
@@ -1597,6 +1582,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             if (PAR(cr))
             {
                 gmx_sumd(2*DIM, mu, cr);
+                dd_reopenBalanceRegion(cr->dd);
             }
             for (i = 0; i < 2; i++)
             {
@@ -1656,11 +1642,8 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (inputrec->bRot)
     {
-        /* Enforced rotation has its own cycle counter that starts after the collective
-         * coordinates have been communicated. It is added to ddCyclF to allow
-         * for proper load-balancing */
         wallcycle_start(wcycle, ewcROT);
-        do_rotation(cr, inputrec, box, x, t, step, wcycle, bNS);
+        do_rotation(cr, inputrec, box, x, t, step, bNS);
         wallcycle_stop(wcycle, ewcROT);
     }
 
@@ -1668,9 +1651,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     rvec *f = as_rvec_array(force->data());
 
     /* Start the force cycle counter.
-     * This counter is stopped after do_force_lowlevel.
-     * No parallel communication should occur while this counter is running,
-     * since that will interfere with the dynamic load balancing.
+     * Note that a different counter is used for dynamic load balancing.
      */
     wallcycle_start(wcycle, ewcFORCE);
 
@@ -1723,20 +1704,21 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                       flags,
                       &cycles_pme);
 
-    cycles_force = wallcycle_stop(wcycle, ewcFORCE);
-
-    if (ed)
-    {
-        do_flood(cr, inputrec, x, f, ed, box, step, bNS);
-    }
+    wallcycle_stop(wcycle, ewcFORCE);
 
     if (DOMAINDECOMP(cr))
     {
         dd_force_flop_stop(cr->dd, nrnb);
-        if (wcycle)
+
+        if (ddCloseBalanceRegion == DdCloseBalanceRegionAfterForceComputation::yes)
         {
-            dd_cycles_add(cr->dd, cycles_force-cycles_pme, ddCyclF);
+            dd_closeBalanceRegionCpu(cr->dd, cycles_pme, DdBalanceRegionUsingGpu::no);
         }
+    }
+
+    if (ed)
+    {
+        do_flood(cr, inputrec, x, f, ed, box, step, bNS);
     }
 
     if (bDoForces)
@@ -1847,7 +1829,9 @@ void do_force(FILE *fplog, t_commrec *cr,
               gmx_vsite_t *vsite, rvec mu_tot,
               double t, gmx_edsam_t ed,
               gmx_bool bBornRadii,
-              int flags)
+              int flags,
+              DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+              DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion)
 {
     /* modify force flag if not doing nonbonded */
     if (!fr->bNonbonded)
@@ -1876,7 +1860,9 @@ void do_force(FILE *fplog, t_commrec *cr,
                                 vsite, mu_tot,
                                 t, ed,
                                 bBornRadii,
-                                flags);
+                                flags,
+                                ddOpenBalanceRegion,
+                                ddCloseBalanceRegion);
             break;
         case ecutsGROUP:
             do_force_cutsGROUP(fplog, cr, inputrec,
@@ -1891,10 +1877,22 @@ void do_force(FILE *fplog, t_commrec *cr,
                                fr, vsite, mu_tot,
                                t, ed,
                                bBornRadii,
-                               flags);
+                               flags,
+                               ddOpenBalanceRegion,
+                               ddCloseBalanceRegion);
             break;
         default:
             gmx_incons("Invalid cut-off scheme passed!");
+    }
+
+    /* In case have no constraints and are using GPUs, the next balancing
+     * region starts here.
+     * Some "special" work at the end of do_force_cuts? is not thus not
+     * included in the balancing, which is ok as most included communication.
+     */
+    if (ddOpenBalanceRegion == DdOpenBalanceRegionBeforeForceComputation::yes)
+    {
+        dd_openBalanceRegion(cr->dd);
     }
 }
 

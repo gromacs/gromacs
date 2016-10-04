@@ -94,6 +94,8 @@ void dd_move_x_constraints(gmx_domdec_t *dd, matrix box,
     if (dd->constraint_comm)
     {
         dd_move_x_specat(dd, dd->constraint_comm, box, x0, x1, bX1IsCoord);
+
+        dd_reopenBalanceRegion(dd);
     }
 }
 
