@@ -673,7 +673,9 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                      nullptr, fr, nullptr, mu_tot, t, nullptr, FALSE,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
                      (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS : 0) |
-                     (bStateChanged ? GMX_FORCE_STATECHANGED : 0));
+                     (bStateChanged ? GMX_FORCE_STATECHANGED : 0),
+                     DdOpenBalanceRegionBeforeForceComputation::no,
+                     DdCloseBalanceRegionAfterForceComputation::no);
             cr->nnodes    = nnodes;
             bStateChanged = FALSE;
             bNS           = FALSE;

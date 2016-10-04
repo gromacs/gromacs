@@ -767,7 +767,13 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              ems->s.lambda, graph, fr, vsite, mu_tot, t, nullptr, TRUE,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
-             (bNS ? GMX_FORCE_NS : 0));
+             (bNS ? GMX_FORCE_NS : 0),
+             DOMAINDECOMP(cr) ?
+             DdOpenBalanceRegionBeforeForceComputation::yes :
+             DdOpenBalanceRegionBeforeForceComputation::no,
+             DOMAINDECOMP(cr) ?
+             DdCloseBalanceRegionAfterForceComputation::yes :
+             DdCloseBalanceRegionAfterForceComputation::no);
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);
@@ -2876,7 +2882,9 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                                &state_work.s, &state_work.f, vir, mdatoms,
                                                nrnb, wcycle, graph, &top_global->groups,
                                                shellfc, fr, bBornRadii, t, mu_tot,
-                                               vsite);
+                                               vsite,
+                                               DdOpenBalanceRegionBeforeForceComputation::no,
+                                               DdCloseBalanceRegionAfterForceComputation::no);
                     bNS = false;
                     step++;
                 }
