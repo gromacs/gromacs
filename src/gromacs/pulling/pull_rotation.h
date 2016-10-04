@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,10 @@
 #ifndef GMX_PULLING_PULL_ROTATION_H
 #define GMX_PULLING_PULL_ROTATION_H
 
+#include <stdio.h>
+
 #include "gromacs/math/vectypes.h"
-#include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_domdec_t;
 struct gmx_mtop_t;
@@ -112,13 +114,11 @@ extern void dd_make_local_rotation_groups(struct gmx_domdec_t *dd, t_rot *rot);
  * \param x       The positions of all the local particles.
  * \param t       Time.
  * \param step    The time step.
- * \param wcycle  During the potential calculation the wallcycles are
- *                counted. Later they enter the dynamic load balancing.
  * \param bNS     After domain decomposition / neighbor searching several
  *                local arrays have to be updated (masses, shifts)
  */
 extern void do_rotation(struct t_commrec *cr, t_inputrec *ir, matrix box, rvec x[], real t,
-                        gmx_int64_t step, gmx_wallcycle_t wcycle, gmx_bool bNS);
+                        gmx_int64_t step, gmx_bool bNS);
 
 
 /*! \brief Add the enforced rotation forces to the official force array.

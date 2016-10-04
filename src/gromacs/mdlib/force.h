@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,7 @@
 #ifndef GMX_MDLIB_FORCE_H
 #define GMX_MDLIB_FORCE_H
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/fcdata.h"
@@ -172,7 +173,9 @@ void do_force(FILE *log, t_commrec *cr,
               gmx_vsite_t *vsite, rvec mu_tot,
               double t, struct gmx_edsam *ed,
               gmx_bool bBornRadii,
-              int flags);
+              int flags,
+              DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+              DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
 
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).

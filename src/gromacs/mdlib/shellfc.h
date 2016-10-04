@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,7 @@
 
 #include <cstdio>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
@@ -82,7 +83,9 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                          t_forcerec *fr,
                          gmx_bool bBornRadii,
                          double t, rvec mu_tot,
-                         gmx_vsite_t *vsite);
+                         gmx_vsite_t *vsite,
+                         DdOpenBalanceRegionBeforeForceComputation ddOpenBalanceRegion,
+                         DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion);
 
 /* Print some final output */
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, gmx_int64_t numSteps);
