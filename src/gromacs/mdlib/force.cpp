@@ -511,6 +511,16 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                         /* We don't calculate f, but we do want the potential */
                         pme_flags |= GMX_PME_CALC_POT;
                     }
+
+                    /* With domain decomposition we close the CPU side load
+                     * balancing region here, because PME does global
+                     * communication that acts as a global barrier.
+                     */
+                    if (DOMAINDECOMP(cr))
+                    {
+                        ddCloseBalanceRegionCpu(cr->dd);
+                    }
+
                     wallcycle_start(wcycle, ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,
                                         0, md->homenr - fr->n_tpi,
