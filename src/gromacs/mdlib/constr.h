@@ -38,6 +38,7 @@
 #ifndef GMX_MBLIB_CONSTR_H
 #define GMX_MBLIB_CONSTR_H
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/topology/idef.h"
@@ -172,7 +173,8 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
                    gmx_bool bMolPBC, matrix box,
                    real lambda, real *dvdlambda,
                    rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq);
+                   t_nrnb *nrnb, int econq,
+                   DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
@@ -291,7 +293,8 @@ constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
                 gmx_bool bCalcVir, tensor vir_r_m_dr,
                 int econ,
                 t_nrnb *nrnb,
-                int maxwarn, int *warncount);
+                int maxwarn, int *warncount,
+                DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion);
 /* Returns if the constraining succeeded */
 
 

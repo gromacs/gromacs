@@ -279,7 +279,8 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    gmx_bool bMolPBC, matrix box,
                    real lambda, real *dvdlambda,
                    rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq)
+                   t_nrnb *nrnb, int econq,
+                   DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion)
 {
     gmx_bool    bOK, bDump;
     int         start, homenr;
@@ -369,7 +370,8 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
      */
     if (cr->dd)
     {
-        dd_move_x_constraints(cr->dd, box, x, xprime, econq == econqCoord);
+        dd_move_x_constraints(cr->dd, box, x, xprime, econq == econqCoord,
+                              ddReOpenBalanceRegion);
 
         if (v != NULL)
         {
@@ -388,7 +390,8 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                               box, pbc_null, lambda, dvdlambda,
                               invdt, v, vir != NULL, vir_r_m_dr,
                               econq, nrnb,
-                              constr->maxwarn, &constr->warncount_lincs);
+                              constr->maxwarn, &constr->warncount_lincs,
+                              ddReOpenBalanceRegion);
         if (!bOK && constr->maxwarn >= 0)
         {
             if (fplog != NULL)

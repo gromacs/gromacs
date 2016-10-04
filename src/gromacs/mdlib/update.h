@@ -37,6 +37,7 @@
 #ifndef GMX_MDLIB_UPDATE_H
 #define GMX_MDLIB_UPDATE_H
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
@@ -113,24 +114,25 @@ void update_coords(FILE              *fplog,
 
 extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, const t_commrec *cr, t_mdatoms *md, t_state *state, gmx_update_t *upd, gmx_constr *constr);
 
-void update_constraints(FILE              *fplog,
-                        gmx_int64_t        step,
-                        real              *dvdlambda, /* FEP stuff */
-                        t_inputrec        *inputrec,  /* input record and box stuff	*/
-                        t_mdatoms         *md,
-                        t_state           *state,
-                        gmx_bool           bMolPBC,
-                        t_graph           *graph,
-                        PaddedRVecVector  *force, /* forces on home particles */
-                        t_idef            *idef,
-                        tensor             vir_part,
-                        t_commrec         *cr,
-                        t_nrnb            *nrnb,
-                        gmx_wallcycle_t    wcycle,
-                        gmx_update_t      *upd,
-                        gmx_constr        *constr,
-                        gmx_bool           bFirstHalf,
-                        gmx_bool           bCalcVir);
+void update_constraints(FILE                                   *fplog,
+                        gmx_int64_t                             step,
+                        real                                   *dvdlambda, /* FEP stuff */
+                        t_inputrec                             *inputrec,  /* input record and box stuff	*/
+                        t_mdatoms                              *md,
+                        t_state                                *state,
+                        gmx_bool                                bMolPBC,
+                        t_graph                                *graph,
+                        PaddedRVecVector                       *force, /* forces on home particles */
+                        t_idef                                 *idef,
+                        tensor                                  vir_part,
+                        t_commrec                              *cr,
+                        t_nrnb                                 *nrnb,
+                        gmx_wallcycle_t                         wcycle,
+                        gmx_update_t                           *upd,
+                        gmx_constr                             *constr,
+                        gmx_bool                                bFirstHalf,
+                        gmx_bool                                bCalcVir,
+                        DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 

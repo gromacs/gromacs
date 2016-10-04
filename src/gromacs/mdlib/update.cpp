@@ -1275,24 +1275,25 @@ void update_pcouple(FILE             *fplog,
     }
 }
 
-void update_constraints(FILE             *fplog,
-                        gmx_int64_t       step,
-                        real             *dvdlambda, /* the contribution to be added to the bonded interactions */
-                        t_inputrec       *inputrec,  /* input record and box stuff	*/
-                        t_mdatoms        *md,
-                        t_state          *state,
-                        gmx_bool          bMolPBC,
-                        t_graph          *graph,
-                        PaddedRVecVector *force,     /* forces on home particles */
-                        t_idef           *idef,
-                        tensor            vir_part,
-                        t_commrec        *cr,
-                        t_nrnb           *nrnb,
-                        gmx_wallcycle_t   wcycle,
-                        gmx_update_t     *upd,
-                        gmx_constr_t      constr,
-                        gmx_bool          bFirstHalf,
-                        gmx_bool          bCalcVir)
+void update_constraints(FILE                                   *fplog,
+                        gmx_int64_t                             step,
+                        real                                   *dvdlambda, /* the contribution to be added to the bonded interactions */
+                        t_inputrec                             *inputrec,  /* input record and box stuff	*/
+                        t_mdatoms                              *md,
+                        t_state                                *state,
+                        gmx_bool                                bMolPBC,
+                        t_graph                                *graph,
+                        PaddedRVecVector                       *force, /* forces on home particles */
+                        t_idef                                 *idef,
+                        tensor                                  vir_part,
+                        t_commrec                              *cr,
+                        t_nrnb                                 *nrnb,
+                        gmx_wallcycle_t                         wcycle,
+                        gmx_update_t                           *upd,
+                        gmx_constr_t                            constr,
+                        gmx_bool                                bFirstHalf,
+                        gmx_bool                                bCalcVir,
+                        DdReOpenBalanceRegionAfterCommunication ddReOpenBalanceRegion)
 {
     gmx_bool             bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     double               dt;
@@ -1346,7 +1347,8 @@ void update_constraints(FILE             *fplog,
                       as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc);
+                      NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc,
+                      ddReOpenBalanceRegion);
         }
         else
         {
@@ -1355,7 +1357,8 @@ void update_constraints(FILE             *fplog,
                       as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), bCalcVir ? &vir_con : NULL, nrnb, econqCoord);
+                      as_rvec_array(state->v.data()), bCalcVir ? &vir_con : NULL, nrnb, econqCoord,
+                      ddReOpenBalanceRegion);
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
@@ -1418,7 +1421,8 @@ void update_constraints(FILE             *fplog,
                       as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), NULL, nrnb, econqCoord);
+                      as_rvec_array(state->v.data()), NULL, nrnb, econqCoord,
+                      ddReOpenBalanceRegion);
 
             wallcycle_stop(wcycle, ewcCONSTR);
         }

@@ -755,6 +755,9 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         signals[eglsRESETCOUNTERS] = SimulationSignal(resetCountersIsLocal);
     }
 
+    DdReOpenBalanceRegionAfterCommunication   ddReOpenBalanceRegion = (DOMAINDECOMP(cr) ? DdReOpenBalanceRegionAfterCommunication::yes : DdReOpenBalanceRegionAfterCommunication::no);
+    DdCloseBalanceRegionAfterForceComputation ddCloseBalanceRegion  = (DOMAINDECOMP(cr) ? DdCloseBalanceRegionAfterForceComputation::yes : DdCloseBalanceRegionAfterForceComputation::no);
+
     step     = ir->init_step;
     step_rel = 0;
 
@@ -1067,7 +1070,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                 state, &f, force_vir, mdatoms,
                                 nrnb, wcycle, graph, groups,
                                 shellfc, fr, bBornRadii, t, mu_tot,
-                                vsite, mdoutf_get_fp_field(outf));
+                                vsite, mdoutf_get_fp_field(outf),
+                                ddReOpenBalanceRegion, ddCloseBalanceRegion);
         }
         else
         {
@@ -1081,7 +1085,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                      &f, force_vir, mdatoms, enerd, fcd,
                      &state->lambda, graph,
                      fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
-                     (bNS ? GMX_FORCE_NS : 0) | force_flags);
+                     (bNS ? GMX_FORCE_NS : 0) | force_flags,
+                     ddReOpenBalanceRegion, ddCloseBalanceRegion);
         }
 
         if (EI_VV(ir->eI) && !startingFromCheckpoint && !bRerunMD)
@@ -1118,7 +1123,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                    state, fr->bMolPBC, graph, &f,
                                    &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
-                                   TRUE, bCalcVir);
+                                   TRUE, bCalcVir,
+                                   ddReOpenBalanceRegion);
                 wallcycle_start(wcycle, ewcUPDATE);
             }
             else if (graph)
@@ -1351,7 +1357,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                    state, fr->bMolPBC, graph, &f,
                                    &top->idef, tmp_vir,
                                    cr, nrnb, wcycle, upd, constr,
-                                   TRUE, bCalcVir);
+                                   TRUE, bCalcVir,
+                                   ddReOpenBalanceRegion);
             }
         }
         /* Box is changed in update() when we do pressure coupling,
@@ -1414,7 +1421,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                fr->bMolPBC, graph, &f,
                                &top->idef, shake_vir,
                                cr, nrnb, wcycle, upd, constr,
-                               FALSE, bCalcVir);
+                               FALSE, bCalcVir,
+                               ddReOpenBalanceRegion);
 
             if (ir->eI == eiVVAK)
             {
@@ -1444,7 +1452,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                                    state, fr->bMolPBC, graph, &f,
                                    &top->idef, tmp_vir,
                                    cr, nrnb, wcycle, upd, NULL,
-                                   FALSE, bCalcVir);
+                                   FALSE, bCalcVir,
+                                   ddReOpenBalanceRegion);
             }
             if (EI_VV(ir->eI))
             {
