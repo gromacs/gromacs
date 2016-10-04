@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,9 +48,12 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
 
 /*! \cond INTERNAL */
+
+struct BalanceRegion;
 
 typedef struct
 {
@@ -345,10 +348,12 @@ struct gmx_domdec_comm_t
     MPI_Comm        mpi_comm_gpu_shared; /**< The MPI load communicator for ranks sharing a GPU */
 #endif
 
-    /** Maximum DLB scaling per load balancing step in percent */
-    int dlb_scale_lim;
+    /* Information for managing the dynamic load balancing */
+    int            dlb_scale_lim;      /**< Maximum DLB scaling per load balancing step in percent */
 
-    /* Cycle counters */
+    BalanceRegion *balanceRegion;      /**< Struct for timing the force load balancing region */
+
+    /* Cycle counters over nstlist steps */
     float  cycl[ddCyclNr];             /**< Total cycles counted */
     int    cycl_n[ddCyclNr];           /**< The number of cycle recordings */
     float  cycl_max[ddCyclNr];         /**< The maximum cycle count */
