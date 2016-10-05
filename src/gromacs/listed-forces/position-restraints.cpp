@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -397,7 +397,7 @@ posres_wrapper(t_nrnb             *nrnb,
     dvdl = 0;
     v    = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
                   idef->iparams_posres,
-                  x, fr->f_novirsum, fr->vir_diag_posres,
+                  x, as_rvec_array(fr->f_novirsum->data()), fr->vir_diag_posres,
                   fr->ePBC == epbcNONE ? NULL : pbc,
                   lambda[efptRESTRAINT], &dvdl,
                   fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
@@ -456,7 +456,7 @@ void fbposres_wrapper(t_nrnb             *nrnb,
 
     v = fbposres(idef->il[F_FBPOSRES].nr, idef->il[F_FBPOSRES].iatoms,
                  idef->iparams_fbposres,
-                 x, fr->f_novirsum, fr->vir_diag_posres,
+                 x, as_rvec_array(fr->f_novirsum->data()), fr->vir_diag_posres,
                  fr->ePBC == epbcNONE ? NULL : pbc,
                  fr->rc_scaling, fr->ePBC, fr->posres_com);
     enerd->term[F_FBPOSRES] += v;
