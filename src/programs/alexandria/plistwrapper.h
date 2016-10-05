@@ -59,7 +59,7 @@ enum InteractionType
     eitPOLARIZATION       = 6,
     eitCONSTR             = 7,
     eitVSITE2             = 8,
-    eitNR                 = 9,
+    eitNR                 = 9
 };
 
 using ParamIterator = typename std::vector<t_param>::iterator;

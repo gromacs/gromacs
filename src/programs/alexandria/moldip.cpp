@@ -495,7 +495,7 @@ void MolDip::Read(FILE            *fp,
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    if (NULL != fp)
+    if (nullptr != fp)
     {
         fprintf(fp, "There are %d atom types in the input file %s:\n---\n",
                 static_cast<int>(pd_.getNatypes()), pd_fn);
@@ -547,25 +547,23 @@ void MolDip::Read(FILE            *fp,
                 if (immOK == imm)
                 {
                     gmx::MDLogger mdlog = getMdLogger(_cr, stdout);
-                    imm = mpnew.GenerateCharges(pd_,
-                                                mdlog,
-                                                _atomprop,
+                    imm = mpnew.GenerateCharges(pd_, mdlog, _atomprop,
                                                 _iChargeDistributionModel,
                                                 _iChargeGenerationAlgorithm,
-                                                watoms, _hfac,
-                                                lot, TRUE, NULL, _cr, tabfn);
+                                                watoms, _hfac, lot, true, 
+                                                nullptr, _cr, tabfn);
                     rms = mpnew.espRms();
                 }
                 if (immOK == imm)
                 {
-                    imm = mpnew.GenerateChargeGroups(ecgGroup, FALSE);
+                    imm = mpnew.GenerateChargeGroups(ecgGroup, false);
                 }
                 if (immOK == imm)
                 {
                     imm = mpnew.getExpProps(_bQM, bZero, bZPE, lot, pd_);
                 }
 
-                if (NULL != debug)
+                if (nullptr != debug)
                 {
 
                     mpnew.PrintTopology(debug, _iChargeDistributionModel, false,
@@ -578,7 +576,7 @@ void MolDip::Read(FILE            *fp,
                     {
                         mpnew.eSupp = eSupportRemote;
                         /* Send another molecule */
-                        if (NULL != debug)
+                        if (nullptr != debug)
                         {
                             fprintf(debug, "Going to send %s to cpu %d\n",
                                     mpi->getMolname().c_str(), dest);
@@ -598,7 +596,7 @@ void MolDip::Read(FILE            *fp,
                             fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
                                     mpnew.molProp()->getMolname().c_str(), dest, alexandria::immsg(imm));
                         }
-                        else if (NULL != debug)
+                        else if (nullptr != debug)
                         {
                             fprintf(debug, "Succesfully beamed over %s\n", mpi->getMolname().c_str());
                         }
@@ -612,7 +610,7 @@ void MolDip::Read(FILE            *fp,
                     {
                         _mymol.push_back(std::move(mpnew));
                         ntopol++;
-                        if (NULL != debug)
+                        if (nullptr != debug)
                         {
                             fprintf(debug, "Added %s, ntopol = %d\n",
                                     mpnew.molProp()->getMolname().c_str(),
@@ -620,7 +618,7 @@ void MolDip::Read(FILE            *fp,
                         }
                     }
                 }
-                if ((immOK != imm) && (NULL != debug))
+                if ((immOK != imm) && (nullptr != debug))
                 {
                     fprintf(debug, "IMM: Dest: %d %s - %s\n",
                             dest, mpi->getMolname().c_str(), immsg(imm));
@@ -651,7 +649,7 @@ void MolDip::Read(FILE            *fp,
             /* Receive another molecule */
             alexandria::MyMol mpnew;
 
-            if (NULL != debug)
+            if (nullptr != debug)
             {
                 fprintf(debug, "Going to retrieve new molecule\n");
             }
@@ -660,7 +658,7 @@ void MolDip::Read(FILE            *fp,
             {
                 imm = immCommProblem;
             }
-            else if (NULL != debug)
+            else if (nullptr != debug)
             {
                 fprintf(debug, "Succesfully retrieved %s\n", mpnew.molProp()->getMolname().c_str());
                 fflush(debug);
@@ -675,14 +673,13 @@ void MolDip::Read(FILE            *fp,
             {
                 gmx::MDLogger mdlog = getMdLogger(_cr, stdout);
                 imm = mpnew.GenerateCharges(pd_, mdlog, _atomprop, _iChargeDistributionModel,
-                                            _iChargeGenerationAlgorithm,
-                                            watoms, _hfac,
-                                            lot, TRUE, NULL, _cr, tabfn);
+                                            _iChargeGenerationAlgorithm, watoms, _hfac,
+                                            lot, true, nullptr, _cr, tabfn);
                 rms = mpnew.espRms();
             }
             if (immOK == imm)
             {
-                imm = mpnew.GenerateChargeGroups(ecgAtom, FALSE);
+                imm = mpnew.GenerateChargeGroups(ecgAtom, false);
             }
             if (immOK == imm)
             {
@@ -694,7 +691,7 @@ void MolDip::Read(FILE            *fp,
             if (immOK == imm)
             {
                 _mymol.push_back(std::move(mpnew));
-                if (NULL != debug)
+                if (nullptr != debug)
                 {
                     fprintf(debug, "Added molecule %s\n", mpnew.molProp()->getMolname().c_str());
                 }
@@ -729,8 +726,7 @@ void MolDip::Read(FILE            *fp,
             nmoltot = mp.size();
         }
         fprintf(fp, "Made topologies for %d out of %d molecules.\n",
-                ntopol,
-                (MASTER(_cr)) ? nmoltot : nmol_cpu);
+                ntopol, (MASTER(_cr)) ? nmoltot : nmol_cpu);
 
         for (int i = 0; (i < immNR); i++)
         {
@@ -747,7 +743,7 @@ void MolDip::Read(FILE            *fp,
     if (bCheckSupport)
     {
         _nmol_support =
-            check_data_sufficiency(MASTER(_cr) ? fp : NULL, _mymol,
+            check_data_sufficiency(MASTER(_cr) ? fp : nullptr, _mymol,
                                    minimum_data, pd_, &indexCount_,
                                    _iChargeDistributionModel, opt_elem, const_elem, _cr,
                                    _bPol, _bFitZeta);

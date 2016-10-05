@@ -1301,7 +1301,6 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
                  nullptr, nullptr, false,
                  flags);
     }
-
 }
 
 
@@ -1496,12 +1495,15 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
                                  t_commrec           *cr,
                                  const char          *tabfn)
 {
-    GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == NULL. You forgot to call GenerateTopology");
+    GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
     int nalloc = 2 * topology_->atoms.nr;
 
     if (nullptr == f_)
     {
         snew(f_, nalloc);
+    }
+    if (nullptr == optf_)
+    {
         snew(optf_, nalloc);
     }
     if (nullptr == fr_)
@@ -1516,10 +1518,10 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
     }
 
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
-                  box_, tabfn, tabfn, nullptr, nullptr, TRUE, -1);
+                  box_, tabfn, tabfn, nullptr, nullptr, true, -1);
     snew(state_, 1);
     init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
-    mdatoms_   = init_mdatoms(nullptr, mtop_, FALSE);
+    mdatoms_   = init_mdatoms(nullptr, mtop_, false);
     atoms2md(mtop_, inputrec_, 0, nullptr, topology_->atoms.nr, mdatoms_);
     for (int i = 0; (i < topology_->atoms.nr); i++)
     {

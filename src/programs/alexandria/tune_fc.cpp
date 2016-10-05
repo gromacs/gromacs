@@ -480,21 +480,26 @@ class Optimization : public MolDip
          * energy is the largest contribution to the molecular energy.
          */
         void getDissociationEnergy(FILE *fplog);
+        
         void InitOpt(FILE *fplog, bool bOpt[eitNR], real factor);
-
 
         void optRun(FILE *fp, FILE *fplog, int maxiter,
                     int nrun, real stepsize, int seed,
                     const gmx_output_env_t *oenv,
-                    int nprint, const char *xvgconv, const char *xvgepot,
+                    int nprint, const char *xvgconv, 
+                    const char *xvgepot,
                     real temperature, bool bBound);
+                    
         void Print(FILE *fp);
+        
         void printSpecs(FILE *fp, char *title,
-                        const char *xvg, const gmx_output_env_t *oenv,
+                        const char *xvg, 
+                        const gmx_output_env_t *oenv,
                         bool bCheckOutliers);
 
         double calcDeviation();
-        double objFunction(double v[]);
+        
+        double objFunction(const double v[]);
 };
 
 void Optimization::checkSupport(FILE *fp, bool  bOpt[])
@@ -1013,8 +1018,7 @@ double Optimization::calcDeviation()
                         mymol.computeForces(debug, _cr, mu_tot);
 
                         debug           = dbcopy;
-                        mymol.Force2    = 0;
-                        mymol.OptForce2 = 0;
+                        mymol.Force2    = 0.0;
 
                         for (j = 0; (j < natoms); j++)
                         {
@@ -1025,10 +1029,12 @@ double Optimization::calcDeviation()
 
                         if (jtype == JOB_OPT)
                         {
+                            mymol.OptForce2 = 0.0;
+                            
                             for (j = 0; (j < natoms); j++)
                             {
                                 mymol.OptForce2 += iprod(mymol.f_[j], mymol.f_[j]);
-                                copy_rvec(mymol.optf_[j], mymol.f_[j]);
+                                copy_rvec(mymol.f_[j], mymol.optf_[j]);
                             }
 
                             mymol.OptForce2 /= natoms;
@@ -1039,7 +1045,7 @@ double Optimization::calcDeviation()
 
                         mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
                         ener               = gmx::square(mymol.Ecalc-Emol);
-                        _ener[ermsEPOT]   += _fc[ermsEPOT]*ener/_nmol_support;
+                        _ener[ermsEPOT]   += _fc[ermsEPOT]*ener;
 
                         if (nullptr != debug)
                         {
@@ -1080,7 +1086,7 @@ double Optimization::calcDeviation()
 
     for (j = 0; (j < ermsTOT); j++)
     {
-        _ener[ermsTOT] += _ener[j];
+        _ener[ermsTOT] += (_ener[j]/_nmol_support);
     }
 
     if (debug)
@@ -1104,7 +1110,7 @@ double Optimization::calcDeviation()
     return _ener[ermsTOT];
 }
 
-double Optimization::objFunction(double v[])
+double Optimization::objFunction(const double v[])
 {
     double rms = 0;
     for (size_t i = 0; (i < param_.size()); i++)
@@ -1121,8 +1127,9 @@ double Optimization::objFunction(double v[])
 void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
                           int nrun, real stepsize, int seed,
                           const gmx_output_env_t *oenv,
-                          int nprint, const char *xvgconv, const char *xvgepot,
-                          real temperature, bool bBound)
+                          int nprint, const char *xvgconv, 
+                          const char *xvgepot, real temperature, 
+                          bool bBound)
 {
 
     std::vector<double>              optx, opts, optm;
@@ -1132,8 +1139,7 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
     std::mt19937                     gen;
     std::uniform_real_distribution<> dis;
 
-    auto func = [&] (double v[])
-        {
+    auto func = [&] (const double v[]) {
             return objFunction(v);
         };
 
@@ -1170,13 +1176,13 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
 
             if (nullptr != fp)
             {
-                fprintf(fp, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n",
-                        n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
+                fprintf(fp, "Run: %3d  rmsd: %4.3f   ermsBOUNDS: %4.3f\n",
+                        n, sqrt(chi2), _ener[ermsBOUNDS]);
             }
             if (nullptr != fplog)
             {
-                fprintf(fplog, "Run: %5d  chi2: %8.3f  ermsTOT: %8.3f  ermsBOUNDS: %8.3f\n",
-                        n, chi2, _ener[ermsTOT], _ener[ermsBOUNDS]);
+                fprintf(fplog, "Run: %3d  rmsd: %4.3f   ermsBOUNDS: %4.3f\n",
+                        n, sqrt(chi2), _ener[ermsBOUNDS]);
                 fflush(fplog);
             }
 
@@ -1189,8 +1195,8 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
             double emin = objFunction(best_.data());
             if (fplog)
             {
-                fprintf(fplog, "\nMinimum chi^2 value during optimization: %.3f.\n",
-                        emin);
+                fprintf(fplog, "\nMinimum rmsd value during optimization: %.3f.\n",
+                        sqrt(emin));
                 fprintf(fplog, "Average and standard deviation of parameters\n");
                 for (size_t k = 0; (k < param_.size()); k++)
                 {
@@ -1505,7 +1511,8 @@ int alex_tune_fc(int argc, char *argv[])
 
     if (iChargeDistributionModel != eqdAXp && nullptr == tabfn)
     {
-        gmx_fatal(FARGS, "Cannot generate charges with the %s charge model without a potential table. Please supply a table file.", getEemtypeName(iChargeDistributionModel));
+        gmx_fatal(FARGS, "Cannot generate charges with the %s charge model without a potential table. "
+                  "Please supply a table file.", getEemtypeName(iChargeDistributionModel));
     }
 
     opt.Init(cr, bQM, bGaussianBug, iChargeDistributionModel,
