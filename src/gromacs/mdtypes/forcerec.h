@@ -40,6 +40,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#ifdef __cplusplus
+#include "gromacs/mdtypes/state.h"
+#endif
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -304,14 +307,21 @@ typedef struct t_forcerec {
     /* Forces that should not enter into the virial summation:
      * PPPM/PME/Ewald/posres
      */
-    gmx_bool bF_NoVirSum;
-    int      f_novirsum_n;
-    int      f_novirsum_nalloc;
-    rvec    *f_novirsum_alloc;
-    /* Pointer that points to f_novirsum_alloc when pressure is calcaluted,
-     * points to the normal force vectors wen pressure is not requested.
+    gmx_bool          bF_NoVirSum;
+#ifdef __cplusplus
+    /* TODO: Replace the pointer by an object once we got rid of C */
+    PaddedRVecVector *forceBufferNoVirialSummation;
+#else
+    void             *forceBufferNoVirialSummation_dummy;
+#endif
+    /* Pointer that points to forceNoVirialSummation when virial is calcaluted,
+     * points to the normal force vector when the virial is not requested.
      */
-    rvec *f_novirsum;
+#ifdef __cplusplus
+    PaddedRVecVector *f_novirsum;
+#else
+    void             *f_novirsum_xdummy;
+#endif
 
     /* Long-range forces and virial for PPPM/PME/Ewald */
     struct gmx_pme_t *pmedata;
