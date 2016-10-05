@@ -1504,16 +1504,8 @@ void forcerec_set_ranges(t_forcerec *fr,
 
     if (fr->bF_NoVirSum)
     {
-        fr->f_novirsum_n = natoms_f_novirsum;
-        if (fr->f_novirsum_n > fr->f_novirsum_nalloc)
-        {
-            fr->f_novirsum_nalloc = over_alloc_dd(fr->f_novirsum_n);
-            srenew(fr->f_novirsum_alloc, fr->f_novirsum_nalloc);
-        }
-    }
-    else
-    {
-        fr->f_novirsum_n = 0;
+        /* TODO: remove this + 1 when padding is properly implemented */
+        fr->forceBufferNoVirialSummation->resize(natoms_f_novirsum + 1);
     }
 }
 
@@ -2834,6 +2826,10 @@ void init_forcerec(FILE                *fp,
                        gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
                        inputrecElecField(ir)
                        );
+    if (fr->bF_NoVirSum)
+    {
+        fr->forceBufferNoVirialSummation = new PaddedRVecVector;
+    }
 
     if (fr->cutoff_scheme == ecutsGROUP &&
         ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr))
