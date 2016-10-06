@@ -1454,9 +1454,21 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             if (ir->bDrude && ir->drude->bHardWall)
             {
+                /* TODO: TESTING */
+                if (DOMAINDECOMP(cr))
+                {
+                    dd_move_x_shells(cr->dd, state->box, state->x);
+                    dd_move_v(cr->dd, state->v);
+                }
                 wallcycle_start(wcycle, ewcHARDWALL);
                 apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift, step, bVerbose);
                 wallcycle_stop(wcycle, ewcHARDWALL);
+                /* TODO: TESTING */
+                if (DOMAINDECOMP(cr))
+                {
+                    dd_move_x_shells(cr->dd, state->box, state->x);
+                    dd_move_v(cr->dd, state->v);
+                }
             }
 
             if (ir->eI == eiVVAK)
@@ -1491,9 +1503,21 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 if (ir->bDrude && ir->drude->bHardWall)
                 {
+                    /* TODO: TESTING */
+                    if (DOMAINDECOMP(cr))
+                    {
+                        dd_move_x_shells(cr->dd, state->box, state->x);
+                        dd_move_v(cr->dd, state->v);
+                    }
                     wallcycle_start(wcycle, ewcHARDWALL);
                     apply_drude_hardwall(cr, &top->idef, ir, mdatoms, state, fr->fshift, step, bVerbose);
                     wallcycle_stop(wcycle, ewcHARDWALL);
+                    /* TODO: TESTING */
+                    if (DOMAINDECOMP(cr))
+                    {
+                        dd_move_x_shells(cr->dd, state->box, state->x);
+                        dd_move_v(cr->dd, state->v);
+                    }
                 }
 
             }
