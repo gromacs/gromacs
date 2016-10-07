@@ -162,7 +162,9 @@ bool Poldata::atypeToPtype(const std::string &atype,
     }
     auto ai = std::find_if(alexandria_.begin(), alexandria_.end(),
                            [atype](Ffatype const &fa)
-                           { return fa.getType().compare(atype) == 0; });
+        {
+            return fa.getType().compare(atype) == 0;
+        });
     if (ai != alexandria_.end() && ai->getPtype().size() > 0)
     {
         ptype = ai->getPtype();
@@ -256,7 +258,9 @@ bool Poldata::getBosquePol(const std::string &bosque,
 {
     BosqueConstIterator bb  = bosque_.begin(), be = bosque_.end();
     BosqueConstIterator bos = std::find_if(bb, be, [bosque](Bosque const &b)
-                                           { return (bosque.compare(b.getBosque()) == 0); });
+        {
+            return (bosque.compare(b.getBosque()) == 0);
+        });
     if (bosque_.end() != bos)
     {
         *polarizability = bos->getPolarizability();
@@ -320,7 +324,9 @@ bool Poldata::getMillerPol(const std::string &miller,
 {
     MillerConstIterator mb  = miller_.begin(), me = miller_.end();
     MillerConstIterator mil = std::find_if(mb, me, [miller](Miller const &m)
-                                           { return (miller.compare(m.getMiller()) == 0); });
+        {
+            return (miller.compare(m.getMiller()) == 0);
+        });
     if (miller_.end() != mil)
     {
         *atomnumber      = mil->getAtomnumber();
@@ -348,7 +354,9 @@ bool Poldata::atypeToBtype(const std::string &atype,
     }
     auto ai = std::find_if(alexandria_.begin(), alexandria_.end(),
                            [atype](Ffatype const &fa)
-                           { return fa.getType().compare(atype) == 0; });
+        {
+            return fa.getType().compare(atype) == 0;
+        });
     if (ai != alexandria_.end() && ai->getBtype().size() > 0)
     {
         btype = ai->getBtype();
@@ -429,7 +437,7 @@ bool Poldata::searchForce(std::vector<std::string> &atoms,
                           InteractionType           iType) const
 {
     auto f  = findForces(iType);
-    
+
     if (forcesEnd() != f)
     {
         if (f->searchForce(atoms, params, refValue,
@@ -760,8 +768,10 @@ EempropsConstIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
     }
     return std::find_if(eep_.begin(), eep_.end(),
                         [eqdModel, nn](Eemprops const &eep)
-                        { return (strcasecmp(eep.getName(), nn.c_str()) == 0 &&
-                                  (eep.getEqdModel() == eqdModel)); });
+        {
+            return (strcasecmp(eep.getName(), nn.c_str()) == 0 &&
+                    (eep.getEqdModel() == eqdModel));
+        });
 }
 
 EempropsIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
@@ -782,8 +792,10 @@ EempropsIterator Poldata::findEem(ChargeDistributionModel  eqdModel,
     }
     return std::find_if(eep_.begin(), eep_.end(),
                         [eqdModel, nn](Eemprops const &eep)
-                        { return (strcasecmp(eep.getName(), nn.c_str()) == 0 &&
-                                  (eep.getEqdModel() == eqdModel)); });
+        {
+            return (strcasecmp(eep.getName(), nn.c_str()) == 0 &&
+                    (eep.getEqdModel() == eqdModel));
+        });
 }
 
 typedef struct {

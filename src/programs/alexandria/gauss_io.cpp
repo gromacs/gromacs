@@ -75,7 +75,9 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
         std::sort(espv.begin()+natom, espv.end(),
                   [](const alexandria::ElectrostaticPotential &a,
                      const alexandria::ElectrostaticPotential &b)
-                  {  return (a.getV() < b.getV()); });
+        {
+            return (a.getV() < b.getV());
+        });
 
         int npot = espv.size() - natom;
         mymod = npot / maxpot;
@@ -229,7 +231,9 @@ static void gmx_molprop_read_babel(const char          *g98,
             {
                 std::string dup = i;
                 std::replace_if(dup.begin(), dup.end(),
-                                [](const char c) { return c == '_'; }, ' ');
+                                [](const char c) {
+                    return c == '_';
+                }, ' ');
                 mpt.AddCategory(dup);
             }
         }
@@ -291,7 +295,7 @@ static void gmx_molprop_read_babel(const char          *g98,
     }
 
     alexandria::Experiment ca(program, method, basis, reference,
-                              conformation, g98ptr, 
+                              conformation, g98ptr,
                               jobtype);
     mpt.AddExperiment(ca);
     mpt.SetCharge(mol.GetTotalCharge());
@@ -550,7 +554,7 @@ void ReadGauss(const char          *g98,
 {
 #if HAVE_LIBOPENBABEL2
     gmx_molprop_read_babel(g98, mp, molnm, iupac, conf, basis,
-                           maxpot, nsymm, forcefield, 
+                           maxpot, nsymm, forcefield,
                            alexandria::string2jobType(jobtype));
 #else
     gmx_fatal(FARGS, "For reading Gaussian input you need to link to OpenBabel");

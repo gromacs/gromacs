@@ -386,24 +386,26 @@ void MolProp::DeleteComposition(const std::string &compname)
 {
     std::remove_if(_mol_comp.begin(), _mol_comp.end(),
                    [compname](MolecularComposition mc)
-                   { return (compname.compare(mc.getCompName()) == 0); });
+        {
+            return (compname.compare(mc.getCompName()) == 0);
+        });
 }
 
 Experiment::Experiment(std::string program, std::string method,
-		       std::string basisset, std::string reference,
-		       std::string conformation, std::string datafile,
-		       jobType jtype) 
+                       std::string basisset, std::string reference,
+                       std::string conformation, std::string datafile,
+                       jobType jtype)
     :
-      dataSource_(dsTheory),
-      reference_(reference), 
-      conformation_(conformation), 
-      _program(program), 
-      _method(method), 
-      _basisset(basisset),
-      _datafile(datafile),
-      jobtype_(jtype)
+    dataSource_(dsTheory),
+    reference_(reference),
+    conformation_(conformation),
+    _program(program),
+    _method(method),
+    _basisset(basisset),
+    _datafile(datafile),
+    jobtype_(jtype)
 
-   {}
+{}
 
 void Experiment::Dump(FILE *fp)
 {
@@ -732,7 +734,9 @@ MolecularCompositionIterator MolProp::SearchMolecularComposition(std::string str
 {
     return std::find_if(_mol_comp.begin(), _mol_comp.end(),
                         [str](MolecularComposition const &mc)
-                        { return (str.compare(mc.getCompName()) == 0); });
+        {
+            return (str.compare(mc.getCompName()) == 0);
+        });
 }
 
 void MolProp::Dump(FILE *fp)
@@ -920,9 +924,9 @@ bool MolProp::HasComposition(const std::string &composition) const
     return std::find_if(BeginMolecularComposition(),
                         EndMolecularComposition(),
                         [composition](const MolecularComposition &mi)
-                        {
-                            return mi.getCompName().compare(composition) == 0;
-                        }) != EndMolecularComposition();
+        {
+            return mi.getCompName().compare(composition) == 0;
+        }) != EndMolecularComposition();
 }
 
 bool Experiment::getVal(const std::string  type,
@@ -930,7 +934,7 @@ bool Experiment::getVal(const std::string  type,
                         double            *value,
                         double            *error,
                         double            *T,
-                        double             vec[3], 
+                        double             vec[3],
                         tensor             quad_polar)
 {
     bool   done = false;
@@ -1105,7 +1109,7 @@ int MolProp::NOptSP()
 
     for (auto ei = BeginExperiment(); ei < EndExperiment(); ++ei)
     {
-        if (ei->getJobtype() == JOB_OPT || 
+        if (ei->getJobtype() == JOB_OPT ||
             ei->getJobtype() == JOB_SP)
         {
             n++;

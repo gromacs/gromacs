@@ -410,15 +410,15 @@ static void set_linear_angle_params(const int                  atoms[],
         if (((ang->a[0] == atoms[0]) && (ang->a[2] == atoms[2])) ||
             ((ang->a[2] == atoms[0]) && (ang->a[0] == atoms[2])))
         {
-	    delete_params(plist, pangle->getFtype(), atoms);
-	    memset(&pp, 0, sizeof(pp));
-	    for (int i = 0; (i < 3); i++)
-	    {
-	       pp.a[i] = atoms[i];
-	    }
-	    add_param_to_plist(plist, F_LINEAR_ANGLES, eitLINEAR_ANGLES, pp);
-	    found = true;
-	    break;
+            delete_params(plist, pangle->getFtype(), atoms);
+            memset(&pp, 0, sizeof(pp));
+            for (int i = 0; (i < 3); i++)
+            {
+                pp.a[i] = atoms[i];
+            }
+            add_param_to_plist(plist, F_LINEAR_ANGLES, eitLINEAR_ANGLES, pp);
+            found = true;
+            break;
         }
     }
 
