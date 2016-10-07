@@ -5167,6 +5167,21 @@ static void get_load_distribution(gmx_domdec_t *dd, gmx_wallcycle_t wcycle)
     }
 }
 
+static float dd_force_load_fraction(gmx_domdec_t *dd)
+{
+    /* Return the relative performance loss on the total run time
+     * due to the force calculation load imbalance.
+     */
+    if (dd->comm->nload > 0 && dd->comm->load_step > 0)
+    {
+        return dd->comm->load_sum/(dd->comm->load_step*dd->nnodes);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 static float dd_force_imb_perf_loss(gmx_domdec_t *dd)
 {
     /* Return the relative performance loss on the total run time
@@ -5186,99 +5201,110 @@ static float dd_force_imb_perf_loss(gmx_domdec_t *dd)
 
 static void print_dd_load_av(FILE *fplog, gmx_domdec_t *dd)
 {
-    char               buf[STRLEN];
-    int                npp, npme, nnodes, d, limp;
-    float              imbal, pme_f_ratio, lossf = 0, lossp = 0;
-    gmx_bool           bLim;
-    gmx_domdec_comm_t *comm;
+    gmx_domdec_comm_t *comm = dd->comm;
 
-    comm = dd->comm;
-    if (DDMASTER(dd) && comm->nload > 0)
+    /* Only the master rank prints loads and only if we measured loads */
+    if (!DDMASTER(dd) || comm->nload == 0)
     {
-        npp    = dd->nnodes;
-        npme   = (dd->pme_nodeid >= 0) ? comm->npmenodes : 0;
-        nnodes = npp + npme;
-        if (dd->nnodes > 1 && comm->load_sum > 0)
-        {
-            imbal  = comm->load_max*npp/comm->load_sum - 1;
-            lossf  = dd_force_imb_perf_loss(dd);
-            sprintf(buf, " Average load imbalance: %.1f %%\n", imbal*100);
-            fprintf(fplog, "%s", buf);
-            fprintf(stderr, "\n");
-            fprintf(stderr, "%s", buf);
-            sprintf(buf, " Part of the total run time spent waiting due to load imbalance: %.1f %%\n", lossf*100);
-            fprintf(fplog, "%s", buf);
-            fprintf(stderr, "%s", buf);
-        }
-        bLim = FALSE;
-        if (dlbIsOn(comm))
-        {
-            sprintf(buf, " Steps where the load balancing was limited by -rdd, -rcon and/or -dds:");
-            for (d = 0; d < dd->ndim; d++)
-            {
-                limp = (200*comm->load_lim[d]+1)/(2*comm->nload);
-                sprintf(buf+strlen(buf), " %c %d %%", dim2char(dd->dim[d]), limp);
-                if (limp >= 50)
-                {
-                    bLim = TRUE;
-                }
-            }
-            sprintf(buf+strlen(buf), "\n");
-            fprintf(fplog, "%s", buf);
-            fprintf(stderr, "%s", buf);
-        }
-        if (npme > 0 && comm->load_mdf > 0 && comm->load_step > 0)
-        {
-            pme_f_ratio = comm->load_pme/comm->load_mdf;
-            lossp       = (comm->load_pme - comm->load_mdf)/comm->load_step;
-            if (lossp <= 0)
-            {
-                lossp *= (float)npme/(float)nnodes;
-            }
-            else
-            {
-                lossp *= (float)npp/(float)nnodes;
-            }
-            sprintf(buf, " Average PME mesh/force load: %5.3f\n", pme_f_ratio);
-            fprintf(fplog, "%s", buf);
-            fprintf(stderr, "%s", buf);
-            sprintf(buf, " Part of the total run time spent waiting due to PP/PME imbalance: %.1f %%\n", fabs(lossp)*100);
-            fprintf(fplog, "%s", buf);
-            fprintf(stderr, "%s", buf);
-        }
-        fprintf(fplog, "\n");
-        fprintf(stderr, "\n");
+        return;
+    }
 
-        if (lossf >= DD_PERF_LOSS_WARN)
+    char  buf[STRLEN];
+    int   numPpRanks   = dd->nnodes;
+    int   numPmeRanks  = (dd->pme_nodeid >= 0) ? comm->npmenodes : 0;
+    int   numRanks     = numPpRanks + numPmeRanks;
+    float lossFraction = 0;
+
+    /* Print the average load imbalance and performance loss */
+    if (dd->nnodes > 1 && comm->load_sum > 0)
+    {
+        float imbalance = comm->load_max*numPpRanks/comm->load_sum - 1;
+        lossFraction    = dd_force_imb_perf_loss(dd);
+        fprintf(stderr, "\n");
+        sprintf(buf,
+                " Load balancing based on %d %% of the MD step time\n"
+                " Average load imbalance: %.1f %%\n"
+                " Part of the total run time spent waiting due to load imbalance: %.1f %%\n",
+                static_cast<int>(dd_force_load_fraction(dd)*100 + 0.5),
+                imbalance*100,
+                lossFraction*100);
+        fprintf(fplog, "%s", buf);
+        fprintf(stderr, "%s", buf);
+    }
+
+    /* Print during what percentage of steps the  load balancing was limited */
+    bool dlbWasLimited = false;
+    if (dlbIsOn(comm))
+    {
+        sprintf(buf, " Steps where the load balancing was limited by -rdd, -rcon and/or -dds:");
+        for (int d = 0; d < dd->ndim; d++)
         {
-            sprintf(buf,
-                    "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
-                    "      in the domain decomposition.\n", lossf*100);
-            if (!dlbIsOn(comm))
+            int limitPercentage = (200*comm->load_lim[d] + 1)/(2*comm->nload);
+            sprintf(buf+strlen(buf), " %c %d %%",
+                    dim2char(dd->dim[d]), limitPercentage);
+            if (limitPercentage >= 50)
             {
-                sprintf(buf+strlen(buf), "      You might want to use dynamic load balancing (option -dlb.)\n");
+                dlbWasLimited = true;
             }
-            else if (bLim)
-            {
-                sprintf(buf+strlen(buf), "      You might want to decrease the cell size limit (options -rdd, -rcon and/or -dds).\n");
-            }
-            fprintf(fplog, "%s\n", buf);
-            fprintf(stderr, "%s\n", buf);
         }
-        if (npme > 0 && fabs(lossp) >= DD_PERF_LOSS_WARN)
+        sprintf(buf + strlen(buf), "\n");
+        fprintf(fplog, "%s", buf);
+        fprintf(stderr, "%s", buf);
+    }
+
+    /* Print the performance loss due to separate PME - PP rank imbalance */
+    float lossFractionPme = 0;
+    if (numPmeRanks > 0 && comm->load_mdf > 0 && comm->load_step > 0)
+    {
+        float pmeForceRatio = comm->load_pme/comm->load_mdf;
+        lossFractionPme     = (comm->load_pme - comm->load_mdf)/comm->load_step;
+        if (lossFractionPme <= 0)
         {
-            sprintf(buf,
-                    "NOTE: %.1f %% performance was lost because the PME ranks\n"
-                    "      had %s work to do than the PP ranks.\n"
-                    "      You might want to %s the number of PME ranks\n"
-                    "      or %s the cut-off and the grid spacing.\n",
-                    fabs(lossp*100),
-                    (lossp < 0) ? "less"     : "more",
-                    (lossp < 0) ? "decrease" : "increase",
-                    (lossp < 0) ? "decrease" : "increase");
-            fprintf(fplog, "%s\n", buf);
-            fprintf(stderr, "%s\n", buf);
+            lossFractionPme *= numPmeRanks/static_cast<float>(numRanks);
         }
+        else
+        {
+            lossFractionPme *= numPpRanks/static_cast<float>(numRanks);
+        }
+        sprintf(buf, " Average PME mesh/force load: %5.3f\n", pmeForceRatio);
+        fprintf(fplog, "%s", buf);
+        fprintf(stderr, "%s", buf);
+        sprintf(buf, " Part of the total run time spent waiting due to PP/PME imbalance: %.1f %%\n", fabs(lossFractionPme)*100);
+        fprintf(fplog, "%s", buf);
+        fprintf(stderr, "%s", buf);
+    }
+    fprintf(fplog, "\n");
+    fprintf(stderr, "\n");
+
+    if (lossFraction >= DD_PERF_LOSS_WARN)
+    {
+        sprintf(buf,
+                "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
+                "      in the domain decomposition.\n", lossFraction*100);
+        if (!dlbIsOn(comm))
+        {
+            sprintf(buf+strlen(buf), "      You might want to use dynamic load balancing (option -dlb.)\n");
+        }
+        else if (dlbWasLimited)
+        {
+            sprintf(buf+strlen(buf), "      You might want to decrease the cell size limit (options -rdd, -rcon and/or -dds).\n");
+        }
+        fprintf(fplog, "%s\n", buf);
+        fprintf(stderr, "%s\n", buf);
+    }
+    if (numPmeRanks > 0 && fabs(lossFractionPme) >= DD_PERF_LOSS_WARN)
+    {
+        sprintf(buf,
+                "NOTE: %.1f %% performance was lost because the PME ranks\n"
+                "      had %s work to do than the PP ranks.\n"
+                "      You might want to %s the number of PME ranks\n"
+                "      or %s the cut-off and the grid spacing.\n",
+                fabs(lossFractionPme*100),
+                (lossFractionPme < 0) ? "less"     : "more",
+                (lossFractionPme < 0) ? "decrease" : "increase",
+                (lossFractionPme < 0) ? "decrease" : "increase");
+        fprintf(fplog, "%s\n", buf);
+        fprintf(stderr, "%s\n", buf);
     }
 }
 
