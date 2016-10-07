@@ -97,7 +97,7 @@ void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
         ai = ang->param[i].a[0];
         aj = ang->param[i].a[1];
         ak = ang->param[i].a[2];
-        th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : NULL,
+        th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr,
                                 r_ij, r_kj, &costh, &t1, &t2);
         if (debug)
         {
@@ -112,7 +112,7 @@ void calc_angles_dihs(t_params *ang, t_params *dih, rvec x[], gmx_bool bPBC,
         aj = dih->param[i].a[1];
         ak = dih->param[i].a[2];
         al = dih->param[i].a[3];
-        ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : NULL,
+        ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr,
                                r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
         if (debug)
         {
@@ -324,16 +324,13 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
     int          anr_central, anr_attached, nrq;
     double       qaver, qsum;
 
-    //printf("Fix me: symmetrize charges algorithm is broken in: file %s, line %d\n",
-    //       __FILE__, __LINE__ );
-    //return;
     for (int i = 0; (i < atoms->nr); i++)
     {
         sym_charges.push_back(i);
     }
     if (bQsym)
     {
-        if ((NULL != symm_string) && (strlen(symm_string) > 0))
+        if ((nullptr != symm_string) && (strlen(symm_string) > 0))
         {
             std::vector<std::string> ss = gmx::splitString(symm_string);
             if ((int)ss.size() != atoms->nr)
@@ -342,7 +339,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                           ss.size(), atoms->nr);
             }
             int ii = 0;
-            for (std::vector<std::string>::iterator is = ss.begin();
+            for (auto is = ss.begin();
                  (is < ss.end()); ++is)
             {
                 sym_charges[ii] = atoi(is->c_str());
@@ -351,7 +348,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
         }
         else
         {
-            for (SymchargesConstIterator symcharges = pd.getSymchargesBegin();
+            for (auto symcharges = pd.getSymchargesBegin();
                  symcharges != pd.getSymchargesEnd(); symcharges++)
             {
                 anr_central  = gmx_atomprop_atomnumber(aps, symcharges->getCentral().c_str());
@@ -362,7 +359,7 @@ void symmetrize_charges(gmx_bool bQsym, t_atoms *atoms,
                 {
                     if (atoms->atom[i].atomnumber == anr_central)
                     {
-                        for (alexandria::ParamIterator j = bonds->beginParam();
+                        for (auto j = bonds->beginParam();
                              (j < bonds->endParam()); ++j)
                         {
                             ai   = j->a[0];
@@ -478,10 +475,10 @@ static int *generate_cg_group(t_atoms                               *atoms,
     }
     /* Rely on the notion that all H and other monovalent
        atoms are bound to something */
-    alexandria::PlistWrapperIterator bonds = SearchPlist(plist, F_BONDS);
+    auto bonds = SearchPlist(plist, F_BONDS);
     if (plist.end() != bonds)
     {
-        for (alexandria::ParamIterator j = bonds->beginParam();
+        for (auto j = bonds->beginParam();
              (j < bonds->endParam()); ++j)
         {
             ai  = j->a[0];
@@ -519,10 +516,10 @@ static int *generate_cg_group(t_atoms                               *atoms,
         }
     }
     /* Rely on the notion that all shells are bound to something */
-    alexandria::PlistWrapperIterator pols = SearchPlist(plist, F_POLARIZATION);
+    auto pols = SearchPlist(plist, F_POLARIZATION);
     if (plist.end() != pols)
     {
-        for (alexandria::ParamIterator j = pols->beginParam();
+        for (auto j = pols->beginParam();
              (j < pols->endParam()); ++j)
         {
             ai       = j->a[0];
@@ -560,7 +557,7 @@ int *generate_charge_groups(eChargeGroup cgtp, t_atoms *atoms,
                             bool bUsePDBcharge,
                             real *qtot, real *mtot)
 {
-    int i, *cgnr = NULL;
+    int i, *cgnr = nullptr;
     std::vector<alexandria::PlistWrapper>::iterator pb, ps;
     pb = alexandria::SearchPlist(plist, F_BONDS);
     ps = alexandria::SearchPlist(plist, F_POLARIZATION);
@@ -679,11 +676,9 @@ void sort_on_charge_groups(int *cgnr, t_atoms *atoms,
         newi               = cg_renum[i];
         atoms->atomtype[i] = smn[newi];
     }
-    for (alexandria::PlistWrapperIterator i = pw.begin();
-         (i < pw.end()); ++i)
+    for (auto i = pw.begin(); i < pw.end(); ++i)
     {
-        for (alexandria::ParamIterator j = i->beginParam();
-             (j < i->endParam()); j++)
+        for (auto j = i->beginParam(); j < i->endParam(); j++)
         {
             for (k = 0; (k < NRAL(i->getFtype())); k++)
             {
@@ -714,7 +709,7 @@ void sort_on_charge_groups(int *cgnr, t_atoms *atoms,
         }
         excls[newi].nr = newexcls[i].nr;
     }
-    if (NULL != ndxout)
+    if (nullptr != ndxout)
     {
         fp = fopen(ndxout, "w");
         fprintf(fp, "[ number_backward ]\n");

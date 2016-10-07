@@ -1270,7 +1270,7 @@ CommunicationStatus MolecularQuadrupole::Receive(t_commrec *cr, int src)
         xz_    = gmx_recv_double(cr, src);
         yz_    = gmx_recv_double(cr, src);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to received MolecularQuadrupole, status %s\n", cs_name(cs));
         fflush(debug);

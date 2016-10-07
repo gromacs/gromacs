@@ -160,7 +160,7 @@ static OpenBabel::OBConversion *read_babel(const char *g98, OpenBabel::OBMol *mo
     }
     g98f.close();
 
-    return NULL;
+    return nullptr;
 }
 
 static void gmx_molprop_read_babel(const char          *g98,
@@ -240,14 +240,14 @@ static void gmx_molprop_read_babel(const char          *g98,
     //mol.ConnectTheDots();
 
     OBpd = (OpenBabel::OBPairData *)mol.GetData("basis");
-    if ((NULL != basisset) && (strlen(basisset) > 0))
+    if ((nullptr != basisset) && (strlen(basisset) > 0))
     {
         basis = basisset;
     }
-    else if (NULL != OBpd)
+    else if (nullptr != OBpd)
     {
         basis = strdup(OBpd->GetValue().c_str());
-        if (NULL != (ptr = strstr(basis, " (5D, 7F)")))
+        if (nullptr != (ptr = strstr(basis, " (5D, 7F)")))
         {
             *ptr = '\0';
         }
@@ -258,7 +258,7 @@ static void gmx_molprop_read_babel(const char          *g98,
     }
 
     OBpd = (OpenBabel::OBPairData *)mol.GetData("program");
-    if (NULL != OBpd)
+    if (nullptr != OBpd)
     {
         program = strdup(OBpd->GetValue().c_str());
     }
@@ -268,7 +268,7 @@ static void gmx_molprop_read_babel(const char          *g98,
     }
 
     OBpd = (OpenBabel::OBPairData *)mol.GetData("method");
-    if (NULL != OBpd)
+    if (nullptr != OBpd)
     {
         method = strdup(OBpd->GetValue().c_str());
     }
@@ -277,7 +277,7 @@ static void gmx_molprop_read_babel(const char          *g98,
         method = strdup(unknown);
     }
     g98ptr = (char *) strrchr(g98, '/');
-    if (NULL == g98ptr)
+    if (nullptr == g98ptr)
     {
         g98ptr = (char *)g98;
     }
@@ -299,7 +299,7 @@ static void gmx_molprop_read_babel(const char          *g98,
     mpt.SetMultiplicity(mol.GetTotalSpinMultiplicity());
     mpt.SetFormula(mol.GetFormula());
 
-    if (NULL != molnm)
+    if (nullptr != molnm)
     {
         mpt.SetMolname(molnm);
     }
@@ -308,7 +308,7 @@ static void gmx_molprop_read_babel(const char          *g98,
         mpt.SetMolname(unknown);
     }
 
-    if (NULL != iupac)
+    if (nullptr != iupac)
     {
         mpt.SetIupac(iupac);
     }
@@ -403,7 +403,7 @@ static void gmx_molprop_read_babel(const char          *g98,
 
     /* Now add properties by extracting them from the OpenBabel structure */
     OBpd = (OpenBabel::OBPairData *) mol.GetData("PartialCharges");
-    if (NULL != OBpd)
+    if (nullptr != OBpd)
     {
         charge_model = strdup(OBpd->GetValue().c_str());
     }
@@ -420,12 +420,12 @@ static void gmx_molprop_read_babel(const char          *g98,
         ff->GetAtomTypes(mol);
         FOR_ATOMS_OF_MOL (atom, mol) {
             OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
-            if (NULL == type)
+            if (nullptr == type)
             {
                 gmx_fatal(FARGS, "Could not find %s atom type for atom %s",
                           forcefield, atom->GetIdx());
             }
-            if (NULL != debug)
+            if (nullptr != debug)
             {
                 fprintf(debug, "XXX atom %d gafftype %s OBtype %s\n",
                         atom->GetIdx(), type->GetValue().c_str(), atom->GetType());
@@ -451,7 +451,7 @@ static void gmx_molprop_read_babel(const char          *g98,
 
     OBbi   = mol.BeginBonds();
     bondid = 1;
-    for (OBb = mol.BeginBond(OBbi); (NULL != OBb); OBb = mol.NextBond(OBbi))
+    for (OBb = mol.BeginBond(OBbi); (nullptr != OBb); OBb = mol.NextBond(OBbi))
     {
         alexandria::Bond ab(1+OBb->GetBeginAtom()->GetIndex(),
                             1+OBb->GetEndAtom()->GetIndex(),
@@ -462,7 +462,7 @@ static void gmx_molprop_read_babel(const char          *g98,
 
     // Dipole
     dipole = (OpenBabel::OBVectorData *) mol.GetData("Dipole Moment");
-    if (NULL != dipole)
+    if (nullptr != dipole)
     {
         OpenBabel::vector3            v3 = dipole->GetData();
         alexandria::MolecularDipole   dp("electronic",
@@ -475,7 +475,7 @@ static void gmx_molprop_read_babel(const char          *g98,
 
     // Quadrupole
     quadrupole = (OpenBabel::OBMatrixData *) mol.GetData("Traceless Quadrupole Moment");
-    if (NULL != quadrupole)
+    if (nullptr != quadrupole)
     {
         OpenBabel::matrix3x3            m3 = quadrupole->GetData();
         double                          mm[9];
@@ -490,7 +490,7 @@ static void gmx_molprop_read_babel(const char          *g98,
 
     // Polarizability
     pol_tensor = (OpenBabel::OBMatrixData *) mol.GetData("Exact polarizability");
-    if (NULL != pol_tensor)
+    if (nullptr != pol_tensor)
     {
         OpenBabel::matrix3x3 m3 = pol_tensor->GetData();
         double               mm[9], alpha, fac;
@@ -513,7 +513,7 @@ static void gmx_molprop_read_babel(const char          *g98,
 
     // Electrostatic potential
     esp = (OpenBabel::OBFreeGrid *) mol.GetData("Electrostatic Potential");
-    if (NULL != esp)
+    if (nullptr != esp)
     {
         OpenBabel::OBFreeGridPoint        *fgp;
         OpenBabel::OBFreeGridPointIterator fgpi;
@@ -522,7 +522,7 @@ static void gmx_molprop_read_babel(const char          *g98,
         int         espid = 0;
 
         fgpi = esp->BeginPoints();
-        for (fgp = esp->BeginPoint(fgpi); (NULL != fgp); fgp = esp->NextPoint(fgpi))
+        for (fgp = esp->BeginPoint(fgpi); (nullptr != fgp); fgp = esp->NextPoint(fgpi))
         {
             alexandria::ElectrostaticPotential ep(xyz_unit, V_unit, ++espid,
                                                   100*fgp->GetX(),

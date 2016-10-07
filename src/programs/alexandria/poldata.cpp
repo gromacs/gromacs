@@ -697,7 +697,7 @@ void Poldata::broadcast(t_commrec *cr)
     unsigned int          i, j, nep;
     std::vector<Eemprops> ep;
 
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Going to update poldata on node %d\n", cr->nodeid);
     }
@@ -724,7 +724,7 @@ void Poldata::broadcast(t_commrec *cr)
             eep_.push_back(ep[i]);
         }
     }
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "  EEP  Atom      Chi      J00     Zeta\n");
         for (i = 0; (i < nep); i++)

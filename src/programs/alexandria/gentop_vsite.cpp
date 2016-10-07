@@ -223,7 +223,7 @@ static void calc_vsite2parm(t_atoms *atoms,
              mK*gmx::square(rC-com) + mL*gmx::square(rD-com));
     rVV   = com+I/(com*mT);
     mV    = com*mT/rVV;
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "com = %g, I = %g, rVV = %g mV = %g rB = %g rC = %g rD = %g\n",
                 com, I, rVV, mV, rB, rC, rD);
@@ -267,15 +267,15 @@ static void calc_vsite2parm(t_atoms *atoms,
         atoms->atom[i].m          = mV;
         atoms->atom[i].mB         = mV;
         atoms->atom[i].atomnumber = 0;
-        if (NULL != atoms->atomname)
+        if (nullptr != atoms->atomname)
         {
             atoms->atomname[i]        = put_symtab(symtab, ml);
         }
-        if (NULL != atoms->atomtype)
+        if (nullptr != atoms->atomtype)
         {
             atoms->atomtype[i]        = put_symtab(symtab, ml);
         }
-        if (NULL != atoms->atomtypeB)
+        if (nullptr != atoms->atomtypeB)
         {
             atoms->atomtypeB[i]       = put_symtab(symtab, ml);
         }
@@ -338,7 +338,7 @@ void GentopVsites::mergeLinear(bool bGenVsites)
             if (ndbl > 0)
             {
                 fprintf(stderr, "WARNING: merging two linear vsites into one. Please check result.\n");
-                if (NULL != debug)
+                if (nullptr != debug)
                 {
                     fprintf(debug, "Linear group j");
                     for (l = 0; (l < linear_[j].nline); l++)
@@ -371,7 +371,7 @@ void GentopVsites::mergeLinear(bool bGenVsites)
                 {
                     gmx_fatal(FARGS, "Atoms in strange order in linear vsites. Check debug file.");
                 }
-                if (NULL != debug)
+                if (nullptr != debug)
                 {
                     fprintf(debug, "Linear group j");
                     for (l = 0; (l < linear_[j].nline); l++)
@@ -457,7 +457,7 @@ void GentopVsites::generateSpecial(const Poldata              &pd,
         nlin_at += linear_[i].nline;
     }
 
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Generating %d linear ", nlin_at);
         if (bUseVsites)
