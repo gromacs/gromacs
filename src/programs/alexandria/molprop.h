@@ -1286,6 +1286,9 @@ class MolProp
 
         //! Returns true if the HF energy of the optimized geometry exists and returns the HF
         bool getOptHF(double *value);
+        
+        //! Returns the number of Opt and SP experiments for a molecule in allmols.dat
+        int NOptSP();
 
         //! Add a classification category for this molecule
         void AddCategory(const std::string &category)

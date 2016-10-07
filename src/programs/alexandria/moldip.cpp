@@ -243,13 +243,13 @@ static int check_data_sufficiency(FILE                           *fp,
     int                      k, at_global;
 
     /* Parse opt_elem list to test which elements to optimize */
-    if (NULL != const_elem)
+    if (nullptr != const_elem)
     {
-        update_index_count_bool(ic, pd, const_elem, TRUE, TRUE, iDistributionModel);
+        update_index_count_bool(ic, pd, const_elem, true, true, iDistributionModel);
     }
-    if (NULL != opt_elem)
+    if (nullptr != opt_elem)
     {
-        update_index_count_bool(ic, pd, opt_elem, FALSE, TRUE, iDistributionModel);
+        update_index_count_bool(ic, pd, opt_elem, false, true, iDistributionModel);
     }
     else
     {
@@ -258,9 +258,9 @@ static int check_data_sufficiency(FILE                           *fp,
             auto ai = ic->findName(eep->getName());
             if ((eep->getEqdModel() == iDistributionModel) &&
                 (ai != ic->endIndex()) && !ai->isConst() &&
-                pd.haveEemSupport(iDistributionModel, eep->getName(), FALSE))
+                pd.haveEemSupport(iDistributionModel, eep->getName(), false))
             {
-                ic->addName(eep->getName(), FALSE);
+                ic->addName(eep->getName(), false);
             }
         }
     }
@@ -363,7 +363,7 @@ static int check_data_sufficiency(FILE                           *fp,
     {
         if (mmi.eSupp == eSupportLocal)
         {
-            if (NULL != debug)
+            if (nullptr != debug)
             {
                 fprintf(debug, "Supported molecule %s on CPU %d\n",
                         mmi.molProp()->getMolname().c_str(), cr->nodeid);
@@ -385,7 +385,7 @@ static int check_data_sufficiency(FILE                           *fp,
 
 static void fill_inputrec(t_inputrec *ir)
 {
-    ir->bAdress          = FALSE;
+    ir->bAdress          = false;
     ir->cutoff_scheme    = ecutsGROUP;
     ir->tabext           = 0; /* nm */
     ir->ePBC             = epbcNONE;
@@ -405,8 +405,8 @@ static void fill_inputrec(t_inputrec *ir)
 
 MolDip::MolDip()
 {
-    _cr     = NULL;
-    _fixchi = NULL;
+    _cr     = nullptr;
+    _fixchi = nullptr;
     for (int i = 0; (i < ermsNR); i++)
     {
         _fc[i]   = 0;
@@ -895,19 +895,19 @@ void MolDip::CalcDeviation()
             {
                 split_shell_charges(mymol->mtop_, &mymol->ltop_->idef);
                 fprintf(stderr, "Check whether we need atoms2md here %s %d\n", __FILE__, __LINE__);
-                atoms2md(mymol->mtop_, mymol->inputrec_, 0, NULL, 0,
+                atoms2md(mymol->mtop_, mymol->inputrec_, 0, nullptr, 0,
                          mymol->mdatoms_);
                 (void)
                 relax_shell_flexcon(debug, _cr, FALSE, 0,
-                                    mymol->inputrec_, TRUE,
+                                    mymol->inputrec_, true,
                                     GMX_FORCE_ALLFORCES,
-                                    mymol->ltop_, NULL, NULL, NULL,
+                                    mymol->ltop_, nullptr, nullptr, nullptr,
                                     mymol->state_,
                                     mymol->f_, force_vir, mymol->mdatoms_,
-                                    &my_nrnb, wcycle, NULL,
+                                    &my_nrnb, wcycle, nullptr,
                                     &(mymol->mtop_->groups),
-                                    mymol->shellfc_, mymol->fr_, FALSE, t, mu_tot,
-                                    NULL, NULL);
+                                    mymol->shellfc_, mymol->fr_, false, t, mu_tot,
+                                    nullptr, nullptr);
             }
             /* Compute the molecular dipole */
             mymol->CalcMultipoles();

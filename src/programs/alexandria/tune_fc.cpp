@@ -150,31 +150,23 @@ namespace alexandria
  */
 class BondNames
 {
-    private:
-        //! Number of copies in the molecule data set
-        int                 ncopies_;
-        //! Name of this bond/angle/dihedral
-        std::string         name_;
-        //! String holding all the parameters
-        std::string         params_;
-        //! Vector containing all the parameters
-        std::vector<double> p_;
-        //! The bond order in case this is a bond
-        double              bondorder_;
-        //! Index in Poldata structure
-        int                 poldataIndex_;
-        //! Internal routine to extract the parameters
-        void extractParams();
     public:
+    
         BondNames(int                ncopies,
                   const std::string &name,
                   const std::string &params,
                   int                index,
-                  double             bondorder = 0) :
-            ncopies_(ncopies), name_(name), params_(params), bondorder_(bondorder), poldataIndex_(index)
-        {
-            extractParams();
-        }
+                  double             bondorder = 0) 
+                  
+            :
+                ncopies_(ncopies), 
+                name_(name), 
+                params_(params), 
+                bondorder_(bondorder), 
+                poldataIndex_(index)
+            {
+                extractParams();
+            }
 
         void inc() { ncopies_++; }
 
@@ -193,8 +185,26 @@ class BondNames
         const std::vector<double> &paramValues() const { return p_; }
 
         size_t nParams() const { return p_.size(); }
+        
+    private:
+    
+        //! Number of copies in the molecule data set
+        int                 ncopies_;
+        //! Name of this bond/angle/dihedral
+        std::string         name_;
+        //! String holding all the parameters
+        std::string         params_;
+        //! Vector containing all the parameters
+        std::vector<double> p_;
+        //! The bond order in case this is a bond
+        double              bondorder_;
+        //! Index in Poldata structure
+        int                 poldataIndex_;
+        //! Internal routine to extract the parameters
+        void extractParams();
 };
-typedef std::vector<BondNames>::iterator BondNamesIterator;
+
+using BondNamesIterator = typename std::vector<BondNames>::iterator ;
 
 void BondNames::setParamString(const std::string &params)
 {
@@ -208,7 +218,7 @@ void BondNames::extractParams()
     p_.clear();
     for (const auto &d : p)
     {
-        p_.push_back(atof(d.c_str()));
+        p_.push_back(std::move(atof(d.c_str())));
     }
 }
 
@@ -218,19 +228,18 @@ void BondNames::extractParams()
  */
 class ForceConstants
 {
-    private:
-        int                    bt_;
-        int                    ftype_;
-        InteractionType        itype_;
-        bool                   bOpt_;
-        std::vector<BondNames> bn_;
-        std::vector<int>       reverseIndex_;
-        std::vector<double>    params_;
-    public:
-        ForceConstants(int bt, int ftype, InteractionType itype, bool bOpt) : bt_(bt), ftype_(ftype), itype_(itype), bOpt_(bOpt)
-        { }
 
-        void addForceConstant(BondNames bn) { bn_.push_back(bn); }
+    public:
+    
+        ForceConstants(int bt, int ftype, InteractionType itype, bool bOpt) 
+            : 
+                bt_(bt), 
+                ftype_(ftype), 
+                itype_(itype), 
+                bOpt_(bOpt)
+            {}
+
+        void addForceConstant(BondNames bn) { bn_.push_back(std::move(bn)); }
 
         void analyzeIdef(std::vector<MyMol> &mm,
                          const Poldata      &pd);
@@ -264,6 +273,16 @@ class ForceConstants
         BondNamesIterator endBN() { return bn_.end(); }
 
         size_t nbad() const { return bn_.size(); }
+        
+    private:
+    
+        int                    bt_;
+        int                    ftype_;
+        InteractionType        itype_;
+        bool                   bOpt_;
+        std::vector<BondNames> bn_;
+        std::vector<int>       reverseIndex_;
+        std::vector<double>    params_;
 };
 
 void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
@@ -432,12 +451,16 @@ class Optimization : public MolDip
 
         std::vector<ForceConstants> ForceConstants_;
         param_type                  param_, lower_, upper_, best_, orig_, psigma_, pmean_;
+        const real                  forceWeight_;
 
         /*! \brief
          *
          * Constructor
          */
-        Optimization() {};
+        Optimization(const real forceWeight) 
+            :
+                forceWeight_(forceWeight)
+            {};
 
         /*! \brief
          *
@@ -522,8 +545,8 @@ void Optimization::checkSupport(FILE *fp, bool  bOpt[])
             if (bOpt[bt])
             {
                 auto iType = static_cast<InteractionType>(bt);
-                ft       = pd_.findForces(iType)->fType();
-                bSupport = (mymol->ltop_ != nullptr);
+                ft         = pd_.findForces(iType)->fType();
+                bSupport   = (mymol->ltop_ != nullptr);
                 for (int i = 0; bSupport && (i < mymol->ltop_->idef.il[ft].nr);
                      i += interaction_function[ft].nratoms+1)
                 {
@@ -673,7 +696,7 @@ void Optimization::polData2TuneFc()
         {
             for (const auto &p : b->paramValues())
             {
-                param_.push_back(p);
+                param_.push_back(std::move(p));
             }
         }
     }
@@ -809,7 +832,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                           mymol->molProp()->getIupac().c_str());
             }
         }
-        rhs.push_back(-mymol->Emol);
+        rhs.push_back(std::move(-mymol->Emol));
     }
 
     char buf[STRLEN];
@@ -865,7 +888,7 @@ void Optimization::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
     for (auto fs = pd_.forcesBegin();
          fs != pd_.forcesEnd(); fs++)
     {
-        fts.push_back(fs->fType());
+        fts.push_back(std::move(fs->fType()));
     }
 
     for (size_t bt = 0; (bt < fts.size()); bt++)
@@ -874,7 +897,7 @@ void Optimization::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
         fc.analyzeIdef(_mymol, pd_);
         fc.makeReverseIndex();
         fc.dump(fplog);
-        ForceConstants_.push_back(fc);
+        ForceConstants_.push_back(std::move(fc));
     }
 
     if (ForceConstants_[eitBONDS].nbad() <= _mymol.size())
@@ -937,11 +960,14 @@ static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
 
 double Optimization::calcDeviation()
 {
-    rvec    mu_tot;
     int     j;
+    rvec    mu_tot;
     FILE   *dbcopy;
-    double  ener    = 0, optHF = 0, spHF = 0;
-    double  deltaEn = 0, Emol = 0;
+    double  ener    = 0;
+    double  optHF   = 0;
+    double  spHF    = 0;
+    double  deltaEn = 0;
+    double  Emol    = 0;
 
     if (PAR(_cr))
     {
@@ -976,13 +1002,12 @@ double Optimization::calcDeviation()
     {
         if (mymol.molProp()->getOptHF(&optHF))
         {
-            int nconfs = 0;
             int natoms = mymol.molProp()->NAtom();
+            int nOptSP = mymol.molProp()->NOptSP();
 
             if ((mymol.eSupp == eSupportLocal) ||
                 (_bFinal && (mymol.eSupp == eSupportRemote)))
             {
-                /* Update topology for this molecule */
                 for (const auto fc : ForceConstants_)
                 {
                     if (fc.nbad() > 0)
@@ -998,9 +1023,6 @@ double Optimization::calcDeviation()
 
                     if (jtype == JOB_OPT || jtype == JOB_SP)
                     {
-
-                        nconfs++;
-
                         ei->getHF(&spHF);
 
                         deltaEn = spHF - optHF;
@@ -1017,15 +1039,18 @@ double Optimization::calcDeviation()
                         mymol.changeCoordinate(ei);
                         mymol.computeForces(debug, _cr, mu_tot);
 
-                        debug           = dbcopy;
-                        mymol.Force2    = 0.0;
+                        debug         = dbcopy;
+                        mymol.Force2  = 0.0;
 
+                        mymol.Ecalc  = mymol.enerd_->term[F_EPOT];
+                        ener         = gmx::square(mymol.Ecalc-Emol);
+                        
                         for (j = 0; (j < natoms); j++)
                         {
                             mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
                         }
 
-                        mymol.Force2     /= natoms;
+                        mymol.Force2 /= natoms;
 
                         if (jtype == JOB_OPT)
                         {
@@ -1039,12 +1064,12 @@ double Optimization::calcDeviation()
 
                             mymol.OptForce2 /= natoms;
 
-                            _ener[ermsForce2] += _fc[ermsForce2]*mymol.OptForce2;
+                            _ener[ermsForce2] += _fc[ermsForce2]*mymol.OptForce2*forceWeight_;
                             mymol.OptEcalc     = mymol.enerd_->term[F_EPOT];
+                            
+                            ener *= gmx::square(nOptSP-1);
                         }
 
-                        mymol.Ecalc        = mymol.enerd_->term[F_EPOT];
-                        ener               = gmx::square(mymol.Ecalc-Emol);
                         _ener[ermsEPOT]   += _fc[ermsEPOT]*ener;
 
                         if (nullptr != debug)
@@ -1052,21 +1077,21 @@ double Optimization::calcDeviation()
                             fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
 
                             fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  "
-                                    "Hangle %g Langle %g  PDIHS  %g  Coul %g  LJ  %g  BHAM  %g  Force2 %g\n",
+                                    "Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g Force2 %g\n",
                                     mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, Emol, mymol.Ecalc,
                                     mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY],
                                     mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS],
-                                    mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ],
+                                    mymol.enerd_->term[F_IDIHS], mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ],
                                     mymol.enerd_->term[F_BHAM], mymol.Force2);
                         }
                     }
                 }
-                _ener[ermsEPOT] /= nconfs;
+                _ener[ermsEPOT] /= nOptSP;
             }
         }
         else
         {
-            gmx_fatal(FARGS, "No optimized structure for %s\n",
+            gmx_fatal(FARGS, "There is no optimized structure for %s\n",
                       mymol.molProp()->getMolname().c_str());
         }
     }
@@ -1122,7 +1147,6 @@ double Optimization::objFunction(const double v[])
 
     return rms;
 }
-
 
 void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
                           int nrun, real stepsize, int seed,
@@ -1267,22 +1291,29 @@ void Optimization::printSpecs(FILE *fp, char *title,
                               const gmx_output_env_t *oenv,
                               bool bCheckOutliers)
 {
-    FILE       *xfp;
-    int         i;
+    int         N, i;
+    real        a, b;
+    real        da, db;
+    real        chi2, Rfit;
     double      msd;
+    FILE       *xfp;
     gmx_stats_t gst;
 
     gst = gmx_stats_init();
+    
     if (nullptr != xvg)
     {
         xfp = xvgropen(xvg, "Entalpy of Formation", "Experiment (kJ/mol)", "Calculated (kJ/mol)",
                        oenv);
     }
+    
     fprintf(fp, "%s\n", title);
+    
     fprintf(fp, "Nr.   %-30s %10s %10s %10s %10s %10s\n",
             "Molecule", "DHf@298K", "Emol@0K", "Delta E", "rms F", "Outlier?");
     msd = 0;
     i   = 0;
+    
     for (auto mi = _mymol.begin(); (mi < _mymol.end()); mi++, i++)
     {
         real DeltaE = mi->OptEcalc - mi->Emol;
@@ -1300,6 +1331,7 @@ void Optimization::printSpecs(FILE *fp, char *title,
             fprintf(xfp, "%10g  %10g\n", mi->Hform, mi->Hform + DeltaE);
         }
     }
+    
     fprintf(fp, "\n");
     fprintf(fp, "RMSD is %g kJ/mol for %d molecules.\n\n",
             sqrt(msd/_mymol.size()), static_cast<int>(_mymol.size()));
@@ -1309,14 +1341,14 @@ void Optimization::printSpecs(FILE *fp, char *title,
         xvgrclose(xfp);
         do_view(oenv, xvg, nullptr);
     }
-    //! Do statistics
-    real a, b, da, db, chi2, Rfit;
-    int  N;
+    
     gmx_stats_get_ab(gst, 1, &a, &b, &da, &db, &chi2, &Rfit);
     gmx_stats_get_npoints(gst, &N);
+    
     fprintf(fp, "Regression analysis fit to y = ax + b:\n");
     fprintf(fp, "a = %.3f  b = %3f  R2 = %.1f%%  chi2 = %.1f N = %d\n",
             a, b, Rfit*100, chi2, N);
+            
     gmx_stats_free(gst);
     fflush(fp);
 }
@@ -1362,66 +1394,97 @@ int alex_tune_fc(int argc, char *argv[])
     };
 
     t_filenm              fnm[] = {
-        { efDAT, "-f", "allmols",    ffREAD  },
-        { efDAT, "-d", "gentop",     ffOPTRD },
-        { efDAT, "-o", "tune_fc",    ffWRITE },
-        { efDAT, "-sel", "molselect", ffREAD },
-        { efXVG, "-table", "table",    ffOPTRD },
-        { efLOG, "-g", "tune_fc",    ffWRITE },
-        { efXVG, "-x", "hform-corr", ffWRITE },
-        { efXVG, "-conv", "param-conv", ffWRITE },
-        { efXVG, "-epot", "param-epot", ffWRITE }
+        { efDAT, "-f",     "allmols",    ffREAD  },
+        { efDAT, "-d",     "gentop",     ffOPTRD },
+        { efDAT, "-o",     "tune_fc",    ffWRITE },
+        { efDAT, "-sel",   "molselect",  ffREAD  },
+        { efXVG, "-table", "table",      ffOPTRD },
+        { efLOG, "-g",     "tune_fc",    ffWRITE },
+        { efXVG, "-x",     "hform-corr", ffWRITE },
+        { efXVG, "-conv",  "param-conv", ffWRITE },
+        { efXVG, "-epot",  "param-epot", ffWRITE }
     };
+    
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
-    static int            nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
-    static int            minimum_data  = 3, compress = 0;
-    static real           tol           = 1e-3, stol = 1e-6, watoms = 0;
-    static gmx_bool       bBound        = false, bZero = true, bWeighted = false, bOptHfac = false;
-    static gmx_bool       bQM           = false, bGaussianBug = true, bPolar = false, bFitZeta = false, bZPE = false;
-    static real           J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
-    static real           J0_1          = 30, Chi0_1 = 30, w_1 = 50;
-    static real           fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0, fc_epot = 1, fc_force = 0.001;
+
+    static int            nrun          = 1;
+    static int            maxiter       = 100; 
+    static int            reinit        = 0;
+    static int            seed          = 0;
+    static int            minimum_data  = 3;
+    static int            compress      = 0;
+    static int            nprint        = 10;
+    static real           tol           = 1e-3;
+    static real           stol          = 1e-6;
+    static real           watoms        = 0;   
+    static real           J0_0          = 5;
+    static real           Chi0_0        = 1;
+    static real           w_0           = 5;
+    static real           step          = 0.01;
+    static real           hfac          = 0.0;
+    static real           rDecrZeta     = -1;
+    static real           J0_1          = 30;
+    static real           Chi0_1        = 30;
+    static real           w_1           = 50;
+    static real           fc_mu         = 1;
+    static real           fc_bound      = 1;
+    static real           fc_quad       = 1;
+    static real           fc_charge     = 0;
+    static real           fc_esp        = 0; 
+    static real           fc_epot       = 1;
+    static real           fc_force      = 0.001;
+    static real           fweight       = 0.001;
     static real           factor        = 0.8;
-    static char          *opt_elem      = nullptr, *const_elem = nullptr, *fixchi = (char *)"H";
-    static char          *lot           = (char *)"B3LYP/aug-cc-pVTZ";
-    static const char    *cqdist[]      = {
-        nullptr, "AXp", "AXg", "AXs",
-        "Yang", "Bultinck", "Rappe", nullptr
-    };
-    static const char    *cqgen[]      = {
-        nullptr, "None", "EEM", "ESP", "RESP", nullptr
-    };
-    static bool           bOpt[eitNR]  = { true, false, false, false, false, false, false, false, false};
-    static real           beta0        = 0, D0 = 0, beta_min = 10, D0_min = 50, temperature;
-    static int            nprint       = 10;
+    static real           beta0         = 0;
+    static real           D0            = 0; 
+    static real           beta_min      = 10; 
+    static real           D0_min        = 50; 
+    static real           temperature   = 300;
+    static char          *opt_elem      = nullptr;
+    static char          *const_elem    = nullptr;
+    static char          *fixchi        = (char *)"H";
+    static char          *lot           = (char *)"B3LYP/aug-cc-pVTZ";    
+    static gmx_bool       bBound        = false;
+    static gmx_bool       bWeighted     = false;
+    static gmx_bool       bOptHfac      = false;
+    static gmx_bool       bQM           = false; 
+    static gmx_bool       bPolar        = false;
+    static gmx_bool       bFitZeta      = false;
+    static gmx_bool       bZPE          = false;
+    static gmx_bool       bGaussianBug  = true;
+    static gmx_bool       bZero         = true;  
+    static const char    *cqdist[]      = {nullptr, "AXp", "AXg", "AXs","Yang", "Bultinck", "Rappe", nullptr};
+    static const char    *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
+    static bool           bOpt[eitNR]   = { true, false, false, false, false, false, false, false, false};
+      
     t_pargs               pa[]         = {
-        { "-tol",   FALSE, etREAL, {&tol},
+        { "-tol",     FALSE, etREAL, {&tol},
           "Tolerance for convergence in optimization" },
         { "-maxiter", FALSE, etINT, {&maxiter},
           "Max number of iterations for optimization" },
-        { "-nprint", FALSE, etINT, {&nprint},
+        { "-nprint",  FALSE, etINT, {&nprint},
           "How often to print the parameters during the simulation" },
-        { "-temp",  FALSE, etREAL, {&temperature},
+        { "-temp",    FALSE, etREAL, {&temperature},
           "'Temperature' for the Monte Carlo simulation" },
-        { "-reinit", FALSE, etINT, {&reinit},
+        { "-reinit",  FALSE, etINT, {&reinit},
           "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
-        { "-stol",   FALSE, etREAL, {&stol},
+        { "-stol",    FALSE, etREAL, {&stol},
           "If reinit is -1 then a reinit will be done as soon as the simplex size is below this treshold." },
-        { "-nrun",   FALSE, etINT,  {&nrun},
+        { "-nrun",    FALSE, etINT,  {&nrun},
           "This many runs will be done, before each run a complete randomization will be done" },
         { "-qdist",   FALSE, etENUM, {cqdist},
           "Model used for charge distribution" },
-        { "-qgen",   FALSE, etENUM, {cqgen},
+        { "-qgen",    FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
-        { "-bonds",  FALSE, etBOOL, {&bOpt[eitBONDS]},
+        { "-bonds",   FALSE, etBOOL, {&bOpt[eitBONDS]},
           "Optimize bond parameters" },
         { "-angles",  FALSE, etBOOL, {&bOpt[eitANGLES]},
           "Optimize angle parameters" },
-        { "-langles",  FALSE, etBOOL, {&bOpt[eitLINEAR_ANGLES]},
+        { "-langles", FALSE, etBOOL, {&bOpt[eitLINEAR_ANGLES]},
           "Optimize linear angle parameters" },
-        { "-dihedrals",  FALSE, etBOOL, {&bOpt[eitPROPER_DIHEDRALS]},
+        { "-dihedrals", FALSE, etBOOL, {&bOpt[eitPROPER_DIHEDRALS]},
           "Optimize proper dihedral parameters" },
-        { "-impropers",  FALSE, etBOOL, {&bOpt[eitIMPROPER_DIHEDRALS]},
+        { "-impropers", FALSE, etBOOL, {&bOpt[eitIMPROPER_DIHEDRALS]},
           "Optimize improper dihedral parameters" },
         { "-pairs",  FALSE, etBOOL, {&bOpt[eitLJ14]},
           "Optimize 1-4 interaction parameters" },
@@ -1444,7 +1507,9 @@ int alex_tune_fc(int argc, char *argv[])
         { "-fc_epot",    FALSE, etREAL, {&fc_epot},
           "Force constant in the penalty function for the energy term" },
         { "-fc_force",    FALSE, etREAL, {&fc_force},
-          "Force constant in the penalty function for the force term" },
+          "Force constant in the penalty function for the force term" },         
+        { "-fweight",    FALSE, etREAL, {&fweight},
+          "Force weight in chi squared calculation" },         
         { "-step",  FALSE, etREAL, {&step},
           "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
         { "-min_data",  FALSE, etINT, {&minimum_data},
@@ -1464,6 +1529,7 @@ int alex_tune_fc(int argc, char *argv[])
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" }
     };
+    
     FILE                 *fp;
     t_commrec            *cr;
     gmx_output_env_t     *oenv;
@@ -1503,7 +1569,7 @@ int alex_tune_fc(int argc, char *argv[])
         gms.read(opt2fn_null("-sel", NFILE, fnm));
     }
 
-    alexandria::Optimization       opt;
+    alexandria::Optimization       opt(fweight);
     ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
 

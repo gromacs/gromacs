@@ -391,6 +391,13 @@ class Poldata
                          double                   *refValue,
                          double                   *sigma,
                          size_t                   *ntrain) const;
+                         
+        bool searchForce(std::vector<std::string> &atoms,
+                         std::string              &params,
+                         double                   *refValue,
+                         double                   *sigma,
+                         size_t                   *ntrain,
+                         InteractionType           iType) const;
 
         const std::string &getVdwFunction() const { return gtVdwFunction_; }
 

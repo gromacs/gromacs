@@ -421,6 +421,26 @@ bool Poldata::searchForce(std::vector<std::string> &atoms,
     return false;
 }
 
+bool Poldata::searchForce(std::vector<std::string> &atoms,
+                          std::string              &params,
+                          double                   *refValue,
+                          double                   *sigma,
+                          size_t                   *ntrain,
+                          InteractionType           iType) const
+{
+    auto f  = findForces(iType);
+    
+    if (forcesEnd() != f)
+    {
+        if (f->searchForce(atoms, params, refValue,
+                           sigma, ntrain))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 /*
  *-+-+-+-+-+-+-+-+

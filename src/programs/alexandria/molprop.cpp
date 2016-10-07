@@ -189,7 +189,7 @@ CommunicationStatus GenericProperty::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, T_);
         gmx_send_int(cr, dest, (int) eP_);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to send GenericProperty, status %s\n", cs_name(cs));
         fflush(debug);
@@ -209,7 +209,7 @@ CommunicationStatus GenericProperty::Receive(t_commrec *cr, int src)
         T_  = gmx_recv_double(cr, src);
         eP_ = (ePhase) gmx_recv_int(cr, src);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to receive GenericProperty, status %s\n", cs_name(cs));
         fflush(debug);
@@ -292,7 +292,7 @@ void MolProp::AddBond(Bond b)
     {
         _bond.push_back(b);
     }
-    else if ((NULL != debug) && (bi->getBondOrder() != b.getBondOrder()))
+    else if ((nullptr != debug) && (bi->getBondOrder() != b.getBondOrder()))
     {
         fprintf(debug, "Different bond orders in molecule %s\n", getMolname().c_str());
         fflush(debug);
@@ -407,7 +407,7 @@ Experiment::Experiment(std::string program, std::string method,
 
 void Experiment::Dump(FILE *fp)
 {
-    if (NULL != fp)
+    if (nullptr != fp)
     {
         fprintf(fp, "Experiment %s %d polar %d dipole\n",
                 dataSourceName(dataSource()), NPolar(), NDipole());
@@ -621,7 +621,7 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
     else
     {
         int smult = src->getMultiplicity();
-        if ((NULL != debug) && (smult != getMultiplicity()))
+        if ((nullptr != debug) && (smult != getMultiplicity()))
         {
             fprintf(debug, "Not overriding multiplicity to %d when merging since it is %d (%s)\n",
                     smult, getMultiplicity(), src->getMolname().c_str());
@@ -636,7 +636,7 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
     else
     {
         sq = src->getCharge();
-        if ((NULL != debug) && (sq != q))
+        if ((nullptr != debug) && (sq != q))
         {
             fprintf(debug, "Not overriding charge to %g when merging since it is %g (%s)\n",
                     sq, q, getMolname().c_str());
@@ -820,7 +820,7 @@ bool MolProp::GenerateComposition(const Poldata &pd)
     if (natoms == mci_alexandria.CountAtoms())
     {
         AddComposition(mci_alexandria);
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "LO_COMP: ");
             for (auto ani = mci_alexandria.BeginAtomNum(); (ani < mci_alexandria.EndAtomNum()); ani++)
@@ -1099,6 +1099,21 @@ bool MolProp::getOptHF(double *value)
     return done;
 }
 
+int MolProp::NOptSP()
+{
+    int n = 0;
+
+    for (auto ei = BeginExperiment(); ei < EndExperiment(); ++ei)
+    {
+        if (ei->getJobtype() == JOB_OPT || 
+            ei->getJobtype() == JOB_SP)
+        {
+            n++;
+        }
+    }
+    return n;
+}
+
 bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
                       const std::string &lot,
                       const std::string &conf,
@@ -1112,7 +1127,7 @@ bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
 
     bReturn = getPropRef(mpo, iQM, lot, conf, type, value, &myerror, T,
                          myref, mylot, vec, quad);
-    if (NULL != error)
+    if (nullptr != error)
     {
         *error = myerror;
     }
@@ -1143,21 +1158,21 @@ ExperimentIterator MolProp::getLotPropType(const char       *lot,
                     case MPO_DIPOLE:
                         for (auto mdp = ci->BeginDipole(); !done && (mdp < ci->EndDipole()); mdp++)
                         {
-                            done =  ((NULL == type) ||
+                            done =  ((nullptr == type) ||
                                      (strcasecmp(type, mdp->getType().c_str()) == 0));
                         }
                         break;
                     case MPO_QUADRUPOLE:
                         for (auto mdp = ci->BeginQuadrupole(); !done && (mdp < ci->EndQuadrupole()); mdp++)
                         {
-                            done =  ((NULL == type) ||
+                            done =  ((nullptr == type) ||
                                      (strcasecmp(type, mdp->getType().c_str()) == 0));
                         }
                         break;
                     case MPO_POLARIZABILITY:
                         for (auto mdp = ci->BeginPolar(); !done && (mdp < ci->EndPolar()); mdp++)
                         {
-                            done =  ((NULL == type) ||
+                            done =  ((nullptr == type) ||
                                      (strcasecmp(type, mdp->getType().c_str()) == 0));
                         }
                         break;
@@ -1165,7 +1180,7 @@ ExperimentIterator MolProp::getLotPropType(const char       *lot,
                     case MPO_ENTROPY:
                         for (auto mdp = ci->BeginEnergy(); !done && (mdp < ci->EndEnergy()); mdp++)
                         {
-                            done =  ((NULL == type) ||
+                            done =  ((nullptr == type) ||
                                      (strcasecmp(type, mdp->getType().c_str()) == 0));
                         }
                         break;
@@ -1229,7 +1244,7 @@ CommunicationStatus MolecularQuadrupole::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, xz_);
         gmx_send_double(cr, dest, yz_);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to send MolecularQuadrupole, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1283,7 +1298,7 @@ CommunicationStatus MolecularPolarizability::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, _average);
         gmx_send_double(cr, dest, _error);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to send MolecularQuadrupole, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1311,7 +1326,7 @@ CommunicationStatus MolecularPolarizability::Receive(t_commrec *cr, int src)
         _average = gmx_recv_double(cr, src);
         _error   = gmx_recv_double(cr, src);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to received MolecularQuadrupole, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1333,7 +1348,7 @@ CommunicationStatus MolecularEnergy::Receive(t_commrec *cr, int src)
         _value = gmx_recv_double(cr, src);
         _error = gmx_recv_double(cr, src);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to receive MolecularEnergy, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1355,7 +1370,7 @@ CommunicationStatus MolecularEnergy::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, _value);
         gmx_send_double(cr, dest, _error);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to send MolecularEnergy, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1374,7 +1389,7 @@ CommunicationStatus Bond::Send(t_commrec *cr, int dest)
         gmx_send_int(cr, dest, _aj);
         gmx_send_int(cr, dest, _bondorder);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to send Bond, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1393,7 +1408,7 @@ CommunicationStatus Bond::Receive(t_commrec *cr, int src)
         _aj        = gmx_recv_int(cr, src);
         _bondorder = gmx_recv_int(cr, src);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to receive Bond, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1418,7 +1433,7 @@ CommunicationStatus MolecularDipole::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, _aver);
         gmx_send_double(cr, dest, _error);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to send MolecularDipole, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1443,7 +1458,7 @@ CommunicationStatus MolecularDipole::Receive(t_commrec *cr, int src)
         _aver  = gmx_recv_double(cr, src);
         _error = gmx_recv_double(cr, src);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to receive MolecularDipole, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1542,7 +1557,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
         }
         while (CS_OK == cs);
     }
-    if ((CS_OK != cs) && (NULL != debug))
+    if ((CS_OK != cs) && (nullptr != debug))
     {
         fprintf(debug, "Trying to receive Experiment, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1610,7 +1625,7 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
         }
         cs = gmx_send_done(cr, dest);
     }
-    if ((CS_OK != cs) && (NULL != debug))
+    if ((CS_OK != cs) && (nullptr != debug))
     {
         fprintf(debug, "Trying to send Experiment, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1633,7 +1648,7 @@ CommunicationStatus ElectrostaticPotential::Receive(t_commrec *cr, int src)
         z_     = gmx_recv_double(cr, src);
         V_     = gmx_recv_double(cr, src);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to receive ElectrostaticPotential, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1656,7 +1671,7 @@ CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, z_);
         gmx_send_double(cr, dest, V_);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to send ElectrostaticPotential, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1678,7 +1693,7 @@ CommunicationStatus AtomicCharge::Receive(t_commrec *cr, int src)
     {
         _q = gmx_recv_double(cr, src);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to receive AtomicCharge, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1700,7 +1715,7 @@ CommunicationStatus AtomicCharge::Send(t_commrec *cr, int dest)
     {
         gmx_send_double(cr, dest, _q);
     }
-    else if (NULL != debug)
+    else if (nullptr != debug)
     {
         fprintf(debug, "Trying to send AtomicCharge, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1736,7 +1751,7 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
         while (CS_OK == cs);
 
     }
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Received CalcAtom, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1766,7 +1781,7 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest)
         }
         cs = gmx_send_done(cr, dest);
     }
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "Sent CalcAtom, status %s\n", cs_name(cs));
         fflush(debug);
@@ -1783,7 +1798,7 @@ CommunicationStatus AtomNum::Send(t_commrec *cr, int dest)
     {
         gmx_send_str(cr, dest, _catom.c_str());
         gmx_send_int(cr, dest, _cnumber);
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "Sent AtomNum %s %d, status %s\n",
                     _catom.c_str(), _cnumber, cs_name(cs));
@@ -1802,7 +1817,7 @@ CommunicationStatus AtomNum::Receive(t_commrec *cr, int src)
     {
         _catom.assign(gmx_recv_str(cr, src));
         _cnumber = gmx_recv_int(cr, src);
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "Received AtomNum %s %d, status %s\n",
                     _catom.c_str(), _cnumber, cs_name(cs));
@@ -1824,7 +1839,7 @@ CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest)
             cs = ani->Send(cr, dest);
         }
         cs = gmx_send_done(cr, dest);
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "Sent MolecularComposition %s, status %s\n",
                     _compname.c_str(), cs_name(cs));
@@ -1854,7 +1869,7 @@ CommunicationStatus MolecularComposition::Receive(t_commrec *cr, int src)
             }
         }
         while (CS_OK == cs2);
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "Received MolecularComposition %s, status %s\n",
                     _compname.c_str(), cs_name(cs));
@@ -1907,7 +1922,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
             if (CS_OK == cs)
             {
                 gmx_send_str(cr, dest, si->c_str());
-                if (NULL != debug)
+                if (nullptr != debug)
                 {
                     fprintf(debug, "Sent category %s\n", si->c_str());
                     fflush(debug);
@@ -1923,7 +1938,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
         }
         cs = gmx_send_done(cr, dest);
 
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "Sent MolProp %s, status %s\n",
                     getMolname().c_str(), cs_name(cs));
@@ -1951,7 +1966,7 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
         _cas.assign(gmx_recv_str(cr, src));
         _cid.assign(gmx_recv_str(cr, src));
         _inchi.assign(gmx_recv_str(cr, src));
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "Got molname %s\n", getMolname().c_str());
         }
@@ -1988,10 +2003,10 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
             if (CS_OK == cs)
             {
                 char *ptr = gmx_recv_str(cr, src);
-                if (NULL != ptr)
+                if (nullptr != ptr)
                 {
                     AddCategory(ptr);
-                    if (NULL != debug)
+                    if (nullptr != debug)
                     {
                         fprintf(debug, "Received a category %s\n", ptr);
                         fflush(debug);
@@ -2019,7 +2034,7 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
         }
         while (CS_OK == cs);
 
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "Reveived %d experiments from %d for mol %s\n",
                     NExperiment(), src, getMolname().c_str());

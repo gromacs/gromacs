@@ -2534,10 +2534,13 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[aj], aaj))
                 {
                     atoms = {aai, aaj};
-                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
+                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain, iType))
                     {
-                        mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value, lu);
-                        ltop_->idef.iparams[tp].morse.b0A     = convert2gmx(value, lu);
+                        mtop_->ffparams.iparams[tp].morse.b0A =
+                            mtop_->ffparams.iparams[tp].morse.b0B = convert2gmx(value, lu);
+                            
+                        ltop_->idef.iparams[tp].morse.b0A     = 
+                            ltop_->idef.iparams[tp].morse.b0B = convert2gmx(value, lu);
 
                         ptr = gmx::splitString(params);
                         n   = 0;
@@ -2547,13 +2550,19 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                             {
                                 if (n == 0)
                                 {
-                                    mtop_->ffparams.iparams[tp].morse.cbA = atof(pi->c_str());
-                                    ltop_->idef.iparams[tp].morse.cbA     = atof(pi->c_str());
+                                    mtop_->ffparams.iparams[tp].morse.cbA = 
+                                        mtop_->ffparams.iparams[tp].morse.cbB = atof(pi->c_str());
+                                        
+                                    ltop_->idef.iparams[tp].morse.cbA     = 
+                                        ltop_->idef.iparams[tp].morse.cbB = atof(pi->c_str());
                                 }
                                 else
                                 {
-                                    mtop_->ffparams.iparams[tp].morse.betaA = atof(pi->c_str());
-                                    ltop_->idef.iparams[tp].morse.betaA     = atof(pi->c_str());
+                                    mtop_->ffparams.iparams[tp].morse.betaA = 
+                                        mtop_->ffparams.iparams[tp].morse.betaB = atof(pi->c_str());
+                                        
+                                    ltop_->idef.iparams[tp].morse.betaA     = 
+                                        ltop_->idef.iparams[tp].morse.betaB = atof(pi->c_str());
                                 }
                                 n++;
                             }
@@ -2583,7 +2592,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
                 {
                     atoms = {aai, aaj, aak};
-                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
+                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain, iType))
                     {
 
                         r13 = calc_r13(pd, aai, aaj, aak, value);
@@ -2650,7 +2659,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[ak], aak))
                 {
                     atoms = {aai, aaj, aak};
-                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
+                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain, iType))
                     {
                         r13 = calc_r13(pd, aai, aaj, aak, value);
 
@@ -2720,7 +2729,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[al], aal))
                 {
                     atoms = {aai, aaj, aak, aal};
-                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
+                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain, iType))
                     {
                         mtop_->ffparams.iparams[tp].pdihs.phiA     =
                             mtop_->ffparams.iparams[tp].pdihs.phiB = value;
@@ -2780,7 +2789,7 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     pd.atypeToBtype(*topology_->atoms.atomtype[al], aal))
                 {
                     atoms = {aai, aaj, aak, aal};
-                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain))
+                    if (pd.searchForce(atoms, params, &value, &sigma, &ntrain, iType))
                     {
                         mtop_->ffparams.iparams[tp].harmonic.rA     =
                             mtop_->ffparams.iparams[tp].harmonic.rB = value;
