@@ -251,23 +251,20 @@ recommends either
 * that you build FFTW from the source code.
 
 If you build FFTW from source yourself, get the most recent version
-and follow the `FFTW installation guide`_. Note that we have recently
-contributed new SIMD optimization for several extra platforms to
-FFTW, which will appear in FFTW-3.3.5 (for now it is available in the
-FFTW repository on github, or you can find a very unofficial prerelease
-version at ftp://ftp.gromacs.org/pub/contrib ).
-Choose the precision for FFTW (i.e. single/float vs. double) to
-match whether you will later use mixed or double precision for
-|Gromacs|. There is no need to compile FFTW with
-threading or MPI support, but it does no harm. On x86 hardware,
-compile with *both* ``--enable-sse2`` and ``--enable-avx`` for
-FFTW-3.3.4 and earlier. As of FFTW-3.3.5 you should also add
-``--enable-avx2``. FFTW will create a fat library with codelets
-for all different instruction sets, and pick the fastest supported
-one at runtime. On IBM Power8, you definitely want the upcoming
-FFTW-3.3.5 and to compile it with ``--enable-vsx`` for SIMD support. If you are
-using a Cray, there is a special modified (commercial) version of
-FFTs using the FFTW interface which can be slightly faster.
+and follow the `FFTW installation guide`_. Choose the precision for
+FFTW (i.e. single/float vs. double) to match whether you will later
+use mixed or double precision for |Gromacs|. There is no need to
+compile FFTW with threading or MPI support, but it does no harm. On
+x86 hardware, compile with *both* ``--enable-sse2`` and
+``--enable-avx`` for FFTW-3.3.4 and earlier. From FFTW-3.3.5, you
+should also add ``--enable-avx2`` also. On Intel chipsets supporting
+512-wide AVX, including KNL, add ``--enable-avx512`` also. FFTW will
+create a fat library with codelets for all different instruction sets,
+and pick the fastest supported one at runtime. On IBM Power8, you
+definitely want FFTW-3.3.5 and to compile it with ``--enable-vsx`` for
+SIMD support. If you are using a Cray, there is a special modified
+(commercial) version of FFTs using the FFTW interface which can be
+slightly faster.
 
 Using MKL
 ^^^^^^^^^
