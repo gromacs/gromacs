@@ -34,7 +34,7 @@
 ;                bond as an improper dihedral
 ;            0 = do not generate such
 ; bonds  angles  dihedrals  impropers all_dihedrals nrexcl HH14 RemoveDih
-     1       1          3          1	    1         3      1     0
+     1       1          3          1        1         3      1     0
 
 [ ACE ]
  [ atoms ]
@@ -111,28 +111,28 @@
      C     O
     -C     N
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
 
 
 [ ARG ]
  [ atoms ]
-     N    opls_238   -0.500     1       
+     N    opls_238   -0.500     1
      H    opls_241    0.300     1
-    CA    opls_224B   0.140     1 
-    HA    opls_140    0.060     1 
-    CB    opls_136   -0.120     2 
-   HB1    opls_140    0.060     2 
-   HB2    opls_140    0.060     2 
-    CG    opls_308   -0.050     3 
-   HG1    opls_140    0.060     3 
-   HG2    opls_140    0.060     3 
-    CD    opls_307    0.190     4 
-   HD1    opls_140    0.060     4 
-   HD2    opls_140    0.060     4 
-    NE    opls_303   -0.700     5 
-    HE    opls_304    0.440     5 
-    CZ    opls_302    0.640	5 
+    CA    opls_224B   0.140     1
+    HA    opls_140    0.060     1
+    CB    opls_136   -0.120     2
+   HB1    opls_140    0.060     2
+   HB2    opls_140    0.060     2
+    CG    opls_308   -0.050     3
+   HG1    opls_140    0.060     3
+   HG2    opls_140    0.060     3
+    CD    opls_307    0.190     4
+   HD1    opls_140    0.060     4
+   HD2    opls_140    0.060     4
+    NE    opls_303   -0.700     5
+    HE    opls_304    0.440     5
+    CZ    opls_302    0.640     5
    NH1    opls_300   -0.800     6
   HH11    opls_301    0.460     6
   HH12    opls_301    0.460     6
@@ -194,11 +194,11 @@
    HD2    opls_140    0.060     4
     NE    opls_749   -0.620     5
     HE    opls_304    0.350     5; guessed charge
-    CZ    opls_752    0.550	6
+    CZ    opls_752    0.550     6
    NH1    opls_750   -0.785     6
-   HH1    opls_301    0.340     6; guessed charge  
+   HH1    opls_301    0.340     6; guessed charge
    NH2    opls_751   -0.785     7
-  HH21    opls_301    0.360     7; guessed charge  
+  HH21    opls_301    0.360     7; guessed charge
   HH22    opls_301    0.360     7; guessed charge
      C    opls_235    0.500     8
      O    opls_236   -0.500     8
@@ -300,22 +300,22 @@
     CB    CG
     CG   OD1
     CG   OD2
-     C     O	
-    -C     N 
+     C     O
+    -C     N
  [ dihedrals ] ; override some with residue-specific ones
      N    CA    CB    CG    dih_ASP_chi1_N_C_C_C
     CG    CB    CA     C    dih_ASP_chi1_C_C_C_CO
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
-    CB   OD1    CG   OD2    improper_O_C_X_Y     
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+    CB   OD1    CG   OD2    improper_O_C_X_Y
 
 [ ASPH ]
  [ atoms ]
-     N    opls_238   -0.500     0  
-     H    opls_241    0.300     0  
-    CA    opls_224B   0.140     1  
-    HA    opls_140    0.060     1  
+     N    opls_238   -0.500     0
+     H    opls_241    0.300     0
+    CA    opls_224B   0.140     1
+    HA    opls_140    0.060     1
     CB    opls_136   -0.120     2
    HB1    opls_140    0.060     2
    HB2    opls_140    0.060     2
@@ -504,13 +504,13 @@
      N    CA    CB    CG    dih_GLN_chi1_N_C_C_C
     CG    CB    CA     C    dih_GLN_chi1_C_C_C_CO
     CB    CG    CD   NE2    dih_GLN_chi3_C_C_CO_N
-    CG	  CD	OE1  HE1    dih_GLN_chi4_C_C_O_H
+    CG    CD    OE1  HE1    dih_GLN_chi4_C_C_O_H
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y 
-    CA    +N     C     O    improper_O_C_X_Y 
-    CG   NE2    CD   OE1    improper_O_C_X_Y  
-    CD  HE21   NE2  HE22    improper_Z_N_X_Y        
-    HE1  OE1    CD   NE2    improper_O_C_X_Y  
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+    CG   NE2    CD   OE1    improper_O_C_X_Y
+    CD  HE21   NE2  HE22    improper_Z_N_X_Y
+    HE1  OE1    CD   NE2    improper_O_C_X_Y
 
 
 [ GLU ]
@@ -707,28 +707,28 @@
     CG    CB    CA     C    dih_HIS_chi1_C_C_C_CO
     CA    CB    CG   ND1    dih_HIS_chi2_C_C_C_N
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y  
-    CA    +N     C     O    improper_O_C_X_Y  
-   ND1   CD2    CG    CB    improper_Z_CA_X_Y 
-    CG   CE1   ND1   HD1    improper_Z_N_X_Y  
-    CG   NE2   CD2   HD2    improper_Z_CA_X_Y 
-   ND1   NE2   CE1   HE1    improper_Z_CA_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+   ND1   CD2    CG    CB    improper_Z_CA_X_Y
+    CG   CE1   ND1   HD1    improper_Z_N_X_Y
+    CG   NE2   CD2   HD2    improper_Z_CA_X_Y
+   ND1   NE2   CE1   HE1    improper_Z_CA_X_Y
 
 
-[ HISE ] 
+[ HISE ]
  [ atoms ]
      N    opls_238   -0.500     1
      H    opls_241    0.300     1
     CA    opls_224B   0.140     1
     HA    opls_140    0.060     1
     CB    opls_505   -0.005     2
-   HB1    opls_140    0.060	2
-   HB2    opls_140    0.060	2
+   HB1    opls_140    0.060     2
+   HB2    opls_140    0.060     2
     CG    opls_507   -0.015     3
    ND1    opls_511   -0.490     3
    CD2    opls_508    0.015     4
-   HD2    opls_146    0.115     4 
-   CE1    opls_506    0.182     5
+   HD2    opls_146    0.115     4
+   CE1    opls_506    0.295     5
    HE1    opls_146    0.115     5
    NE2    opls_503   -0.570     6
    HE2    opls_504    0.420     6
@@ -1124,34 +1124,34 @@
    CH3  HH33
     -C     N
  [ impropers ]
-    -C    CH3     N    H      improper_Z_N_X_Y   
- 
+    -C    CH3     N    H      improper_Z_N_X_Y
+
 
 [ NH2 ]
  [ atoms ]
-     N     opls_237  -0.760	1
+     N     opls_237  -0.760     1
     H1     opls_240   0.380     1
     H2     opls_240   0.380     1
  [ bonds ]
     -C     N
-     N	   H1
+     N     H1
      N     H2
  [ impropers ]
-    -C     H1    N      H2       improper_Z_N_X_Y 
+    -C     H1    N      H2       improper_Z_N_X_Y
 
-[ NHE ] 
+[ NHE ]
 ; same as NH2
  [ atoms ]
-     N     opls_237  -0.760	1
+     N     opls_237  -0.760     1
     H1     opls_240   0.380     1
     H2     opls_240   0.380     1
  [ bonds ]
     -C     N
-     N	   H1
+     N     H1
      N     H2
  [ impropers ]
-    -C     H1     N     H2       improper_Z_N_X_Y 
- 
+    -C     H1     N     H2       improper_Z_N_X_Y
+
 [ PHE ]
  [ atoms ]
      N    opls_238   -0.500     1
@@ -1433,14 +1433,14 @@
      C     O
     -C     N
  [ impropers ]
-    -C    CA     N     H    improper_Z_N_X_Y  
-    CA    +N     C     O    improper_O_C_X_Y  
-    CG   CE2   CD2   HD2    improper_Z_CA_X_Y 
-   CD2    CZ   CE2   HE2    improper_Z_CA_X_Y 
-   CD1    CZ   CE1   HE1    improper_Z_CA_X_Y 
-    CG   CE1   CD1   HD1    improper_Z_CA_X_Y 
-   CD1   CD2    CG    CB    improper_Z_CA_X_Y 
-   CE1   CE2    CZ    OH    improper_Z_CA_X_Y 
+    -C    CA     N     H    improper_Z_N_X_Y
+    CA    +N     C     O    improper_O_C_X_Y
+    CG   CE2   CD2   HD2    improper_Z_CA_X_Y
+   CD2    CZ   CE2   HE2    improper_Z_CA_X_Y
+   CD1    CZ   CE1   HE1    improper_Z_CA_X_Y
+    CG   CE1   CD1   HD1    improper_Z_CA_X_Y
+   CD1   CD2    CG    CB    improper_Z_CA_X_Y
+   CE1   CE2    CZ    OH    improper_Z_CA_X_Y
 
 
 [ VAL ]
@@ -1449,7 +1449,7 @@
      H    opls_241    0.300     1
     CA    opls_224B   0.140     1
     HA    opls_140    0.060     1
-    CB    opls_137   -0.060	2
+    CB    opls_137   -0.060     2
     HB    opls_140    0.060     2
    CG1    opls_135   -0.180     3
   HG11    opls_140    0.060     3
@@ -1567,25 +1567,25 @@
 ; Use at your own risk!
 [ DMSO  ]
  [ atoms ]
-OD	    opls_125	-0.459	    1
-SD	    opls_124	 0.139      1
-CD1	    opls_139	-0.020	    1
-HD11	    opls_140	 0.060	    1
-HD12	    opls_140	 0.060	    1
-HD13	    opls_140	 0.060	    1
-CD2	    opls_139	-0.020	    1
-HD21	    opls_140	 0.060	    1
-HD22	    opls_140	 0.060	    1
-HD23	    opls_140	 0.060	    1
+OD      opls_125    -0.459      1
+SD      opls_124     0.139      1
+CD1     opls_139    -0.020      1
+HD11    opls_140     0.060      1
+HD12    opls_140     0.060      1
+HD13    opls_140     0.060      1
+CD2     opls_139    -0.020      1
+HD21    opls_140     0.060      1
+HD22    opls_140     0.060      1
+HD23    opls_140     0.060      1
 
  [ bonds ]
-    OD     SD  
-    SD     CD1 
-    SD     CD2 
+    OD     SD
+    SD     CD1
+    SD     CD2
     CD1    HD11
-    CD1	   HD12
-    CD1	   HD13
-    CD2	   HD21
-    CD2	   HD22
-    CD2	   HD23
+    CD1    HD12
+    CD1    HD13
+    CD2    HD21
+    CD2    HD22
+    CD2    HD23
 
