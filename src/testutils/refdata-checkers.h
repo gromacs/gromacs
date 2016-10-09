@@ -52,6 +52,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata-impl.h"
@@ -143,27 +144,13 @@ class ExactStringBlockChecker : public IReferenceDataEntryChecker
         std::string  value_;
 };
 
-//! Helper function to parse a floating-point value.
-// TODO: Move this into src/gromacs/utility/, and consolidate with similar code
-// elsewhere.
-double convertDouble(const std::string &value)
-{
-    char   *endptr;
-    double  convertedValue = std::strtod(value.c_str(), &endptr);
-    // TODO: Check for overflow
-    if (*endptr != '\0')
-    {
-        GMX_THROW(InvalidInputError("Invalid floating-point value: " + value));
-    }
-    return convertedValue;
-}
 
 //! Helper function to parse a floating-point reference data value.
 double convertDoubleReferenceValue(const std::string &value)
 {
     try
     {
-        return convertDouble(value);
+        return fromString<double>(value);
     }
     catch (const InvalidInputError &ex)
     {
@@ -224,7 +211,7 @@ class FloatingPointFromStringChecker : public IReferenceDataEntryChecker
         virtual ::testing::AssertionResult
         checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
         {
-            FloatType               value    = static_cast<FloatType>(convertDouble(value_));
+            FloatType               value    = fromString<FloatType>(value_);
             FloatType               refValue = static_cast<FloatType>(convertDoubleReferenceValue(entry.value()));
             FloatingPointDifference diff(refValue, value);
             if (tolerance_.isWithin(diff))
@@ -243,6 +230,41 @@ class FloatingPointFromStringChecker : public IReferenceDataEntryChecker
         std::string             value_;
         FloatingPointTolerance  tolerance_;
 };
+
+template <typename ValueType>
+class ValueExtractor : public IReferenceDataEntryChecker
+{
+    public:
+        explicit ValueExtractor(ValueType *value)
+            : value_(value)
+        {
+        }
+
+        virtual void fillEntry(ReferenceDataEntry *) const
+        {
+            GMX_THROW(TestException("Extracting value from non-existent reference data entry"));
+        }
+        virtual ::testing::AssertionResult
+        checkEntry(const ReferenceDataEntry &entry, const std::string &) const
+        {
+            extractValue(entry.value());
+            return ::testing::AssertionSuccess();
+        }
+
+        void extractValue(const std::string &value) const
+        {
+            *value_ = fromString<ValueType>(value);
+        }
+
+    private:
+        ValueType *value_;
+};
+
+template <> inline void
+ValueExtractor<std::string>::extractValue(const std::string &value) const
+{
+    *value_ = value;
+}
 
 } // namespace test
 } // namespace gmx

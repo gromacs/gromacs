@@ -668,6 +668,25 @@ TEST(ReferenceDataTest, HandlesMultipleComparisonsAgainstNullIds)
 }
 
 
+TEST(ReferenceDataTest, HandlesReadingValues)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkUChar('A', "char");
+        checker.checkInteger(1, "int");
+        checker.checkString("Test", "string");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_EQ('A', checker.readUChar("char"));
+        EXPECT_EQ(1, checker.readInteger("int"));
+        EXPECT_EQ("Test", checker.readString("string"));
+    }
+}
+
+
 TEST(ReferenceDataTest, HandlesUpdateChangedWithoutChanges)
 {
     {
