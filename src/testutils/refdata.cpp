@@ -384,6 +384,8 @@ class TestReferenceChecker::Impl
         static const char * const    cBooleanNodeName;
         //! String constant for naming XML elements for string values.
         static const char * const    cStringNodeName;
+        //! String constant for naming XML elements for unsigned char values.
+        static const char * const    cUCharNodeName;
         //! String constant for naming XML elements for integer values.
         static const char * const    cIntegerNodeName;
         //! String constant for naming XML elements for int64 values.
@@ -551,6 +553,7 @@ class TestReferenceChecker::Impl
 
 const char *const TestReferenceChecker::Impl::cBooleanNodeName    = "Bool";
 const char *const TestReferenceChecker::Impl::cStringNodeName     = "String";
+const char *const TestReferenceChecker::Impl::cUCharNodeName      = "UChar";
 const char *const TestReferenceChecker::Impl::cIntegerNodeName    = "Int";
 const char *const TestReferenceChecker::Impl::cInt64NodeName      = "Int64";
 const char *const TestReferenceChecker::Impl::cUInt64NodeName     = "UInt64";
@@ -885,6 +888,12 @@ void TestReferenceChecker::checkTextBlock(const std::string &value,
 }
 
 
+void TestReferenceChecker::checkUChar(unsigned char value, const char *id)
+{
+    EXPECT_PLAIN(impl_->processItem(Impl::cUCharNodeName, id,
+                                    ExactStringChecker(formatString("%d", value))));
+}
+
 void TestReferenceChecker::checkInteger(int value, const char *id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cIntegerNodeName, id,
@@ -1027,6 +1036,44 @@ TestReferenceChecker::checkSequenceCompound(const char *id, size_t length)
     TestReferenceChecker compound(checkCompound(Impl::cSequenceType, id));
     compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
     return compound;
+}
+
+
+unsigned char TestReferenceChecker::readUChar(const char *id)
+{
+    if (impl_->shouldIgnore())
+    {
+        GMX_THROW(TestException("Trying to read from non-existent reference data value"));
+    }
+    int value = 0;
+    EXPECT_PLAIN(impl_->processItem(Impl::cUCharNodeName, id,
+                                    ValueExtractor<int>(&value)));
+    return value;
+}
+
+
+int TestReferenceChecker::readInteger(const char *id)
+{
+    if (impl_->shouldIgnore())
+    {
+        GMX_THROW(TestException("Trying to read from non-existent reference data value"));
+    }
+    int value = 0;
+    EXPECT_PLAIN(impl_->processItem(Impl::cIntegerNodeName, id,
+                                    ValueExtractor<int>(&value)));
+    return value;
+}
+
+std::string TestReferenceChecker::readString(const char *id)
+{
+    if (impl_->shouldIgnore())
+    {
+        GMX_THROW(TestException("Trying to read from non-existent reference data value"));
+    }
+    std::string value;
+    EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id,
+                                    ValueExtractor<std::string>(&value)));
+    return value;
 }
 
 } // namespace test

@@ -348,6 +348,8 @@ class TestReferenceChecker
          * is easier to edit by hand to set the desired output formatting.
          */
         void checkTextBlock(const std::string &value, const char *id);
+        //! Check a single unsigned char value.
+        void checkUChar(unsigned char value, const char *id);
         //! Check a single integer value.
         void checkInteger(int value, const char *id);
         //! Check a single int64 value.
@@ -376,6 +378,25 @@ class TestReferenceChecker
         void checkKeyValueTreeObject(const KeyValueTreeObject &tree, const char *id);
         //! Checks a generic key-value tree value.
         void checkKeyValueTreeValue(const KeyValueTreeValue &value, const char *id);
+
+        /*! \name Methods to read values from reference data
+         *
+         * These methods assume that a value with the given `id` has already
+         * been created in the test with `check*()` methods, and that it has
+         * the correct type.
+         *
+         * Currently, these methods do not work correctly if the reference data
+         * file does not exist, so a test using them may fail with exceptions
+         * before the reference data has been generated.
+         * \{
+         */
+        //! Reads an unsigned char value.
+        unsigned char readUChar(const char *id);
+        //! Reads an integer value.
+        int readInteger(const char *id);
+        //! Reads a string value.
+        std::string readString(const char *id);
+        //! \}
 
         /*! \name Overloaded versions of simple checker methods
          *
