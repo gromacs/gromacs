@@ -165,6 +165,9 @@ static inline const rvec *as_rvec_array(const RVec *x)
     return as_vec_array(x);
 }
 
+//! Shorthand for C++ `ivec`-equivalent type.
+typedef BasicVector<int> IVec;
+
 } // namespace gmx
 
 #endif
