@@ -430,8 +430,8 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
 {
     _cr                         = cr;
     _bQM                        = bQM;
-    _bDone                      = FALSE;
-    _bFinal                     = FALSE;
+    _bDone                      = false;
+    _bFinal                     = false;
     _bGaussianBug               = bGaussianBug;
     _bFitZeta                   = bFitZeta;
     _iChargeDistributionModel   = iChargeDistributionModel;

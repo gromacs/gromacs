@@ -48,8 +48,10 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -59,6 +61,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "gauss_io.h"
 #include "gentop_core.h"
@@ -92,6 +95,26 @@ static void clean_pdb_names(t_atoms *atoms, t_symtab *tab)
             atoms->atomname[i] = put_symtab(tab, buf);
         }
     }
+}
+
+static void fill_inputrec(t_inputrec *ir)
+{
+    ir->bAdress          = false;
+    ir->cutoff_scheme    = ecutsGROUP;
+    ir->tabext           = 0; /* nm */
+    ir->ePBC             = epbcNONE;
+    ir->ns_type          = ensSIMPLE;
+    ir->epsilon_r        = 1;
+    ir->vdwtype          = evdwCUT;
+    ir->coulombtype      = eelCUT;
+    ir->coulomb_modifier = eintmodNONE;
+    ir->eDispCorr        = edispcNO;
+    ir->vdw_modifier     = eintmodNONE;
+    ir->niter            = 25;
+    ir->em_stepsize      = 1e-2; // nm
+    ir->em_tol           = 1e-2;
+    ir->opts.ngener      = 1;
+    snew(ir->fepvals, 1);
 }
 
 int alex_gentop(int argc, char *argv[])
@@ -137,56 +160,90 @@ int alex_gentop(int argc, char *argv[])
     immStatus                        imm;
 
     t_filenm                         fnm[] = {
-        { efSTX, "-f",    "conf", ffOPTRD },
-        { efTOP, "-o",    "out",  ffOPTWR },
-        { efITP, "-oi",   "out",  ffOPTWR },
-        { efSTO, "-c",    "out",  ffWRITE },
-        { efLOG, "-g03",  "gauss",  ffOPTRD },
-        { efNDX, "-n",    "renum", ffOPTWR },
-        { efDAT, "-q",    "qout", ffOPTWR },
-        { efDAT, "-mpdb", "molprops", ffOPTRD },
-        { efDAT, "-d",    "gentop", ffOPTRD },
-        { efXVG, "-table", "table",  ffOPTRD },
-        { efCUB, "-pot",  "potential", ffOPTWR },
-        { efCUB, "-ref",  "refpot", ffOPTRD },
-        { efCUB, "-diff", "diffpot", ffOPTWR },
-        { efCUB, "-rho",  "density", ffOPTWR },
-        { efXVG, "-diffhist", "diffpot", ffOPTWR },
-        { efXVG, "-his",  "pot-histo", ffOPTWR },
-        { efXVG, "-pc",   "pot-comp", ffOPTWR },
-        { efPDB, "-pdbdiff", "pdbdiff", ffOPTWR }
+        { efSTX, "-f",        "conf",      ffOPTRD },
+        { efTOP, "-o",        "out",       ffOPTWR },
+        { efITP, "-oi",       "out",       ffOPTWR },
+        { efSTO, "-c",        "out",       ffWRITE },
+        { efLOG, "-g03",      "gauss",     ffOPTRD },
+        { efNDX, "-n",        "renum",     ffOPTWR },
+        { efDAT, "-q",        "qout",      ffOPTWR },
+        { efDAT, "-mpdb",     "molprops",  ffOPTRD },
+        { efDAT, "-d",        "gentop",    ffOPTRD },
+        { efXVG, "-table",    "table",     ffOPTRD },
+        { efCUB, "-pot",      "potential", ffOPTWR },
+        { efCUB, "-ref",      "refpot",    ffOPTRD },
+        { efCUB, "-diff",     "diffpot",   ffOPTWR },
+        { efCUB, "-rho",      "density",   ffOPTWR },
+        { efXVG, "-diffhist", "diffpot",   ffOPTWR },
+        { efXVG, "-his",      "pot-histo", ffOPTWR },
+        { efXVG, "-pc",       "pot-comp",  ffOPTWR },
+        { efPDB, "-pdbdiff",  "pdbdiff",   ffOPTWR }
     };
+    
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
-    static real                      kb             = 4e5, kt = 400, kp = 5;
-    static real                      btol           = 0.2, qtol = 1e-10, zmin = 5, zmax = 100, delta_z = -1;
-    static real                      hfac           = 0, qweight = 1e-3, bhyper = 0.1;
-    static real                      th_toler       = 170, ph_toler = 5, watoms = 0, spacing = 0.1;
-    static real                      dbox           = 0.370424, penalty_fac = 1;
-    static int                       maxiter        = 25000, maxcycle = 1;
-    static int                       nmol           = 1;
-    static real                      rDecrZeta      = -1;
-    static gmx_bool                  bPolar         = FALSE;
-    static gmx_bool                  bRemoveDih     = FALSE, bQsym = FALSE, bZatype = TRUE, bFitCube = FALSE;
-    static gmx_bool                  bParam         = FALSE, bH14 = TRUE, bRound = TRUE, bITP;
-    static gmx_bool                  bPairs         = FALSE, bPBC = TRUE;
-    static gmx_bool                  bUsePDBcharge  = FALSE, bVerbose = TRUE, bAXpRESP = FALSE;
-    static gmx_bool                  bCONECT        = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = FALSE, bEntropy = FALSE;
-    static gmx_bool                  bGenVSites     = FALSE, bSkipVSites = TRUE, bDihedral = FALSE, b13 = FALSE;
-    static char                     *molnm          = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
-    static char                     *jobtype        = (char *)"unknown";
+
     static int                       maxpot         = 0;
     static int                       seed           = 0;
     static int                       nsymm          = 0;
-    static const char               *cqdist[]       = {
-        NULL, "AXp", "AXs", "AXg", "Yang", "Bultinck", "Rappe", NULL
-    };
-    static const char               *cqgen[]       = {
-        NULL, "None", "EEM", "ESP", "RESP", NULL
-    };
-    static const char               *cgopt[]  = { NULL, "Atom", "Group", "Neutral", NULL };
-    static const char               *lot      = "B3LYP/aug-cc-pVTZ";
-    static const char               *dzatoms  = "";
-    static const char               *ff       = "alexandria";
+    static int                       maxiter        = 25000;
+    static int                       maxcycle       = 1;
+    static int                       nmol           = 1;
+    static real                      kb             = 4e5;
+    static real                      kt             = 400;
+    static real                      kp             = 5;
+    static real                      btol           = 0.2;
+    static real                      qtol           = 1e-10;
+    static real                      zmin           = 5;
+    static real                      zmax           = 100;
+    static real                      delta_z        = -1;
+    static real                      hfac           = 0;
+    static real                      qweight        = 1e-3;
+    static real                      bhyper         = 0.1;
+    static real                      th_toler       = 170;
+    static real                      ph_toler       = 5;
+    static real                      watoms         = 0;
+    static real                      spacing        = 0.1;
+    static real                      dbox           = 0.370424;
+    static real                      penalty_fac    = 1;   
+    static real                      rDecrZeta      = -1;
+    static char                     *molnm          = (char *)"";
+    static char                     *iupac          = (char *)"";
+    static char                     *dbname         = (char *)"";
+    static char                     *symm_string    = (char *)"";
+    static char                     *conf           = (char *)"minimum";
+    static char                     *basis          = (char *)"";
+    static char                     *jobtype        = (char *)"unknown";
+    static gmx_bool                  bPolar         = false;
+    static gmx_bool                  bRemoveDih     = false;
+    static gmx_bool                  bQsym          = false;
+    static gmx_bool                  bAXpRESP       = false;
+    static gmx_bool                  bCONECT        = false;
+    static gmx_bool                  bRandZeta      = false;
+    static gmx_bool                  bFitCube       = false;
+    static gmx_bool                  bParam         = false;
+    static gmx_bool                  bITP           = false;
+    static gmx_bool                  bPairs         = false;
+    static gmx_bool                  bUsePDBcharge  = false;
+    static gmx_bool                  bFitZeta       = false;
+    static gmx_bool                  bEntropy       = false;
+    static gmx_bool                  bGenVSites     = false;
+    static gmx_bool                  bDihedral      = false;
+    static gmx_bool                  b13            = false;
+    static gmx_bool                  bZatype        = true;
+    static gmx_bool                  bH14           = true;
+    static gmx_bool                  bRound         = true;    
+    static gmx_bool                  bPBC           = true;    
+    static gmx_bool                  bVerbose       = true;
+    static gmx_bool                  bRandQ         = true;   
+    static gmx_bool                  bSkipVSites    = true;
+  
+    static const char               *cqdist[]       = {nullptr, "AXp", "AXs", "AXg", "Yang", "Bultinck", "Rappe", nullptr};
+    static const char               *cqgen[]        = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
+    static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
+    static const char               *lot            = "B3LYP/aug-cc-pVTZ";
+    static const char               *dzatoms        = "";
+    static const char               *ff             = "alexandria";
+    
     t_pargs                          pa[]     = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
@@ -317,7 +374,7 @@ int alex_gentop(int argc, char *argv[])
     }
 
     /* Force field selection, interactive or direct */
-    choose_ff(strcmp(ff, "select") == 0 ? NULL : ff,
+    choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff,
               forcefield, sizeof(forcefield),
               ffdir, sizeof(ffdir));
 
@@ -355,9 +412,10 @@ int alex_gentop(int argc, char *argv[])
     }
 
     /* Check command line options of type enum */
-    eChargeGroup              ecg  = (eChargeGroup) get_option(cgopt);
+    eChargeGroup              ecg                        = (eChargeGroup) get_option(cgopt);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     ChargeDistributionModel   iChargeDistributionModel;
+    
     if ((iChargeDistributionModel = name2eemtype(cqdist[0])) == eqdNR)
     {
         gmx_fatal(FARGS, "Invalid model %s. How could you!\n", cqdist[0]);
@@ -420,39 +478,48 @@ int alex_gentop(int argc, char *argv[])
         {
             molnm = (char *)"XXX";
         }
+        
         ReadGauss(fn, mp, molnm, iupac, conf, basis,
                   maxpot, nsymm, pd.getForceField().c_str(), jobtype);
+                  
         mps.push_back(mp);
+        
         mpi = mps.begin();
     }
 
     mymol.molProp()->Merge(mpi);
     mymol.SetForceField(forcefield);
 
+    gmx::MDModules mdModules;
+    t_inputrec    *inputrec = mdModules.inputrec();
+    
+    fill_inputrec(inputrec);
+    mymol.setInputrec(inputrec);
+    
     imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel,
                                  bGenVSites, bPairs, bDihedral, bPolar);
+                                 
     t_commrec     *cr    = init_commrec();
     gmx::MDLogger  mdlog = getMdLogger(cr, stdout);
 
     if (immOK == imm)
     {
         const char *tabfn = opt2fn_null("-table", NFILE, fnm);
-        if (NULL == tabfn && bPolar && iChargeDistributionModel != eqdAXp)
+        
+        if (nullptr == tabfn && bPolar && iChargeDistributionModel != eqdAXp)
         {
             gmx_fatal(FARGS, "Cannot generate charges in a polarizable system with the %s charge "
-		      "model without a potential table. Please supply a table file.", 
-		      getEemtypeName(iChargeDistributionModel));
+                      "model without a potential table. Please supply a table file.", 
+                      getEemtypeName(iChargeDistributionModel));
         }
-        imm = mymol.GenerateCharges(pd,
-                                    mdlog,
-                                    aps,
+        
+        imm = mymol.GenerateCharges(pd, mdlog, aps,
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,
-                                    watoms,
-                                    hfac,
-                                    lot, bQsym, symm_string, cr,
-                                    tabfn);
+                                    watoms, hfac, lot, bQsym, 
+                                    symm_string, cr,tabfn);
     }
+    
     if (immOK == imm)
     {
         fprintf(stderr, "Fix me: GenerateCube is broken\n");
@@ -487,6 +554,7 @@ int alex_gentop(int argc, char *argv[])
                                 iChargeDistributionModel, bVerbose,
                                 pd, aps);
         }
+        
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
     }
     else

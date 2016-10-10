@@ -1067,7 +1067,7 @@ double Optimization::calcDeviation()
                             _ener[ermsForce2] += _fc[ermsForce2]*mymol.OptForce2*forceWeight_;
                             mymol.OptEcalc     = mymol.enerd_->term[F_EPOT];
                             
-                            ener *= gmx::square(nOptSP-1);
+                            ener *= gmx::square(nOptSP);
                         }
 
                         _ener[ermsEPOT]   += _fc[ermsEPOT]*ener;
@@ -1433,7 +1433,7 @@ int alex_tune_fc(int argc, char *argv[])
     static real           fc_esp        = 0; 
     static real           fc_epot       = 1;
     static real           fc_force      = 0.001;
-    static real           fweight       = 0.001;
+    static real           fweight       = 1;
     static real           factor        = 0.8;
     static real           beta0         = 0;
     static real           D0            = 0; 

@@ -984,7 +984,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
 
         memset(&nb, 0, sizeof(nb));
         natom = 0;
-        init_t_atoms(&(topology_->atoms), ci->NAtom(), FALSE);
+        init_t_atoms(&(topology_->atoms), ci->NAtom(), false);
         snew(x_, ci->NAtom());
         snew(topology_->atoms.atomtype, ci->NAtom());
         snew(topology_->atoms.atomtypeB, ci->NAtom());
