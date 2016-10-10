@@ -2171,8 +2171,8 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
                    epullg_names[header->pcrd[i].geometry], header->pcrd[i].k, header->pcrd[i].init_dist,
                    int2YN(header->pcrd[i].dim[XX]), int2YN(header->pcrd[i].dim[YY]), int2YN(header->pcrd[i].dim[ZZ]),
                    header->pcrd[i].ndim, use ? "Yes" : "No");
+            printf("\tPull group coordinates of %d groups expected in pullx files.\n", ir.pull->bPrintCOM ? header->pcrd[i].ngroup : 0);
         }
-        printf("\tPull group coordinates of %d groups expected in pullx files.\n", ir.pull->bPrintCOM ? header->pcrd[i].ngroup : 0);
         printf("\tReference value of the coordinate%s expected in pullx files.\n",
                header->bPrintRefValue ? "" : " not");
     }
