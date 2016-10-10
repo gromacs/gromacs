@@ -72,7 +72,7 @@ enum {
  */
 int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  int nnodes_major, int nnodes_minor,
-                 t_inputrec *ir, int homenr,
+                 const t_inputrec *ir, int homenr,
                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                  gmx_bool bReproducible,
                  real ewaldcoeff_q, real ewaldcoeff_lj,
