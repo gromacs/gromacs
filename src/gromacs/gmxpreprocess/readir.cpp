@@ -1185,9 +1185,14 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
-        if (ir->pme_order < 3)
+        // TODO: Move these checks into the ewald module with the options class
+        int orderMin = 3;
+        int orderMax = (ir->coulombtype == eelP3M_AD ? 8 : 12);
+
+        if (ir->pme_order < orderMin || ir->pme_order > orderMax)
         {
-            warning_error(wi, "pme-order can not be smaller than 3");
+            sprintf(warn_buf, "With coulombtype = %s, you should have %d <= pme-order <= %d", eel_names[ir->coulombtype], orderMin, orderMax);
+            warning_error(wi, warn_buf);
         }
     }
 
