@@ -140,15 +140,18 @@ void pme_init_all_work(struct pme_solve_work_t **work, int nthread, int nkx)
 
 static void free_work(struct pme_solve_work_t *work)
 {
-    sfree(work->mhx);
-    sfree(work->mhy);
-    sfree(work->mhz);
-    sfree(work->m2);
-    sfree_aligned(work->denom);
-    sfree_aligned(work->tmp1);
-    sfree_aligned(work->tmp2);
-    sfree_aligned(work->eterm);
-    sfree(work->m2inv);
+    if (work)
+    {
+        sfree(work->mhx);
+        sfree(work->mhy);
+        sfree(work->mhz);
+        sfree(work->m2);
+        sfree_aligned(work->denom);
+        sfree_aligned(work->tmp1);
+        sfree_aligned(work->tmp2);
+        sfree_aligned(work->eterm);
+        sfree(work->m2inv);
+    }
 }
 
 void pme_free_all_work(struct pme_solve_work_t **work, int nthread)

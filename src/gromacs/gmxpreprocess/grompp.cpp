@@ -2078,6 +2078,11 @@ int gmx_grompp(int argc, char *argv[])
         }
         calc_grid(stdout, box, ir->fourier_spacing,
                   &(ir->nkx), &(ir->nky), &(ir->nkz));
+        // NOTE: with PME domain decomposition we actually need >= 2*pme-order
+        if (ir->nkx < ir->pme_order || ir->nky < ir->pme_order || ir->nkz < ir->pme_order)
+        {
+            warning_error(wi, "The PME grid size should be >= pme-order; either manually increase the grid size or decrease pme-order");
+        }
     }
 
     /* MRS: eventually figure out better logic for initializing the fep
