@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "gmxfio-impl.h"
@@ -672,3 +673,48 @@ gmx_bool gmx_fio_ndoe_string(t_fileio *fio, char *item[], int n,
     gmx_fio_unlock(fio);
     return ret;
 }
+
+namespace gmx
+{
+
+bool FileIOXdrSerializer::reading() const
+{
+    return fio_->bRead;
+}
+
+void FileIOXdrSerializer::doUChar(unsigned char *value)
+{
+    gmx_fio_do_uchar(fio_, *value);
+}
+
+void FileIOXdrSerializer::doInt(int *value)
+{
+    gmx_fio_do_int(fio_, *value);
+}
+
+void FileIOXdrSerializer::doFloat(float *value)
+{
+    gmx_fio_do_float(fio_, *value);
+}
+
+void FileIOXdrSerializer::doDouble(double *value)
+{
+    gmx_fio_do_double(fio_, *value);
+}
+
+void FileIOXdrSerializer::doString(std::string *value)
+{
+    char *cstr = nullptr;
+    if (!fio_->bRead)
+    {
+        cstr = const_cast<char *>(value->c_str());
+    }
+    gmx_fio_do_string(fio_, cstr);
+    if (fio_->bRead)
+    {
+        scoped_guard_sfree guard(cstr);
+        *value = (cstr != nullptr ? cstr : "");
+    }
+}
+
+} // namespace gmx
