@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1315,11 +1315,15 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (cr->duty & DUTY_PME)
         {
-            status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
-                                  mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
-                                  (Flags & MD_REPRODUCIBLE),
-                                  ewaldcoeff_q, ewaldcoeff_lj,
-                                  nthreads_pme);
+            try
+            {
+                status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
+                                      mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
+                                      (Flags & MD_REPRODUCIBLE),
+                                      ewaldcoeff_q, ewaldcoeff_lj,
+                                      nthreads_pme);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             if (status != 0)
             {
                 gmx_fatal(FARGS, "Error %d initializing PME", status);
@@ -1418,7 +1422,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     // Free PME data
     if (pmedata)
     {
-        gmx_pme_destroy(pmedata);
+        gmx_pme_destroy(*pmedata); // TODO: pmedata is always a single element list, refactor
         pmedata = NULL;
     }
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1185,9 +1185,14 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (EEL_PME(ir->coulombtype) || EVDW_PME(ir->vdwtype))
     {
-        if (ir->pme_order < 3)
+        // TODO: Move these checks into the ewald module with the options class
+        int orderMin = 3;
+        int orderMax = (ir->coulombtype == eelP3M_AD ? 8 : 12);
+
+        if (ir->pme_order < orderMin || ir->pme_order > orderMax)
         {
-            warning_error(wi, "pme-order can not be smaller than 3");
+            sprintf(warn_buf, "With coulombtype = %s, you should have %d <= pme-order <= %d", eel_names[ir->coulombtype], orderMin, orderMax);
+            warning_error(wi, warn_buf);
         }
     }
 
