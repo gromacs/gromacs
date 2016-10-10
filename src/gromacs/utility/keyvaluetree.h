@@ -89,9 +89,14 @@ class KeyValueTreeValue
     public:
         bool isArray() const;
         bool isObject() const;
+        template <typename T>
+        bool isType() const { return value_.isType<T>(); }
+        std::type_index type() const { return value_.type(); }
 
         const KeyValueTreeArray  &asArray() const;
         const KeyValueTreeObject &asObject() const;
+        template <typename T>
+        const T                  &cast() const { return value_.cast<T>(); }
 
         const Variant            &asVariant() const { return value_; }
 
