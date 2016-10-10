@@ -105,6 +105,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "calculate-spline-moduli.h"
 #include "pme-gather.h"
@@ -437,8 +438,11 @@ void gmx_pme_check_restrictions(int pme_order,
             *bValidSettings = FALSE;
             return;
         }
-        gmx_fatal(FARGS, "pme_order (%d) is larger than the maximum allowed value (%d). Modify and recompile the code if you really need such a high order.",
-                  pme_order, PME_ORDER_MAX);
+
+        std::string message = gmx::formatString(
+                    "pme_order (%d) is larger than the maximum allowed value (%d). Modify and recompile the code if you really need such a high order.",
+                    pme_order, PME_ORDER_MAX);
+        GMX_THROW(InconsistentInputError(message));
     }
 
     if (nkx <= pme_order*(nnodes_major > 1 ? 2 : 1) ||
@@ -450,8 +454,10 @@ void gmx_pme_check_restrictions(int pme_order,
             *bValidSettings = FALSE;
             return;
         }
-        gmx_fatal(FARGS, "The PME grid sizes need to be larger than pme_order (%d) and for dimensions with domain decomposition larger than 2*pme_order",
-                  pme_order);
+        std::string message = gmx::formatString(
+                    "The PME grid sizes need to be larger than pme_order (%d) and for dimensions with domain decomposition larger than 2*pme_order",
+                    pme_order);
+        GMX_THROW(InconsistentInputError(message));
     }
 
     /* Check for a limitation of the (current) sum_fftgrid_dd code.
@@ -487,7 +493,7 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
                  t_commrec *        cr,
                  int                nnodes_major,
                  int                nnodes_minor,
-                 t_inputrec *       ir,
+                 const t_inputrec * ir,
                  int                homenr,
                  gmx_bool           bFreeEnergy_q,
                  gmx_bool           bFreeEnergy_lj,
@@ -854,8 +860,12 @@ int gmx_pme_reinit(struct gmx_pme_t **pmedata,
         homenr = -1;
     }
 
-    ret = gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
-                       &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj, pme_src->nthread);
+    try
+    {
+        ret = gmx_pme_init(pmedata, cr, pme_src->nnodes_major, pme_src->nnodes_minor,
+                           &irc, homenr, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE, ewaldcoeff_q, ewaldcoeff_lj, pme_src->nthread);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     if (ret == 0)
     {
