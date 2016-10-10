@@ -124,6 +124,7 @@ typedef struct
 {
     int      pull_type;       //!< such as constraint, umbrella, ...
     int      geometry;        //!< such as distance, direction, cylinder
+    int      ngroup;          //!< the number of pull groups involved
     ivec     dim;             //!< pull dimension with geometry distance
     int      ndim;            //!< nr of pull_dim != 0
     real     k;               //!< force constants in tpr file
@@ -140,9 +141,9 @@ typedef struct
     /*!\{*/
     int          npullcrds;      //!< nr of umbrella pull coordinates for reading
     t_pullcoord *pcrd;           //!< the pull coordinates
+    gmx_bool     bPrintCOM;      //!< COMs of pull groups writtn in pullx.xvg
     gmx_bool     bPrintRefValue; //!< Reference value for the coordinate written in pullx.xvg
     gmx_bool     bPrintComp;     //!< Components of pull distance written to pullx.xvg ?
-    int          nCOMGrpsPullx;  //!< Number of grps of which the COM is listed in pullx.xvg (COM of grp 1 or grp 2 or both)
 
     /*!\}*/
     /*!
@@ -2067,12 +2068,8 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     }
 
     /* Read overall pull info */
-    header->npullcrds     = ir->pull->ncoord;
-    header->nCOMGrpsPullx = 0;
-    if (ir->pull->bPrintCOM)
-    {
-        header->nCOMGrpsPullx += ir->pull->ngroup;
-    }
+    header->npullcrds      = ir->pull->ncoord;
+    header->bPrintCOM      = ir->pull->bPrintCOM;
     header->bPrintRefValue = ir->pull->bPrintRefValue;
     header->bPrintComp     = ir->pull->bPrintComp;
 
@@ -2082,6 +2079,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
     {
         header->pcrd[i].pull_type     = ir->pull->coord[i].eType;
         header->pcrd[i].geometry      = ir->pull->coord[i].eGeom;
+        header->pcrd[i].ngroup        = ir->pull->coord[i].ngroup;
         header->pcrd[i].k             = ir->pull->coord[i].k;
         header->pcrd[i].init_dist     = ir->pull->coord[i].init;
 
@@ -2174,18 +2172,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
                    epullg_names[header->pcrd[i].geometry], header->pcrd[i].k, header->pcrd[i].init_dist,
                    int2YN(header->pcrd[i].dim[XX]), int2YN(header->pcrd[i].dim[YY]), int2YN(header->pcrd[i].dim[ZZ]),
                    header->pcrd[i].ndim, use ? "Yes" : "No");
-        }
-        switch (header->nCOMGrpsPullx)
-        {
-            case 0:
-                printf("\tNo pull group coordinates expected in pullx files.\n");
-                break;
-            case 1:
-                printf("\tPull group coordinates of one group expected in pullx files.\n");
-                break;
-            case 2:
-                printf("\tPull group coordinates of two groups expected in pullx files.\n");
-                break;
+            printf("\tPull group coordinates of %d groups expected in pullx files.\n", ir->pull->bPrintCOM ? header->pcrd[i].ngroup : 0);
         }
         printf("\tReference value of the coordinate%s expected in pullx files.\n",
                header->bPrintRefValue ? "" : " not");
@@ -2233,8 +2220,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
      *    No reference columns, one column per pull coordinate
      *
      *  - in position output pullx.xvg:
-     *     * optionally, ndim columns for COM of of grp1 or grp2, depending on on mdp options
-     *       pull-print-com1 & pull-print-com2);
+     *     * optionally, ndim columns for COMs of all groups (depending on on mdp options pull-print-com);
      *     * The displacement, always one column. Note: with pull-print-components = yes, the dx/dy/dz would
      *       be written separately into pullx file, but this is not supported and throws an error below;
      *     * optionally, the position of the reference coordinate (depending on pull-print-ref-value)
@@ -2267,7 +2253,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
         for (g = 0; g < header->npullcrds; g++)
         {
             nColRefCrd[g]   = (header->bPrintRefValue ? 1 : 0);
-            nColCOMCrd[g]   = header->pcrd[g].ndim*header->nCOMGrpsPullx;
+            nColCOMCrd[g]   = (header->bPrintCOM ? header->pcrd[g].ndim*header->pcrd[g].ngroup : 0);
             nColThisCrd[g]  = 1 + nColCOMCrd[g] + nColRefCrd[g];
         }
     }
@@ -2293,10 +2279,10 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
         for (i = 0; i < header->npullcrds; i++)
         {
             printf("\tColumns for pull coordinate %d\n", i+1);
-            printf("\t\tcenter-of-mass of groups:        %d\n"
-                   "\t\tdisplacement wrt. reference:     %d\n"
+            printf("\t\treaction coordinate:             %d\n"
+                   "\t\tcenter-of-mass of groups:        %d\n"
                    "\t\treference position column:       %s\n",
-                   nColCOMCrd[i], 1, (header->bPrintRefValue ? "Yes" : "No"));
+                   1, nColCOMCrd[i], (header->bPrintRefValue ? "Yes" : "No"));
         }
         printf("\tFound %d times in %s\n", nt, fn);
         bFirst = FALSE;
@@ -2459,7 +2445,6 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
                     {
                         column += nColThisCrd[j];
                     }
-                    column += nColCOMCrd[g];
                     pos     = y[column][i];
                 }
 

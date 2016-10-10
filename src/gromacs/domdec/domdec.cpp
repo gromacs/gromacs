@@ -2104,8 +2104,8 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t *dd, const t_commrec *cr)
         gmx_domdec_comm_t *comm = dd->comm;
         if (comm->bCartesianPP_PME)
         {
-            int  pmenode = dd_simnode2pmenode(dd, cr, cr->sim_nodeid);
 #if GMX_MPI
+            int  pmenode = dd_simnode2pmenode(dd, cr, cr->sim_nodeid);
             ivec coords;
             MPI_Cart_coords(cr->mpi_comm_mysim, cr->sim_nodeid, DIM, coords);
             coords[comm->cartpmedim]++;
@@ -2119,6 +2119,8 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t *dd, const t_commrec *cr)
                     bReceive = FALSE;
                 }
             }
+#else
+            GMX_RELEASE_ASSERT(false, "Without MPI we should not have Cartesian PP-PME with #PMEnodes < #DDnodes");
 #endif
         }
         else
@@ -5750,8 +5752,8 @@ static void make_pp_communicator(FILE                 *fplog,
     }
 }
 
-static void receive_ddindex2simnodeid(gmx_domdec_t gmx_unused *dd,
-                                      t_commrec    gmx_unused *cr)
+static void receive_ddindex2simnodeid(gmx_domdec_t         *dd,
+                                      t_commrec            *cr)
 {
 #if GMX_MPI
     gmx_domdec_comm_t *comm = dd->comm;
@@ -5770,6 +5772,9 @@ static void receive_ddindex2simnodeid(gmx_domdec_t gmx_unused *dd,
                       cr->mpi_comm_mysim);
         sfree(buf);
     }
+#else
+    GMX_UNUSED_VALUE(dd);
+    GMX_UNUSED_VALUE(cr);
 #endif
 }
 
