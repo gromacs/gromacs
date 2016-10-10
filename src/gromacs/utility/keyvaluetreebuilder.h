@@ -53,6 +53,7 @@
 namespace gmx
 {
 
+class KeyValueTreeArrayBuilder;
 class KeyValueTreeObjectBuilder;
 
 class KeyValueTreeBuilder
@@ -95,6 +96,7 @@ class KeyValueTreeValueBuilder
             value_ = std::move(value);
         }
         KeyValueTreeObjectBuilder createObject();
+        KeyValueTreeArrayBuilder createArray();
 
         KeyValueTreeValue build() { return KeyValueTreeValue(std::move(value_)); }
 
@@ -118,6 +120,20 @@ class KeyValueTreeArrayBuilderBase
 
     private:
         KeyValueTreeArray *array_;
+};
+
+class KeyValueTreeArrayBuilder : public KeyValueTreeArrayBuilderBase
+{
+    public:
+        using KeyValueTreeArrayBuilderBase::addRawValue;
+
+    private:
+        explicit KeyValueTreeArrayBuilder(KeyValueTreeArray *array)
+            : KeyValueTreeArrayBuilderBase(array)
+        {
+        }
+
+        friend class KeyValueTreeValueBuilder;
 };
 
 template <typename T>
@@ -225,6 +241,12 @@ inline KeyValueTreeObjectBuilder KeyValueTreeValueBuilder::createObject()
 {
     value_ = Variant::create<KeyValueTreeObject>(KeyValueTreeObject());
     return KeyValueTreeObjectBuilder(&value_.castRef<KeyValueTreeObject>());
+}
+
+inline KeyValueTreeArrayBuilder KeyValueTreeValueBuilder::createArray()
+{
+    value_ = Variant::create<KeyValueTreeArray>(KeyValueTreeArray());
+    return KeyValueTreeArrayBuilder(&value_.castRef<KeyValueTreeArray>());
 }
 
 inline KeyValueTreeObjectBuilder KeyValueTreeObjectArrayBuilder::addObject()
