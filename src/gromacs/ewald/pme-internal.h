@@ -220,7 +220,7 @@ typedef struct {
     ivec       nc;           /* The local spatial decomposition over the threads */
     pmegrid_t *grid_th;      /* Array of grids for each thread                   */
     real      *grid_all;     /* Allocated array for the grids in *grid_th        */
-    int      **g2t;          /* The grid to thread index                         */
+    int       *g2t[DIM];     /* The grid to thread index                         */
     ivec       nthread_comm; /* The number of threads to communicate with        */
 } pmegrids_t;
 
