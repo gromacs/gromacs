@@ -2470,7 +2470,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
         if (bWarn)
         {
-            if (maxwarn >= 0)
+            if (maxwarn < INT_MAX)
             {
                 cconerr(lincsd, xprime, pbc,
                         &ncons_loc, &p_ssd, &p_max, &p_imax);
