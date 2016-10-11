@@ -2254,7 +2254,7 @@ static void lincs_warning(FILE *fplog,
             (*warncount)++;
         }
     }
-    if (*warncount > maxwarn)
+    if (*warncount > maxwarn && maxwarn > 0)
     {
         too_many_constraint_warnings(econtLINCS, *warncount);
     }
