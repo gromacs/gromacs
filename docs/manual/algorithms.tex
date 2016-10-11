@@ -2777,12 +2777,13 @@ should be calculated on which rank.
 When different ranks have a different computational load
 (load imbalance), all ranks will have to wait for the one
 that takes the most time. One would like to avoid such a situation.
-Load imbalance can occur due to three reasons:
+Load imbalance can occur due to four reasons:
 \begin{itemize}
 \item inhomogeneous particle distribution
 \item inhomogeneous interaction cost distribution (charged/uncharged,
   water/non-water due to {\gromacs} water innerloops)
 \item statistical fluctuation (only with small particle numbers)
+\item differences in communication time, due to network topology and/or other jobs on the machine interfering with our communication
 \end{itemize}
 So we need a dynamic load balancing algorithm
 where the volume of each domain decomposition cell
@@ -2806,7 +2807,7 @@ of a distance between following, staggered boundaries of cells.
 
 By default, {\tt mdrun} automatically turns on the dynamic load
 balancing during a simulation when the total performance loss
-due to the force calculation imbalance is 5\% or more.
+due to the force calculation imbalance is 2\% or more.
 {\bf Note} that the reported force load imbalance numbers might be higher,
 since the force calculation is only part of work that needs to be done
 during an integration step.
@@ -2823,6 +2824,36 @@ to change their volume by about a factor of 0.5, which should allow
 for compensation of a load imbalance of 100\%.
 The minimum allowed scaling can be changed with the {\tt -dds}
 option of {\tt mdrun}.
+
+The load imbalance is measured by timing a single region of the MD step
+on each MPI rank. This region can not include MPI communication, as
+timing of MPI calls does not allow separating wait due to imbalance
+from actual communication.
+The domain volumes are then scaled, with under-relaxation, inversely
+proportional with the measured time. This procedure will decrease the
+load imbalance when the change in load in the measured region correlates
+with the change in domain volume and the load outside
+the measured region does not depend strongly on the domain volume.
+In CPU-only simulations, the load is measured between the coordinate
+and the force communication. In hybrid CPU-GPU simulations we overlap
+communication on the CPU with calculation on the GPU. Therefore we
+measure from the last communication before the force calculation to
+when the CPU or GPU is finished, whichever is last.
+When not using PME ranks, we subtract the time in PME from the CPU time,
+as this includes MPI calls and the PME load is independent of domain size.
+This generally works well, unless the non-bonded load is low and there is
+imbalance in the bonded interactions. Then two issues can arise.
+Dynamic load balancing can increase the imbalance in update and constraints
+and with PME the coordinate and force redistribution time can go up
+significantly. Although dynamic load balancing
+can significantly improve performance in cases where there is imbalance in
+the bonded interactions on the CPU, there are many situations in which
+some domains continue decreasing in size and the load imbalance increases
+and/or PME coordinate and force redistribution cost increases significantly.
+As of version 2016.1, {\tt mdrun} disables the dynamic load balancing when
+measurement indicates that it deteriorates performance. This means that in most
+cases the user will get good performance with the default, automated
+dynamic load balancing setting.
 
 \subsection{Constraints in parallel\index{constraints}}
 \label{subsec:plincs}

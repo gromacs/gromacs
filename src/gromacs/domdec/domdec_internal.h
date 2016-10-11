@@ -149,15 +149,17 @@ enum {
     edlbsOffForever,           /**< DLB is off and will never be turned on */
     edlbsOffCanTurnOn,         /**< DLB is off and will turn on on imbalance */
     edlbsOffTemporarilyLocked, /**< DLB is off and temporarily can't turn on */
-    edlbsOn,                   /**< DLB is on and will stay on forever */
+    edlbsOnCanTurnOff,         /**< DLB is on and can turn off when slow */
+    edlbsOnForever,            /**< DLB is on and will stay on forever, because the user chose this */
     edlbsNR                    /**< The number of DLB states */
 };
 
-/* Allowed DLB state transitions:
- *   edlbsOffCanTurnOn         -> edlbsOn
+/* Allowed DLB state transitions in automatic mode:
+ *   edlbsOffCanTurnOn         -> edlbsOnCanTurnOff
  *   edlbsOffCanTurnOn         -> edlbsOffForever
  *   edlbsOffCanTurnOn         -> edlbsOffTemporarilyLocked
  *   edlbsOffTemporarilyLocked -> edlbsOffCanTurnOn
+ *   edlbsOnCanTurnOff         -> edlbsOffCanTurnOn
  */
 
 /*! \brief The PME domain decomposition for one dimension */
@@ -243,6 +245,8 @@ struct gmx_domdec_comm_t
     int      dlbState;
     /* With dlbState=edlbsOffCanTurnOn, should we check if to DLB on at the next DD? */
     gmx_bool bCheckWhetherToTurnDlbOn;
+    /* The first DD count since we are running without DLB */
+    int      ddPartioningCountFirstDlbOff;
 
     /* Cell sizes for static load balancing, first index cartesian */
     real **slb_frac;
@@ -290,7 +294,7 @@ struct gmx_domdec_comm_t
     /** Which cg distribution is stored on the master node,
      *  stored as DD partitioning call count.
      */
-    int master_cg_ddp_count;
+    gmx_int64_t master_cg_ddp_count;
 
     /** The number of cg's received from the direct neighbors */
     int  zone_ncg1[DD_MAXZONE];
@@ -356,6 +360,12 @@ struct gmx_domdec_comm_t
     int    n_load_have;
     /** How many times have we collected the load measurements */
     int    n_load_collect;
+
+    /* Cycle count history for DLB checks */
+    float       cyclesPerStepBeforeDLB;     /**< The averaged cycles per step over the last nstlist step before turning on DLB */
+    float       cyclesPerStepDlbExpAverage; /**< The running average of the cycles per step during DLB */
+    bool        haveTurnedOffDlb;           /**< Have we turned off DLB (after turning DLB on)? */
+    gmx_int64_t dlbSlowerPartitioningCount; /**< The DD step at which we last measured that DLB off was faster than DLB on, 0 if there was no such step */
 
     /* Statistics */
     double sum_nat[ddnatNR-ddnatZONE]; /**< The atoms per zone, summed over the steps */
