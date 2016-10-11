@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -394,8 +394,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
                  real invmass[], int nblocks, int sblock[],
                  t_idef *idef, t_inputrec *ir, rvec x_s[], rvec prime[],
                  t_nrnb *nrnb, real *scaled_lagrange_multiplier, real lambda, real *dvdlambda,
-                 real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
-                 gmx_bool bDumpOnError, int econq)
+                 real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr, int econq)
 {
     t_iatom *iatoms;
     real     dt_2, dvdl;
@@ -429,7 +428,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
 
         if (n0 == 0)
         {
-            if (bDumpOnError && log)
+            if (log)
             {
                 {
                     check_cons(log, blen, x_s, prime, v, idef->iparams, iatoms, invmass, econq);
