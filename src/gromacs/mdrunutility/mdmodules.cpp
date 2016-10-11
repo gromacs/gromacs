@@ -38,6 +38,8 @@
 
 #include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/treesupport.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -81,6 +83,15 @@ MDModules::MDModules() : impl_(new Impl)
 
 MDModules::~MDModules()
 {
+}
+
+void MDModules::assignOptionsToModulesFromInputrec()
+{
+    gmx::Options                 options;
+    impl_->field_->initMdpOptions(&options);
+    // TODO: Error handling.
+    gmx::assignOptionsFromKeyValueTree(&options, *impl_->ir_->params,
+                                       nullptr);
 }
 
 t_inputrec *MDModules::inputrec()

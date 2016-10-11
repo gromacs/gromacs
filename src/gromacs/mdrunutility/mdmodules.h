@@ -88,6 +88,14 @@ class MDModules
         ~MDModules();
 
         /*! \brief
+         * Initializes modules based on inputrec values read from tpr file.
+         *
+         * This needs to be called after read_tpx_state() if the modules need
+         * to be accessed.
+         */
+        void assignOptionsToModulesFromInputrec();
+
+        /*! \brief
          * Returns an initialized t_inputrec structure.
          *
          * The inputrec structure is owned by MDModules and will be destroyed
