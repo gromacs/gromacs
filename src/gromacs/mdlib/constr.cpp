@@ -389,7 +389,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                               invdt, v, vir != NULL, vir_r_m_dr,
                               econq, nrnb,
                               constr->maxwarn, &constr->warncount_lincs);
-        if (!bOK && constr->maxwarn >= 0)
+        if (!bOK && constr->maxwarn < INT_MAX)
         {
             if (fplog != NULL)
             {
@@ -410,7 +410,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                               idef, ir, x, xprime, nrnb,
                               constr->lagr, lambda, dvdlambda,
                               invdt, v, vir != NULL, vir_r_m_dr,
-                              constr->maxwarn >= 0, econq);
+                              constr->maxwarn < INT_MAX, econq);
                 break;
             case (econqVeloc):
                 bOK = bshakef(fplog, constr->shaked,
@@ -418,14 +418,14 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                               idef, ir, x, min_proj, nrnb,
                               constr->lagr, lambda, dvdlambda,
                               invdt, NULL, vir != NULL, vir_r_m_dr,
-                              constr->maxwarn >= 0, econq);
+                              constr->maxwarn < INT_MAX, econq);
                 break;
             default:
                 gmx_fatal(FARGS, "Internal error, SHAKE called for constraining something else than coordinates");
                 break;
         }
 
-        if (!bOK && constr->maxwarn >= 0)
+        if (!bOK && constr->maxwarn < INT_MAX)
         {
             if (fplog != NULL)
             {
@@ -1277,6 +1277,10 @@ gmx_constr_t init_constraints(FILE *fplog,
     {
         constr->maxwarn = 0;
         sscanf(env, "%8d", &constr->maxwarn);
+        if (constr->maxwarn < 0)
+        {
+            constr->maxwarn = INT_MAX;
+        }
         if (fplog)
         {
             fprintf(fplog,
@@ -1289,10 +1293,6 @@ gmx_constr_t init_constraints(FILE *fplog,
                     "Setting the maximum number of constraint warnings to %d\n",
                     constr->maxwarn);
         }
-    }
-    if (constr->maxwarn < 0 && fplog)
-    {
-        fprintf(fplog, "maxwarn < 0, will not stop on constraint errors\n");
     }
     constr->warncount_lincs  = 0;
     constr->warncount_settle = 0;
