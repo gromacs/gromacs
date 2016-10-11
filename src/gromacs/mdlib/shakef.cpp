@@ -394,8 +394,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
                  real invmass[], int nblocks, int sblock[],
                  t_idef *idef, t_inputrec *ir, rvec x_s[], rvec prime[],
                  t_nrnb *nrnb, real *scaled_lagrange_multiplier, real lambda, real *dvdlambda,
-                 real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
-                 gmx_bool bDumpOnError, int econq)
+                 real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr, int econq)
 {
     t_iatom *iatoms;
     real     dt_2, dvdl;
@@ -429,7 +428,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
 
         if (n0 == 0)
         {
-            if (bDumpOnError && log)
+            if (log)
             {
                 {
                     check_cons(log, blen, x_s, prime, v, idef->iparams, iatoms, invmass, econq);
