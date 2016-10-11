@@ -2470,35 +2470,32 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
         if (bWarn)
         {
-            if (maxwarn >= 0)
+            cconerr(lincsd, xprime, pbc,
+                    &ncons_loc, &p_ssd, &p_max, &p_imax);
+            if (MULTISIM(cr))
             {
-                cconerr(lincsd, xprime, pbc,
-                        &ncons_loc, &p_ssd, &p_max, &p_imax);
-                if (MULTISIM(cr))
-                {
-                    sprintf(buf3, " in simulation %d", cr->ms->sim);
-                }
-                else
-                {
-                    buf3[0] = 0;
-                }
-                sprintf(buf, "\nStep %s, time %g (ps)  LINCS WARNING%s\n"
-                        "relative constraint deviation after LINCS:\n"
-                        "rms %.6f, max %.6f (between atoms %d and %d)\n",
-                        gmx_step_str(step, buf2), ir->init_t+step*ir->delta_t,
-                        buf3,
-                        std::sqrt(p_ssd/ncons_loc), p_max,
-                        ddglatnr(cr->dd, lincsd->bla[2*p_imax]),
-                        ddglatnr(cr->dd, lincsd->bla[2*p_imax+1]));
-                if (fplog)
-                {
-                    fprintf(fplog, "%s", buf);
-                }
-                fprintf(stderr, "%s", buf);
-                lincs_warning(fplog, cr->dd, x, xprime, pbc,
-                              lincsd->nc, lincsd->bla, lincsd->bllen,
-                              ir->LincsWarnAngle, maxwarn, warncount);
+                sprintf(buf3, " in simulation %d", cr->ms->sim);
             }
+            else
+            {
+                buf3[0] = 0;
+            }
+            sprintf(buf, "\nStep %s, time %g (ps)  LINCS WARNING%s\n"
+                    "relative constraint deviation after LINCS:\n"
+                    "rms %.6f, max %.6f (between atoms %d and %d)\n",
+                    gmx_step_str(step, buf2), ir->init_t+step*ir->delta_t,
+                    buf3,
+                    std::sqrt(p_ssd/ncons_loc), p_max,
+                    ddglatnr(cr->dd, lincsd->bla[2*p_imax]),
+                    ddglatnr(cr->dd, lincsd->bla[2*p_imax+1]));
+            if (fplog)
+            {
+                fprintf(fplog, "%s", buf);
+            }
+            fprintf(stderr, "%s", buf);
+            lincs_warning(fplog, cr->dd, x, xprime, pbc,
+                          lincsd->nc, lincsd->bla, lincsd->bllen,
+                          ir->LincsWarnAngle, maxwarn, warncount);
             bOK = (p_max < 0.5);
         }
 

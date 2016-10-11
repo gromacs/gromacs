@@ -104,7 +104,6 @@ gmx_bool bshakef(FILE           *log,          /* Log file			*/
                  rvec           *v,            /* Also constrain v if v!=NULL  */
                  gmx_bool        bCalcVir,     /* Calculate r x m delta_r      */
                  tensor          vir_r_m_dr,   /* sum r x m delta_r            */
-                 gmx_bool        bDumpOnError, /* Dump debugging stuff on error*/
                  int             econq);       /* which type of constraint is occurring */
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
