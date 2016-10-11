@@ -177,6 +177,23 @@ static const int
 #define GMX_DD_NNODES_SENDRECV 4
 
 
+/* We check if to turn on DLB at the first and every 100 DD partitionings.
+ * With large imbalance DLB will turn on at the first step, so we can
+ * make the interval so large that the MPI overhead of the check is negligible.
+ */
+static const int c_checkTurnDlbOnInterval  = 100;
+/* We need to check if DLB results in worse performance and then turn it off.
+ * We check this more often then for turning DLB on, because the DLB can scale
+ * the domains very rapidly, so if unlucky the load imbalance can go up quickly
+ * and furthermore, we are already synchronizing often with DLB, so
+ * the overhead of the MPI Bcast is not that high.
+ */
+static const int c_checkTurnDlbOffInterval =  20;
+
+/* Forward declaration */
+static void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, gmx_bool bValue);
+
+
 /*
    #define dd_index(n,i) ((((i)[ZZ]*(n)[YY] + (i)[YY])*(n)[XX]) + (i)[XX])
 
@@ -256,7 +273,8 @@ t_block *dd_charge_groups_global(gmx_domdec_t *dd)
 
 static bool dlbIsOn(const gmx_domdec_comm_t *comm)
 {
-    return (comm->dlbState == edlbsOn);
+    return (comm->dlbState == edlbsOnCanTurnOff ||
+            comm->dlbState == edlbsOnForever);
 }
 
 static void vec_rvec_init(vec_rvec_t *v)
@@ -2498,7 +2516,7 @@ static gmx_bool check_grid_jump(gmx_int64_t     step,
                 /* This error should never be triggered under normal
                  * circumstances, but you never know ...
                  */
-                gmx_fatal(FARGS, "Step %s: The domain decomposition grid has shifted too much in the %c-direction around cell %d %d %d. This should not have happened. Running with fewer ranks might avoid this issue.",
+                gmx_fatal(FARGS, "step %s: The domain decomposition grid has shifted too much in the %c-direction around cell %d %d %d. This should not have happened. Running with fewer ranks might avoid this issue.",
                           gmx_step_str(step, buf),
                           dim2char(dim), dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
             }
@@ -2987,7 +3005,7 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t *dd,
     if (bPBC && cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
     {
         char buf[22];
-        gmx_fatal(FARGS, "Step %s: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
+        gmx_fatal(FARGS, "step %s: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
                   gmx_step_str(step, buf),
                   dim2char(dim), ddbox->box_size[dim], ddbox->skew_fac[dim],
                   ncd, comm->cellsize_min[dim]);
@@ -3532,7 +3550,7 @@ static void comm_dd_ns_cell_sizes(gmx_domdec_t *dd,
             comm->cellsize_min[dim])
         {
             char buf[22];
-            gmx_fatal(FARGS, "Step %s: The %c-size (%f) times the triclinic skew factor (%f) is smaller than the smallest allowed cell size (%f) for domain decomposition grid cell %d %d %d",
+            gmx_fatal(FARGS, "step %s: The %c-size (%f) times the triclinic skew factor (%f) is smaller than the smallest allowed cell size (%f) for domain decomposition grid cell %d %d %d",
                       gmx_step_str(step, buf), dim2char(dim),
                       comm->cell_x1[dim] - comm->cell_x0[dim],
                       ddbox->skew_fac[dim],
@@ -6162,7 +6180,7 @@ static int check_dlb_support(FILE *fplog, t_commrec *cr,
     {
         case 'a': dlbState = edlbsOffCanTurnOn; break;
         case 'n': dlbState = edlbsOffForever;   break;
-        case 'y': dlbState = edlbsOn;           break;
+        case 'y': dlbState = edlbsOnForever;    break;
         default: gmx_incons("Unknown dlb_opt");
     }
 
@@ -6173,7 +6191,7 @@ static int check_dlb_support(FILE *fplog, t_commrec *cr,
 
     if (!EI_DYNAMICS(ir->eI))
     {
-        if (dlbState == edlbsOn)
+        if (dlbState == edlbsOnForever)
         {
             sprintf(buf, "NOTE: dynamic load balancing is only supported with dynamics, not with integrator '%s'\n", EI(ir->eI));
             dd_warning(cr, fplog, buf);
@@ -6195,10 +6213,11 @@ static int check_dlb_support(FILE *fplog, t_commrec *cr,
             case edlbsOffForever:
                 break;
             case edlbsOffCanTurnOn:
+            case edlbsOnCanTurnOff:
                 dd_warning(cr, fplog, "NOTE: reproducibility requested, will not use dynamic load balancing\n");
                 dlbState = edlbsOffForever;
                 break;
-            case edlbsOn:
+            case edlbsOnForever:
                 dd_warning(cr, fplog, "WARNING: reproducibility requested with dynamic load balancing, the simulation will NOT be binary reproducible\n");
                 break;
             default:
@@ -6311,8 +6330,12 @@ static void set_dd_limits_and_grid(FILE *fplog, t_commrec *cr, gmx_domdec_t *dd,
     /* Initialize to GPU share count to 0, might change later */
     comm->nrank_gpu_shared = 0;
 
-    comm->dlbState                 = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
-    comm->bCheckWhetherToTurnDlbOn = TRUE;
+    comm->dlbState         = check_dlb_support(fplog, cr, dlb_opt, comm->bRecordLoad, Flags, ir);
+    dd_dlb_set_should_check_whether_to_turn_dlb_on(dd, TRUE);
+    /* To consider turning DLB on after 2*nstlist steps we need to check
+     * at partitioning count 3. Thus we need to increase the first count by 2.
+     */
+    comm->ddPartioningCountFirstDlbOff += 2;
 
     if (fplog)
     {
@@ -6688,15 +6711,9 @@ static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
     gmx_domdec_comm_t *comm;
     real               cellsize_min;
     int                d, nc, i;
-    char               buf[STRLEN];
 
     dd   = cr->dd;
     comm = dd->comm;
-
-    if (fplog)
-    {
-        fprintf(fplog, "At step %s the performance loss due to force load imbalance is %.1f %%\n", gmx_step_str(step, buf), dd_force_imb_perf_loss(dd)*100);
-    }
 
     cellsize_min = comm->cellsize_min[dd->dim[0]];
     for (d = 1; d < dd->ndim; d++)
@@ -6706,7 +6723,8 @@ static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
 
     if (cellsize_min < comm->cellsize_limit*1.05)
     {
-        dd_warning(cr, fplog, "NOTE: the minimum cell size is smaller than 1.05 times the cell size limit, will not turn on dynamic load balancing\n");
+        char buf[STRLEN];
+        sprintf(buf, "step %" GMX_PRId64 " Measured %.1f %% performance load due to load imbalance, but the minimum cell size is smaller than 1.05 times the cell size limit. Will no longer try dynamic load balancing.\n", step, dd_force_imb_perf_loss(dd)*100);
 
         /* Change DLB from "auto" to "no". */
         comm->dlbState = edlbsOffForever;
@@ -6714,8 +6732,16 @@ static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
         return;
     }
 
-    dd_warning(cr, fplog, "NOTE: Turning on dynamic load balancing\n");
-    comm->dlbState = edlbsOn;
+    char buf[STRLEN];
+    sprintf(buf, "step %" GMX_PRId64 " Turning on dynamic load balancing, because the performance loss due to load imbalance is %.1f %%.\n", step, dd_force_imb_perf_loss(dd)*100);
+    dd_warning(cr, fplog, buf);
+    comm->dlbState = edlbsOnCanTurnOff;
+
+    /* Store the non-DLB performance, so we can check if DLB actually
+     * improves performance.
+     */
+    GMX_RELEASE_ASSERT(comm->cycl_n[ddCyclStep] > 0, "When we turned on DLB, we should have measured cycles");
+    comm->cyclesPerStepBeforeDLB = comm->cycl[ddCyclStep]/comm->cycl_n[ddCyclStep];
 
     set_dlb_limits(dd);
 
@@ -6742,6 +6768,27 @@ static void turn_on_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
             comm->root[d]->cell_f[nc] = 1.0;
         }
     }
+}
+
+static void turn_off_dlb(FILE *fplog, t_commrec *cr, gmx_int64_t step)
+{
+    gmx_domdec_t *dd = cr->dd;
+
+    char          buf[STRLEN];
+    sprintf(buf, "step %" GMX_PRId64 " Turning off dynamic load balancing, because it is degrading performance.\n", step);
+    dd_warning(cr, fplog, buf);
+    dd->comm->dlbState                     = edlbsOffCanTurnOn;
+    dd->comm->haveTurnedOffDlb             = true;
+    dd->comm->ddPartioningCountFirstDlbOff = dd->ddp_count;
+}
+
+static void turn_off_dlb_forever(FILE *fplog, t_commrec *cr, gmx_int64_t step)
+{
+    GMX_RELEASE_ASSERT(cr->dd->comm->dlbState == edlbsOffCanTurnOn, "Can only turn off DLB forever when it was in the can-turn-on state");
+    char buf[STRLEN];
+    sprintf(buf, "step %" GMX_PRId64 " Will no longer try dynamic load balancing, as it degraded performance.\n", step);
+    dd_warning(cr, fplog, buf);
+    cr->dd->comm->dlbState = edlbsOffForever;
 }
 
 static char *init_bLocalCG(const gmx_mtop_t *mtop)
@@ -7308,6 +7355,14 @@ static void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, gmx
     if (dd->comm->dlbState == edlbsOffCanTurnOn)
     {
         dd->comm->bCheckWhetherToTurnDlbOn = bValue;
+
+        if (bValue == TRUE)
+        {
+            /* Store the DD partitioning count, so we can ignore cycle counts
+             * over the next nstlist steps, which are often slower.
+             */
+            dd->comm->ddPartioningCountFirstDlbOff = dd->ddp_count;
+        }
     }
 }
 
@@ -7316,10 +7371,17 @@ static void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, gmx
  */
 static gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd)
 {
-    const int nddp_chk_dlb = 100;
-
     if (dd->comm->dlbState != edlbsOffCanTurnOn)
     {
+        return FALSE;
+    }
+
+    if (dd->ddp_count <= dd->comm->ddPartioningCountFirstDlbOff)
+    {
+        /* We ignore the first nstlist steps at the start of the run
+         * or after PME load balancing or after turning DLB off, since
+         * these often have extra allocation or cache miss overhead.
+         */
         return FALSE;
     }
 
@@ -7332,10 +7394,10 @@ static gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd)
         dd_dlb_set_should_check_whether_to_turn_dlb_on(dd, FALSE);
         return TRUE;
     }
-    /* We should also check whether we should use DLB every 100
+    /* We check whether we should use DLB every c_checkTurnDlbOnInterval
      * partitionings (we do not do this every partioning, so that we
      * avoid excessive communication). */
-    if (dd->comm->n_load_have % nddp_chk_dlb == nddp_chk_dlb - 1)
+    if (dd->comm->n_load_have % c_checkTurnDlbOnInterval == c_checkTurnDlbOnInterval - 1)
     {
         return TRUE;
     }
@@ -7345,7 +7407,7 @@ static gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd)
 
 gmx_bool dd_dlb_is_on(const gmx_domdec_t *dd)
 {
-    return (dd->comm->dlbState == edlbsOn);
+    return dlbIsOn(dd->comm);
 }
 
 gmx_bool dd_dlb_is_locked(const gmx_domdec_t *dd)
@@ -9095,7 +9157,7 @@ void dd_partition_system(FILE                *fplog,
     gmx_int64_t        step_pcoupl;
     rvec               cell_ns_x0, cell_ns_x1;
     int                i, n, ncgindex_set, ncg_home_old = -1, ncg_moved, nat_f_novirsum;
-    gmx_bool           bBoxChanged, bNStGlobalComm, bDoDLB, bCheckWhetherToTurnDlbOn, bTurnOnDLB, bLogLoad;
+    gmx_bool           bBoxChanged, bNStGlobalComm, bDoDLB, bCheckWhetherToTurnDlbOn, bLogLoad;
     gmx_bool           bRedist, bSortCG, bResortAll;
     ivec               ncells_old = {0, 0, 0}, ncells_new = {0, 0, 0}, np;
     real               grid_density;
@@ -9186,40 +9248,109 @@ void dd_partition_system(FILE                *fplog,
             }
             comm->n_load_collect++;
 
-            if (bCheckWhetherToTurnDlbOn)
+            if (dlbIsOn(comm))
             {
+                if (DDMASTER(dd))
+                {
+                    /* Add the measured cycles to the running average */
+                    const float averageFactor        = 0.1f;
+                    comm->cyclesPerStepDlbExpAverage =
+                        (1 - averageFactor)*comm->cyclesPerStepDlbExpAverage +
+                        averageFactor*comm->cycl[ddCyclStep]/comm->cycl_n[ddCyclStep];
+                }
+                if (comm->dlbState == edlbsOnCanTurnOff &&
+                    dd->comm->n_load_have % c_checkTurnDlbOffInterval == c_checkTurnDlbOffInterval - 1)
+                {
+                    gmx_bool turnOffDlb;
+                    if (DDMASTER(dd))
+                    {
+                        /* If the running averaged cycles with DLB are more
+                         * than before we turned on DLB, turn off DLB.
+                         * We will again run and check the cycles without DLB
+                         * and we can then decide if to turn off DLB forever.
+                         */
+                        turnOffDlb = (comm->cyclesPerStepDlbExpAverage >
+                                      comm->cyclesPerStepBeforeDLB);
+                    }
+                    dd_bcast(dd, sizeof(turnOffDlb), &turnOffDlb);
+                    if (turnOffDlb)
+                    {
+                        /* To turn off DLB, we need to redistribute the atoms */
+                        dd_collect_state(dd, state_local, state_global);
+                        bMasterState = TRUE;
+                        turn_off_dlb(fplog, cr, step);
+                    }
+                }
+            }
+            else if (bCheckWhetherToTurnDlbOn)
+            {
+                gmx_bool turnOffDlbForever = FALSE;
+                gmx_bool turnOnDlb         = FALSE;
+
                 /* Since the timings are node dependent, the master decides */
                 if (DDMASTER(dd))
                 {
-                    /* Here we check if the max PME rank load is more than 0.98
-                     * the max PP force load. If so, PP DLB will not help,
-                     * since we are (almost) limited by PME. Furthermore,
-                     * DLB will cause a significant extra x/f redistribution
-                     * cost on the PME ranks, which will then surely result
-                     * in lower total performance.
-                     * This check might be fragile, since one measurement
-                     * below 0.98 (although only done once every 100 DD part.)
-                     * could turn on DLB for the rest of the run.
+                    /* If we recently turned off DLB, we want to check if
+                     * performance is better without DLB. We want to do this
+                     * ASAP to minimize the chance that external factors
+                     * slowed down the DLB step are gone here and we
+                     * incorrectly conclude that DLB was causing the slowdown.
+                     * So we measure one nstlist block, no running average.
                      */
-                    if (cr->npmenodes > 0 &&
-                        dd_pme_f_ratio(dd) > 1 - DD_PERF_LOSS_DLB_ON)
+                    if (comm->haveTurnedOffDlb &&
+                        comm->cycl[ddCyclStep]/comm->cycl_n[ddCyclStep] <
+                        comm->cyclesPerStepDlbExpAverage)
                     {
-                        bTurnOnDLB = FALSE;
+                        /* After turning off DLB we ran nstlist steps in fewer
+                         * cycles than with DLB. This likely means that DLB
+                         * in not benefical, but this could be due to a one
+                         * time unlucky fluctuation, so we require two such
+                         * observations in close succession to turn off DLB
+                         * forever.
+                         */
+                        if (comm->dlbSlowerPartitioningCount > 0 &&
+                            dd->ddp_count < comm->dlbSlowerPartitioningCount + 10*c_checkTurnDlbOnInterval)
+                        {
+                            turnOffDlbForever = TRUE;
+                        }
+                        comm->haveTurnedOffDlb           = false;
+                        /* Register when we last measured DLB slowdown */
+                        comm->dlbSlowerPartitioningCount = dd->ddp_count;
                     }
                     else
                     {
-                        bTurnOnDLB =
-                            (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS_DLB_ON);
-                    }
-                    if (debug)
-                    {
-                        fprintf(debug, "step %s, imb loss %f\n",
-                                gmx_step_str(step, sbuf),
-                                dd_force_imb_perf_loss(dd));
+                        /* Here we check if the max PME rank load is more than 0.98
+                         * the max PP force load. If so, PP DLB will not help,
+                         * since we are (almost) limited by PME. Furthermore,
+                         * DLB will cause a significant extra x/f redistribution
+                         * cost on the PME ranks, which will then surely result
+                         * in lower total performance.
+                         */
+                        if (cr->npmenodes > 0 &&
+                            dd_pme_f_ratio(dd) > 1 - DD_PERF_LOSS_DLB_ON)
+                        {
+                            turnOnDlb = FALSE;
+                        }
+                        else
+                        {
+                            turnOnDlb = (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS_DLB_ON);
+                        }
                     }
                 }
-                dd_bcast(dd, sizeof(bTurnOnDLB), &bTurnOnDLB);
-                if (bTurnOnDLB)
+                struct
+                {
+                    gmx_bool turnOffDlbForever;
+                    gmx_bool turnOnDlb;
+                }
+                bools {
+                    turnOffDlbForever, turnOnDlb
+                };
+                dd_bcast(dd, sizeof(bools), &bools);
+                if (bools.turnOffDlbForever)
+                {
+                    turn_off_dlb_forever(fplog, cr, step);
+                }
+                else if (bools.turnOnDlb)
                 {
                     turn_on_dlb(fplog, cr, step);
                     bDoDLB = TRUE;
