@@ -556,7 +556,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                 }
                 fprintf(stderr, "%s", buf);
                 constr->warncount_settle++;
-                if (constr->warncount_settle > constr->maxwarn)
+                if (constr->warncount_settle > constr->maxwarn && constr->maxwarn > 0)
                 {
                     too_many_constraint_warnings(-1, constr->warncount_settle);
                 }
@@ -1281,15 +1281,31 @@ gmx_constr_t init_constraints(FILE *fplog,
         sscanf(env, "%8d", &constr->maxwarn);
         if (fplog)
         {
-            fprintf(fplog,
-                    "Setting the maximum number of constraint warnings to %d\n",
-                    constr->maxwarn);
+            if (constr->maxwarn > 0)
+            {
+                fprintf(fplog,
+                        "Setting the maximum number of constraint warnings to %d\n",
+                        constr->maxwarn);
+            }
+            else
+            {
+                fprintf(fplog,
+                        "Setting the maximum number of constraint warnings to unlimited\n");
+            }
         }
         if (MASTER(cr))
         {
-            fprintf(stderr,
-                    "Setting the maximum number of constraint warnings to %d\n",
-                    constr->maxwarn);
+            if (constr->maxwarn > 0)
+            {
+                fprintf(stderr,
+                        "Setting the maximum number of constraint warnings to %d\n",
+                        constr->maxwarn);
+            }
+            else
+            {
+                fprintf(fplog,
+                        "Setting the maximum number of constraint warnings to unlimited\n");
+            }
         }
     }
     if (constr->maxwarn < 0 && fplog)
