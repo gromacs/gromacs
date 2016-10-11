@@ -45,91 +45,77 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pme-internal.h"
 
-static void make_dft_mod(real *mod, real *data, int ndata)
+static void make_dft_mod(real *mod, const double *data, int order, int ndata)
 {
-    int  i, j;
-    real sc, ss, arg;
-
-    for (i = 0; i < ndata; i++)
+    for (int i = 0; i < ndata; i++)
     {
-        sc = ss = 0;
-        for (j = 0; j < ndata; j++)
+        /* We use double precision, since this is only called once per grid.
+         * But for single precision bsp_mod, single precision also seems
+         * to give full accuracy.
+         */
+        double sc = 0;
+        double ss = 0;
+        for (int j = 0; j < order - 1; j++)
         {
-            arg = (2.0*M_PI*i*j)/ndata;
-            sc += data[j]*cos(arg);
-            ss += data[j]*sin(arg);
+            double arg  = (2.0*M_PI*i*(j + 1))/ndata;
+            sc         += data[j]*cos(arg);
+            ss         += data[j]*sin(arg);
         }
-        mod[i] = sc*sc+ss*ss;
+        mod[i] = sc*sc + ss*ss;
     }
-    for (i = 0; i < ndata; i++)
+    if (order % 2 == 1 && ndata % 2 == 0)
     {
-        if (mod[i] < 1e-7)
-        {
-            mod[i] = (mod[i-1]+mod[i+1])*0.5;
-        }
+        GMX_RELEASE_ASSERT(mod[ndata/2] < GMX_DOUBLE_EPS, "With odd spline support (odd pme_order), so even spline order, and even grid size, the middle dft_mod entry should first come out as zero");
+        /* This factor causes a division by zero. But since this occurs in
+         * the tail of the distribution, the term with this factor can
+         * be ignored (see Essmann et al. JCP 103, 8577).
+         * TODO: Explain why we take the average of the neighbors.
+         */
+        mod[ndata/2] = (mod[ndata/2 - 1] + mod[ndata/2 + 1])*0.5;
     }
 }
 
 void make_bspline_moduli(splinevec bsp_mod,
                          int nx, int ny, int nz, int order)
 {
-    int   nmax = std::max(nx, std::max(ny, nz));
-    real *data, *ddata, *bsp_data;
-    int   i, k, l;
-    real  div;
+    /* We use double precision, since this is only called once per grid.
+     * But for single precision bsp_mod, single precision also seems
+     * to give full accuracy.
+     */
+    double *data;
 
-    snew(data, order);
-    snew(ddata, order);
-    snew(bsp_data, nmax);
+    snew(data, order - 1);
 
-    data[order-1] = 0;
-    data[1]       = 0;
-    data[0]       = 1;
+    data[1]         = 0;
+    data[0]         = 1;
 
-    for (k = 3; k < order; k++)
+    for (int k = 3; k < order; k++)
     {
-        div       = 1.0/(k-1.0);
-        data[k-1] = 0;
-        for (l = 1; l < (k-1); l++)
+        double div = 1.0/(k - 1);
+        data[k-1]  = 0;
+        for (int l = 1; l < k - 1; l++)
         {
-            data[k-l-1] = div*(l*data[k-l-2]+(k-l)*data[k-l-1]);
+            data[k - l - 1] = div*(l*data[k - l - 2] + (k - l)*data[k - l - 1]);
         }
         data[0] = div*data[0];
     }
-    /* differentiate */
-    ddata[0] = -data[0];
-    for (k = 1; k < order; k++)
+    double div      = 1.0/(order - 1);
+    for (int l = 1; l <  order - 1; l++)
     {
-        ddata[k] = data[k-1]-data[k];
-    }
-    div           = 1.0/(order-1);
-    data[order-1] = 0;
-    for (l = 1; l < (order-1); l++)
-    {
-        data[order-l-1] = div*(l*data[order-l-2]+(order-l)*data[order-l-1]);
+        data[order - l - 1] = div*(l*data[order - l - 2] + (order - l)*data[order - l - 1]);
     }
     data[0] = div*data[0];
 
-    for (i = 0; i < nmax; i++)
-    {
-        bsp_data[i] = 0;
-    }
-    for (i = 1; i <= order; i++)
-    {
-        bsp_data[i] = data[i-1];
-    }
-
-    make_dft_mod(bsp_mod[XX], bsp_data, nx);
-    make_dft_mod(bsp_mod[YY], bsp_data, ny);
-    make_dft_mod(bsp_mod[ZZ], bsp_data, nz);
+    make_dft_mod(bsp_mod[XX], data, order, nx);
+    make_dft_mod(bsp_mod[YY], data, order, ny);
+    make_dft_mod(bsp_mod[ZZ], data, order, nz);
 
     sfree(data);
-    sfree(ddata);
-    sfree(bsp_data);
 }
 
 /* Return the P3M optimal influence function */
