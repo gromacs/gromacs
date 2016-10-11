@@ -2249,13 +2249,14 @@ void get_ir(const char *mdparin, const char *mdparout,
             GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
             mark_einp_set(ninp, inp, path[0].c_str());
         }
-        gmx::Options                 options;
-        ir->efield->initMdpOptions(&options);
         MdpErrorHandler              errorHandler(wi);
         auto                         result
             = transform.transform(convertedValues, &errorHandler);
         errorHandler.setBackMapping(result.backMapping());
-        gmx::assignOptionsFromKeyValueTree(&options, result.object(),
+        ir->params = new gmx::KeyValueTreeObject(result.object());
+        gmx::Options                 options;
+        ir->efield->initMdpOptions(&options);
+        gmx::assignOptionsFromKeyValueTree(&options, *ir->params,
                                            &errorHandler);
     }
 
