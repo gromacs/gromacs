@@ -93,6 +93,10 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
                    ir,
                    &state,
                    tpx.bTop ? &mtop : NULL);
+    if (tpx.bIr)
+    {
+        mdModules.assignOptionsToModulesFromInputrec();
+    }
 
     if (mdpfn && tpx.bIr)
     {
