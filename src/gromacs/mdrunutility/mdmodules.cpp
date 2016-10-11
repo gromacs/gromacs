@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,6 +38,8 @@
 
 #include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/treesupport.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -81,6 +83,15 @@ MDModules::MDModules() : impl_(new Impl)
 
 MDModules::~MDModules()
 {
+}
+
+void MDModules::assignOptionsToModulesFromInputrec()
+{
+    gmx::Options                 options;
+    impl_->field_->initMdpOptions(&options);
+    // TODO: Error handling.
+    gmx::assignOptionsFromKeyValueTree(&options, *impl_->ir_->params,
+                                       nullptr);
 }
 
 t_inputrec *MDModules::inputrec()

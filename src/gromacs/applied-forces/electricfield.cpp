@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,9 +47,6 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/gmxfio-xdr.h"
-#include "gromacs/fileio/readinp.h"
-#include "gromacs/fileio/warninp.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
@@ -165,7 +162,6 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         ElectricField() : fpField_(nullptr) {}
 
         // From IInputRecExtension
-        virtual void doTpxIO(t_fileio *fio, bool bRead);
         virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
         virtual void initMdpOptions(IOptionsContainerWithSections *options);
         virtual void broadCast(const t_commrec *cr);
@@ -247,54 +243,6 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         FILE             *fpField_;
 };
 
-void ElectricField::doTpxIO(t_fileio *fio, bool bRead)
-{
-    // The content of the tpr file for this feature has
-    // been the same since gromacs 4.0 that was used for
-    // developing.
-    for (int j = 0; (j < DIM); j++)
-    {
-        int n = 0, nt = 0;
-        if (!bRead)
-        {
-            n = 1;
-            if (omega(j) != 0 || sigma(j) != 0 || t0(j) != 0)
-            {
-                nt = 1;
-            }
-        }
-        gmx_fio_do_int(fio, n);
-        gmx_fio_do_int(fio, nt);
-        std::vector<real> aa, phi, at, phit;
-        if (!bRead)
-        {
-            aa.push_back(a(j));
-            phi.push_back(t0(j));
-            at.push_back(omega(j));
-            phit.push_back(sigma(j));
-        }
-        else
-        {
-            aa.resize(n+1);
-            phi.resize(nt+1);
-            at.resize(nt+1);
-            phit.resize(nt+1);
-        }
-        gmx_fio_ndo_real(fio, aa.data(),  n);
-        gmx_fio_ndo_real(fio, phi.data(), n);
-        gmx_fio_ndo_real(fio, at.data(),  nt);
-        gmx_fio_ndo_real(fio, phit.data(), nt);
-        if (bRead && n > 0)
-        {
-            setFieldTerm(j, aa[0], at[0], phi[0], phit[0]);
-            if (n > 1 || nt > 1)
-            {
-                gmx_fatal(FARGS, "Can not handle tpr files with more than one electric field term per direction.");
-            }
-        }
-    }
-}
-
 //! Converts static parameters from mdp format to E0.
 real convertStaticParameters(const std::string &value)
 {
@@ -356,17 +304,17 @@ void convertDynamicParameters(gmx::KeyValueTreeObjectBuilder *builder,
 
 void ElectricField::initMdpTransform(IKeyValueTreeTransformRules *rules)
 {
-    rules->addRule().from<std::string>("/E-x").to<real>("/electric-field/x/E0")
+    rules->addRule().from<std::string>("/E-x").to<real>("/applied-forces/electric-field/x/E0")
         .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-xt").toObject("/electric-field/x")
+    rules->addRule().from<std::string>("/E-xt").toObject("/applied-forces/electric-field/x")
         .transformWith(&convertDynamicParameters);
-    rules->addRule().from<std::string>("/E-y").to<real>("/electric-field/y/E0")
+    rules->addRule().from<std::string>("/E-y").to<real>("/applied-forces/electric-field/y/E0")
         .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-yt").toObject("/electric-field/y")
+    rules->addRule().from<std::string>("/E-yt").toObject("/applied-forces/electric-field/y")
         .transformWith(&convertDynamicParameters);
-    rules->addRule().from<std::string>("/E-z").to<real>("/electric-field/z/E0")
+    rules->addRule().from<std::string>("/E-z").to<real>("/applied-forces/electric-field/z/E0")
         .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-zt").toObject("/electric-field/z")
+    rules->addRule().from<std::string>("/E-zt").toObject("/applied-forces/electric-field/z")
         .transformWith(&convertDynamicParameters);
 }
 
