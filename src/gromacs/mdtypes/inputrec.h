@@ -67,6 +67,7 @@ namespace gmx
 
 class IKeyValueTreeTransformRules;
 class IOptionsContainerWithSections;
+class KeyValueTreeObject;
 
 /*! \libinternal \brief
  * Inputrec extension interface for a mdrun module.
@@ -90,15 +91,6 @@ class IInputRecExtension
 {
     public:
         virtual ~IInputRecExtension() {}
-
-        /*! \brief Read or write tpr file
-         *
-         * Read or write the necessary data from a tpr file. The routine is responsible
-         * for consistency, such that all data belonging to this module is read or written.
-         * \param[inout] fio Gromacs file descriptor
-         * \param[in]    bRead boolean determines whether we are reading or writing
-         */
-        virtual void doTpxIO(t_fileio *fio, bool bRead) = 0;
 
         /*! \brief
          * Initializes a transform from mdp values to sectioned options.
@@ -492,8 +484,10 @@ struct t_inputrec
     real                     scalefactor;   /* factor for scaling the MM charges in QM calc.*/
 
     /* Fields for removed features go here (better caching) */
-    gmx_bool        bAdress;       // Whether AdResS is enabled - always false if a valid .tpr was read
-    gmx_bool        useTwinRange;  // Whether twin-range scheme is active - always false if a valid .tpr was read
+    gmx_bool                 bAdress;      // Whether AdResS is enabled - always false if a valid .tpr was read
+    gmx_bool                 useTwinRange; // Whether twin-range scheme is active - always false if a valid .tpr was read
+
+    gmx::KeyValueTreeObject *params;
 };
 
 int ir_optimal_nstcalcenergy(const t_inputrec *ir);

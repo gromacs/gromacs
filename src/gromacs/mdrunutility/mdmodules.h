@@ -82,9 +82,11 @@ class IKeyValueTreeTransformRules;
  * loops over a container of these interfaces, and/or groups of them (e.g.
  * applied forces), instead of the current single pointer.
  *
- * The assignOptionsToModules() method of this class also takes
- * responsibility for wiring up the options (and their defaults) for
- * each
+ * The assignOptionsToModules() and
+ * assignOptionsToModulesFromInputrec() methods of this class also
+ * take responsibility for wiring up the options (and their defaults)
+ * for each module, respectively for mdp- and tpr-style input of those
+ * options.
  *
  * \inlibraryapi
  * \ingroup module_mdrunutility
@@ -117,14 +119,23 @@ class MDModules
          */
         void initMdpTransform(IKeyValueTreeTransformRules *rules);
 
-        /*! \brief Use \c optionValues to set the options for each module.
+        /*! \brief Use \c mdpOptionValues to set the options (e.g.read
+         * from mdp input) for each module.
          *
-         * \param[in] optionValues Contains keys and values from user
+         * \param[in] mdpOptionValues Contains keys and values from user
          *     input (and defaults) to configure modules that have
          *     registered options with those keys.
          * \param[out] errorHandler  Called to report errors. */
-        void assignOptionsToModules(const KeyValueTreeObject  &optionValues,
-                                    IKeyValueTreeErrorHandler *errorHandler);
+        void assignOptionsToModulesFromMdp(const KeyValueTreeObject  &mdpOptionValues,
+                                           IKeyValueTreeErrorHandler *errorHandler);
+
+        /*! \brief
+         * Initializes modules based on inputrec values read from tpr file.
+         *
+         * This needs to be called after read_tpx_state() if the modules need
+         * to be accessed.
+         */
+        void assignOptionsToModulesFromTpr();
 
     private:
         class Impl;

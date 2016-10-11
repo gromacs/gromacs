@@ -78,6 +78,14 @@ class MDModules::Impl
             }
         }
 
+        void makeModuleOptions(Options *options)
+        {
+            // Create a section for applied-forces modules
+            auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));
+            field_->initMdpOptions(&appliedForcesOptions);
+            // In future, other sections would also go here.
+        }
+
         IInputRecExtensionPtr  field_;
         t_inputrec            *ir_;
 };
@@ -108,16 +116,32 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
     impl_->field_->initMdpTransform(rules);
 }
 
-void MDModules::assignOptionsToModules(const KeyValueTreeObject  &optionValues,
-                                       IKeyValueTreeErrorHandler *errorHandler)
+void MDModules::assignOptionsToModulesFromMdp(const KeyValueTreeObject  &mdpOptionValues,
+                                              IKeyValueTreeErrorHandler *errorHandler)
 {
-    Options options;
-    // Create a section for applied-forces modules
-    auto    appliedForcesOptions = options.addSection(OptionSection("applied-forces"));
-    impl_->field_->initMdpOptions(&appliedForcesOptions);
-    // In future, other sections would also go here.
+    Options moduleOptions;
+    impl_->makeModuleOptions(&moduleOptions);
 
-    assignOptionsFromKeyValueTree(&options, optionValues, errorHandler);
+    KeyValueTreeObject keyValueParameters(mdpOptionValues);
+    impl_->ir_->params = new KeyValueTreeObject(adjustKeyValueTreeFromOptions(keyValueParameters, moduleOptions));
+    // The actual output is in the data fields of the modules that
+    // were set up in the module options.
+    assignOptionsFromKeyValueTree(&moduleOptions, *impl_->ir_->params, errorHandler);
+}
+
+void MDModules::assignOptionsToModulesFromTpr()
+{
+    Options moduleOptions;
+    impl_->makeModuleOptions(&moduleOptions);
+
+    // Note that impl_->ir_->params was set up during tpr reading, so
+    // all we need to do here is integrate that with the module
+    // options, which e.g. might have changed between versions.
+    // The actual output is in the data fields of the modules that
+    // were set up in the module options.
+    //
+    // TODO error handling
+    assignOptionsFromKeyValueTree(&moduleOptions, *impl_->ir_->params, nullptr);
 }
 
 } // namespace gmx

@@ -668,6 +668,7 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     gmx::IInputRecExtension *eptr = inputrec->efield;
     block_bc(cr, *inputrec);
     inputrec->efield = eptr;
+    inputrec->params = nullptr;
 
     bc_grpopts(cr, &(inputrec->opts));
 
