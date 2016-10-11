@@ -556,7 +556,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                 }
                 fprintf(stderr, "%s", buf);
                 constr->warncount_settle++;
-                if (constr->warncount_settle > constr->maxwarn)
+                if (constr->warncount_settle > constr->maxwarn && constr->maxwarn != -1)
                 {
                     too_many_constraint_warnings(-1, constr->warncount_settle);
                 }
