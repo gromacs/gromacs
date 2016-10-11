@@ -69,6 +69,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/txtdump.h"
@@ -112,6 +114,7 @@ enum tpxv {
     tpxv_RemoveTwinRange,                                    /**< removed support for twin-range interactions */
     tpxv_ReplacePullPrintCOM12,                              /**< Replaced print-com-1, 2 with pull-print-com */
     tpxv_PullExternalPotential,                              /**< Added pull type external potential */
+    tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -919,6 +922,39 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
 
 }
 
+static void do_legacy_efield(t_fileio *fio, gmx::KeyValueTreeObjectBuilder *root)
+{
+    const char *const dimName[] = { "x", "y", "z" };
+
+    auto              efieldObj = root->addObject("electric-field");
+    // The content of the tpr file for this feature has
+    // been the same since gromacs 4.0 that was used for
+    // developing.
+    for (int j = 0; j < DIM; ++j)
+    {
+        int n, nt;
+        gmx_fio_do_int(fio, n);
+        gmx_fio_do_int(fio, nt);
+        std::vector<real> aa(n+1), phi(nt+1), at(nt+1), phit(nt+1);
+        gmx_fio_ndo_real(fio, aa.data(),  n);
+        gmx_fio_ndo_real(fio, phi.data(), n);
+        gmx_fio_ndo_real(fio, at.data(),  nt);
+        gmx_fio_ndo_real(fio, phit.data(), nt);
+        if (n > 0)
+        {
+            if (n > 1 || nt > 1)
+            {
+                gmx_fatal(FARGS, "Can not handle tpr files with more than one electric field term per direction.");
+            }
+            auto dimObj = efieldObj.addObject(dimName[j]);
+            dimObj.addValue<real>("E0", aa[0]);
+            dimObj.addValue<real>("omega", at[0]);
+            dimObj.addValue<real>("t0", phi[0]);
+            dimObj.addValue<real>("sigma", phit[0]);
+        }
+    }
+}
+
 
 static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
                         int file_version, real *fudgeQQ)
@@ -938,6 +974,9 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     {
         return;
     }
+
+    gmx::KeyValueTreeBuilder       paramsBuilder;
+    gmx::KeyValueTreeObjectBuilder paramsObj = paramsBuilder.rootObject();
 
     /* Basic inputrec stuff */
     gmx_fio_do_int(fio, ir->eI);
@@ -1625,7 +1664,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         ir->wall_ewald_zfac  = 3;
     }
     /* Cosine stuff for electric fields */
-    ir->efield->doTpxIO(fio, bRead);
+    if (file_version < tpxv_GenericParamsForElectricField)
+    {
+        do_legacy_efield(fio, &paramsObj);
+    }
 
     /* Swap ions */
     if (file_version >= tpxv_ComputationalElectrophysiology)
@@ -1679,6 +1721,26 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             gmx_fio_ndo_gmx_bool(fio, ir->opts.bTS, ir->opts.ngQM);
         }
         /* end of QMMM stuff */
+    }
+
+    if (file_version >= tpxv_GenericParamsForElectricField)
+    {
+        gmx::FileIOXdrSerializer serializer(fio);
+        if (bRead)
+        {
+            paramsObj.mergeObject(
+                    gmx::deserializeKeyValueTree(&serializer));
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(ir->params != nullptr,
+                               "Parameters should be present when writing inputrec");
+            gmx::serializeKeyValueTree(*ir->params, &serializer);
+        }
+    }
+    if (bRead)
+    {
+        ir->params = new gmx::KeyValueTreeObject(paramsBuilder.build());
     }
 }
 

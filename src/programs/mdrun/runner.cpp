@@ -94,6 +94,8 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
@@ -777,6 +779,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, mtop);
+        {
+            gmx::Options                 options;
+            inputrec->efield->initMdpOptions(&options);
+            // TODO: Error handling.
+            gmx::assignOptionsFromKeyValueTree(&options, *inputrec->params,
+                                               nullptr);
+        }
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
