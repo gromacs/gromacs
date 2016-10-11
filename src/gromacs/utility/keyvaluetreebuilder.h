@@ -198,7 +198,10 @@ class KeyValueTreeObjectBuilder
         }
         void mergeObject(KeyValueTreeValue &&value)
         {
-            KeyValueTreeObject &obj = value.asObject();
+            mergeObject(std::move(value.asObject()));
+        }
+        void mergeObject(KeyValueTreeObject &&obj)
+        {
             for (auto &prop : obj.valueMap_)
             {
                 addRawValue(prop.first, std::move(prop.second));
