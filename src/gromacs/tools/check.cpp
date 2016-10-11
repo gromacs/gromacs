@@ -103,6 +103,7 @@ static void comp_tpx(const char *fn1, const char *fn2,
     for (i = 0; i < (fn2 ? 2 : 1); i++)
     {
         read_tpx_state(ff[i], ir[i], &state[i], &(mtop[i]));
+        mdModules[i].assignOptionsToModulesFromTpr();
     }
     if (fn2)
     {

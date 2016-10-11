@@ -2251,7 +2251,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         auto                         result
             = transform.transform(convertedValues, &errorHandler);
         errorHandler.setBackMapping(result.backMapping());
-        mdModules->assignOptionsToModules(result.object(), &errorHandler);
+        mdModules->assignOptionsToModulesFromMdp(result.object(), &errorHandler);
     }
 
     /* Ion/water position swapping ("computational electrophysiology") */

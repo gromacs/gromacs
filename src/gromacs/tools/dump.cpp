@@ -95,6 +95,10 @@ static void list_tpx(const char *fn,
                    ir,
                    &state,
                    tpx.bTop ? &mtop : nullptr);
+    if (tpx.bIr)
+    {
+        mdModules.assignOptionsToModulesFromTpr();
+    }
 
     if (mdpfn && tpx.bIr)
     {
