@@ -59,6 +59,7 @@
 #include "gromacs/options/optionsection.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/variant.h"
 
 #include "testutils/testasserts.h"
 
@@ -641,6 +642,24 @@ TEST(OptionsAssignerDoubleTest, StoresSingleValue)
     EXPECT_NO_THROW(options.finish());
 
     EXPECT_DOUBLE_EQ(2.7, value);
+}
+
+TEST(OptionsAssignerDoubleTest, StoresValueFromFloat)
+{
+    gmx::Options options;
+    double       value = 0.0;
+    using gmx::DoubleOption;
+    ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value)));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    ASSERT_NO_THROW(assigner.appendValue(gmx::Variant::create<float>(2.7)));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_FLOAT_EQ(2.7, value);
 }
 
 TEST(OptionsAssignerDoubleTest, HandlesEmptyValue)
