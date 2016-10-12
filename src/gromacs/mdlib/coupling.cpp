@@ -1346,6 +1346,8 @@ real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *Mas
         switch (ir->epc)
         {
             case epcPARRINELLORAHMAN:
+                // TODO: Implement
+                break;
             case epcMTTK:
                 /* contribution from the pressure momenta */
                 energyNPT += 0.5*gmx::square(state->veta)/MassQ->Winv;
