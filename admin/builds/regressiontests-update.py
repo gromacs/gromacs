@@ -34,8 +34,7 @@
 
 import os.path
 
-# TODO when merging this to master, update gcc to 4.8
-build_options = ['gcc-4.7', 'cmake-3.4.3']
+build_options = ['gcc-4.8', 'cmake-3.4.3']
 extra_projects = [Project.REGRESSIONTESTS]
 
 def run_build(context, cmake_opts):
