@@ -274,6 +274,7 @@ std::string DoubleOptionStorage::formatSingleValue(const double &value) const
 void DoubleOptionStorage::initConverter(ConverterType *converter)
 {
     converter->addConverter<std::string>(&fromStdString<double>);
+    converter->addCastConversion<float>();
 }
 
 double DoubleOptionStorage::processValue(const double &value)
@@ -366,6 +367,7 @@ std::string FloatOptionStorage::formatSingleValue(const float &value) const
 void FloatOptionStorage::initConverter(ConverterType *converter)
 {
     converter->addConverter<std::string>(&fromStdString<float>);
+    converter->addCastConversion<double>();
 }
 
 float FloatOptionStorage::processValue(const float &value)

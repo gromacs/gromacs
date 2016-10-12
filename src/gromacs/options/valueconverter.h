@@ -107,6 +107,20 @@ class OptionValueConverterSimple
                     return func(value.cast<InType>());
                 };
         }
+        /*! \brief
+         * Adds a supported conversion from a type that can be directly cast.
+         *
+         * \tparam InType  Type to convert from with a simple cast.
+         */
+        template <typename InType>
+        void addCastConversion()
+        {
+            converters_[std::type_index(typeid(InType))] =
+                [] (const Variant &value)
+                {
+                    return static_cast<OutType>(value.cast<InType>());
+                };
+        }
 
     private:
         typedef std::function<OutType(const Variant &value)> ConversionFunction;
