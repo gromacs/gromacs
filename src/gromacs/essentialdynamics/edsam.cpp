@@ -1379,9 +1379,7 @@ static void init_edi(const gmx_mtop_t *mtop, t_edpar *edi)
     {
         if (edi->fitmas)
         {
-            const t_atom *atom;
-            mtopGetAtomParameters(mtop, edi->sref.anrs[i], &molb, &atom);
-            edi->sref.m[i] = atom->m;
+            edi->sref.m[i] = mtopGetAtomMass(mtop, edi->sref.anrs[i], &molb);
         }
         else
         {
@@ -1408,12 +1406,10 @@ static void init_edi(const gmx_mtop_t *mtop, t_edpar *edi)
     snew(edi->sav.m, edi->sav.nr );
     for (i = 0; i < edi->sav.nr; i++)
     {
-        const t_atom *atom;
-        mtopGetAtomParameters(mtop, edi->sav.anrs[i], &molb, &atom);
-        edi->sav.m[i] = atom->m;
+        edi->sav.m[i] = mtopGetAtomMass(mtop, edi->sav.anrs[i], &molb);
         if (edi->pcamas)
         {
-            edi->sav.sqrtm[i] = sqrt(atom->m);
+            edi->sav.sqrtm[i] = sqrt(edi->sav.m[i]);
         }
         else
         {
@@ -1427,7 +1423,7 @@ static void init_edi(const gmx_mtop_t *mtop, t_edpar *edi)
                       "For ED with mass-weighting, all average structure atoms need to have a mass >0.\n"
                       "Either make the covariance analysis non-mass-weighted, or exclude massless\n"
                       "atoms from the average structure by creating a proper index group.\n",
-                      i, edi->sav.anrs[i]+1, atom->m);
+                      i, edi->sav.anrs[i] + 1, edi->sav.m[i]);
         }
     }
 
