@@ -3474,9 +3474,7 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
     {
         if (rotg->bMassW)
         {
-            const t_atom *atom;
-            mtopGetAtomParameters(mtop, rotg->ind[i], &molb, &atom);
-            mass = atom->m;
+            mass = mtopGetAtomMass(mtop, rotg->ind[i], &molb);
         }
         else
         {

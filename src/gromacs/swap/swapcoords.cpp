@@ -1402,9 +1402,8 @@ void convertOldToNewGroupFormat(
     int molb = 0;
     for (int i = 0; i < g->nat; i++)
     {
-        const t_atom *atom;
-        mtopGetAtomParameters(mtop, g->ind[i], &molb, &atom);
-        if (atom->q < 0)
+        const t_atom &atom = mtopGetAtomParameters(mtop, g->ind[i], &molb);
+        if (atom.q < 0)
         {
             // This is an anion, add it to the list of anions
             indAnions[nAnions++] = g->ind[i];
@@ -1465,7 +1464,6 @@ void init_swapcoords(
 {
     t_swapcoords          *sc;
     t_swap                *s;
-    const t_atom          *atom;
     t_swapgrp             *g;
     swapstateIons_t       *gs;
     gmx_bool               bAppend, bStartFromCpt, bRerun;
@@ -1596,9 +1594,9 @@ void init_swapcoords(
         int molb = 0;
         for (int j = 0; j < g->apm; j++)
         {
-            mtopGetAtomParameters(mtop, g->ind[j], &molb, &atom);
-            g->m[j] = atom->m;
-            charge += atom->q;
+            const t_atom &atom = mtopGetAtomParameters(mtop, g->ind[j], &molb);
+            g->m[j] = atom.m;
+            charge += atom.q;
         }
         /* Total charge of one molecule of this group: */
         g->q = charge;
@@ -1616,8 +1614,7 @@ void init_swapcoords(
             int molb = 0;
             for (int i = 0; i < g->nat; i++)
             {
-                mtopGetAtomParameters(mtop, g->ind[i], &molb, &atom);
-                g->m[i] = atom->m;
+                g->m[i] = mtopGetAtomMass(mtop, g->ind[i], &molb);
             }
         }
     }
