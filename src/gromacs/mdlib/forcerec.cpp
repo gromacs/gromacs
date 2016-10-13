@@ -1778,9 +1778,9 @@ static void pick_nbnxn_kernel(FILE                *fp,
             nbnxnk8x8x8_PlainC == *kernel_type)
         {
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "WARNING: Using the slow %s kernels. This should\n"
-                    "not happen during routine usage on supported platforms.",
-                    lookup_nbnxn_kernel_name(*kernel_type));
+                "WARNING: Using the slow %s kernels. This should\n"
+                "not happen during routine usage on supported platforms.",
+                lookup_nbnxn_kernel_name(*kernel_type));
         }
     }
 }
@@ -2429,8 +2429,8 @@ void init_forcerec(FILE                *fp,
         /* turn off non-bonded calculations */
         fr->bNonbonded = FALSE;
         GMX_LOG(mdlog.warning).asParagraph().appendText(
-                "Found environment variable GMX_NO_NONBONDED.\n"
-                "Disabling nonbonded calculations.");
+            "Found environment variable GMX_NO_NONBONDED.\n"
+            "Disabling nonbonded calculations.");
     }
 
     bGenericKernelOnly = FALSE;

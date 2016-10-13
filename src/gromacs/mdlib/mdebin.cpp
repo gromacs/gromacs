@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -664,8 +664,8 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                        const gmx_output_env_t *oenv)
 {
     FILE       *fp;
-    const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
-    *lambdastate     = "\\lambda state";
+    const char *dhdl            = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
+               *lambdastate     = "\\lambda state";
     char        title[STRLEN], label_x[STRLEN], label_y[STRLEN];
     int         i, nps, nsets, nsets_de, nsetsbegin;
     int         n_lambda_terms = 0;
