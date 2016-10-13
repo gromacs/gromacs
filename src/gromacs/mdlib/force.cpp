@@ -723,6 +723,7 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
  * and has been added earlier
  */
     epot[F_BHAM]     = sum_v(grpp->nener, grpp->ener[egBHAMSR]);
+    epot[F_WBHAM]    = sum_v(grpp->nener, grpp->ener[egWBHAMSR]);
 
     epot[F_EPOT] = 0;
     for (i = 0; (i < F_EPOT); i++)

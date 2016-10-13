@@ -147,7 +147,7 @@ enum {
 };
 
 enum {
-    egCOULSR, egLJSR, egBHAMSR,
+    egCOULSR, egLJSR, egBHAMSR, egWBHAMSR,
     egCOUL14, egLJ14, egGB, egNR
 };
 extern const char *egrp_nm[egNR+1];
