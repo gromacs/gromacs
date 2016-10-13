@@ -1965,8 +1965,7 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
     for (i = 0; i < pg->params.nat; i++)
     {
         ii = pg->params.ind[i];
-        const t_atom *atom;
-        mtopGetAtomParameters(mtop, ii, &molb, &atom);
+        const t_atom atom = mtopGetAtomParameters(mtop, ii, &molb);
         if (bConstraint && ir->opts.nFreeze)
         {
             for (d = 0; d < DIM; d++)
@@ -1980,11 +1979,11 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
         }
         if (ir->efep == efepNO)
         {
-            m = atom->m;
+            m = atom.m;
         }
         else
         {
-            m = (1 - lambda)*atom->m + lambda*atom->mB;
+            m = (1 - lambda)*atom.m + lambda*atom.mB;
         }
         if (pg->params.nweight > 0)
         {
