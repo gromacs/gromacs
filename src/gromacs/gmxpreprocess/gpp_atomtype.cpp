@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -479,9 +479,13 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     {
         ftype = F_LJ;
     }
-    else
+    else if (plist[F_BHAM].nr > 0)
     {
         ftype = F_BHAM;
+    }
+    else
+    {
+        ftype = F_WBHAM;
     }
 
     /* Renumber atomtypes by first making a list of which ones are actually used.
