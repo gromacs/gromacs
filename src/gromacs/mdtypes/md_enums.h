@@ -287,7 +287,7 @@ extern const char *edisreweighting_names[edrwNR+1];
 
 //! Combination rule algorithm.
 enum {
-    eCOMB_NONE, eCOMB_GEOMETRIC, eCOMB_ARITHMETIC, eCOMB_GEOM_SIG_EPS, eCOMB_NR
+    eCOMB_NONE, eCOMB_GEOMETRIC, eCOMB_ARITHMETIC, eCOMB_GEOM_SIG_EPS, eCOMB_KONG_MASON, eCOMB_NR
 };
 //! String for combination rule algorithm
 extern const char *ecomb_names[eCOMB_NR+1];
@@ -296,7 +296,7 @@ extern const char *ecomb_names[eCOMB_NR+1];
 
 //! Van der Waals potential.
 enum {
-    eNBF_NONE, eNBF_LJ, eNBF_BHAM, eNBF_NR
+    eNBF_NONE, eNBF_LJ, eNBF_BHAM, eNBF_WBHAM, eNBF_NR
 };
 //! String corresponding to Van der Waals potential
 extern const char *enbf_names[eNBF_NR+1];
@@ -663,6 +663,7 @@ enum gmx_nbkernel_vdw
     GMX_NBKERNEL_VDW_BUCKINGHAM,
     GMX_NBKERNEL_VDW_CUBICSPLINETABLE,
     GMX_NBKERNEL_VDW_LJEWALD,
+    GMX_NBKERNEL_VDW_WANGBUCKINGHAM,
     GMX_NBKERNEL_VDW_NR
 };
 //! String corresponding to VdW kernels

@@ -117,9 +117,9 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
     eps2                = 0.0;
 
     /* 3 VdW parameters for buckingham, otherwise 2 */
-    nvdwparam           = (nlist->ivdw == 2) ? 3 : 2;
-    table_nelements     = (ielec == 3) ? 4 : 0;
-    table_nelements    += (ivdw == 3) ? 8 : 0;
+    nvdwparam           = (nlist->ivdw == GMX_NBKERNEL_VDW_BUCKINGHAM || ivdw == GMX_NBKERNEL_VDW_WANGBUCKINGHAM) ? 3 : 2;
+    table_nelements     = (ielec == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE) ? 4 : 0;
+    table_nelements    += (ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE) ? 8 : 0;
 
     charge              = mdatoms->chargeA;
     type                = mdatoms->typeA;
@@ -185,7 +185,8 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                     rinvsq           = rinv*rinv;
                     fscal            = 0;
 
-                    if (ielec == 3 || ivdw == 3)
+                    if (ielec == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE || 
+                        ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE)
                     {
                         r                = rsq*rinv;
                         rt               = r*tabscale;
@@ -195,27 +196,25 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                         nnn              = table_nelements*n0;
                     }
 
-                    /* Coulomb interaction. ielec==0 means no interaction */
-                    if (ielec > 0)
+                    /* Coulomb interaction. ielec==GMX_NBKERNEL_ELEC_NONE means no interaction */
+                    if (ielec != GMX_NBKERNEL_ELEC_NONE)
                     {
                         qq               = iq*charge[aj];
 
                         switch (ielec)
                         {
-                            case 1:
+                            case GMX_NBKERNEL_ELEC_COULOMB:
                                 /* Vanilla cutoff coulomb */
                                 vcoul            = qq*rinv;
                                 fscal            = vcoul*rinvsq;
                                 break;
-
-                            case 2:
+                            case GMX_NBKERNEL_ELEC_REACTIONFIELD:
                                 /* Reaction-field */
                                 krsq             = fr->k_rf*rsq;
                                 vcoul            = qq*(rinv+krsq-fr->c_rf);
                                 fscal            = qq*(rinv-2.0*krsq)*rinvsq;
                                 break;
-
-                            case 3:
+                            case GMX_NBKERNEL_ELEC_CUBICSPLINETABLE:
                                 /* Tabulated coulomb */
                                 Y                = VFtab[nnn];
                                 F                = VFtab[nnn+1];
@@ -228,12 +227,10 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                                 vcoul            = qq*VV;
                                 fscal            = -qq*FF*tabscale*rinv;
                                 break;
-
-                            case 4:
+                            case GMX_NBKERNEL_ELEC_GENERALIZEDBORN:
                                 /* GB */
                                 gmx_fatal(FARGS, "Death & horror! GB generic interaction not implemented.\n");
                                 break;
-
                             default:
                                 gmx_fatal(FARGS, "Death & horror! No generic coulomb interaction for ielec=%d.\n", ielec);
                                 break;
@@ -242,14 +239,14 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                     }  /* End of coulomb interactions */
 
 
-                    /* VdW interaction. ivdw==0 means no interaction */
-                    if (ivdw > 0)
+                    /* VdW interaction. ivdw==GMX_NBKERNEL_VDW_NONE means no interaction */
+                    if (ivdw != GMX_NBKERNEL_VDW_NONE)
                     {
                         tj               = nti+nvdwparam*type[aj];
 
                         switch (ivdw)
                         {
-                            case 1:
+                            case GMX_NBKERNEL_VDW_LENNARDJONES:
                                 /* Vanilla Lennard-Jones cutoff */
                                 c6               = vdwparam[tj];
                                 c12              = vdwparam[tj+1];
@@ -260,8 +257,7 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                                 fscal           += (12.0*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
                                 Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
                                 break;
-
-                            case 2:
+                            case GMX_NBKERNEL_VDW_BUCKINGHAM:
                                 /* Buckingham */
                                 c6               = vdwparam[tj];
                                 cexp1            = vdwparam[tj+1];
@@ -274,8 +270,7 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                                 fscal           += (br*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
                                 Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
                                 break;
-
-                            case 3:
+                            case GMX_NBKERNEL_VDW_CUBICSPLINETABLE:
                                 /* Tabulated VdW */
                                 c6               = vdwparam[tj];
                                 c12              = vdwparam[tj+1];
@@ -302,7 +297,6 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                                 fscal           += -(fijD+fijR)*tabscale*rinv;
                                 Vvdwtot          = Vvdwtot + Vvdw_disp + Vvdw_rep;
                                 break;
-
                             default:
                                 gmx_fatal(FARGS, "Death & horror! No generic VdW interaction for ivdw=%d.\n", ivdw);
                                 break;

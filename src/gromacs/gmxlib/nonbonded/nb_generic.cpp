@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,40 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 
+static gmx_inline void Wang_Buckingham(real  r,
+                                       real  sigma,
+                                       real  epsilon,
+                                       real  gamma,
+                                       real *vvdw_disp,
+                                       real *vvdw_rep,
+                                       real *fvdw)
+{
+    real c2, c5, c6;
+    real r2, r5, r6, rinvsix;
+    real fvdw_disp, fvdw_rep;
+    real wang1, wang2, wang3;
+
+    r2           = r*r;
+    r5           = r2*r*r;
+    r6           = r5*r;
+    rinvsix      = 1.0/r6;
+
+    c2           = sigma*sigma;
+    c5           = c2*c2*sigma;
+    c6           = c5*sigma;
+
+    wang1        = std::exp(gamma*(1-(r/sigma)));
+    wang2        = c6 + rinvsix;
+    wang3        = gamma + 3;
+
+    *vvdw_disp   = -2*epsilon*(1.0/(1-(3.0/wang3))*(c6/wang2));
+    *vvdw_rep    = -(*vvdw_disp)*((3.0/wang3)*wang1);
+    fvdw_disp    = -2*epsilon*((6*wang3*r5*c6)/(gamma*(wang2*wang2)));
+    fvdw_rep     = (6*wang1*epsilon*c5*(gamma*r6 + 6*r5*sigma + gamma*c6))/(gamma*(wang2*wang2));
+    *fvdw        = fvdw_rep - fvdw_disp;
+}
+
+
 void
 gmx_nb_generic_kernel(t_nblist *                nlist,
                       rvec *                    xx,
@@ -74,7 +108,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          ix, iy, iz, fix, fiy, fiz;
     real          jx, jy, jz;
     real          dx, dy, dz, rsq, rinv;
-    real          c6, c12, c6grid, cexp1, cexp2, br;
+    real          c, c2, c6, c12, c6grid, cexp1, cexp2, br;
     real *        charge;
     real *        shiftvec;
     real *        vdwparam, *vdwgridparam;
@@ -186,7 +220,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     eps2                = 0.0;
 
     /* 3 VdW parameters for Buckingham, otherwise 2 */
-    nvdwparam           = (ivdw == GMX_NBKERNEL_VDW_BUCKINGHAM) ? 3 : 2;
+    nvdwparam           = (ivdw == GMX_NBKERNEL_VDW_BUCKINGHAM || ivdw == GMX_NBKERNEL_VDW_WANGBUCKINGHAM) ? 3 : 2;
     table_nelements     = 12;
 
     charge              = mdatoms->chargeA;
@@ -361,7 +395,6 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                             vvdw             = vvdw_rep/12.0-vvdw_disp/6.0;
                         }
                         break;
-
                     case GMX_NBKERNEL_VDW_BUCKINGHAM:
                         /* Buckingham */
                         c6               = vdwparam[tj];
@@ -382,7 +415,28 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                             vvdw             = vvdw_rep-vvdw_disp/6.0;
                         }
                         break;
+                    case GMX_NBKERNEL_VDW_WANGBUCKINGHAM:
+                        /* Wang-Buckingham JCTC  Volume: 9  Page: 452  Year: 2012 */
+                        c                = vdwparam[tj];     /*sigma*/
+                        cexp1            = vdwparam[tj+1];   /*epsilon*/
+                        cexp2            = vdwparam[tj+2];   /*gamma*/
+                        rinvsix          = rinvsq*rinvsq*rinvsq;
+                        r                = rsq*rinv;
+                        c2               = c*c;
+                        c6               = c2*c2*c2;
 
+                        Wang_Buckingham(r, c, cexp1, cexp2, &vvdw_disp, &vvdw_rep, &fvdw);
+
+                        if (fr->vdw_modifier == eintmodPOTSHIFT)
+                        {
+                            vvdw             = (vvdw_rep-cexp1*std::exp(-cexp2*rvdw))-(vvdw_disp + c6*sh_dispersion)/6.0;
+                        }
+                        else
+                        {
+                            vvdw             = vvdw_rep-vvdw_disp/6.0;
+                        }
+
+                        break;
                     case GMX_NBKERNEL_VDW_CUBICSPLINETABLE:
                         /* Tabulated VdW */
                         c6               = vdwparam[tj];
