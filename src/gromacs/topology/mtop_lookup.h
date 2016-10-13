@@ -65,7 +65,7 @@ struct t_atom;
  * \param[out]    moleculeIndex        The index of the molecule in the block, can be NULL
  * \param[out]    atomIndexInMolecule  The atom index in the molecule, can be NULL
  */
-static void
+static inline void
 mtopGetMolblockIndex(const gmx_mtop_t *mtop,
                      int               globalAtomIndex,
                      int              *moleculeBlock,
@@ -110,7 +110,7 @@ mtopGetMolblockIndex(const gmx_mtop_t *mtop,
     }
 }
 
-/*! \brief Look up the molecule block and atom data of a global atom index
+/*! \brief Returns the atom data for an atom based on global atom index
  *
  * The atom index has to be in range: 0 <= \p globalAtomIndex < \p mtop->natoms.
  * The input value of moleculeBlock should be in range. Use 0 as starting value.
@@ -121,18 +121,42 @@ mtopGetMolblockIndex(const gmx_mtop_t *mtop,
  * \param[in]     mtop                 The molecule topology
  * \param[in]     globalAtomIndex      The global atom index to look up
  * \param[in,out] moleculeBlock        The molecule block index in \p mtop
- * \param[out]    atom                 Atom data of the global atom index
  */
-static void
+static inline const t_atom &
 mtopGetAtomParameters(const gmx_mtop_t  *mtop,
                       int                globalAtomIndex,
-                      int               *moleculeBlock,
-                      const t_atom     **atom)
+                      int               *moleculeBlock)
 {
     int atomIndexInMolecule;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
                          NULL, &atomIndexInMolecule);
-    *atom = &mtop->moltype[mtop->molblock[*moleculeBlock].type].atoms.atom[atomIndexInMolecule];
+    const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
+    return moltype.atoms.atom[atomIndexInMolecule];
+}
+
+/*! \brief Returns the mass of an atom based on global atom index
+ *
+ * Returns that A-state mass of the atom with global index \p globalAtomIndex.
+ * The atom index has to be in range: 0 <= \p globalAtomIndex < \p mtop->natoms.
+ * The input value of moleculeBlock should be in range. Use 0 as starting value.
+ * For subsequent calls to this function, e.g. in a loop, pass in the previously
+ * returned value for best performance. Atoms in a group tend to be in the same
+ * molecule(block), so this minimizes the search time.
+ *
+ * \param[in]     mtop                 The molecule topology
+ * \param[in]     globalAtomIndex      The global atom index to look up
+ * \param[in,out] moleculeBlock        The molecule block index in \p mtop
+ */
+static inline real
+mtopGetAtomMass(const gmx_mtop_t  *mtop,
+                int                globalAtomIndex,
+                int               *moleculeBlock)
+{
+    int atomIndexInMolecule;
+    mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
+                         NULL, &atomIndexInMolecule);
+    const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
+    return moltype.atoms.atom[atomIndexInMolecule].m;
 }
 
 /*! \brief Look up the atom and residue name and residue number and index of a global atom index
@@ -154,7 +178,7 @@ mtopGetAtomParameters(const gmx_mtop_t  *mtop,
  * \param[out]    residueName         The residue name, input can be NULL
  * \param[out]    globalResidueIndex  The gobal residue index, input can be NULL
  */
-static void
+static inline void
 mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
                           int                globalAtomIndex,
                           int               *moleculeBlock,
@@ -168,32 +192,82 @@ mtopGetAtomAndResidueName(const gmx_mtop_t  *mtop,
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
                          &moleculeIndex, &atomIndexInMolecule);
 
-    const gmx_molblock_t *molb  = &mtop->molblock[*moleculeBlock];
-    const t_atoms        *atoms = &mtop->moltype[molb->type].atoms;
+    const gmx_molblock_t &molb  = mtop->molblock[*moleculeBlock];
+    const t_atoms        &atoms = mtop->moltype[molb.type].atoms;
     if (atomName != nullptr)
     {
-        *atomName = *(atoms->atomname[atomIndexInMolecule]);
+        *atomName = *(atoms.atomname[atomIndexInMolecule]);
     }
     if (residueNumber != nullptr)
     {
-        if (atoms->nres > mtop->maxres_renum)
+        if (atoms.nres > mtop->maxres_renum)
         {
-            *residueNumber = atoms->resinfo[atoms->atom[atomIndexInMolecule].resind].nr;
+            *residueNumber = atoms.resinfo[atoms.atom[atomIndexInMolecule].resind].nr;
         }
         else
         {
             /* Single residue molecule, keep counting */
-            *residueNumber = molb->residueNumberStart + moleculeIndex*atoms->nres + atoms->atom[atomIndexInMolecule].resind;
+            *residueNumber = molb.residueNumberStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
         }
     }
     if (residueName != nullptr)
     {
-        *residueName = *(atoms->resinfo[atoms->atom[atomIndexInMolecule].resind].name);
+        *residueName = *(atoms.resinfo[atoms.atom[atomIndexInMolecule].resind].name);
     }
     if (globalResidueIndex != nullptr)
     {
-        *globalResidueIndex = molb->globalResidueStart + moleculeIndex*atoms->nres + atoms->atom[atomIndexInMolecule].resind;
+        *globalResidueIndex = molb.globalResidueStart + moleculeIndex*atoms.nres + atoms.atom[atomIndexInMolecule].resind;
     }
+}
+
+/*! \brief Returns residue information for an atom based on global atom index
+ *
+ * The atom index has to be in range: 0 <= \p globalAtomIndex < \p mtop->natoms.
+ * The input value of moleculeBlock should be in range. Use 0 as starting value.
+ * For subsequent calls to this function, e.g. in a loop, pass in the previously
+ * returned value for best performance. Atoms in a group tend to be in the same
+ * molecule(block), so this minimizes the search time.
+ *
+ * \param[in]     mtop                 The molecule topology
+ * \param[in]     globalAtomIndex      The global atom index to look up
+ * \param[in,out] moleculeBlock        The molecule block index in \p mtop
+ */
+static inline const t_resinfo &
+mtopGetResidueInformation(const gmx_mtop_t  *mtop,
+                          int                globalAtomIndex,
+                          int               *moleculeBlock)
+{
+    int atomIndexInMolecule;
+    mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
+                         NULL, &atomIndexInMolecule);
+    const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
+    const int            resind  = moltype.atoms.atom[atomIndexInMolecule].resind;
+    return moltype.atoms.resinfo[resind];
+}
+
+/*! \brief Returns PDB information for an atom based on global atom index
+ *
+ * The atom index has to be in range: 0 <= \p globalAtomIndex < \p mtop->natoms.
+ * The input value of moleculeBlock should be in range. Use 0 as starting value.
+ * For subsequent calls to this function, e.g. in a loop, pass in the previously
+ * returned value for best performance. Atoms in a group tend to be in the same
+ * molecule(block), so this minimizes the search time.
+ *
+ * \param[in]     mtop                 The molecule topology
+ * \param[in]     globalAtomIndex      The global atom index to look up
+ * \param[in,out] moleculeBlock        The molecule block index in \p mtop
+ */
+static inline const t_pdbinfo &
+mtopGetAtomPdbInformation(const gmx_mtop_t  *mtop,
+                          int                globalAtomIndex,
+                          int               *moleculeBlock)
+{
+    int atomIndexInMolecule;
+    mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
+                         NULL, &atomIndexInMolecule);
+    const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
+    GMX_ASSERT(moltype.atoms.havePdbInfo, "PDB information not present when requested");
+    return moltype.atoms.pdbinfo[atomIndexInMolecule];
 }
 
 #endif

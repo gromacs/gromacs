@@ -320,10 +320,9 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                     {
                         if (clust_index[i] == max_clust_ind)
                         {
-                            ai    = index[i];
-                            const t_atom       *atom;
-                            mtopGetAtomParameters(mtop, ai, &molb, &atom);
-                            ekin += 0.5*atom->m*iprod(v[ai], v[ai]);
+                            ai      = index[i];
+                            real m  = mtopGetAtomMass(mtop, ai, &molb);
+                            ekin   += 0.5*m*iprod(v[ai], v[ai]);
                         }
                     }
                     temp = (ekin*2.0)/(3.0*tfac*max_clust_size*BOLTZ);
