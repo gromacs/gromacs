@@ -151,7 +151,6 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     int                   i, m, s1, n1, n2, n3;
     real                  dt_1, fudge, tm, m1, m2, m3;
     rvec                 *ptr;
-    const t_atom         *atom;
 
     /* We introduce a fudge factor for performance reasons: with this choice
      * the initial force on the shells is about a factor of two lower than
@@ -202,10 +201,8 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                 else
                 {
                     /* Not the correct masses with FE, but it is just a prediction... */
-                    mtopGetAtomParameters(mtop, n1, &molb, &atom);
-                    m1 = atom->m;
-                    mtopGetAtomParameters(mtop, n2, &molb, &atom);
-                    m2 = atom->m;
+                    m1 = mtopGetAtomMass(mtop, n1, &molb);
+                    m2 = mtopGetAtomMass(mtop, n2, &molb);
                 }
                 tm = dt_1/(m1+m2);
                 for (m = 0; (m < DIM); m++)
@@ -226,12 +223,9 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                 else
                 {
                     /* Not the correct masses with FE, but it is just a prediction... */
-                    mtopGetAtomParameters(mtop, n1, &molb, &atom);
-                    m1 = atom->m;
-                    mtopGetAtomParameters(mtop, n2, &molb, &atom);
-                    m2 = atom->m;
-                    mtopGetAtomParameters(mtop, n3, &molb, &atom);
-                    m3 = atom->m;
+                    m1 = mtopGetAtomMass(mtop, n1, &molb);
+                    m2 = mtopGetAtomMass(mtop, n2, &molb);
+                    m3 = mtopGetAtomMass(mtop, n3, &molb);
                 }
                 tm = dt_1/(m1+m2+m3);
                 for (m = 0; (m < DIM); m++)
