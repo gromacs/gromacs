@@ -330,10 +330,9 @@ static void init_QMrec(int grpnr, t_QMrec *qm, int nr, int *atomarray,
     int molb = 0;
     for (int i = 0; i < qm->nrQMatoms; i++)
     {
-        const t_atom *atom;
-        mtopGetAtomParameters(mtop, qm->indexQM[i], &molb, &atom);
-        qm->nelectrons       += mtop->atomtypes.atomnumber[atom->type];
-        qm->atomicnumberQM[i] = mtop->atomtypes.atomnumber[atom->type];
+        const t_atom atom = mtopGetAtomParameters(mtop, qm->indexQM[i], &molb);
+        qm->nelectrons       += mtop->atomtypes.atomnumber[atom.type];
+        qm->atomicnumberQM[i] = mtop->atomtypes.atomnumber[atom.type];
     }
 
     qm->QMcharge       = ir->opts.QMcharge[grpnr];
@@ -677,11 +676,10 @@ void init_QMMMrec(t_commrec  *cr,
         {
             for (i = 0; i < qm_nr; i++)
             {
-                const t_atom *atom;
-                mtopGetAtomParameters(mtop, qm_arr[i], &molb, &atom);
+                const t_atom atom = mtopGetAtomParameters(mtop, qm_arr[i], &molb);
                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                qr->qm[0]->c6[i]  =  C6(fr->nbfp, mtop->ffparams.atnr, atom->type, atom->type)/c6au/6.0;
-                qr->qm[0]->c12[i] = C12(fr->nbfp, mtop->ffparams.atnr, atom->type, atom->type)/c12au/12.0;
+                qr->qm[0]->c6[i]  =  C6(fr->nbfp, mtop->ffparams.atnr, atom.type, atom.type)/c6au/6.0;
+                qr->qm[0]->c12[i] = C12(fr->nbfp, mtop->ffparams.atnr, atom.type, atom.type)/c12au/12.0;
             }
         }
 

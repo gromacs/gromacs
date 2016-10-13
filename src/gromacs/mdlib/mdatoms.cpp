@@ -240,8 +240,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             {
                 ag = index[i];
             }
-            const t_atom *atom;
-            mtopGetAtomParameters(mtop, ag, &molb, &atom);
+            const t_atom atom = mtopGetAtomParameters(mtop, ag, &molb);
 
             if (md->cFREEZE)
             {
@@ -274,14 +273,14 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 {
                     /* The friction coefficient is mass/tau_t */
                     fac = ir->delta_t/opts->tau_t[md->cTC ? groups->grpnr[egcTC][ag] : 0];
-                    mA  = 0.5*atom->m*fac;
-                    mB  = 0.5*atom->mB*fac;
+                    mA  = 0.5*atom.m*fac;
+                    mB  = 0.5*atom.mB*fac;
                 }
             }
             else
             {
-                mA = atom->m;
-                mB = atom->mB;
+                mA = atom.m;
+                mB = atom.mB;
             }
             if (md->nMassPerturbed)
             {
@@ -329,12 +328,12 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 }
             }
 
-            md->chargeA[i]      = atom->q;
-            md->typeA[i]        = atom->type;
+            md->chargeA[i]      = atom.q;
+            md->typeA[i]        = atom.type;
             if (bLJPME)
             {
-                c6                = mtop->ffparams.iparams[atom->type*(mtop->ffparams.atnr+1)].lj.c6;
-                c12               = mtop->ffparams.iparams[atom->type*(mtop->ffparams.atnr+1)].lj.c12;
+                c6                = mtop->ffparams.iparams[atom.type*(mtop->ffparams.atnr+1)].lj.c6;
+                c12               = mtop->ffparams.iparams[atom.type*(mtop->ffparams.atnr+1)].lj.c12;
                 md->sqrt_c6A[i]   = sqrt(c6);
                 if (c6 == 0.0 || c12 == 0)
                 {
@@ -348,13 +347,13 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             }
             if (md->nPerturbed)
             {
-                md->bPerturbed[i] = PERTURBED(*atom);
-                md->chargeB[i]    = atom->qB;
-                md->typeB[i]      = atom->typeB;
+                md->bPerturbed[i] = PERTURBED(atom);
+                md->chargeB[i]    = atom.qB;
+                md->typeB[i]      = atom.typeB;
                 if (bLJPME)
                 {
-                    c6                = mtop->ffparams.iparams[atom->typeB*(mtop->ffparams.atnr+1)].lj.c6;
-                    c12               = mtop->ffparams.iparams[atom->typeB*(mtop->ffparams.atnr+1)].lj.c12;
+                    c6                = mtop->ffparams.iparams[atom.typeB*(mtop->ffparams.atnr+1)].lj.c6;
+                    c12               = mtop->ffparams.iparams[atom.typeB*(mtop->ffparams.atnr+1)].lj.c12;
                     md->sqrt_c6B[i]   = sqrt(c6);
                     if (c6 == 0.0 || c12 == 0)
                     {
@@ -367,7 +366,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     md->sigma3B[i]    = 1/(md->sigmaB[i]*md->sigmaB[i]*md->sigmaB[i]);
                 }
             }
-            md->ptype[i]    = atom->ptype;
+            md->ptype[i]    = atom.ptype;
             if (md->cTC)
             {
                 md->cTC[i]    = groups->grpnr[egcTC][ag];
