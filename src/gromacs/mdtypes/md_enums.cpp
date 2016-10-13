@@ -126,11 +126,11 @@ const char *edisreweighting_names[edrwNR+1] = {
 };
 
 const char *enbf_names[eNBF_NR+1] = {
-    "", "LJ", "Buckingham", nullptr
+    "", "LJ", "Buckingham", "WBHAM", nullptr
 };
 
 const char *ecomb_names[eCOMB_NR+1] = {
-    "", "Geometric", "Arithmetic", "GeomSigEps", nullptr
+    "", "Geometric", "Arithmetic", "GeomSigEps", "Kong_Mason", nullptr
 };
 
 const char *esimtemp_names[esimtempNR+1] = {

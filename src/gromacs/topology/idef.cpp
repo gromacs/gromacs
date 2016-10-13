@@ -89,6 +89,10 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
             fprintf(fp, "a=%15.8e, b=%15.8e, c=%15.8e\n",
                     iparams->bham.a, iparams->bham.b, iparams->bham.c);
             break;
+        case F_WBHAM:
+            fprintf(fp, "a=%15.8e, b=%15.8e, c=%15.8e\n",
+                    iparams->bham.a, iparams->bham.b, iparams->bham.c);
+            break;
         case F_BONDS:
         case F_G96BONDS:
         case F_HARMONIC:

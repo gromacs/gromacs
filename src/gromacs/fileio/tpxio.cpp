@@ -112,6 +112,7 @@ enum tpxv {
     tpxv_RemoveTwinRange,                                    /**< removed support for twin-range interactions */
     tpxv_ReplacePullPrintCOM12,                              /**< Replaced print-com-1, 2 with pull-print-com */
     tpxv_PullExternalPotential,                              /**< Added pull type external potential */
+    tpxv_WangBuckinhamPotential,                             /**< A new potential to support VDW interaction */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -182,6 +183,7 @@ static const t_ftupd ftupd[] = {
     { 72, F_NPSOLVATION       },
     { 41, F_LJC14_Q           },
     { 41, F_LJC_PAIRS_NB      },
+    { tpxv_WangBuckinhamPotential, F_WBHAM },
     { 32, F_BHAM_LR_NOLONGERUSED },
     { 32, F_RF_EXCL           },
     { 32, F_COUL_RECIP        },
@@ -1782,6 +1784,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_ndo_real(fio, iparams->qangle.c, 5);
             break;
         case F_BHAM:
+        case F_WBHAM:
             gmx_fio_do_real(fio, iparams->bham.a);
             gmx_fio_do_real(fio, iparams->bham.b);
             gmx_fio_do_real(fio, iparams->bham.c);

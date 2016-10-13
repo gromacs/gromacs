@@ -201,9 +201,13 @@ int ifunc_index(directive d, int type)
             {
                 return F_LJ;
             }
-            else
+            else if (type == 2)
             {
                 return F_BHAM;
+            }
+            else
+            {
+                return F_WBHAM;
             }
         case d_vsites2:
             return F_VSITE2;

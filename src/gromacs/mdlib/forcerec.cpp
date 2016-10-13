@@ -2468,7 +2468,7 @@ void init_forcerec(FILE                *fp,
         }
     }
 
-    fr->bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
+    fr->bBHAM = (mtop->ffparams.functype[0] == F_BHAM || mtop->ffparams.functype[0] == F_WBHAM);
 
     /* Check if we can/should do all-vs-all kernels */
     fr->bAllvsAll       = can_use_allvsall(ir, FALSE, NULL, NULL);
@@ -2626,7 +2626,14 @@ void init_forcerec(FILE                *fp,
         case evdwCUT:
             if (fr->bBHAM)
             {
-                fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_BUCKINGHAM;
+                if (mtop->ffparams.functype[0] == F_BHAM)
+                {
+                    fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_BUCKINGHAM;
+                }
+                else
+                {
+                    fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_WANGBUCKINGHAM;
+                }
             }
             else
             {

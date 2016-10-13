@@ -479,9 +479,13 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     {
         ftype = F_LJ;
     }
-    else
+    else if (plist[F_BHAM].nr > 0)
     {
         ftype = F_BHAM;
+    }
+    else
+    {
+        ftype = F_WBHAM;
     }
 
     /* Renumber atomtypes by first making a list of which ones are actually used.

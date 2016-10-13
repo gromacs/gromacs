@@ -178,7 +178,74 @@ void generate_nbparams(int comb, int ftype, t_params *plist, gpp_atomtype_t atyp
                 }
             }
 
-            break;
+            break;   
+                    
+        case F_WBHAM:
+            switch (comb)
+            {
+                case eCOMB_GEOMETRIC:
+                    /* c0 and c1 and c2 are sigma and epsilon and gamma */
+                    for (i = k = 0; (i < nr); i++)
+                    {
+                        for (j = 0; (j < nr); j++, k++)
+                        {
+                            ci0                  = get_atomtype_nbparam(i, 0, atype);
+                            cj0                  = get_atomtype_nbparam(j, 0, atype);
+                            ci1                  = get_atomtype_nbparam(i, 1, atype);
+                            cj1                  = get_atomtype_nbparam(j, 1, atype);
+                            ci2                  = get_atomtype_nbparam(i, 2, atype);
+                            cj2                  = get_atomtype_nbparam(j, 2, atype);
+                            
+                            plist->param[k].c[0] = std::sqrt(ci0*cj0);
+                            plist->param[k].c[1] = std::sqrt(ci1*cj1);
+                            plist->param[k].c[2] = std::sqrt(ci2*cj2);
+                        }
+                    }
+                    break;                  
+                case eCOMB_ARITHMETIC:
+                    /* c0 and c1 and c2 are sigma and epsilon and gamma */
+                    for (i = k = 0; (i < nr); i++)
+                    {
+                        for (j = 0; (j < nr); j++, k++)
+                        {
+                            ci0                  = get_atomtype_nbparam(i, 0, atype);
+                            cj0                  = get_atomtype_nbparam(j, 0, atype);
+                            ci1                  = get_atomtype_nbparam(i, 1, atype);
+                            cj1                  = get_atomtype_nbparam(j, 1, atype);
+                            ci2                  = get_atomtype_nbparam(i, 2, atype);
+                            cj2                  = get_atomtype_nbparam(j, 2, atype);
+                            
+                            plist->param[k].c[0] = 0.5*(fabs(ci0) + fabs(cj0));
+                            plist->param[k].c[1] = std::sqrt(ci1*cj1);
+                            plist->param[k].c[2] = 0.5*(fabs(ci2) + fabs(cj2));
+                        }
+                    }
+                    break;                    
+                case eCOMB_KONG_MASON:
+                    /* c0 and c1 and c2 are sigma and epsilon and gamma */
+                    for (i = k = 0; (i < nr); i++)
+                    {
+                        for (j = 0; (j < nr); j++, k++)
+                        {
+                            ci0                  = get_atomtype_nbparam(i, 0, atype);
+                            cj0                  = get_atomtype_nbparam(j, 0, atype);
+                            ci1                  = get_atomtype_nbparam(i, 1, atype);
+                            cj1                  = get_atomtype_nbparam(j, 1, atype);
+                            ci2                  = get_atomtype_nbparam(i, 2, atype);
+                            cj2                  = get_atomtype_nbparam(j, 2, atype);
+                            
+                            plist->param[k].c[0] = std::sqrt(ci0*cj0);
+                            plist->param[k].c[1] = 2.0*(ci1*cj1)/(ci1+cj1);
+                            plist->param[k].c[2] = 0.25*((ci2/ci0)+(cj2/cj0))*(ci0+cj0);
+                        }
+                    }
+                    break;                  
+                default:
+                    sprintf(errbuf, "No such combination rule %d", comb);
+                    warning_error_and_exit(wi, errbuf, FARGS);
+            }
+            
+            break;           
         default:
             sprintf(errbuf, "Invalid nonbonded type %s",
                     interaction_function[ftype].longname);
@@ -386,6 +453,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
             break;
 
         case F_BHAM:
+        case F_WBHAM:
             nfp0 = 3;
 
             if (have_atomic_number)

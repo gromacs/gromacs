@@ -61,20 +61,20 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          facel;
     int           n, ii, is3, ii3, k, nj0, nj1, jnr, j3, ggid, nnn, n0;
     real          shX, shY, shZ;
-    real          fscal, felec, fvdw, velec, vvdw, tx, ty, tz;
+    real          fscal, felec, fvdw, fvdw_disp, fvdw_rep, velec, vvdw, tx, ty, tz;
     real          rinvsq;
     real          iq;
     real          qq, vctot;
     int           nti, nvdwparam;
     int           tj;
-    real          rt, r, eps, eps2, Y, F, Geps, Heps2, VV, FF, Fp, fijD, fijR;
+    real          rt, r, r5, r6, eps, eps2, Y, F, Geps, Heps2, VV, FF, Fp, fijD, fijR;
     real          rinvsix;
     real          vvdwtot;
     real          vvdw_rep, vvdw_disp;
     real          ix, iy, iz, fix, fiy, fiz;
     real          jx, jy, jz;
     real          dx, dy, dz, rsq, rinv;
-    real          c6, c12, c6grid, cexp1, cexp2, br;
+    real          c, c2, c5, c6, c12, c6grid, cexp1, cexp2, br;
     real *        charge;
     real *        shiftvec;
     real *        vdwparam, *vdwgridparam;
@@ -95,6 +95,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          elec_swV3, elec_swV4, elec_swV5, elec_swF2, elec_swF3, elec_swF4;
     real          vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
     real          ewclj, ewclj2, ewclj6, ewcljrsq, poly, exponent, sh_lj_ewald;
+    real          vdw_wang1, vdw_wang2, vdw_wang3;
     gmx_bool      bExactElecCutoff, bExactVdwCutoff, bExactCutoff;
     gmx_bool      do_tab;
 
@@ -186,7 +187,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     eps2                = 0.0;
 
     /* 3 VdW parameters for Buckingham, otherwise 2 */
-    nvdwparam           = (ivdw == GMX_NBKERNEL_VDW_BUCKINGHAM) ? 3 : 2;
+    nvdwparam           = (ivdw == GMX_NBKERNEL_VDW_BUCKINGHAM || ivdw == GMX_NBKERNEL_VDW_WANGBUCKINGHAM) ? 3 : 2;
     table_nelements     = 12;
 
     charge              = mdatoms->chargeA;
@@ -382,7 +383,40 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                             vvdw             = vvdw_rep-vvdw_disp/6.0;
                         }
                         break;
-
+                        
+                    case GMX_NBKERNEL_VDW_WANGBUCKINGHAM:
+                        /* Wang-Buckingham JCTC  Volume: 9  Page: 452  Year: 2012 */                        
+                        c                = vdwparam[tj];     /*sigma*/
+                        cexp1            = vdwparam[tj+1];   /*epsilon*/
+                        cexp2            = vdwparam[tj+2];   /*gamma*/
+                        rinvsix          = rinvsq*rinvsq*rinvsq;
+                        r                = rsq*rinv;
+                        r5               = rsq*rsq*r;
+                        r6               = r5*r;
+                        c2               = c*c;
+                        c6               = c2*c2*c2;
+                        c5               = c2*c2*c;
+                        vdw_wang1        = std::exp(cexp2*(1-(r/c)));
+                        vdw_wang2        = c6 + rinvsix;
+                        vdw_wang3        = cexp2 + 3;
+                        
+                        vvdw_disp        = -2*cexp1*(1.0/(1-(3.0/vdw_wang3))*(c6/vdw_wang2));
+                        vvdw_rep         = -vvdw_disp*((3.0/vdw_wang3)*vdw_wang1);
+                        fvdw_disp        = -2*cexp1*((6*vdw_wang3*r5*c6)/(cexp2*(vdw_wang2*vdw_wang2)));
+                        fvdw_rep         = (6*vdw_wang1*cexp1*c5*(cexp2*r6 + 6*r5*c + cexp2*c6))/(cexp2*(vdw_wang2*vdw_wang2));
+                        fvdw             = fvdw_rep - fvdw_disp;
+                        
+                        if (fr->vdw_modifier == eintmodPOTSHIFT)
+                        {
+                            vvdw             = (vvdw_rep-cexp1*std::exp(-cexp2*rvdw))-(vvdw_disp + c6*sh_dispersion)/6.0;
+                        }
+                        else
+                        {
+                            vvdw             = vvdw_rep-vvdw_disp/6.0;
+                        }
+                        
+                        break;
+                        
                     case GMX_NBKERNEL_VDW_CUBICSPLINETABLE:
                         /* Tabulated VdW */
                         c6               = vdwparam[tj];

@@ -98,6 +98,7 @@ enum {
     F_LJC_PAIRS_NB,
     F_LJ,
     F_BHAM,
+    F_WBHAM,
     F_LJ_LR_NOLONGERUSED,
     F_BHAM_LR_NOLONGERUSED,
     F_DISPCORR,
