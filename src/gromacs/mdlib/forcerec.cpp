@@ -1778,9 +1778,9 @@ static void pick_nbnxn_kernel(FILE                *fp,
             nbnxnk8x8x8_PlainC == *kernel_type)
         {
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "WARNING: Using the slow %s kernels. This should\n"
-                    "not happen during routine usage on supported platforms.",
-                    lookup_nbnxn_kernel_name(*kernel_type));
+                "WARNING: Using the slow %s kernels. This should\n"
+                "not happen during routine usage on supported platforms.",
+                lookup_nbnxn_kernel_name(*kernel_type));
         }
     }
 }
@@ -2429,8 +2429,8 @@ void init_forcerec(FILE                *fp,
         /* turn off non-bonded calculations */
         fr->bNonbonded = FALSE;
         GMX_LOG(mdlog.warning).asParagraph().appendText(
-                "Found environment variable GMX_NO_NONBONDED.\n"
-                "Disabling nonbonded calculations.");
+            "Found environment variable GMX_NO_NONBONDED.\n"
+            "Disabling nonbonded calculations.");
     }
 
     bGenericKernelOnly = FALSE;
@@ -2468,7 +2468,7 @@ void init_forcerec(FILE                *fp,
         }
     }
 
-    fr->bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
+    fr->bBHAM = (mtop->ffparams.functype[0] == F_BHAM || mtop->ffparams.functype[0] == F_WBHAM);
 
     /* Check if we can/should do all-vs-all kernels */
     fr->bAllvsAll       = can_use_allvsall(ir, FALSE, NULL, NULL);
@@ -2626,7 +2626,14 @@ void init_forcerec(FILE                *fp,
         case evdwCUT:
             if (fr->bBHAM)
             {
-                fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_BUCKINGHAM;
+                if (mtop->ffparams.functype[0] == F_BHAM)
+                {
+                    fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_BUCKINGHAM;
+                }
+                else
+                {
+                    fr->nbkernel_vdw_interaction = GMX_NBKERNEL_VDW_WANGBUCKINGHAM;
+                }
             }
             else
             {

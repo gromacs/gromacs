@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -269,6 +269,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
             }
             break;
         case F_BHAM:
+        case F_WBHAM:
             newparam->bham.a = old[0];
             newparam->bham.b = old[1];
             newparam->bham.c = old[2];
@@ -592,6 +593,8 @@ void convert_params(int atnr, t_params nbtypes[],
                    &maxtypes, TRUE, TRUE);
     enter_function(&(nbtypes[F_BHAM]), (t_functype)F_BHAM,  comb, reppow, ffp, NULL,
                    &maxtypes, TRUE, TRUE);
+    enter_function(&(nbtypes[F_WBHAM]), (t_functype)F_WBHAM,  comb, reppow, ffp, NULL,
+                   &maxtypes, TRUE, TRUE);
 
     for (mt = 0; mt < mtop->nmoltype; mt++)
     {
@@ -604,9 +607,9 @@ void convert_params(int atnr, t_params nbtypes[],
             plist = mi[mt].plist;
 
             flags = interaction_function[i].flags;
-            if ((i != F_LJ) && (i != F_BHAM) && ((flags & IF_BOND) ||
-                                                 (flags & IF_VSITE) ||
-                                                 (flags & IF_CONSTRAINT)))
+            if ((i != F_LJ) && (i != F_BHAM) && (i != F_WBHAM) && ((flags & IF_BOND) ||
+                                                                   (flags & IF_VSITE) ||
+                                                                   (flags & IF_CONSTRAINT)))
             {
                 enter_function(&(plist[i]), (t_functype)i, comb, reppow,
                                ffp, &molt->ilist[i],
