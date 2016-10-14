@@ -147,8 +147,12 @@ void init_mtop(gmx_mtop_t *mtop);
 void init_top(t_topology *top);
 void done_moltype(gmx_moltype_t *molt);
 void done_molblock(gmx_molblock_t *molb);
-void done_mtop(gmx_mtop_t *mtop, gmx_bool bDoneSymtab);
+void done_gmx_groups_t(gmx_groups_t *g);
+void done_mtop(gmx_mtop_t *mtop);
 void done_top(t_topology *top);
+// Frees both t_topology and gmx_mtop_t when the former has been created from
+// the latter.
+void done_top_mtop(t_topology *top, gmx_mtop_t *mtop);
 
 bool gmx_mtop_has_masses(const gmx_mtop_t *mtop);
 bool gmx_mtop_has_charges(const gmx_mtop_t *mtop);

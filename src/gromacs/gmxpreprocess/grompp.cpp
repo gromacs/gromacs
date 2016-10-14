@@ -2183,7 +2183,7 @@ int gmx_grompp(int argc, char *argv[])
     write_IMDgroup_to_file(ir->bIMD, ir, &state, sys, NFILE, fnm);
 
     done_atomtype(atype);
-    done_mtop(sys, TRUE);
+    done_mtop(sys);
     done_inputrec_strings();
 
     return 0;
