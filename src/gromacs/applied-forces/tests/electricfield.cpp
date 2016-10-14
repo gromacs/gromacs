@@ -126,14 +126,17 @@ class ElectricFieldTest : public ::testing::Test
             t_forcerec *forcerec = mk_forcerec();
             inputrec->efield->initForcerec(forcerec);
             forcerec->efield->calculateForces(cr, &md, &f, 0);
-
+            done_commrec(&cr);
             EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
             for (int i = 0; i < ninp; i++)
             {
                 sfree(inp[i].name);
                 sfree(inp[i].value);
             }
+            sfree(inp);
             done_warning(wi, 0, "no file", 0);
+            sfree(forcerec);
+            sfree(md.chargeA);
         }
 };
 
