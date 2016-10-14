@@ -50,6 +50,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 /* reset the delta_h list to prepare it for new values */
@@ -680,67 +681,51 @@ void mde_delta_h_coll_reset(t_mde_delta_h_coll *dhc)
 }
 
 /* set the energyhistory variables to save state */
-void mde_delta_h_coll_update_energyhistory(t_mde_delta_h_coll *dhc,
-                                           energyhistory_t    *enerhist)
+void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll *dhc,
+                                           energyhistory_t          *enerhist)
 {
-    int i;
-    if (!enerhist->dht)
+    if (enerhist->deltaHForeignLambdas == nullptr)
     {
-        snew(enerhist->dht, 1);
-        snew(enerhist->dht->ndh, dhc->ndh);
-        snew(enerhist->dht->dh, dhc->ndh);
-        enerhist->dht->nndh = dhc->ndh;
+        enerhist->deltaHForeignLambdas.reset(new delta_h_history_t);
+        enerhist->deltaHForeignLambdas->dh.resize(dhc->ndh);
     }
-    else
+
+    delta_h_history_t * const deltaH = enerhist->deltaHForeignLambdas.get();
+
+    GMX_RELEASE_ASSERT(deltaH->dh.size() == static_cast<size_t>(dhc->ndh), "energy history number of delta_h histograms should match inputrec's number");
+
+    for (int i = 0; i < dhc->ndh; i++)
     {
-        if (enerhist->dht->nndh != dhc->ndh)
-        {
-            gmx_incons("energy history number of delta_h histograms != inputrec's number");
-        }
+        std::vector<real> &dh = deltaH->dh[i];
+        dh.resize(dhc->dh[i].ndh);
+        std::copy(dh.begin(), dh.end(), dhc->dh[i].dh);
     }
-    for (i = 0; i < dhc->ndh; i++)
-    {
-        enerhist->dht->dh[i]  = dhc->dh[i].dh;
-        enerhist->dht->ndh[i] = dhc->dh[i].ndh;
-    }
-    enerhist->dht->start_time   = dhc->start_time;
-    enerhist->dht->start_lambda = dhc->start_lambda;
+    deltaH->start_time   = dhc->start_time;
+    deltaH->start_lambda = dhc->start_lambda;
 }
 
 
 
 /* restore the variables from an energyhistory */
-void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
-                                            energyhistory_t    *enerhist)
+void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll      *dhc,
+                                            const delta_h_history_t *deltaH)
 {
-    int          i;
-    unsigned int j;
+    GMX_RELEASE_ASSERT(dhc, "Should have delta_h histograms");
+    GMX_RELEASE_ASSERT(deltaH, "Should have delta_h histograms in energy history");
+    GMX_RELEASE_ASSERT(deltaH->dh.size() == static_cast<size_t>(dhc->ndh), "energy history number of delta_h histograms should match inputrec's number");
 
-    if (!dhc)
+    for (unsigned int i = 0; i < deltaH->dh.size(); i++)
     {
-        gmx_incons("No delta_h histograms found");
-    }
-    if (!enerhist->dht)
-    {
-        gmx_incons("No delta_h histograms found in energy history");
-    }
-    if (enerhist->dht->nndh != dhc->ndh)
-    {
-        gmx_incons("energy history number of delta_h histograms != inputrec's number");
-    }
-
-    for (i = 0; i < enerhist->dht->nndh; i++)
-    {
-        dhc->dh[i].ndh = enerhist->dht->ndh[i];
-        for (j = 0; j < dhc->dh[i].ndh; j++)
+        dhc->dh[i].ndh = deltaH->dh[i].size();
+        for (unsigned int j = 0; j < dhc->dh[i].ndh; j++)
         {
-            dhc->dh[i].dh[j] = enerhist->dht->dh[i][j];
+            dhc->dh[i].dh[j] = deltaH->dh[i][j];
         }
     }
-    dhc->start_time = enerhist->dht->start_time;
-    if (enerhist->dht->start_lambda_set)
+    dhc->start_time = deltaH->start_time;
+    if (deltaH->start_lambda_set)
     {
-        dhc->start_lambda = enerhist->dht->start_lambda;
+        dhc->start_lambda = deltaH->start_lambda;
     }
     if (dhc->dh[0].ndh > 0)
     {

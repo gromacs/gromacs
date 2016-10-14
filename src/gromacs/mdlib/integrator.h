@@ -54,7 +54,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct energyhistory_t;
+class energyhistory_t;
 struct gmx_mtop_t;
 struct gmx_membed_t;
 struct gmx_output_env_t;
