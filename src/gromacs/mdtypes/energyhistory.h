@@ -35,45 +35,40 @@
 #ifndef GMX_MDLIB_ENERGYHISTORY_H
 #define GMX_MDLIB_ENERGYHISTORY_H
 
+#include <memory>
+#include <vector>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-/* energy history for delta_h histograms */
+//! \brief Energy history for delta_h histograms in between energy file frames
 typedef struct delta_h_history_t
 {
-    int      nndh;             /* the number of energy difference lists */
-    int     *ndh;              /* the number in each energy difference list */
-    real   **dh;               /* the energy difference lists */
-
-    double   start_time;       /* the start time of these energy diff blocks */
-    double   start_lambda;     /* lambda at start time */
-
-    gmx_bool start_lambda_set; /* whether the lambda value is set. Here
-                                  For backward-compatibility. */
+    //! Vector (size number of intermediate data points) of vector of Hamiltonian differences for each foreign lambda
+    std::vector<std::vector<real> > dh;
+    //! The start time of these energy diff blocks
+    double                          start_time;
+    //! Lambda at start time
+    double                          start_lambda;
+    //! Whether the lambda value is set. Here for backward-compatibility.
+    gmx_bool                        start_lambda_set;
 } delta_h_history_t;
 
 
+//! \brief Energy statistics history, only used for output and reporting
 typedef struct energyhistory_t
 {
-    gmx_int64_t        nsteps;       /* The number of steps in the history            */
-    gmx_int64_t        nsum;         /* The nr. of steps in the ener_ave and ener_sum */
-    double         *   ener_ave;     /* Energy term history sum to get fluctuations   */
-    double         *   ener_sum;     /* Energy term history sum to get fluctuations   */
-    int                nener;        /* Number of energy terms in two previous arrays */
-    gmx_int64_t        nsteps_sim;   /* The number of steps in ener_sum_sim      */
-    gmx_int64_t        nsum_sim;     /* The number of frames in ener_sum_sim     */
-    double         *   ener_sum_sim; /* Energy term history sum of the whole sim      */
+    gmx_int64_t         nsteps;       //! The number of steps in the history
+    gmx_int64_t         nsum;         //! Nr. of steps in the ener_ave and ener_sum
+    std::vector<double> ener_ave;     //! Energy terms difference^2 sum to get fluctuations
+    std::vector<double> ener_sum;     //! Energy terms sum
+    gmx_int64_t         nsteps_sim;   //! The number of steps in ener_sum_sim
+    gmx_int64_t         nsum_sim;     //! The number of frames in ener_sum_sim
+    std::vector<double> ener_sum_sim; //! Energy term history sum of the whole sim
 
-    delta_h_history_t *dht;          /* The BAR energy differences */
+    //! The BAR energy differences history in between energy file frames
+    std::unique_ptr<delta_h_history_t> dht;
 }
 energyhistory_t;
-
-/* \brief Initialize an energy history structure
- */
-void init_energyhistory(energyhistory_t * enerhist);
-
-/* \brief Destroy an energy history structure
- */
-void done_energyhistory(energyhistory_t * enerhist);
 
 #endif
