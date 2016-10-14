@@ -1002,7 +1002,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     energyhistory_t energyHistory;
-    init_energyhistory(&energyHistory);
 
     if (Flags & MD_STARTFROMCPT)
     {
@@ -1429,8 +1428,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         free_membed(membed);
     }
-
-    done_energyhistory(&energyHistory);
 
     gmx_hardware_info_free(hwinfo);
 
