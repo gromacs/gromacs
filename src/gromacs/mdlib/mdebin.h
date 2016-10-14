@@ -44,7 +44,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/state.h"
 
-struct energyhistory_t;
+class energyhistory_t;
 struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
@@ -160,13 +160,13 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
 /* Between .edr writes, the averages are history dependent,
    and that history needs to be retained in checkpoints.
-   These functions set/read the energyhistory_t structure
+   These functions set/read the energyhistory_t class
    that is written to checkpoints in checkpoint.c */
 
-/* Set the energyhistory_t data structure from a mdebin structure */
+/* Set the energyhistory_t data from a mdebin structure */
 void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin);
 
-/* Read the energyhistory_t data structure to a mdebin structure*/
+/* Read the energyhistory_t data to a mdebin structure*/
 void restore_energyhistory_from_state(t_mdebin        * mdebin,
                                       energyhistory_t * enerhist);
 
