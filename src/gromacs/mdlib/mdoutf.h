@@ -42,7 +42,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct energyhistory_t;
+class  energyhistory_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct t_commrec;

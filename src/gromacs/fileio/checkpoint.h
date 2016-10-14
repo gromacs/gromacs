@@ -47,7 +47,7 @@
 extern "C" {
 #endif
 
-struct energyhistory_t;
+class  energyhistory_t;
 struct gmx_file_position_t;
 struct t_commrec;
 struct t_fileio;
