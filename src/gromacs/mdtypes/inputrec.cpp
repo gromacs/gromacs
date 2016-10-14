@@ -298,6 +298,9 @@ void done_inputrec(t_inputrec *ir)
     sfree(ir->opts.SAsteps);
     sfree(ir->opts.bOPT);
     sfree(ir->opts.bTS);
+    sfree(ir->fepvals);
+    sfree(ir->expandedvals);
+    sfree(ir->simtempvals);
 
     if (ir->pull)
     {

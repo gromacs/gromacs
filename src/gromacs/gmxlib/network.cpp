@@ -111,6 +111,34 @@ t_commrec *init_commrec()
     return cr;
 }
 
+static void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
+{
+    if (NULL != buf)
+    {
+        sfree(buf->ibuf);
+        sfree(buf->libuf);
+        sfree(buf->fbuf);
+        sfree(buf->dbuf);
+        sfree(buf);
+    }
+}
+
+void done_commrec(t_commrec *cr)
+{
+    if (NULL != cr->dd)
+    {
+        // TODO: implement
+        // done_domdec(cr->dd);
+    }
+    if (NULL != cr->ms)
+    {
+        done_mpi_in_place_buf(cr->ms->mpb);
+        sfree(cr->ms);
+    }
+    done_mpi_in_place_buf(cr->mpb);
+    sfree(cr);
+}
+
 t_commrec *reinitialize_commrec_for_this_thread(const t_commrec gmx_unused *cro)
 {
 #if GMX_THREAD_MPI
