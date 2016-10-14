@@ -40,13 +40,10 @@
 
 #include "gromacs/mdlib/mdebin.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
 /* The functions & data structures here describe writing
    energy differences (or their histogram )for use with g_bar */
+
+struct delta_h_history_t;
 
 /* Data for one foreign lambda, or derivative. */
 typedef struct
@@ -170,16 +167,11 @@ void mde_delta_h_coll_reset(t_mde_delta_h_coll *dhc);
 
 
 /* set the energyhistory variables to save state */
-void mde_delta_h_coll_update_energyhistory(t_mde_delta_h_coll *dhc,
-                                           energyhistory_t    *enerhist);
+void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll *dhc,
+                                           energyhistory_t          *enerhist);
 
 /* restore the variables from an energyhistory */
-void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
-                                            energyhistory_t    *enerhist);
-
-
-#ifdef __cplusplus
-}
-#endif
+void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll      *dhc,
+                                            const delta_h_history_t *enerhist);
 
 #endif  /* _mdebin_bar_h */
