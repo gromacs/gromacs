@@ -1242,60 +1242,66 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
 {
     int ret = 0;
 
+    /* This is stored/read for backward compatibility */
+    int  energyHistoryNumEnergies = 0;
     if (bRead)
     {
         enerhist->nsteps     = 0;
         enerhist->nsum       = 0;
         enerhist->nsteps_sim = 0;
         enerhist->nsum_sim   = 0;
-        enerhist->dht        = NULL;
-
-        if (fflags & (1<< eenhENERGY_DELTA_H_NN) )
-        {
-            snew(enerhist->dht, 1);
-            enerhist->dht->ndh              = NULL;
-            enerhist->dht->dh               = NULL;
-            enerhist->dht->start_lambda_set = FALSE;
-        }
+    }
+    else
+    {
+        energyHistoryNumEnergies = enerhist->ener_sum_sim.size();
     }
 
-    const StatePart part = StatePart::energyHistory;
+    delta_h_history_t *deltaH = enerhist->deltaHForeignLambdas.get();
+    const StatePart    part   = StatePart::energyHistory;
     for (int i = 0; (i < eenhNR && ret == 0); i++)
     {
         if (fflags & (1<<i))
         {
             switch (i)
             {
-                case eenhENERGY_N:     ret = do_cpte_int(xd, part, i, fflags, &enerhist->nener, list); break;
-                case eenhENERGY_AVER:  ret = do_cpte_doubles(xd, part, i, fflags, enerhist->nener, &enerhist->ener_ave, list); break;
-                case eenhENERGY_SUM:   ret = do_cpte_doubles(xd, part, i, fflags, enerhist->nener, &enerhist->ener_sum, list); break;
+                case eenhENERGY_N:     ret = do_cpte_int(xd, part, i, fflags, &energyHistoryNumEnergies, list); break;
+                case eenhENERGY_AVER:  ret = doVector<double>(xd, part, i, fflags, energyHistoryNumEnergies, &enerhist->ener_ave, list); break;
+                case eenhENERGY_SUM:   ret = doVector<double>(xd, part, i, fflags, energyHistoryNumEnergies, &enerhist->ener_sum, list); break;
                 case eenhENERGY_NSUM:  do_cpt_step_err(xd, eenh_names[i], &enerhist->nsum, list); break;
-                case eenhENERGY_SUM_SIM: ret = do_cpte_doubles(xd, part, i, fflags, enerhist->nener, &enerhist->ener_sum_sim, list); break;
+                case eenhENERGY_SUM_SIM: ret = doVector<double>(xd, part, i, fflags, energyHistoryNumEnergies, &enerhist->ener_sum_sim, list); break;
                 case eenhENERGY_NSUM_SIM:   do_cpt_step_err(xd, eenh_names[i], &enerhist->nsum_sim, list); break;
                 case eenhENERGY_NSTEPS:     do_cpt_step_err(xd, eenh_names[i], &enerhist->nsteps, list); break;
                 case eenhENERGY_NSTEPS_SIM: do_cpt_step_err(xd, eenh_names[i], &enerhist->nsteps_sim, list); break;
-                case eenhENERGY_DELTA_H_NN: do_cpt_int_err(xd, eenh_names[i], &(enerhist->dht->nndh), list);
-                    if (bRead) /* now allocate memory for it */
+                case eenhENERGY_DELTA_H_NN:
+                {
+                    int numDeltaH = 0;
+                    if (!bRead && deltaH != nullptr)
                     {
-                        snew(enerhist->dht->dh, enerhist->dht->nndh);
-                        snew(enerhist->dht->ndh, enerhist->dht->nndh);
-                        for (int j = 0; j < enerhist->dht->nndh; j++)
+                        numDeltaH = deltaH->dh.size();
+                    }
+                    do_cpt_int_err(xd, eenh_names[i], &numDeltaH, list);
+                    if (bRead)
+                    {
+                        if (deltaH == nullptr)
                         {
-                            enerhist->dht->ndh[j] = 0;
-                            enerhist->dht->dh[j]  = NULL;
+                            enerhist->deltaHForeignLambdas.reset(new delta_h_history_t);
+                            deltaH = enerhist->deltaHForeignLambdas.get();
                         }
+                        deltaH->dh.resize(numDeltaH);
+                        deltaH->start_lambda_set = FALSE;
                     }
                     break;
+                }
                 case eenhENERGY_DELTA_H_LIST:
-                    for (int j = 0; j < enerhist->dht->nndh; j++)
+                    for (auto dh : deltaH->dh)
                     {
-                        ret = do_cpte_n_reals(xd, part, i, fflags, &enerhist->dht->ndh[j], &(enerhist->dht->dh[j]), list);
+                        ret = doVector<real>(xd, part, i, fflags, &dh, list);
                     }
                     break;
                 case eenhENERGY_DELTA_H_STARTTIME:
-                    ret = do_cpte_double(xd, part, i, fflags, &(enerhist->dht->start_time), list); break;
+                    ret = do_cpte_double(xd, part, i, fflags, &(deltaH->start_time), list); break;
                 case eenhENERGY_DELTA_H_STARTLAMBDA:
-                    ret = do_cpte_double(xd, part, i, fflags, &(enerhist->dht->start_lambda), list); break;
+                    ret = do_cpte_double(xd, part, i, fflags, &(deltaH->start_lambda), list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown energy history entry %d\n"
                               "You are probably reading a new checkpoint file with old code", i);
@@ -1306,11 +1312,7 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
     if ((fflags & (1<<eenhENERGY_SUM)) && !(fflags & (1<<eenhENERGY_SUM_SIM)))
     {
         /* Assume we have an old file format and copy sum to sum_sim */
-        srenew(enerhist->ener_sum_sim, enerhist->nener);
-        for (int i = 0; i < enerhist->nener; i++)
-        {
-            enerhist->ener_sum_sim[i] = enerhist->ener_sum[i];
-        }
+        enerhist->ener_sum_sim = enerhist->ener_sum;
     }
 
     if ( (fflags & (1<<eenhENERGY_NSUM)) &&
@@ -1626,7 +1628,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         {
             flags_enh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSUM_SIM));
         }
-        if (enerhist->dht)
+        if (enerhist->deltaHForeignLambdas != nullptr)
         {
             flags_enh |= ( (1<< eenhENERGY_DELTA_H_NN) |
                            (1<< eenhENERGY_DELTA_H_LIST) |
@@ -2449,10 +2451,8 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     }
 
     energyhistory_t enerhist;
-    init_energyhistory(&enerhist);
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           flags_enh, &enerhist, NULL);
-    done_energyhistory(&enerhist);
     if (ret)
     {
         cp_error();
@@ -2608,10 +2608,8 @@ void list_checkpoint(const char *fn, FILE *out)
     }
 
     energyhistory_t enerhist;
-    init_energyhistory(&enerhist);
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           flags_enh, &enerhist, out);
-    done_energyhistory(&enerhist);
 
     if (ret == 0)
     {
