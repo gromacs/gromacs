@@ -339,7 +339,7 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         {
             if (top_ != NULL)
             {
-                done_mtop(top_, TRUE);
+                done_mtop(top_);
                 sfree(top_);
             }
         }

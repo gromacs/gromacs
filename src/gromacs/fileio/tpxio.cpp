@@ -3168,7 +3168,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         else
         {
             do_mtop(fio, &dum_top, bRead, fileVersion);
-            done_mtop(&dum_top, TRUE);
+            done_mtop(&dum_top);
         }
     }
     do_test(fio, tpx.bX, x);

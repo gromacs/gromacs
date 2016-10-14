@@ -158,6 +158,16 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     state->cg_gl.resize(0);
 }
 
+t_state::t_state()
+    : enerhist(nullptr)
+{
+}
+
+t_state::~t_state()
+{
+    sfree(enerhist);
+}
+
 void comp_state(const t_state *st1, const t_state *st2,
                 gmx_bool bRMSD, real ftol, real abstol)
 {

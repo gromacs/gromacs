@@ -198,6 +198,11 @@ swapstate_t;
 
 typedef struct t_state
 {
+    t_state();
+    t_state(const t_state &)            = default;
+    t_state &operator=(const t_state &) = default;
+    ~t_state();
+
     int                     natoms;
     int                     ngtc;
     int                     nnhpres;

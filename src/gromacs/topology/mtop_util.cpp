@@ -968,27 +968,6 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
     return top;
 }
 
-static void done_gmx_groups_t(gmx_groups_t *g)
-{
-    int i;
-
-    for (i = 0; (i < egcNR); i++)
-    {
-        if (NULL != g->grps[i].nm_ind)
-        {
-            sfree(g->grps[i].nm_ind);
-            g->grps[i].nm_ind = NULL;
-        }
-        if (NULL != g->grpnr[i])
-        {
-            sfree(g->grpnr[i]);
-            g->grpnr[i] = NULL;
-        }
-    }
-    /* The contents of this array is in symtab, don't free it here */
-    sfree(g->grpname);
-}
-
 t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop)
 {
     int            mt, mb;

@@ -194,12 +194,8 @@ TopologyInformation::TopologyInformation()
 
 TopologyInformation::~TopologyInformation()
 {
-    if (mtop_)
-    {
-        done_mtop(mtop_, TRUE);
-        sfree(mtop_);
-    }
-    // TODO: Free that part of the memory that is not shared with mtop_.
+    done_top_mtop(top_, mtop_);
+    sfree(mtop_);
     sfree(top_);
     sfree(xtop_);
 }
