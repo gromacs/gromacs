@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1495,41 +1495,34 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
 void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)
 {
-    int i;
+    const t_ebin *ebin = mdebin->ebin;
 
-    enerhist->nsteps     = mdebin->ebin->nsteps;
-    enerhist->nsum       = mdebin->ebin->nsum;
-    enerhist->nsteps_sim = mdebin->ebin->nsteps_sim;
-    enerhist->nsum_sim   = mdebin->ebin->nsum_sim;
-    enerhist->nener      = mdebin->ebin->nener;
+    enerhist->nsteps     = ebin->nsteps;
+    enerhist->nsum       = ebin->nsum;
+    enerhist->nsteps_sim = ebin->nsteps_sim;
+    enerhist->nsum_sim   = ebin->nsum_sim;
 
-    if (mdebin->ebin->nsum > 0)
+    if (ebin->nsum > 0)
     {
-        /* Check if we need to allocate first */
-        if (enerhist->ener_ave == NULL)
-        {
-            snew(enerhist->ener_ave, enerhist->nener);
-            snew(enerhist->ener_sum, enerhist->nener);
-        }
+        /* This will only actually resize the first time */
+        enerhist->ener_ave.resize(ebin->nener);
+        enerhist->ener_sum.resize(ebin->nener);
 
-        for (i = 0; i < enerhist->nener; i++)
+        for (int i = 0; i < ebin->nener; i++)
         {
-            enerhist->ener_ave[i] = mdebin->ebin->e[i].eav;
-            enerhist->ener_sum[i] = mdebin->ebin->e[i].esum;
+            enerhist->ener_ave[i] = ebin->e[i].eav;
+            enerhist->ener_sum[i] = ebin->e[i].esum;
         }
     }
 
-    if (mdebin->ebin->nsum_sim > 0)
+    if (ebin->nsum_sim > 0)
     {
-        /* Check if we need to allocate first */
-        if (enerhist->ener_sum_sim == NULL)
-        {
-            snew(enerhist->ener_sum_sim, enerhist->nener);
-        }
+        /* This will only actually resize the first time */
+        enerhist->ener_sum_sim.resize(ebin->nener);
 
-        for (i = 0; i < enerhist->nener; i++)
+        for (int i = 0; i < ebin->nener; i++)
         {
-            enerhist->ener_sum_sim[i] = mdebin->ebin->e_sim[i].esum;
+            enerhist->ener_sum_sim[i] = ebin->e_sim[i].esum;
         }
     }
     if (mdebin->dhc)
@@ -1541,13 +1534,13 @@ void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)
 void restore_energyhistory_from_state(t_mdebin        * mdebin,
                                       energyhistory_t * enerhist)
 {
-    int i;
+    unsigned int nener = static_cast<unsigned int>(mdebin->ebin->nener);
 
-    if ((enerhist->nsum > 0 || enerhist->nsum_sim > 0) &&
-        mdebin->ebin->nener != enerhist->nener)
+    if ((enerhist->nsum     > 0 && nener != enerhist->ener_sum.size()) ||
+        (enerhist->nsum_sim > 0 && nener != enerhist->ener_sum_sim.size()))
     {
-        gmx_fatal(FARGS, "Mismatch between number of energies in run input (%d) and checkpoint file (%d).",
-                  mdebin->ebin->nener, enerhist->nener);
+        gmx_fatal(FARGS, "Mismatch between number of energies in run input (%d) and checkpoint file (%d or %d).",
+                  nener, enerhist->ener_sum.size(), enerhist->ener_sum_sim.size());
     }
 
     mdebin->ebin->nsteps     = enerhist->nsteps;
@@ -1555,7 +1548,7 @@ void restore_energyhistory_from_state(t_mdebin        * mdebin,
     mdebin->ebin->nsteps_sim = enerhist->nsteps_sim;
     mdebin->ebin->nsum_sim   = enerhist->nsum_sim;
 
-    for (i = 0; i < mdebin->ebin->nener; i++)
+    for (int i = 0; i < mdebin->ebin->nener; i++)
     {
         mdebin->ebin->e[i].eav  =
             (enerhist->nsum > 0 ? enerhist->ener_ave[i] : 0);
@@ -1566,6 +1559,7 @@ void restore_energyhistory_from_state(t_mdebin        * mdebin,
     }
     if (mdebin->dhc)
     {
-        mde_delta_h_coll_restore_energyhistory(mdebin->dhc, enerhist);
+        mde_delta_h_coll_restore_energyhistory(mdebin->dhc,
+                                               enerhist->deltaH.get());
     }
 }
