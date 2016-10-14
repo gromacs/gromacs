@@ -134,6 +134,8 @@ class ElectricFieldTest : public ::testing::Test
                 sfree(inp[i].value);
             }
             done_warning(wi, 0, "no file", 0);
+            sfree(forcerec);
+            sfree(md.chargeA);
         }
 };
 

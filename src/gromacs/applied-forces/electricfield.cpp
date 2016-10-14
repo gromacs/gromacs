@@ -322,6 +322,7 @@ void ElectricField::readMdp(int *ninp_p, t_inpfile **inp_p, warninp_t wi)
     decodeMdp(XX, efield_x, efield_xt, wi);
     decodeMdp(YY, efield_y, efield_yt, wi);
     decodeMdp(ZZ, efield_z, efield_zt, wi);
+    free(inp);
 }
 
 void ElectricField::decodeMdp(int         dim,
