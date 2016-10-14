@@ -472,8 +472,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                 /* We might have read an energy history from checkpoint,
                  * free the allocated memory and reset the counts.
                  */
-                done_energyhistory(energyHistory);
-                init_energyhistory(energyHistory);
+                energyHistory = {};
             }
         }
         /* Set the initial energy history in state by updating once */
