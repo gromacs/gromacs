@@ -464,19 +464,19 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             /* Update mdebin with energy history if appending to output files */
             if (Flags & MD_APPENDFILES)
             {
-                restore_energyhistory_from_state(mdebin, state_global->enerhist);
+                restore_energyhistory_from_state(mdebin, state_global->enerhist.get());
             }
             else
             {
                 /* We might have read an energy history from checkpoint,
                  * free the allocated memory and reset the counts.
                  */
-                done_energyhistory(state_global->enerhist);
-                init_energyhistory(state_global->enerhist);
+                done_energyhistory(state_global->enerhist.get());
+                init_energyhistory(state_global->enerhist.get());
             }
         }
         /* Set the initial energy history in state by updating once */
-        update_energyhistory(state_global->enerhist, mdebin);
+        update_energyhistory(state_global->enerhist.get(), mdebin);
     }
 
     /* Initialize constraints */

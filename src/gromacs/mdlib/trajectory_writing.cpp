@@ -139,7 +139,7 @@ do_md_trajectory_writing(FILE             *fplog,
                     update_ekinstate(&state_global->ekinstate, ekind);
                     state_global->ekinstate.bUpToDate = TRUE;
                 }
-                update_energyhistory(state_global->enerhist, mdebin);
+                update_energyhistory(state_global->enerhist.get(), mdebin);
             }
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
