@@ -244,6 +244,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
+                                      energyhistory_t *energyHistory,
                                       PaddedRVecVector *f_local)
 {
     rvec *f_global;
@@ -293,7 +294,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                              DOMAINDECOMP(cr) ? cr->dd->nc : one_ivec,
                              DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes,
                              of->eIntegrator, of->simulation_part,
-                             of->bExpanded, of->elamstats, step, t, state_global);
+                             of->bExpanded, of->elamstats, step, t,
+                             state_global, energyHistory);
         }
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))

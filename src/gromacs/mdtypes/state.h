@@ -37,15 +37,12 @@
 #ifndef GMX_MDTYPES_STATE_H
 #define GMX_MDTYPES_STATE_H
 
-#include <memory>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-struct energyhistory_t;
 
 /*
  * The t_state struct should contain all the (possibly) non-static
@@ -76,8 +73,6 @@ extern const char *est_names[estNR];
 
 /* This vector is not padded yet, padding will be added soon */
 typedef std::vector<gmx::RVec> PaddedRVecVector;
-
-typedef std::shared_ptr<energyhistory_t> EnerHistPtr;
 
 typedef struct history_t
 {
@@ -225,11 +220,10 @@ typedef struct t_state
     PaddedRVecVector        v;               /* the velocities (natoms)                      */
     PaddedRVecVector        cg_p;            /* p vector for conjugate gradient minimization */
 
-    history_t               hist;            /* Time history for restraints                  */
-
     ekinstate_t             ekinstate;       /* The state of the kinetic energy data      */
 
-    EnerHistPtr             enerhist;        /* Energy history for statistics           */
+    /* History for special algorithms, should be moved to a history struct */
+    history_t               hist;            /* Time history for restraints                  */
     swapstate_t            *swapstate;       /* Position swapping                       */
     df_history_t           *dfhist;          /*Free energy history for free energy analysis  */
     edsamstate_t           *edsamstate;      /* Essential dynamics / flooding history */
