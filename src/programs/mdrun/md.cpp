@@ -219,6 +219,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   gmx_mtop_t *top_global,
                   t_fcdata *fcd,
                   t_state *state_global,
+                  energyhistory_t *energyHistory,
                   t_mdatoms *mdatoms,
                   t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                   gmx_edsam_t ed, t_forcerec *fr,
@@ -464,19 +465,19 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             /* Update mdebin with energy history if appending to output files */
             if (Flags & MD_APPENDFILES)
             {
-                restore_energyhistory_from_state(mdebin, state_global->enerhist.get());
+                restore_energyhistory_from_state(mdebin, energyHistory);
             }
             else
             {
                 /* We might have read an energy history from checkpoint,
                  * free the allocated memory and reset the counts.
                  */
-                done_energyhistory(state_global->enerhist.get());
-                init_energyhistory(state_global->enerhist.get());
+                done_energyhistory(energyHistory);
+                init_energyhistory(energyHistory);
             }
         }
         /* Set the initial energy history in state by updating once */
-        update_energyhistory(state_global->enerhist.get(), mdebin);
+        update_energyhistory(energyHistory, mdebin);
     }
 
     /* Initialize constraints */
@@ -1258,7 +1259,8 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
          * the update.
          */
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
-                                 ir, state, state_global, top_global, fr,
+                                 ir, state, state_global, energyHistory,
+                                 top_global, fr,
                                  outf, mdebin, ekind, &f,
                                  &nchkpt,
                                  bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),

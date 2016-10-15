@@ -61,6 +61,7 @@ do_md_trajectory_writing(FILE             *fplog,
                          t_inputrec       *ir,
                          t_state          *state,
                          t_state          *state_global,
+                         energyhistory_t  *energyHistory,
                          gmx_mtop_t       *top_global,
                          t_forcerec       *fr,
                          gmx_mdoutf_t      outf,
@@ -139,11 +140,11 @@ do_md_trajectory_writing(FILE             *fplog,
                     update_ekinstate(&state_global->ekinstate, ekind);
                     state_global->ekinstate.bUpToDate = TRUE;
                 }
-                update_energyhistory(state_global->enerhist.get(), mdebin);
+                update_energyhistory(energyHistory, mdebin);
             }
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
-                                         step, t, state, state_global, f);
+                                         step, t, state, state_global, energyHistory, f);
         if (bCPT)
         {
             (*nchkpt)++;

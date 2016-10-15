@@ -46,7 +46,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/veccompare.h"
 #include "gromacs/mdtypes/df_history.h"
-#include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/compare.h"
@@ -140,8 +139,6 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     state->cg_p.resize(0);
     zero_history(&state->hist);
     zero_ekinstate(&state->ekinstate);
-    state->enerhist.reset(new energyhistory_t);
-    init_energyhistory(state->enerhist.get());
     if (dfhistNumLambda > 0)
     {
         snew(state->dfhist, 1);

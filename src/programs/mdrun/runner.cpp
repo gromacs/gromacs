@@ -91,6 +91,7 @@
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -1000,6 +1001,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
     }
 
+    energyhistory_t energyHistory;
+    init_energyhistory(&energyHistory);
+
     if (Flags & MD_STARTFROMCPT)
     {
         /* Check if checkpoint file exists before doing continuation.
@@ -1009,7 +1013,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
                         cr, ddxyz, &npme,
-                        inputrec, state, &bReadEkin,
+                        inputrec, state, &bReadEkin, &energyHistory,
                         (Flags & MD_APPENDFILES),
                         (Flags & MD_APPENDFILESSET),
                         (Flags & MD_REPRODUCIBLE));
@@ -1373,7 +1377,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      nstglobalcomm,
                                      vsite, constr,
                                      nstepout, inputrec, mtop,
-                                     fcd, state,
+                                     fcd, state, &energyHistory,
                                      mdatoms, nrnb, wcycle, ed, fr,
                                      repl_ex_nst, repl_ex_nex, repl_ex_seed,
                                      membed,
@@ -1425,6 +1429,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         free_membed(membed);
     }
+
+    done_energyhistory(&energyHistory);
 
     gmx_hardware_info_free(hwinfo);
 
