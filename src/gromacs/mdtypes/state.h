@@ -37,6 +37,7 @@
 #ifndef GMX_MDTYPES_STATE_H
 #define GMX_MDTYPES_STATE_H
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -75,6 +76,8 @@ extern const char *est_names[estNR];
 
 /* This vector is not padded yet, padding will be added soon */
 typedef std::vector<gmx::RVec> PaddedRVecVector;
+
+typedef std::shared_ptr<energhistory_t> EnerHistPtr;
 
 typedef struct history_t
 {
@@ -226,7 +229,7 @@ typedef struct t_state
 
     ekinstate_t             ekinstate;       /* The state of the kinetic energy data      */
 
-    struct energyhistory_t *enerhist;        /* Energy history for statistics           */
+    EnerHistPtr             enerhist;        /* Energy history for statistics           */
     swapstate_t            *swapstate;       /* Position swapping                       */
     df_history_t           *dfhist;          /*Free energy history for free energy analysis  */
     edsamstate_t           *edsamstate;      /* Essential dynamics / flooding history */

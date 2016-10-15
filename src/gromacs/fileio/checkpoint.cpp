@@ -1678,7 +1678,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     if ((do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, NULL) < 0)        ||
         (do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state->ekinstate, NULL) < 0) ||
-        (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, state->enerhist, NULL) < 0)  ||
+        (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, state->enerhist.get(), NULL) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, NULL) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, &state->edsamstate, NULL) < 0)      ||
         (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, eSwapCoords, &state->swapstate, NULL) < 0) ||
@@ -2120,7 +2120,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                   ((flags_eks & (1<<eeksEKINSCALEF)) | (flags_eks & (1<<eeksEKINSCALEH)) | (flags_eks & (1<<eeksVSCALE))));
 
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
-                          flags_enh, state->enerhist, NULL);
+                          flags_enh, state->enerhist.get(), NULL);
     if (ret)
     {
         cp_error();
@@ -2433,7 +2433,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
         cp_error();
     }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
-                          flags_enh, state->enerhist, NULL);
+                          flags_enh, state->enerhist.get(), NULL);
     if (ret)
     {
         cp_error();
@@ -2588,7 +2588,7 @@ void list_checkpoint(const char *fn, FILE *out)
         cp_error();
     }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
-                          flags_enh, state.enerhist, out);
+                          flags_enh, state.enerhist.get(), out);
 
     if (ret == 0)
     {

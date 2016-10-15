@@ -623,8 +623,8 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
 
     init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
     init_ekinstate(&state->ekinstate, ir);
-    snew(state->enerhist, 1);
-    init_energyhistory(state->enerhist);
+    state->enerhist.reset(new energyhistory_t);
+    init_energyhistory(state->enerhist.get());
     if (ir->bExpanded)
     {
         snew(state->dfhist, 1);
