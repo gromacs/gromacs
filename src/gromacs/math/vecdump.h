@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@ void pr_ivecs(FILE *fp, int indent, const char *title, const ivec vec[], int n, 
 void pr_bvec(FILE *fp, int indent, const char *title, const gmx_bool vec[], int n, gmx_bool bShowNnumbers);
 void pr_rvec(FILE *fp, int indent, const char *title, const real vec[], int n, gmx_bool bShowNumbers);
 void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, const rvec vec[], int n, int dim);
+void pr_fvec(FILE *fp, int indent, const char *title, const float vec[], int n, gmx_bool bShowNumbers);
 void pr_dvec(FILE *fp, int indent, const char *title, const double vec[], int n, gmx_bool bShowNumbers);
 void pr_rvecs(FILE *fp, int indent, const char *title, const rvec vec[], int n);
 void pr_rvecs_len(FILE *fp, int indent, const char *title, const rvec vec[], int n);
