@@ -72,6 +72,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/int64_to_int.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
@@ -150,29 +151,33 @@ const char *edfh_names[edfhNR] =
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical"
 };
 
-enum {
-    ecprREAL, ecprRVEC, ecprMATRIX
-};
-
-enum {
-    cptpEST, cptpEEKS, cptpEENH, cptpEDFH
-};
-/* enums for the different components of checkpoint variables, replacing the hard coded ones.
-   cptpEST - state variables.
-   cptpEEKS - Kinetic energy state variables.
-   cptpEENH - Energy history state variables.
-   cptpEDFH - free energy history variables.
- */
-
-
-static const char *st_names(int cptp, int ecpt)
+//! Higher level vector element type, only used for formatting checkpoint dumps
+enum class ElementType
 {
-    switch (cptp)
+    integer,   //!< integer
+    real,      //!< float or double, not linked to precision of type real
+    real3,     //!< float[3] or double[3], not linked to precision of type real
+    matrix3x3  //!< float[3][3] or double[3][3], not linked to precision of type real
+};
+
+//! \brief Parts of the checkpoint state, only used for reporting
+enum class StatePart
+{
+    microState,       //!< The microstate of the simulated system
+    kineticEnergy,    //!< Kinetic energy, needed for T/P-coupling state
+    energyHistory,    //!< Energy observable statistics
+    freeEnergyHistory //!< Free-energy state and observable statistics
+};
+
+//! \brief Return the name of a checkpoint entry based on part and part entry
+static const char *entryName(StatePart part, int ecpt)
+{
+    switch (part)
     {
-        case cptpEST: return est_names [ecpt];
-        case cptpEEKS: return eeks_names[ecpt];
-        case cptpEENH: return eenh_names[ecpt];
-        case cptpEDFH: return edfh_names[ecpt];
+        case StatePart::microState:        return est_names [ecpt];
+        case StatePart::kineticEnergy:     return eeks_names[ecpt];
+        case StatePart::energyHistory:     return eenh_names[ecpt];
+        case StatePart::freeEnergyHistory: return edfh_names[ecpt];
     }
 
     return NULL;
@@ -308,360 +313,316 @@ static void do_cpt_n_rvecs_err(XDR *xd, const char *desc, int n, rvec f[], FILE 
     }
 }
 
-/* If nval >= 0, nval is used; on read this should match the passed value.
- * If nval n<0, *nptr is used; on read the value is stored in nptr
- */
-static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
-                             int nval, int *nptr, real **v,
-                             FILE *list, int erealtype)
+template <typename T>
+struct xdr_type
 {
-    bool_t     res       = 0;
-    const bool useDouble = GMX_DOUBLE;
-    int        dtc       = useDouble ? xdr_datatype_double : xdr_datatype_float;
-    real      *vp, *va = NULL;
-    float     *vf;
-    double    *vd;
-    int        nf, dt, i;
+};
 
-    if (list == NULL)
-    {
-        if (nval >= 0)
-        {
-            nf = nval;
-        }
-        else
-        {
-            if (nptr == NULL)
-            {
-                gmx_incons("*ntpr=NULL in do_cpte_reals_low");
-            }
-            nf = *nptr;
-        }
-    }
-    res = xdr_int(xd, &nf);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (list == NULL)
-    {
-        if (nval >= 0)
-        {
-            if (nf != nval)
-            {
-                gmx_fatal(FARGS, "Count mismatch for state entry %s, code count is %d, file count is %d\n", st_names(cptp, ecpt), nval, nf);
-            }
-        }
-        else
-        {
-            *nptr = nf;
-        }
-    }
-    dt  = dtc;
-    res = xdr_int(xd, &dt);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (dt != dtc)
-    {
-        fprintf(stderr, "Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
-                st_names(cptp, ecpt), xdr_datatype_names[dtc],
-                xdr_datatype_names[dt]);
-    }
-    if (list || !(sflags & (1<<ecpt)))
-    {
-        snew(va, nf);
-        vp = va;
-    }
-    else
-    {
-        if (*v == NULL)
-        {
-            snew(*v, nf);
-        }
-        vp = *v;
-    }
-    if (dt == xdr_datatype_float)
-    {
-        if (!useDouble)
-        {
-            // This branch is not reached unless vp is already float *.
-            vf = reinterpret_cast<float *>(vp);
-        }
-        else
-        {
-            snew(vf, nf);
-        }
-        res = xdr_vector(xd, reinterpret_cast<char *>(vf), nf,
-                         static_cast<unsigned int>(sizeof(float)), (xdrproc_t)xdr_float);
-        if (res == 0)
-        {
-            return -1;
-        }
-        if (useDouble)
-        {
-            for (i = 0; i < nf; i++)
-            {
-                vp[i] = vf[i];
-            }
-            sfree(vf);
-        }
-    }
-    else
-    {
-        if (useDouble)
-        {
-            // This branch is not reached unless vp is already double *.
-            // cppcheck-suppress invalidPointerCast
-            vd = reinterpret_cast<double *>(vp);
-        }
-        else
-        {
-            snew(vd, nf);
-        }
-        res = xdr_vector(xd, reinterpret_cast<char *>(vd), nf,
-                         static_cast<unsigned int>(sizeof(double)), (xdrproc_t)xdr_double);
-        if (res == 0)
-        {
-            return -1;
-        }
-        if (!useDouble)
-        {
-            for (i = 0; i < nf; i++)
-            {
-                vp[i] = vd[i];
-            }
-            sfree(vd);
-        }
-    }
+template <>
+struct xdr_type<int>
+{
+    static const int value = xdr_datatype_int;
+};
 
-    if (list)
+template <>
+struct xdr_type<float>
+{
+    static const int value = xdr_datatype_float;
+};
+
+template <>
+struct xdr_type<double>
+{
+    static const int value = xdr_datatype_double;
+};
+
+//! \brief Returns size in byte of an xdr_datatype
+static inline unsigned int sizeOfXdrType(int xdrType)
+{
+    switch (xdrType)
     {
-        switch (erealtype)
-        {
-            case ecprREAL:
-                pr_reals(list, 0, st_names(cptp, ecpt), vp, nf);
-                break;
-            case ecprRVEC:
-                pr_rvecs(list, 0, st_names(cptp, ecpt), (rvec *)vp, nf/3);
-                break;
-            default:
-                gmx_incons("Unknown checkpoint real type");
-        }
-    }
-    if (va)
-    {
-        sfree(va);
+        case xdr_datatype_int:
+            return sizeof(int);
+            break;
+        case xdr_datatype_float:
+            return sizeof(float);
+            break;
+        case xdr_datatype_double:
+            return sizeof(double);
+            break;
+        default: GMX_RELEASE_ASSERT(false, "XDR data type not implemented");
     }
 
     return 0;
 }
 
-
-/* This function stores n along with the reals for reading,
- * but on reading it assumes that n matches the value in the checkpoint file,
- * a fatal error is generated when this is not the case.
- */
-static int do_cpte_reals(XDR *xd, int cptp, int ecpt, int sflags,
-                         int n, real **v, FILE *list)
+//! \brief Returns and XDR processes for i/o of an XDR type
+static inline xdrproc_t xdrProc(int xdrType)
 {
-    return do_cpte_reals_low(xd, cptp, ecpt, sflags, n, NULL, v, list, ecprREAL);
-}
-
-/* This function stores n along with the reals for reading,
- * but on reading it assumes that n matches the value in the checkpoint file,
- * a fatal error is generated when this is not the case.
- */
-static int do_cpte_reals(XDR *xd, int cptp, int ecpt, int sflags,
-                         int n, std::vector<real> *v, FILE *list)
-{
-    real *v_real;
-    if (list == NULL && (sflags & (1 << ecpt)))
+    switch (xdrType)
     {
-        /* Resizes on read, on write the size should already be n */
-        v->resize(n);
-        v_real = v->data();
-    }
-    else
-    {
-        v_real = NULL;
+        case xdr_datatype_int:
+            return (xdrproc_t)xdr_int;
+            break;
+        case xdr_datatype_float:
+            return (xdrproc_t)xdr_float;
+            break;
+        case xdr_datatype_double:
+            return (xdrproc_t)xdr_double;
+            break;
+        default: GMX_RELEASE_ASSERT(false, "XDR data type not implemented");
     }
 
-    return do_cpte_reals_low(xd, cptp, ecpt, sflags, n, NULL, &v_real, list, ecprREAL);
+    return NULL;
 }
 
-/* This function does the same as do_cpte_reals,
- * except that on reading it ignores the passed value of *n
- * and stored the value read from the checkpoint file in *n.
+/*! \brief Lists or only reads an xdr vector from checkpoint file
+ *
+ * When list!=NULL reads and lists the \p nf vector elements of type \p xdrType.
+ * The header for the print is set by \p part and \p ecpt.
+ * The formatting of the printing is set by \p higherLevelElementType.
+ * When list==NULL only reads the elements.
  */
-static int do_cpte_n_reals(XDR *xd, int cptp, int ecpt, int sflags,
-                           int *n, real **v, FILE *list)
+static bool_t listXdrVector(XDR *xd, StatePart part, int ecpt, int nf, int xdrType,
+                            FILE *list, ElementType higherLevelElementType)
 {
-    return do_cpte_reals_low(xd, cptp, ecpt, sflags, -1, n, v, list, ecprREAL);
+    bool_t        res = 0;
+
+    unsigned int  elemSize = sizeOfXdrType(xdrType);
+    char         *data;
+    snew(data, nf*elemSize);
+    res = xdr_vector(xd, data, nf, elemSize, xdrProc(xdrType));
+
+    if (list != NULL)
+    {
+        switch (xdrType)
+        {
+            case xdr_datatype_int:
+                pr_ivec(list, 0, entryName(part, ecpt), reinterpret_cast<int *>(data), nf, TRUE);
+                break;
+            case xdr_datatype_float:
+#if !GMX_DOUBLE
+                if (higherLevelElementType == ElementType::real3)
+                {
+                    pr_rvecs(list, 0, entryName(part, ecpt), reinterpret_cast<rvec *>(data), nf/3);
+                }
+                else
+#endif
+                {
+                    /* Note: With double precision code dumping a single precision rvec will produce float iso rvec print, but that's a minor annoyance */
+                    pr_fvec(list, 0, entryName(part, ecpt), reinterpret_cast<float *>(data), nf, TRUE);
+                }
+                break;
+            case xdr_datatype_double:
+#if GMX_DOUBLE
+                if (higherLevelElementType == ElementType::real3)
+                {
+                    pr_rvecs(list, 0, entryName(part, ecpt), reinterpret_cast<rvec *>(data), nf/3);
+                }
+                else
+#endif
+                {
+                    /* Note: With single precision code dumping a double precision rvec will produce float iso rvec print, but that's a minor annoyance */
+                    pr_dvec(list, 0, entryName(part, ecpt), reinterpret_cast<double *>(data), nf, TRUE);
+                }
+                break;
+            default: GMX_RELEASE_ASSERT(false, "Data type not implemented for listing");
+        }
+    }
+
+    sfree(data);
+
+    return res;
 }
 
-static int do_cpte_real(XDR *xd, int cptp, int ecpt, int sflags,
-                        real *r, FILE *list)
+//! \brief Convert a double array, typed char*, to float
+static void convertArrayRealPrecision(const char *c, float *v, int n)
 {
-    return do_cpte_reals_low(xd, cptp, ecpt, sflags, 1, NULL, &r, list, ecprREAL);
+    const double *d = reinterpret_cast<const double *>(c);
+    for (int i = 0; i < n; i++)
+    {
+        v[i] = static_cast<float>(d[i]);
+    }
 }
 
-static int do_cpte_ints(XDR *xd, int cptp, int ecpt, int sflags,
-                        int n, int **v, FILE *list)
+//! \brief Convert a float array, typed char*, to double
+static void convertArrayRealPrecision(const char *c, double *v, int n)
 {
+    const float *f = reinterpret_cast<const float *>(c);
+    for (int i = 0; i < n; i++)
+    {
+        v[i] = static_cast<double>(f[i]);
+    }
+}
+
+//! \brief Generate an error for trying to convert to integer
+static void convertArrayRealPrecision(const char gmx_unused *c, int gmx_unused *v, int gmx_unused n)
+{
+    GMX_RELEASE_ASSERT(false, "We only expect type mismatches between float and double, not integer");
+}
+
+/*! \brief Low-level routine for reading/writing a vector of reals from/to file.
+ *
+ * This is the only routine that does the actually i/o of real vector,
+ * all other routines are intermediate level routines for specific real
+ * data types, calling this routine.
+ * Currently this routine is (too) complex, since it handles both real *
+ * and std::vector<real>. Using real * is deprecated and this routine
+ * will simplify a lot when only std::vector needs to be supported.
+ *
+ * When not listing, we use either v or vector, depending on which is !=NULL.
+ * If nval >= 0, nval is used; on read this should match the passed value.
+ * If nval n<0, *nptr (with v) or vector->size() is used. On read using v,
+ * the value is stored in nptr
+ */
+template<typename T>
+static int doVectorLow(XDR *xd, StatePart part, int ecpt, int sflags,
+                       int nval, int *nptr,
+                       T **v, std::vector<T> *vector,
+                       FILE *list, ElementType higherLevelElementType)
+{
+    GMX_RELEASE_ASSERT(list != NULL || (v != NULL && vector == NULL) || (v == NULL && vector != NULL), "Without list, we should have exactly one of v and vector != NULL");
+
     bool_t res = 0;
-    int    dtc = xdr_datatype_int;
-    int   *vp, *va = NULL;
-    int    nf, dt;
 
-    nf  = n;
-    res = xdr_int(xd, &nf);
-    if (res == 0)
+    int    numElemInTheFile;
+    if (list == NULL)
     {
-        return -1;
-    }
-    if (list == NULL && v != NULL && nf != n)
-    {
-        gmx_fatal(FARGS, "Count mismatch for state entry %s, code count is %d, file count is %d\n", st_names(cptp, ecpt), n, nf);
-    }
-    dt  = dtc;
-    res = xdr_int(xd, &dt);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (dt != dtc)
-    {
-        gmx_fatal(FARGS, "Type mismatch for state entry %s, code type is %s, file type is %s\n",
-                  st_names(cptp, ecpt), xdr_datatype_names[dtc],
-                  xdr_datatype_names[dt]);
-    }
-    if (list || !(sflags & (1<<ecpt)) || v == NULL)
-    {
-        snew(va, nf);
-        vp = va;
-    }
-    else
-    {
-        if (*v == NULL)
+        if (nval >= 0)
         {
-            snew(*v, nf);
+            GMX_RELEASE_ASSERT(nptr == NULL, "With nval>=0 we should have nptr==NULL");
+            numElemInTheFile = nval;
         }
-        vp = *v;
-    }
-    res = xdr_vector(xd, reinterpret_cast<char *>(vp), nf,
-                     static_cast<unsigned int>(sizeof(int)), (xdrproc_t)xdr_int);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (list)
-    {
-        pr_ivec(list, 0, st_names(cptp, ecpt), vp, nf, TRUE);
-    }
-    if (va)
-    {
-        sfree(va);
-    }
-
-    return 0;
-}
-
-static int do_cpte_int(XDR *xd, int cptp, int ecpt, int sflags,
-                       int *i, FILE *list)
-{
-    return do_cpte_ints(xd, cptp, ecpt, sflags, 1, &i, list);
-}
-
-static int do_cpte_doubles(XDR *xd, int cptp, int ecpt, int sflags,
-                           int n, double **v, FILE *list)
-{
-    bool_t  res = 0;
-    int     dtc = xdr_datatype_double;
-    double *vp, *va = NULL;
-    int     nf, dt;
-
-    nf  = n;
-    res = xdr_int(xd, &nf);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (list == NULL && nf != n)
-    {
-        gmx_fatal(FARGS, "Count mismatch for state entry %s, code count is %d, file count is %d\n", st_names(cptp, ecpt), n, nf);
-    }
-    dt  = dtc;
-    res = xdr_int(xd, &dt);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (dt != dtc)
-    {
-        gmx_fatal(FARGS, "Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
-                  st_names(cptp, ecpt), xdr_datatype_names[dtc],
-                  xdr_datatype_names[dt]);
-    }
-    if (list || !(sflags & (1<<ecpt)))
-    {
-        snew(va, nf);
-        vp = va;
-    }
-    else
-    {
-        if (*v == NULL)
+        else
         {
-            snew(*v, nf);
+            if (v != NULL)
+            {
+                GMX_RELEASE_ASSERT(nptr != NULL, "With nval<0 we should have nptr!=NULL");
+                numElemInTheFile = *nptr;
+            }
+            else
+            {
+                numElemInTheFile = vector->size();
+            }
         }
-        vp = *v;
     }
-    res = xdr_vector(xd, reinterpret_cast<char *>(vp), nf,
-                     static_cast<unsigned int>(sizeof(double)), (xdrproc_t)xdr_double);
+    /* Read/write the vector element count */
+    res = xdr_int(xd, &numElemInTheFile);
     if (res == 0)
     {
         return -1;
     }
-    if (list)
+    /* Read/write the element data type */
+    const int xdrTypeInTheCode = xdr_type<T>::value;
+    int       xdrTypeInTheFile = xdrTypeInTheCode;
+    res = xdr_int(xd, &xdrTypeInTheFile);
+    if (res == 0)
     {
-        pr_doubles(list, 0, st_names(cptp, ecpt), vp, nf);
-    }
-    if (va)
-    {
-        sfree(va);
+        return -1;
     }
 
-    return 0;
-}
-
-static int do_cpte_doubles(XDR *xd, int cptp, int ecpt, int sflags,
-                           int n, std::vector<double> *v, FILE *list)
-{
-    double *v_double;
     if (list == NULL && (sflags & (1 << ecpt)))
     {
-        /* Resizes on read, on write the size should already be n */
-        v->resize(n);
-        v_double = v->data();
+        if (nval >= 0)
+        {
+            if (numElemInTheFile != nval)
+            {
+                gmx_fatal(FARGS, "Count mismatch for state entry %s, code count is %d, file count is %d\n", entryName(part, ecpt), nval, numElemInTheFile);
+            }
+        }
+        else if (nptr != NULL)
+        {
+            *nptr = numElemInTheFile;
+        }
+
+        bool typesMatch = (xdrTypeInTheFile == xdrTypeInTheCode);
+        if (!typesMatch)
+        {
+            fprintf(stderr, "Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
+                    entryName(part, ecpt),
+                    xdr_datatype_names[xdrTypeInTheCode],
+                    xdr_datatype_names[xdrTypeInTheFile]);
+        }
+
+        T *vp;
+        if (v != NULL)
+        {
+            if (*v == NULL)
+            {
+                snew(*v, numElemInTheFile);
+            }
+            vp = *v;
+        }
+        else
+        {
+            /* This conditional ensures that we don't resize on write.
+             * In particular in the state where this code was written
+             * PaddedRVecVector has a size of numElemInThefile and we
+             * don't want to loose that padding here.
+             */
+            if (vector->size() < static_cast<unsigned int>(numElemInTheFile))
+            {
+                vector->resize(numElemInTheFile);
+            }
+            vp = vector->data();
+        }
+
+        char *vChar;
+        if (typesMatch)
+        {
+            vChar = reinterpret_cast<char *>(vp);
+        }
+        else
+        {
+            snew(vChar, numElemInTheFile*sizeOfXdrType(xdrTypeInTheFile));
+        }
+        res = xdr_vector(xd, vChar,
+                         numElemInTheFile, sizeOfXdrType(xdrTypeInTheFile),
+                         xdrProc(xdrTypeInTheFile));
+        if (res == 0)
+        {
+            return -1;
+        }
+
+        if (!typesMatch)
+        {
+            /* In the old code float-double conversion came for free.
+             * In the new code we still support it, mainly because
+             * a regression test makes use of this.
+             * But maybe we actually want to avoid automatic conversion.
+             */
+            convertArrayRealPrecision(vChar, vp, numElemInTheFile);
+            sfree(vChar);
+        }
     }
     else
     {
-        v_double = NULL;
+        res = listXdrVector(xd, part, ecpt, numElemInTheFile, xdrTypeInTheFile,
+                            list, higherLevelElementType);
     }
 
-    return do_cpte_doubles(xd, cptp, ecpt, sflags, n, &v_double, list);
+    return 0;
 }
 
-static int do_cpte_double(XDR *xd, int cptp, int ecpt, int sflags,
-                          double *r, FILE *list)
+//! \brief Read/Write an std::vector
+template <typename T>
+static int doVector(XDR *xd, StatePart part, int ecpt, int sflags,
+                    std::vector<T> *vector, FILE *list)
 {
-    return do_cpte_doubles(xd, cptp, ecpt, sflags, 1, &r, list);
+    return doVectorLow<T>(xd, part, ecpt, sflags, -1, NULL, NULL, vector, list, ElementType::real);
 }
 
+//! \brief Read/Write an std::vector, on read checks the number of elements matches \p numElements
+template <typename T>
+static int doVector(XDR *xd, StatePart part, int ecpt, int sflags,
+                    int numElements, std::vector<T> *vector, FILE *list)
+{
+    return doVectorLow<T>(xd, part, ecpt, sflags, numElements, NULL, NULL, vector, list, ElementType::real);
+}
 
-static int do_cpte_rvecs(XDR *xd, int cptp, int ecpt, int sflags,
-                         int n, std::vector<gmx::RVec> *v, FILE *list)
+//! \brief Read/Write a PaddedRVecVector, on read checks the number of elements matches \p numElements
+static int doPaddedVector(XDR *xd, StatePart part, int ecpt, int sflags,
+                          int numElements, PaddedRVecVector *v, FILE *list)
 {
     rvec *v_rvec;
 
@@ -670,7 +631,7 @@ static int do_cpte_rvecs(XDR *xd, int cptp, int ecpt, int sflags,
         /* We resize the vector here to avoid pointer reallocation in
          * do_cpte_reals_low. Note the we allocate 1 element extra for SIMD.
          */
-        v->resize(n + 1);
+        v->resize(numElements + 1);
         v_rvec = as_rvec_array(v->data());
     }
     else
@@ -678,30 +639,81 @@ static int do_cpte_rvecs(XDR *xd, int cptp, int ecpt, int sflags,
         v_rvec = NULL;
     }
 
-    return do_cpte_reals_low(xd, cptp, ecpt, sflags,
-                             n*DIM, NULL, (real **)(&v_rvec), list, ecprRVEC);
+    return doVectorLow<real>(xd, part, ecpt, sflags,
+                             numElements*DIM, NULL, (real **)(&v_rvec), NULL,
+                             list, ElementType::real3);
 }
 
-static int do_cpte_matrix(XDR *xd, int cptp, int ecpt, int sflags,
+/* This function stores n along with the reals for reading,
+ * but on reading it assumes that n matches the value in the checkpoint file,
+ * a fatal error is generated when this is not the case.
+ */
+static int do_cpte_reals(XDR *xd, StatePart part, int ecpt, int sflags,
+                         int n, real **v, FILE *list)
+{
+    return doVectorLow<real>(xd, part, ecpt, sflags, n, NULL, v, NULL, list, ElementType::real);
+}
+
+/* This function does the same as do_cpte_reals,
+ * except that on reading it ignores the passed value of *n
+ * and stores the value read from the checkpoint file in *n.
+ */
+static int do_cpte_n_reals(XDR *xd, StatePart part, int ecpt, int sflags,
+                           int *n, real **v, FILE *list)
+{
+    return doVectorLow<real>(xd, part, ecpt, sflags, -1, n, v, NULL, list, ElementType::real);
+}
+
+static int do_cpte_real(XDR *xd, StatePart part, int ecpt, int sflags,
+                        real *r, FILE *list)
+{
+    return doVectorLow<real>(xd, part, ecpt, sflags, 1, NULL, &r, NULL, list, ElementType::real);
+}
+
+static int do_cpte_ints(XDR *xd, StatePart part, int ecpt, int sflags,
+                        int n, int **v, FILE *list)
+{
+    return doVectorLow<int>(xd, part, ecpt, sflags, n, NULL, v, NULL, list, ElementType::integer);
+}
+
+static int do_cpte_int(XDR *xd, StatePart part, int ecpt, int sflags,
+                       int *i, FILE *list)
+{
+    return do_cpte_ints(xd, part, ecpt, sflags, 1, &i, list);
+}
+
+static int do_cpte_doubles(XDR *xd, StatePart part, int ecpt, int sflags,
+                           int n, double **v, FILE *list)
+{
+    return doVectorLow<double>(xd, part, ecpt, sflags, n, NULL, v, NULL, list, ElementType::real);
+}
+
+static int do_cpte_double(XDR *xd, StatePart part, int ecpt, int sflags,
+                          double *r, FILE *list)
+{
+    return do_cpte_doubles(xd, part, ecpt, sflags, 1, &r, list);
+}
+
+static int do_cpte_matrix(XDR *xd, StatePart part, int ecpt, int sflags,
                           matrix v, FILE *list)
 {
     real *vr;
     int   ret;
 
     vr  = &(v[0][0]);
-    ret = do_cpte_reals_low(xd, cptp, ecpt, sflags,
-                            DIM*DIM, NULL, &vr, NULL, ecprMATRIX);
+    ret = doVectorLow<real>(xd, part, ecpt, sflags,
+                            DIM*DIM, NULL, &vr, NULL, NULL, ElementType::matrix3x3);
 
     if (list && ret == 0)
     {
-        pr_rvecs(list, 0, st_names(cptp, ecpt), v, DIM);
+        pr_rvecs(list, 0, entryName(part, ecpt), v, DIM);
     }
 
     return ret;
 }
 
 
-static int do_cpte_nmatrix(XDR *xd, int cptp, int ecpt, int sflags,
+static int do_cpte_nmatrix(XDR *xd, StatePart part, int ecpt, int sflags,
                            int n, real **v, FILE *list)
 {
     int   i;
@@ -715,10 +727,10 @@ static int do_cpte_nmatrix(XDR *xd, int cptp, int ecpt, int sflags,
     }
     for (i = 0; i < n; i++)
     {
-        reti = do_cpte_reals_low(xd, cptp, ecpt, sflags, n, NULL, &(v[i]), NULL, ecprREAL);
+        reti = doVectorLow<real>(xd, part, ecpt, sflags, n, NULL, &(v[i]), NULL, NULL, ElementType::matrix3x3);
         if (list && reti == 0)
         {
-            sprintf(name, "%s[%d]", st_names(cptp, ecpt), i);
+            sprintf(name, "%s[%d]", entryName(part, ecpt), i);
             pr_reals(list, 0, name, v[i], n);
         }
         if (reti != 0)
@@ -729,7 +741,7 @@ static int do_cpte_nmatrix(XDR *xd, int cptp, int ecpt, int sflags,
     return ret;
 }
 
-static int do_cpte_matrices(XDR *xd, int cptp, int ecpt, int sflags,
+static int do_cpte_matrices(XDR *xd, StatePart part, int ecpt, int sflags,
                             int n, matrix **v, FILE *list)
 {
     bool_t  res = 0;
@@ -746,7 +758,7 @@ static int do_cpte_matrices(XDR *xd, int cptp, int ecpt, int sflags,
     }
     if (list == NULL && nf != n)
     {
-        gmx_fatal(FARGS, "Count mismatch for state entry %s, code count is %d, file count is %d\n", st_names(cptp, ecpt), n, nf);
+        gmx_fatal(FARGS, "Count mismatch for state entry %s, code count is %d, file count is %d\n", entryName(part, ecpt), n, nf);
     }
     if (list || !(sflags & (1<<ecpt)))
     {
@@ -772,8 +784,9 @@ static int do_cpte_matrices(XDR *xd, int cptp, int ecpt, int sflags,
             }
         }
     }
-    ret = do_cpte_reals_low(xd, cptp, ecpt, sflags,
-                            nf*DIM*DIM, NULL, &vr, NULL, ecprMATRIX);
+    ret = doVectorLow<real>(xd, part, ecpt, sflags,
+                            nf*DIM*DIM, NULL, &vr, NULL, NULL,
+                            ElementType::matrix3x3);
     for (i = 0; i < nf; i++)
     {
         for (j = 0; j < DIM; j++)
@@ -790,7 +803,7 @@ static int do_cpte_matrices(XDR *xd, int cptp, int ecpt, int sflags,
     {
         for (i = 0; i < nf; i++)
         {
-            pr_rvecs(list, 0, st_names(cptp, ecpt), vp[i], DIM);
+            pr_rvecs(list, 0, entryName(part, ecpt), vp[i], DIM);
         }
     }
     if (va)
@@ -989,51 +1002,47 @@ static int do_cpt_state(XDR *xd,
                         int fflags, t_state *state,
                         FILE *list)
 {
-    int    sflags;
-    int    i;
-    int    ret;
-    int    nnht, nnhtp;
+    int             ret    = 0;
 
-    ret = 0;
+    const int       nnht   = state->nhchainlength*state->ngtc;
+    const int       nnhtp  = state->nhchainlength*state->nnhpres;
 
-    nnht  = state->nhchainlength*state->ngtc;
-    nnhtp = state->nhchainlength*state->nnhpres;
-
-    sflags = state->flags;
-    for (i = 0; (i < estNR && ret == 0); i++)
+    const StatePart part   = StatePart::microState;
+    const int       sflags = state->flags;
+    for (int i = 0; (i < estNR && ret == 0); i++)
     {
         if (fflags & (1<<i))
         {
             switch (i)
             {
-                case estLAMBDA:  ret      = do_cpte_reals(xd, cptpEST, i, sflags, efptNR, &(state->lambda), list); break;
-                case estFEPSTATE: ret     = do_cpte_int (xd, cptpEST, i, sflags, &state->fep_state, list); break;
-                case estBOX:     ret      = do_cpte_matrix(xd, cptpEST, i, sflags, state->box, list); break;
-                case estBOX_REL: ret      = do_cpte_matrix(xd, cptpEST, i, sflags, state->box_rel, list); break;
-                case estBOXV:    ret      = do_cpte_matrix(xd, cptpEST, i, sflags, state->boxv, list); break;
-                case estPRES_PREV: ret    = do_cpte_matrix(xd, cptpEST, i, sflags, state->pres_prev, list); break;
-                case estSVIR_PREV:  ret   = do_cpte_matrix(xd, cptpEST, i, sflags, state->svir_prev, list); break;
-                case estFVIR_PREV:  ret   = do_cpte_matrix(xd, cptpEST, i, sflags, state->fvir_prev, list); break;
-                case estNH_XI:   ret      = do_cpte_doubles(xd, cptpEST, i, sflags, nnht, &state->nosehoover_xi, list); break;
-                case estNH_VXI:  ret      = do_cpte_doubles(xd, cptpEST, i, sflags, nnht, &state->nosehoover_vxi, list); break;
-                case estNHPRES_XI:   ret  = do_cpte_doubles(xd, cptpEST, i, sflags, nnhtp, &state->nhpres_xi, list); break;
-                case estNHPRES_VXI:  ret  = do_cpte_doubles(xd, cptpEST, i, sflags, nnhtp, &state->nhpres_vxi, list); break;
-                case estTC_INT:  ret      = do_cpte_doubles(xd, cptpEST, i, sflags, state->ngtc, &state->therm_integral, list); break;
-                case estVETA:    ret      = do_cpte_real(xd, cptpEST, i, sflags, &state->veta, list); break;
-                case estVOL0:    ret      = do_cpte_real(xd, cptpEST, i, sflags, &state->vol0, list); break;
-                case estX:       ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->x, list); break;
-                case estV:       ret      = do_cpte_rvecs(xd, cptpEST, i, sflags, state->natoms, &state->v, list); break;
+                case estLAMBDA:  ret      = doVector<real>(xd, part, i, sflags, static_cast<int>(efptNR), &state->lambda, list); break;
+                case estFEPSTATE: ret     = do_cpte_int (xd, part, i, sflags, &state->fep_state, list); break;
+                case estBOX:     ret      = do_cpte_matrix(xd, part, i, sflags, state->box, list); break;
+                case estBOX_REL: ret      = do_cpte_matrix(xd, part, i, sflags, state->box_rel, list); break;
+                case estBOXV:    ret      = do_cpte_matrix(xd, part, i, sflags, state->boxv, list); break;
+                case estPRES_PREV: ret    = do_cpte_matrix(xd, part, i, sflags, state->pres_prev, list); break;
+                case estSVIR_PREV:  ret   = do_cpte_matrix(xd, part, i, sflags, state->svir_prev, list); break;
+                case estFVIR_PREV:  ret   = do_cpte_matrix(xd, part, i, sflags, state->fvir_prev, list); break;
+                case estNH_XI:   ret      = doVector<double>(xd, part, i, sflags, nnht, &state->nosehoover_xi, list); break;
+                case estNH_VXI:  ret      = doVector<double>(xd, part, i, sflags, nnht, &state->nosehoover_vxi, list); break;
+                case estNHPRES_XI:   ret  = doVector<double>(xd, part, i, sflags, nnhtp, &state->nhpres_xi, list); break;
+                case estNHPRES_VXI:  ret  = doVector<double>(xd, part, i, sflags, nnhtp, &state->nhpres_vxi, list); break;
+                case estTC_INT:  ret      = doVector<double>(xd, part, i, sflags, state->ngtc, &state->therm_integral, list); break;
+                case estVETA:    ret      = do_cpte_real(xd, part, i, sflags, &state->veta, list); break;
+                case estVOL0:    ret      = do_cpte_real(xd, part, i, sflags, &state->vol0, list); break;
+                case estX:       ret      = doPaddedVector(xd, part, i, sflags, state->natoms, &state->x, list); break;
+                case estV:       ret      = doPaddedVector(xd, part, i, sflags, state->natoms, &state->v, list); break;
                 /* The RNG entries are no longer written,
                  * the next 4 lines are only for reading old files.
                  */
-                case estLD_RNG:  ret      = do_cpte_ints(xd, cptpEST, i, sflags, 0, NULL, list); break;
-                case estLD_RNGI: ret      = do_cpte_ints(xd, cptpEST, i, sflags, 0, NULL, list); break;
-                case estMC_RNG:  ret      = do_cpte_ints(xd, cptpEST, i, sflags, 0, NULL, list); break;
-                case estMC_RNGI: ret      = do_cpte_ints(xd, cptpEST, i, sflags, 0, NULL, list); break;
-                case estDISRE_INITF:  ret = do_cpte_real (xd, cptpEST, i, sflags, &state->hist.disre_initf, list); break;
-                case estDISRE_RM3TAV: ret = do_cpte_n_reals(xd, cptpEST, i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
-                case estORIRE_INITF:  ret = do_cpte_real (xd, cptpEST, i, sflags, &state->hist.orire_initf, list); break;
-                case estORIRE_DTAV:   ret = do_cpte_n_reals(xd, cptpEST, i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
+                case estLD_RNG:  ret      = do_cpte_ints(xd, part, i, sflags, 0, NULL, list); break;
+                case estLD_RNGI: ret      = do_cpte_ints(xd, part, i, sflags, 0, NULL, list); break;
+                case estMC_RNG:  ret      = do_cpte_ints(xd, part, i, sflags, 0, NULL, list); break;
+                case estMC_RNGI: ret      = do_cpte_ints(xd, part, i, sflags, 0, NULL, list); break;
+                case estDISRE_INITF:  ret = do_cpte_real (xd, part, i, sflags, &state->hist.disre_initf, list); break;
+                case estDISRE_RM3TAV: ret = do_cpte_n_reals(xd, part, i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
+                case estORIRE_INITF:  ret = do_cpte_real (xd, part, i, sflags, &state->hist.orire_initf, list); break;
+                case estORIRE_DTAV:   ret = do_cpte_n_reals(xd, part, i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown state entry %d\n"
                               "You are reading a checkpoint file written by different code, which is not supported", i);
@@ -1047,28 +1056,26 @@ static int do_cpt_state(XDR *xd,
 static int do_cpt_ekinstate(XDR *xd, int fflags, ekinstate_t *ekins,
                             FILE *list)
 {
-    int  i;
-    int  ret;
+    int             ret  = 0;
 
-    ret = 0;
-
-    for (i = 0; (i < eeksNR && ret == 0); i++)
+    const StatePart part = StatePart::kineticEnergy;
+    for (int i = 0; (i < eeksNR && ret == 0); i++)
     {
         if (fflags & (1<<i))
         {
             switch (i)
             {
 
-                case eeksEKIN_N:     ret = do_cpte_int(xd, cptpEEKS, i, fflags, &ekins->ekin_n, list); break;
-                case eeksEKINH:     ret  = do_cpte_matrices(xd, cptpEEKS, i, fflags, ekins->ekin_n, &ekins->ekinh, list); break;
-                case eeksEKINF:      ret = do_cpte_matrices(xd, cptpEEKS, i, fflags, ekins->ekin_n, &ekins->ekinf, list); break;
-                case eeksEKINO:      ret = do_cpte_matrices(xd, cptpEEKS, i, fflags, ekins->ekin_n, &ekins->ekinh_old, list); break;
-                case eeksEKINTOTAL:  ret = do_cpte_matrix(xd, cptpEEKS, i, fflags, ekins->ekin_total, list); break;
-                case eeksEKINSCALEF: ret = do_cpte_doubles(xd, cptpEEKS, i, fflags, ekins->ekin_n, &ekins->ekinscalef_nhc, list); break;
-                case eeksVSCALE:     ret = do_cpte_doubles(xd, 1, cptpEEKS, fflags, ekins->ekin_n, &ekins->vscale_nhc, list); break;
-                case eeksEKINSCALEH: ret = do_cpte_doubles(xd, 1, cptpEEKS, fflags, ekins->ekin_n, &ekins->ekinscaleh_nhc, list); break;
-                case eeksDEKINDL:   ret  = do_cpte_real(xd, 1, cptpEEKS, fflags, &ekins->dekindl, list); break;
-                case eeksMVCOS:      ret = do_cpte_real(xd, 1, cptpEEKS, fflags, &ekins->mvcos, list); break;
+                case eeksEKIN_N:     ret = do_cpte_int(xd, part, i, fflags, &ekins->ekin_n, list); break;
+                case eeksEKINH:     ret  = do_cpte_matrices(xd, part, i, fflags, ekins->ekin_n, &ekins->ekinh, list); break;
+                case eeksEKINF:      ret = do_cpte_matrices(xd, part, i, fflags, ekins->ekin_n, &ekins->ekinf, list); break;
+                case eeksEKINO:      ret = do_cpte_matrices(xd, part, i, fflags, ekins->ekin_n, &ekins->ekinh_old, list); break;
+                case eeksEKINTOTAL:  ret = do_cpte_matrix(xd, part, i, fflags, ekins->ekin_total, list); break;
+                case eeksEKINSCALEF: ret = doVector<double>(xd, part, i, fflags, ekins->ekin_n, &ekins->ekinscalef_nhc, list); break;
+                case eeksVSCALE:     ret = doVector<double>(xd, part, i, fflags, ekins->ekin_n, &ekins->vscale_nhc, list); break;
+                case eeksEKINSCALEH: ret = doVector<double>(xd, part, i, fflags, ekins->ekin_n, &ekins->ekinscaleh_nhc, list); break;
+                case eeksDEKINDL:   ret  = do_cpte_real(xd, part, i, fflags, &ekins->dekindl, list); break;
+                case eeksMVCOS:      ret = do_cpte_real(xd, part, i, fflags, &ekins->mvcos, list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown ekin data state entry %d\n"
                               "You are probably reading a new checkpoint file with old code", i);
@@ -1228,11 +1235,7 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
                            int fflags, energyhistory_t *enerhist,
                            FILE *list)
 {
-    int  i;
-    int  j;
-    int  ret;
-
-    ret = 0;
+    int ret = 0;
 
     if (bRead)
     {
@@ -1251,17 +1254,18 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
         }
     }
 
-    for (i = 0; (i < eenhNR && ret == 0); i++)
+    const StatePart part = StatePart::energyHistory;
+    for (int i = 0; (i < eenhNR && ret == 0); i++)
     {
         if (fflags & (1<<i))
         {
             switch (i)
             {
-                case eenhENERGY_N:     ret = do_cpte_int(xd, cptpEENH, i, fflags, &enerhist->nener, list); break;
-                case eenhENERGY_AVER:  ret = do_cpte_doubles(xd, cptpEENH, i, fflags, enerhist->nener, &enerhist->ener_ave, list); break;
-                case eenhENERGY_SUM:   ret = do_cpte_doubles(xd, cptpEENH, i, fflags, enerhist->nener, &enerhist->ener_sum, list); break;
+                case eenhENERGY_N:     ret = do_cpte_int(xd, part, i, fflags, &enerhist->nener, list); break;
+                case eenhENERGY_AVER:  ret = do_cpte_doubles(xd, part, i, fflags, enerhist->nener, &enerhist->ener_ave, list); break;
+                case eenhENERGY_SUM:   ret = do_cpte_doubles(xd, part, i, fflags, enerhist->nener, &enerhist->ener_sum, list); break;
                 case eenhENERGY_NSUM:  do_cpt_step_err(xd, eenh_names[i], &enerhist->nsum, list); break;
-                case eenhENERGY_SUM_SIM: ret = do_cpte_doubles(xd, cptpEENH, i, fflags, enerhist->nener, &enerhist->ener_sum_sim, list); break;
+                case eenhENERGY_SUM_SIM: ret = do_cpte_doubles(xd, part, i, fflags, enerhist->nener, &enerhist->ener_sum_sim, list); break;
                 case eenhENERGY_NSUM_SIM:   do_cpt_step_err(xd, eenh_names[i], &enerhist->nsum_sim, list); break;
                 case eenhENERGY_NSTEPS:     do_cpt_step_err(xd, eenh_names[i], &enerhist->nsteps, list); break;
                 case eenhENERGY_NSTEPS_SIM: do_cpt_step_err(xd, eenh_names[i], &enerhist->nsteps_sim, list); break;
@@ -1270,7 +1274,7 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
                     {
                         snew(enerhist->dht->dh, enerhist->dht->nndh);
                         snew(enerhist->dht->ndh, enerhist->dht->nndh);
-                        for (j = 0; j < enerhist->dht->nndh; j++)
+                        for (int j = 0; j < enerhist->dht->nndh; j++)
                         {
                             enerhist->dht->ndh[j] = 0;
                             enerhist->dht->dh[j]  = NULL;
@@ -1278,15 +1282,15 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
                     }
                     break;
                 case eenhENERGY_DELTA_H_LIST:
-                    for (j = 0; j < enerhist->dht->nndh; j++)
+                    for (int j = 0; j < enerhist->dht->nndh; j++)
                     {
-                        ret = do_cpte_n_reals(xd, cptpEENH, i, fflags, &enerhist->dht->ndh[j], &(enerhist->dht->dh[j]), list);
+                        ret = do_cpte_n_reals(xd, part, i, fflags, &enerhist->dht->ndh[j], &(enerhist->dht->dh[j]), list);
                     }
                     break;
                 case eenhENERGY_DELTA_H_STARTTIME:
-                    ret = do_cpte_double(xd, cptpEENH, i, fflags, &(enerhist->dht->start_time), list); break;
+                    ret = do_cpte_double(xd, part, i, fflags, &(enerhist->dht->start_time), list); break;
                 case eenhENERGY_DELTA_H_STARTLAMBDA:
-                    ret = do_cpte_double(xd, cptpEENH, i, fflags, &(enerhist->dht->start_lambda), list); break;
+                    ret = do_cpte_double(xd, part, i, fflags, &(enerhist->dht->start_lambda), list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown energy history entry %d\n"
                               "You are probably reading a new checkpoint file with old code", i);
@@ -1298,7 +1302,7 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
     {
         /* Assume we have an old file format and copy sum to sum_sim */
         srenew(enerhist->ener_sum_sim, enerhist->nener);
-        for (i = 0; i < enerhist->nener; i++)
+        for (int i = 0; i < enerhist->nener; i++)
         {
             enerhist->ener_sum_sim[i] = enerhist->ener_sum[i];
         }
@@ -1322,6 +1326,8 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
 
 static int do_cpt_df_hist(XDR *xd, int fflags, int nlambda, df_history_t **dfhistPtr, FILE *list)
 {
+    int ret = 0;
+
     if (fflags == 0)
     {
         return 0;
@@ -1333,29 +1339,29 @@ static int do_cpt_df_hist(XDR *xd, int fflags, int nlambda, df_history_t **dfhis
         (*dfhistPtr)->nlambda = nlambda;
         init_df_history(*dfhistPtr, nlambda);
     }
-    df_history_t *dfhist = *dfhistPtr;
-    int           ret    = 0;
+    df_history_t    *dfhist = *dfhistPtr;
 
+    const StatePart  part   = StatePart::freeEnergyHistory;
     for (int i = 0; (i < edfhNR && ret == 0); i++)
     {
         if (fflags & (1<<i))
         {
             switch (i)
             {
-                case edfhBEQUIL:       ret = do_cpte_int(xd, cptpEDFH, i, fflags, &dfhist->bEquil, list); break;
-                case edfhNATLAMBDA:    ret = do_cpte_ints(xd, cptpEDFH, i, fflags, nlambda, &dfhist->n_at_lam, list); break;
-                case edfhWLHISTO:      ret = do_cpte_reals(xd, cptpEDFH, i, fflags, nlambda, &dfhist->wl_histo, list); break;
-                case edfhWLDELTA:      ret = do_cpte_real(xd, cptpEDFH, i, fflags, &dfhist->wl_delta, list); break;
-                case edfhSUMWEIGHTS:   ret = do_cpte_reals(xd, cptpEDFH, i, fflags, nlambda, &dfhist->sum_weights, list); break;
-                case edfhSUMDG:        ret = do_cpte_reals(xd, cptpEDFH, i, fflags, nlambda, &dfhist->sum_dg, list); break;
-                case edfhSUMMINVAR:    ret = do_cpte_reals(xd, cptpEDFH, i, fflags, nlambda, &dfhist->sum_minvar, list); break;
-                case edfhSUMVAR:       ret = do_cpte_reals(xd, cptpEDFH, i, fflags, nlambda, &dfhist->sum_variance, list); break;
-                case edfhACCUMP:       ret = do_cpte_nmatrix(xd, cptpEDFH, i, fflags, nlambda, dfhist->accum_p, list); break;
-                case edfhACCUMM:       ret = do_cpte_nmatrix(xd, cptpEDFH, i, fflags, nlambda, dfhist->accum_m, list); break;
-                case edfhACCUMP2:      ret = do_cpte_nmatrix(xd, cptpEDFH, i, fflags, nlambda, dfhist->accum_p2, list); break;
-                case edfhACCUMM2:      ret = do_cpte_nmatrix(xd, cptpEDFH, i, fflags, nlambda, dfhist->accum_m2, list); break;
-                case edfhTIJ:          ret = do_cpte_nmatrix(xd, cptpEDFH, i, fflags, nlambda, dfhist->Tij, list); break;
-                case edfhTIJEMP:       ret = do_cpte_nmatrix(xd, cptpEDFH, i, fflags, nlambda, dfhist->Tij_empirical, list); break;
+                case edfhBEQUIL:       ret = do_cpte_int(xd, part, i, fflags, &dfhist->bEquil, list); break;
+                case edfhNATLAMBDA:    ret = do_cpte_ints(xd, part, i, fflags, nlambda, &dfhist->n_at_lam, list); break;
+                case edfhWLHISTO:      ret = do_cpte_reals(xd, part, i, fflags, nlambda, &dfhist->wl_histo, list); break;
+                case edfhWLDELTA:      ret = do_cpte_real(xd, part, i, fflags, &dfhist->wl_delta, list); break;
+                case edfhSUMWEIGHTS:   ret = do_cpte_reals(xd, part, i, fflags, nlambda, &dfhist->sum_weights, list); break;
+                case edfhSUMDG:        ret = do_cpte_reals(xd, part, i, fflags, nlambda, &dfhist->sum_dg, list); break;
+                case edfhSUMMINVAR:    ret = do_cpte_reals(xd, part, i, fflags, nlambda, &dfhist->sum_minvar, list); break;
+                case edfhSUMVAR:       ret = do_cpte_reals(xd, part, i, fflags, nlambda, &dfhist->sum_variance, list); break;
+                case edfhACCUMP:       ret = do_cpte_nmatrix(xd, part, i, fflags, nlambda, dfhist->accum_p, list); break;
+                case edfhACCUMM:       ret = do_cpte_nmatrix(xd, part, i, fflags, nlambda, dfhist->accum_m, list); break;
+                case edfhACCUMP2:      ret = do_cpte_nmatrix(xd, part, i, fflags, nlambda, dfhist->accum_p2, list); break;
+                case edfhACCUMM2:      ret = do_cpte_nmatrix(xd, part, i, fflags, nlambda, dfhist->accum_m2, list); break;
+                case edfhTIJ:          ret = do_cpte_nmatrix(xd, part, i, fflags, nlambda, dfhist->Tij, list); break;
+                case edfhTIJEMP:       ret = do_cpte_nmatrix(xd, part, i, fflags, nlambda, dfhist->Tij_empirical, list); break;
 
                 default:
                     gmx_fatal(FARGS, "Unknown df history entry %d\n"
@@ -2567,7 +2573,6 @@ void list_checkpoint(const char *fn, FILE *out)
     gmx_int64_t          step;
     double               t;
     ivec                 dd_nc;
-    t_state              state;
     int                  nlambda;
     int                  flags_eks, flags_enh, flags_dfh;
     int                  nED, eSwapCoords;
@@ -2575,7 +2580,8 @@ void list_checkpoint(const char *fn, FILE *out)
     gmx_file_position_t *outputfiles;
     int                  nfiles;
 
-    init_state(&state, -1, -1, -1, -1, 0);
+    t_state              state = {};
+    init_state(&state, 0, 0, 0, 0, 0);
 
     fp = gmx_fio_open(fn, "r");
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, &file_version,
