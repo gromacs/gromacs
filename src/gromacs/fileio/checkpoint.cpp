@@ -72,6 +72,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/int64_to_int.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
@@ -151,7 +152,7 @@ const char *edfh_names[edfhNR] =
 };
 
 enum {
-    ecprREAL, ecprRVEC, ecprMATRIX
+    ecprINT, ecprREAL, ecprRVEC, ecprMATRIX
 };
 
 enum {
@@ -308,151 +309,287 @@ static void do_cpt_n_rvecs_err(XDR *xd, const char *desc, int n, rvec f[], FILE 
     }
 }
 
-/* If nval >= 0, nval is used; on read this should match the passed value.
- * If nval n<0, *nptr is used; on read the value is stored in nptr
- */
-static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
-                             int nval, int *nptr, real **v,
-                             FILE *list, int erealtype)
+template <typename T>
+struct xdr_type
 {
-    bool_t     res       = 0;
-    const bool useDouble = GMX_DOUBLE;
-    int        dtc       = useDouble ? xdr_datatype_double : xdr_datatype_float;
-    real      *vp, *va = NULL;
-    float     *vf;
-    double    *vd;
-    int        nf, dt, i;
+};
 
+template <>
+struct xdr_type<int>
+{
+    static const int value = xdr_datatype_int;
+};
+
+template <>
+struct xdr_type<float>
+{
+    static const int value = xdr_datatype_float;
+};
+
+template <>
+struct xdr_type<double>
+{
+    static const int value = xdr_datatype_double;
+};
+
+static inline unsigned int sizeOfXdrType(int xdrType)
+{
+    switch (xdrType)
+    {
+        case xdr_datatype_int:
+            return sizeof(int);
+            break;
+        case xdr_datatype_float:
+            return sizeof(float);
+            break;
+        case xdr_datatype_double:
+            return sizeof(double);
+            break;
+        default: GMX_RELEASE_ASSERT(false, "XDR data type not implemented");
+    }
+
+    return 0;
+}
+
+static inline xdrproc_t xdrProc(int xdrType)
+{
+    switch (xdrType)
+    {
+        case xdr_datatype_int:
+            return (xdrproc_t)xdr_int;
+            break;
+        case xdr_datatype_float:
+            return (xdrproc_t)xdr_float;
+            break;
+        case xdr_datatype_double:
+            return (xdrproc_t)xdr_double;
+            break;
+        default: GMX_RELEASE_ASSERT(false, "XDR data type not implemented");
+    }
+
+    return NULL;
+}
+
+/*! \brief Lists or only reads an xdr vector from checkpoint file
+ *
+ * When list!=NULL reads and lists the \p nf vector elements of type \p xdrType.
+ * The header for the print is set by \p cptp and \p ecpt.
+ * The formatting of the printing is set by \p higherLevelElementType.
+ * When list==NULL only reads the elements.
+ */
+static bool_t listXdrVector(XDR *xd, int cptp, int ecpt, int nf, int xdrType,
+                            FILE *list, int higherLevelElementType)
+{
+    bool_t        res = 0;
+
+    unsigned int  elemSize = sizeOfXdrType(xdrType);
+    char         *data;
+    snew(data, nf*elemSize);
+    res = xdr_vector(xd, data, nf, elemSize, xdrProc(xdrType));
+
+    if (list != NULL)
+    {
+        switch (xdrType)
+        {
+            case xdr_datatype_int:
+                pr_ivec(list, 0, st_names(cptp, ecpt), reinterpret_cast<int *>(data), nf, TRUE);
+                break;
+            case xdr_datatype_float:
+#if !GMX_DOUBLE
+                if (higherLevelElementType == ecprRVEC)
+                {
+                    pr_rvecs(list, 0, st_names(cptp, ecpt), reinterpret_cast<rvec *>(data), nf/3);
+                }
+                else
+#endif
+                {
+                    /* Note: With double precision code dumping a single precision rvec will produce float iso rvec print, but that's a minor annoyance */
+                    pr_fvec(list, 0, st_names(cptp, ecpt), reinterpret_cast<float *>(data), nf, TRUE);
+                }
+                break;
+            case xdr_datatype_double:
+#if GMX_DOUBLE
+                if (higherLevelElementType == ecprRVEC)
+                {
+                    pr_rvecs(list, 0, st_names(cptp, ecpt), reinterpret_cast<rvec *>(data), nf/3);
+                }
+                else
+#endif
+                {
+                    /* Note: With single precision code dumping a double precision rvec will produce float iso rvec print, but that's a minor annoyance */
+                    pr_dvec(list, 0, st_names(cptp, ecpt), reinterpret_cast<double *>(data), nf, TRUE);
+                }
+                break;
+            default: GMX_RELEASE_ASSERT(false, "Data type not implemented for listing");
+        }
+    }
+
+    sfree(data);
+
+    return res;
+}
+
+static void convertRealPrecision(const char *c, float *v, int n)
+{
+    const double *d = reinterpret_cast<const double *>(c);
+    for (int i = 0; i < n; i++)
+    {
+        v[i] = static_cast<float>(d[i]);
+    }
+}
+
+static void convertRealPrecision(const char *c, double *v, int n)
+{
+    const float *f = reinterpret_cast<const float *>(c);
+    for (int i = 0; i < n; i++)
+    {
+        v[i] = static_cast<double>(f[i]);
+    }
+}
+
+static void convertRealPrecision(const char gmx_unused *c, int gmx_unused *v, int gmx_unused n)
+{
+    GMX_RELEASE_ASSERT(false, "We only expect type mismatches between float and double, not integer");
+}
+
+/*! \brief Low-level routine for reading/writing a vector of reals from/to file.
+ *
+ * This is the only routine that does the actually i/o of real vector,
+ * all other routines are intermediate level routines for specific real
+ * data types, calling this routine.
+ * Currently this routine is (too) complex, since it handles both real *
+ * and std::vector<real>. Using real * is deprecated and this routine
+ * will simplify a lot when only std::vector needs to be supported.
+ *
+ * When not listing, we use either v or vector, depending on which is !=NULL.
+ * If nval >= 0, nval is used; on read this should match the passed value.
+ * If nval n<0, *nptr (with v) or vector->size() is used. On read using v,
+ * the value is stored in nptr
+ */
+template<typename T>
+static int do_cpte_low(XDR *xd, int cptp, int ecpt, int sflags,
+                       int nval, int *nptr,
+                       T **v, std::vector<T> *vector,
+                       FILE *list, int higherLevelElementType)
+{
+    GMX_RELEASE_ASSERT(list != NULL || (v != NULL && vector == NULL) || (v == NULL && vector != NULL), "Without list, we should have exactly one of v and vector != NULL");
+
+    bool_t res = 0;
+
+    int    numElemInTheFile;
     if (list == NULL)
     {
         if (nval >= 0)
         {
-            nf = nval;
+            GMX_RELEASE_ASSERT(nptr == NULL, "With nval>=0 we should have nptr==NULL");
+            numElemInTheFile = nval;
         }
         else
         {
-            if (nptr == NULL)
+            if (v != NULL)
             {
-                gmx_incons("*ntpr=NULL in do_cpte_reals_low");
+                GMX_RELEASE_ASSERT(nptr != NULL, "With nval<0 we should have nptr!=NULL");
+                numElemInTheFile = *nptr;
             }
-            nf = *nptr;
+            else
+            {
+                numElemInTheFile = vector->size();
+            }
         }
     }
-    res = xdr_int(xd, &nf);
+    /* Read/write the vector element count */
+    res = xdr_int(xd, &numElemInTheFile);
     if (res == 0)
     {
         return -1;
     }
-    if (list == NULL)
+    /* Read/write the element data type */
+    const int xdrTypeInTheCode = xdr_type<T>::value;
+    int       xdrTypeInTheFile = xdrTypeInTheCode;
+    res = xdr_int(xd, &xdrTypeInTheFile);
+    if (res == 0)
+    {
+        return -1;
+    }
+
+    if (list == NULL && (sflags & (1 << ecpt)))
     {
         if (nval >= 0)
         {
-            if (nf != nval)
+            if (numElemInTheFile != nval)
             {
-                gmx_fatal(FARGS, "Count mismatch for state entry %s, code count is %d, file count is %d\n", st_names(cptp, ecpt), nval, nf);
+                gmx_fatal(FARGS, "Count mismatch for state entry %s, code count is %d, file count is %d\n", st_names(cptp, ecpt), nval, numElemInTheFile);
             }
         }
-        else
+        else if (nptr != NULL)
         {
-            *nptr = nf;
+            *nptr = numElemInTheFile;
         }
-    }
-    dt  = dtc;
-    res = xdr_int(xd, &dt);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (dt != dtc)
-    {
-        fprintf(stderr, "Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
-                st_names(cptp, ecpt), xdr_datatype_names[dtc],
-                xdr_datatype_names[dt]);
-    }
-    if (list || !(sflags & (1<<ecpt)))
-    {
-        snew(va, nf);
-        vp = va;
-    }
-    else
-    {
-        if (*v == NULL)
-        {
-            snew(*v, nf);
-        }
-        vp = *v;
-    }
-    if (dt == xdr_datatype_float)
-    {
-        if (!useDouble)
-        {
-            // This branch is not reached unless vp is already float *.
-            vf = reinterpret_cast<float *>(vp);
-        }
-        else
-        {
-            snew(vf, nf);
-        }
-        res = xdr_vector(xd, reinterpret_cast<char *>(vf), nf,
-                         static_cast<unsigned int>(sizeof(float)), (xdrproc_t)xdr_float);
-        if (res == 0)
-        {
-            return -1;
-        }
-        if (useDouble)
-        {
-            for (i = 0; i < nf; i++)
-            {
-                vp[i] = vf[i];
-            }
-            sfree(vf);
-        }
-    }
-    else
-    {
-        if (useDouble)
-        {
-            // This branch is not reached unless vp is already double *.
-            // cppcheck-suppress invalidPointerCast
-            vd = reinterpret_cast<double *>(vp);
-        }
-        else
-        {
-            snew(vd, nf);
-        }
-        res = xdr_vector(xd, reinterpret_cast<char *>(vd), nf,
-                         static_cast<unsigned int>(sizeof(double)), (xdrproc_t)xdr_double);
-        if (res == 0)
-        {
-            return -1;
-        }
-        if (!useDouble)
-        {
-            for (i = 0; i < nf; i++)
-            {
-                vp[i] = vd[i];
-            }
-            sfree(vd);
-        }
-    }
 
-    if (list)
-    {
-        switch (erealtype)
+        bool typesMatch = (xdrTypeInTheFile == xdrTypeInTheCode);
+        if (!typesMatch)
         {
-            case ecprREAL:
-                pr_reals(list, 0, st_names(cptp, ecpt), vp, nf);
-                break;
-            case ecprRVEC:
-                pr_rvecs(list, 0, st_names(cptp, ecpt), (rvec *)vp, nf/3);
-                break;
-            default:
-                gmx_incons("Unknown checkpoint real type");
+            fprintf(stderr, "Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
+                    st_names(cptp, ecpt),
+                    xdr_datatype_names[xdrTypeInTheCode],
+                    xdr_datatype_names[xdrTypeInTheFile]);
+        }
+
+        T *vp;
+        if (v != NULL)
+        {
+            if (*v == NULL)
+            {
+                snew(*v, numElemInTheFile);
+            }
+            vp = *v;
+        }
+        else
+        {
+            /* This conditional ensures that we don't resize on write.
+             * In particular in the state where this code was written
+             * PaddedRVecVector has a size of numElemInThefile and we
+             * don't want to loose that padding here.
+             */
+            if (vector->size() < static_cast<unsigned int>(numElemInTheFile))
+            {
+                vector->resize(numElemInTheFile);
+            }
+            vp = vector->data();
+        }
+
+        char *vChar;
+        if (typesMatch)
+        {
+            vChar = reinterpret_cast<char *>(vp);
+        }
+        else
+        {
+            snew(vChar, numElemInTheFile*sizeOfXdrType(xdrTypeInTheFile));
+        }
+        res = xdr_vector(xd, vChar,
+                         numElemInTheFile, sizeOfXdrType(xdrTypeInTheFile),
+                         xdrProc(xdrTypeInTheFile));
+        if (res == 0)
+        {
+            return -1;
+        }
+
+        if (!typesMatch)
+        {
+            /* In the old code float-double conversion came for free.
+             * In the new code we still support it, mainly because
+             * a regression test makes use of this.
+             * But maybe we actually want to avoid automatic conversion.
+             */
+            convertRealPrecision(vChar, vp, numElemInTheFile);
+            sfree(vChar);
         }
     }
-    if (va)
+    else
     {
-        sfree(va);
+        res = listXdrVector(xd, cptp, ecpt, numElemInTheFile, xdrTypeInTheFile,
+                            list, higherLevelElementType);
     }
 
     return 0;
@@ -466,7 +603,7 @@ static int do_cpte_reals_low(XDR *xd, int cptp, int ecpt, int sflags,
 static int do_cpte_reals(XDR *xd, int cptp, int ecpt, int sflags,
                          int n, real **v, FILE *list)
 {
-    return do_cpte_reals_low(xd, cptp, ecpt, sflags, n, NULL, v, list, ecprREAL);
+    return do_cpte_low<real>(xd, cptp, ecpt, sflags, n, NULL, v, NULL, list, ecprREAL);
 }
 
 /* This function stores n along with the reals for reading,
@@ -474,98 +611,52 @@ static int do_cpte_reals(XDR *xd, int cptp, int ecpt, int sflags,
  * a fatal error is generated when this is not the case.
  */
 static int do_cpte_reals(XDR *xd, int cptp, int ecpt, int sflags,
-                         int n, std::vector<real> *v, FILE *list)
+                         int n, std::vector<real> &vector, FILE *list)
 {
-    real *v_real;
+    std::vector<real> *vectorPtr;
     if (list == NULL && (sflags & (1 << ecpt)))
     {
         /* Resizes on read, on write the size should already be n */
-        v->resize(n);
-        v_real = v->data();
+        vector.resize(n);
+        vectorPtr = &vector;
     }
     else
     {
-        v_real = NULL;
+        vectorPtr = NULL;
     }
 
-    return do_cpte_reals_low(xd, cptp, ecpt, sflags, n, NULL, &v_real, list, ecprREAL);
+    return do_cpte_low<real>(xd, cptp, ecpt, sflags, n, NULL, NULL, vectorPtr, list, ecprREAL);
 }
 
 /* This function does the same as do_cpte_reals,
  * except that on reading it ignores the passed value of *n
- * and stored the value read from the checkpoint file in *n.
+ * and stores the value read from the checkpoint file in *n.
  */
 static int do_cpte_n_reals(XDR *xd, int cptp, int ecpt, int sflags,
                            int *n, real **v, FILE *list)
 {
-    return do_cpte_reals_low(xd, cptp, ecpt, sflags, -1, n, v, list, ecprREAL);
+    return do_cpte_low<real>(xd, cptp, ecpt, sflags, -1, n, v, NULL, list, ecprREAL);
+}
+
+/* This function does the same as do_cpte_reals,
+ * except that the number of elements is stored in or read from vector->size().
+ */
+static int do_cpte_n_reals(XDR *xd, int cptp, int ecpt, int sflags,
+                           std::vector<real> *vector, FILE *list)
+{
+    return do_cpte_low<real>(xd, cptp, ecpt, sflags, -1, NULL, NULL, vector, list, ecprREAL);
 }
 
 static int do_cpte_real(XDR *xd, int cptp, int ecpt, int sflags,
                         real *r, FILE *list)
 {
-    return do_cpte_reals_low(xd, cptp, ecpt, sflags, 1, NULL, &r, list, ecprREAL);
+    return do_cpte_low<real>(xd, cptp, ecpt, sflags, 1, NULL, &r, NULL, list, ecprREAL);
 }
 
 static int do_cpte_ints(XDR *xd, int cptp, int ecpt, int sflags,
                         int n, int **v, FILE *list)
 {
-    bool_t res = 0;
-    int    dtc = xdr_datatype_int;
-    int   *vp, *va = NULL;
-    int    nf, dt;
-
-    nf  = n;
-    res = xdr_int(xd, &nf);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (list == NULL && v != NULL && nf != n)
-    {
-        gmx_fatal(FARGS, "Count mismatch for state entry %s, code count is %d, file count is %d\n", st_names(cptp, ecpt), n, nf);
-    }
-    dt  = dtc;
-    res = xdr_int(xd, &dt);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (dt != dtc)
-    {
-        gmx_fatal(FARGS, "Type mismatch for state entry %s, code type is %s, file type is %s\n",
-                  st_names(cptp, ecpt), xdr_datatype_names[dtc],
-                  xdr_datatype_names[dt]);
-    }
-    if (list || !(sflags & (1<<ecpt)) || v == NULL)
-    {
-        snew(va, nf);
-        vp = va;
-    }
-    else
-    {
-        if (*v == NULL)
-        {
-            snew(*v, nf);
-        }
-        vp = *v;
-    }
-    res = xdr_vector(xd, reinterpret_cast<char *>(vp), nf,
-                     static_cast<unsigned int>(sizeof(int)), (xdrproc_t)xdr_int);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (list)
-    {
-        pr_ivec(list, 0, st_names(cptp, ecpt), vp, nf, TRUE);
-    }
-    if (va)
-    {
-        sfree(va);
-    }
-
-    return 0;
+    return do_cpte_low<int>(xd, cptp, ecpt, sflags, n, NULL, v, NULL, list, ecprINT);
 }
 
 static int do_cpte_int(XDR *xd, int cptp, int ecpt, int sflags,
@@ -577,80 +668,13 @@ static int do_cpte_int(XDR *xd, int cptp, int ecpt, int sflags,
 static int do_cpte_doubles(XDR *xd, int cptp, int ecpt, int sflags,
                            int n, double **v, FILE *list)
 {
-    bool_t  res = 0;
-    int     dtc = xdr_datatype_double;
-    double *vp, *va = NULL;
-    int     nf, dt;
-
-    nf  = n;
-    res = xdr_int(xd, &nf);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (list == NULL && nf != n)
-    {
-        gmx_fatal(FARGS, "Count mismatch for state entry %s, code count is %d, file count is %d\n", st_names(cptp, ecpt), n, nf);
-    }
-    dt  = dtc;
-    res = xdr_int(xd, &dt);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (dt != dtc)
-    {
-        gmx_fatal(FARGS, "Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",
-                  st_names(cptp, ecpt), xdr_datatype_names[dtc],
-                  xdr_datatype_names[dt]);
-    }
-    if (list || !(sflags & (1<<ecpt)))
-    {
-        snew(va, nf);
-        vp = va;
-    }
-    else
-    {
-        if (*v == NULL)
-        {
-            snew(*v, nf);
-        }
-        vp = *v;
-    }
-    res = xdr_vector(xd, reinterpret_cast<char *>(vp), nf,
-                     static_cast<unsigned int>(sizeof(double)), (xdrproc_t)xdr_double);
-    if (res == 0)
-    {
-        return -1;
-    }
-    if (list)
-    {
-        pr_doubles(list, 0, st_names(cptp, ecpt), vp, nf);
-    }
-    if (va)
-    {
-        sfree(va);
-    }
-
-    return 0;
+    return do_cpte_low<double>(xd, cptp, ecpt, sflags, n, NULL, v, NULL, list, ecprREAL);
 }
 
 static int do_cpte_doubles(XDR *xd, int cptp, int ecpt, int sflags,
                            int n, std::vector<double> *v, FILE *list)
 {
-    double *v_double;
-    if (list == NULL && (sflags & (1 << ecpt)))
-    {
-        /* Resizes on read, on write the size should already be n */
-        v->resize(n);
-        v_double = v->data();
-    }
-    else
-    {
-        v_double = NULL;
-    }
-
-    return do_cpte_doubles(xd, cptp, ecpt, sflags, n, &v_double, list);
+    return do_cpte_low<double>(xd, cptp, ecpt, sflags, n, NULL, NULL, v, list, ecprREAL);
 }
 
 static int do_cpte_double(XDR *xd, int cptp, int ecpt, int sflags,
@@ -661,7 +685,7 @@ static int do_cpte_double(XDR *xd, int cptp, int ecpt, int sflags,
 
 
 static int do_cpte_rvecs(XDR *xd, int cptp, int ecpt, int sflags,
-                         int n, std::vector<gmx::RVec> *v, FILE *list)
+                         int n, PaddedRVecVector *v, FILE *list)
 {
     rvec *v_rvec;
 
@@ -678,8 +702,8 @@ static int do_cpte_rvecs(XDR *xd, int cptp, int ecpt, int sflags,
         v_rvec = NULL;
     }
 
-    return do_cpte_reals_low(xd, cptp, ecpt, sflags,
-                             n*DIM, NULL, (real **)(&v_rvec), list, ecprRVEC);
+    return do_cpte_low<real>(xd, cptp, ecpt, sflags,
+                             n*DIM, NULL, (real **)(&v_rvec), NULL, list, ecprRVEC);
 }
 
 static int do_cpte_matrix(XDR *xd, int cptp, int ecpt, int sflags,
@@ -689,8 +713,8 @@ static int do_cpte_matrix(XDR *xd, int cptp, int ecpt, int sflags,
     int   ret;
 
     vr  = &(v[0][0]);
-    ret = do_cpte_reals_low(xd, cptp, ecpt, sflags,
-                            DIM*DIM, NULL, &vr, NULL, ecprMATRIX);
+    ret = do_cpte_low<real>(xd, cptp, ecpt, sflags,
+                            DIM*DIM, NULL, &vr, NULL, NULL, ecprMATRIX);
 
     if (list && ret == 0)
     {
@@ -715,7 +739,7 @@ static int do_cpte_nmatrix(XDR *xd, int cptp, int ecpt, int sflags,
     }
     for (i = 0; i < n; i++)
     {
-        reti = do_cpte_reals_low(xd, cptp, ecpt, sflags, n, NULL, &(v[i]), NULL, ecprREAL);
+        reti = do_cpte_low<real>(xd, cptp, ecpt, sflags, n, NULL, &(v[i]), NULL, NULL, ecprMATRIX);
         if (list && reti == 0)
         {
             sprintf(name, "%s[%d]", st_names(cptp, ecpt), i);
@@ -772,8 +796,8 @@ static int do_cpte_matrices(XDR *xd, int cptp, int ecpt, int sflags,
             }
         }
     }
-    ret = do_cpte_reals_low(xd, cptp, ecpt, sflags,
-                            nf*DIM*DIM, NULL, &vr, NULL, ecprMATRIX);
+    ret = do_cpte_low<real>(xd, cptp, ecpt, sflags,
+                            nf*DIM*DIM, NULL, &vr, NULL, NULL, ecprMATRIX);
     for (i = 0; i < nf; i++)
     {
         for (j = 0; j < DIM; j++)
@@ -1006,7 +1030,7 @@ static int do_cpt_state(XDR *xd,
         {
             switch (i)
             {
-                case estLAMBDA:  ret      = do_cpte_reals(xd, cptpEST, i, sflags, efptNR, &(state->lambda), list); break;
+                case estLAMBDA:  ret      = do_cpte_reals(xd, cptpEST, i, sflags, efptNR, state->lambda, list); break;
                 case estFEPSTATE: ret     = do_cpte_int (xd, cptpEST, i, sflags, &state->fep_state, list); break;
                 case estBOX:     ret      = do_cpte_matrix(xd, cptpEST, i, sflags, state->box, list); break;
                 case estBOX_REL: ret      = do_cpte_matrix(xd, cptpEST, i, sflags, state->box_rel, list); break;
@@ -2567,7 +2591,6 @@ void list_checkpoint(const char *fn, FILE *out)
     gmx_int64_t          step;
     double               t;
     ivec                 dd_nc;
-    t_state              state;
     int                  nlambda;
     int                  flags_eks, flags_enh, flags_dfh;
     int                  nED, eSwapCoords;
@@ -2575,7 +2598,8 @@ void list_checkpoint(const char *fn, FILE *out)
     gmx_file_position_t *outputfiles;
     int                  nfiles;
 
-    init_state(&state, -1, -1, -1, -1, 0);
+    t_state              state = {};
+    init_state(&state, 0, 0, 0, 0, 0);
 
     fp = gmx_fio_open(fn, "r");
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, &file_version,
