@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -140,14 +140,13 @@ void pr_ivecs(FILE *fp, int indent, const char *title, const ivec vec[], int n, 
     }
 }
 
-void pr_rvec(FILE *fp, int indent, const char *title, const real vec[], int n, gmx_bool bShowNumbers)
+template <typename T>
+static void printRealVector(FILE *fp, int indent, const char *title, const T vec[], int n, gmx_bool bShowNumbers)
 {
-    int i;
-
     if (available(fp, vec, indent, title))
     {
         indent = pr_title_n(fp, indent, title, n);
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
             fprintf(fp, "%s[%d]=%12.5e\n", title, bShowNumbers ? i : -1, vec[i]);
@@ -155,19 +154,19 @@ void pr_rvec(FILE *fp, int indent, const char *title, const real vec[], int n, g
     }
 }
 
+void pr_rvec(FILE *fp, int indent, const char *title, const real vec[], int n, gmx_bool bShowNumbers)
+{
+    printRealVector<real>(fp, indent, title, vec, n, bShowNumbers);
+}
+
+void pr_fvec(FILE *fp, int indent, const char *title, const float vec[], int n, gmx_bool bShowNumbers)
+{
+    printRealVector<float>(fp, indent, title, vec, n, bShowNumbers);
+}
+
 void pr_dvec(FILE *fp, int indent, const char *title, const double vec[], int n, gmx_bool bShowNumbers)
 {
-    int i;
-
-    if (available(fp, vec, indent, title))
-    {
-        indent = pr_title_n(fp, indent, title, n);
-        for (i = 0; i < n; i++)
-        {
-            pr_indent(fp, indent);
-            fprintf(fp, "%s[%d]=%12.5e\n", title, bShowNumbers ? i : -1, vec[i]);
-        }
-    }
+    printRealVector<double>(fp, indent, title, vec, n, bShowNumbers);
 }
 
 
