@@ -60,7 +60,7 @@ struct t_filenm;
  */
 typedef struct gmx_edsam *gmx_edsam_t;
 
-struct edsamstate_t;
+struct edsamhistory_t;
 struct t_commrec;
 struct t_inputrec;
 struct gmx_domdec_t;
@@ -80,15 +80,15 @@ void do_edsam(const t_inputrec *ir, gmx_int64_t step,
               t_commrec *cr, rvec xs[], rvec v[], matrix box, gmx_edsam_t ed);
 
 
-/*! \brief Reads in the .edi file containing the essential dynamics and flooding data.
+/*! \brief Reads in the .edi file containing the essential dynamics (ED) and flooding data.
  *
  * This function opens the ED input and output files, reads in all datasets it finds
  * in the input file, and cross-checks whether the .edi file information is consistent
- * with the essential dynamics data found in the checkpoint file (if present).
+ * with the ED data found in the checkpoint file (if present).
  * gmx make_edi can be used to create an .edi input file.
  *
  * \param natoms            Number of atoms of the whole MD system.
- * \param EDstatePtr        Essential dynamics and flooding data stored in the checkpoint file.
+ * \param oh                Observables history, contains ED observables history
  * \param nfile             Number of entries (files) in the fnm structure.
  * \param fnm               The filenames struct; it contains also the names of the
  *                          essential dynamics and flooding in + output files.
@@ -98,7 +98,7 @@ void do_edsam(const t_inputrec *ir, gmx_int64_t step,
  * \param cr                Data needed for MPI communication.
  * \returns                 Pointer to the initialized essential dynamics / flooding data.
  */
-gmx_edsam_t ed_open(int natoms, edsamstate_t **EDstatePtr, int nfile, const t_filenm fnm[],
+gmx_edsam_t ed_open(int natoms, struct ObservablesHistory *oh, int nfile, const t_filenm fnm[],
                     unsigned long Flags, const gmx_output_env_t *oenv, t_commrec *cr);
 
 /*! \brief Initializes the essential dynamics and flooding module.
@@ -112,7 +112,7 @@ gmx_edsam_t ed_open(int natoms, edsamstate_t **EDstatePtr, int nfile, const t_fi
  * \param EDstate           ED data stored in the checkpoint file.
  */
 void init_edsam(const gmx_mtop_t *mtop, const t_inputrec *ir, t_commrec *cr,
-                gmx_edsam_t ed, rvec x[], matrix box, edsamstate_t *EDstate);
+                gmx_edsam_t ed, rvec x[], matrix box, edsamhistory_t *EDstate);
 
 
 /*! \brief Make a selection of the home atoms for the ED groups.

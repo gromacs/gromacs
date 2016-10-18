@@ -34,6 +34,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+/*! \libinternal \file
+ *
+ * \brief
+ * This file contains the definition of the microstate of the simulated system
+ *
+ * History of observables that needs to be checkpointed should be stored
+ * in ObservablesHistory.
+ * The state of the mdrun machinery that needs to be checkpointed is also
+ * stored elsewhere.
+ *
+ * \author Berk Hess
+ *
+ * \inlibraryapi
+ * \ingroup module_mdtypes
+ */
+
 #ifndef GMX_MDTYPES_STATE_H
 #define GMX_MDTYPES_STATE_H
 
@@ -44,6 +61,8 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+//! \cond INTERNAL
 
 /*
  * The t_state struct should contain all the (possibly) non-static
@@ -67,22 +86,40 @@ enum {
     estNR
 };
 
-#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estMC_RNGI)))
+/*! \brief Returns if the state entry \p est needs to be distributed over DD ranks
+ *
+ * This is useful for knowing which entries are distributed over DD ranks.
+ */
+static inline bool stateEntryIsAtomProperty(int est)
+{
+    /* All entries between x and up to and not including the virial are
+     * per atom properties, and thus need to distributed over DD.
+     */
+    return est >= estX && est < estSVIR_PREV;
+};
 
-/* The names of the state entries, defined in src/gmxlib/checkpoint.c */
+//! \brief The names of the state entries, defined in src/gmxlib/checkpoint.c
 extern const char *est_names[estNR];
 
+/*! \brief History information for NMR distance and orientation restraints
+ *
+ * Often this is only used for reporting observables, and thus should not
+ * actually be part of the microstate. But with time-dependent restraining
+ * they are actually part of the (non-Markovian) microstate.
+ * \todo Rename this with a more descriptive name.
+ */
 typedef struct history_t
 {
-    real  disre_initf;  /* The scaling factor for initializing the time av. */
-    int   ndisrepairs;  /* The number of distance restraints                */
-    real *disre_rm3tav; /* The r^-3 time averaged pair distances            */
-    real  orire_initf;  /* The scaling factor for initializing the time av. */
-    int   norire_Dtav;  /* The number of matrix element in dtav (npair*5)   */
-    real *orire_Dtav;   /* The time averaged orientation tensors            */
+    real  disre_initf;  //!< The scaling factor for initializing the time av.
+    int   ndisrepairs;  //!< The number of distance restraints
+    real *disre_rm3tav; //!< The r^-3 time averaged pair distances
+    real  orire_initf;  //!< The scaling factor for initializing the time av.
+    int   norire_Dtav;  //!< The number of matrix element in dtav (npair*5)
+    real *orire_Dtav;   //!< The time averaged orientation tensors
 } history_t;
 
-/* Struct used for checkpointing only.
+/*! \brief Struct used for checkpointing only
+ *
  * This struct would not be required with unlimited precision.
  * But because of limited precision, the COM motion removal implementation
  * can cause the kinetic energy in the MD loop to differ by a few bits from
@@ -90,146 +127,97 @@ typedef struct history_t
  */
 typedef struct ekinstate_t
 {
-    gmx_bool             bUpToDate;
-    int                  ekin_n;
-    tensor              *ekinh;
-    tensor              *ekinf;
-    tensor              *ekinh_old;
-    tensor               ekin_total;
-    std::vector<double>  ekinscalef_nhc;
-    std::vector<double>  ekinscaleh_nhc;
-    std::vector<double>  vscale_nhc;
-    real                 dekindl;
-    real                 mvcos;
+    gmx_bool             bUpToDate;      //!< Test if all data is up to date
+    int                  ekin_n;         //!< The number of tensors
+    tensor              *ekinh;          //!< Half step Ekin, size \p ekin_n
+    tensor              *ekinf;          //!< Full step Ekin, size \p ekin_n
+    tensor              *ekinh_old;      //!< Half step Ekin of the previous step, size \p ekin_n
+    tensor               ekin_total;     //!< Total kinetic energy
+    std::vector<double>  ekinscalef_nhc; //!< Nose-Hoover Ekin scaling factors for full step Ekin
+    std::vector<double>  ekinscaleh_nhc; //!< Nose-Hoover Ekin scaling factors for half step Ekin
+    std::vector<double>  vscale_nhc;     //!< Nose-Hoover velocity scaling factors
+    real                 dekindl;        //!< dEkin/dlambda, with free-energy
+    real                 mvcos;          //!< Cosine(z) component of the momentum, for viscosity calculations
 } ekinstate_t;
 
+/*! \brief Free-energy sampling history struct
+ *
+ * \todo Split out into microstate and observables history.
+ */
 typedef struct df_history_t
 {
-    int      nlambda;        /* total number of lambda states - for history*/
+    int      nlambda;        //!< total number of lambda states - for history
 
-    gmx_bool bEquil;         /* Have we reached equilibration */
-    int     *n_at_lam;       /* number of points observed at each lambda */
-    real    *wl_histo;       /* histogram for WL flatness determination */
-    real     wl_delta;       /* current wang-landau delta */
+    gmx_bool bEquil;         //!< Have we reached equilibration
+    int     *n_at_lam;       //!< number of points observed at each lambda
+    real    *wl_histo;       //!< histogram for WL flatness determination
+    real     wl_delta;       //!< current wang-landau delta
 
-    real    *sum_weights;    /* weights of the states */
-    real    *sum_dg;         /* free energies of the states -- not actually used for weighting, but informational */
-    real    *sum_minvar;     /* corrections to weights for minimum variance */
-    real    *sum_variance;   /* variances of the states */
+    real    *sum_weights;    //!< weights of the states
+    real    *sum_dg;         //!< free energies of the states -- not actually used for weighting, but informational
+    real    *sum_minvar;     //!< corrections to weights for minimum variance
+    real    *sum_variance;   //!< variances of the states
 
-    real   **accum_p;        /* accumulated bennett weights for n+1 */
-    real   **accum_m;        /* accumulated bennett weights for n-1 */
-    real   **accum_p2;       /* accumulated squared bennett weights for n+1 */
-    real   **accum_m2;       /* accumulated squared bennett weights for n-1 */
+    real   **accum_p;        //!< accumulated bennett weights for n+1
+    real   **accum_m;        //!< accumulated bennett weights for n-1
+    real   **accum_p2;       //!< accumulated squared bennett weights for n+1
+    real   **accum_m2;       //!< accumulated squared bennett weights for n-1
 
-    real   **Tij;            /* transition matrix */
-    real   **Tij_empirical;  /* Empirical transition matrix */
+    real   **Tij;            //!< transition matrix
+    real   **Tij_empirical;  //!< Empirical transition matrix
 
 } df_history_t;
 
-typedef struct edsamstate_t
-{
-    /* If one uses essential dynamics or flooding on a group of atoms from
-     * more than one molecule, we cannot make this group whole with
-     * do_pbc_first_mtop(). We assume that the ED group has the correct PBC
-     * representation at the beginning of the simulation and keep track
-     * of the shifts to always get it into that representation.
-     * For proper restarts from a checkpoint we store the positions of the
-     * reference group at the time of checkpoint writing */
-    gmx_bool      bFromCpt;     /* Did we start from a checkpoint file?       */
-    int           nED;          /* No. of ED/Flooding data sets, if <1 no ED  */
-    int          *nref;         /* No. of atoms in i'th reference structure   */
-    int          *nav;          /* Same for average structure                 */
-    rvec        **old_sref;     /* Positions of the reference atoms
-                                   at the last time step (with correct PBC
-                                   representation)                            */
-    rvec        **old_sref_p;   /* Pointer to these positions                 */
-    rvec        **old_sav;      /* Same for the average positions             */
-    rvec        **old_sav_p;
-}
-edsamstate_t;
 
-typedef struct swapstateIons_t
-{
-    int  nMolReq[eCompNR];                  /* Requested # of molecules per compartment      */
-    int *nMolReq_p[eCompNR];                /* Pointer to this data (for .cpt writing)       */
-    int  inflow_net[eCompNR];               /* Flux determined from the # of swaps           */
-    int *inflow_net_p[eCompNR];             /* Pointer to this data                          */
-    int *nMolPast[eCompNR];                 /* Array with nAverage entries for history       */
-    int *nMolPast_p[eCompNR];               /* Pointer points to the first entry only        */
-    /*                                                                                       */
-    /* Channel flux detection, this is counting only and has no influence on whether swaps   */
-    /* are performed or not:                                                                 */
-    int            fluxfromAtoB[eCompNR];   /* Flux determined from the split cylinders      */
-    int           *fluxfromAtoB_p[eCompNR]; /* Pointer to this data                          */
-    int            nMol;                    /* # of molecules, size of the following arrays  */
-    unsigned char *comp_from;               /* Ion came from which compartment?              */
-    unsigned char *channel_label;           /* Through which channel did this ion pass?      */
-} swapstateIons_t;
-
-typedef struct swapstate_t
-{
-    int  eSwapCoords;                       /* Swapping along x, y, or z-direction?          */
-    int  nIonTypes;                         /* Number of ion types, this is the size of      */
-                                            /* the following arrays                          */
-    int  nAverage;                          /* Use average over this many swap attempt       */
-                                            /* steps when determining the ion counts         */
-    int  fluxleak;                          /* Ions not going through any channel (bad!)     */
-    int *fluxleak_p;                        /* Pointer to this data                          */
-    /*                                                                                       */
-    /* To also make multimeric channel proteins whole, we save the last whole configuration  */
-    /* of the channels in the checkpoint file. If we have no checkpoint file, we assume      */
-    /* that the starting configuration has the correct PBC representation after making the   */
-    /* individual molecules whole                                                            */
-    gmx_bool         bFromCpt;                 /* Did we start from a checkpoint file?       */
-    int              nat[eChanNR];             /* Size of xc_old_whole, i.e. the number of   */
-                                               /* atoms in each channel                      */
-    rvec            *xc_old_whole[eChanNR];    /* Last known whole positions of the two      */
-                                               /* channels (important for multimeric ch.!)   */
-    rvec           **xc_old_whole_p[eChanNR];  /* Pointer to these positions                 */
-    swapstateIons_t *ionType;
-}
-swapstate_t;
-
-
+/*! \brief The microstate of the system
+ *
+ * The global state will contain complete data for all used entries.
+ * The local state with domain decomposition will have partial entries
+ * for which \p stateEntryIsAtomProperty() is true. Some entries that
+ * are used in the global state might not be present in the local state.
+ * \todo Move pure observables history to ObservablesHistory.
+ */
 typedef struct t_state
 {
-    int                     natoms;
-    int                     ngtc;
-    int                     nnhpres;
-    int                     nhchainlength;   /* number of nose-hoover chains               */
-    int                     flags;           /* Flags telling which entries are present      */
-    int                     fep_state;       /* indicates which of the alchemical states we are in                 */
-    std::vector<real>       lambda;          /* lambda vector                               */
-    matrix                  box;             /* box vector coordinates                         */
-    matrix                  box_rel;         /* Relitaive box vectors to preserve shape        */
-    matrix                  boxv;            /* box velocitites for Parrinello-Rahman pcoupl */
-    matrix                  pres_prev;       /* Pressure of the previous step for pcoupl  */
-    matrix                  svir_prev;       /* Shake virial for previous step for pcoupl */
-    matrix                  fvir_prev;       /* Force virial of the previous step for pcoupl  */
-    std::vector<double>     nosehoover_xi;   /* for Nose-Hoover tcoupl (ngtc)       */
-    std::vector<double>     nosehoover_vxi;  /* for N-H tcoupl (ngtc)               */
-    std::vector<double>     nhpres_xi;       /* for Nose-Hoover pcoupl for barostat     */
-    std::vector<double>     nhpres_vxi;      /* for Nose-Hoover pcoupl for barostat     */
-    std::vector<double>     therm_integral;  /* for N-H/V-rescale tcoupl (ngtc)     */
-    real                    veta;            /* trotter based isotropic P-coupling             */
-    real                    vol0;            /* initial volume,required for computing NPT conserverd quantity */
-    PaddedRVecVector        x;               /* the coordinates (natoms)                     */
-    PaddedRVecVector        v;               /* the velocities (natoms)                      */
-    PaddedRVecVector        cg_p;            /* p vector for conjugate gradient minimization */
+    int                     natoms;          //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
+    int                     ngtc;            //!< The number of temperature coupling groups
+    int                     nnhpres;         //!< The NH-chain length for the MTTK barostat
+    int                     nhchainlength;   //!< The NH-chain length for temperature coupling
+    int                     flags;           //!< Set of bit-flags telling which entries are present, see enum at the top of the file
+    int                     fep_state;       //!< indicates which of the alchemical states we are in
+    std::vector<real>       lambda;          //!< Free-energy lambda vector
+    matrix                  box;             //!< Matrix of box vectors
+    matrix                  box_rel;         //!< Relative box vectors to preserve box shape
+    matrix                  boxv;            //!< Box velocities for Parrinello-Rahman P-coupling
+    matrix                  pres_prev;       //!< Pressure of the previous step for pcoupl
+    matrix                  svir_prev;       //!< Shake virial for previous step for pcoupl
+    matrix                  fvir_prev;       //!< Force virial of the previous step for pcoupl
+    std::vector<double>     nosehoover_xi;   //!< Nose-Hoover coordinates (ngtc)
+    std::vector<double>     nosehoover_vxi;  //!< Nose-Hoover velocities (ngtc)
+    std::vector<double>     nhpres_xi;       //!< Pressure Nose-Hoover coordinates
+    std::vector<double>     nhpres_vxi;      //!< Pressure Nose-Hoover velocities
+    std::vector<double>     therm_integral;  //!< Work exterted N-H/V-rescale T-coupling (ngtc)
+    real                    veta;            //!< Trotter based isotropic P-coupling
+    real                    vol0;            //!< Initial volume,required for computing MTTK conserved quantity
+    PaddedRVecVector        x;               //!< The coordinates (natoms)
+    PaddedRVecVector        v;               //!< The velocities (natoms)
+    PaddedRVecVector        cg_p;            //!< p vector for conjugate gradient minimization
 
-    ekinstate_t             ekinstate;       /* The state of the kinetic energy data      */
+    ekinstate_t             ekinstate;       //!< The state of the kinetic energy
 
     /* History for special algorithms, should be moved to a history struct */
-    history_t               hist;            /* Time history for restraints                  */
-    swapstate_t            *swapstate;       /* Position swapping                       */
-    df_history_t           *dfhist;          /*Free energy history for free energy analysis  */
-    edsamstate_t           *edsamstate;      /* Essential dynamics / flooding history */
+    history_t               hist;            //!< Time history for restraints
+    df_history_t           *dfhist;          //!< Free-energy history for free energy analysis
 
-    int                     ddp_count;       /* The DD partitioning count for this state  */
-    int                     ddp_count_cg_gl; /* The DD part. count for index_gl     */
-    std::vector<int>        cg_gl;           /* The global cg number of the local cgs        */
+    int                     ddp_count;       //!< The DD partitioning count for this state
+    int                     ddp_count_cg_gl; //!< The DD partitioning count for index_gl
+    std::vector<int>        cg_gl;           //!< The global cg number of the local cgs
 } t_state;
+
+#ifndef DOXYGEN
+/* We don't document the structs below, as they don't belong here.
+ * TODO: Move the next two structs out of state.h.
+ */
 
 typedef struct t_extmass
 {
@@ -250,14 +238,21 @@ typedef struct
     double *vscale_nhc;
 } t_vetavars;
 
+#endif // DOXYGEN
+
+/*! \brief Resizes the T- and P-coupling state variables */
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
 
+/*! \brief Resizes all entries of the state */
 void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int dfhistNumLambda);
 
+/*! \brief Compares two states, write the differences to stdout */
 void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
 
-/*! \brief Allocate an rvec pointer and copy the contents of v to it */
+/*! \brief Allocates an rvec pointer and copy the contents of v to it */
 rvec *getRvecArrayFromPaddedRVecVector(const PaddedRVecVector *v,
                                        unsigned int            n);
+
+//! \endcond
 
 #endif
