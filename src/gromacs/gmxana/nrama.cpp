@@ -53,10 +53,10 @@ static const char *pp_pat[] = { "C", "N", "CA", "C", "N" };
 
 static int d_comp(const void *a, const void *b)
 {
-    t_dih *da, *db;
+    const t_dih *da, *db;
 
-    da = (t_dih *)a;
-    db = (t_dih *)b;
+    da = static_cast<const t_dih *>(a);
+    db = static_cast<const t_dih *>(b);
 
     if (da->ai[1] < db->ai[1])
     {
@@ -217,7 +217,7 @@ static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
 
         key.ai[1] = ia[2];
         key.ai[2] = ia[3];
-        if ((dd = (t_dih *)bsearch(&key, xr->dih, xr->ndih, (size_t)sizeof(key), d_comp))
+        if ((dd = static_cast<t_dih *>(bsearch(&key, xr->dih, xr->ndih, (size_t)sizeof(key), d_comp)))
             != NULL)
         {
             dd->mult = idef->iparams[ft].pdihs.mult;
