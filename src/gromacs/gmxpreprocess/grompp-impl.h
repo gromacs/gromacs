@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,10 +63,15 @@ typedef struct {
     real       c[MAXFORCEPARAM]; /* Force parameters (eg. b0 = c[0])	*/
     char       s[MAXSLEN];       /* A string (instead of parameters),    *
                                   * read from the .rtp file in pdb2gmx   */
+    const int &ai() const { return a[0]; }
     int   &ai() { return a[0]; }
+    const int &aj() const { return a[1]; }
     int   &aj() { return a[1]; }
+    const int &ak() const { return a[2]; }
     int   &ak() { return a[2]; }
+    const int &al() const { return a[3]; }
     int   &al() { return a[3]; }
+    const int &am() const { return a[4]; }
     int   &am() { return a[4]; }
 
     real      &c0() { return c[0]; }

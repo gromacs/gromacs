@@ -137,6 +137,7 @@ SelectionTreeElement::SelectionTreeElement(e_selelem_t              type,
                                            const SelectionLocation &location)
     : location_(location)
 {
+    // cppcheck-suppress useInitializationList
     this->type       = type;
     this->flags      = (type != SEL_ROOT) ? SEL_ALLOCVAL : 0;
     if (type == SEL_BOOLEAN)

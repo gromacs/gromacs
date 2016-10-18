@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -133,8 +133,7 @@ int BinarySearch (real *array, int low, int high, real key, int direction)
         }
         return iMin;
     }
-
-    else if (direction < 0)
+    else
     {
         while (iMax-iMin > 1)
         {
@@ -149,9 +148,7 @@ int BinarySearch (real *array, int low, int high, real key, int direction)
             }
         }
         return iMin-1;
-
-    } /*end -ifelse direction*/
-    return -1;
+    }
 }
 
 
@@ -181,7 +178,7 @@ int LinearSearch (double *array, int startindx, int stopindx,
             }
         }
     }
-    else if (direction < 0)
+    else
     {
         for (i = stopindx; i >= startindx; i--)
         {
@@ -192,11 +189,6 @@ int LinearSearch (double *array, int startindx, int stopindx,
                 return keyindex;
             }
         }
-    }
-
-    else
-    {
-        gmx_fatal(FARGS, "Startindex=stopindex=%d\n", startindx);
     }
 
     return -1;
