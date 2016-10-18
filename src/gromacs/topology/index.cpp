@@ -847,7 +847,6 @@ int find_group(const char *s, int ngrps, char **grpname)
     n         = strlen(s);
     aa        = -1;
     /* first look for whole name match */
-    if (aa == -1)
     {
         for (i = 0; i < ngrps; i++)
         {

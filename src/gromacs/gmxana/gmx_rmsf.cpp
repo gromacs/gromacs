@@ -36,6 +36,7 @@
  */
 #include "gmxpre.h"
 
+#include <cassert>
 #include <cmath>
 #include <cstring>
 
@@ -119,6 +120,10 @@ static void average_residues(double f[], double **U, int uind,
     start = 0;
     av    = 0;
     m     = 0;
+    if (!f)
+    {
+        assert(U);
+    }
     for (i = 0; i < isize; i++)
     {
         av += w_rls[index[i]]*(f != NULL ? f[i] : U[i][uind]);
