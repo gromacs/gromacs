@@ -37,6 +37,8 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include "broadcaststructs.h"
+
 #include <string.h>
 
 #include "gromacs/gmxlib/network.h"
@@ -52,39 +54,6 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-
-#define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
-#define  nblock_bc(cr, nr, d) { gmx_bcast((nr)*sizeof((d)[0]), (d), (cr)); }
-#define    snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}
-
-#if !GMX_DOUBLE
-static void nblock_abc(const t_commrec *cr, int numElements, real **v)
-{
-    if (!MASTER(cr))
-    {
-        snew(*v, numElements);
-    }
-    nblock_bc(cr, numElements, *v);
-}
-#endif
-
-static void nblock_abc(const t_commrec *cr, int numElements, double **v)
-{
-    if (!MASTER(cr))
-    {
-        snew(*v, numElements);
-    }
-    nblock_bc(cr, numElements, *v);
-}
-
-static void nblock_abc(const t_commrec *cr, int numElements, std::vector<double> *v)
-{
-    if (!MASTER(cr))
-    {
-        v->resize(numElements);
-    }
-    gmx_bcast(numElements*sizeof(double), v->data(), cr);
-}
 
 static void bc_cstring(const t_commrec *cr, char **s)
 {

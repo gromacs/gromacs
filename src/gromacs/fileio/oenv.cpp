@@ -45,13 +45,11 @@
 struct gmx_output_env_t
 {
     explicit gmx_output_env_t(const gmx::IProgramContext &context)
-        : programContext(context)
-    {
-        time_unit   = time_ps;
-        view        = FALSE;
-        xvg_format  = exvgNONE;
-        verbosity   = 0;
-    }
+        : programContext(context),
+          time_unit(time_ps),
+          view(FALSE),
+          xvg_format(exvgNONE),
+          verbosity(0) {}
 
     const gmx::IProgramContext  &programContext;
 

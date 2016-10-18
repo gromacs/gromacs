@@ -36,7 +36,7 @@ def do_build(context):
     # TODO: Make the XMLs go directly to the desired folder.
     # xml_dir = context.workspace.get_log_dir(category='cppcheck')
     cmake_opts = {
-            'CPPCHECK_EXECUTABLE': context.env.get_cppcheck_command(version='1.72'),
+            'CPPCHECK_EXECUTABLE': context.env.get_cppcheck_command(version='1.76.1'),
             'CPPCHECK_XML_OUTPUT': 'ON',
             'GMX_SIMD': 'Reference'
         }

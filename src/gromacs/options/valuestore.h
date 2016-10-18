@@ -113,6 +113,7 @@ class OptionValueStoreVector : public IOptionValueStore<T>
 
 // Specialization that works around std::vector<bool> specialities.
 template <>
+// cppcheck-suppress noConstructor
 class OptionValueStoreVector<bool> : public IOptionValueStore<bool>
 {
     public:

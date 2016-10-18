@@ -36,6 +36,7 @@
  */
 #include "gmxpre.h"
 
+#include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -180,6 +181,7 @@ static void write_xvgr_graphs(const char *file, int ngraphs, int nsetspergraph,
         }
         else
         {
+            assert(sy);
             ymin = sy[g][0][0];
             ymax = sy[g][0][0];
             for (s = 0; s < nsetspergraph; s++)

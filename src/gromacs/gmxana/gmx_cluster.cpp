@@ -332,10 +332,10 @@ static real rms_dist(int isize, real **d, real **d_r)
 
 static int rms_dist_comp(const void *a, const void *b)
 {
-    t_dist *da, *db;
+    const t_dist *da, *db;
 
-    da = (t_dist *)a;
-    db = (t_dist *)b;
+    da = static_cast<const t_dist *>(a);
+    db = static_cast<const t_dist *>(b);
 
     if (da->dist - db->dist < 0)
     {
@@ -350,20 +350,20 @@ static int rms_dist_comp(const void *a, const void *b)
 
 static int clust_id_comp(const void *a, const void *b)
 {
-    t_clustid *da, *db;
+    const t_clustid *da, *db;
 
-    da = (t_clustid *)a;
-    db = (t_clustid *)b;
+    da = static_cast<const t_clustid *>(a);
+    db = static_cast<const t_clustid *>(b);
 
     return da->clust - db->clust;
 }
 
 static int nrnb_comp(const void *a, const void *b)
 {
-    t_nnb *da, *db;
+    const t_nnb *da, *db;
 
-    da = (t_nnb *)a;
-    db = (t_nnb *)b;
+    da = static_cast<const t_nnb *>(a);
+    db = static_cast<const t_nnb *>(b);
 
     /* return the b-a, we want highest first */
     return db->nr - da->nr;

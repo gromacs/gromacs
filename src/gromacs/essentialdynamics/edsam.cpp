@@ -53,6 +53,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sim_util.h"
@@ -68,11 +69,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-
-/* We use the same defines as in broadcaststructs.cpp here */
-#define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
-#define nblock_bc(cr, nr, d) gmx_bcast((nr)*sizeof((d)[0]), (d), (cr))
-#define   snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}
 
 /* enum to identify the type of ED: none, normal ED, flooding */
 enum {

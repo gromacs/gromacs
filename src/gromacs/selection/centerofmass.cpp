@@ -518,7 +518,7 @@ gmx_calc_comg_blocka(const gmx_mtop_t *top, rvec x[], const t_blocka *block,
                      bool bMass, rvec xout[])
 {
     /* TODO: It would probably be better to do this without the type cast */
-    gmx_calc_comg_block(top, x, (t_block *)block, block->a, bMass, xout);
+    gmx_calc_comg_block(top, x, reinterpret_cast<const t_block *>(block), block->a, bMass, xout);
 }
 
 /*!
@@ -544,5 +544,5 @@ gmx_calc_comg_f_blocka(const gmx_mtop_t *top, rvec f[], const t_blocka *block,
                        bool bMass, rvec fout[])
 {
     /* TODO: It would probably be better to do this without the type cast */
-    gmx_calc_comg_f_block(top, f, (t_block *)block, block->a, bMass, fout);
+    gmx_calc_comg_f_block(top, f, reinterpret_cast<const t_block *>(block), block->a, bMass, fout);
 }

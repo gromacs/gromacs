@@ -298,7 +298,7 @@ static void calc_dist(real rcut, gmx_bool bPBC, int ePBC, matrix box, rvec x[],
                 {
                     nmin_j++;
                 }
-                else if (r2 > rcut2)
+                else
                 {
                     nmax_j++;
                 }

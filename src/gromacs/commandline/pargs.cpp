@@ -210,7 +210,7 @@ int getDefaultXvgFormat(gmx::ConstArrayRef<const char *> xvgFormats)
             std::find(xvgFormats.begin(), xvgFormats.end(), std::string(select));
         if (i != xvgFormats.end())
         {
-            return i - xvgFormats.begin();
+            return std::distance(xvgFormats.begin(), i);
         }
         else
         {
