@@ -44,37 +44,37 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
 void
-do_md_trajectory_writing(FILE             *fplog,
-                         t_commrec        *cr,
-                         int               nfile,
-                         const t_filenm    fnm[],
-                         gmx_int64_t       step,
-                         gmx_int64_t       step_rel,
-                         double            t,
-                         t_inputrec       *ir,
-                         t_state          *state,
-                         t_state          *state_global,
-                         energyhistory_t  *energyHistory,
-                         gmx_mtop_t       *top_global,
-                         t_forcerec       *fr,
-                         gmx_mdoutf_t      outf,
-                         t_mdebin         *mdebin,
-                         gmx_ekindata_t   *ekind,
-                         PaddedRVecVector *f,
-                         int              *nchkpt,
-                         gmx_bool          bCPT,
-                         gmx_bool          bRerunMD,
-                         gmx_bool          bLastStep,
-                         gmx_bool          bDoConfOut,
-                         gmx_bool          bSumEkinhOld
+do_md_trajectory_writing(FILE               *fplog,
+                         t_commrec          *cr,
+                         int                 nfile,
+                         const t_filenm      fnm[],
+                         gmx_int64_t         step,
+                         gmx_int64_t         step_rel,
+                         double              t,
+                         t_inputrec         *ir,
+                         t_state            *state,
+                         t_state            *state_global,
+                         ObservablesHistory *observablesHistory,
+                         gmx_mtop_t         *top_global,
+                         t_forcerec         *fr,
+                         gmx_mdoutf_t        outf,
+                         t_mdebin           *mdebin,
+                         gmx_ekindata_t     *ekind,
+                         PaddedRVecVector   *f,
+                         int                *nchkpt,
+                         gmx_bool            bCPT,
+                         gmx_bool            bRerunMD,
+                         gmx_bool            bLastStep,
+                         gmx_bool            bDoConfOut,
+                         gmx_bool            bSumEkinhOld
                          )
 {
     int   mdof_flags;
@@ -141,11 +141,12 @@ do_md_trajectory_writing(FILE             *fplog,
                     update_ekinstate(&state_global->ekinstate, ekind);
                     state_global->ekinstate.bUpToDate = TRUE;
                 }
-                update_energyhistory(energyHistory, mdebin);
+
+                update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
             }
         }
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
-                                         step, t, state, state_global, energyHistory, f);
+                                         step, t, state, state_global, observablesHistory, f);
         if (bCPT)
         {
             (*nchkpt)++;
