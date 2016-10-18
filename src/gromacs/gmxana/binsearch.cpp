@@ -133,8 +133,7 @@ int BinarySearch (real *array, int low, int high, real key, int direction)
         }
         return iMin;
     }
-
-    else if (direction < 0)
+    else
     {
         while (iMax-iMin > 1)
         {
@@ -150,7 +149,7 @@ int BinarySearch (real *array, int low, int high, real key, int direction)
         }
         return iMin-1;
 
-    } /*end -ifelse direction*/
+    }
     return -1;
 }
 
@@ -181,7 +180,7 @@ int LinearSearch (double *array, int startindx, int stopindx,
             }
         }
     }
-    else if (direction < 0)
+    else
     {
         for (i = stopindx; i >= startindx; i--)
         {
@@ -192,11 +191,6 @@ int LinearSearch (double *array, int startindx, int stopindx,
                 return keyindex;
             }
         }
-    }
-
-    else
-    {
-        gmx_fatal(FARGS, "Startindex=stopindex=%d\n", startindx);
     }
 
     return -1;

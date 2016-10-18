@@ -41,6 +41,7 @@
 
 #include <string.h>
 
+#include <cassert>
 #include <cmath>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -560,6 +561,7 @@ static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
         /* Type==-1 is used as a signal that this interaction is all-zero and should not be added. */
         if (!bNB && type >= 0)
         {
+            assert(il);
             nral  = NRAL(ftype);
             delta = nr*(nral+1);
             srenew(il->iatoms, il->nr+delta);

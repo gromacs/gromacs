@@ -498,6 +498,7 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
             return FALSE;
         }
         *file_version = enx_version;
+        // cppcheck-suppress redundantPointerOp
         if (!gmx_fio_do_int(ef->fio, *file_version))
         {
             *bOK = FALSE;
