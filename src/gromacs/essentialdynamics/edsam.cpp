@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1184,7 +1184,7 @@ static void get_flood_energies(t_edpar *edi, real Vfl[], int nnames)
 #endif
 
 
-gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm fnm[], unsigned long Flags, const gmx_output_env_t *oenv, t_commrec *cr)
+gmx_edsam_t ed_open(int natoms, edsamstate_t **EDstatePtr, int nfile, const t_filenm fnm[], unsigned long Flags, const gmx_output_env_t *oenv, t_commrec *cr)
 {
     gmx_edsam_t ed;
     int         nED;
@@ -1192,6 +1192,12 @@ gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm
 
     /* Allocate space for the ED data structure */
     snew(ed, 1);
+
+    if (*EDstatePtr == NULL)
+    {
+        snew(*EDstatePtr, 1);
+    }
+    edsamstate_t *EDstate = *EDstatePtr;
 
     /* We want to perform ED (this switch might later be upgraded to eEDflood) */
     ed->eEDtype = eEDedsam;
@@ -1361,23 +1367,19 @@ static void init_edi(const gmx_mtop_t *mtop, t_edpar *edi)
     int                   i;
     real                  totalmass = 0.0;
     rvec                  com;
-    gmx_mtop_atomlookup_t alook = NULL;
-    t_atom               *atom;
 
     /* NOTE Init_edi is executed on the master process only
      * The initialized data sets are then transmitted to the
      * other nodes in broadcast_ed_data */
 
-    alook = gmx_mtop_atomlookup_init(mtop);
-
     /* evaluate masses (reference structure) */
     snew(edi->sref.m, edi->sref.nr);
+    int molb = 0;
     for (i = 0; i < edi->sref.nr; i++)
     {
         if (edi->fitmas)
         {
-            gmx_mtop_atomnr_to_atom(alook, edi->sref.anrs[i], &atom);
-            edi->sref.m[i] = atom->m;
+            edi->sref.m[i] = mtopGetAtomMass(mtop, edi->sref.anrs[i], &molb);
         }
         else
         {
@@ -1404,11 +1406,10 @@ static void init_edi(const gmx_mtop_t *mtop, t_edpar *edi)
     snew(edi->sav.m, edi->sav.nr );
     for (i = 0; i < edi->sav.nr; i++)
     {
-        gmx_mtop_atomnr_to_atom(alook, edi->sav.anrs[i], &atom);
-        edi->sav.m[i] = atom->m;
+        edi->sav.m[i] = mtopGetAtomMass(mtop, edi->sav.anrs[i], &molb);
         if (edi->pcamas)
         {
-            edi->sav.sqrtm[i] = sqrt(atom->m);
+            edi->sav.sqrtm[i] = sqrt(edi->sav.m[i]);
         }
         else
         {
@@ -1422,11 +1423,9 @@ static void init_edi(const gmx_mtop_t *mtop, t_edpar *edi)
                       "For ED with mass-weighting, all average structure atoms need to have a mass >0.\n"
                       "Either make the covariance analysis non-mass-weighted, or exclude massless\n"
                       "atoms from the average structure by creating a proper index group.\n",
-                      i, edi->sav.anrs[i]+1, atom->m);
+                      i, edi->sav.anrs[i] + 1, edi->sav.m[i]);
         }
     }
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     /* put reference structure in origin */
     get_center(edi->sref.x, edi->sref.m, edi->sref.nr, com);

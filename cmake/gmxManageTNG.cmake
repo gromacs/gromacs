@@ -32,29 +32,64 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(GMX_TNG_MINIMUM_REQUIRED_VERSION "1.7.6")
-set(BUNDLED_TNG_LOCATION "${CMAKE_SOURCE_DIR}/src/external/tng_io")
-if(GMX_USE_TNG)
-    option(GMX_EXTERNAL_TNG "Use external TNG instead of compiling the version shipped with GROMACS." OFF)
+set(GMX_TNG_MINIMUM_REQUIRED_VERSION "1.7.10")
 
+gmx_dependent_option(
+    GMX_EXTERNAL_TNG
+    "Use external TNG instead of compiling the version shipped with GROMACS."
+    OFF
+    GMX_USE_TNG)
+gmx_dependent_option(
+    GMX_EXTERNAL_ZLIB
+    "Use external ZLIB instead of compiling the version shipped with GROMACS as part of TNG."
+    OFF
+    "NOT GMX_EXTERNAL_TNG")
+
+if(GMX_USE_TNG)
     # Detect TNG if GMX_EXTERNAL_TNG is explicitly ON
     if(GMX_EXTERNAL_TNG)
         find_package(TNG_IO ${GMX_TNG_MINIMUM_REQUIRED_VERSION})
         if(NOT TNG_IO_FOUND)
             message(FATAL_ERROR "TNG >= ${GMX_TNG_MINIMUM_REQUIRED_VERSION} not found. You can set GMX_EXTERNAL_TNG=OFF to compile the TNG bundled with GROMACS.")
         endif()
-        include_directories(SYSTEM ${TNG_IO_INCLUDE_DIRS})
     else()
-        include(${BUNDLED_TNG_LOCATION}/BuildTNG.cmake)
-        tng_get_source_list(TNG_SOURCES TNG_IO_DEFINITIONS)
-
-        if (HAVE_ZLIB)
-            list(APPEND GMX_EXTRA_LIBRARIES ${ZLIB_LIBRARIES})
-            include_directories(SYSTEM ${ZLIB_INCLUDE_DIRS})
+        # Detect zlib if the user requires us to use an external
+        # version. If found, it can be used by TNG.
+        if(GMX_EXTERNAL_ZLIB)
+            find_package(ZLIB)
+            if(NOT ZLIB_FOUND)
+                message(FATAL_ERROR "External zlib compression library was required but could not be found. Set GMX_EXTERNAL_ZLIB=OFF to compile zlib as part of GROMACS.")
+            endif()
+            include(gmxTestZLib)
+            gmx_test_zlib(HAVE_ZLIB)
+            if(NOT HAVE_ZLIB)
+                message(FATAL_ERROR "External zlib compression library was required but could not compile and link. Set GMX_EXTERNAL_ZLIB=OFF to compile zlib as part of GROMACS.")
+            endif()
         endif()
     endif()
-else()
-    # We still need to get tng/tng_io_fwd.h from somewhere!
-    include_directories(BEFORE ${BUNDLED_TNG_LOCATION}/include)
 endif()
 
+function(gmx_setup_tng_for_libgromacs)
+    set(BUNDLED_TNG_LOCATION "${CMAKE_SOURCE_DIR}/src/external/tng_io")
+    # Because of imperfect encapsulation of tng data types, we need to get
+    # tng/tng_io_fwd.h from somewhere for the whole build tree.
+    if (GMX_USE_TNG)
+        if (GMX_EXTERNAL_TNG)
+            target_link_libraries(libgromacs PRIVATE tng_io::tng_io)
+        else()
+            set(_zlib_arg)
+            if (NOT GMX_EXTERNAL_ZLIB)
+                set(_zlib_arg OWN_ZLIB)
+            endif()
+            include(${BUNDLED_TNG_LOCATION}/BuildTNG.cmake)
+            add_tng_io_library(tng_io OBJECT ${_zlib_arg})
+            add_library(tng_io::tng_io ALIAS tng_io)
+            target_link_libraries(libgromacs PRIVATE $<BUILD_INTERFACE:tng_io::tng_io>)
+        endif()
+        get_target_property(_include_dirs tng_io::tng_io INTERFACE_INCLUDE_DIRECTORIES)
+        target_include_directories(libgromacs INTERFACE $<BUILD_INTERFACE:${_include_dirs}>)
+    else()
+        target_include_directories(libgromacs PUBLIC
+                                   $<BUILD_INTERFACE:${BUNDLED_TNG_LOCATION}/include>)
+    endif()
+endfunction()

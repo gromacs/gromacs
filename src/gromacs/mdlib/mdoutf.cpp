@@ -70,7 +70,6 @@ struct gmx_mdoutf {
     int               elamstats;
     int               simulation_part;
     FILE             *fp_dhdl;
-    FILE             *fp_field;
     int               natoms_global;
     int               natoms_x_compressed;
     gmx_groups_t     *groups; /* for compressed position writing */
@@ -97,7 +96,6 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
     of->tng          = NULL;
     of->tng_low_prec = NULL;
     of->fp_dhdl      = NULL;
-    of->fp_field     = NULL;
 
     of->eIntegrator             = ir->eI;
     of->bExpanded               = ir->bExpanded;
@@ -194,21 +192,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
             }
         }
 
-        if (opt2bSet("-field", nfile, fnm) &&
-            (ir->ex[XX].n || ir->ex[YY].n || ir->ex[ZZ].n))
-        {
-            if (bAppendFiles)
-            {
-                of->fp_field = gmx_fio_fopen(opt2fn("-field", nfile, fnm),
-                                             filemode);
-            }
-            else
-            {
-                of->fp_field = xvgropen(opt2fn("-field", nfile, fnm),
-                                        "Applied electric field", "Time (ps)",
-                                        "E (V/nm)", oenv);
-            }
-        }
+        ir->efield->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
 
         /* Set up atom counts so they can be passed to actual
            trajectory-writing routines later. Also, XTC writing needs
@@ -239,11 +223,6 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
     return of;
 }
 
-FILE *mdoutf_get_fp_field(gmx_mdoutf_t of)
-{
-    return of->fp_field;
-}
-
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of)
 {
     return of->fp_ene;
@@ -265,17 +244,10 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      rvec *f_local)
+                                      energyhistory_t *energyHistory,
+                                      PaddedRVecVector *f_local)
 {
-    rvec *local_v;
-    rvec *global_v;
     rvec *f_global;
-
-    /* MRS -- defining these variables is to manage the difference
-     * between half step and full step velocities, but there must be a better way . . . */
-
-    local_v  = state_local->v;
-    global_v = state_global->v;
 
     if (DOMAINDECOMP(cr))
     {
@@ -287,13 +259,13 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
         {
             if (mdof_flags & (MDOF_X | MDOF_X_COMPRESSED))
             {
-                dd_collect_vec(cr->dd, state_local, state_local->x,
-                               state_global->x);
+                dd_collect_vec(cr->dd, state_local, &state_local->x,
+                               &state_global->x);
             }
             if (mdof_flags & MDOF_V)
             {
-                dd_collect_vec(cr->dd, state_local, local_v,
-                               global_v);
+                dd_collect_vec(cr->dd, state_local, &state_local->v,
+                               &state_global->v);
             }
         }
         f_global = of->f_global;
@@ -304,21 +276,10 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
     }
     else
     {
-        if (mdof_flags & MDOF_CPT)
-        {
-            /* All pointers in state_local are equal to state_global,
-             * but we need to copy the non-pointer entries.
-             */
-            state_global->lambda = state_local->lambda;
-            state_global->veta   = state_local->veta;
-            state_global->vol0   = state_local->vol0;
-            copy_mat(state_local->box, state_global->box);
-            copy_mat(state_local->boxv, state_global->boxv);
-            copy_mat(state_local->svir_prev, state_global->svir_prev);
-            copy_mat(state_local->fvir_prev, state_global->fvir_prev);
-            copy_mat(state_local->pres_prev, state_global->pres_prev);
-        }
-        f_global = f_local;
+        /* We have the whole state locally: copy the local state pointer */
+        state_global = state_local;
+
+        f_global     = as_rvec_array(f_local->data());
     }
 
     if (MASTER(cr))
@@ -333,18 +294,21 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                              DOMAINDECOMP(cr) ? cr->dd->nc : one_ivec,
                              DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes,
                              of->eIntegrator, of->simulation_part,
-                             of->bExpanded, of->elamstats, step, t, state_global);
+                             of->bExpanded, of->elamstats, step, t,
+                             state_global, energyHistory);
         }
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
         {
+            const rvec *x = (mdof_flags & MDOF_X) ? as_rvec_array(state_global->x.data()) : NULL;
+            const rvec *v = (mdof_flags & MDOF_V) ? as_rvec_array(state_global->v.data()) : NULL;
+            const rvec *f = (mdof_flags & MDOF_F) ? f_global : NULL;
+
             if (of->fp_trn)
             {
                 gmx_trr_write_frame(of->fp_trn, step, t, state_local->lambda[efptFEP],
                                     state_local->box, top_global->natoms,
-                                    (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                                    (mdof_flags & MDOF_V) ? global_v : NULL,
-                                    (mdof_flags & MDOF_F) ? f_global : NULL);
+                                    x, v, f);
                 if (gmx_fio_flush(of->fp_trn) != 0)
                 {
                     gmx_file("Cannot write trajectory; maybe you are out of disk space?");
@@ -358,9 +322,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 gmx_fwrite_tng(of->tng, FALSE, step, t, state_local->lambda[efptFEP],
                                state_local->box,
                                top_global->natoms,
-                               (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                               (mdof_flags & MDOF_V) ? global_v : NULL,
-                               (mdof_flags & MDOF_F) ? f_global : NULL);
+                               x, v, f);
             }
             /* If only a TNG file is open for compressed coordinate output (no uncompressed
                coordinate output) also write forces and velocities to it. */
@@ -369,9 +331,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 gmx_fwrite_tng(of->tng_low_prec, FALSE, step, t, state_local->lambda[efptFEP],
                                state_local->box,
                                top_global->natoms,
-                               (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                               (mdof_flags & MDOF_V) ? global_v : NULL,
-                               (mdof_flags & MDOF_F) ? f_global : NULL);
+                               x, v, f);
             }
         }
         if (mdof_flags & MDOF_X_COMPRESSED)
@@ -382,7 +342,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
             {
                 /* We are writing the positions of all of the atoms to
                    the compressed output */
-                xxtc = state_global->x;
+                xxtc = as_rvec_array(state_global->x.data());
             }
             else
             {
@@ -434,7 +394,7 @@ void mdoutf_tng_close(gmx_mdoutf_t of)
     }
 }
 
-void done_mdoutf(gmx_mdoutf_t of)
+void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir)
 {
     if (of->fp_ene != NULL)
     {
@@ -452,13 +412,7 @@ void done_mdoutf(gmx_mdoutf_t of)
     {
         gmx_fio_fclose(of->fp_dhdl);
     }
-    if (of->fp_field != NULL)
-    {
-        /* This is opened sometimes with xvgropen, sometimes with
-         * gmx_fio_fopen, so we use the least common denominator for closing.
-         */
-        gmx_fio_fclose(of->fp_field);
-    }
+    ir->efield->finishOutput();
     if (of->f_global != NULL)
     {
         sfree(of->f_global);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,7 +108,7 @@ class RootHelpTopic : public AbstractCompositeHelpTopic
         {
             if (bExported)
             {
-                exportedTopics_.push_back(topic->name());
+                exportedTopics_.emplace_back(topic->name());
             }
             addSubTopic(std::move(topic));
         }
@@ -743,7 +743,7 @@ void HelpExportCompletion::exportModuleHelp(
         const std::string                 & /*tag*/,
         const std::string                 & /*displayName*/)
 {
-    modules_.push_back(module.name());
+    modules_.emplace_back(module.name());
     {
         CommandLineHelpContext context(&bashWriter_);
         // We use the display name to pass the name of the module to the
@@ -949,7 +949,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
 
     const char *const exportFormats[] = { "rst", "completion" };
     std::string       exportFormat;
-    Options           options(NULL, NULL);
+    Options           options;
     options.addOption(StringOption("export").store(&exportFormat)
                           .enumValue(exportFormats));
     CommandLineParser(&options).parse(&argc, argv);

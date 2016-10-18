@@ -37,12 +37,12 @@
 #ifndef GMX_MDTYPES_STATE_H
 #define GMX_MDTYPES_STATE_H
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-struct energyhistory_t;
 
 /*
  * The t_state struct should contain all the (possibly) non-static
@@ -71,6 +71,9 @@ enum {
 /* The names of the state entries, defined in src/gmxlib/checkpoint.c */
 extern const char *est_names[estNR];
 
+/* This vector is not padded yet, padding will be added soon */
+typedef std::vector<gmx::RVec> PaddedRVecVector;
+
 typedef struct history_t
 {
     real  disre_initf;  /* The scaling factor for initializing the time av. */
@@ -89,17 +92,17 @@ typedef struct history_t
  */
 typedef struct ekinstate_t
 {
-    gmx_bool     bUpToDate;
-    int          ekin_n;
-    tensor      *ekinh;
-    tensor      *ekinf;
-    tensor      *ekinh_old;
-    tensor       ekin_total;
-    double      *ekinscalef_nhc;
-    double      *ekinscaleh_nhc;
-    double      *vscale_nhc;
-    real         dekindl;
-    real         mvcos;
+    gmx_bool             bUpToDate;
+    int                  ekin_n;
+    tensor              *ekinh;
+    tensor              *ekinf;
+    tensor              *ekinh_old;
+    tensor               ekin_total;
+    std::vector<double>  ekinscalef_nhc;
+    std::vector<double>  ekinscaleh_nhc;
+    std::vector<double>  vscale_nhc;
+    real                 dekindl;
+    real                 mvcos;
 } ekinstate_t;
 
 typedef struct df_history_t
@@ -199,39 +202,35 @@ typedef struct t_state
     int                     nhchainlength;   /* number of nose-hoover chains               */
     int                     flags;           /* Flags telling which entries are present      */
     int                     fep_state;       /* indicates which of the alchemical states we are in                 */
-    real                   *lambda;          /* lambda vector                               */
+    std::vector<real>       lambda;          /* lambda vector                               */
     matrix                  box;             /* box vector coordinates                         */
     matrix                  box_rel;         /* Relitaive box vectors to preserve shape        */
     matrix                  boxv;            /* box velocitites for Parrinello-Rahman pcoupl */
     matrix                  pres_prev;       /* Pressure of the previous step for pcoupl  */
     matrix                  svir_prev;       /* Shake virial for previous step for pcoupl */
     matrix                  fvir_prev;       /* Force virial of the previous step for pcoupl  */
-    double                 *nosehoover_xi;   /* for Nose-Hoover tcoupl (ngtc)       */
-    double                 *nosehoover_vxi;  /* for N-H tcoupl (ngtc)               */
-    double                 *nhpres_xi;       /* for Nose-Hoover pcoupl for barostat     */
-    double                 *nhpres_vxi;      /* for Nose-Hoover pcoupl for barostat     */
-    double                 *therm_integral;  /* for N-H/V-rescale tcoupl (ngtc)     */
+    std::vector<double>     nosehoover_xi;   /* for Nose-Hoover tcoupl (ngtc)       */
+    std::vector<double>     nosehoover_vxi;  /* for N-H tcoupl (ngtc)               */
+    std::vector<double>     nhpres_xi;       /* for Nose-Hoover pcoupl for barostat     */
+    std::vector<double>     nhpres_vxi;      /* for Nose-Hoover pcoupl for barostat     */
+    std::vector<double>     therm_integral;  /* for N-H/V-rescale tcoupl (ngtc)     */
     real                    veta;            /* trotter based isotropic P-coupling             */
     real                    vol0;            /* initial volume,required for computing NPT conserverd quantity */
-    int                     nalloc;          /* Allocation size for x and v when !=NULL*/
-    rvec                   *x;               /* the coordinates (natoms)                     */
-    rvec                   *v;               /* the velocities (natoms)                      */
-    rvec                   *cg_p;            /* p vector for conjugate gradient minimization */
-
-    history_t               hist;            /* Time history for restraints                  */
+    PaddedRVecVector        x;               /* the coordinates (natoms)                     */
+    PaddedRVecVector        v;               /* the velocities (natoms)                      */
+    PaddedRVecVector        cg_p;            /* p vector for conjugate gradient minimization */
 
     ekinstate_t             ekinstate;       /* The state of the kinetic energy data      */
 
-    struct energyhistory_t *enerhist;        /* Energy history for statistics           */
-    swapstate_t             swapstate;       /* Position swapping                       */
-    df_history_t            dfhist;          /*Free energy history for free energy analysis  */
-    edsamstate_t            edsamstate;      /* Essential dynamics / flooding history */
+    /* History for special algorithms, should be moved to a history struct */
+    history_t               hist;            /* Time history for restraints                  */
+    swapstate_t            *swapstate;       /* Position swapping                       */
+    df_history_t           *dfhist;          /*Free energy history for free energy analysis  */
+    edsamstate_t           *edsamstate;      /* Essential dynamics / flooding history */
 
     int                     ddp_count;       /* The DD partitioning count for this state  */
     int                     ddp_count_cg_gl; /* The DD part. count for index_gl     */
-    int                     ncg_gl;          /* The number of local charge groups            */
-    int                    *cg_gl;           /* The global cg number of the local cgs        */
-    int                     cg_gl_nalloc;    /* Allocation size of cg_gl;              */
+    std::vector<int>        cg_gl;           /* The global cg number of the local cgs        */
 } t_state;
 
 typedef struct t_extmass
@@ -255,12 +254,12 @@ typedef struct
 
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
 
-void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda);
-
-t_state *serial_init_local_state(t_state *state_global);
-
-void done_state(t_state *state);
+void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int dfhistNumLambda);
 
 void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
+
+/*! \brief Allocate an rvec pointer and copy the contents of v to it */
+rvec *getRvecArrayFromPaddedRVecVector(const PaddedRVecVector *v,
+                                       unsigned int            n);
 
 #endif

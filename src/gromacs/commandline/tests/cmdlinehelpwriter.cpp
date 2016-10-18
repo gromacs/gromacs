@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,7 +101,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
 {
     using namespace gmx;
 
-    Options options("test", "Short Description");
+    Options options;
     options.addOption(BooleanOption("bool").description("Boolean option")
                           .defaultValue(true));
     options.addOption(BooleanOption("hidden").description("Hidden option")
@@ -166,7 +166,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesDefaultValuesFromVariables)
 {
     using namespace gmx;
 
-    Options options("test", "Short Description");
+    Options options;
 
     bool    bValue = true;
     options.addOption(BooleanOption("bool").description("Boolean option")
@@ -181,7 +181,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesDefaultValuesFromVariables)
                           .store(iavalue).valueCount(2));
 
     std::vector<std::string> svalues;
-    svalues.push_back("foo");
+    svalues.emplace_back("foo");
     options.addOption(StringOption("str").description("String option")
                           .storeVector(&svalues).multiValue());
 
@@ -204,7 +204,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesLongFileOptions)
     using gmx::eftGenericData;
     using gmx::eftTrajectory;
 
-    gmx::Options options(NULL, NULL);
+    gmx::Options options;
     options.addOption(FileNameOption("f")
                           .description("File name option with a long value")
                           .filetype(eftTrajectory).inputFile().required()
@@ -240,7 +240,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesLongOptions)
     using gmx::DoubleOption;
     using gmx::StringOption;
 
-    gmx::Options options(NULL, NULL);
+    gmx::Options options;
     options.addOption(BooleanOption("longboolean")
                           .description("Boolean option with a long name")
                           .defaultValue(true));
@@ -248,8 +248,8 @@ TEST_F(CommandLineHelpWriterTest, HandlesLongOptions)
     options.addOption(DoubleOption("dvec").description("Double vector option")
                           .vector().store(dblvec));
     std::vector<std::string> values;
-    values.push_back("A very long string value that overflows even the description column");
-    values.push_back("Another very long string value that overflows even the description column");
+    values.emplace_back("A very long string value that overflows even the description column");
+    values.emplace_back("Another very long string value that overflows even the description column");
     options.addOption(StringOption("string")
                           .description("String option with very long values (may "
                                        "be less relevant with selections having "
@@ -270,7 +270,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
     using gmx::SelectionFileOption;
     using gmx::SelectionOption;
 
-    gmx::Options                options(NULL, NULL);
+    gmx::Options                options;
     gmx::SelectionCollection    selections;
     gmx::SelectionOptionManager manager(&selections);
     options.addManager(&manager);
@@ -298,7 +298,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionGroups)
 {
     using gmx::IntegerOption;
 
-    gmx::Options            options(NULL, NULL);
+    gmx::Options            options;
     gmx::IOptionsContainer &group1 = options.addGroup();
     gmx::IOptionsContainer &group2 = options.addGroup();
     group2.addOption(IntegerOption("sub2").description("Option in group 2"));
@@ -321,7 +321,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesHelpText)
     };
     using gmx::IntegerOption;
 
-    gmx::Options options(NULL, NULL);
+    gmx::Options options;
     options.addOption(IntegerOption("int").description("Integer option")
                           .defaultValue(2));
 

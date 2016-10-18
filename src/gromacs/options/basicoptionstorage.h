@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,7 @@ namespace gmx
 /*! \internal \brief
  * Converts, validates, and stores boolean values.
  */
-class BooleanOptionStorage : public OptionStorageTemplate<bool>
+class BooleanOptionStorage : public OptionStorageTemplateSimple<bool>
 {
     public:
         /*! \brief
@@ -80,7 +80,7 @@ class BooleanOptionStorage : public OptionStorageTemplate<bool>
         bool defaultValue() const { return valueCount() > 0 && values()[0]; }
 
     private:
-        virtual void convertValue(const std::string &value);
+        virtual void initConverter(ConverterType *converter);
 
         BooleanOptionInfo       info_;
 };
@@ -88,7 +88,7 @@ class BooleanOptionStorage : public OptionStorageTemplate<bool>
 /*! \internal \brief
  * Converts, validates, and stores integer values.
  */
-class IntegerOptionStorage : public OptionStorageTemplate<int>
+class IntegerOptionStorage : public OptionStorageTemplateSimple<int>
 {
     public:
         //! \copydoc BooleanOptionStorage::BooleanOptionStorage()
@@ -103,7 +103,7 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
         virtual std::string formatSingleValue(const int &value) const;
 
     private:
-        virtual void convertValue(const std::string &value);
+        virtual void initConverter(ConverterType *converter);
         virtual void processSetValues(ValueList *values);
 
         IntegerOptionInfo       info_;
@@ -112,7 +112,7 @@ class IntegerOptionStorage : public OptionStorageTemplate<int>
 /*! \internal \brief
  * Converts, validates, and stores integer values.
  */
-class Int64OptionStorage : public OptionStorageTemplate<gmx_int64_t>
+class Int64OptionStorage : public OptionStorageTemplateSimple<gmx_int64_t>
 {
     public:
         //! \copydoc BooleanOptionStorage::BooleanOptionStorage()
@@ -126,7 +126,7 @@ class Int64OptionStorage : public OptionStorageTemplate<gmx_int64_t>
         virtual std::string formatSingleValue(const gmx_int64_t &value) const;
 
     private:
-        virtual void convertValue(const std::string &value);
+        virtual void initConverter(ConverterType *converter);
 
         Int64OptionInfo       info_;
 };
@@ -134,7 +134,7 @@ class Int64OptionStorage : public OptionStorageTemplate<gmx_int64_t>
 /*! \internal \brief
  * Converts, validates, and stores floating-point (double) values.
  */
-class DoubleOptionStorage : public OptionStorageTemplate<double>
+class DoubleOptionStorage : public OptionStorageTemplateSimple<double>
 {
     public:
         //! \copydoc IntegerOptionStorage::IntegerOptionStorage()
@@ -150,7 +150,8 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
         void setScaleFactor(double factor);
 
     private:
-        virtual void convertValue(const std::string &value);
+        virtual void initConverter(ConverterType *converter);
+        virtual double processValue(const double &value);
         virtual void processSetValues(ValueList *values);
 
         DoubleOptionInfo        info_;
@@ -161,7 +162,7 @@ class DoubleOptionStorage : public OptionStorageTemplate<double>
 /*! \internal \brief
  * Converts, validates, and stores floating-point (float) values.
  */
-class FloatOptionStorage : public OptionStorageTemplate<float>
+class FloatOptionStorage : public OptionStorageTemplateSimple<float>
 {
     public:
         //! \copydoc IntegerOptionStorage::IntegerOptionStorage()
@@ -177,7 +178,8 @@ class FloatOptionStorage : public OptionStorageTemplate<float>
         void setScaleFactor(double factor);
 
     private:
-        virtual void convertValue(const std::string &value);
+        virtual void initConverter(ConverterType *converter);
+        virtual float processValue(const float &value);
         virtual void processSetValues(ValueList *values);
 
         FloatOptionInfo         info_;
@@ -188,7 +190,7 @@ class FloatOptionStorage : public OptionStorageTemplate<float>
 /*! \internal \brief
  * Converts, validates, and stores string values.
  */
-class StringOptionStorage : public OptionStorageTemplate<std::string>
+class StringOptionStorage : public OptionStorageTemplateSimple<std::string>
 {
     public:
         //! \copydoc DoubleOptionStorage::DoubleOptionStorage()
@@ -204,7 +206,8 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
         const ValueList &allowedValues() const { return allowed_; }
 
     private:
-        virtual void convertValue(const std::string &value);
+        virtual void initConverter(ConverterType *converter);
+        virtual std::string processValue(const std::string &value);
 
         StringOptionInfo        info_;
         ValueList               allowed_;
@@ -213,13 +216,9 @@ class StringOptionStorage : public OptionStorageTemplate<std::string>
 /*! \internal \brief
  * Converts, validates, and stores enum values.
  */
-class EnumOptionStorage : public OptionStorageTemplate<int>
+class EnumOptionStorage : public OptionStorageTemplateSimple<int>
 {
     public:
-        //! Shorthand for the enum index storage interface.
-        typedef std::unique_ptr<internal::EnumIndexStoreInterface>
-            EnumIndexStorePointer;
-
         /*! \brief
          * Initializes the storage from option settings.
          *
@@ -239,7 +238,7 @@ class EnumOptionStorage : public OptionStorageTemplate<int>
         EnumOptionStorage(const AbstractOption &settings,
                           const char *const *enumValues, int count,
                           int defaultValue, int defaultValueIfSet,
-                          EnumIndexStorePointer store);
+                          StorePointer store);
 
         virtual OptionInfo &optionInfo() { return info_; }
         virtual std::string typeString() const { return "enum"; }
@@ -250,15 +249,10 @@ class EnumOptionStorage : public OptionStorageTemplate<int>
         const std::vector<std::string> &allowedValues() const { return allowed_; }
 
     private:
-        virtual void convertValue(const std::string &value);
-        virtual void processSetValues(ValueList *values);
-        virtual void refreshValues();
-
-        void refreshEnumIndexStore();
+        virtual void initConverter(ConverterType *converter);
 
         EnumOptionInfo            info_;
         std::vector<std::string>  allowed_;
-        EnumIndexStorePointer     store_;
 };
 
 /*!\}*/

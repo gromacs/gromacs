@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,10 +81,6 @@ struct gmx_domdec_zones_t;
 struct t_commrec;
 struct t_inputrec;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*! \brief Returns the global topology atom number belonging to local atom index i.
  *
  * This function is intended for writing ASCII output
@@ -108,6 +104,9 @@ struct gmx_domdec_zones_t *domdec_zones(struct gmx_domdec_t *dd);
 /*! \brief Sets the j-charge-group range for i-charge-group \p icg */
 void dd_get_ns_ranges(const gmx_domdec_t *dd, int icg,
                       int *jcg0, int *jcg1, ivec shift0, ivec shift1);
+
+/*! \brief Returns the atom range in the local state for atoms that need to be present in mdatoms */
+int dd_natoms_mdatoms(const gmx_domdec_t *dd);
 
 /*! \brief Returns the atom range in the local state for atoms involved in virtual sites */
 int dd_natoms_vsite(const gmx_domdec_t *dd);
@@ -208,7 +207,11 @@ void dd_setup_dlb_resource_sharing(struct t_commrec           *cr,
 
 /*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
 void dd_collect_vec(struct gmx_domdec_t *dd,
-                    t_state *state_local, rvec *lv, rvec *v);
+                    t_state *state_local, const PaddedRVecVector *lv, rvec *v);
+
+/*! \brief Collects local rvec arrays \p lv to \p v on the master rank */
+void dd_collect_vec(struct gmx_domdec_t *dd,
+                    t_state *state_local, const PaddedRVecVector *lv, PaddedRVecVector *v);
 
 /*! \brief Collects the local state \p state_local to \p state on the master rank */
 void dd_collect_state(struct gmx_domdec_t *dd,
@@ -266,7 +269,7 @@ void dd_partition_system(FILE                *fplog,
                          const gmx_mtop_t    *top_global,
                          const t_inputrec    *ir,
                          t_state             *state_local,
-                         rvec               **f,
+                         PaddedRVecVector    *f,
                          t_mdatoms           *mdatoms,
                          gmx_localtop_t      *top_local,
                          t_forcerec          *fr,
@@ -398,9 +401,5 @@ void set_ddbox_cr(t_commrec *cr, const ivec *dd_nc,
                   const t_inputrec *ir, const matrix box,
                   const t_block *cgs, const rvec *x,
                   gmx_ddbox_t *ddbox);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

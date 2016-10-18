@@ -123,12 +123,30 @@ void done_molblock(gmx_molblock_t *molb)
     }
 }
 
-void done_mtop(gmx_mtop_t *mtop, gmx_bool bDoneSymtab)
+void done_gmx_groups_t(gmx_groups_t *g)
 {
-    if (bDoneSymtab)
+    int i;
+
+    for (i = 0; (i < egcNR); i++)
     {
-        done_symtab(&mtop->symtab);
+        if (NULL != g->grps[i].nm_ind)
+        {
+            sfree(g->grps[i].nm_ind);
+            g->grps[i].nm_ind = NULL;
+        }
+        if (NULL != g->grpnr[i])
+        {
+            sfree(g->grpnr[i]);
+            g->grpnr[i] = NULL;
+        }
     }
+    /* The contents of this array is in symtab, don't free it here */
+    sfree(g->grpname);
+}
+
+void done_mtop(gmx_mtop_t *mtop)
+{
+    done_symtab(&mtop->symtab);
 
     sfree(mtop->ffparams.functype);
     sfree(mtop->ffparams.iparams);
@@ -143,6 +161,8 @@ void done_mtop(gmx_mtop_t *mtop, gmx_bool bDoneSymtab)
         done_molblock(&mtop->molblock[i]);
     }
     sfree(mtop->molblock);
+    done_atomtypes(&mtop->atomtypes);
+    done_gmx_groups_t(&mtop->groups);
     done_block(&mtop->mols);
 }
 
@@ -166,6 +186,64 @@ void done_top(t_topology *top)
     done_block(&(top->cgs));
     done_block(&(top->mols));
     done_blocka(&(top->excls));
+}
+
+void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
+{
+    if (mtop != nullptr)
+    {
+        if (top != nullptr)
+        {
+            for (int f = 0; f < F_NRE; ++f)
+            {
+                sfree(top->idef.il[f].iatoms);
+                top->idef.il[f].iatoms = NULL;
+                top->idef.il[f].nalloc = 0;
+            }
+            done_atom(&top->atoms);
+            done_block(&top->cgs);
+            done_blocka(&top->excls);
+            done_symtab(&top->symtab);
+            open_symtab(&mtop->symtab);
+        }
+        done_mtop(mtop);
+    }
+}
+
+bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)
+{
+    if (mtop == nullptr)
+    {
+        return false;
+    }
+    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveMass;
+}
+
+bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
+{
+    if (mtop == nullptr)
+    {
+        return false;
+    }
+    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveCharge;
+}
+
+bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop)
+{
+    if (mtop == nullptr)
+    {
+        return false;
+    }
+    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.haveType;
+}
+
+bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
+{
+    if (mtop == nullptr)
+    {
+        return false;
+    }
+    return mtop->nmoltype == 0 || mtop->moltype[0].atoms.havePdbInfo;
 }
 
 static void pr_grps(FILE *fp, const char *title, const t_grps grps[], char **grpname[])

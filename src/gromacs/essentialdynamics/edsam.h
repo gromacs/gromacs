@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,7 +88,7 @@ void do_edsam(const t_inputrec *ir, gmx_int64_t step,
  * gmx make_edi can be used to create an .edi input file.
  *
  * \param natoms            Number of atoms of the whole MD system.
- * \param EDstate           Essential dynamics and flooding data stored in the checkpoint file.
+ * \param EDstatePtr        Essential dynamics and flooding data stored in the checkpoint file.
  * \param nfile             Number of entries (files) in the fnm structure.
  * \param fnm               The filenames struct; it contains also the names of the
  *                          essential dynamics and flooding in + output files.
@@ -98,7 +98,7 @@ void do_edsam(const t_inputrec *ir, gmx_int64_t step,
  * \param cr                Data needed for MPI communication.
  * \returns                 Pointer to the initialized essential dynamics / flooding data.
  */
-gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm fnm[],
+gmx_edsam_t ed_open(int natoms, edsamstate_t **EDstatePtr, int nfile, const t_filenm fnm[],
                     unsigned long Flags, const gmx_output_env_t *oenv, t_commrec *cr);
 
 /*! \brief Initializes the essential dynamics and flooding module.

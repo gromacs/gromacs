@@ -48,7 +48,7 @@ F77_FUNC(sbdsqr,SBDSQR)(const char *uplo,
     float unfl, sinl, cosr, smin, smax, sinr;
     float oldcs;
     int oldll;
-    float shift, sigmn, oldsn;
+    float shift, sigmn, oldsn = 0.;
     int maxit;
     float sminl;
     float sigmx;

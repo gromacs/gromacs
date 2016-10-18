@@ -52,6 +52,7 @@
 namespace gmx
 {
 
+#ifdef DOXYGEN
 /*! \brief
  * Macro to declare a class non-copyable and non-assignable.
  *
@@ -59,9 +60,12 @@ namespace gmx
  *
  * \ingroup module_utility
  */
+#define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName)
+#else
 #define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName) \
     ClassName &operator=(const ClassName &) = delete;   \
     ClassName(const ClassName &)            = delete
+#endif
 /*! \brief
  * Macro to declare a class non-assignable.
  *

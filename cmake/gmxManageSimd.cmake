@@ -32,8 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# include avx test source, used if the AVX flags are set below
-include(gmxTestAVXMaskload)
 include(gmxFindFlagsForSource)
 
 # Macro that manages setting the respective C and C++ toolchain
@@ -142,6 +140,8 @@ elseif(GMX_SIMD STREQUAL "SSE2")
         gmx_give_fatal_error_when_simd_support_not_found("SSE2" "disable SIMD support (slow)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
+    set(SIMD_C_FLAGS "${TOOLCHAIN_C_FLAGS}")
+    set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
     set(GMX_SIMD_X86_${GMX_SIMD} 1)
     set(SIMD_STATUS_MESSAGE "Enabling SSE2 SIMD instructions")
 
@@ -245,8 +245,6 @@ elseif(GMX_SIMD STREQUAL "AVX_128_FMA")
     set(GMX_SIMD_X86_${GMX_SIMD} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX SIMD GROMACS SIMD (with fused-multiply add)")
 
-    gmx_test_avx_gcc_maskload_bug(GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG "${SIMD_C_FLAGS}")
-
 elseif(GMX_SIMD STREQUAL "AVX_256")
 
     prepare_x86_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
@@ -267,8 +265,6 @@ elseif(GMX_SIMD STREQUAL "AVX_256")
     set(GMX_SIMD_X86_${GMX_SIMD} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX SIMD instructions")
 
-    gmx_test_avx_gcc_maskload_bug(GMX_SIMD_X86_AVX_GCC_MASKLOAD_BUG "${SIMD_C_FLAGS}")
-
 elseif(GMX_SIMD STREQUAL "AVX2_256")
 
     prepare_x86_toolchain(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
@@ -288,8 +284,6 @@ elseif(GMX_SIMD STREQUAL "AVX2_256")
     set(SIMD_CXX_FLAGS "${TOOLCHAIN_CXX_FLAGS}")
     set(GMX_SIMD_X86_${GMX_SIMD} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions")
-
-    # No need to test for Maskload bug - it was fixed before gcc added AVX2 support
 
 elseif(GMX_SIMD STREQUAL "MIC")
 
@@ -384,7 +378,7 @@ elseif(GMX_SIMD STREQUAL "IBM_QPX")
         set(SIMD_STATUS_MESSAGE "Enabling IBM QPX SIMD instructions")
 
     else()
-        gmx_give_fatal_error_when_simd_support_not_found("IBM QPX" "or 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-CXX' to set up the tool chain" "${SUGGEST_BINUTILS_UPDATE}")
+        gmx_give_fatal_error_when_simd_support_not_found("IBM QPX" "or 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-bgclang-CXX' to set up the tool chain" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
 
 elseif(GMX_SIMD STREQUAL "IBM_VMX")

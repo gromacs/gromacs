@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2007, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
-#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
@@ -85,8 +85,6 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     gmx_mtop_t           *mtop = NULL;
     int                   ePBC = -1;
     t_block              *mols = NULL;
-    gmx_mtop_atomlookup_t alook;
-    t_atom               *atom;
     int                   ii, jj;
     real                  temp, tfac;
     /* Cluster size distribution (matrix) */
@@ -157,8 +155,6 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         rd_index(ndx, 1, &nindex, &index, &gname);
     }
 
-    alook = gmx_mtop_atomlookup_init(mtop);
-
     snew(clust_index, nindex);
     snew(clust_size, nindex);
     cut2   = cut*cut;
@@ -171,6 +167,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     max_clust_size = 1;
     max_clust_ind  = -1;
+    int molb       = 0;
     do
     {
         if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0)))
@@ -323,9 +320,9 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                     {
                         if (clust_index[i] == max_clust_ind)
                         {
-                            ai    = index[i];
-                            gmx_mtop_atomnr_to_atom(alook, ai, &atom);
-                            ekin += 0.5*atom->m*iprod(v[ai], v[ai]);
+                            ai      = index[i];
+                            real            m  = mtopGetAtomMass(mtop, ai, &molb);
+                            ekin   += 0.5*m*iprod(v[ai], v[ai]);
                         }
                     }
                     temp = (ekin*2.0)/(3.0*tfac*max_clust_size*BOLTZ);
@@ -341,8 +338,6 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     xvgrclose(gp);
     xvgrclose(hp);
     xvgrclose(tp);
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     if (max_clust_ind >= 0)
     {

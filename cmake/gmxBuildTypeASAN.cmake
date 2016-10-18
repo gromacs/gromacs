@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014, by the GROMACS development team, led by
+# Copyright (c) 2014,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -42,9 +42,3 @@ foreach(_language C CXX)
     set(CMAKE_${_language}_FLAGS_ASAN ${_flags} CACHE STRING "${_human_readable_language} flags for address sanitizer")
     mark_as_advanced(CMAKE_${_language}_FLAGS_ASAN)
 endforeach()
-
-string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
-if (APPLE AND _cmake_build_type STREQUAL ASAN) #https://code.google.com/p/address-sanitizer/issues/detail?id=210
-   set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disabled for ASAN builds" FORCE)
-endif()
-

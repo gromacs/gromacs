@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -344,7 +344,7 @@ void OptionsAdapter::filenmToOptions(Options *options, t_filenm *fnm)
         GMX_RELEASE_ASSERT(defType != efNR,
                            "File name option specifies an invalid extension");
     }
-    fileNameOptions_.push_back(FileNameData(fnm));
+    fileNameOptions_.emplace_back(fnm);
     FileNameData &data = fileNameOptions_.back();
     data.optionInfo = options->addOption(
                 FileNameOption(name).storeVector(&data.values)
@@ -361,7 +361,7 @@ void OptionsAdapter::pargsToOptions(Options *options, t_pargs *pa)
     const bool        bHidden = startsWith(pa->desc, "HIDDEN");
     const char *const name    = &pa->option[1];
     const char *const desc    = (bHidden ? &pa->desc[6] : pa->desc);
-    programArgs_.push_back(ProgramArgData(pa));
+    programArgs_.emplace_back(pa);
     ProgramArgData   &data = programArgs_.back();
     switch (pa->type)
     {
@@ -494,7 +494,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         bool                            bView         = false;
         int                             xvgFormat     = 0;
         gmx::OptionsAdapter             adapter(*argc, argv);
-        gmx::Options                    options(NULL, NULL);
+        gmx::Options                    options;
         gmx::OptionsBehaviorCollection  behaviors(&options);
         gmx::FileNameOptionManager      fileOptManager;
 

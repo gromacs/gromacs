@@ -36,6 +36,7 @@
 
 #include "mdmodules.h"
 
+#include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -61,14 +62,17 @@ class MDModules::Impl
         {
             if (ir_ == nullptr)
             {
+                field_ = createElectricFieldModule();
                 snew(ir_, 1);
                 snew(ir_->fepvals, 1);
                 snew(ir_->expandedvals, 1);
                 snew(ir_->simtempvals, 1);
+                ir_->efield = field_.get();
             }
         }
 
-        t_inputrec *ir_;
+        std::unique_ptr<IInputRecExtension>  field_;
+        t_inputrec                          *ir_;
 };
 
 MDModules::MDModules() : impl_(new Impl)

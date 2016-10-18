@@ -200,7 +200,7 @@ gmx_gettime()
        headers claim sufficient support for POSIX (ie not Mac and
        Windows), and it isn't BG/Q (whose compute node kernel only
        supports gettimeofday, and bgclang doesn't provide a fully
-       functional implementation clock_gettime, unlike xlc). */
+       functional implementation clock_gettime). */
 #if HAVE_CLOCK_GETTIME && defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0 && !(defined __bgq__ && defined __clang__)
     struct timespec t;
     double          seconds;
@@ -237,7 +237,7 @@ gmx_gettime_per_thread()
        headers claim sufficient support for POSIX (ie not Mac and
        Windows), and it isn't BG/Q (whose compute node kernel only
        supports gettimeofday, and bgclang doesn't provide a fully
-       functional implementation clock_gettime, unlike xlc). */
+       functional implementation clock_gettime). */
 #if HAVE_CLOCK_GETTIME && defined(_POSIX_THREAD_CPUTIME) && _POSIX_THREAD_CPUTIME > 0 && !(defined __bgq__ && defined __clang__)
     struct timespec t;
     double          seconds;

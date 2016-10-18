@@ -74,7 +74,7 @@ struct t_swapcoords;
  * \param[in] mtop          Molecular topology.
  * \param[in] x             The initial positions of all particles.
  * \param[in] box           The simulation box.
- * \param[in] swapstate     Swap-related data that is read from or written to checkpoint.
+ * \param[in] swapstatePtr  Swap-related data that is read from or written to checkpoint.
  * \param[in] cr            Pointer to MPI communication data.
  * \param[in] oenv          Needed to open the swap output XVGR file.
  * \param[in] Flags         Flags passed over from main, used to determine
@@ -88,7 +88,7 @@ void init_swapcoords(
         gmx_mtop_t             *mtop,
         rvec                    x[],
         matrix                  box,
-        swapstate_t            *swapstate,
+        swapstate_t           **swapstatePtr,
         t_commrec              *cr,
         const gmx_output_env_t *oenv,
         unsigned long           Flags);
@@ -121,7 +121,6 @@ void dd_make_local_swap_groups(gmx_domdec_t *dd, t_swapcoords *si_pub);
  * \param[in] wcycle   Count wallcycles of swap routines for diagnostic output.
  * \param[in] x        Positions of home particles this node owns.
  * \param[in] box      The simulation box.
- * \param[in] mtop     Molecular topology.
  * \param[in] bVerbose Should we be quiet or verbose?
  * \param[in] bRerun   Are we doing a rerun?
  *
@@ -135,7 +134,6 @@ gmx_bool do_swapcoords(
         gmx_wallcycle_t   wcycle,
         rvec              x[],
         matrix            box,
-        gmx_mtop_t       *mtop,
         gmx_bool          bVerbose,
         gmx_bool          bRerun);
 

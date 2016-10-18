@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,9 +118,9 @@ void SelectionOptionStorage::addSelections(
 }
 
 
-void SelectionOptionStorage::convertValue(const std::string &value)
+void SelectionOptionStorage::convertValue(const Variant &value)
 {
-    manager_.convertOptionValue(this, value, false);
+    manager_.convertOptionValue(this, value.cast<std::string>(), false);
 }
 
 void SelectionOptionStorage::processSetValues(ValueList *values)
@@ -180,10 +180,9 @@ void SelectionOptionStorage::setAllowedValueCount(int count)
 
 void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
 {
-    ValueList::iterator i;
-    for (i = values().begin(); i != values().end(); ++i)
+    for (const Selection &value : values())
     {
-        if (flag == efSelection_OnlyStatic && bSet && i->isDynamic())
+        if (flag == efSelection_OnlyStatic && bSet && value.isDynamic())
         {
             MessageStringCollector errors;
             errors.startContext("In option '" + name() + "'");
@@ -193,9 +192,9 @@ void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
         }
     }
     selectionFlags_.set(flag, bSet);
-    for (i = values().begin(); i != values().end(); ++i)
+    for (Selection &value : values())
     {
-        i->data().setFlags(selectionFlags_);
+        value.data().setFlags(selectionFlags_);
     }
 }
 
@@ -281,7 +280,7 @@ void SelectionFileOptionStorage::clearSet()
     bValueParsed_ = false;
 }
 
-void SelectionFileOptionStorage::convertValue(const std::string &value)
+void SelectionFileOptionStorage::convertValue(const Variant &value)
 {
     if (bValueParsed_)
     {
@@ -289,7 +288,7 @@ void SelectionFileOptionStorage::convertValue(const std::string &value)
     }
     bValueParsed_ = true;
     // TODO: Should we throw an InvalidInputError if the file does not exist?
-    manager_.parseRequestedFromFile(value);
+    manager_.parseRequestedFromFile(value.cast<std::string>());
 }
 
 void SelectionFileOptionStorage::processSet()

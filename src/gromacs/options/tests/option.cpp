@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@ namespace
 
 TEST(OptionsTest, FailsOnNonsafeStorage)
 {
-    gmx::Options options(NULL, NULL);
+    gmx::Options options;
     int          value = -1;
     using gmx::IntegerOption;
     ASSERT_THROW_GMX(options.addOption(IntegerOption("name").store(&value)

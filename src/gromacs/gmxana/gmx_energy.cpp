@@ -56,9 +56,11 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdebin.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -367,20 +369,19 @@ static void get_dhdl_parms(const char *topnm, t_inputrec *ir)
     read_tpx(topnm, ir, box, &natoms, NULL, NULL, &mtop);
 }
 
-static void get_orires_parms(const char *topnm,
+static void get_orires_parms(const char *topnm, t_inputrec *ir,
                              int *nor, int *nex, int **label, real **obs)
 {
     gmx_mtop_t      mtop;
     gmx_localtop_t *top;
-    t_inputrec      ir;
     t_iparams      *ip;
     int             natoms, i;
     t_iatom        *iatom;
     int             nb;
     matrix          box;
 
-    read_tpx(topnm, &ir, box, &natoms, NULL, NULL, &mtop);
-    top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
+    read_tpx(topnm, ir, box, &natoms, NULL, NULL, &mtop);
+    top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO);
 
     ip       = top->idef.iparams;
     iatom    = top->idef.il[F_ORIRES].iatoms;
@@ -1992,7 +1993,6 @@ int gmx_energy(int argc, char *argv[])
     int                timecheck = 0;
     gmx_mtop_t         mtop;
     gmx_localtop_t    *top = NULL;
-    t_inputrec         ir;
     enerdata_t         edat;
     gmx_enxnm_t       *enm = NULL;
     t_enxframe        *frame, *fr = NULL;
@@ -2014,7 +2014,7 @@ int gmx_energy(int argc, char *argv[])
     gmx_bool          *bIsEner = NULL;
     char             **pairleg, **odtleg, **otenleg;
     char             **leg = NULL;
-    char              *anm_j, *anm_k, *resnm_j, *resnm_k;
+    const char        *anm_j, *anm_k, *resnm_j, *resnm_k;
     int                resnr_j, resnr_k;
     const char        *orinst_sub = "@ subtitle \"instantaneous\"\n";
     char               buf[256];
@@ -2052,6 +2052,7 @@ int gmx_energy(int argc, char *argv[])
                            PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
+        sfree(ppa);
         return 0;
     }
 
@@ -2075,6 +2076,9 @@ int gmx_energy(int argc, char *argv[])
     Vaver = -1;
 
     bVisco = opt2bSet("-vis", NFILE, fnm);
+
+    gmx::MDModules  mdModules;
+    t_inputrec     *ir = mdModules.inputrec();
 
     if ((!bDisRe) && (!bDHDL))
     {
@@ -2172,7 +2176,8 @@ int gmx_energy(int argc, char *argv[])
 
         if (bORIRE || bOTEN)
         {
-            get_orires_parms(ftp2fn(efTPR, NFILE, fnm), &nor, &nex, &or_label, &oobs);
+            get_orires_parms(ftp2fn(efTPR, NFILE, fnm), ir,
+                             &nor, &nex, &or_label, &oobs);
         }
 
         if (bORIRE)
@@ -2298,7 +2303,7 @@ int gmx_energy(int argc, char *argv[])
     else if (bDisRe)
     {
         nbounds = get_bounds(ftp2fn(efTPR, NFILE, fnm), &bounds, &index, &pair, &npairs,
-                             &mtop, &top, &ir);
+                             &mtop, &top, ir);
         snew(violaver, npairs);
         out = xvgropen(opt2fn("-o", NFILE, fnm), "Sum of Violations",
                        "Time (ps)", "nm", oenv);
@@ -2310,13 +2315,13 @@ int gmx_energy(int argc, char *argv[])
             if (output_env_get_print_xvgr_codes(oenv))
             {
                 fprintf(fp_pairs, "@ subtitle \"averaged (tau=%g) and instantaneous\"\n",
-                        ir.dr_tau);
+                        ir->dr_tau);
             }
         }
     }
     else if (bDHDL)
     {
-        get_dhdl_parms(ftp2fn(efTPR, NFILE, fnm), &ir);
+        get_dhdl_parms(ftp2fn(efTPR, NFILE, fnm), ir);
     }
 
     /* Initiate energies and set them to zero */
@@ -2472,13 +2477,14 @@ int gmx_energy(int argc, char *argv[])
                               ndisre, top->idef.il[F_DISRES].nr/3);
                 }
                 snew(pairleg, ndisre);
+                int molb = 0;
                 for (i = 0; i < ndisre; i++)
                 {
                     snew(pairleg[i], 30);
                     j = fa[3*i+1];
                     k = fa[3*i+2];
-                    gmx_mtop_atominfo_global(&mtop, j, &anm_j, &resnr_j, &resnm_j);
-                    gmx_mtop_atominfo_global(&mtop, k, &anm_k, &resnr_k, &resnm_k);
+                    mtopGetAtomAndResidueName(&mtop, j, &molb, &anm_j, &resnr_j, &resnm_j, nullptr);
+                    mtopGetAtomAndResidueName(&mtop, k, &molb, &anm_k, &resnr_k, &resnm_k, nullptr);
                     sprintf(pairleg[i], "%d %s %d %s (%d)",
                             resnr_j, anm_j, resnr_k, anm_k,
                             ip[fa[3*i]].disres.label);
@@ -2555,7 +2561,7 @@ int gmx_energy(int argc, char *argv[])
                 }
                 else if (bDHDL)
                 {
-                    do_dhdl(fr, &ir, &fp_dhdl, opt2fn("-odh", NFILE, fnm), bDp, &dh_blocks, &dh_hists, &dh_samples, &dh_lambdas, oenv);
+                    do_dhdl(fr, ir, &fp_dhdl, opt2fn("-odh", NFILE, fnm), bDp, &dh_blocks, &dh_hists, &dh_samples, &dh_lambdas, oenv);
                 }
 
                 /*******************************************

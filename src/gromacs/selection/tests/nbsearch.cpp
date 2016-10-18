@@ -132,7 +132,7 @@ class NeighborhoodSearchTestData
                 testPos_.reserve(testPositions_.size());
                 for (size_t i = 0; i < testPositions_.size(); ++i)
                 {
-                    testPos_.push_back(testPositions_[i].x);
+                    testPos_.emplace_back(testPositions_[i].x);
                 }
             }
             return gmx::AnalysisNeighborhoodPositions(testPos_);
@@ -146,7 +146,7 @@ class NeighborhoodSearchTestData
         {
             GMX_RELEASE_ASSERT(testPos_.empty(),
                                "Cannot add positions after testPositions() call");
-            testPositions_.push_back(TestPosition(x));
+            testPositions_.emplace_back(x);
         }
         gmx::RVec generateRandomPosition();
         std::vector<int> generateIndex(int count, gmx_uint64_t seed) const;

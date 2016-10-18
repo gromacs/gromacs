@@ -41,16 +41,16 @@
 
 #include <vector>
 
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 
 struct gmx_localtop_t;
-struct gmx_moltype_t;
-struct gmx_mtop_t;
 struct t_atom;
 struct t_atoms;
 struct t_block;
 struct t_ilist;
-struct t_topology;
+struct t_symtab;
 
 /* Should be called after generating or reading mtop,
  * to set some compute intesive variables to avoid
@@ -70,61 +70,11 @@ gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[]);
 int
 ncg_mtop(const gmx_mtop_t *mtop);
 
+/* Returns the total number of residues in mtop. */
+int gmx_mtop_nres(const gmx_mtop_t *mtop);
+
 /* Removes the charge groups, i.e. makes single atom charge groups, in mtop */
 void gmx_mtop_remove_chargegroups(gmx_mtop_t *mtop);
-
-
-/* Abstract data type for looking up atoms by global atom number */
-typedef struct gmx_mtop_atomlookup *gmx_mtop_atomlookup_t;
-
-/* Initialize atom lookup by global atom number */
-gmx_mtop_atomlookup_t
-gmx_mtop_atomlookup_init(const gmx_mtop_t *mtop);
-
-/* As gmx_mtop_atomlookup_init, but optimized for atoms involved in settle */
-gmx_mtop_atomlookup_t
-gmx_mtop_atomlookup_settle_init(const gmx_mtop_t *mtop);
-
-/* Destroy a gmx_mtop_atomlookup_t data structure */
-void
-gmx_mtop_atomlookup_destroy(gmx_mtop_atomlookup_t alook);
-
-
-/* Returns a pointer to the t_atom struct belonging to atnr_global.
- * This can be an expensive operation, so if possible use
- * one of the atom loop constructs below.
- */
-void
-gmx_mtop_atomnr_to_atom(const gmx_mtop_atomlookup_t alook,
-                        int                         atnr_global,
-                        t_atom                    **atom);
-
-
-/* Returns a pointer to the molecule interaction array ilist_mol[F_NRE]
- * and the local atom number in the molecule belonging to atnr_global.
- */
-void
-gmx_mtop_atomnr_to_ilist(const gmx_mtop_atomlookup_t alook,
-                         int atnr_global,
-                         t_ilist **ilist_mol, int *atnr_offset);
-
-
-/* Returns the molecule block index
- * and the molecule number in the block
- * and the atom number offset for the atom indices in moltype
- * belonging to atnr_global.
- */
-void
-gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_atomlookup_t alook,
-                                int atnr_global,
-                                int *molb, int *molnr, int *atnr_mol);
-
-
-/* Returns atom name, global resnr and residue name  of atom atnr_global */
-void
-gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
-                         char **atomname, int *resnr, char **resname);
-
 
 /* Abstract type for atom loop over all atoms */
 typedef struct gmx_mtop_atomloop_all *gmx_mtop_atomloop_all_t;
@@ -153,7 +103,7 @@ gmx_mtop_atomloop_all_init(const gmx_mtop_t *mtop);
  */
 gmx_bool
 gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
-                           int *at_global, t_atom **atom);
+                           int *at_global, const t_atom **atom);
 
 /* Return the atomname, the residue number and residue name
  * of the current atom in the loop.
@@ -193,7 +143,7 @@ gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop);
  */
 gmx_bool
 gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
-                             t_atom **atom, int *nmol);
+                             const t_atom **atom, int *nmol);
 
 
 /* Abstract type for ilist loop over all ilists */
@@ -253,7 +203,7 @@ gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
 
 
 /* Generate a 'local' topology for the whole system.
- * When feeEnergyInteractionsAtEnd == true, the free energy interactions will
+ * When freeEnergyInteractionsAtEnd == true, the free energy interactions will
  * be sorted to the end.
  */
 gmx_localtop_t *
@@ -261,10 +211,14 @@ gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, bool freeEnergyInteractionsA
 
 
 /* Converts a gmx_mtop_t struct to t_topology.
- * All memory relating only to mtop will be freed.
+ *
+ * If freeMTop == true, memory related to mtop will be freed so that done_top()
+ * on the result value will free all memory.
+ * If freeMTop == false, mtop and the return value will share some of their
+ * memory, and there is currently no way to consistently free all the memory.
  */
 t_topology
-gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
+gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, bool freeMTop);
 
 /*! \brief Get vector of atoms indices from topology
  *
@@ -274,5 +228,21 @@ gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
  * \returns Vector that will be filled with the atom indices
  */
 std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop);
+
+/*! \brief Converts a t_atoms struct to an mtop struct
+ *
+ * All pointers contained in \p atoms will be copied into \p mtop.
+ * Note that this will produce one moleculetype encompassing the whole system.
+ *
+ * \param[in]  symtab  The symbol table
+ * \param[in]  name    Pointer to the name for the topology
+ * \param[in]  atoms   The atoms to convert
+ * \param[out] mtop    The molecular topology output containing atoms.
+ */
+void
+convertAtomsToMtop(t_symtab    *symtab,
+                   char       **name,
+                   t_atoms     *atoms,
+                   gmx_mtop_t  *mtop);
 
 #endif

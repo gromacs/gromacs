@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,13 +124,20 @@ init_data_compare(int npar, gmx_ana_selparam_t *param);
  * \returns   0 if the input data is valid, -1 on error.
  */
 static void
-init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_compare(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the memory allocated for comparison expression evaluation. */
 static void
 free_data_compare(void *data);
-/** Evaluates comparison expressions. */
+/*! \brief
+ * Evaluates comparison expressions.
+ *
+ * \param[in]  context  Not used.
+ * \param[in]  g        Evaluation index group.
+ * \param[out] out      Output data structure (\p out->u.g is used).
+ * \param[in]  data     Should point to a \c t_methoddata_compare.
+ */
 static void
-evaluate_compare(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_compare(const gmx::SelMethodEvalContext &context,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for comparison expression evaluation. */
@@ -409,7 +416,7 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, bool bRight)
 }
 
 static void
-init_compare(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+init_compare(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_compare *d = (t_methoddata_compare *)data;
     int                   n1, n2;
@@ -503,25 +510,18 @@ free_data_compare(void *data)
 /*! \brief
  * Implementation for evaluate_compare() for integer values.
  *
- * \param[in]  top   Not used.
- * \param[in]  fr    Not used.
- * \param[in]  pbc   Not used.
  * \param[in]  g     Evaluation index group.
  * \param[out] out   Output data structure (\p out->u.g is used).
  * \param[in]  data  Should point to a \c t_methoddata_compare.
  */
 static void
-evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_compare_int(gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_compare *d = (t_methoddata_compare *)data;
     int                   i, i1, i2, ig;
     int                   a, b;
     bool                  bAccept;
 
-    GMX_UNUSED_VALUE(top);
-    GMX_UNUSED_VALUE(fr);
-    GMX_UNUSED_VALUE(pbc);
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {
         a       = d->left.i[i1];
@@ -556,9 +556,6 @@ evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 /*! \brief
  * Implementation for evaluate_compare() if either value is non-integer.
  *
- * \param[in]  top   Not used.
- * \param[in]  fr    Not used.
- * \param[in]  pbc   Not used.
  * \param[in]  g     Evaluation index group.
  * \param[out] out   Output data structure (\p out->u.g is used).
  * \param[in]  data  Should point to a \c t_methoddata_compare.
@@ -567,17 +564,13 @@ evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * This is ensured by the initialization method.
  */
 static void
-evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_compare_real(gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_compare *d = (t_methoddata_compare *)data;
     int                   i, i1, i2, ig;
     real                  a, b;
     bool                  bAccept;
 
-    GMX_UNUSED_VALUE(top);
-    GMX_UNUSED_VALUE(fr);
-    GMX_UNUSED_VALUE(pbc);
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {
         a       = d->left.r[i1];
@@ -609,26 +602,18 @@ evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->u.g->isize = ig;
 }
 
-/*!
- * \param[in]  top   Not used.
- * \param[in]  fr    Not used.
- * \param[in]  pbc   Not used.
- * \param[in]  g     Evaluation index group.
- * \param[out] out   Output data structure (\p out->u.g is used).
- * \param[in]  data  Should point to a \c t_methoddata_compare.
- */
 static void
-evaluate_compare(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_compare(const gmx::SelMethodEvalContext & /*context*/,
                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_compare *d = (t_methoddata_compare *)data;
 
     if (!((d->left.flags | d->right.flags) & CMP_REALVAL))
     {
-        evaluate_compare_int(top, fr, pbc, g, out, data);
+        evaluate_compare_int(g, out, data);
     }
     else
     {
-        evaluate_compare_real(top, fr, pbc, g, out, data);
+        evaluate_compare_real(g, out, data);
     }
 }

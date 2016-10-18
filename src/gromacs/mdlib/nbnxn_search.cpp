@@ -1678,9 +1678,9 @@ static void make_fep_list(const nbnxn_search_t    nbs,
 
             bFEP_i_all = bFEP_i_all && bFEP_i;
 
-            if ((nlist->nrj + cj_ind_end - cj_ind_start)*nbl->na_cj > nlist->maxnrj)
+            if (nlist->nrj + (cj_ind_end - cj_ind_start)*nbl->na_cj > nlist->maxnrj)
             {
-                nlist->maxnrj = over_alloc_small((nlist->nrj + cj_ind_end - cj_ind_start)*nbl->na_cj);
+                nlist->maxnrj = over_alloc_small(nlist->nrj + (cj_ind_end - cj_ind_start)*nbl->na_cj);
                 srenew(nlist->jjnr,     nlist->maxnrj);
                 srenew(nlist->excl_fep, nlist->maxnrj);
             }

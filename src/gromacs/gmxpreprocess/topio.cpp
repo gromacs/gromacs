@@ -65,6 +65,7 @@
 #include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
@@ -73,6 +74,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
 #define OPENDIR     '[' /* starting sign for directive */
@@ -581,7 +583,8 @@ static char **read_topol(const char *infile, const char *outfile,
                          gmx_bool        bFEP,
                          gmx_bool        bGenborn,
                          gmx_bool        bZero,
-                         warninp_t   wi)
+                         gmx_bool        usingFullRangeElectrostatics,
+                         warninp_t       wi)
 {
     FILE           *out;
     int             i, sl, nb_funct;
@@ -927,8 +930,13 @@ static char **read_topol(const char *infile, const char *outfile,
 
                             push_molt(symtab, &nmol, molinfo, pline, wi);
                             srenew(block2, nmol);
-                            block2[nmol-1].nr = 0;
-                            mi0               = &((*molinfo)[nmol-1]);
+                            block2[nmol-1].nr      = 0;
+                            mi0                    = &((*molinfo)[nmol-1]);
+                            mi0->atoms.haveMass    = TRUE;
+                            mi0->atoms.haveCharge  = TRUE;
+                            mi0->atoms.haveType    = TRUE;
+                            mi0->atoms.haveBState  = TRUE;
+                            mi0->atoms.havePdbInfo = FALSE;
                             break;
                         }
                         case d_atoms:
@@ -977,7 +985,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             {
                                 init_block2(&(block2[nmol-1]), mi0->atoms.nr);
                             }
-                            push_excl(pline, &(block2[nmol-1]));
+                            push_excl(pline, &(block2[nmol-1]), wi);
                             break;
                         case d_system:
                             trim(pline);
@@ -1020,7 +1028,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                               mi0->plist,
                                               &nnb,
                                               &(mi0->excls));
-                                merge_excl(&(mi0->excls), &(block2[whichmol]));
+                                merge_excl(&(mi0->excls), &(block2[whichmol]), wi);
                                 done_block2(&(block2[whichmol]));
                                 make_shake(mi0->plist, &mi0->atoms, opts->nshake);
 
@@ -1041,7 +1049,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                     convert_moltype_couple(mi0, dcatt, *fudgeQQ,
                                                            opts->couple_lam0, opts->couple_lam1,
                                                            opts->bCoupleIntra,
-                                                           nb_funct, &(plist[nb_funct]));
+                                                           nb_funct, &(plist[nb_funct]), wi);
                                 }
                                 stupid_fill_block(&mi0->mols, mi0->atoms.nr, TRUE);
                                 mi0->bProcessed = TRUE;
@@ -1086,6 +1094,7 @@ static char **read_topol(const char *infile, const char *outfile,
     {
         title = put_symtab(symtab, "");
     }
+
     if (fabs(qt) > 1e-4)
     {
         sprintf(warn_buf, "System has non-zero total charge: %.6f\n%s\n", qt, floating_point_arithmetic_tip);
@@ -1096,6 +1105,12 @@ static char **read_topol(const char *infile, const char *outfile,
         sprintf(warn_buf, "State B has non-zero total charge: %.6f\n%s\n", qBt, floating_point_arithmetic_tip);
         warning_note(wi, warn_buf);
     }
+    if (usingFullRangeElectrostatics && (fabs(qt) > 1e-4 || fabs(qBt) > 1e-4))
+    {
+        warning(wi, "You are using Ewald electrostatics in a system with net charge. This can lead to severe artifacts, such as ions moving into regions with low dielectric, due to the uniform background charge. We suggest to neutralize your system with counter ions, possibly in combination with a physiological salt concentration.");
+        please_cite(stdout, "Hub2014a");
+    }
+
     DS_Done (&DS);
     for (i = 0; i < nmol; i++)
     {
@@ -1160,7 +1175,9 @@ char **do_top(gmx_bool          bVerbose,
                        nrmols, molinfo, intermolecular_interactions,
                        plist, combination_rule, repulsion_power,
                        opts, fudgeQQ, nmolblock, molblock,
-                       ir->efep != efepNO, bGenborn, bZero, wi);
+                       ir->efep != efepNO, bGenborn, bZero,
+                       EEL_FULL(ir->coulombtype), wi);
+
     if ((*combination_rule != eCOMB_GEOMETRIC) &&
         (ir->vdwtype == evdwUSER))
     {
@@ -1174,7 +1191,7 @@ char **do_top(gmx_bool          bVerbose,
 
 
 static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
-                                    t_inputrec *ir)
+                                    t_inputrec *ir, warninp_t wi)
 {
     /* This routine expects molt->ilist to be of size F_NRE and ordered. */
 
@@ -1414,7 +1431,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt, unsigned char *grpnr,
     t_block2  qmexcl2;
     init_block2(&qmexcl2, molt->atoms.nr);
     b_to_b2(&qmexcl, &qmexcl2);
-    merge_excl(&(molt->excls), &qmexcl2);
+    merge_excl(&(molt->excls), &qmexcl2, wi);
     done_block2(&qmexcl2);
 
     /* Finally, we also need to get rid of the pair interactions of the
@@ -1530,7 +1547,7 @@ void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi)
                     /* Set the molecule type for the QMMM molblock */
                     molb->type = sys->nmoltype - 1;
                 }
-                generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir);
+                generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, wi);
             }
             if (grpnr)
             {

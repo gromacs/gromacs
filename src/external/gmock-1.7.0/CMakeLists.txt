@@ -59,11 +59,6 @@ if(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "5")
     endif()
 endif()
 
-if(CMAKE_COMPILER_IS_GNUCXX AND NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "6")
-    # Work around a bug in gmock-1.7 that is triggered in gcc-6
-    set(GMOCK_COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS} -fno-delete-null-pointer-checks")
-endif()
-
 # GTest/GMock suggest linking with pthreads when available for thread safety
 set(CMAKE_THREAD_PREFER_PTHREAD 1)
 find_package(Threads)

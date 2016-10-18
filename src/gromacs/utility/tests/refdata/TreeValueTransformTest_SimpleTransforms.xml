@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="Input">
+    <String Name="a">1</String>
+    <String Name="b">2</String>
+  </Object>
+  <Sequence Name="MappedPaths">
+    <Int Name="Length">2</Int>
+    <String>/a</String>
+    <String>/b</String>
+  </Sequence>
+  <Object Name="Tree">
+    <Int Name="i">1</Int>
+    <Int Name="j">2</Int>
+  </Object>
+  <BackMapping Name="Mapping">
+    <String Name="/i">/a</String>
+    <String Name="/j">/b</String>
+  </BackMapping>
+</ReferenceData>

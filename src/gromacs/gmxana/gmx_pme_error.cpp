@@ -818,7 +818,6 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
     int                     i;
     int                     nq; /* number of charged particles */
     gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
 
 
     if (MASTER(cr))
@@ -828,7 +827,7 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
         nq = 0;
 
         aloop = gmx_mtop_atomloop_all_init(mtop);
-
+        const t_atom *atom;
         while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
             if (is_charge(atom->q))
@@ -946,7 +945,7 @@ static void estimate_PME_error(t_inputinfo *info, const t_state *state,
     }
 
     /* Prepare an x and q array with only the charged atoms */
-    ncharges = prepare_x_q(&q, &x, mtop, state->x, cr);
+    ncharges = prepare_x_q(&q, &x, mtop, as_rvec_array(state->x.data()), cr);
     if (MASTER(cr))
     {
         calc_q2all(mtop, &(info->q2all), &(info->q2allnr));
@@ -1137,6 +1136,7 @@ int gmx_pme_error(int argc, char *argv[])
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,
                            0, NULL, &oenv))
     {
+        sfree(cr);
         return 0;
     }
 

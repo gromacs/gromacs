@@ -593,7 +593,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t               *nb,
 
     if (cl_error)
     {
-        printf("ClERROR! %d\n", cl_error);
+        printf("OpenCL error: %s\n", ocl_get_error_string(cl_error).c_str());
     }
     cl_error = clEnqueueNDRangeKernel(stream, nb_kernel, 3, NULL, global_work_size, local_work_size, 0, NULL, bDoTime ? &(t->nb_k[iloc]) : NULL);
     assert(cl_error == CL_SUCCESS);

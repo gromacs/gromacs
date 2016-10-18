@@ -66,7 +66,7 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull_internal.h"
-#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -1916,13 +1916,6 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
                                   const gmx_mtop_t *mtop,
                                   const t_inputrec *ir, real lambda)
 {
-    int                   i, ii, d, nfrozen, ndim;
-    real                  m, w, mbd;
-    double                tmass, wmass, wwmass;
-    const gmx_groups_t   *groups;
-    gmx_mtop_atomlookup_t alook;
-    t_atom               *atom;
-
     if (EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD)
     {
         /* There are no masses in the integrator.
@@ -1957,21 +1950,20 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
         }
     }
 
-    groups = &mtop->groups;
+    const gmx_groups_t *groups = &mtop->groups;
 
-    alook = gmx_mtop_atomlookup_init(mtop);
-
-    nfrozen = 0;
-    tmass   = 0;
-    wmass   = 0;
-    wwmass  = 0;
-    for (i = 0; i < pg->params.nat; i++)
+    /* Count frozen dimensions and (weighted) mass */
+    int    nfrozen = 0;
+    double tmass   = 0;
+    double wmass   = 0;
+    double wwmass  = 0;
+    int    molb    = 0;
+    for (int i = 0; i < pg->params.nat; i++)
     {
-        ii = pg->params.ind[i];
-        gmx_mtop_atomnr_to_atom(alook, ii, &atom);
+        int ii = pg->params.ind[i];
         if (bConstraint && ir->opts.nFreeze)
         {
-            for (d = 0; d < DIM; d++)
+            for (int d = 0; d < DIM; d++)
             {
                 if (pulldim_con[d] == 1 &&
                     ir->opts.nFreeze[ggrpnr(groups, egcFREEZE, ii)][d])
@@ -1980,14 +1972,17 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
                 }
             }
         }
+        const t_atom &atom = mtopGetAtomParameters(mtop, ii, &molb);
+        real          m;
         if (ir->efep == efepNO)
         {
-            m = atom->m;
+            m = atom.m;
         }
         else
         {
-            m = (1 - lambda)*atom->m + lambda*atom->mB;
+            m = (1 - lambda)*atom.m + lambda*atom.mB;
         }
+        real w;
         if (pg->params.nweight > 0)
         {
             w = pg->params.weight[i];
@@ -2005,6 +2000,7 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
         }
         else if (ir->eI == eiBD)
         {
+            real mbd;
             if (ir->bd_fric)
             {
                 mbd = ir->bd_fric*ir->delta_t;
@@ -2028,8 +2024,6 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
         wmass  += m*w;
         wwmass += m*w*w;
     }
-
-    gmx_mtop_atomlookup_destroy(alook);
 
     if (wmass == 0)
     {
@@ -2071,8 +2065,8 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
     }
     else
     {
-        ndim = 0;
-        for (d = 0; d < DIM; d++)
+        int ndim = 0;
+        for (int d = 0; d < DIM; d++)
         {
             ndim += pulldim_con[d]*pg->params.nat;
         }

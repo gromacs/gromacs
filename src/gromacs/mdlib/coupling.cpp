@@ -343,7 +343,7 @@ real calc_temp(real ekin, real nrdf)
 }
 
 void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
-                             t_inputrec *ir, real dt, tensor pres,
+                             const t_inputrec *ir, real dt, const tensor pres,
                              tensor box, tensor box_rel, tensor boxv,
                              tensor M, matrix mu, gmx_bool bFirstStep)
 {
@@ -541,7 +541,8 @@ void parrinellorahman_pcoupl(FILE *fplog, gmx_int64_t step,
 }
 
 void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
-                      t_inputrec *ir, real dt, tensor pres, matrix box,
+                      const t_inputrec *ir, real dt,
+                      const tensor pres, const matrix box,
                       matrix mu)
 {
     int     d, n;
@@ -652,10 +653,10 @@ void berendsen_pcoupl(FILE *fplog, gmx_int64_t step,
     }
 }
 
-void berendsen_pscale(t_inputrec *ir, matrix mu,
+void berendsen_pscale(const t_inputrec *ir, const matrix mu,
                       matrix box, matrix box_rel,
                       int start, int nr_atoms,
-                      rvec x[], unsigned short cFREEZE[],
+                      rvec x[], const unsigned short cFREEZE[],
                       t_nrnb *nrnb)
 {
     ivec   *nFreeze = ir->opts.nFreeze;
@@ -822,32 +823,6 @@ void nosehoover_tcoupl(t_grpopts *opts, gmx_ekindata_t *ekind, real dt,
     }
 }
 
-t_state *init_bufstate(const t_state *template_state)
-{
-    t_state *state;
-    int      nc = template_state->nhchainlength;
-    snew(state, 1);
-    snew(state->nosehoover_xi, nc*template_state->ngtc);
-    snew(state->nosehoover_vxi, nc*template_state->ngtc);
-    snew(state->therm_integral, template_state->ngtc);
-    snew(state->nhpres_xi, nc*template_state->nnhpres);
-    snew(state->nhpres_vxi, nc*template_state->nnhpres);
-
-    return state;
-}
-
-void destroy_bufstate(t_state *state)
-{
-    sfree(state->x);
-    sfree(state->v);
-    sfree(state->nosehoover_xi);
-    sfree(state->nosehoover_vxi);
-    sfree(state->therm_integral);
-    sfree(state->nhpres_xi);
-    sfree(state->nhpres_vxi);
-    sfree(state);
-}
-
 void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                     gmx_enerdata_t *enerd, t_state *state,
                     tensor vir, t_mdatoms *md,
@@ -917,13 +892,13 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
                 break;
             case etrtBARONHC:
             case etrtBARONHC2:
-                NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi,
-                            state->nhpres_vxi, NULL, &(state->veta), MassQ, FALSE);
+                NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi.data(),
+                            state->nhpres_vxi.data(), NULL, &(state->veta), MassQ, FALSE);
                 break;
             case etrtNHC:
             case etrtNHC2:
-                NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi,
-                            state->nosehoover_vxi, scalefac, NULL, MassQ, (ir->eI == eiVV));
+                NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi.data(),
+                            state->nosehoover_vxi.data(), scalefac, NULL, MassQ, (ir->eI == eiVV));
                 /* need to rescale the kinetic energies and velocities here.  Could
                    scale the velocities later, but we need them scaled in order to
                    produce the correct outputs, so we'll scale them here. */
@@ -1264,124 +1239,158 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
     return trotter_seq;
 }
 
-real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
+static real energyNoseHoover(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ)
 {
-    int     i, j;
-    real    nd, ndj;
-    real    ener_npt, reft, kT;
-    double *ivxi, *ixi;
-    double *iQinv;
-    real    vol;
-    int     nh = state->nhchainlength;
+    real energy = 0;
 
-    ener_npt = 0;
+    int  nh     = state->nhchainlength;
 
-    /* now we compute the contribution of the pressure to the conserved quantity*/
-
-    if (ir->epc == epcMTTK)
+    for (int i = 0; i < ir->opts.ngtc; i++)
     {
-        /* find the volume, and the kinetic energy of the volume */
+        const double *ixi   = &state->nosehoover_xi[i*nh];
+        const double *ivxi  = &state->nosehoover_vxi[i*nh];
+        const double *iQinv = &(MassQ->Qinv[i*nh]);
 
-        switch (ir->epct)
+        int           nd    = ir->opts.nrdf[i];
+        real          reft  = std::max<real>(ir->opts.ref_t[i], 0);
+        real          kT    = BOLTZ * reft;
+
+        if (nd > 0.0)
         {
-
-            case epctISOTROPIC:
-                /* contribution from the pressure momenenta */
-                ener_npt += 0.5*gmx::square(state->veta)/MassQ->Winv;
-
-                /* contribution from the PV term */
-                vol       = det(state->box);
-                ener_npt += vol*trace(ir->ref_p)/(DIM*PRESFAC);
-
-                break;
-            case epctANISOTROPIC:
-
-                break;
-
-            case epctSURFACETENSION:
-
-                break;
-            case epctSEMIISOTROPIC:
-
-                break;
-            default:
-                break;
-        }
-    }
-
-    if (inputrecNptTrotter(ir) || inputrecNphTrotter(ir))
-    {
-        /* add the energy from the barostat thermostat chain */
-        for (i = 0; i < state->nnhpres; i++)
-        {
-
-            /* note -- assumes only one degree of freedom that is thermostatted in barostat */
-            ivxi  = &state->nhpres_vxi[i*nh];
-            ixi   = &state->nhpres_xi[i*nh];
-            iQinv = &(MassQ->QPinv[i*nh]);
-            reft  = std::max<real>(ir->opts.ref_t[0], 0.0); /* using 'System' temperature */
-            kT    = BOLTZ * reft;
-
-            for (j = 0; j < nh; j++)
+            if (inputrecNvtTrotter(ir))
             {
-                if (iQinv[j] > 0)
+                /* contribution from the thermal momenta of the NH chain */
+                for (int j = 0; j < nh; j++)
                 {
-                    ener_npt += 0.5*gmx::square(ivxi[j])/iQinv[j];
-                    /* contribution from the thermal variable of the NH chain */
-                    ener_npt += ixi[j]*kT;
-                }
-                if (debug)
-                {
-                    fprintf(debug, "P-T-group: %10d Chain %4d ThermV: %15.8f ThermX: %15.8f", i, j, ivxi[j], ixi[j]);
-                }
-            }
-        }
-    }
-
-    if (ir->etc)
-    {
-        for (i = 0; i < ir->opts.ngtc; i++)
-        {
-            ixi   = &state->nosehoover_xi[i*nh];
-            ivxi  = &state->nosehoover_vxi[i*nh];
-            iQinv = &(MassQ->Qinv[i*nh]);
-
-            nd   = ir->opts.nrdf[i];
-            reft = std::max<real>(ir->opts.ref_t[i], 0);
-            kT   = BOLTZ * reft;
-
-            if (nd > 0.0)
-            {
-                if (inputrecNvtTrotter(ir))
-                {
-                    /* contribution from the thermal momenta of the NH chain */
-                    for (j = 0; j < nh; j++)
+                    if (iQinv[j] > 0)
                     {
-                        if (iQinv[j] > 0)
+                        energy += 0.5*gmx::square(ivxi[j])/iQinv[j];
+                        /* contribution from the thermal variable of the NH chain */
+                        int ndj;
+                        if (j == 0)
                         {
-                            ener_npt += 0.5*gmx::square(ivxi[j])/iQinv[j];
-                            /* contribution from the thermal variable of the NH chain */
-                            if (j == 0)
-                            {
-                                ndj = nd;
-                            }
-                            else
-                            {
-                                ndj = 1.0;
-                            }
-                            ener_npt += ndj*ixi[j]*kT;
+                            ndj = nd;
                         }
+                        else
+                        {
+                            ndj = 1.0;
+                        }
+                        energy += ndj*ixi[j]*kT;
                     }
                 }
-                else  /* Other non Trotter temperature NH control  -- no chains yet. */
-                {
-                    ener_npt += 0.5*BOLTZ*nd*gmx::square(ivxi[0])/iQinv[0];
-                    ener_npt += nd*ixi[0]*kT;
-                }
+            }
+            else  /* Other non Trotter temperature NH control  -- no chains yet. */
+            {
+                energy += 0.5*BOLTZ*nd*gmx::square(ivxi[0])/iQinv[0];
+                energy += nd*ixi[0]*kT;
             }
         }
     }
-    return ener_npt;
+
+    return energy;
+}
+
+/* Returns the energy from the barostat thermostat chain */
+static real energyPressureMTTK(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ)
+{
+    real energy = 0;
+
+    int  nh     = state->nhchainlength;
+
+    for (int i = 0; i < state->nnhpres; i++)
+    {
+        /* note -- assumes only one degree of freedom that is thermostatted in barostat */
+        real    reft  = std::max<real>(ir->opts.ref_t[0], 0.0); /* using 'System' temperature */
+        real    kT    = BOLTZ * reft;
+
+        for (int j = 0; j < nh; j++)
+        {
+            double iQinv = MassQ->QPinv[i*nh + j];
+            if (iQinv > 0)
+            {
+                energy += 0.5*gmx::square(state->nhpres_vxi[i*nh + j]/iQinv);
+                /* contribution from the thermal variable of the NH chain */
+                energy += state->nhpres_xi[i*nh + j]*kT;
+            }
+            if (debug)
+            {
+                fprintf(debug, "P-T-group: %10d Chain %4d ThermV: %15.8f ThermX: %15.8f", i, j, state->nhpres_vxi[i*nh + j], state->nhpres_xi[i*nh + j]);
+            }
+        }
+    }
+
+    return energy;
+}
+
+/* Returns the energy accumulated by the V-rescale or Berendsen thermostat */
+static real energyVrescale(const t_inputrec *ir, const t_state *state)
+{
+    real energy = 0;
+    for (int i = 0; i < ir->opts.ngtc; i++)
+    {
+        energy += state->therm_integral[i];
+    }
+
+    return energy;
+}
+
+real NPT_energy(const t_inputrec *ir, const t_state *state, const t_extmass *MassQ)
+{
+    real energyNPT = 0;
+
+    if (ir->epc != epcNO)
+    {
+        /* Compute the contribution of the pressure to the conserved quantity*/
+
+        real vol  = det(state->box);
+
+        switch (ir->epc)
+        {
+            case epcPARRINELLORAHMAN:
+                // TODO: Implement
+                break;
+            case epcMTTK:
+                /* contribution from the pressure momenta */
+                energyNPT += 0.5*gmx::square(state->veta)/MassQ->Winv;
+
+                /* contribution from the PV term */
+                energyNPT += vol*trace(ir->ref_p)/(DIM*PRESFAC);
+
+                if (ir->epc == epcMTTK)
+                {
+                    /* contribution from the MTTK chain */
+                    energyNPT += energyPressureMTTK(ir, state, MassQ);
+                }
+                break;
+            case epcBERENDSEN:
+                // Not supported, excluded in integratorHasConservedEnergyQuantity()
+                // TODO: Implement
+                break;
+            default:
+                GMX_RELEASE_ASSERT(false, "Conserved energy quantity for pressure coupling is not handled. A case should be added with either the conserved quantity added or nothing added and an exclusion added to integratorHasConservedEnergyQuantity().");
+        }
+    }
+
+    switch (ir->etc)
+    {
+        case etcNO:
+            break;
+        case etcVRESCALE:
+        case etcBERENDSEN:
+            energyNPT += energyVrescale(ir, state);
+            break;
+        case etcNOSEHOOVER:
+            energyNPT += energyNoseHoover(ir, state, MassQ);
+            break;
+        case etcANDERSEN:
+        case etcANDERSENMASSIVE:
+            // Not supported, excluded in integratorHasConservedEnergyQuantity()
+            break;
+        default:
+            GMX_RELEASE_ASSERT(false, "Conserved energy quantity for temperature coupling is not handled. A case should be added with either the conserved quantity added or nothing added and an exclusion added to integratorHasConservedEnergyQuantity().");
+    }
+
+    return energyNPT;
 }
 
 
@@ -1515,20 +1524,6 @@ void vrescale_tcoupl(t_inputrec *ir, gmx_int64_t step,
             ekind->tcstat[i].lambda = 1.0;
         }
     }
-}
-
-real vrescale_energy(t_grpopts *opts, double therm_integral[])
-{
-    int  i;
-    real ener;
-
-    ener = 0;
-    for (i = 0; i < opts->ngtc; i++)
-    {
-        ener += therm_integral[i];
-    }
-
-    return ener;
 }
 
 void rescale_velocities(gmx_ekindata_t *ekind, t_mdatoms *mdatoms,

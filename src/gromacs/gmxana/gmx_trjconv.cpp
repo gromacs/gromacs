@@ -1243,14 +1243,14 @@ int gmx_trjconv(int argc, char *argv[])
             /* get memory for stuff to go in .pdb file, and initialize
              * the pdbinfo structure part if the input has it.
              */
-            init_t_atoms(&useatoms, atoms->nr, (atoms->pdbinfo != NULL));
+            init_t_atoms(&useatoms, atoms->nr, atoms->havePdbInfo);
             sfree(useatoms.resinfo);
             useatoms.resinfo = atoms->resinfo;
             for (i = 0; (i < nout); i++)
             {
                 useatoms.atomname[i] = atoms->atomname[index[i]];
                 useatoms.atom[i]     = atoms->atom[index[i]];
-                if (atoms->pdbinfo != NULL)
+                if (atoms->havePdbInfo)
                 {
                     useatoms.pdbinfo[i]  = atoms->pdbinfo[index[i]];
                 }
@@ -1813,7 +1813,7 @@ int gmx_trjconv(int argc, char *argv[])
                                 switch (ftp)
                                 {
                                     case efGRO:
-                                        write_hconf_p(out, title, &useatoms, prec2ndec(frout.prec),
+                                        write_hconf_p(out, title, &useatoms,
                                                       frout.x, frout.bV ? frout.v : NULL, frout.box);
                                         break;
                                     case efPDB:

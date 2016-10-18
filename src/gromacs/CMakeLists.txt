@@ -71,6 +71,7 @@ endfunction()
 
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
+add_subdirectory(applied-forces)
 add_subdirectory(listed-forces)
 add_subdirectory(commandline)
 add_subdirectory(domdec)
@@ -121,9 +122,6 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
 list(APPEND LIBGROMACS_SOURCES ${THREAD_MPI_SOURCES})
 
-list(APPEND LIBGROMACS_SOURCES ${TNG_SOURCES})
-tng_set_source_properties(WITH_ZLIB ${HAVE_ZLIB})
-
 get_lmfit_properties(LMFIT_SOURCES LMFIT_LIBRARIES_TO_LINK LMFIT_INCLUDE_DIRECTORY LMFIT_INCLUDE_DIR_ORDER)
 include_directories(${LMFIT_INCLUDE_DIR_ORDER} SYSTEM "${LMFIT_INCLUDE_DIRECTORY}")
 list(APPEND LIBGROMACS_SOURCES ${LMFIT_SOURCES})
@@ -152,6 +150,9 @@ gmx_configure_version_file(
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
 if (GMX_USE_CUDA)
+    # Work around FindCUDA that prevents using target_link_libraries()
+    # with keywords otherwise...
+    set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
     cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
@@ -177,12 +178,12 @@ else()
 endif()
 set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_scanner_cpp_compiler_flags}")
 
-target_link_libraries(libgromacs
+gmx_setup_tng_for_libgromacs()
+
+target_link_libraries(libgromacs PRIVATE
                       ${EXTRAE_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
-                      ${TNG_IO_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
-                      ${XML_LIBRARIES}
                       ${LMFIT_LIBRARIES_TO_LINK}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS} ${OPENCL_LIBRARIES}
                       ${GMX_STDLIB_LIBRARIES})

@@ -159,7 +159,7 @@ void pme_free_all_work(struct pme_solve_work_t **work, int nthread)
     {
         free_work(&(*work)[thread]);
     }
-    sfree(work);
+    sfree(*work);
     *work = NULL;
 }
 
@@ -287,8 +287,7 @@ gmx_inline static void calc_exponentials_lj(int start, int end, real *r, real *t
 }
 #endif
 
-int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
-                  real ewaldcoeff, real vol,
+int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid, real vol,
                   gmx_bool bEnerVir,
                   int nthread, int thread)
 {
@@ -298,7 +297,8 @@ int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
     int                      kx, ky, kz, maxkx, maxky;
     int                      nx, ny, nz, iyz0, iyz1, iyz, iy, iz, kxstart, kxend;
     real                     mx, my, mz;
-    real                     factor = M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
+    real                     ewaldcoeff = pme->ewaldcoeff_q;
+    real                     factor     = M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
     real                     ets2, struct2, vfactor, ets2vf;
     real                     d1, d2, energy = 0;
     real                     by, bz;
@@ -538,8 +538,7 @@ int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid,
     return local_ndata[YY]*local_ndata[XX];
 }
 
-int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
-                     real ewaldcoeff, real vol,
+int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real vol,
                      gmx_bool bEnerVir, int nthread, int thread)
 {
     /* do recip sum over local cells in grid */
@@ -548,7 +547,8 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB,
     int                      kx, ky, kz, maxkx, maxky;
     int                      nx, ny, nz, iy, iyz0, iyz1, iyz, iz, kxstart, kxend;
     real                     mx, my, mz;
-    real                     factor = M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
+    real                     ewaldcoeff = pme->ewaldcoeff_lj;
+    real                     factor     = M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
     real                     ets2, ets2vf;
     real                     eterm, vterm, d1, d2, energy = 0;
     real                     by, bz;

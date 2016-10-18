@@ -59,6 +59,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/ifunc.h"
@@ -912,8 +913,8 @@ static void reset_nhbonds(t_donors *ddd)
     }
 }
 
-void pbc_correct_gem(rvec dx, matrix box, rvec hbox);
-void pbc_in_gridbox(rvec dx, matrix box);
+static void pbc_correct_gem(rvec dx, matrix box, rvec hbox);
+static void pbc_in_gridbox(rvec dx, matrix box);
 
 static void build_grid(t_hbdata *hb, rvec x[], rvec xshell,
                        gmx_bool bBox, matrix box, rvec hbox,
@@ -1186,7 +1187,7 @@ static void free_grid(ivec ngrid, t_gridcell ****grid)
     g = NULL;
 }
 
-void pbc_correct_gem(rvec dx, matrix box, rvec hbox)
+static void pbc_correct_gem(rvec dx, matrix box, rvec hbox)
 {
     int      m;
     gmx_bool bDone = FALSE;
@@ -1209,7 +1210,7 @@ void pbc_correct_gem(rvec dx, matrix box, rvec hbox)
     }
 }
 
-void pbc_in_gridbox(rvec dx, matrix box)
+static void pbc_in_gridbox(rvec dx, matrix box)
 {
     int      m;
     gmx_bool bDone = FALSE;
@@ -2509,7 +2510,6 @@ int gmx_hbond(int argc, char *argv[])
     t_trxstatus          *status;
     int                   trrStatus = 1;
     t_topology            top;
-    t_inputrec            ir;
     t_pargs              *ppa;
     int                   npargs, natoms, nframes = 0, shatom;
     int                  *isize;
@@ -2549,6 +2549,7 @@ int gmx_hbond(int argc, char *argv[])
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, npargs,
                            ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
+        sfree(ppa);
         return 0;
     }
 
@@ -2585,7 +2586,9 @@ int gmx_hbond(int argc, char *argv[])
     hb = mk_hbdata(bHBmap, opt2bSet("-dan", NFILE, fnm), bMerge || bContact);
 
     /* get topology */
-    read_tpx_top(ftp2fn(efTPR, NFILE, fnm), &ir, box, &natoms, NULL, NULL, &top);
+    gmx::MDModules  mdModules;
+    t_inputrec     *ir = mdModules.inputrec();
+    read_tpx_top(ftp2fn(efTPR, NFILE, fnm), ir, box, &natoms, NULL, NULL, &top);
 
     snew(grpnames, grNR);
     snew(index, grNR);
@@ -2763,7 +2766,7 @@ int gmx_hbond(int argc, char *argv[])
                   top.atoms.nr, natoms);
     }
 
-    bBox  = ir.ePBC != epbcNONE;
+    bBox  = (ir->ePBC != epbcNONE);
     grid  = init_grid(bBox, box, (rcut > r2cut) ? rcut : r2cut, ngrid);
     nabin = static_cast<int>(acut/abin);
     nrbin = static_cast<int>(rcut/rbin);

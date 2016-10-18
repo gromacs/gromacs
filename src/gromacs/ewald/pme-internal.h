@@ -94,12 +94,17 @@ static const real lb_scale_factor_symm[] = { 2.0/64, 12.0/64, 30.0/64, 20.0/64 }
  */
 #define PME_ORDER_MAX 12
 
-/*! \brief As gmx_pme_init, but takes most settings, except the grid, from pme_src */
+/*! \brief As gmx_pme_init, but takes most settings, except the grid/Ewald coefficients, from pme_src.
+ * This is only called when the PME cut-off/grid size changes.
+ */
 int gmx_pme_reinit(struct gmx_pme_t **pmedata,
                    t_commrec *        cr,
                    struct gmx_pme_t * pme_src,
                    const t_inputrec * ir,
-                   ivec               grid_size);
+                   ivec               grid_size,
+                   real               ewaldcoeff_q,
+                   real               ewaldcoeff_lj);
+
 
 /* The following three routines are for PME/PP node splitting in pme_pp.c */
 
@@ -244,12 +249,16 @@ typedef struct gmx_pme_t {
     int        nthread;       /* The number of threads doing PME on our rank */
 
     gmx_bool   bPPnode;       /* Node also does particle-particle forces */
+    bool       doCoulomb;     /* Apply PME to electrostatics */
+    bool       doLJ;          /* Apply PME to Lennard-Jones r^-6 interactions */
     gmx_bool   bFEP;          /* Compute Free energy contribution */
     gmx_bool   bFEP_q;
     gmx_bool   bFEP_lj;
     int        nkx, nky, nkz; /* Grid dimensions */
     gmx_bool   bP3M;          /* Do P3M: optimize the influence function */
     int        pme_order;
+    real       ewaldcoeff_q;  /* Ewald splitting coefficient for Coulomb */
+    real       ewaldcoeff_lj; /* Ewald splitting coefficient for r^-6 */
     real       epsilon_r;
 
     int        ljpme_combination_rule;  /* Type of combination rule in LJ-PME */
@@ -365,9 +374,8 @@ int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
                                real **sigmaA, real **sigmaB,
                                matrix box, rvec **x, rvec **f,
                                int *maxshift_x, int *maxshift_y,
-                               gmx_bool *bFreeEnergy_q, gmx_bool *bFreeEnergy_lj,
                                real *lambda_q, real *lambda_lj,
-                               gmx_bool *bEnerVir, int *pme_flags,
+                               gmx_bool *bEnerVir,
                                gmx_int64_t *step,
                                ivec grid_size, real *ewaldcoeff_q, real *ewaldcoeff_lj);
 

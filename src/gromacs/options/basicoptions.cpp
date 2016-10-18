@@ -141,20 +141,9 @@ std::string BooleanOptionStorage::formatSingleValue(const bool &value) const
     return value ? "yes" : "no";
 }
 
-void BooleanOptionStorage::convertValue(const std::string &value)
+void BooleanOptionStorage::initConverter(ConverterType *converter)
 {
-    // TODO: Case-independence
-    if (value == "1" || value == "yes" || value == "true")
-    {
-        addValue(true);
-        return;
-    }
-    else if (value == "0" || value == "no" || value == "false")
-    {
-        addValue(false);
-        return;
-    }
-    GMX_THROW(InvalidInputError("Invalid value: '" + value + "'; supported values are: 1, 0, yes, no, true, false"));
+    converter->addConverter<std::string>(&fromStdString<bool>);
 }
 
 /********************************************************************
@@ -196,9 +185,9 @@ std::string IntegerOptionStorage::formatSingleValue(const int &value) const
     return formatString("%d", value);
 }
 
-void IntegerOptionStorage::convertValue(const std::string &value)
+void IntegerOptionStorage::initConverter(ConverterType *converter)
 {
-    addValue(fromString<int>(value));
+    converter->addConverter<std::string>(&fromStdString<int>);
 }
 
 void IntegerOptionStorage::processSetValues(ValueList *values)
@@ -238,9 +227,9 @@ std::string Int64OptionStorage::formatSingleValue(const gmx_int64_t &value) cons
     return formatString("%" GMX_PRId64, value);
 }
 
-void Int64OptionStorage::convertValue(const std::string &value)
+void Int64OptionStorage::initConverter(ConverterType *converter)
 {
-    addValue(fromString<gmx_int64_t>(value));
+    converter->addConverter<std::string>(&fromStdString<gmx_int64_t>);
 }
 
 /********************************************************************
@@ -282,9 +271,16 @@ std::string DoubleOptionStorage::formatSingleValue(const double &value) const
     return formatString("%g", value / factor_);
 }
 
-void DoubleOptionStorage::convertValue(const std::string &value)
+void DoubleOptionStorage::initConverter(ConverterType *converter)
 {
-    addValue(fromString<double>(value) * factor_);
+    converter->addConverter<std::string>(&fromStdString<double>);
+    converter->addCastConversion<float>();
+}
+
+double DoubleOptionStorage::processValue(const double &value)
+{
+    // TODO: Consider testing for overflow when scaling with factor_.
+    return value * factor_;
 }
 
 void DoubleOptionStorage::processSetValues(ValueList *values)
@@ -300,13 +296,11 @@ void DoubleOptionStorage::setScaleFactor(double factor)
     GMX_RELEASE_ASSERT(factor > 0.0, "Invalid scaling factor");
     if (!hasFlag(efOption_HasDefaultValue))
     {
-        double              scale = factor / factor_;
-        ValueList::iterator i;
-        for (i = values().begin(); i != values().end(); ++i)
+        double scale = factor / factor_;
+        for (double &value : values())
         {
-            (*i) *= scale;
+            value *= scale;
         }
-        refreshValues();
     }
     factor_ = factor;
 }
@@ -370,11 +364,16 @@ std::string FloatOptionStorage::formatSingleValue(const float &value) const
     return formatString("%g", value / factor_);
 }
 
-void FloatOptionStorage::convertValue(const std::string &value)
+void FloatOptionStorage::initConverter(ConverterType *converter)
 {
-    // TODO: Consider testing for overflow when scaling with factor_ (also for
-    // the double precision case).
-    addValue(fromString<float>(value) * factor_);
+    converter->addConverter<std::string>(&fromStdString<float>);
+    converter->addCastConversion<double>();
+}
+
+float FloatOptionStorage::processValue(const float &value)
+{
+    // TODO: Consider testing for overflow when scaling with factor_.
+    return value * factor_;
 }
 
 void FloatOptionStorage::processSetValues(ValueList *values)
@@ -390,13 +389,11 @@ void FloatOptionStorage::setScaleFactor(double factor)
     GMX_RELEASE_ASSERT(factor > 0.0, "Invalid scaling factor");
     if (!hasFlag(efOption_HasDefaultValue))
     {
-        double              scale = factor / factor_;
-        ValueList::iterator i;
-        for (i = values().begin(); i != values().end(); ++i)
+        float scale = factor / factor_;
+        for (float &value : values())
         {
-            (*i) *= scale;
+            value *= scale;
         }
-        refreshValues();
     }
     factor_ = factor;
 }
@@ -469,7 +466,7 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
             {
                 GMX_THROW(APIError("Enumeration value cannot be NULL"));
             }
-            allowed_.push_back(settings.enumValues_[i]);
+            allowed_.emplace_back(settings.enumValues_[i]);
         }
         if (settings.defaultEnumIndex_ >= 0)
         {
@@ -482,9 +479,7 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
             {
                 GMX_THROW(APIError("Conflicting default values"));
             }
-            clear();
-            addValue(allowed_[settings.defaultEnumIndex_]);
-            commitValues();
+            setDefaultValue(allowed_[settings.defaultEnumIndex_]);
         }
     }
 }
@@ -505,17 +500,17 @@ std::string StringOptionStorage::formatSingleValue(const std::string &value) con
     return value;
 }
 
-void StringOptionStorage::convertValue(const std::string &value)
+void StringOptionStorage::initConverter(ConverterType * /*converter*/)
 {
-    if (allowed_.size() == 0)
+}
+
+std::string StringOptionStorage::processValue(const std::string &value)
+{
+    if (allowed_.size() > 0)
     {
-        addValue(value);
+        return *findEnumValue(this->allowed_, value);
     }
-    else
-    {
-        ValueList::const_iterator match = findEnumValue(allowed_, value);
-        addValue(*match);
-    }
+    return value;
 }
 
 /********************************************************************
@@ -560,8 +555,8 @@ StringOption::createStorage(const OptionManagerContainer & /*managers*/) const
 EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
                                      const char *const *enumValues, int count,
                                      int defaultValue, int defaultValueIfSet,
-                                     EnumIndexStorePointer store)
-    : MyBase(settings), info_(this), store_(move(store))
+                                     StorePointer store)
+    : MyBase(settings, std::move(store)), info_(this)
 {
     if (enumValues == NULL)
     {
@@ -582,7 +577,7 @@ EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
         {
             GMX_THROW(APIError("Enumeration value cannot be NULL"));
         }
-        allowed_.push_back(enumValues[i]);
+        allowed_.emplace_back(enumValues[i]);
     }
 
     GMX_ASSERT(defaultValue < count, "Default enumeration value is out of range");
@@ -596,12 +591,6 @@ EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
     {
         setDefaultValueIfSet(defaultValueIfSet);
     }
-
-    if (values().empty())
-    {
-        values() = store_->initialValues();
-    }
-    refreshEnumIndexStore();
 }
 
 std::string EnumOptionStorage::formatExtraDescription() const
@@ -621,28 +610,13 @@ std::string EnumOptionStorage::formatSingleValue(const int &value) const
     return allowed_[value];
 }
 
-void EnumOptionStorage::convertValue(const std::string &value)
+void EnumOptionStorage::initConverter(ConverterType *converter)
 {
-    std::vector<std::string>::const_iterator match = findEnumValue(allowed_, value);
-    addValue(match - allowed_.begin());
-}
-
-void EnumOptionStorage::processSetValues(ValueList *values)
-{
-    const size_t newSize = (hasFlag(efOption_ClearOnNextSet) ? 0 : valueCount())
-        + std::max<size_t>(values->size(), 1);
-    store_->reserveSpace(newSize);
-}
-
-void EnumOptionStorage::refreshValues()
-{
-    MyBase::refreshValues();
-    refreshEnumIndexStore();
-}
-
-void EnumOptionStorage::refreshEnumIndexStore()
-{
-    store_->refreshValues(values());
+    converter->addConverter<std::string>(
+            [this] (const std::string &value)
+            {
+                return findEnumValue(this->allowed_, value) - this->allowed_.begin();
+            });
 }
 
 /********************************************************************
@@ -671,18 +645,14 @@ const std::vector<std::string> &EnumOptionInfo::allowedValues() const
 namespace internal
 {
 
-EnumIndexStoreInterface::~EnumIndexStoreInterface()
-{
-}
-
 //! \cond internal
 AbstractOptionStorage *
 createEnumOptionStorage(const AbstractOption &option,
                         const char *const *enumValues, int count,
                         int defaultValue, int defaultValueIfSet,
-                        EnumIndexStoreInterface *store)
+                        IOptionValueStore<int> *store)
 {
-    EnumOptionStorage::EnumIndexStorePointer storePtr(store);
+    std::unique_ptr<IOptionValueStore<int> > storePtr(store);
     return new EnumOptionStorage(option, enumValues, count, defaultValue,
                                  defaultValueIfSet, move(storePtr));
 }

@@ -4,7 +4,7 @@ Build system overview
 =====================
 
 The |Gromacs| build system uses CMake (version
-|GMX_CMAKE_MINIMUM_REQUIRED_VERSION| or newer is required) to generate the
+|CMAKE_MINIMUM_REQUIRED_VERSION| or newer is required) to generate the
 actual build system for the build tool choosen by the user.  See CMake
 documentation for general introduction to CMake and how to use it.  This
 documentation focuses on how the |Gromacs| build system is organized and
@@ -201,6 +201,12 @@ Variables affecting compilation/linking
    When building from a git repository, defaults to ``ON``.
 
 .. cmake:: GMX_CYCLE_SUBCOUNTERS
+
+   If set to ``ON``, enables performance subcounters that offer more
+   fine-grained mdrun performance measurement and evaluation than the default
+   counters. See :doc:`/user-guide/mdrun-performance` for the description of
+   subcounters which are available.
+   Defaults to ``OFF``.
 
 .. cmake:: GMX_DATA_INSTALL_DIR
 

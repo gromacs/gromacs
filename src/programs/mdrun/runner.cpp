@@ -91,6 +91,7 @@
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -344,7 +345,6 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     real                   rlistWithReferenceNstlist, rlist_inc, rlist_ok, rlist_max;
     real                   rlist_new, rlist_prev;
     size_t                 nstlist_ind = 0;
-    t_state                state_tmp;
     gmx_bool               bBox, bDD, bCont;
     const char            *nstl_gpu = "\nFor optimal performance with a GPU nstlist (now %d) should be larger.\nThe optimum depends on your CPU and GPU resources.\nYou might want to try several nstlist values.\n";
     const char            *nve_err  = "Can not increase nstlist because an NVE ensemble is used";
@@ -483,6 +483,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
             {
                 gmx_incons("Changing nstlist with domain decomposition and unbounded dimensions is not implemented yet");
             }
+            t_state state_tmp {};
             copy_mat(box, state_tmp.box);
             bDD = change_dd_cutoff(cr, &state_tmp, ir, rlist_new);
         }
@@ -706,7 +707,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 {
     gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD;
     t_inputrec               *inputrec;
-    t_state                  *state = NULL;
     matrix                    box;
     gmx_ddbox_t               ddbox = {0};
     int                       npme_major, npme_minor;
@@ -771,7 +771,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         please_cite(fplog, "Berendsen95a");
     }
 
-    snew(state, 1);
+    std::unique_ptr<t_state> stateInstance = std::unique_ptr<t_state>(new t_state {});
+    t_state *                state         = stateInstance.get();
+
     if (SIMMASTER(cr))
     {
         /* Read (nearly) all data required for the simulation */
@@ -973,7 +975,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* This needs to be called before read_checkpoint to extend the state */
     init_disres(fplog, mtop, inputrec, cr, fcd, state, repl_ex_nst > 0);
 
-    init_orires(fplog, mtop, state->x, inputrec, cr, &(fcd->orires),
+    init_orires(fplog, mtop, as_rvec_array(state->x.data()), inputrec, cr, &(fcd->orires),
                 state);
 
     if (inputrecDeform(inputrec))
@@ -999,6 +1001,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
     }
 
+    energyhistory_t energyHistory;
+    init_energyhistory(&energyHistory);
+
     if (Flags & MD_STARTFROMCPT)
     {
         /* Check if checkpoint file exists before doing continuation.
@@ -1008,7 +1013,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
                         cr, ddxyz, &npme,
-                        inputrec, state, &bReadEkin,
+                        inputrec, state, &bReadEkin, &energyHistory,
                         (Flags & MD_APPENDFILES),
                         (Flags & MD_APPENDFILESSET),
                         (Flags & MD_REPRODUCIBLE));
@@ -1059,7 +1064,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                            dddlb_opt, dlb_scale,
                                            ddcsx, ddcsy, ddcsz,
                                            mtop, inputrec,
-                                           box, state->x,
+                                           box, as_rvec_array(state->x.data()),
                                            &ddbox, &npme_major, &npme_minor);
     }
     else
@@ -1228,7 +1233,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             /* Make molecules whole at start of run */
             if (fr->ePBC != epbcNONE)
             {
-                do_pbc_first_mtop(fplog, inputrec->ePBC, box, mtop, state->x);
+                do_pbc_first_mtop(fplog, inputrec->ePBC, box, mtop, as_rvec_array(state->x.data()));
             }
             if (vsite)
             {
@@ -1236,7 +1241,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                  * for the initial distribution in the domain decomposition
                  * and for the initial shell prediction.
                  */
-                construct_vsites_mtop(vsite, mtop, state->x);
+                construct_vsites_mtop(vsite, mtop, as_rvec_array(state->x.data()));
             }
         }
 
@@ -1256,7 +1261,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* This is a PME only node */
 
         /* We don't need the state */
-        done_state(state);
+        stateInstance.reset();
+        state         = NULL;
 
         ewaldcoeff_q  = calc_ewaldcoeff_q(inputrec->rcoulomb, inputrec->ewald_rtol);
         ewaldcoeff_lj = calc_ewaldcoeff_lj(inputrec->rvdw, inputrec->ewald_rtol_lj);
@@ -1311,7 +1317,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
                                   mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
-                                  (Flags & MD_REPRODUCIBLE), nthreads_pme);
+                                  (Flags & MD_REPRODUCIBLE),
+                                  ewaldcoeff_q, ewaldcoeff_lj,
+                                  nthreads_pme);
             if (status != 0)
             {
                 gmx_fatal(FARGS, "Error %d initializing PME", status);
@@ -1347,7 +1355,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
-            init_rot(fplog, inputrec, nfile, fnm, cr, state->x, state->box, mtop, oenv,
+            init_rot(fplog, inputrec, nfile, fnm, cr, as_rvec_array(state->x.data()), state->box, mtop, oenv,
                      bVerbose, Flags);
         }
 
@@ -1369,7 +1377,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      nstglobalcomm,
                                      vsite, constr,
                                      nstepout, inputrec, mtop,
-                                     fcd, state,
+                                     fcd, state, &energyHistory,
                                      mdatoms, nrnb, wcycle, ed, fr,
                                      repl_ex_nst, repl_ex_nex, repl_ex_seed,
                                      membed,
@@ -1407,6 +1415,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                fr ? fr->nbv : NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
+    // Free PME data
+    if (pmedata)
+    {
+        gmx_pme_destroy(pmedata);
+        pmedata = NULL;
+    }
 
     /* Free GPU memory and context */
     free_gpu_resources(fr, cr, &hwinfo->gpu_info, fr ? fr->gpu_opt : NULL);
@@ -1415,6 +1429,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         free_membed(membed);
     }
+
+    done_energyhistory(&energyHistory);
 
     gmx_hardware_info_free(hwinfo);
 

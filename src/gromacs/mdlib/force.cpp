@@ -360,7 +360,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                    TRUE, box);
     }
 
-    do_force_listed(wcycle, box, ir->fepvals, cr->ms,
+    do_force_listed(wcycle, box, ir->fepvals, cr,
                     idef, (const rvec *) x, hist, f, fr,
                     &pbc, graph, enerd, nrnb, lambda, md, fcd,
                     DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
@@ -450,8 +450,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                          * exclusion forces) are calculated, so we can store
                          * the forces in the normal, single fr->f_novirsum array.
                          */
-                        ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
-                                           cr, t, fr,
+                        ewald_LRcorrection(md->homenr, cr, nthreads, t, fr,
                                            md->chargeA, md->chargeB,
                                            md->sqrt_c6A, md->sqrt_c6B,
                                            md->sigmaA, md->sigmaB,
@@ -461,7 +460,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                            excl, x, bSB ? boxs : box, mu_tot,
                                            ir->ewald_geometry,
                                            ir->epsilon_surface,
-                                           fr->f_novirsum, *vir_q, *vir_lj,
+                                           as_rvec_array(fr->f_novirsum->data()),
+                                           *vir_q, *vir_lj,
                                            Vcorrt_q, Vcorrt_lj,
                                            lambda[efptCOUL], lambda[efptVDW],
                                            dvdlt_q, dvdlt_lj);
@@ -498,14 +498,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                 if (fr->n_tpi == 0 || (flags & GMX_FORCE_STATECHANGED))
                 {
                     pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
-                    if (EEL_PME(fr->eeltype))
-                    {
-                        pme_flags     |= GMX_PME_DO_COULOMB;
-                    }
-                    if (EVDW_PME(fr->vdwtype))
-                    {
-                        pme_flags |= GMX_PME_DO_LJ;
-                    }
+
                     if (flags & GMX_FORCE_FORCES)
                     {
                         pme_flags |= GMX_PME_CALC_F;
@@ -522,7 +515,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                     wallcycle_start(wcycle, ewcPMEMESH);
                     status = gmx_pme_do(fr->pmedata,
                                         0, md->homenr - fr->n_tpi,
-                                        x, fr->f_novirsum,
+                                        x,
+                                        as_rvec_array(fr->f_novirsum->data()),
                                         md->chargeA, md->chargeB,
                                         md->sqrt_c6A, md->sqrt_c6B,
                                         md->sigmaA, md->sigmaB,
@@ -530,8 +524,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
                                         DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
                                         nrnb, wcycle,
-                                        fr->vir_el_recip, fr->ewaldcoeff_q,
-                                        fr->vir_lj_recip, fr->ewaldcoeff_lj,
+                                        fr->vir_el_recip, fr->vir_lj_recip,
                                         &Vlr_q, &Vlr_lj,
                                         lambda[efptCOUL], lambda[efptVDW],
                                         &dvdl_long_range_q, &dvdl_long_range_lj, pme_flags);
@@ -568,7 +561,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 
         if (!EEL_PME(fr->eeltype) && EEL_PME_EWALD(fr->eeltype))
         {
-            Vlr_q = do_ewald(ir, x, fr->f_novirsum,
+            Vlr_q = do_ewald(ir, x, as_rvec_array(fr->f_novirsum->data()),
                              md->chargeA, md->chargeB,
                              box_size, cr, md->homenr,
                              fr->vir_el_recip, fr->ewaldcoeff_q,
@@ -742,7 +735,7 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     }
 }
 
-void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
+void sum_dhdl(gmx_enerdata_t *enerd, const std::vector<real> *lambda, t_lambda *fepvals)
 {
     int    i, j, index;
     double dlam;
@@ -824,7 +817,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
         for (j = 0; j < efptNR; j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
-            dlam = (fepvals->all_lambda[j][i]-lambda[j]);
+            dlam = (fepvals->all_lambda[j][i] - (*lambda)[j]);
             enerd->enerpart_lambda[i+1] += dlam*enerd->dvdl_lin[j];
             if (debug)
             {

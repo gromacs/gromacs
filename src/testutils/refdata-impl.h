@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,7 +67,7 @@ class ReferenceDataEntry
 
         ReferenceDataEntry(const char *type, const char *id)
             : type_(type), id_(id != NULL ? id : ""), isTextBlock_(false),
-              correspondingOutputEntry_(NULL)
+              hasBeenChecked_(false), correspondingOutputEntry_(NULL)
         {
         }
 
@@ -132,6 +132,18 @@ class ReferenceDataEntry
             return prev != children_.end();
         }
 
+        bool hasBeenChecked() const { return hasBeenChecked_; }
+        void setChecked() { hasBeenChecked_ = true; }
+
+        void setCheckedIncludingChildren()
+        {
+            setChecked();
+            for (const auto &child : children_)
+            {
+                child->setCheckedIncludingChildren();
+            }
+        }
+
         EntryPointer cloneToOutputEntry()
         {
             EntryPointer entry(new ReferenceDataEntry(type_.c_str(), id_.c_str()));
@@ -179,6 +191,7 @@ class ReferenceDataEntry
         std::string         value_;
         bool                isTextBlock_;
         ChildList           children_;
+        bool                hasBeenChecked_;
         ReferenceDataEntry *correspondingOutputEntry_;
 };
 

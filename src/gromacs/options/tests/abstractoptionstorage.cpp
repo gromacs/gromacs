@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,7 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
          *
          * \param[in] settings   Storage settings.
          */
-        MockOptionStorage(const MockOption &settings);
+        explicit MockOptionStorage(const MockOption &settings);
 
         /*! \brief
          * Calls addValue("dummy") in the base class.
@@ -99,25 +99,9 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         {
             addValue("dummy");
         }
-        // using MyBase::markAsSet;
-        // using MyBase::addValue;
-        // using MyBase::commitValues;
-        // "using" is correct but MSVC gives error C2248. Workaround:
-        //! \copydoc gmx::OptionStorageTemplate::markAsSet()
-        void markAsSet()
-        {
-            MyBase::markAsSet();
-        }
-        //! \copydoc gmx::OptionStorageTemplate::addValue()
-        void addValue(const std::string &value)
-        {
-            MyBase::addValue(value);
-        }
-        //! \copydoc gmx::OptionStorageTemplate::commitValues()
-        void commitValues()
-        {
-            MyBase::commitValues();
-        }
+        using MyBase::markAsSet;
+        using MyBase::addValue;
+        using MyBase::commitValues;
 
         virtual gmx::OptionInfo &optionInfo() { return info_; }
         // These are not used.
@@ -125,6 +109,11 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         virtual std::string formatSingleValue(const std::string & /*value*/) const
         {
             return "";
+        }
+
+        virtual void convertValue(const gmx::Variant &value)
+        {
+            convertValue(value.cast<std::string>());
         }
 
         MOCK_METHOD1(convertValue, void(const std::string &value));
@@ -186,7 +175,7 @@ MockOptionStorage &MockOptionInfo::option()
  */
 TEST(AbstractOptionStorageTest, HandlesSetInFinish)
 {
-    gmx::Options                options(NULL, NULL);
+    gmx::Options                options;
     std::vector<std::string>    values;
     MockOptionInfo             *info = options.addOption(
                 MockOption("name").required().storeVector(&values));
@@ -216,7 +205,7 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
  */
 TEST(AbstractOptionStorageTest, HandlesValueRemoval)
 {
-    gmx::Options                options(NULL, NULL);
+    gmx::Options                options;
     std::vector<std::string>    values;
     MockOptionInfo             *info = options.addOption(
                 MockOption("name").storeVector(&values).multiValue());
@@ -255,7 +244,7 @@ TEST(AbstractOptionStorageTest, HandlesValueRemoval)
  */
 TEST(AbstractOptionStorageTest, HandlesValueAddition)
 {
-    gmx::Options                options(NULL, NULL);
+    gmx::Options                options;
     std::vector<std::string>    values;
     MockOptionInfo             *info = options.addOption(
                 MockOption("name").storeVector(&values).multiValue());
@@ -295,7 +284,7 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
  */
 TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
 {
-    gmx::Options                options(NULL, NULL);
+    gmx::Options                options;
     std::vector<std::string>    values;
     MockOptionInfo             *info = options.addOption(
                 MockOption("name").storeVector(&values).valueCount(2));
@@ -331,7 +320,7 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
  */
 TEST(AbstractOptionStorageTest, AllowsEmptyValues)
 {
-    gmx::Options                options(NULL, NULL);
+    gmx::Options                options;
     std::vector<std::string>    values;
     MockOptionInfo             *info = options.addOption(
                 MockOption("name").storeVector(&values).valueCount(0));

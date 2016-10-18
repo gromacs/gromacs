@@ -177,46 +177,37 @@ class DirectoryEnumerator::Impl
             }
             return new Impl(handle);
         }
-        explicit Impl(DIR *handle) : dirent_handle(handle)
-        {
-            // TODO: Use memory allocation that throws, and handle
-            // exception safety (close handle) in such a case.
-            /* On some platforms no space is present for d_name in dirent.
-             * Since d_name is guaranteed to be the last entry, allocating
-             * extra space for dirent will allow more size for d_name.
-             * GMX_MAX_PATH should always be >= the max possible d_name.
-             */
-            smalloc(direntp_large, sizeof(*direntp_large) + GMX_PATH_MAX);
-        }
+        explicit Impl(DIR *handle) : dirent_handle(handle) {}
         ~Impl()
         {
-            sfree(direntp_large);
             closedir(dirent_handle);
         }
 
         bool nextFile(std::string *filename)
         {
             errno = 0;
-            dirent *p;
-            int     rc = readdir_r(dirent_handle, direntp_large, &p);
-            if (p == NULL && rc == 0)
+            dirent *p = readdir(dirent_handle);
+            if (p == NULL)
             {
-                filename->clear();
-                return false;
+                if (errno == 0)
+                {
+                    // All the files have been found.
+                    filename->clear();
+                    return false;
+                }
+                else
+                {
+                    GMX_THROW_WITH_ERRNO(
+                            FileIOError("Failed to list files in a directory"),
+                            "readdir", errno);
+                }
             }
-            else if (rc != 0)
-            {
-                GMX_THROW_WITH_ERRNO(
-                        FileIOError("Failed to list files in a directory"),
-                        "readdir_r", errno);
-            }
-            *filename = direntp_large->d_name;
+            *filename = p->d_name;
             return true;
         }
 
     private:
         DIR    *dirent_handle;
-        dirent *direntp_large;
 };
 #else
 class DirectoryEnumerator::Impl

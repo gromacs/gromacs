@@ -419,7 +419,7 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
 
     print_missing_interactions_atoms(fplog, cr, top_global, &top_local->idef);
     write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr,
-                 -1, state_local->x, state_local->box);
+                 -1, as_rvec_array(state_local->x.data()), state_local->box);
 
     std::string errorMessage;
 
@@ -2219,8 +2219,6 @@ void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
     if (dd->reverse_top->bExclRequired)
     {
         dd->nbonded_local += nexcl;
-
-        forcerec_set_excl_load(fr, ltop);
     }
 
     ltop->atomtypes  = mtop->atomtypes;
@@ -2274,7 +2272,7 @@ void dd_init_local_state(gmx_domdec_t *dd,
         buf[1] = state_global->ngtc;
         buf[2] = state_global->nnhpres;
         buf[3] = state_global->nhchainlength;
-        buf[4] = state_global->dfhist.nlambda;
+        buf[4] = state_global->dfhist ? state_global->dfhist->nlambda : 0;
     }
     dd_bcast(dd, NITEM_DD_INIT_LOCAL_STATE*sizeof(int), buf);
 

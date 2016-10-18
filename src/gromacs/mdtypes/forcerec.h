@@ -40,15 +40,46 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#ifdef __cplusplus
+#include "gromacs/mdtypes/state.h"
+#endif
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-#if 0
-} /* fixes auto-indentation problems */
+
+struct t_mdatoms;
+struct t_commrec;
+
+/*! \libinternal \brief
+ * Interface for a component that provides forces during MD.
+ *
+ * This is typically part of a larger structure/class managing its own
+ * data, such that it has the information on what to do stored locally.
+ * \todo Implement returning of energy and dH/dlambda.
+ * \inlibraryapi
+ */
+struct IForceProvider
+{
+    public:
+        /*! \brief Compute forces
+         *
+         * \todo This is specific for electric fields and needs to be generalized.
+         * \param[in]    cr      Communication record for parallel operations
+         * \param[in]    mdatoms Atom information
+         * \param[inout] force   The forces
+         * \param[in]    t       The actual time in the simulation (ps)
+         */
+        virtual void calculateForces(const t_commrec  *cr,
+                                     const t_mdatoms  *mdatoms,
+                                     PaddedRVecVector *force,
+                                     double            t) = 0;
+
+    protected:
+        ~IForceProvider() {}
+};
 #endif
 
 /* Abstract type for PME that is defined only in the routine that use them. */
@@ -303,15 +334,24 @@ typedef struct t_forcerec {
 
     /* Forces that should not enter into the virial summation:
      * PPPM/PME/Ewald/posres
+     * If such forces are present in the system, bF_NoVirSum=TRUE.
      */
-    gmx_bool bF_NoVirSum;
-    int      f_novirsum_n;
-    int      f_novirsum_nalloc;
-    rvec    *f_novirsum_alloc;
-    /* Pointer that points to f_novirsum_alloc when pressure is calcaluted,
-     * points to the normal force vectors wen pressure is not requested.
+    gmx_bool          bF_NoVirSum;
+#ifdef __cplusplus
+    /* TODO: Replace the pointer by an object once we got rid of C */
+    PaddedRVecVector *forceBufferNoVirialSummation;
+#else
+    void             *forceBufferNoVirialSummation_dummy;
+#endif
+    /* Pointer that points to forceNoVirialSummation when virial is calcaluted,
+     * points to the normal force vector when the virial is not requested
+     * or when bF_NoVirSum == FALSE.
      */
-    rvec *f_novirsum;
+#ifdef __cplusplus
+    PaddedRVecVector *f_novirsum;
+#else
+    void             *f_novirsum_xdummy;
+#endif
 
     /* Long-range forces and virial for PPPM/PME/Ewald */
     struct gmx_pme_t *pmedata;
@@ -421,10 +461,10 @@ typedef struct t_forcerec {
     struct bonded_threading_t *bonded_threading;
 
     /* Ewald correction thread local virial and energy data */
-    int                  nthread_ewc;
-    ewald_corr_thread_t *ewc_t;
-    /* Ewald charge correction load distribution over the threads */
-    int                 *excl_load;
+    int                    nthread_ewc;
+    ewald_corr_thread_t   *ewc_t;
+
+    struct IForceProvider *efield;
 } t_forcerec;
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

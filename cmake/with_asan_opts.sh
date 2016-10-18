@@ -1,7 +1,8 @@
+#!/bin/bash
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,9 +33,22 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# the name of the target operating system
-set(CMAKE_SYSTEM_NAME BlueGeneP-static CACHE STRING "Cross-compiling for BlueGene/P")
-
-# set the compiler
-set(CMAKE_C_COMPILER mpixlc_r)
-set(CMAKE_CXX_COMPILER mpixlcxx_r)
+while [[ "$1" != "--" ]] ; do
+    extra_opts="$extra_opts $1"
+    shift
+done
+for opt in $ASAN_OPTIONS ; do
+    if [[ "$opt" == log_path=* ]] ; then
+        # CTest gives errors if the file does not exist, but AddressSanitizer
+        # only produces it if it finds issues...
+        log_path="${opt#log_path=}"
+        log_path="${log_path%\"}"
+        log_path="${log_path#\"}"
+        touch ${log_path}.99999
+    fi
+done
+# Suppressions are not currently necessary, but can be introduced like this.
+#path=`dirname $0`
+#export LSAN_OPTIONS="suppressions=$path/../admin/lsan-suppressions.txt"
+export ASAN_OPTIONS="$ASAN_OPTIONS $extra_opts"
+exec "$@"

@@ -37,14 +37,18 @@
 /* This file is completely threadsafe - keep it that way! */
 #include "gmxpre.h"
 
+#include "config.h" /* for GMX_MAX_OPENMP_THREADS */
+
 #include <algorithm>
 
+#include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/gmxassert.h"
 
 #define XXXX    0
 #define XXYY    1
@@ -63,28 +67,21 @@ static void upd_vir(rvec vir, real dvx, real dvy, real dvz)
     vir[ZZ] -= 0.5*dvz;
 }
 
-void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
-              gmx_bool bScrewPBC, matrix box)
+static void calc_x_times_f(int nxf, const rvec x[], const rvec f[],
+                           gmx_bool bScrewPBC, const matrix box,
+                           matrix x_times_f)
 {
-    int      i;
-    double   dvxx = 0, dvxy = 0, dvxz = 0, dvyx = 0, dvyy = 0, dvyz = 0, dvzx = 0, dvzy = 0, dvzz = 0;
+    clear_mat(x_times_f);
 
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntDefault)) \
-    schedule(static) \
-    reduction(+: dvxx, dvxy, dvxz, dvyx, dvyy, dvyz, dvzx, dvzy, dvzz)
-    for (i = 0; i < nxf; i++)
+    for (int i = 0; i < nxf; i++)
     {
-        dvxx += x[i][XX]*f[i][XX];
-        dvxy += x[i][XX]*f[i][YY];
-        dvxz += x[i][XX]*f[i][ZZ];
-
-        dvyx += x[i][YY]*f[i][XX];
-        dvyy += x[i][YY]*f[i][YY];
-        dvyz += x[i][YY]*f[i][ZZ];
-
-        dvzx += x[i][ZZ]*f[i][XX];
-        dvzy += x[i][ZZ]*f[i][YY];
-        dvzz += x[i][ZZ]*f[i][ZZ];
+        for (int d = 0; d < DIM; d++)
+        {
+            for (int n = 0; n < DIM; n++)
+            {
+                x_times_f[d][n] += x[i][d]*f[i][n];
+            }
+        }
 
         if (bScrewPBC)
         {
@@ -92,18 +89,60 @@ void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
             /* We should correct all odd x-shifts, but the range of isx is -2 to 2 */
             if (isx == 1 || isx == -1)
             {
-                dvyy += box[YY][YY]*f[i][YY];
-                dvyz += box[YY][YY]*f[i][ZZ];
-
-                dvzy += box[ZZ][ZZ]*f[i][YY];
-                dvzz += box[ZZ][ZZ]*f[i][ZZ];
+                for (int d = 0; d < DIM; d++)
+                {
+                    for (int n = 0; n < DIM; n++)
+                    {
+                        x_times_f[d][n] += box[d][d]*f[i][n];
+                    }
+                }
             }
         }
     }
+}
 
-    upd_vir(vir[XX], dvxx, dvxy, dvxz);
-    upd_vir(vir[YY], dvyx, dvyy, dvyz);
-    upd_vir(vir[ZZ], dvzx, dvzy, dvzz);
+void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
+              gmx_bool bScrewPBC, matrix box)
+{
+    matrix x_times_f;
+
+    int    nthreads = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, nxf*9);
+
+    GMX_ASSERT(nthreads >= 1, "Avoids uninitialized x_times_f (warning)");
+
+    if (nthreads == 1)
+    {
+        calc_x_times_f(nxf, x, f, bScrewPBC, box, x_times_f);
+    }
+    else
+    {
+        /* Use a buffer on the stack for storing thread-local results.
+         * We use 2 extra elements (=18 reals) per thread to separate thread
+         * local data by at least a cache line. Element 0 is not used.
+         */
+        matrix xf_buf[GMX_OPENMP_MAX_THREADS*3];
+
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+        for (int thread = 0; thread < nthreads; thread++)
+        {
+            int start = (nxf*thread)/nthreads;
+            int end   = std::min(nxf*(thread + 1)/nthreads, nxf);
+
+            calc_x_times_f(end - start, x + start, f + start, bScrewPBC, box,
+                           // cppcheck-suppress uninitvar
+                           thread == 0 ? x_times_f : xf_buf[thread*3]);
+        }
+
+        for (int thread = 1; thread < nthreads; thread++)
+        {
+            m_add(x_times_f, xf_buf[thread*3], x_times_f);
+        }
+    }
+
+    for (int d = 0; d < DIM; d++)
+    {
+        upd_vir(vir[d], x_times_f[d][XX], x_times_f[d][YY], x_times_f[d][ZZ]);
+    }
 }
 
 

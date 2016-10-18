@@ -112,13 +112,14 @@
  * The CUDA device information is queried and set at detection and contains
  * both information about the device/hardware returned by the runtime as well
  * as additional data like support status.
+ *
+ * \todo extract an object to manage NVML details
  */
 struct gmx_device_info_t
 {
     int                 id;                      /* id of the CUDA device */
     cudaDeviceProp      prop;                    /* CUDA device properties */
     int                 stat;                    /* result of the device check */
-    gmx_bool            nvml_initialized;        /* If NVML was initialized */
     unsigned int        nvml_orig_app_sm_clock;  /* The original SM clock before we changed it */
     unsigned int        nvml_orig_app_mem_clock; /* The original memory clock before we changed it */
     gmx_bool            nvml_app_clocks_changed; /* If application clocks have been changed */
@@ -126,6 +127,7 @@ struct gmx_device_info_t
     unsigned int        nvml_set_app_mem_clock;  /* The memory clock we set */
 #if HAVE_NVML
     nvmlDevice_t        nvml_device_id;          /* NVML device id */
+    // TODO This can become a bool with a more useful name
     nvmlEnableState_t   nvml_is_restricted;      /* Status of application clocks permission */
 #endif                                           /* HAVE_NVML */
 };
@@ -137,18 +139,12 @@ int cu_copy_D2H(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);
 /*! Launches asynchronous host to device memory copy in stream s. */
 int cu_copy_D2H_async(void * /*h_dest*/, void * /*d_src*/, size_t /*bytes*/, cudaStream_t /*s = 0*/);
 
-/*! Allocates host memory and launches synchronous host to device memory copy. */
-int cu_copy_D2H_alloc(void ** /*h_dest*/, void * /*d_src*/, size_t /*bytes*/);
-
 
 /*! Launches synchronous host to device memory copy. */
 int cu_copy_H2D(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
 
 /*! Launches asynchronous host to device memory copy in stream s. */
 int cu_copy_H2D_async(void * /*d_dest*/, void * /*h_src*/, size_t /*bytes*/, cudaStream_t /*s = 0*/);
-
-/*! Allocates device memory and launches synchronous host to device memory copy. */
-int cu_copy_H2D_alloc(void ** /*d_dest*/, void * /*h_src*/, size_t /*bytes*/);
 
 /*! Frees device memory and resets the size and allocation size to -1. */
 void cu_free_buffered(void *d_ptr, int *n = NULL, int *nalloc = NULL);

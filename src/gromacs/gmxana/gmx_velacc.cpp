@@ -239,6 +239,7 @@ int gmx_velacc(int argc, char *argv[])
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
     {
+        sfree(ppa);
         return 0;
     }
 

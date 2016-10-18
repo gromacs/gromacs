@@ -57,9 +57,9 @@
 #include "poscalc.h"
 #include "selelem.h"
 
+struct gmx_mtop_t;
 struct gmx_sel_mempool_t;
 struct t_pbc;
-struct t_topology;
 struct t_trxframe;
 
 namespace gmx
@@ -71,6 +71,7 @@ typedef std::unique_ptr<internal::SelectionData> SelectionDataPointer;
 typedef std::vector<SelectionDataPointer> SelectionDataList;
 
 class SelectionParserSymbolTable;
+struct SelectionTopologyProperties;
 
 } // namespace gmx
 
@@ -99,7 +100,7 @@ struct gmx_ana_selcollection_t
     char                         **varstrs;
 
     /** Topology for the collection. */
-    t_topology                                        *top;
+    const gmx_mtop_t                                  *top;
     /** Index group that contains all the atoms. */
     gmx_ana_index_t                                    gall;
     /** Memory pool used for selection evaluation. */
@@ -153,6 +154,15 @@ class SelectionCollection::Impl
          */
         void resolveExternalGroups(const gmx::SelectionTreeElementPointer &root,
                                    ExceptionInitializer                   *errors);
+
+        //! Whether forces have been requested for some selection.
+        bool areForcesRequested() const;
+        /*! \brief
+         * Returns topology properties needed for a certain position type.
+         */
+        SelectionTopologyProperties
+        requiredTopologyPropertiesForPositionType(const std::string &post,
+                                                  bool               forces) const;
 
         //! Internal data, used for interfacing with old C code.
         gmx_ana_selcollection_t sc_;

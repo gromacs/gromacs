@@ -286,7 +286,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     {
         gmx_write_pdb_box(out, ePBC, box);
     }
-    if (atoms->pdbinfo)
+    if (atoms->havePdbInfo)
     {
         /* Check whether any occupancies are set, in that case leave it as is,
          * otherwise set them all to one
@@ -870,6 +870,12 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
         clear_mat(box);
     }
 
+    atoms->haveMass    = FALSE;
+    atoms->haveCharge  = FALSE;
+    atoms->haveType    = FALSE;
+    atoms->haveBState  = FALSE;
+    atoms->havePdbInfo = (atoms->pdbinfo != NULL);
+
     bCOMPND  = FALSE;
     title[0] = '\0';
     natom    = 0;
@@ -886,7 +892,7 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
                 break;
 
             case epdbANISOU:
-                if (atoms->pdbinfo)
+                if (atoms->havePdbInfo)
                 {
                     read_anisou(line, natom, atoms);
                 }
@@ -1018,12 +1024,13 @@ void get_pdb_coordnum(FILE *in, int *natoms)
 }
 
 void gmx_pdb_read_conf(const char *infile,
-                       t_topology *top, rvec x[], int *ePBC, matrix box)
+                       t_symtab *symtab, char ***name, t_atoms *atoms,
+                       rvec x[], int *ePBC, matrix box)
 {
     FILE *in = gmx_fio_fopen(infile, "r");
     char  title[STRLEN];
-    read_pdbfile(in, title, NULL, &top->atoms, &top->symtab, x, ePBC, box, TRUE, NULL);
-    top->name = put_symtab(&top->symtab, title);
+    read_pdbfile(in, title, NULL, atoms, symtab, x, ePBC, box, TRUE, NULL);
+    *name = put_symtab(symtab, title);
     gmx_fio_fclose(in);
 }
 

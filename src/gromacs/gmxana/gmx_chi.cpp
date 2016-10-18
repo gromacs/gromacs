@@ -1144,6 +1144,8 @@ static void order_params(FILE *log,
     {
         real x0, y0, z0;
 
+        atoms->havePdbInfo = TRUE;
+
         if (NULL == atoms->pdbinfo)
         {
             snew(atoms->pdbinfo, atoms->nr);
@@ -1398,6 +1400,7 @@ int gmx_chi(int argc, char *argv[])
                            NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
                            &oenv))
     {
+        sfree(ppa);
         return 0;
     }
 

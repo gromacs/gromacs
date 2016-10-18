@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -231,11 +231,6 @@ class ArrayRef
          *
          * This constructor is not explicit to allow directly passing
          * a C array to a function that takes an ArrayRef parameter.
-         *
-         * xlc on BG/Q compiles wrong code if the C array is a struct
-         * field, unless value_type is char or unsigned char. There's
-         * no good way to assert on this before C++11 (which that
-         * compiler will never support).
          */
         template <size_t count>
         ArrayRef(value_type (&array)[count])
@@ -412,6 +407,10 @@ class ConstArrayRef
          */
         ConstArrayRef(const EmptyArrayRef &) : begin_(NULL), end_(NULL) {}
         /*! \brief
+         * Constructs a const reference from a non-const reference.
+         */
+        ConstArrayRef(const ArrayRef<T> &other) : begin_(other.begin()), end_(other.end()) {}
+        /*! \brief
          * Constructs a reference to a particular range.
          *
          * \param[in] begin  Pointer to the beginning of a range.
@@ -460,11 +459,6 @@ class ConstArrayRef
          *
          * This constructor is not explicit to allow directly passing
          * a C array to a function that takes a ConstArrayRef parameter.
-         *
-         * xlc on BG/Q compiles wrong code if the C array is a struct
-         * field, unless value_type is char or unsigned char. There's
-         * no good way to assert on this before C++11 (which that
-         * compiler will never support).
          */
         template <size_t count>
         ConstArrayRef(const value_type (&array)[count])

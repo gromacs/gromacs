@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
 
+struct energyhistory_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct t_commrec;
@@ -66,9 +67,6 @@ gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
                          gmx_wallcycle_t         wcycle);
 
 /*! \brief Getter for file pointer */
-FILE *mdoutf_get_fp_field(gmx_mdoutf_t of);
-
-/*! \brief Getter for file pointer */
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
 
 /*! \brief Getter for file pointer */
@@ -85,13 +83,14 @@ gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
 void mdoutf_tng_close(gmx_mdoutf_t of);
 
 /*! \brief Close all open output files and free the of pointer */
-void done_mdoutf(gmx_mdoutf_t of);
+void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir);
 
 /*! \brief Routine that writes trajectory-like frames.
  *
  * Writes data to trn, xtc and/or checkpoint. What is written is
  * determined by the mdof_flags defined below. Data is collected to
- * the master node only when necessary.
+ * the master node only when necessary. Without domain decomposition
+ * only data from state_local is used and state_global is ignored.
  */
 void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mdoutf_t of,
@@ -99,7 +98,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      rvec *f_local);
+                                      energyhistory_t *energyHistory,
+                                      PaddedRVecVector *f_local);
 
 #define MDOF_X            (1<<0)
 #define MDOF_V            (1<<1)

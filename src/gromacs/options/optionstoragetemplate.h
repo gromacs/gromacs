@@ -49,9 +49,13 @@
 
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/options/abstractoptionstorage.h"
+#include "gromacs/options/valuestore.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "valueconverter.h"
 
 namespace gmx
 {
@@ -65,10 +69,8 @@ class Options;
  *
  * Provides an implementation of the clearSet(), valueCount(), and processSet()
  * methods of AbstractOptionStorage, as well as a basic no-action
- * implementation of processAll().  Two new virtual methods are added:
- * processSetValues() and refreshValues().  The default implementation of
- * processSetValues() does nothing, and refreshValues() is used to update
- * secondary storage after values have been added/changed.
+ * implementation of processAll().  One new virtual method is added:
+ * processSetValues().  The default implementation does nothing.
  * This leaves typeString(), formatValue(), and convertValue() to be
  * implemented in derived classes.  processSetValues() and processAll() can
  * also be implemented if necessary.
@@ -91,15 +93,13 @@ class OptionStorageTemplate : public AbstractOptionStorage
         //! Type of the container that contains the current values.
         typedef std::vector<T> ValueList;
 
-        virtual ~OptionStorageTemplate();
-
         // No implementation in this class for the pure virtual methods, but
         // the declarations are still included for clarity.
         // The various copydoc calls are needed with Doxygen 1.8.10, although
         // things work without with 1.8.5...
         virtual std::string typeString() const = 0;
         //! \copydoc gmx::AbstractOptionStorage::valueCount()
-        virtual int valueCount() const { return static_cast<int>(values_->size()); }
+        virtual int valueCount() const { return store_->valueCount(); }
         /*! \copydoc gmx::AbstractOptionStorage::formatValue()
          *
          * OptionStorageTemplate implements handling of DefaultValueIfSetIndex
@@ -110,6 +110,9 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual std::string formatValue(int i) const;
 
     protected:
+        //! Smart pointer for managing the final storage interface.
+        typedef std::unique_ptr<IOptionValueStore<T> > StorePointer;
+
         /*! \brief
          * Initializes the storage from option settings.
          *
@@ -125,12 +128,14 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * Initializes the storage from base option settings.
          *
          * \param[in] settings  Option settings.
+         * \param[in] store     Final storage location.
          * \throws  APIError if invalid settings have been provided.
          *
          * This constructor works for cases where there is no matching
          * OptionTemplate (e.g., EnumOption).
          */
-        explicit OptionStorageTemplate(const AbstractOption &settings);
+        OptionStorageTemplate(const AbstractOption &settings,
+                              StorePointer          store);
 
         //! \copydoc gmx::AbstractOptionStorage::clearSet()
         virtual void clearSet();
@@ -143,7 +148,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * should be considered whether the implementation can be made strongly
          * exception safe.
          */
-        virtual void convertValue(const std::string &value) = 0;
+        virtual void convertValue(const Variant &value) = 0;
         /*! \brief
          * Processes values for a set after all have been converted.
          *
@@ -189,12 +194,6 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual std::string formatSingleValue(const T &value) const = 0;
 
         /*! \brief
-         * Removes all values from the storage.
-         *
-         * Does not throw.
-         */
-        void clear() { values_->clear(); }
-        /*! \brief
          * Adds a value to a temporary storage.
          *
          * \param[in] value  Value to add. A copy is made.
@@ -226,24 +225,9 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * See addValue() for cases where this method should be used in derived
          * classes.
          *
-         * Calls refreshValues() and clearSet() if it is successful.
+         * Calls clearSet() if it is successful.
          */
         void commitValues();
-        /*! \brief
-         * Updates alternative store locations.
-         *
-         * Derived classes should override this method if they implement
-         * alternative store locations, and copy/translate values from the
-         * values() vector to these alternative storages.  They should also
-         * call the base class implementation as part of their implementation.
-         *
-         * Should be called in derived classes if values are modified directly
-         * through the values() method, e.g., in processAll().  Does not need
-         * to be called if commitValues() is used.
-         *
-         * Does not throw, and derived classes should not change that.
-         */
-        virtual void refreshValues();
 
         /*! \brief
          * Sets the default value for the option.
@@ -270,70 +254,129 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * Provides derived classes access to the current list of values.
          *
          * The non-const variant should only be used from processAll() in
-         * derived classes if necessary, and refreshValues() should be called
-         * if any changes are made.
+         * derived classes if necessary.
          */
-        ValueList       &values() { return *values_; }
+        ArrayRef<T>      values() { return store_->values(); }
         //! Provides derived classes access to the current list of values.
-        const ValueList &values() const { return *values_; }
+        ConstArrayRef<T> values() const { return store_->values(); }
 
     private:
+        //! Creates the internal storage object for final values..
+        StorePointer createStore(ValueList *storeVector,
+                                 T *store, int *storeCount,
+                                 int initialCount);
+
         /*! \brief
          * Vector for temporary storage of values before commitSet() is called.
          */
         ValueList               setValues_;
-        /*! \brief
-         * Vector for primary storage of option values.
-         *
-         * Is never NULL; points either to externally provided vector, or an
-         * internally allocated one.  The allocation is performed by the
-         * constructor.
-         *
-         * Primarily, modifications to values are done only to this storage,
-         * and other storage locations are updated only when refreshValues() is
-         * called.
-         */
-        ValueList                   *values_;
-        T                           *store_;
-        int                         *countptr_;
-        // These never release ownership.
-        std::unique_ptr<ValueList>   ownedValues_;
-        std::unique_ptr<T>           defaultValueIfSet_;
+        //! Final storage for option values.
+        const StorePointer      store_;
+        // This never releases ownership.
+        std::unique_ptr<T>      defaultValueIfSet_;
 
         // Copy and assign disallowed by base.
 };
 
+
+/*! \libinternal \brief
+ * Simplified option storage template for options that have one-to-one value
+ * conversion.
+ *
+ * \tparam T Assignable type that stores a single option value.
+ *
+ * To implement an option that always map a single input value to a single
+ * output value, derive from this class instead of OptionStorageTemplate.
+ * This class implements convertValue() in terms of two new virtual methods:
+ * initConverter() and processValue().
+ *
+ * To specify how different types of values need to be converted, implement
+ * initConverter().
+ * To do common post-processing of the values after conversion, but before they
+ * are added to the underlying storage, override processValue().
+ *
+ * \inlibraryapi
+ * \ingroup module_options
+ */
+template <typename T>
+class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
+{
+    public:
+        //! Alias for the template class for use in base classes.
+        typedef OptionStorageTemplateSimple<T> MyBase;
+
+    protected:
+        //! Alias for the converter parameter type for initConverter().
+        typedef OptionValueConverterSimple<T> ConverterType;
+
+        //! Initializes the storage.
+        template <class U>
+        explicit OptionStorageTemplateSimple(const OptionTemplate<T, U> &settings,
+                                             OptionFlags staticFlags = OptionFlags())
+            : OptionStorageTemplate<T>(settings, staticFlags), initialized_(false)
+        {
+        }
+        //! Initializes the storage.
+        OptionStorageTemplateSimple(const AbstractOption                            &settings,
+                                    typename OptionStorageTemplate<T>::StorePointer  store)
+            : OptionStorageTemplate<T>(settings, std::move(store)), initialized_(false)
+        {
+        }
+
+        /*! \brief
+         * Specifies how different types are converted.
+         *
+         * See OptionValueConverterSimple for more details.
+         */
+        virtual void initConverter(ConverterType *converter) = 0;
+        /*! \brief
+         * Post-processes a value after conversion to the output type.
+         *
+         * \param[in] value  Value after conversion.
+         * \returns   Value to store for the option.
+         *
+         * The default implementation only provides an identity mapping.
+         */
+        virtual T processValue(const T &value)
+        {
+            return value;
+        }
+
+    private:
+        virtual void convertValue(const Variant &variant)
+        {
+            if (!initialized_)
+            {
+                initConverter(&converter_);
+                initialized_ = true;
+            }
+            this->addValue(processValue(converter_.convert(variant)));
+        }
+
+        ConverterType  converter_;
+        bool           initialized_;
+};
+
+
+/********************************************************************
+ * OptionStorageTemplate implementation
+ */
 
 template <typename T>
 template <class U>
 OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &settings,
                                                 OptionFlags staticFlags)
     : AbstractOptionStorage(settings, staticFlags),
-      values_(settings.storeVector_),
-      store_(settings.store_),
-      countptr_(settings.countptr_)
+      store_(createStore(settings.storeVector_,
+                         settings.store_, settings.countptr_,
+                         (settings.isVector() ?
+                          settings.maxValueCount_ : settings.minValueCount_)))
 {
-    // If the maximum number of values is not known, storage to
-    // caller-allocated memory is unsafe.
-    if (store_ != NULL && (maxValueCount() < 0 || hasFlag(efOption_MultipleTimes)))
-    {
-        GMX_THROW(APIError("Cannot set user-allocated storage for arbitrary number of values"));
-    }
-    if (values_ == NULL)
-    {
-        ownedValues_.reset(new std::vector<T>);
-        values_ = ownedValues_.get();
-    }
     if (hasFlag(efOption_NoDefaultValue)
         && (settings.defaultValue_ != NULL
             || settings.defaultValueIfSet_ != NULL))
     {
         GMX_THROW(APIError("Option does not support default value, but one is set"));
-    }
-    if (store_ != NULL && countptr_ == NULL && !isVector()
-        && minValueCount() != maxValueCount())
-    {
-        GMX_THROW(APIError("Count storage is not set, although the number of produced values is not known"));
     }
     if (!hasFlag(efOption_NoDefaultValue))
     {
@@ -341,16 +384,6 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         if (settings.defaultValue_ != NULL)
         {
             setDefaultValue(*settings.defaultValue_);
-        }
-        else if (ownedValues_.get() != NULL && store_ != NULL)
-        {
-            values_->clear();
-            int count = (settings.isVector() ?
-                         settings.maxValueCount_ : settings.minValueCount_);
-            for (int i = 0; i < count; ++i)
-            {
-                values_->push_back(store_[i]);
-            }
         }
         if (settings.defaultValueIfSet_ != NULL)
         {
@@ -361,19 +394,44 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
 
 
 template <typename T>
-// cppcheck-suppress uninitMemberVar
-OptionStorageTemplate<T>::OptionStorageTemplate(const AbstractOption &settings)
-    : AbstractOptionStorage(settings, OptionFlags()),
-      store_(NULL), countptr_(NULL),
-      ownedValues_(new std::vector<T>())
+OptionStorageTemplate<T>::OptionStorageTemplate(const AbstractOption &settings,
+                                                StorePointer          store)
+    : AbstractOptionStorage(settings, OptionFlags()), store_(std::move(store))
 {
-    values_ = ownedValues_.get();
 }
 
 
 template <typename T>
-OptionStorageTemplate<T>::~OptionStorageTemplate()
+std::unique_ptr<IOptionValueStore<T> > OptionStorageTemplate<T>::createStore(
+        ValueList *storeVector, T *store, int *storeCount, int initialCount)
 {
+    if (storeVector != nullptr)
+    {
+        GMX_RELEASE_ASSERT(store == nullptr && storeCount == nullptr,
+                           "Cannot specify more than one storage location");
+        return StorePointer(new OptionValueStoreVector<T>(storeVector));
+    }
+    else if (store != nullptr)
+    {
+        // If the maximum number of values is not known, storage to
+        // caller-allocated memory is unsafe.
+        if (maxValueCount() < 0 || hasFlag(efOption_MultipleTimes))
+        {
+            GMX_THROW(APIError("Cannot set user-allocated storage for arbitrary number of values"));
+        }
+        if (storeCount == nullptr && !isVector() && minValueCount() != maxValueCount())
+        {
+            GMX_THROW(APIError("Count storage is not set, although the number of produced values is not known"));
+        }
+        if (hasFlag(efOption_NoDefaultValue))
+        {
+            initialCount = 0;
+        }
+        return StorePointer(new OptionValueStorePlain<T>(store, storeCount, initialCount));
+    }
+    GMX_RELEASE_ASSERT(storeCount == nullptr,
+                       "Cannot specify count storage without value storage");
+    return StorePointer(new OptionValueStoreNull<T>());
 }
 
 
@@ -440,32 +498,14 @@ void OptionStorageTemplate<T>::commitValues()
 {
     if (hasFlag(efOption_ClearOnNextSet))
     {
-        values_->swap(setValues_);
+        store_->clear();
     }
-    else
+    store_->reserve(setValues_.size());
+    for (T value : setValues_)
     {
-        values_->reserve(values_->size() + setValues_.size());
-        values_->insert(values_->end(), setValues_.begin(), setValues_.end());
+        store_->append(value);
     }
     clearSet();
-    refreshValues();
-}
-
-
-template <typename T>
-void OptionStorageTemplate<T>::refreshValues()
-{
-    if (countptr_ != NULL)
-    {
-        *countptr_ = static_cast<int>(values_->size());
-    }
-    if (store_ != NULL)
-    {
-        for (size_t i = 0; i < values_->size(); ++i)
-        {
-            store_[i] = (*values_)[i];
-        }
-    }
 }
 
 
@@ -479,12 +519,8 @@ void OptionStorageTemplate<T>::setDefaultValue(const T &value)
     if (hasFlag(efOption_HasDefaultValue))
     {
         setFlag(efOption_ExplicitDefaultValue);
-        clear();
-        clearSet();
-        addValue(value);
-        // TODO: As this is called from the constructor, it should not call
-        // virtual functions.
-        commitValues();
+        store_->clear();
+        store_->append(value);
     }
 }
 

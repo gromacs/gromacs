@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,11 +34,24 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 
 #include "mdrun/mdrun_main.h"
 
+namespace
+{
+
+//! Initializer for a module that defaults to nice level zero.
+void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
+{
+    settings->setDefaultNiceLevel(0);
+}
+
+}
+
 int main(int argc, char *argv[])
 {
-    return gmx::CommandLineModuleManager::runAsMainCMain(argc, argv, &gmx_mdrun);
+    return gmx::CommandLineModuleManager::runAsMainCMainWithSettings(
+            argc, argv, &gmx_mdrun, &initSettingsNoNice);
 }

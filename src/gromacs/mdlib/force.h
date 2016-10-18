@@ -41,6 +41,7 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_edsam;
@@ -149,7 +150,7 @@ void reset_enerdata(gmx_enerdata_t *enerd);
 void sum_epot(gmx_grppairener_t *grpp, real *epot);
 /* Locally sum the non-bonded potential energy terms */
 
-void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals);
+void sum_dhdl(gmx_enerdata_t *enerd, const std::vector<real> *lambda, t_lambda *fepvals);
 /* Sum the free energy contributions */
 
 /* Compute the average C6 and C12 params for LJ corrections */
@@ -161,15 +162,15 @@ void do_force(FILE *log, t_commrec *cr,
               gmx_int64_t step, struct t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
               gmx_groups_t *groups,
-              matrix box, rvec x[], history_t *hist,
-              rvec f[],
+              matrix box, PaddedRVecVector *coordinates, history_t *hist,
+              PaddedRVecVector *force,
               tensor vir_force,
               t_mdatoms *mdatoms,
               gmx_enerdata_t *enerd, t_fcdata *fcd,
-              real *lambda, struct t_graph *graph,
+              std::vector<real> *lambda, struct t_graph *graph,
               t_forcerec *fr,
               gmx_vsite_t *vsite, rvec mu_tot,
-              double t, FILE *field, struct gmx_edsam *ed,
+              double t, struct gmx_edsam *ed,
               gmx_bool bBornRadii,
               int flags);
 

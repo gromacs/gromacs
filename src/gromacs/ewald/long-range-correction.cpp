@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 /* There's nothing special to do here if just masses are perturbed,
  * but if either charge or type is perturbed then the implementation
@@ -59,8 +60,10 @@
  * perturbations. The parameter vectors for LJ-PME are likewise
  * undefined when LJ-PME is not active. This works because
  * bHaveChargeOrTypePerturbed handles the control flow. */
-void ewald_LRcorrection(int start, int end,
-                        t_commrec *cr, int thread, t_forcerec *fr,
+void ewald_LRcorrection(int numAtomsLocal,
+                        t_commrec *cr,
+                        int numThreads, int thread,
+                        t_forcerec *fr,
                         real *chargeA, real *chargeB,
                         real *C6A, real *C6B,
                         real *sigmaA, real *sigmaB,
@@ -75,6 +78,22 @@ void ewald_LRcorrection(int start, int end,
                         real lambda_q, real lambda_lj,
                         real *dvdlambda_q, real *dvdlambda_lj)
 {
+    int numAtomsToBeCorrected;
+    if (calc_excl_corr)
+    {
+        /* We need to correct all exclusion pairs (cutoff-scheme = group) */
+        numAtomsToBeCorrected = excl->nr;
+
+        GMX_RELEASE_ASSERT(numAtomsToBeCorrected >= numAtomsLocal, "We might need to do self-corrections");
+    }
+    else
+    {
+        /* We need to correct only self interactions */
+        numAtomsToBeCorrected = numAtomsLocal;
+    }
+    int         start =  (numAtomsToBeCorrected* thread     )/numThreads;
+    int         end   =  (numAtomsToBeCorrected*(thread + 1))/numThreads;
+
     int         i, i1, i2, j, k, m, iv, jv, q;
     int        *AA;
     double      Vexcl_q, dvdl_excl_q, dvdl_excl_lj; /* Necessary for precision */
@@ -88,8 +107,9 @@ void ewald_LRcorrection(int start, int end,
     tensor      dxdf_q = {{0}}, dxdf_lj = {{0}};
     real        vol    = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
     real        L1_q, L1_lj, dipole_coeff, qqA, qqB, qqL, vr0_q, vr0_lj = 0;
-    gmx_bool    bMolPBC      = fr->bMolPBC;
-    gmx_bool    bDoingLBRule = (fr->ljpme_combination_rule == eljpmeLB);
+    real        chargecorr[2] = { 0, 0 };
+    gmx_bool    bMolPBC       = fr->bMolPBC;
+    gmx_bool    bDoingLBRule  = (fr->ljpme_combination_rule == eljpmeLB);
     gmx_bool    bNeedLongRangeCorrection;
 
     /* This routine can be made faster by using tables instead of analytical interactions
@@ -138,9 +158,17 @@ void ewald_LRcorrection(int start, int end,
             }
             break;
         case eewg3DC:
-            dipole_coeff = 2*M_PI*one_4pi_eps/vol;
-            dipcorrA[ZZ] = 2*dipole_coeff*mutot[0][ZZ];
-            dipcorrB[ZZ] = 2*dipole_coeff*mutot[1][ZZ];
+            dipole_coeff  = 2*M_PI*one_4pi_eps/vol;
+            dipcorrA[ZZ]  = 2*dipole_coeff*mutot[0][ZZ];
+            dipcorrB[ZZ]  = 2*dipole_coeff*mutot[1][ZZ];
+            for (int q = 0; q < (bHaveChargeOrTypePerturbed ? 2 : 1); q++)
+            {
+                /* Avoid charge corrections with near-zero net charge */
+                if (fabs(fr->qsum[q]) > 1e-4)
+                {
+                    chargecorr[q] = 2*dipole_coeff*fr->qsum[q];
+                }
+            }
             break;
         default:
             gmx_incons("Unsupported Ewald geometry");
@@ -305,11 +333,15 @@ void ewald_LRcorrection(int start, int end,
                 }
             }
             /* Dipole correction on force */
-            if (dipole_coeff != 0)
+            if (dipole_coeff != 0 && i < numAtomsLocal)
             {
                 for (j = 0; (j < DIM); j++)
                 {
                     f[i][j] -= dipcorrA[j]*chargeA[i];
+                }
+                if (chargecorr[0] != 0)
+                {
+                    f[i][ZZ] += chargecorr[0]*chargeA[i]*x[i][ZZ];
                 }
             }
         }
@@ -452,12 +484,17 @@ void ewald_LRcorrection(int start, int end,
                 }
             }
             /* Dipole correction on force */
-            if (dipole_coeff != 0)
+            if (dipole_coeff != 0 && i < numAtomsLocal)
             {
                 for (j = 0; (j < DIM); j++)
                 {
                     f[i][j] -= L1_q*dipcorrA[j]*chargeA[i]
                         + lambda_q*dipcorrB[j]*chargeB[i];
+                }
+                if (chargecorr[0] != 0 || chargecorr[1] != 0)
+                {
+                    f[i][ZZ] += (L1_q*chargecorr[0]*chargeA[i]
+                                 + lambda_q*chargecorr[1])*x[i][ZZ];
                 }
             }
         }
@@ -491,8 +528,9 @@ void ewald_LRcorrection(int start, int end,
                 }
             }
 
-            /* Apply surface dipole correction:
-             * correction = dipole_coeff * (dipole)^2
+            /* Apply surface and charged surface dipole correction:
+             * correction = dipole_coeff * ( (dipole)^2
+             *              - qsum*sum_i q_i z_i^2 - qsum^2 * box_z^2 / 12 )
              */
             if (dipole_coeff != 0)
             {
@@ -503,6 +541,23 @@ void ewald_LRcorrection(int start, int end,
                 else if (ewald_geometry == eewg3DC)
                 {
                     Vdipole[q] = dipole_coeff*mutot[q][ZZ]*mutot[q][ZZ];
+
+                    if (chargecorr[q] != 0)
+                    {
+                        /* Here we use a non thread-parallelized loop,
+                         * because this is the only loop over atoms for
+                         * energies and they need reduction (unlike forces).
+                         * We could implement a reduction over threads,
+                         * but this case is rarely used.
+                         */
+                        const real *qPtr   = (q == 0 ? chargeA : chargeB);
+                        real        sumQZ2 = 0;
+                        for (int i = 0; i < numAtomsLocal; i++)
+                        {
+                            sumQZ2 += qPtr[i]*x[i][ZZ]*x[i][ZZ];
+                        }
+                        Vdipole[q] -= dipole_coeff*fr->qsum[q]*(sumQZ2 + fr->qsum[q]*box[ZZ][ZZ]*box[ZZ][ZZ]/12);
+                    }
                 }
             }
         }
@@ -532,7 +587,6 @@ void ewald_LRcorrection(int start, int end,
     if (debug)
     {
         fprintf(debug, "Long Range corrections for Ewald interactions:\n");
-        fprintf(debug, "start=%d,natoms=%d\n", start, end-start);
         fprintf(debug, "q2sum = %g, Vself_q=%g c6sum = %g, Vself_lj=%g\n",
                 L1_q*fr->q2sum[0]+lambda_q*fr->q2sum[1], L1_q*Vself_q[0]+lambda_q*Vself_q[1], L1_lj*fr->c6sum[0]+lambda_lj*fr->c6sum[1], L1_lj*Vself_lj[0]+lambda_lj*Vself_lj[1]);
         fprintf(debug, "Electrostatic Long Range correction: Vexcl=%g\n", Vexcl_q);

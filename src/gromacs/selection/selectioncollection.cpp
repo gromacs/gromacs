@@ -56,6 +56,7 @@
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selhelp.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
@@ -406,7 +407,7 @@ early_termination:
     result.reserve(nr);
     for (i = sc->sel.begin() + oldCount; i != sc->sel.end(); ++i)
     {
-        result.push_back(Selection(i->get()));
+        result.emplace_back(i->get());
     }
     return result;
 }
@@ -449,6 +450,24 @@ void checkExternalGroups(const SelectionTreeElementPointer &root,
     }
 }
 
+//! Checks whether the given topology properties are available.
+void checkTopologyProperties(const gmx_mtop_t                  *top,
+                             const SelectionTopologyProperties &props)
+{
+    if (top == NULL)
+    {
+        if (props.hasAny())
+        {
+            GMX_THROW(InconsistentInputError("Selection requires topology information, but none provided"));
+        }
+        return;
+    }
+    if (props.needsMasses && !gmx_mtop_has_masses(top))
+    {
+        GMX_THROW(InconsistentInputError("Selection requires mass information, but it is not available in the topology"));
+    }
+}
+
 }   // namespace
 
 
@@ -476,6 +495,42 @@ void SelectionCollection::Impl::resolveExternalGroups(
         root->flags |= (child->flags & SEL_UNSORTED);
         child        = child->next;
     }
+}
+
+
+bool SelectionCollection::Impl::areForcesRequested() const
+{
+    for (const auto &sel : sc_.sel)
+    {
+        if (sel->hasFlag(gmx::efSelection_EvaluateForces))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+SelectionTopologyProperties
+SelectionCollection::Impl::requiredTopologyPropertiesForPositionType(
+        const std::string &post, bool forces) const
+{
+    SelectionTopologyProperties props;
+    if (!post.empty())
+    {
+        switch (PositionCalculationCollection::requiredTopologyInfoForType(post.c_str(), forces))
+        {
+            case PositionCalculationCollection::RequiredTopologyInfo::None:
+                break;
+            case PositionCalculationCollection::RequiredTopologyInfo::Topology:
+                props.merge(SelectionTopologyProperties::topology());
+                break;
+            case PositionCalculationCollection::RequiredTopologyInfo::TopologyAndMasses:
+                props.merge(SelectionTopologyProperties::masses());
+                break;
+        }
+    }
+    return props;
 }
 
 
@@ -557,14 +612,15 @@ SelectionCollection::setDebugLevel(int debugLevel)
 
 
 void
-SelectionCollection::setTopology(t_topology *top, int natoms)
+SelectionCollection::setTopology(gmx_mtop_t *top, int natoms)
 {
     GMX_RELEASE_ASSERT(natoms > 0 || top != NULL,
                        "The number of atoms must be given if there is no topology");
+    checkTopologyProperties(top, requiredTopologyProperties());
     // Get the number of atoms from the topology if it is not given.
     if (natoms <= 0)
     {
-        natoms = top->atoms.nr;
+        natoms = top->natoms;
     }
     if (impl_->bExternalGroupsSet_)
     {
@@ -583,8 +639,8 @@ SelectionCollection::setTopology(t_topology *top, int natoms)
     gmx_ana_selcollection_t *sc = &impl_->sc_;
     // Do this first, as it allocates memory, while the others don't throw.
     gmx_ana_index_init_simple(&sc->gall, natoms);
-    sc->pcc.setTopology(top);
     sc->top = top;
+    sc->pcc.setTopology(top);
 }
 
 
@@ -614,46 +670,24 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
     }
 }
 
-
-bool
-SelectionCollection::requiresTopology() const
+SelectionTopologyProperties
+SelectionCollection::requiredTopologyProperties() const
 {
-    e_poscalc_t  type;
-    int          flags;
+    SelectionTopologyProperties props;
 
-    if (!impl_->rpost_.empty())
-    {
-        flags = 0;
-        // Should not throw, because has been checked earlier.
-        PositionCalculationCollection::typeFromEnum(impl_->rpost_.c_str(),
-                                                    &type, &flags);
-        if (type != POS_ATOM)
-        {
-            return true;
-        }
-    }
-    if (!impl_->spost_.empty())
-    {
-        flags = 0;
-        // Should not throw, because has been checked earlier.
-        PositionCalculationCollection::typeFromEnum(impl_->spost_.c_str(),
-                                                    &type, &flags);
-        if (type != POS_ATOM)
-        {
-            return true;
-        }
-    }
+    // These should not throw, because has been checked earlier.
+    props.merge(impl_->requiredTopologyPropertiesForPositionType(impl_->rpost_, false));
+    const bool forcesRequested = impl_->areForcesRequested();
+    props.merge(impl_->requiredTopologyPropertiesForPositionType(impl_->spost_,
+                                                                 forcesRequested));
 
     SelectionTreeElementPointer sel = impl_->sc_.root;
-    while (sel)
+    while (sel && !props.hasAll())
     {
-        if (_gmx_selelem_requires_top(*sel))
-        {
-            return true;
-        }
+        props.merge(sel->requiredTopologyProperties());
         sel = sel->next;
     }
-    return false;
+    return props;
 }
 
 
@@ -756,10 +790,7 @@ SelectionCollection::parseFromString(const std::string &str)
 void
 SelectionCollection::compile()
 {
-    if (impl_->sc_.top == NULL && requiresTopology())
-    {
-        GMX_THROW(InconsistentInputError("Selection requires topology information, but none provided"));
-    }
+    checkTopologyProperties(impl_->sc_.top, requiredTopologyProperties());
     if (!impl_->bExternalGroupsSet_)
     {
         setIndexGroups(NULL);
@@ -827,12 +858,15 @@ SelectionCollection::compile()
             }
         }
     }
+    impl_->rpost_.clear();
+    impl_->spost_.clear();
 }
 
 
 void
 SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 {
+    checkTopologyProperties(impl_->sc_.top, requiredTopologyProperties());
     if (fr->bIndex)
     {
         gmx_ana_index_t g;

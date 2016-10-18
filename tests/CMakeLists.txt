@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -87,10 +87,10 @@ log: ${log}")
     set(REGRESSIONTEST_DOWNLOAD OFF CACHE BOOL "Tests already downloaded. Set to yes to download again" FORCE)
 endif()
 
-if(REGRESSIONTEST_PATH AND (GMX_BLUEGENE OR CMAKE_CROSSCOMPILING OR CMAKE_CONFIGURATION_TYPES OR GMX_BUILD_MDRUN_ONLY))
-    # TODO: It would be nicer to do these before potentially downloading the tests.
-    # Bluegene requires us to compile both front-end and back-end binaries
-    # (single build is insufficient)
+if(REGRESSIONTEST_PATH AND (CMAKE_CROSSCOMPILING OR CMAKE_CONFIGURATION_TYPES OR GMX_BUILD_MDRUN_ONLY))
+    # TODO: It would be nicer to do these checks before potentially downloading the tests.
+    # Cross-compiling toolchains require us to compile both front-end and
+    # back-end binaries to run gmxtest.pl.
     # Testing an mdrun-only builds require supporting binaries from a full build
     message(WARNING
         "With cross-compiling, multi-configuration generators (e.g. Visual Studio), or with mdrun-only builds, running regressiontests from build system is not supported. Please run gmxtest.pl directly.")
@@ -174,11 +174,8 @@ if(REGRESSIONTEST_PATH)
             ENVIRONMENT "PATH=${PATH}")
     endforeach()
 else()
-    add_custom_target(regressiontests-notice
-        ${CMAKE_COMMAND} -E echo "NOTE: Regression tests have not been run. If you want to run them from the build system, get the correct version of the regression tests package and set REGRESSIONTEST_PATH in CMake to point to it, or set REGRESSIONTEST_DOWNLOAD=ON."
-        DEPENDS run-ctest
-        COMMENT "Regression tests not available" VERBATIM)
-    add_dependencies(check regressiontests-notice)
+    gmx_add_missing_tests_notice("Regression tests have not been run. If you want to run them from the build system, get the correct version of the regression tests package and set REGRESSIONTEST_PATH in CMake to point to it, or set REGRESSIONTEST_DOWNLOAD=ON.")
 endif()
 
+gmx_create_missing_tests_notice_target()
 include(CppCheck.cmake)

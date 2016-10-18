@@ -64,6 +64,7 @@
 #include "gromacs/pulling/pull.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/invblock.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -183,7 +184,7 @@ static void write_constr_pdb(const char *fn, const char *title,
     FILE         *out;
     int           dd_ac0 = 0, dd_ac1 = 0, i, ii, resnr;
     gmx_domdec_t *dd;
-    char         *anm, *resnm;
+    const char   *anm, *resnm;
 
     dd = NULL;
     if (DOMAINDECOMP(cr))
@@ -207,6 +208,7 @@ static void write_constr_pdb(const char *fn, const char *title,
 
     fprintf(out, "TITLE     %s\n", title);
     gmx_write_pdb_box(out, -1, box);
+    int molb = 0;
     for (i = start; i < start+homenr; i++)
     {
         if (dd != NULL)
@@ -221,7 +223,7 @@ static void write_constr_pdb(const char *fn, const char *title,
         {
             ii = i;
         }
-        gmx_mtop_atominfo_global(mtop, ii, &anm, &resnr, &resnm);
+        mtopGetAtomAndResidueName(mtop, ii, &molb, &anm, &resnr, &resnm, nullptr);
         gmx_fprintf_pdb_atomline(out, epdbATOM, ii+1, anm, ' ', resnm, ' ', resnr, ' ',
                                  10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, 0.0, "");
     }
@@ -1300,9 +1302,9 @@ gmx_constr_t init_constraints(FILE *fplog,
     /* Initialize the essential dynamics sampling.
      * Put the pointer to the ED struct in constr */
     constr->ed = ed;
-    if (ed != NULL || state->edsamstate.nED > 0)
+    if (ed != NULL || state->edsamstate != NULL)
     {
-        init_edsam(mtop, ir, cr, ed, state->x, state->box, &state->edsamstate);
+        init_edsam(mtop, ir, cr, ed, as_rvec_array(state->x.data()), state->box, state->edsamstate);
     }
 
     constr->warn_mtop = mtop;

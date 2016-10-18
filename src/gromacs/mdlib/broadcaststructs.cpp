@@ -54,13 +54,37 @@
 #include "gromacs/utility/smalloc.h"
 
 #define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
-/* Probably the test for (nr) > 0 in the next macro is only needed
- * on BlueGene(/L), where IBM's MPI_Bcast will segfault after
- * dereferencing a null pointer, even when no data is to be transferred. */
-#define  nblock_bc(cr, nr, d) { if ((nr) > 0) {gmx_bcast((nr)*sizeof((d)[0]), (d), (cr)); }}
+#define  nblock_bc(cr, nr, d) { gmx_bcast((nr)*sizeof((d)[0]), (d), (cr)); }
 #define    snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}
-/* Dirty macro with bAlloc not as an argument */
-#define nblock_abc(cr, nr, d) { if (bAlloc) {snew((d), (nr)); } nblock_bc(cr, (nr), (d)); }
+
+#if !GMX_DOUBLE
+static void nblock_abc(const t_commrec *cr, int numElements, real **v)
+{
+    if (!MASTER(cr))
+    {
+        snew(*v, numElements);
+    }
+    nblock_bc(cr, numElements, *v);
+}
+#endif
+
+static void nblock_abc(const t_commrec *cr, int numElements, double **v)
+{
+    if (!MASTER(cr))
+    {
+        snew(*v, numElements);
+    }
+    nblock_bc(cr, numElements, *v);
+}
+
+static void nblock_abc(const t_commrec *cr, int numElements, std::vector<double> *v)
+{
+    if (!MASTER(cr))
+    {
+        v->resize(numElements);
+    }
+    gmx_bcast(numElements*sizeof(double), v->data(), cr);
+}
 
 static void bc_cstring(const t_commrec *cr, char **s)
 {
@@ -262,10 +286,15 @@ static void bc_groups(const t_commrec *cr, t_symtab *symtab,
     }
 }
 
+static void bcastPaddedRVecVector(const t_commrec *cr, PaddedRVecVector *v, unsigned int n)
+{
+    (*v).resize(n + 1);
+    nblock_bc(cr, n, as_rvec_array(v->data()));
+}
+
 void bcast_state(const t_commrec *cr, t_state *state)
 {
     int      i, nnht, nnhtp;
-    gmx_bool bAlloc;
 
     if (!PAR(cr) || (cr->nnodes - cr->npmenodes <= 1))
     {
@@ -279,10 +308,7 @@ void bcast_state(const t_commrec *cr, t_state *state)
     block_bc(cr, state->nnhpres);
     block_bc(cr, state->nhchainlength);
     block_bc(cr, state->flags);
-    if (state->lambda == NULL)
-    {
-        snew_bc(cr, state->lambda, efptNR)
-    }
+    state->lambda.resize(efptNR);
 
     if (cr->dd)
     {
@@ -295,21 +321,13 @@ void bcast_state(const t_commrec *cr, t_state *state)
     nnht  = (state->ngtc)*(state->nhchainlength);
     nnhtp = (state->nnhpres)*(state->nhchainlength);
 
-    /* We still need to allocate the arrays in state for non-master
-     * ranks, which is done (implicitly via bAlloc) in the dirty,
-     * dirty nblock_abc macro. */
-    bAlloc = !MASTER(cr);
-    if (bAlloc)
-    {
-        state->nalloc = state->natoms;
-    }
     for (i = 0; i < estNR; i++)
     {
         if (state->flags & (1<<i))
         {
             switch (i)
             {
-                case estLAMBDA:  nblock_bc(cr, efptNR, state->lambda); break;
+                case estLAMBDA:  nblock_bc(cr, efptNR, state->lambda.data()); break;
                 case estFEPSTATE: block_bc(cr, state->fep_state); break;
                 case estBOX:     block_bc(cr, state->box); break;
                 case estBOX_REL: block_bc(cr, state->box_rel); break;
@@ -317,25 +335,25 @@ void bcast_state(const t_commrec *cr, t_state *state)
                 case estPRES_PREV: block_bc(cr, state->pres_prev); break;
                 case estSVIR_PREV: block_bc(cr, state->svir_prev); break;
                 case estFVIR_PREV: block_bc(cr, state->fvir_prev); break;
-                case estNH_XI:   nblock_abc(cr, nnht, state->nosehoover_xi); break;
-                case estNH_VXI:  nblock_abc(cr, nnht, state->nosehoover_vxi); break;
-                case estNHPRES_XI:   nblock_abc(cr, nnhtp, state->nhpres_xi); break;
-                case estNHPRES_VXI:  nblock_abc(cr, nnhtp, state->nhpres_vxi); break;
-                case estTC_INT:  nblock_abc(cr, state->ngtc, state->therm_integral); break;
+                case estNH_XI:   nblock_abc(cr, nnht, &state->nosehoover_xi); break;
+                case estNH_VXI:  nblock_abc(cr, nnht, &state->nosehoover_vxi); break;
+                case estNHPRES_XI:   nblock_abc(cr, nnhtp, &state->nhpres_xi); break;
+                case estNHPRES_VXI:  nblock_abc(cr, nnhtp, &state->nhpres_vxi); break;
+                case estTC_INT:  nblock_abc(cr, state->ngtc, &state->therm_integral); break;
                 case estVETA:    block_bc(cr, state->veta); break;
                 case estVOL0:    block_bc(cr, state->vol0); break;
-                case estX:       nblock_abc(cr, state->natoms, state->x); break;
-                case estV:       nblock_abc(cr, state->natoms, state->v); break;
-                case estCGP:     nblock_abc(cr, state->natoms, state->cg_p); break;
+                case estX:       bcastPaddedRVecVector(cr, &state->x, state->natoms);
+                case estV:       bcastPaddedRVecVector(cr, &state->v, state->natoms);
+                case estCGP:     bcastPaddedRVecVector(cr, &state->cg_p, state->natoms);
                 case estDISRE_INITF: block_bc(cr, state->hist.disre_initf); break;
                 case estDISRE_RM3TAV:
                     block_bc(cr, state->hist.ndisrepairs);
-                    nblock_abc(cr, state->hist.ndisrepairs, state->hist.disre_rm3tav);
+                    nblock_abc(cr, state->hist.ndisrepairs, &state->hist.disre_rm3tav);
                     break;
                 case estORIRE_INITF: block_bc(cr, state->hist.orire_initf); break;
                 case estORIRE_DTAV:
                     block_bc(cr, state->hist.norire_Dtav);
-                    nblock_abc(cr, state->hist.norire_Dtav, state->hist.orire_Dtav);
+                    nblock_abc(cr, state->hist.norire_Dtav, &state->hist.orire_Dtav);
                     break;
                 default:
                     gmx_fatal(FARGS,
@@ -490,18 +508,6 @@ static void bc_grpopts(const t_commrec *cr, t_grpopts *g)
         nblock_bc(cr, g->ngQM, g->SAoff);
         nblock_bc(cr, g->ngQM, g->SAsteps);
         /* end of QMMM stuff */
-    }
-}
-
-static void bc_cosines(const t_commrec *cr, t_cosines *cs)
-{
-    block_bc(cr, cs->n);
-    snew_bc(cr, cs->a, cs->n);
-    snew_bc(cr, cs->phi, cs->n);
-    if (cs->n > 0)
-    {
-        nblock_bc(cr, cs->n, cs->a);
-        nblock_bc(cr, cs->n, cs->phi);
     }
 }
 
@@ -687,9 +693,13 @@ static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
 
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
-    int      i;
-
+    /* The statement below is dangerous. It overwrites all structures in inputrec.
+     * If something is added to inputrec, like efield it will need to be
+     * treated here.
+     */
+    gmx::IInputRecExtension *eptr = inputrec->efield;
     block_bc(cr, *inputrec);
+    inputrec->efield = eptr;
 
     bc_grpopts(cr, &(inputrec->opts));
 
@@ -727,11 +737,7 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->imd, 1);
         bc_imd(cr, inputrec->imd);
     }
-    for (i = 0; (i < DIM); i++)
-    {
-        bc_cosines(cr, &(inputrec->ex[i]));
-        bc_cosines(cr, &(inputrec->et[i]));
-    }
+    inputrec->efield->broadCast(cr);
     if (inputrec->eSwapCoords != eswapNO)
     {
         snew_bc(cr, inputrec->swap, 1);
@@ -756,16 +762,12 @@ static void bc_moltype(const t_commrec *cr, t_symtab *symtab,
 
 static void bc_molblock(const t_commrec *cr, gmx_molblock_t *molb)
 {
-    block_bc(cr, molb->type);
-    block_bc(cr, molb->nmol);
-    block_bc(cr, molb->natoms_mol);
-    block_bc(cr, molb->nposres_xA);
+    block_bc(cr, *molb);
     if (molb->nposres_xA > 0)
     {
         snew_bc(cr, molb->posres_xA, molb->nposres_xA);
         nblock_bc(cr, molb->nposres_xA*DIM, molb->posres_xA[0]);
     }
-    block_bc(cr, molb->nposres_xB);
     if (molb->nposres_xB > 0)
     {
         snew_bc(cr, molb->posres_xB, molb->nposres_xB);

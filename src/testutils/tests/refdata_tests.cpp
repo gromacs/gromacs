@@ -43,10 +43,15 @@
 
 #include "testutils/refdata.h"
 
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 #include <gtest/gtest-spi.h>
+
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/variant.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testexceptions.h"
@@ -266,6 +271,203 @@ TEST(ReferenceDataTest, HandlesMissingData)
         TestReferenceChecker checker(data.rootChecker());
         EXPECT_NONFATAL_FAILURE(checker.checkInteger(1, "missing"), "");
         EXPECT_NONFATAL_FAILURE(checker.checkSequenceArray(5, seq, "missing"), "");
+        // Needed to not make the test fail because of unused "int" and "seq".
+        EXPECT_NONFATAL_FAILURE(checker.checkUnusedEntries(), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesUncheckedData)
+{
+    const int seq[5] = { -1, 3, 5, 2, 4 };
+
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkSequenceArray(5, seq, "seq");
+        checker.checkUnusedEntries();
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        EXPECT_NONFATAL_FAILURE(checker.checkUnusedEntries(), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesUncheckedDataInSequence)
+{
+    const int seq[5] = { -1, 3, 5, 2, 4 };
+
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkSequenceArray(5, seq, "seq");
+        checker.checkUnusedEntries();
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        EXPECT_NONFATAL_FAILURE(checker.checkSequenceArray(3, seq, "seq"), "");
+        // It might be nicer to not report the unused sequence entries also
+        // here, but both behaviors are quite OK.
+        EXPECT_NONFATAL_FAILURE(checker.checkUnusedEntries(), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesUncheckedDataInCompound)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        TestReferenceChecker compound(checker.checkCompound("Compound", "Compound"));
+        compound.checkInteger(1, "int1");
+        compound.checkInteger(2, "int2");
+        compound.checkUnusedEntries();
+        checker.checkInteger(1, "int");
+        checker.checkUnusedEntries();
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        TestReferenceChecker compound(checker.checkCompound("Compound", "Compound"));
+        compound.checkInteger(1, "int1");
+        EXPECT_NONFATAL_FAILURE(compound.checkUnusedEntries(), "");
+        checker.checkInteger(1, "int");
+        checker.checkUnusedEntries();
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesVariants)
+{
+    using gmx::Variant;
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkVariant(Variant::create<bool>(true), "bool");
+        checker.checkVariant(Variant::create<int>(1), "int");
+        checker.checkVariant(Variant::create<double>(3.5), "real");
+        checker.checkVariant(Variant::create<std::string>("foo"), "str");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkVariant(Variant::create<bool>(true), "bool");
+        checker.checkVariant(Variant::create<int>(1), "int");
+        checker.checkVariant(Variant::create<double>(3.5), "real");
+        checker.checkVariant(Variant::create<std::string>("foo"), "str");
+    }
+}
+
+//! Helper for building a KeyValueTree for testing.
+gmx::KeyValueTreeObject buildKeyValueTree(bool full)
+{
+    gmx::KeyValueTreeBuilder builder;
+    auto                     root = builder.rootObject();
+    auto                     obj  = root.addObject("o");
+    obj.addValue<int>("i", 1);
+    if (full)
+    {
+        obj.addValue<std::string>("s", "x");
+    }
+    auto arr  = root.addUniformArray<int>("a");
+    arr.addValue(2);
+    arr.addValue(3);
+    root.addValue<std::string>("s", "y");
+    return builder.build();
+}
+
+
+TEST(ReferenceDataTest, HandlesKeyValueTree)
+{
+    gmx::KeyValueTreeObject tree = buildKeyValueTree(true);
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkKeyValueTreeObject(tree, "tree");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkKeyValueTreeObject(tree, "tree");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesKeyValueTreeExtraKey)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkKeyValueTreeObject(buildKeyValueTree(false), "tree");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkKeyValueTreeObject(buildKeyValueTree(true), "tree"), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesKeyValueTreeMissingKey)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkKeyValueTreeObject(buildKeyValueTree(true), "tree");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkKeyValueTreeObject(buildKeyValueTree(false), "tree"), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesVariantsWithIncorrectValue)
+{
+    using gmx::Variant;
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkVariant(Variant::create<bool>(true), "bool");
+        checker.checkVariant(Variant::create<int>(1), "int");
+        checker.checkVariant(Variant::create<double>(3.5), "real");
+        checker.checkVariant(Variant::create<std::string>("foo"), "str");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<bool>(false), "bool"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<int>(2), "int"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<double>(2.5), "real"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<std::string>("bar"), "str"), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesVariantsWithIncorrectType)
+{
+    using gmx::Variant;
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkVariant(Variant::create<bool>(true), "bool");
+        checker.checkVariant(Variant::create<int>(1), "int");
+        checker.checkVariant(Variant::create<double>(3.5), "real");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<int>(1), "bool"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<bool>(true), "int"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkVariant(Variant::create<int>(2), "real"), "");
     }
 }
 
@@ -466,6 +668,25 @@ TEST(ReferenceDataTest, HandlesMultipleComparisonsAgainstNullIds)
 }
 
 
+TEST(ReferenceDataTest, HandlesReadingValues)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkUChar('A', "char");
+        checker.checkInteger(1, "int");
+        checker.checkString("Test", "string");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_EQ('A', checker.readUChar("char"));
+        EXPECT_EQ(1, checker.readInteger("int"));
+        EXPECT_EQ("Test", checker.readString("string"));
+    }
+}
+
+
 TEST(ReferenceDataTest, HandlesUpdateChangedWithoutChanges)
 {
     {
@@ -560,6 +781,26 @@ TEST(ReferenceDataTest, HandlesUpdateChangedWithCompoundChanges)
         TestReferenceChecker compound(checker.checkCompound("Compound", "1"));
         compound.checkInteger(2, "int");
         checker.checkString("Test", "2");
+    }
+}
+
+TEST(ReferenceDataTest, HandlesUpdateChangedWithRemovedEntries)
+{
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkString("Test", "string");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateChanged);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(2, "int");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(2, "int");
     }
 }
 

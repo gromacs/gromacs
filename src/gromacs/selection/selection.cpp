@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -160,22 +161,24 @@ namespace
  *
  * Does not throw if enough space has been reserved for the output vectors.
  */
-void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
+void computeMassesAndCharges(const gmx_mtop_t *top, const gmx_ana_pos_t &pos,
                              std::vector<real> *masses,
                              std::vector<real> *charges)
 {
     GMX_ASSERT(top != NULL, "Should not have been called with NULL topology");
     masses->clear();
     charges->clear();
+    int molb = 0;
     for (int b = 0; b < pos.count(); ++b)
     {
         real mass   = 0.0;
         real charge = 0.0;
         for (int i = pos.m.mapb.index[b]; i < pos.m.mapb.index[b+1]; ++i)
         {
-            const int index = pos.m.mapb.a[i];
-            mass   += top->atoms.atom[index].m;
-            charge += top->atoms.atom[index].q;
+            const int     index  = pos.m.mapb.a[i];
+            const t_atom &atom   = mtopGetAtomParameters(top, index, &molb);
+            mass                += atom.m;
+            charge              += atom.q;
         }
         masses->push_back(mass);
         charges->push_back(charge);
@@ -200,7 +203,7 @@ SelectionData::refreshName()
 }
 
 void
-SelectionData::initializeMassesAndCharges(const t_topology *top)
+SelectionData::initializeMassesAndCharges(const gmx_mtop_t *top)
 {
     GMX_ASSERT(posMass_.empty() && posCharge_.empty(),
                "Should not be called more than once");
@@ -219,7 +222,7 @@ SelectionData::initializeMassesAndCharges(const t_topology *top)
 
 
 void
-SelectionData::refreshMassesAndCharges(const t_topology *top)
+SelectionData::refreshMassesAndCharges(const gmx_mtop_t *top)
 {
     if (top != NULL && isDynamic() && !hasFlag(efSelection_DynamicMask))
     {
@@ -251,7 +254,7 @@ SelectionData::computeAverageCoveredFraction(int nframes)
 
 
 void
-SelectionData::restoreOriginalPositions(const t_topology *top)
+SelectionData::restoreOriginalPositions(const gmx_mtop_t *top)
 {
     if (isDynamic())
     {
@@ -289,7 +292,7 @@ Selection::setOriginalId(int i, int id)
 
 
 int
-Selection::initOriginalIdsToGroup(t_topology *top, e_index_t type)
+Selection::initOriginalIdsToGroup(const gmx_mtop_t *top, e_index_t type)
 {
     try
     {

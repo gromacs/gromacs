@@ -331,6 +331,7 @@ int gmx_rmsf(int argc, char *argv[])
         refatoms  = &top.atoms;
         pdbx      = xref;
         snew(pdbatoms->pdbinfo, pdbatoms->nr);
+        pdbatoms->havePdbInfo = TRUE;
         copy_mat(box, pdbbox);
     }
 

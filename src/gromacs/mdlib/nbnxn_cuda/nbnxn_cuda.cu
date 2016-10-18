@@ -423,8 +423,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int num_threads_z = 1;
-    if ((nb->dev_info->prop.major == 3 && nb->dev_info->prop.minor == 7) ||
-        (nb->dev_info->prop.major == 6 && nb->dev_info->prop.minor == 0))
+    if (nb->dev_info->prop.major == 3 && nb->dev_info->prop.minor == 7)
     {
         num_threads_z = 2;
     }
@@ -435,8 +434,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_cuda_t       *nb,
 
     if (debug)
     {
-        fprintf(debug, "GPU launch configuration:\n\tThread block: %dx%dx%d\n\t"
-                "\tGrid: %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+        fprintf(debug, "GPU launch configuration:\n\tThread block: %ux%ux%u\n\t"
+                "\tGrid: %ux%u\n\t#Super-clusters/clusters: %d/%d (%d)\n"
                 "\tShMem: %d\n",
                 dim_block.x, dim_block.y, dim_block.z,
                 dim_grid.x, dim_grid.y, plist->nsci*c_numClPerSupercl,

@@ -52,6 +52,8 @@
 
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_lookup.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -105,7 +107,7 @@ struct gmx_ana_indexgrps_t
  * If both are null, the index group structure is initialized empty.
  */
 void
-gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
+gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
                        const char *fnm)
 {
     t_blocka *block = NULL;
@@ -118,7 +120,10 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
     else if (top)
     {
         block = new_blocka();
-        analyse(&top->atoms, block, &names, FALSE, FALSE);
+        // TODO: Propagate mtop further.
+        t_atoms atoms = gmx_mtop_global_atoms(top);
+        analyse(&atoms, block, &names, FALSE, FALSE);
+        done_atom(&atoms);
     }
     else
     {
@@ -140,7 +145,7 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
                 grp->index[j] = block->a[block->index[i]+j];
             }
             grp->nalloc_index = grp->isize;
-            (*g)->names.push_back(names[i]);
+            (*g)->names.emplace_back(names[i]);
         }
     }
     catch (...)
@@ -791,7 +796,7 @@ gmx_ana_index_merge(gmx_ana_index_t *dest,
  * \ingroup module_selection
  */
 static bool
-next_group_index(int atomIndex, t_topology *top, e_index_t type, int *id)
+next_group_index(int atomIndex, const gmx_mtop_t *top, e_index_t type, int *id)
 {
     int prev = *id;
     switch (type)
@@ -800,8 +805,12 @@ next_group_index(int atomIndex, t_topology *top, e_index_t type, int *id)
             *id = atomIndex;
             break;
         case INDEX_RES:
-            *id = top->atoms.atom[atomIndex].resind;
+        {
+            int resind, molb = 0;
+            mtopGetAtomAndResidueName(top, atomIndex, &molb, nullptr, nullptr, nullptr, &resind);
+            *id = resind;
             break;
+        }
         case INDEX_MOL:
             if (*id >= 0 && top->mols.index[*id] > atomIndex)
             {
@@ -838,7 +847,7 @@ next_group_index(int atomIndex, t_topology *top, e_index_t type, int *id)
  * \p g should be sorted.
  */
 void
-gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
+gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
                          e_index_t type, bool bComplete)
 {
     if (type == INDEX_UNKNOWN)
@@ -875,10 +884,10 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
         t->nra = 0;
         /* We may allocate some extra memory here because we don't know in
          * advance how much will be needed. */
-        if (t->nalloc_a < top->atoms.nr)
+        if (t->nalloc_a < top->natoms)
         {
-            srenew(t->a, top->atoms.nr);
-            t->nalloc_a = top->atoms.nr;
+            srenew(t->a, top->natoms);
+            t->nalloc_a = top->natoms;
         }
     }
     else
@@ -902,13 +911,14 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
     }
     /* Clear counters */
     t->nr  = 0;
-    int j  = 0; /* j is used by residue completion for the first atom not stored */
-    int id = -1;
+    int id   = -1;
+    int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
+        const int ai = g->index[i];
         /* Find the ID number of the atom/residue/molecule corresponding to
          * the atom. */
-        if (next_group_index(g->index[i], top, type, &id))
+        if (next_group_index(ai, top, type, &id))
         {
             /* If this is the first atom in a new block, initialize the block. */
             if (bComplete)
@@ -919,19 +929,34 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
                 switch (type)
                 {
                     case INDEX_RES:
-                        while (top->atoms.atom[j].resind != id)
+                    {
+                        int            molnr, atnr_mol;
+                        mtopGetMolblockIndex(top, ai, &molb, &molnr, &atnr_mol);
+                        const t_atoms &mol_atoms = top->moltype[top->molblock[molb].type].atoms;
+                        int            last_atom = atnr_mol + 1;
+                        while (last_atom < mol_atoms.nr
+                               && mol_atoms.atom[last_atom].resind == id)
                         {
-                            ++j;
+                            ++last_atom;
                         }
-                        while (j < top->atoms.nr && top->atoms.atom[j].resind == id)
+                        int first_atom = atnr_mol - 1;
+                        while (first_atom >= 0
+                               && mol_atoms.atom[first_atom].resind == id)
+                        {
+                            --first_atom;
+                        }
+                        int first_mol_atom = top->molblock[molb].globalAtomStart;
+                        first_mol_atom += molnr*top->molblock[molb].natoms_mol;
+                        first_atom      = first_mol_atom + first_atom + 1;
+                        last_atom       = first_mol_atom + last_atom - 1;
+                        for (int j = first_atom; j <= last_atom; ++j)
                         {
                             t->a[t->nra++] = j;
-                            ++j;
                         }
                         break;
-
+                    }
                     case INDEX_MOL:
-                        for (j = top->mols.index[id]; j < top->mols.index[id+1]; ++j)
+                        for (int j = top->mols.index[id]; j < top->mols.index[id+1]; ++j)
                         {
                             t->a[t->nra++] = j;
                         }
@@ -970,7 +995,7 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
  * The atoms in \p g are assumed to be sorted.
  */
 bool
-gmx_ana_index_has_full_blocks(gmx_ana_index_t *g, t_block *b)
+gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const t_block *b)
 {
     int  i, j, bi;
 
@@ -1044,6 +1069,29 @@ gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
 }
 
 /*!
+ * \brief Returns if an atom is at a residue boundary.
+ *
+ * \param[in]     top   Topology data.
+ * \param[in]     a     Atom index to check, should be -1 <= \p a < top->natoms.
+ * \param[in,out] molb  The molecule block of atom a
+ * \returns       true if atoms \p a and \p a + 1 are in different residues, false otherwise.
+ */
+static bool is_at_residue_boundary(const gmx_mtop_t *top, int a, int *molb)
+{
+    if (a == -1 || a + 1 == top->natoms)
+    {
+        return true;
+    }
+    int resindA;
+    mtopGetAtomAndResidueName(top, a, molb,
+                              nullptr, nullptr, nullptr, &resindA);
+    int resindAPlusOne;
+    mtopGetAtomAndResidueName(top, a + 1, molb,
+                              nullptr, nullptr, nullptr, &resindAPlusOne);
+    return resindAPlusOne != resindA;
+}
+
+/*!
  * \param[in] g     Index group to check.
  * \param[in] type  Block data to check against.
  * \param[in] top   Topology data.
@@ -1058,8 +1106,13 @@ gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
  */
 bool
 gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
-                                 t_topology *top)
+                                 const gmx_mtop_t *top)
 {
+    if (g->isize == 0)
+    {
+        return true;
+    }
+
     // TODO: Consider whether unsorted groups need to be supported better.
     switch (type)
     {
@@ -1072,30 +1125,28 @@ gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
 
         case INDEX_RES:
         {
-            int      i, ai;
-            int      id, prev;
-
-            prev = -1;
-            for (i = 0; i < g->isize; ++i)
+            int molb  = 0;
+            int aPrev = -1;
+            for (int i = 0; i < g->isize; ++i)
             {
-                ai = g->index[i];
-                id = top->atoms.atom[ai].resind;
-                if (id != prev)
+                const int a = g->index[i];
+                // Check if a is consecutive or on a residue boundary
+                if (a != aPrev + 1)
                 {
-                    if (ai > 0 && top->atoms.atom[ai-1].resind == id)
+                    if (!is_at_residue_boundary(top, aPrev, &molb))
                     {
                         return false;
                     }
-                    if (i > 0 && g->index[i-1] < top->atoms.nr - 1
-                        && top->atoms.atom[g->index[i-1]+1].resind == prev)
+                    if (!is_at_residue_boundary(top, a - 1, &molb))
                     {
                         return false;
                     }
                 }
-                prev = id;
+                aPrev = a;
             }
-            if (g->index[i-1] < top->atoms.nr - 1
-                && top->atoms.atom[g->index[i-1]+1].resind == prev)
+            GMX_ASSERT(g->isize > 0, "We return above when isize=0");
+            const int a = g->index[g->isize - 1];
+            if (!is_at_residue_boundary(top, a, &molb))
             {
                 return false;
             }
@@ -1176,7 +1227,7 @@ gmx_ana_indexmap_reserve(gmx_ana_indexmap_t *m, int nr, int isize)
  */
 void
 gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
-                      t_topology *top, e_index_t type)
+                      const gmx_mtop_t *top, e_index_t type)
 {
     m->type   = type;
     gmx_ana_index_make_block(&m->b, top, g, type, false);
@@ -1198,7 +1249,7 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
 }
 
 int
-gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, t_topology *top,
+gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, const gmx_mtop_t *top,
                                   e_index_t type)
 {
     GMX_RELEASE_ASSERT(m->bStatic,

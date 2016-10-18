@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/classhelpers.h"
 
+struct gmx_mtop_t;
 struct t_topology;
 
 namespace gmx
@@ -253,11 +254,13 @@ class TopologyInformation
 {
     public:
         //! Returns true if a topology file was loaded.
-        bool hasTopology() const { return top_ != NULL; }
+        bool hasTopology() const { return mtop_ != NULL; }
         //! Returns true if a full topology file was loaded.
         bool hasFullTopology() const { return bTop_; }
         //! Returns the loaded topology, or NULL if not loaded.
-        t_topology *topology() const { return top_; }
+        const gmx_mtop_t *mtop() const { return mtop_; }
+        //! Returns the loaded topology, or NULL if not loaded.
+        t_topology *topology() const;
         //! Returns the ePBC field from the topology.
         int ePBC() const { return ePBC_; }
         /*! \brief
@@ -281,8 +284,10 @@ class TopologyInformation
         TopologyInformation();
         ~TopologyInformation();
 
+        gmx_mtop_t          *mtop_;
         //! The topology structure, or NULL if no topology loaded.
-        t_topology          *top_;
+        // TODO: Replace fully with mtop.
+        mutable t_topology  *top_;
         //! true if full tpx file was loaded, false otherwise.
         bool                 bTop_;
         //! Coordinates from the topology (can be NULL).

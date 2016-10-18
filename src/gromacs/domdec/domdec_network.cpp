@@ -223,26 +223,13 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused *dd,
 #endif
 }
 
-/* IBM's BlueGene(/L) MPI_Bcast dereferences the data pointer
- * even when 0 == nbytes, so we protect calls to it on BlueGene.
- * Fortunately dd_bcast() and dd_bcastc() are only
- * called during DD setup and partition.
- */
-
 void dd_bcast(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *data)
 {
 #if GMX_MPI
     if (dd->nnodes > 1)
     {
-#ifdef GMX_BLUEGENE
-        if (nbytes > 0)
-        {
-#endif
         MPI_Bcast(data, nbytes, MPI_BYTE,
                   DDMASTERRANK(dd), dd->mpi_comm_all);
-#ifdef GMX_BLUEGENE
-    }
-#endif
     }
 #endif
 }
@@ -256,25 +243,19 @@ void dd_bcastc(gmx_domdec_t *dd, int nbytes, void *src, void *dest)
 #if GMX_MPI
     if (dd->nnodes > 1)
     {
-#ifdef GMX_BLUEGENE
-        if (nbytes > 0)
-        {
-#endif
         MPI_Bcast(dest, nbytes, MPI_BYTE,
                   DDMASTERRANK(dd), dd->mpi_comm_all);
-#ifdef GMX_BLUEGENE
-    }
-#endif
     }
 #endif
 }
 
-void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *src, void *dest)
+void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, const void gmx_unused *src, void *dest)
 {
 #if GMX_MPI
     if (dd->nnodes > 1)
     {
-        MPI_Scatter(src, nbytes, MPI_BYTE,
+        /* Some MPI implementions don't specify const */
+        MPI_Scatter(const_cast<void *>(src), nbytes, MPI_BYTE,
                     dest, nbytes, MPI_BYTE,
                     DDMASTERRANK(dd), dd->mpi_comm_all);
     }
@@ -289,17 +270,18 @@ void dd_scatter(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unu
     }
 }
 
-void dd_gather(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, void gmx_unused *src, void gmx_unused *dest)
+void dd_gather(gmx_domdec_t gmx_unused *dd, int gmx_unused nbytes, const void gmx_unused *src, void gmx_unused *dest)
 {
 #if GMX_MPI
-    MPI_Gather(src, nbytes, MPI_BYTE,
+    /* Some MPI implementions don't specify const */
+    MPI_Gather(const_cast<void *>(src), nbytes, MPI_BYTE,
                dest, nbytes, MPI_BYTE,
                DDMASTERRANK(dd), dd->mpi_comm_all);
 #endif
 }
 
 void dd_scatterv(gmx_domdec_t gmx_unused *dd,
-                 int gmx_unused *scounts, int gmx_unused *disps, void *sbuf,
+                 int gmx_unused *scounts, int gmx_unused *disps, const void *sbuf,
                  int rcount, void *rbuf)
 {
 #if GMX_MPI
@@ -312,7 +294,8 @@ void dd_scatterv(gmx_domdec_t gmx_unused *dd,
             /* MPI does not allow NULL pointers */
             rbuf = &dum;
         }
-        MPI_Scatterv(sbuf, scounts, disps, MPI_BYTE,
+        /* Some MPI implementions don't specify const */
+        MPI_Scatterv(const_cast<void *>(sbuf), scounts, disps, MPI_BYTE,
                      rbuf, rcount, MPI_BYTE,
                      DDMASTERRANK(dd), dd->mpi_comm_all);
     }
@@ -328,7 +311,7 @@ void dd_scatterv(gmx_domdec_t gmx_unused *dd,
 }
 
 void dd_gatherv(gmx_domdec_t gmx_unused *dd,
-                int gmx_unused scount, void gmx_unused *sbuf,
+                int gmx_unused scount, const void gmx_unused *sbuf,
                 int gmx_unused *rcounts, int gmx_unused *disps, void gmx_unused *rbuf)
 {
 #if GMX_MPI
@@ -339,7 +322,8 @@ void dd_gatherv(gmx_domdec_t gmx_unused *dd,
         /* MPI does not allow NULL pointers */
         sbuf = &dum;
     }
-    MPI_Gatherv(sbuf, scount, MPI_BYTE,
+    /* Some MPI implementions don't specify const */
+    MPI_Gatherv(const_cast<void *>(sbuf), scount, MPI_BYTE,
                 rbuf, rcounts, disps, MPI_BYTE,
                 DDMASTERRANK(dd), dd->mpi_comm_all);
 #endif

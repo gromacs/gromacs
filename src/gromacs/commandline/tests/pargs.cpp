@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -350,7 +350,7 @@ TEST_F(ParseCommonArgsTest, ParsesFileArgsWithDefaults)
     parseFromArray(cmdline, 0, fnm, gmx::EmptyArrayRef());
     EXPECT_STREQ("topol.tpr", ftp2fn(efTPS, nfile(), fnm));
     EXPECT_STREQ("traj.xtc", opt2fn("-f2", nfile(), fnm));
-    EXPECT_NULL(opt2fn_null("-f2", nfile(), fnm));
+    EXPECT_EQ(nullptr, opt2fn_null("-f2", nfile(), fnm));
     EXPECT_STREQ("trj3.xtc", opt2fn("-f3", nfile(), fnm));
     EXPECT_STREQ("out.xvg", opt2fn("-o", nfile(), fnm));
     EXPECT_STREQ("outm.xvg", opt2fn("-om", nfile(), fnm));
@@ -551,9 +551,9 @@ TEST_F(ParseCommonArgsTest, HandlesNonReadNode)
         "test", "-f", "-f2", "other"
     };
     parseFromArray(cmdline, PCA_NOT_READ_NODE, fnm, gmx::EmptyArrayRef());
-    EXPECT_NULL(fnm[0].fns);
-    EXPECT_NULL(fnm[1].fns);
-    EXPECT_NULL(fnm[2].fns);
+    EXPECT_EQ(nullptr, fnm[0].fns);
+    EXPECT_EQ(nullptr, fnm[1].fns);
+    EXPECT_EQ(nullptr, fnm[2].fns);
     done_filenms(nfile(), fnm);
 }
 
@@ -568,9 +568,9 @@ TEST_F(ParseCommonArgsTest, HandlesNonReadNodeWithDefaultFileName)
         "test", "-deffnm", "def", "-f", "-f2", "other"
     };
     parseFromArray(cmdline, PCA_CAN_SET_DEFFNM | PCA_NOT_READ_NODE, fnm, gmx::EmptyArrayRef());
-    EXPECT_NULL(fnm[0].fns);
-    EXPECT_NULL(fnm[1].fns);
-    EXPECT_NULL(fnm[2].fns);
+    EXPECT_EQ(nullptr, fnm[0].fns);
+    EXPECT_EQ(nullptr, fnm[1].fns);
+    EXPECT_EQ(nullptr, fnm[2].fns);
     done_filenms(nfile(), fnm);
 }
 

@@ -2,7 +2,7 @@
    This source code file is part of thread_mpi.
    Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-   Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+   Copyright (c) 2009,2016, Sander Pronk, Erik Lindahl.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -61,7 +61,7 @@
 
 /* point-to-point communication exported functions */
 
-int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest,
+int tMPI_Send(const void* buf, int count, tMPI_Datatype datatype, int dest,
               int tag, tMPI_Comm comm)
 {
     struct envelope    *sev;
@@ -86,7 +86,7 @@ int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest,
         return tMPI_Error(comm, TMPI_ERR_SEND_DEST);
     }
 
-    sev = tMPI_Post_send(cur, comm, send_dst, buf, count, datatype, tag, FALSE);
+    sev = tMPI_Post_send(cur, comm, send_dst, (void*)buf, count, datatype, tag, FALSE);
     if (sev == NULL)
     {
         return TMPI_ERR_ENVELOPES;
@@ -152,7 +152,7 @@ int tMPI_Recv(void* buf, int count, tMPI_Datatype datatype, int source,
 
 
 
-int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
+int tMPI_Sendrecv(const void *sendbuf, int sendcount, tMPI_Datatype sendtype,
                   int dest, int sendtag, void *recvbuf, int recvcount,
                   tMPI_Datatype recvtype, int source, int recvtag,
                   tMPI_Comm comm, tMPI_Status *status)
@@ -191,7 +191,7 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
     }
 
     /* we first prepare to send */
-    sev = tMPI_Post_send(cur, comm, send_dst, sendbuf, sendcount,
+    sev = tMPI_Post_send(cur, comm, send_dst, (void*)sendbuf, sendcount,
                          sendtype, sendtag, FALSE);
     if (sev == NULL)
     {
@@ -244,7 +244,7 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
 
 /* async */
 
-int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
+int tMPI_Isend(const void* buf, int count, tMPI_Datatype datatype, int dest,
                int tag, tMPI_Comm comm, tMPI_Request *request)
 {
     struct tmpi_thread *cur = tMPI_Get_current();
@@ -271,7 +271,7 @@ int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
         tMPI_Return_req(rql, rq);
         return tMPI_Error(comm, TMPI_ERR_SEND_DEST);
     }
-    ev = tMPI_Post_send(cur, comm, send_dst, buf, count, datatype, tag, TRUE);
+    ev = tMPI_Post_send(cur, comm, send_dst, (void*)buf, count, datatype, tag, TRUE);
     if (ev == NULL)
     {
         return TMPI_ERR_ENVELOPES;

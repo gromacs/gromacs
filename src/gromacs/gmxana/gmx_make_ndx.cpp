@@ -1012,7 +1012,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         if (check_have_atoms(atoms, ostring) &&
             parse_names(string, &n_names, names))
         {
-            if (atoms->atomtype == NULL)
+            if (!(atoms->haveType))
             {
                 printf("Need a run input file to select atom types\n");
             }

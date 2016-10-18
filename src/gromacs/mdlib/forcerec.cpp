@@ -1506,16 +1506,8 @@ void forcerec_set_ranges(t_forcerec *fr,
 
     if (fr->bF_NoVirSum)
     {
-        fr->f_novirsum_n = natoms_f_novirsum;
-        if (fr->f_novirsum_n > fr->f_novirsum_nalloc)
-        {
-            fr->f_novirsum_nalloc = over_alloc_dd(fr->f_novirsum_n);
-            srenew(fr->f_novirsum_alloc, fr->f_novirsum_nalloc);
-        }
-    }
-    else
-    {
-        fr->f_novirsum_n = 0;
+        /* TODO: remove this + 1 when padding is properly implemented */
+        fr->forceBufferNoVirialSummation->resize(natoms_f_novirsum + 1);
     }
 }
 
@@ -2755,6 +2747,9 @@ void init_forcerec(FILE                *fp,
         fr->bcoultab = FALSE;
     }
 
+    /* This now calculates sum for q and C6 */
+    set_chargesum(fp, fr, mtop);
+
     /* Tables are used for direct ewald sum */
     if (fr->bEwald)
     {
@@ -2776,11 +2771,18 @@ void init_forcerec(FILE                *fp,
 
             if (ir->ewald_geometry == eewg3DC)
             {
+                bool haveNetCharge = (fabs(fr->qsum[0]) > 1e-4 ||
+                                      fabs(fr->qsum[1]) > 1e-4);
                 if (fp)
                 {
-                    fprintf(fp, "Using the Ewald3DC correction for systems with a slab geometry.\n");
+                    fprintf(fp, "Using the Ewald3DC correction for systems with a slab geometry%s.\n",
+                            haveNetCharge ? " and net charge" : "");
                 }
                 please_cite(fp, "In-Chul99a");
+                if (haveNetCharge)
+                {
+                    please_cite(fp, "Ballenegger2009");
+                }
             }
         }
         fr->ewaldcoeff_q = calc_ewaldcoeff_q(ir->rcoulomb, ir->ewald_rtol);
@@ -2823,9 +2825,17 @@ void init_forcerec(FILE                *fp,
 
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype) ||
                        gmx_mtop_ftype_count(mtop, F_POSRES) > 0 ||
-                       gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 ||
-                       inputrecElecField(ir)
-                       );
+                       gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0);
+
+    /* Initialization call after setting bF_NoVirSum,
+     * since it efield->initForcerec also sets this to true.
+     */
+    ir->efield->initForcerec(fr);
+
+    if (fr->bF_NoVirSum)
+    {
+        fr->forceBufferNoVirialSummation = new PaddedRVecVector;
+    }
 
     if (fr->cutoff_scheme == ecutsGROUP &&
         ncg_mtop(mtop) > fr->cg_nalloc && !DOMAINDECOMP(cr))
@@ -2980,9 +2990,6 @@ void init_forcerec(FILE                *fp,
                    fr->rcoulomb, fr->temp, fr->zsquare, box,
                    &fr->kappa, &fr->k_rf, &fr->c_rf);
     }
-
-    /*This now calculates sum for q and c6*/
-    set_chargesum(fp, fr, mtop);
 
     /* Construct tables for the group scheme. A little unnecessary to
      * make both vdw and coul tables sometimes, but what the
@@ -3188,7 +3195,6 @@ void init_forcerec(FILE                *fp,
 
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);
-    snew(fr->excl_load, fr->nthread_ewc + 1);
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */
     init_interaction_const(fp, &fr->ic, fr);
@@ -3238,48 +3244,6 @@ void pr_forcerec(FILE *fp, t_forcerec *fr)
     pr_real(fp, fr->rcoulomb);
 
     fflush(fp);
-}
-
-void forcerec_set_excl_load(t_forcerec           *fr,
-                            const gmx_localtop_t *top)
-{
-    const int *ind, *a;
-    int        t, i, j, ntot, n, ntarget;
-
-    ind = top->excls.index;
-    a   = top->excls.a;
-
-    ntot = 0;
-    for (i = 0; i < top->excls.nr; i++)
-    {
-        for (j = ind[i]; j < ind[i+1]; j++)
-        {
-            if (a[j] > i)
-            {
-                ntot++;
-            }
-        }
-    }
-
-    fr->excl_load[0] = 0;
-    n                = 0;
-    i                = 0;
-    for (t = 1; t <= fr->nthread_ewc; t++)
-    {
-        ntarget = (ntot*t)/fr->nthread_ewc;
-        while (i < top->excls.nr && n < ntarget)
-        {
-            for (j = ind[i]; j < ind[i+1]; j++)
-            {
-                if (a[j] > i)
-                {
-                    n++;
-                }
-            }
-            i++;
-        }
-        fr->excl_load[t] = i;
-    }
 }
 
 /* Frees GPU memory and destroys the GPU context.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@ namespace gmx
 {
 
 class Options;
+class Variant;
 
 /*! \libinternal \brief
  * Decorator class for assigning values to Options.
@@ -70,11 +71,11 @@ class Options;
    assigner.startOption("opt1");
    assigner.appendValue("3");
    assigner.finishOption();
-   assigner.startSubSection("section");
+   assigner.startSection("section");
    assigner.startOption("opt2"); // Now in the subsection
    assigner.appendValue("yes");
    assigner.finishOption();
-   assigner.finishSubSection()
+   assigner.finishSection()
    assigner.startOption("opt3"); // Again in the main options
    assigner.appendValue("2");
    assigner.finishOption();
@@ -124,7 +125,7 @@ class OptionsAssigner
          *
          * Strong exception safety guarantee.
          */
-        void startSubSection(const char *name);
+        void startSection(const char *name);
         /*! \brief
          * Starts assigning values for an option.
          *
@@ -145,7 +146,7 @@ class OptionsAssigner
         /*! \brief
          * Appends a value to the value list of the current option.
          *
-         * \param[in] value  String representation of the value to assign.
+         * \param[in] value  Value to assign.
          * \throws InvalidInputError if the value cannot be converted or if
          *      there are too many values for an option.
          *
@@ -165,6 +166,14 @@ class OptionsAssigner
          * This method provides the same exception safety guarantee as the
          * OptionStorageTemplate::convertValue() method of the storage class
          * implementing the option where the value is assigned to.
+         */
+        void appendValue(const Variant &value);
+        /*! \brief
+         * Appends a value to the value list of the current option.
+         *
+         * \param[in] value  Value to assign.
+         *
+         * See appendValue(const Variant &) for more details.
          */
         void appendValue(const std::string &value);
         /*! \brief
@@ -186,7 +195,7 @@ class OptionsAssigner
          *
          * Does not throw.
          */
-        void finishSubSection();
+        void finishSection();
         /*! \brief
          * Finish assigning options through the object.
          *

@@ -32,11 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-cmake_minimum_required(VERSION 2.8.8)
-# When we require cmake >= 2.8.12, it will provide
-# CMAKE_MINIMUM_REQUIRED_VERSION automatically, but in the meantime we
-# need to set a variable, and it must have a different name.
-set(GMX_CMAKE_MINIMUM_REQUIRED_VERSION "2.8.8")
+cmake_minimum_required(VERSION 3.4.3)
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -70,11 +66,10 @@ include(gmxBuildTypeMSAN)
 include(gmxBuildTypeReleaseWithAssert)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert Profile." FORCE)
-    # There's no need to offer a user the choice of ThreadSanitizer
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert Profile TSAN ASAN MSAN." FORCE)
     # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile")
+        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile" "TSAN" "ASAN" "MSAN")
 endif()
 if(CMAKE_CONFIGURATION_TYPES)
     # Add appropriate GROMACS-specific build types for the Visual
@@ -90,14 +85,8 @@ set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBINFO RELWITHASSERT M
 
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
 
-# Set a default valgrind suppression file.
-# This unfortunately needs to duplicate information from CTest to work as
-# expected...
-set(MEMORYCHECK_SUPPRESSIONS_FILE
-    "${CMAKE_SOURCE_DIR}/cmake/legacy_and_external.supp"
-    CACHE FILEPATH
-    "File that contains suppressions for the memory checker")
-include(CTest)
+include(gmxCTestUtilities)
+gmx_ctest_init()
 
 include(gmxCPackUtilities)
 gmx_cpack_init()
@@ -197,12 +186,16 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
 option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
-# Decide on GPU settings based on user-settings and GPU/CUDA detection.
-# GCC 4.6 requires CUDA 5.0 and VS2015 requires CUDA 8.0
+# Decide on GPU settings based on user-settings and GPU/CUDA
+# detection.  GCC 4.8 requires CUDA 6.0 (but we choose 6.5 for the
+# preliminary C++11 support), icc 15 requires CUDA 7.0, and VS2015
+# requires CUDA 8.0
 if(MSVC)
     set(REQUIRED_CUDA_VERSION 8.0)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+    set(REQUIRED_CUDA_VERSION 7.0)
 else()
-    set(REQUIRED_CUDA_VERSION 5.0)
+    set(REQUIRED_CUDA_VERSION 6.5)
 endif()
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 2.0)
 
@@ -336,17 +329,6 @@ set(EXTRA_CXX_FLAGS "")
 # Run through a number of tests for buggy compilers and other issues
 include(gmxTestCompilerProblems)
 gmx_test_compiler_problems()
-# GMX_SIMD will not be set automatically until the second
-# pass (which is not strictly guaranteed to occur), so putting this
-# check here among logically-related tests is inefficient, but the
-# potential loss is likely zero.
-if(GMX_SIMD STREQUAL "AVX_256"
-        AND CMAKE_COMPILER_IS_GNUCC
-        AND (C_COMPILER_VERSION VERSION_EQUAL "4.6.1"
-            OR CXX_COMPILER_VERSION VERSION_EQUAL "4.6.1"))
-    message(FATAL_ERROR "gcc 4.6.1 has buggy support for AVX, and GROMACS mdrun will not work. If you want simulation performance, use a more recent compiler. Otherwise, use GMX_SIMD=SSE4.1")
-    # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=49002
-endif()
 
 # Implement double-precision option. This is complicated because we
 # need installed headers to use the precision mode of the build that
@@ -466,11 +448,6 @@ include(gmxManageSharedLibraries)
 # Find external packages                                               #
 ########################################################################
 
-# TNG wants zlib if it is available. And static libxml2 might have a dependency
-find_package(ZLIB QUIET)
-include(gmxTestZLib)
-gmx_test_zlib(HAVE_ZLIB)
-
 # Unconditionally find the package, as it is also required for unit
 # tests. This exports LIBXML2_FOUND, which we should not use because
 # it does not tell us that linking will succeed. Instead, we test that
@@ -547,7 +524,7 @@ endif()
 option(GMX_HWLOC "Add support for hwloc Portable Hardware locality library" ${GMX_HWLOC_DEFAULT})
 if(GMX_HWLOC)
     if(HWLOC_FOUND)
-        include_directories(${HWLOC_INCLUDE_DIRS})
+        include_directories(SYSTEM ${HWLOC_INCLUDE_DIRS})
         list(APPEND GMX_EXTRA_LIBRARIES ${HWLOC_LIBRARIES})
     else()
         message(FATAL_ERROR "Hwloc package support requested, but not found.")
@@ -606,7 +583,6 @@ if (TMPI_ATOMICS_DISABLED)
    add_definitions(-DTMPI_ATOMICS_DISABLED)
 endif()
 
-# Note this relies on zlib detection having already run
 include(gmxManageTNG)
 
 include(gmxManageLmfit)
@@ -614,8 +590,6 @@ include(gmxManageLmfit)
 if(GMX_GPU)
     # now that we have detected the dependencies, do the second configure pass
     gmx_gpu_setup()
-else()
-    mark_as_advanced(CUDA_HOST_COMPILER)
 endif()
 
 if(CYGWIN)
@@ -648,7 +622,9 @@ gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
 
 add_definitions( -DHAVE_CONFIG_H )
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
-include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
+# TODO required at high level because both libgromacs and progs/mdrun
+# require it, both for thread-MPI and its atomics and mutexes.
+include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
 
@@ -868,17 +844,12 @@ include(gmxManageSuffixes)
 ################################################################
 # Shared library load path settings
 ################################################################
-# CMake supports RPATH on OS X only from 2.8.12 upwards.
-# CMAKE_SYSTEM_VERSION > 8.0 matches OS X 10.5 and above, where RPATH support
-# was added.
-
 if(NOT GMX_BUILD_SHARED_EXE)
     # No rpath
     set(CMAKE_SKIP_RPATH TRUE)
     set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS) # remove -Wl,-Bdynamic
     set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
-elseif((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
-   ((CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0) AND (NOT CMAKE_VERSION VERSION_LESS 2.8.12)))
+else()
     # The build folder always has bin/ and lib/; if we are also going to
     # install to lib/, then the installation RPATH works also in the build
     # tree.  This makes installation slightly faster (no need to rewrite the
@@ -888,23 +859,13 @@ elseif((NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") OR
     endif()
     # Set the RPATH as relative to the executable location to make the
     # binaries relocatable.
-    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Assume OS X >=10.5
         set(CMAKE_INSTALL_RPATH "\$ORIGIN/../${GMX_LIB_INSTALL_DIR}")
     else()
         set(CMAKE_INSTALL_RPATH "@executable_path/../${GMX_LIB_INSTALL_DIR}")
     endif()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_MACOSX_RPATH 1)
-else()
-    # We are on Darwin/OSX, and CMake cannot handle RPATHs automatically.
-    if(CMAKE_SYSTEM_VERSION VERSION_GREATER 8.0)
-        # Set the RPATH options manually.
-        set(CMAKE_INSTALL_NAME_DIR "@rpath")
-        set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} "-Wl,-rpath,@executable_path/../${GMX_LIB_INSTALL_DIR}")
-    else()
-        # Use the old INSTALL_NAME_DIR mechanism if RPATH is not supported.
-        set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/${LIB_INSTALL_DIR}")
-    endif()
 endif()
 
 #COPYING file: Only necessary for binary distributions.
@@ -921,18 +882,7 @@ if (GMX_BUILD_FOR_COVERAGE)
 endif()
 
 if (BUILD_TESTING)
-    # "tests" target builds all the separate test binaries.
-    add_custom_target(tests)
-    # "run-ctest" is an internal target that actually runs the tests.
-    # This is necessary to be able to add separate targets that execute as part
-    # of 'make check', but are ensured to be executed after the actual tests.
-    add_custom_target(run-ctest
-                      COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-                      COMMENT "Running all tests"
-                      VERBATIM)
-    add_dependencies(run-ctest tests)
-    # "check" target builds and runs all tests.
-    add_custom_target(check DEPENDS run-ctest)
+    include(tests/CheckTarget.cmake)
 endif()
 
 if (NOT GMX_BUILD_MDRUN_ONLY)

@@ -409,7 +409,7 @@ void HelpLinks::addLink(const std::string &linkName,
         default:
             GMX_RELEASE_ASSERT(false, "Output format not implemented for links");
     }
-    impl_->links_.push_back(Impl::LinkItem(linkName, replacement));
+    impl_->links_.emplace_back(linkName, replacement);
 }
 
 /********************************************************************
@@ -508,7 +508,7 @@ class HelpWriterContext::Impl
         void addReplacement(const std::string &search,
                             const std::string &replace)
         {
-            replacements_.push_back(ReplaceItem(search, replace));
+            replacements_.emplace_back(search, replace);
         }
 
         //! Replaces links in a given string.

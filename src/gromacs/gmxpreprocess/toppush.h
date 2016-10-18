@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,9 +114,9 @@ void init_block2(t_block2 *b2, int natom);
 
 void done_block2(t_block2 *b2);
 
-void push_excl(char *line, t_block2 *b2);
+void push_excl(char *line, t_block2 *b2, warninp_t wi);
 
-void merge_excl(t_blocka *excl, t_block2 *b2);
+void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi);
 
 void b_to_b2(t_blocka *b, t_block2 *b2);
 
@@ -132,7 +132,8 @@ void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple,
                             real fudgeQQ,
                             int couple_lam0, int couple_lam1,
                             gmx_bool bCoupleIntra,
-                            int nb_funct, t_params *nbp);
+                            int nb_funct, t_params *nbp,
+                            warninp_t wi);
 /* Setup mol such that the B-state has no interaction with the rest
  * of the system, but full interaction with itself.
  */

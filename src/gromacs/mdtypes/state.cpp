@@ -46,10 +46,10 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/veccompare.h"
 #include "gromacs/mdtypes/df_history.h"
-#include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/compare.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
 /* The source code in this file should be thread-safe.
@@ -71,9 +71,9 @@ static void zero_ekinstate(ekinstate_t *eks)
     eks->ekinh          = NULL;
     eks->ekinf          = NULL;
     eks->ekinh_old      = NULL;
-    eks->ekinscalef_nhc = NULL;
-    eks->ekinscaleh_nhc = NULL;
-    eks->vscale_nhc     = NULL;
+    eks->ekinscalef_nhc.resize(0);
+    eks->ekinscaleh_nhc.resize(0);
+    eks->vscale_nhc.resize(0);
     eks->dekindl        = 0;
     eks->mvcos          = 0;
 }
@@ -98,70 +98,23 @@ static void init_swapstate(swapstate_t *swapstate)
 
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 {
-    int i, j;
-
     state->ngtc          = ngtc;
     state->nnhpres       = nnhpres;
     state->nhchainlength = nhchainlength;
-    if (state->ngtc > 0)
-    {
-        snew(state->nosehoover_xi, state->nhchainlength*state->ngtc);
-        snew(state->nosehoover_vxi, state->nhchainlength*state->ngtc);
-        snew(state->therm_integral, state->ngtc);
-        for (i = 0; i < state->ngtc; i++)
-        {
-            for (j = 0; j < state->nhchainlength; j++)
-            {
-                state->nosehoover_xi[i*state->nhchainlength + j]   = 0.0;
-                state->nosehoover_vxi[i*state->nhchainlength + j]  = 0.0;
-            }
-        }
-        for (i = 0; i < state->ngtc; i++)
-        {
-            state->therm_integral[i]  = 0.0;
-        }
-    }
-    else
-    {
-        state->nosehoover_xi  = NULL;
-        state->nosehoover_vxi = NULL;
-        state->therm_integral = NULL;
-    }
-
-    if (state->nnhpres > 0)
-    {
-        snew(state->nhpres_xi, state->nhchainlength*nnhpres);
-        snew(state->nhpres_vxi, state->nhchainlength*nnhpres);
-        for (i = 0; i < nnhpres; i++)
-        {
-            for (j = 0; j < state->nhchainlength; j++)
-            {
-                state->nhpres_xi[i*nhchainlength + j]   = 0.0;
-                state->nhpres_vxi[i*nhchainlength + j]  = 0.0;
-            }
-        }
-    }
-    else
-    {
-        state->nhpres_xi  = NULL;
-        state->nhpres_vxi = NULL;
-    }
+    state->nosehoover_xi.resize(state->nhchainlength*state->ngtc, 0);
+    state->nosehoover_vxi.resize(state->nhchainlength*state->ngtc, 0);
+    state->therm_integral.resize(state->ngtc, 0);
+    state->nhpres_xi.resize(state->nhchainlength*nnhpres, 0);
+    state->nhpres_vxi.resize(state->nhchainlength*nnhpres, 0);
 }
 
 
-void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda)
+void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int dfhistNumLambda)
 {
-    int i;
-
     state->natoms    = natoms;
     state->flags     = 0;
     state->fep_state = 0;
-    state->lambda    = 0;
-    snew(state->lambda, efptNR);
-    for (i = 0; i < efptNR; i++)
-    {
-        state->lambda[i] = 0;
-    }
+    state->lambda.resize(efptNR, 0);
     state->veta   = 0;
     clear_mat(state->box);
     clear_mat(state->box_rel);
@@ -170,82 +123,36 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     clear_mat(state->svir_prev);
     clear_mat(state->fvir_prev);
     init_gtc_state(state, ngtc, nnhpres, nhchainlength);
-    state->nalloc = state->natoms;
-    if (state->nalloc > 0)
+    if (state->natoms > 0)
     {
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
-        snew(state->x, state->nalloc + 1);
-        snew(state->v, state->nalloc + 1);
+        state->x.resize(state->natoms + 1);
+        state->v.resize(state->natoms + 1);
     }
     else
     {
-        state->x = NULL;
-        state->v = NULL;
+        state->x.resize(0);
+        state->v.resize(0);
     }
-    state->cg_p = NULL;
+    state->cg_p.resize(0);
     zero_history(&state->hist);
     zero_ekinstate(&state->ekinstate);
-    snew(state->enerhist, 1);
-    init_energyhistory(state->enerhist);
-    init_df_history(&state->dfhist, nlambda);
-    init_swapstate(&state->swapstate);
+    if (dfhistNumLambda > 0)
+    {
+        snew(state->dfhist, 1);
+        init_df_history(state->dfhist, dfhistNumLambda);
+    }
+    else
+    {
+        state->dfhist = NULL;
+    }
+    state->swapstate       = NULL;
+    state->edsamstate      = NULL;
     state->ddp_count       = 0;
     state->ddp_count_cg_gl = 0;
-    state->cg_gl           = NULL;
-    state->cg_gl_nalloc    = 0;
-}
-
-void done_state(t_state *state)
-{
-    if (state->x)
-    {
-        sfree(state->x);
-    }
-    if (state->v)
-    {
-        sfree(state->v);
-    }
-    if (state->cg_p)
-    {
-        sfree(state->cg_p);
-    }
-    state->nalloc = 0;
-    if (state->cg_gl)
-    {
-        sfree(state->cg_gl);
-    }
-    state->cg_gl_nalloc = 0;
-    if (state->lambda)
-    {
-        sfree(state->lambda);
-    }
-    if (state->ngtc > 0)
-    {
-        sfree(state->nosehoover_xi);
-        sfree(state->nosehoover_vxi);
-        sfree(state->therm_integral);
-    }
-}
-
-t_state *serial_init_local_state(t_state *state_global)
-{
-    int      i;
-    t_state *state_local;
-
-    snew(state_local, 1);
-
-    /* Copy all the contents */
-    *state_local = *state_global;
-    snew(state_local->lambda, efptNR);
-    /* local storage for lambda */
-    for (i = 0; i < efptNR; i++)
-    {
-        state_local->lambda[i] = state_global->lambda[i];
-    }
-
-    return state_local;
+    state->cg_gl.resize(0);
 }
 
 void comp_state(const t_state *st1, const t_state *st2,
@@ -310,12 +217,30 @@ void comp_state(const t_state *st1, const t_state *st2,
         if ((st1->flags & (1<<estX)) && (st2->flags & (1<<estX)))
         {
             fprintf(stdout, "comparing x\n");
-            cmp_rvecs(stdout, "x", st1->natoms, st1->x, st2->x, bRMSD, ftol, abstol);
+            cmp_rvecs(stdout, "x", st1->natoms, as_rvec_array(st1->x.data()), as_rvec_array(st2->x.data()), bRMSD, ftol, abstol);
         }
         if ((st1->flags & (1<<estV)) && (st2->flags & (1<<estV)))
         {
             fprintf(stdout, "comparing v\n");
-            cmp_rvecs(stdout, "v", st1->natoms, st1->v, st2->v, bRMSD, ftol, abstol);
+            cmp_rvecs(stdout, "v", st1->natoms, as_rvec_array(st1->v.data()), as_rvec_array(st2->v.data()), bRMSD, ftol, abstol);
         }
     }
+}
+
+rvec *getRvecArrayFromPaddedRVecVector(const PaddedRVecVector *v,
+                                       unsigned int            n)
+{
+    GMX_ASSERT(v->size() >= n, "We can't copy more elements than the vector size");
+
+    rvec *dest;
+
+    snew(dest, n);
+
+    const rvec *vPtr = as_rvec_array(v->data());
+    for (unsigned int i = 0; i < n; i++)
+    {
+        copy_rvec(vPtr[i], dest[i]);
+    }
+
+    return dest;
 }

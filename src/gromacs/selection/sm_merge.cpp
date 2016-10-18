@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,41 +76,37 @@ init_data_merge(int npar, gmx_ana_selparam_t *param);
  * \returns   0 if everything is successful, -1 on error.
  */
 static void
-init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_merge(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes output for the \p merge selection modifier. */
 static void
-init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data);
+init_output_merge(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data);
 /** Initializes output for the \p plus selection modifier. */
 static void
-init_output_plus(t_topology *top, gmx_ana_selvalue_t *out, void *data);
+init_output_plus(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the memory allocated for the merging selection modifiers. */
 static void
 free_data_merge(void *data);
 /*! \brief
  * Evaluates the \p merge selection modifier.
  *
- * \param[in]  top   Not used.
- * \param[in]  fr    Not used.
- * \param[in]  pbc   Not used.
+ * \param[in]  context Not used.
  * \param[in]  p     Positions to merge (should point to \p data->p1).
  * \param[out] out   Output data structure (\p out->u.p is used).
  * \param[in]  data  Should point to a \p t_methoddata_merge.
  */
 static void
-evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_merge(const gmx::SelMethodEvalContext &context,
                gmx_ana_pos_t * p, gmx_ana_selvalue_t *out, void *data);
 /*! \brief
  * Evaluates the \p plus selection modifier.
  *
- * \param[in]  top   Not used.
- * \param[in]  fr    Not used.
- * \param[in]  pbc   Not used.
+ * \param[in]  context Not used.
  * \param[in]  p     Positions to merge (should point to \p data->p1).
  * \param[out] out   Output data structure (\p out->u.p is used).
  * \param[in]  data  Should point to a \p t_methoddata_merge.
  */
 static void
-evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_plus(const gmx::SelMethodEvalContext &context,
               gmx_ana_pos_t * p, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the merging selection modifiers. */
@@ -201,7 +197,7 @@ init_data_merge(int npar, gmx_ana_selparam_t *param)
 }
 
 static void
-init_merge(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
+init_merge(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
 
@@ -228,7 +224,7 @@ init_merge(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t * /* param
  * \param[in,out] data  Should point to \c t_methoddata_merge.
  */
 static void
-init_output_common(t_topology *top, gmx_ana_selvalue_t *out, void *data)
+init_output_common(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
 
@@ -254,7 +250,7 @@ init_output_common(t_topology *top, gmx_ana_selvalue_t *out, void *data)
  * \param[in,out] data  Should point to \c t_methoddata_merge.
  */
 static void
-init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data)
+init_output_merge(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
     int                 i, j;
@@ -276,7 +272,7 @@ init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data)
  * \param[in,out] data  Should point to \c t_methoddata_merge.
  */
 static void
-init_output_plus(t_topology *top, gmx_ana_selvalue_t *out, void *data)
+init_output_plus(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
     int                 i;
@@ -305,7 +301,7 @@ free_data_merge(void *data)
 }
 
 static void
-evaluate_merge(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_merge(const gmx::SelMethodEvalContext & /*context*/,
                gmx_ana_pos_t * /* p */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
@@ -335,7 +331,7 @@ evaluate_merge(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
 }
 
 static void
-evaluate_plus(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+evaluate_plus(const gmx::SelMethodEvalContext & /*context*/,
               gmx_ana_pos_t * /* p */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;

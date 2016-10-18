@@ -56,6 +56,9 @@ namespace gmx
 {
 
 class IOptionsContainer;
+class KeyValueTreeObject;
+class KeyValueTreeValue;
+class Variant;
 
 namespace test
 {
@@ -275,6 +278,22 @@ class TestReferenceChecker
         void setDefaultTolerance(const FloatingPointTolerance &tolerance);
 
         /*! \brief
+         * Checks that all reference values have been compared against.
+         *
+         * All values under the compound represented by this checker are
+         * checked, and a non-fatal Google Test assertion is produced if some
+         * values have not been used.
+         *
+         * If not called explicitly, the same check will be done for all
+         * reference data values when the test ends.
+         *
+         * This method also marks the values used, so that subsequent checks
+         * (including the check at the end of the test) will not produce
+         * another assertion about the same values.
+         */
+        void checkUnusedEntries();
+
+        /*! \brief
          * Checks whether a data item is present.
          *
          * \param[in] bPresent  Whether to check for presence or absence.
@@ -329,6 +348,8 @@ class TestReferenceChecker
          * is easier to edit by hand to set the desired output formatting.
          */
         void checkTextBlock(const std::string &value, const char *id);
+        //! Check a single unsigned char value.
+        void checkUChar(unsigned char value, const char *id);
         //! Check a single integer value.
         void checkInteger(int value, const char *id);
         //! Check a single int64 value.
@@ -351,6 +372,35 @@ class TestReferenceChecker
         void checkVector(const double value[3], const char *id);
         //! Check a single floating-point value from a string.
         void checkRealFromString(const std::string &value, const char *id);
+        //! Checks a variant value that contains a supported simple type.
+        void checkVariant(const Variant &value, const char *id);
+        //! Checks a key-value tree rooted at a object.
+        void checkKeyValueTreeObject(const KeyValueTreeObject &tree, const char *id);
+        //! Checks a generic key-value tree value.
+        void checkKeyValueTreeValue(const KeyValueTreeValue &value, const char *id);
+
+        /*! \name Methods to read values from reference data
+         *
+         * These methods assume that a value with the given `id` has already
+         * been created in the test with `check*()` methods, and that it has
+         * the correct type.
+         *
+         * Currently, these methods do not work correctly if the reference data
+         * file does not exist, so a test using them may fail with exceptions
+         * before the reference data has been generated.
+         * \{
+         */
+        //! Reads an unsigned char value.
+        unsigned char readUChar(const char *id);
+        //! Reads an integer value.
+        int readInteger(const char *id);
+        //! Reads a float value.
+        float readFloat(const char *id);
+        //! Reads a double value.
+        double readDouble(const char *id);
+        //! Reads a string value.
+        std::string readString(const char *id);
+        //! \}
 
         /*! \name Overloaded versions of simple checker methods
          *
@@ -415,6 +465,11 @@ class TestReferenceChecker
         void checkValue(const double value[3], const char *id)
         {
             checkVector(value, id);
+        }
+        //! Check a generic key-value tree value.
+        void checkValue(const KeyValueTreeValue &value, const char *id)
+        {
+            checkKeyValueTreeValue(value, id);
         }
         /*!\}*/
 

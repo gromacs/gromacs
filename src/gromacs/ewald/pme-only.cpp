@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,6 +107,7 @@ static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
 
 static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
                                ivec grid_size,
+                               real ewaldcoeff_q, real ewaldcoeff_lj,
                                t_commrec *cr, t_inputrec *ir,
                                struct gmx_pme_t **pme_ret)
 {
@@ -133,7 +134,7 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
     srenew(*pmedata, *npmedata);
 
     /* Generate a new PME data structure, copying part of the old pointers */
-    gmx_pme_reinit(&((*pmedata)[ind]), cr, pme, ir, grid_size);
+    gmx_pme_reinit(&((*pmedata)[ind]), cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
 
     *pme_ret = (*pmedata)[ind];
 }
@@ -163,7 +164,6 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     float              cycles;
     int                count;
     gmx_bool           bEnerVir;
-    int                pme_flags;
     gmx_int64_t        step;
     ivec               grid_switch;
 
@@ -190,17 +190,15 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
                                              &sigmaA, &sigmaB,
                                              box, &x_pp, &f_pp,
                                              &maxshift_x, &maxshift_y,
-                                             &pme->bFEP_q, &pme->bFEP_lj,
                                              &lambda_q, &lambda_lj,
                                              &bEnerVir,
-                                             &pme_flags,
                                              &step,
                                              grid_switch, &ewaldcoeff_q, &ewaldcoeff_lj);
 
             if (ret == pmerecvqxSWITCHGRID)
             {
                 /* Switch the PME grid to grid_switch */
-                gmx_pmeonly_switch(&npmedata, &pmedata, grid_switch, cr, ir, &pme);
+                gmx_pmeonly_switch(&npmedata, &pmedata, grid_switch, ewaldcoeff_q, ewaldcoeff_lj, cr, ir, &pme);
             }
 
             if (ret == pmerecvqxRESETCOUNTERS)
@@ -233,9 +231,9 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
         gmx_pme_do(pme, 0, natoms, x_pp, f_pp,
                    chargeA, chargeB, c6A, c6B, sigmaA, sigmaB, box,
                    cr, maxshift_x, maxshift_y, mynrnb, wcycle,
-                   vir_q, ewaldcoeff_q, vir_lj, ewaldcoeff_lj,
+                   vir_q, vir_lj,
                    &energy_q, &energy_lj, lambda_q, lambda_lj, &dvdlambda_q, &dvdlambda_lj,
-                   pme_flags | GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
+                   GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0));
 
         cycles = wallcycle_stop(wcycle, ewcPMEMESH);
 

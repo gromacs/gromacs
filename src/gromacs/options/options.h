@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,15 +48,16 @@
 
 #include <string>
 
-#include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/options/ioptionscontainerwithsections.h"
 #include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
 
 class AbstractOption;
+class OptionSection;
+class OptionSectionInfo;
 class OptionsAssigner;
-class OptionsIterator;
 
 namespace internal
 {
@@ -88,7 +89,7 @@ class IOptionManager
  * Collection of options.
  *
  * See \ref module_options for an overview of how the options work.
- * The IOptionsContainer interface documents how to add options.
+ * The IOptionsContainerWithSections interface documents how to add options.
  *
  * In order to keep the public interface of this class simple, functionality
  * to assign values to options is provided by a separate OptionsAssigner class.
@@ -98,22 +99,12 @@ class IOptionManager
  * \inpublicapi
  * \ingroup module_options
  */
-class Options : public IOptionsContainer
+class Options : public IOptionsContainerWithSections
 {
     public:
-        /*! \brief
-         * Initializes the name and title of an option collection.
-         *
-         * \param[in] name  Single-word name.
-         * \param[in] title Descriptive title.
-         *
-         * Copies the input strings.
-         */
-        Options(const char *name, const char *title);
+        //! Initializes an empty options root container.
+        Options();
         ~Options();
-
-        //! Returns the short name of the option collection.
-        const std::string &name() const;
 
         /*! \brief
          * Adds an option manager.
@@ -133,35 +124,17 @@ class Options : public IOptionsContainer
          * The Options object (and its contained options) only stores a
          * reference to the object.
          *
-         * This method cannot be called after adding options or subsections.
+         * This method cannot be called after adding options or sections.
          */
         void addManager(IOptionManager *manager);
 
-        /*! \brief
-         * Adds an option collection as a subsection of this collection.
-         *
-         * \param[in] section Subsection to add.
-         *
-         * The name() field of \p section is used as the name of the
-         * subsection.  If an attempt is made to add two different subsections
-         * with the same name, this function asserts.
-         *
-         * \p section should not have any options added at the point this
-         * method is called.
-         *
-         * Only a pointer to the provided object is stored.  The caller is
-         * responsible that the object exists for the lifetime of the
-         * collection.
-         * It is not possible to add the same Options object as a subsection to
-         * several different Options.
-         * If an attempt is made, the function asserts.
-         */
-        void addSubSection(Options *section);
-
         // From IOptionsContainer
         virtual IOptionsContainer &addGroup();
-        virtual OptionInfo *addOption(const AbstractOption &settings);
-        using IOptionsContainer::addOption;
+
+        //! Returns a handle to the root section.
+        OptionSectionInfo       &rootSection();
+        //! Returns a handle to the root section.
+        const OptionSectionInfo &rootSection() const;
 
         /*! \brief
          * Notifies the collection that all option values are assigned.
@@ -180,16 +153,16 @@ class Options : public IOptionsContainer
         void finish();
 
     private:
+        // From IOptionsContainerWithSections
+        virtual internal::OptionSectionImpl *
+        addSectionImpl(const AbstractOptionSection &section);
+        // From IOptionsContainer
+        virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
+
         PrivateImplPointer<internal::OptionsImpl> impl_;
 
-        //! Needed for the implementation to access subsections.
-        friend class internal::OptionsImpl;
         //! Needed to be able to extend the interface of this object.
         friend class OptionsAssigner;
-        //! Needed to be able to extend the interface of this object.
-        friend class OptionsIterator;
-        //! Needed to be able to extend the interface of this object.
-        friend class OptionsModifyingIterator;
 };
 
 } // namespace gmx

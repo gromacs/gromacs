@@ -110,8 +110,8 @@ static void comp_tpx(const char *fn1, const char *fn2,
          * We should implement direct mtop comparison,
          * but it might be useful to keep t_topology comparison as an option.
          */
-        top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
-        top[1] = gmx_mtop_t_to_t_topology(&mtop[1]);
+        top[0] = gmx_mtop_t_to_t_topology(&mtop[0], false);
+        top[1] = gmx_mtop_t_to_t_topology(&mtop[1], false);
         cmp_top(stdout, &top[0], &top[1], ftol, abstol);
         cmp_groups(stdout, &mtop[0].groups, &mtop[1].groups,
                    mtop[0].natoms, mtop[1].natoms);
@@ -133,7 +133,7 @@ static void comp_tpx(const char *fn1, const char *fn2,
              * We should implement direct mtop comparison,
              * but it might be useful to keep t_topology comparison as an option.
              */
-            top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
+            top[0] = gmx_mtop_t_to_t_topology(&mtop[0], true);
             cmp_top(stdout, &top[0], NULL, ftol, abstol);
         }
     }
@@ -188,7 +188,7 @@ static void tpx2system(FILE *fp, const gmx_mtop_t *mtop)
 {
     int                       nmol, nvsite = 0;
     gmx_mtop_atomloop_block_t aloop;
-    t_atom                   *atom;
+    const t_atom             *atom;
 
     fprintf(fp, "\\subsection{Simulation system}\n");
     aloop = gmx_mtop_atomloop_block_init(mtop);

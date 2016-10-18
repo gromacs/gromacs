@@ -63,15 +63,22 @@ typedef struct gmx_moltype_t
     t_blocka        excls;        /* The exclusions                       */
 } gmx_moltype_t;
 
+/*! \brief Block of molecules of the same type, used in gmx_mtop_t */
 typedef struct gmx_molblock_t
 {
-    int            type;        /* The molcule type index in mtop.moltype */
-    int            nmol;        /* The number of molecules in this block  */
-    int            natoms_mol;  /* The number of atoms in one molecule    */
-    int            nposres_xA;  /* The number of posres coords for top A  */
-    rvec          *posres_xA;   /* The posres coords for top A            */
-    int            nposres_xB;  /* The number of posres coords for top B  */
-    rvec          *posres_xB;   /* The posres coords for top B            */
+    int     type;               /**< The molecule type index in mtop.moltype  */
+    int     nmol;               /**< The number of molecules in this block    */
+    int     nposres_xA;         /**< The number of posres coords for top A    */
+    rvec   *posres_xA;          /**< Position restraint coordinates for top A */
+    int     nposres_xB;         /**< The number of posres coords for top B    */
+    rvec   *posres_xB;          /**< Position restraint coordinates for top B */
+
+    /* Convenience information, derived from other gmx_mtop_t contents     */
+    int     natoms_mol;         /**< The number of atoms in one molecule      */
+    int     globalAtomStart;    /**< Global atom index of the first atom in the block */
+    int     globalAtomEnd;      /**< Global atom index + 1 of the last atom in the block */
+    int     globalResidueStart; /**< Global residue index of the first residue in the block */
+    int     residueNumberStart; /**< Residue numbers start from this value if the number of residues per molecule is <= maxres_renum */
 } gmx_molblock_t;
 
 typedef struct gmx_groups_t
@@ -140,11 +147,17 @@ void init_mtop(gmx_mtop_t *mtop);
 void init_top(t_topology *top);
 void done_moltype(gmx_moltype_t *molt);
 void done_molblock(gmx_molblock_t *molb);
-void done_mtop(gmx_mtop_t *mtop, gmx_bool bDoneSymtab);
+void done_gmx_groups_t(gmx_groups_t *g);
+void done_mtop(gmx_mtop_t *mtop);
 void done_top(t_topology *top);
+// Frees both t_topology and gmx_mtop_t when the former has been created from
+// the latter.
+void done_top_mtop(t_topology *top, gmx_mtop_t *mtop);
 
-t_atoms *mtop2atoms(gmx_mtop_t *mtop);
-/* generate a t_atoms struct for the system from gmx_mtop_t */
+bool gmx_mtop_has_masses(const gmx_mtop_t *mtop);
+bool gmx_mtop_has_charges(const gmx_mtop_t *mtop);
+bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop);
+bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop);
 
 void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
              gmx_bool bShowNumbers);

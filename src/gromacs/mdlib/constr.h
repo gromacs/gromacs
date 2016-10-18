@@ -118,6 +118,8 @@ gmx_bool bshakef(FILE           *log,          /* Log file			*/
 gmx_settledata_t settle_init(const gmx_mtop_t *mtop);
 /* Initializes and returns a structure with SETTLE parameters */
 
+void settle_free(gmx_settledata_t settled);
+
 void settle_set_constraints(gmx_settledata_t  settled,
                             const t_ilist    *il_settle,
                             const t_mdatoms  *mdatoms);

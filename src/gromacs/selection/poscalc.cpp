@@ -151,7 +151,7 @@ class PositionCalculationCollection::Impl
          * Can be NULL if none of the calculations require topology data or if
          * setTopology() has not been called.
          */
-        t_topology               *top_;
+        const gmx_mtop_t         *top_;
         //! Pointer to the first data structure.
         gmx_ana_poscalc_t        *first_;
         //! Pointer to the last data structure.
@@ -270,6 +270,29 @@ index_type_for_poscalc(e_poscalc_t type)
 namespace gmx
 {
 
+namespace
+{
+
+//! Helper function for determining required topology information.
+PositionCalculationCollection::RequiredTopologyInfo
+requiredTopologyInfo(e_poscalc_t type, int flags)
+{
+    if (type != POS_ATOM)
+    {
+        if ((flags & POS_MASS) || (flags & POS_FORCES))
+        {
+            return PositionCalculationCollection::RequiredTopologyInfo::TopologyAndMasses;
+        }
+        if (type == POS_RES || type == POS_MOL)
+        {
+            return PositionCalculationCollection::RequiredTopologyInfo::Topology;
+        }
+    }
+    return PositionCalculationCollection::RequiredTopologyInfo::None;
+}
+
+}   // namespace
+
 // static
 void
 PositionCalculationCollection::typeFromEnum(const char *post,
@@ -330,6 +353,17 @@ PositionCalculationCollection::typeFromEnum(const char *post,
     {
         GMX_THROW(InternalError("Unknown position calculation type"));
     }
+}
+
+// static
+PositionCalculationCollection::RequiredTopologyInfo
+PositionCalculationCollection::requiredTopologyInfoForType(const char *post,
+                                                           bool        forces)
+{
+    e_poscalc_t  type;
+    int          flags = (forces ? POS_FORCES : 0);
+    PositionCalculationCollection::typeFromEnum(post, &type, &flags);
+    return requiredTopologyInfo(type, flags);
 }
 
 /********************************************************************
@@ -437,7 +471,7 @@ PositionCalculationCollection::~PositionCalculationCollection()
 }
 
 void
-PositionCalculationCollection::setTopology(t_topology *top)
+PositionCalculationCollection::setTopology(const gmx_mtop_t *top)
 {
     impl_->top_ = top;
 }
@@ -702,7 +736,7 @@ void PositionCalculationCollection::initFrame(const t_trxframe *fr)
 static void
 set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
 {
-    t_topology *top = pc->coll->top_;
+    const gmx_mtop_t *top = pc->coll->top_;
     gmx_ana_index_make_block(&pc->b, top, g, pc->itype, pc->flags & POS_COMPLWHOLE);
     /* Set the type to POS_ATOM if the calculation in fact is such. */
     if (pc->b.nr == pc->b.nra)
@@ -1161,20 +1195,10 @@ gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc)
     sfree(pc);
 }
 
-/*!
- * \param[in] pc  Position calculation data to query.
- * \returns   true if \p pc requires topology for initialization and/or
- *   evaluation, false otherwise.
- */
-bool
-gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc)
+gmx::PositionCalculationCollection::RequiredTopologyInfo
+gmx_ana_poscalc_required_topology_info(gmx_ana_poscalc_t *pc)
 {
-    if ((pc->flags & POS_MASS) || pc->type == POS_RES || pc->type == POS_MOL
-        || ((pc->flags & POS_FORCES) && pc->type != POS_ATOM))
-    {
-        return true;
-    }
-    return false;
+    return gmx::requiredTopologyInfo(pc->type, pc->flags);
 }
 
 /*!
@@ -1190,7 +1214,7 @@ gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc)
  */
 void
 gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
-                       gmx_ana_index_t *g, t_trxframe *fr, t_pbc *pbc)
+                       gmx_ana_index_t *g, t_trxframe *fr, const t_pbc *pbc)
 {
     int  i, bi, bj;
 
@@ -1307,7 +1331,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
             }
         }
         gmx::ConstArrayRef<int> index = pc->coll->getFrameIndices(pc->b.nra, pc->b.a);
-        const t_topology       *top   = pc->coll->top_;
+        const gmx_mtop_t       *top   = pc->coll->top_;
         const bool              bMass = pc->flags & POS_MASS;
         switch (pc->type)
         {

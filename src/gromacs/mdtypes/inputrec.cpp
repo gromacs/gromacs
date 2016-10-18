@@ -277,28 +277,6 @@ static void done_pull_params(pull_params_t *pull)
 
 void done_inputrec(t_inputrec *ir)
 {
-    int m;
-
-    for (m = 0; (m < DIM); m++)
-    {
-        if (ir->ex[m].a)
-        {
-            sfree(ir->ex[m].a);
-        }
-        if (ir->ex[m].phi)
-        {
-            sfree(ir->ex[m].phi);
-        }
-        if (ir->et[m].a)
-        {
-            sfree(ir->et[m].a);
-        }
-        if (ir->et[m].phi)
-        {
-            sfree(ir->et[m].phi);
-        }
-    }
-
     sfree(ir->opts.nrdf);
     sfree(ir->opts.ref_t);
     sfree(ir->opts.annealing);
@@ -320,6 +298,9 @@ void done_inputrec(t_inputrec *ir)
     sfree(ir->opts.SAsteps);
     sfree(ir->opts.bOPT);
     sfree(ir->opts.bTS);
+    sfree(ir->fepvals);
+    sfree(ir->expandedvals);
+    sfree(ir->simtempvals);
 
     if (ir->pull)
     {
@@ -466,40 +447,6 @@ static void pr_matrix(FILE *fp, int indent, const char *title, const rvec *m,
     else
     {
         pr_rvecs(fp, indent, title, m, DIM);
-    }
-}
-
-static void pr_cosine(FILE *fp, int indent, const char *title, const t_cosines *cos,
-                      gmx_bool bMDPformat)
-{
-    int j;
-
-    if (bMDPformat)
-    {
-        fprintf(fp, "%s = %d\n", title, cos->n);
-    }
-    else
-    {
-        indent = pr_title(fp, indent, title);
-        pr_indent(fp, indent);
-        fprintf(fp, "n = %d\n", cos->n);
-        if (cos->n > 0)
-        {
-            pr_indent(fp, indent+2);
-            fprintf(fp, "a =");
-            for (j = 0; (j < cos->n); j++)
-            {
-                fprintf(fp, " %e", cos->a[j]);
-            }
-            fprintf(fp, "\n");
-            pr_indent(fp, indent+2);
-            fprintf(fp, "phi =");
-            for (j = 0; (j < cos->n); j++)
-            {
-                fprintf(fp, " %e", cos->phi[j]);
-            }
-            fprintf(fp, "\n");
-        }
     }
 }
 
@@ -1003,12 +950,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         }
 
         /* ELECTRIC FIELDS */
-        pr_cosine(fp, indent, "E-x", &(ir->ex[XX]), bMDPformat);
-        pr_cosine(fp, indent, "E-xt", &(ir->et[XX]), bMDPformat);
-        pr_cosine(fp, indent, "E-y", &(ir->ex[YY]), bMDPformat);
-        pr_cosine(fp, indent, "E-yt", &(ir->et[YY]), bMDPformat);
-        pr_cosine(fp, indent, "E-z", &(ir->ex[ZZ]), bMDPformat);
-        pr_cosine(fp, indent, "E-zt", &(ir->et[ZZ]), bMDPformat);
+        ir->efield->printParameters(fp, indent);
 
         /* ION/WATER SWAPPING FOR COMPUTATIONAL ELECTROPHYSIOLOGY */
         PS("swapcoords", ESWAPTYPE(ir->eSwapCoords));
@@ -1085,23 +1027,6 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
     }
 }
 
-
-static void cmp_cosines(FILE *fp, const char *s, const t_cosines c1[DIM], const t_cosines c2[DIM], real ftol, real abstol)
-{
-    int  i, m;
-    char buf[256];
-
-    for (m = 0; (m < DIM); m++)
-    {
-        sprintf(buf, "inputrec->%s[%d]", s, m);
-        cmp_int(fp, buf, 0, c1->n, c2->n);
-        for (i = 0; (i < std::min(c1->n, c2->n)); i++)
-        {
-            cmp_real(fp, buf, i, c1->a[i], c2->a[i], ftol, abstol);
-            cmp_real(fp, buf, i, c1->phi[i], c2->phi[i], ftol, abstol);
-        }
-    }
-}
 static void cmp_pull(FILE *fp)
 {
     fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
@@ -1329,8 +1254,7 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_real(fp, "inputrec->userreal3", -1, ir1->userreal3, ir2->userreal3, ftol, abstol);
     cmp_real(fp, "inputrec->userreal4", -1, ir1->userreal4, ir2->userreal4, ftol, abstol);
     cmp_grpopts(fp, &(ir1->opts), &(ir2->opts), ftol, abstol);
-    cmp_cosines(fp, "ex", ir1->ex, ir2->ex, ftol, abstol);
-    cmp_cosines(fp, "et", ir1->et, ir2->et, ftol, abstol);
+    ir1->efield->compare(fp, ir2->efield, ftol, abstol);
 }
 
 void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
@@ -1365,11 +1289,6 @@ gmx_bool inputrecNeedMutot(const t_inputrec *ir)
 {
     return ((ir->coulombtype == eelEWALD || EEL_PME(ir->coulombtype)) &&
             (ir->ewald_geometry == eewg3DC || ir->epsilon_surface != 0));
-}
-
-gmx_bool inputrecElecField(const t_inputrec *ir)
-{
-    return (ir->ex[XX].n > 0 || ir->ex[YY].n > 0 || ir->ex[ZZ].n > 0);
 }
 
 gmx_bool inputrecExclForces(const t_inputrec *ir)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,8 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
  * Calculates r and r^-3 (inst. and time averaged) for all pairs
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
-void calc_disres_R_6(int nfa, const t_iatom *fa, const t_iparams ip[],
+void calc_disres_R_6(const t_commrec *cr,
+                     int nfa, const t_iatom *fa,
                      const rvec *x, const t_pbc *pbc,
                      t_fcdata *fcd, history_t *hist);
 

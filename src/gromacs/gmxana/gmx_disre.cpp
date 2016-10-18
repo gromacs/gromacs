@@ -60,6 +60,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdrun.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -204,7 +205,7 @@ static void check_viol(FILE *log,
         while (((i+n) < disres->nr) &&
                (forceparams[forceatoms[i+n]].disres.label == label));
 
-        calc_disres_R_6(n, &forceatoms[i], forceparams,
+        calc_disres_R_6(NULL, n, &forceatoms[i],
                         (const rvec*)x, pbc, fcd, NULL);
 
         if (fcd->disres.Rt_6[0] <= 0)
@@ -690,7 +691,6 @@ int gmx_disre(int argc, char *argv[])
 
     FILE             *out = NULL, *aver = NULL, *numv = NULL, *maxxv = NULL, *xvg = NULL;
     t_tpxheader       header;
-    t_inputrec        ir;
     gmx_mtop_t        mtop;
     rvec             *xtop;
     gmx_localtop_t   *top;
@@ -748,9 +748,12 @@ int gmx_disre(int argc, char *argv[])
         init5(ntop);
     }
 
+    gmx::MDModules  mdModules;
+    t_inputrec     *ir = mdModules.inputrec();
+
     read_tpxheader(ftp2fn(efTPR, NFILE, fnm), &header, FALSE);
     snew(xtop, header.natoms);
-    read_tpx(ftp2fn(efTPR, NFILE, fnm), &ir, box, &ntopatoms, xtop, NULL, &mtop);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), ir, box, &ntopatoms, xtop, NULL, &mtop);
     bPDB = opt2bSet("-q", NFILE, fnm);
     if (bPDB)
     {
@@ -770,15 +773,16 @@ int gmx_disre(int argc, char *argv[])
         {
             snew(atoms->pdbinfo, atoms->nr);
         }
+        atoms->havePdbInfo = TRUE;
     }
 
-    top = gmx_mtop_generate_local_top(&mtop, ir.efep != efepNO);
+    top = gmx_mtop_generate_local_top(&mtop, ir->efep != efepNO);
 
     g        = NULL;
     pbc_null = NULL;
-    if (ir.ePBC != epbcNONE)
+    if (ir->ePBC != epbcNONE)
     {
-        if (ir.bPeriodicMols)
+        if (ir->bPeriodicMols)
         {
             pbc_null = &pbc;
         }
@@ -810,8 +814,8 @@ int gmx_disre(int argc, char *argv[])
         isize = 0;
     }
 
-    ir.dr_tau = 0.0;
-    init_disres(fplog, &mtop, &ir, NULL, &fcd, NULL, FALSE);
+    ir->dr_tau = 0.0;
+    init_disres(fplog, &mtop, ir, NULL, &fcd, NULL, FALSE);
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(f, 5*natoms);
@@ -838,23 +842,23 @@ int gmx_disre(int argc, char *argv[])
                          "Largest Violation", "Time (ps)", "nm", oenv);
     }
 
-    mdatoms = init_mdatoms(fplog, &mtop, ir.efep != efepNO);
-    atoms2md(&mtop, &ir, 0, NULL, mtop.natoms, mdatoms);
-    update_mdatoms(mdatoms, ir.fepvals->init_lambda);
+    mdatoms = init_mdatoms(fplog, &mtop, ir->efep != efepNO);
+    atoms2md(&mtop, ir, -1, NULL, mtop.natoms, mdatoms);
+    update_mdatoms(mdatoms, ir->fepvals->init_lambda);
     init_nrnb(&nrnb);
-    if (ir.ePBC != epbcNONE)
+    if (ir->ePBC != epbcNONE)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ir.ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top->idef, ir->ePBC, natoms);
     }
 
     j = 0;
     do
     {
-        if (ir.ePBC != epbcNONE)
+        if (ir->ePBC != epbcNONE)
         {
-            if (ir.bPeriodicMols)
+            if (ir->bPeriodicMols)
             {
-                set_pbc(&pbc, ir.ePBC, box);
+                set_pbc(&pbc, ir->ePBC, box);
             }
             else
             {
@@ -915,7 +919,7 @@ int gmx_disre(int argc, char *argv[])
     }
     while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
-    if (ir.ePBC != epbcNONE)
+    if (ir->ePBC != epbcNONE)
     {
         gmx_rmpbc_done(gpbc);
     }
@@ -935,7 +939,7 @@ int gmx_disre(int argc, char *argv[])
         {
             write_sto_conf(opt2fn("-q", NFILE, fnm),
                            "Coloured by average violation in Angstrom",
-                           atoms, xav, NULL, ir.ePBC, box);
+                           atoms, xav, NULL, ir->ePBC, box);
         }
         dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, fcd.disres.nres,
                           j, &top->idef, &mtop, max_dr, nlevels, bThird);

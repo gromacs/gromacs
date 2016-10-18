@@ -104,20 +104,12 @@ bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bNotLastFrame);
 
-/* get the conserved energy associated with the ensemble type*/
-real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state,
-                                      t_extmass *MassQ);
-
 /* set the lambda values at each step of mdrun when they change */
 void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
                          t_trxframe *rerun_fr, t_state *state_global, t_state *state, double lam0[]);
 
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
 /* Set an appropriate value for n across the whole multi-simulation */
-
-void copy_coupling_state(t_state *statea, t_state *stateb,
-                         gmx_ekindata_t *ekinda, gmx_ekindata_t *ekindb, t_grpopts* opts);
-/* Copy stuff from state A to state B */
 
 void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_inputrec *ir,
                      t_forcerec *fr, gmx_ekindata_t *ekind,

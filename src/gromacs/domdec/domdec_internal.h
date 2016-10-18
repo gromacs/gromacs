@@ -111,20 +111,20 @@ typedef struct
 
 typedef struct
 {
-    int  nsc;
-    int  ind_gl;
-    int  ind;
+    int  nsc;     /**< Neighborsearch grid cell index */
+    int  ind_gl;  /**< Global atom/charge group index */
+    int  ind;     /**< Local atom/charge group index */
 } gmx_cgsort_t;
 
 typedef struct
 {
-    gmx_cgsort_t *sort;
-    gmx_cgsort_t *sort2;
-    int           sort_nalloc;
-    gmx_cgsort_t *sort_new;
-    int           sort_new_nalloc;
-    int          *ibuf;
-    int           ibuf_nalloc;
+    gmx_cgsort_t *sort;             /**< Sorted array of indices */
+    gmx_cgsort_t *sort2;            /**< Array of stationary atom/charge group indices */
+    int           sort_nalloc;      /**< Number of elements in both arrays of indices */
+    gmx_cgsort_t *sort_new;         /**< Array of moved atom/charge group indices */
+    int           sort_new_nalloc;  /**< Number of elements in array of moved atom/charge group indices */
+    int          *ibuf;             /**< Integer buffer used for sorting */
+    int           ibuf_nalloc;      /**< Number of elements allocated in the buffer */
 } gmx_domdec_sort_t;
 
 /*! \brief rvec array with allocation size, used for DD communication */

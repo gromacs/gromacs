@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,13 +74,15 @@ int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  int nnodes_major, int nnodes_minor,
                  t_inputrec *ir, int homenr,
                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
-                 gmx_bool bReproducible, int nthread);
+                 gmx_bool bReproducible,
+                 real ewaldcoeff_q, real ewaldcoeff_lj,
+                 int nthread);
 
-/*! \brief Destroy the pme data structures resepectively.
+/*! \brief Destroy the PME data structures respectively.
  *
  * \return 0 indicates all well, non zero is an error code.
  */
-int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata);
+int gmx_pme_destroy(struct gmx_pme_t **pmedata);
 
 //@{
 /*! \brief Flag values that control what gmx_pme_do() will calculate
@@ -93,12 +95,6 @@ int gmx_pme_destroy(FILE *log, struct gmx_pme_t **pmedata);
 #define GMX_PME_CALC_ENER_VIR (1<<3)
 /* This forces the grid to be backtransformed even without GMX_PME_CALC_F */
 #define GMX_PME_CALC_POT      (1<<4)
-
-/* These values label bits used for sending messages to PME nodes using the
- * routines in pme_pp.c and shouldn't conflict with the flags used there
- */
-#define GMX_PME_DO_COULOMB    (1<<13)
-#define GMX_PME_DO_LJ         (1<<14)
 
 #define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 //@}
@@ -119,8 +115,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                matrix box,      t_commrec *cr,
                int  maxshift_x, int maxshift_y,
                t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
-               matrix vir_q,    real ewaldcoeff_q,
-               matrix vir_lj,   real ewaldcoeff_lj,
+               matrix vir_q,    matrix vir_lj,
                real *energy_q,  real *energy_lj,
                real lambda_q,   real lambda_lj,
                real *dvdlambda_q, real *dvdlambda_lj,
@@ -155,9 +150,8 @@ void gmx_pme_send_parameters(struct t_commrec *cr,
 
 /*! \brief Send the coordinates to our PME-only node and request a PME calculation */
 void gmx_pme_send_coordinates(struct t_commrec *cr, matrix box, rvec *x,
-                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                               real lambda_q, real lambda_lj,
-                              gmx_bool bEnerVir, int pme_flags,
+                              gmx_bool bEnerVir,
                               gmx_int64_t step);
 
 /*! \brief Tell our PME-only node to finish */

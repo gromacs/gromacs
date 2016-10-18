@@ -32,7 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(testname "LegacyToolsTests")
 set(exename "legacy-tools-test")
 
 gmx_add_gtest_executable(
@@ -40,7 +39,4 @@ gmx_add_gtest_executable(
     # files with code for test fixtures
     gmx_traj_tests.cpp
     )
-gmx_register_integration_test(
-    ${testname}
-    ${exename}
-    )
+gmx_register_gtest_test(LegacyToolsTest ${exename} INTEGRATION_TEST)

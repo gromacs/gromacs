@@ -96,12 +96,13 @@
  * NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
  * warp-pairs per block.
  *
- * - On CC 2.0-3.5, 5.0, and 5.2, NTHREAD_Z == 1, translating to 64 th/block with 16
- * blocks/multiproc, is the fastest even though this setup gives low occupancy.
+ * - On CC 2.0-3.5, and >=5.0 NTHREAD_Z == 1, translating to 64 th/block with 16
+ * blocks/multiproc, is the fastest even though this setup gives low occupancy
+ * (except on 6.0).
  * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
  * per multiprocessor is reduced proportionally to get the original number of max
  * threads in flight (and slightly lower performance).
- * - On CC 3.7 and 6.0 there are enough registers to double the number of threads; using
+ * - On CC 3.7 there are enough registers to double the number of threads; using
  * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
  * with low-register use).
  *
@@ -112,18 +113,18 @@
 /* Kernel launch bounds for different compute capabilities. The value of NTHREAD_Z
  * determines the number of threads per block and it is chosen such that
  * 16 blocks/multiprocessor can be kept in flight.
- * - CC 3.0/3.5/5.x, >=6.1: NTHREAD_Z=1, (64, 16) bounds
- * - CC 3.7, 6.0:           NTHREAD_Z=2, (128, 16) bounds
+ * - CC 3.0,3.5, and >=5.0: NTHREAD_Z=1, (64, 16) bounds
+ * - CC 3.7:                NTHREAD_Z=2, (128, 16) bounds
  *
  * Note: convenience macros, need to be undef-ed at the end of the file.
  */
-#if GMX_PTX_ARCH == 370 || GMX_PTX_ARCH == 600
+#if GMX_PTX_ARCH == 370
     #define NTHREAD_Z           (2)
     #define MIN_BLOCKS_PER_MP   (16)
 #else
     #define NTHREAD_Z           (1)
     #define MIN_BLOCKS_PER_MP   (16)
-#endif /* GMX_PTX_ARCH == 370 || GMX_PTX_ARCH == 600 */
+#endif /* GMX_PTX_ARCH == 370 */
 #define THREADS_PER_BLOCK   (c_clSize*c_clSize*NTHREAD_Z)
 
 #if GMX_PTX_ARCH >= 350
@@ -499,6 +500,14 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif /* LJ_EWALD_COMB_GEOM */
 #endif /* LJ_EWALD */
 
+#ifdef LJ_POT_SWITCH
+#ifdef CALC_ENERGIES
+                                calculate_potential_switch_F_E(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+#else
+                                calculate_potential_switch_F(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
+#endif /* CALC_ENERGIES */
+#endif /* LJ_POT_SWITCH */
+
 #ifdef VDW_CUTOFF_CHECK
                                 /* Separate VDW cut-off check to enable twin-range cut-offs
                                  * (rvdw < rcoulomb <= rlist)
@@ -509,14 +518,6 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 E_lj_p       *= vdw_in_range;
 #endif
 #endif                          /* VDW_CUTOFF_CHECK */
-
-#ifdef LJ_POT_SWITCH
-#ifdef CALC_ENERGIES
-                                calculate_potential_switch_F_E(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
-#else
-                                calculate_potential_switch_F(nbparam, c6, c12, inv_r, r2, &F_invr, &E_lj_p);
-#endif /* CALC_ENERGIES */
-#endif /* LJ_POT_SWITCH */
 
 #ifdef CALC_ENERGIES
                                 E_lj    += E_lj_p;

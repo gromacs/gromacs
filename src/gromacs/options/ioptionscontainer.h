@@ -95,18 +95,6 @@ class IOptionsContainer
         /*! \brief
          * Adds a recognized option.
          *
-         * \param[in] settings Option description.
-         * \returns   OptionInfo object for the created option (never NULL).
-         * \throws    APIError if invalid option settings are provided.
-         *
-         * This method provides the internal implementation, but in most cases
-         * the templated method is called from user code.
-         * See the templated method for more details.
-         */
-        virtual OptionInfo *addOption(const AbstractOption &settings) = 0;
-        /*! \brief
-         * Adds a recognized option.
-         *
          * \tparam    OptionType Type of the options description object.
          * \param[in] settings   Option description.
          * \returns   OptionInfo object for the created option (never NULL).
@@ -130,7 +118,7 @@ class IOptionsContainer
         typename OptionType::InfoType *addOption(const OptionType &settings)
         {
             OptionInfo *info
-                = addOption(static_cast<const AbstractOption &>(settings));
+                = addOptionImpl(static_cast<const AbstractOption &>(settings));
             GMX_ASSERT(info->isType<typename OptionType::InfoType>(),
                        "Mismatching option info type declaration and implementation");
             return info->toType<typename OptionType::InfoType>();
@@ -140,6 +128,19 @@ class IOptionsContainer
         // Disallow deletion through the interface.
         // (no need for the virtual, but some compilers warn otherwise)
         virtual ~IOptionsContainer();
+
+        /*! \brief
+         * Adds a recognized option.
+         *
+         * \param[in] settings Option description.
+         * \returns   OptionInfo object for the created option (never NULL).
+         * \throws    APIError if invalid option settings are provided.
+         *
+         * This method provides the internal implementation, but the templated
+         * method is called from user code.  See the templated method for more
+         * details.
+         */
+        virtual OptionInfo *addOptionImpl(const AbstractOption &settings) = 0;
 
         GMX_DEFAULT_CONSTRUCTORS(IOptionsContainer);
 };

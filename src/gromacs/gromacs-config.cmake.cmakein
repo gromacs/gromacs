@@ -57,6 +57,13 @@ endif()
 include(${_gmx_import_file})
 unset(_gmx_import_file)
 
+get_target_property(_libs libgromacs INTERFACE_LINK_LIBRARIES)
+if (_libs MATCHES "tng_io::tng_io")
+    include(CMakeFindDependencyMacro)
+    find_dependency(TNG_IO)
+endif()
+unset(_libs)
+
 set(GROMACS_INCLUDE_DIRS)
 set(_include_dirs "@INSTALLED_HEADER_INCLUDE_DIRS@")
 foreach (_dir ${_include_dirs})
