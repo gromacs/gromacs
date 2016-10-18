@@ -1147,7 +1147,7 @@ real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir)
 
 gmx_constr_t init_constraints(FILE *fplog,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
-                              gmx_edsam_t ed, t_state *state,
+                              gmx_edsam_t ed, edsamstate_t *edsamHistory, t_state *state,
                               t_commrec *cr)
 {
     int nconstraints =
@@ -1302,9 +1302,9 @@ gmx_constr_t init_constraints(FILE *fplog,
     /* Initialize the essential dynamics sampling.
      * Put the pointer to the ED struct in constr */
     constr->ed = ed;
-    if (ed != NULL || state->edsamstate != NULL)
+    if (ed != NULL || edsamHistory != NULL)
     {
-        init_edsam(mtop, ir, cr, ed, as_rvec_array(state->x.data()), state->box, state->edsamstate);
+        init_edsam(mtop, ir, cr, ed, as_rvec_array(state->x.data()), state->box, edsamHistory);
     }
 
     constr->warn_mtop = mtop;

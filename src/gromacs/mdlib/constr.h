@@ -206,7 +206,7 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
 
 gmx_constr_t init_constraints(FILE *log,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
-                              gmx_edsam_t ed, t_state *state,
+                              gmx_edsam_t ed, edsamstate_t *edsamHistory, t_state *state,
                               struct t_commrec *cr);
 /* Initialize constraints stuff */
 

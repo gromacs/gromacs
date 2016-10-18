@@ -1312,7 +1312,7 @@ void dd_collect_state(gmx_domdec_t *dd,
     }
     for (est = 0; est < estNR; est++)
     {
-        if (EST_DISTR(est) && (state_local->flags & (1<<est)))
+        if (stateEntryIsAtomProperty(est) && (state_local->flags & (1 << est)))
         {
             switch (est)
             {
@@ -1350,7 +1350,7 @@ static void dd_resize_state(t_state *state, PaddedRVecVector *f, int natoms)
 
     for (est = 0; est < estNR; est++)
     {
-        if (EST_DISTR(est) && (state->flags & (1<<est)))
+        if (stateEntryIsAtomProperty(est) && (state->flags & (1 << est)))
         {
             /* We need to allocate one element extra, since we might use
              * (unaligned) 4-wide SIMD loads to access rvec entries.
@@ -1616,7 +1616,7 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
 
     for (i = 0; i < estNR; i++)
     {
-        if (EST_DISTR(i) && (state_local->flags & (1<<i)))
+        if (stateEntryIsAtomProperty(i) && (state_local->flags & (1 << i)))
         {
             switch (i)
             {
@@ -4127,7 +4127,7 @@ static void rotate_state_atom(t_state *state, int a)
 
     for (est = 0; est < estNR; est++)
     {
-        if (EST_DISTR(est) && (state->flags & (1<<est)))
+        if (stateEntryIsAtomProperty(est) && (state->flags & (1 << est)))
         {
             switch (est)
             {
@@ -4388,7 +4388,7 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
 
     for (i = 0; i < estNR; i++)
     {
-        if (EST_DISTR(i))
+        if (stateEntryIsAtomProperty(i))
         {
             switch (i)
             {
@@ -8928,7 +8928,7 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     /* Reorder the state */
     for (i = 0; i < estNR; i++)
     {
-        if (EST_DISTR(i) && (state->flags & (1<<i)))
+        if (stateEntryIsAtomProperty(i) && (state->flags & (1 << i)))
         {
             switch (i)
             {
