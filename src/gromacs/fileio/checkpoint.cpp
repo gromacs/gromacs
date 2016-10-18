@@ -63,10 +63,13 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
+#include "gromacs/mdtypes/edsamhistory.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
@@ -1105,7 +1108,7 @@ static int do_cpt_ekinstate(XDR *xd, int fflags, ekinstate_t *ekins,
 
 
 static int do_cpt_swapstate(XDR *xd, gmx_bool bRead,
-                            int eSwapCoords, swapstate_t **swapstatePtr, FILE *list)
+                            int eSwapCoords, swaphistory_t *swapstate, FILE *list)
 {
     int swap_cpt_version = 2;
 
@@ -1114,11 +1117,6 @@ static int do_cpt_swapstate(XDR *xd, gmx_bool bRead,
         return 0;
     }
 
-    if (*swapstatePtr == nullptr)
-    {
-        snew(*swapstatePtr, 1);
-    }
-    swapstate_t *swapstate = *swapstatePtr;
     swapstate->bFromCpt    = bRead;
     swapstate->eSwapCoords = eSwapCoords;
 
@@ -1263,9 +1261,13 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
         enerhist->nsteps_sim = 0;
         enerhist->nsum_sim   = 0;
     }
-    else
+    else if (enerhist != nullptr)
     {
         energyHistoryNumEnergies = enerhist->ener_sum_sim.size();
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(fflags == 0, "Without energy history, all flags should be off");
     }
 
     delta_h_history_t *deltaH = enerhist->deltaHForeignLambdas.get();
@@ -1397,18 +1399,12 @@ static int do_cpt_df_hist(XDR *xd, int fflags, int nlambda, df_history_t **dfhis
  * average structure in the .cpt file
  */
 static int do_cpt_EDstate(XDR *xd, gmx_bool bRead,
-                          int nED, edsamstate_t **EDstatePtr, FILE *list)
+                          int nED, edsamhistory_t *EDstate, FILE *list)
 {
     if (nED == 0)
     {
         return 0;
     }
-
-    if (*EDstatePtr == nullptr)
-    {
-        snew(*EDstatePtr, 1);
-    }
-    edsamstate_t *EDstate = *EDstatePtr;
 
     EDstate->bFromCpt     = bRead;
     EDstate->nED          = nED;
@@ -1558,7 +1554,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
                       gmx_int64_t step, double t,
-                      t_state *state, energyhistory_t *enerhist)
+                      t_state *state, ObservablesHistory *observablesHistory)
 {
     t_fileio            *fp;
     int                  file_version;
@@ -1575,7 +1571,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     gmx_file_position_t *outputfiles;
     int                  noutputfiles;
     char                *ftime;
-    int                  flags_eks, flags_enh, flags_dfh;
     t_fileio            *ret;
 
     if (DOMAINDECOMP(cr))
@@ -1615,6 +1610,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     fp = gmx_fio_open(fntemp, "w");
 
+    int flags_eks;
     if (state->ekinstate.bUpToDate)
     {
         flags_eks =
@@ -1627,8 +1623,9 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         flags_eks = 0;
     }
 
-    flags_enh = 0;
-    if (enerhist->nsum > 0 || enerhist->nsum_sim > 0)
+    energyhistory_t *enerhist  = observablesHistory->energyHistory.get();
+    int              flags_enh = 0;
+    if (enerhist != nullptr && (enerhist->nsum > 0 || enerhist->nsum_sim > 0))
     {
         flags_enh |= (1<<eenhENERGY_N) | (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSTEPS_SIM);
         if (enerhist->nsum > 0)
@@ -1649,6 +1646,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         }
     }
 
+    int flags_dfh;
     if (bExpanded)
     {
         flags_dfh = ((1<<edfhBEQUIL) | (1<<edfhNATLAMBDA) | (1<<edfhSUMWEIGHTS) |  (1<<edfhSUMDG)  |
@@ -1683,9 +1681,13 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     ftime   = &(timebuf[0]);
 
-    int nlambda     = (state->dfhist ? state->dfhist->nlambda : 0);
-    int nED         = (state->edsamstate ? state->edsamstate->nED : 0);
-    int eSwapCoords = (state->swapstate ? state->swapstate->eSwapCoords : eswapNO);
+    int             nlambda     = (state->dfhist ? state->dfhist->nlambda : 0);
+
+    edsamhistory_t *edsamhist   = observablesHistory->edsamHistory.get();
+    int             nED         = (edsamhist ? edsamhist->nED : 0);
+
+    swaphistory_t  *swaphist    = observablesHistory->swapHistory.get();
+    int             eSwapCoords = (swaphist ? swaphist->eSwapCoords : eswapNO);
 
     do_cpt_header(gmx_fio_getxdr(fp), FALSE, &file_version,
                   &version, &btime, &buser, &bhost, &double_prec, &fprog, &ftime,
@@ -1706,8 +1708,8 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         (do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state->ekinstate, nullptr) < 0) ||
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, enerhist, nullptr) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, nullptr) < 0)  ||
-        (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, &state->edsamstate, nullptr) < 0)      ||
-        (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, eSwapCoords, &state->swapstate, nullptr) < 0) ||
+        (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, edsamhist, nullptr) < 0)      ||
+        (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, eSwapCoords, swaphist, nullptr) < 0) ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, &noutputfiles, nullptr,
                       file_version) < 0))
     {
@@ -1951,7 +1953,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                             ivec dd_nc, int *npme,
                             int eIntegrator, int *init_fep_state, gmx_int64_t *step, double *t,
                             t_state *state, gmx_bool *bReadEkin,
-                            energyhistory_t *enerhist,
+                            ObservablesHistory *observablesHistory,
                             int *simulation_part,
                             gmx_bool bAppendOutputFiles, gmx_bool bForceAppend,
                             gmx_bool reproducibilityRequested)
@@ -2146,8 +2148,12 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     *bReadEkin = ((flags_eks & (1<<eeksEKINH)) || (flags_eks & (1<<eeksEKINF)) || (flags_eks & (1<<eeksEKINO)) ||
                   ((flags_eks & (1<<eeksEKINSCALEF)) | (flags_eks & (1<<eeksEKINSCALEH)) | (flags_eks & (1<<eeksVSCALE))));
 
+    if (flags_enh && observablesHistory->energyHistory == nullptr)
+    {
+        observablesHistory->energyHistory = std::unique_ptr<energyhistory_t>(new energyhistory_t {});
+    }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
-                          flags_enh, enerhist, nullptr);
+                          flags_enh, observablesHistory->energyHistory.get(), nullptr);
     if (ret)
     {
         cp_error();
@@ -2162,8 +2168,8 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         {
             fprintf(fplog, "\nWARNING: %s\n\n", warn);
         }
-        enerhist->nsum     = *step;
-        enerhist->nsum_sim = *step;
+        observablesHistory->energyHistory->nsum     = *step;
+        observablesHistory->energyHistory->nsum_sim = *step;
     }
 
     ret = do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, nullptr);
@@ -2172,13 +2178,21 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, nED, &state->edsamstate, nullptr);
+    if (nED > 0 && observablesHistory->edsamHistory == nullptr)
+    {
+        observablesHistory->edsamHistory = std::unique_ptr<edsamhistory_t>(new edsamhistory_t {});
+    }
+    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, nED, observablesHistory->edsamHistory.get(), nullptr);
     if (ret)
     {
         cp_error();
     }
 
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, eSwapCoords, &state->swapstate, nullptr);
+    if (eSwapCoords != eswapNO && observablesHistory->swapHistory == nullptr)
+    {
+        observablesHistory->swapHistory = std::unique_ptr<swaphistory_t>(new swaphistory_t {});
+    }
+    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, eSwapCoords, observablesHistory->swapHistory.get(), nullptr);
     if (ret)
     {
         cp_error();
@@ -2354,7 +2368,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
                      const t_commrec *cr, ivec dd_nc, int *npme,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
-                     energyhistory_t *enerhist,
+                     ObservablesHistory *observablesHistory,
                      gmx_bool bAppend, gmx_bool bForceAppend,
                      gmx_bool reproducibilityRequested)
 {
@@ -2367,7 +2381,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
         read_checkpoint(fn, fplog,
                         cr, dd_nc, npme,
                         ir->eI, &(ir->fepvals->init_fep_state), &step, &t,
-                        state, bReadEkin, enerhist,
+                        state, bReadEkin, observablesHistory,
                         &ir->simulation_part, bAppend, bForceAppend,
                         reproducibilityRequested);
     }
@@ -2475,13 +2489,15 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
         cp_error();
     }
 
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, nED, &state->edsamstate, nullptr);
+    edsamhistory_t edsamhist = {};
+    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, nED, &edsamhist, nullptr);
     if (ret)
     {
         cp_error();
     }
 
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, eSwapCoords, &state->swapstate, nullptr);
+    swaphistory_t swaphist = {};
+    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, eSwapCoords, &swaphist, nullptr);
     if (ret)
     {
         cp_error();
@@ -2623,12 +2639,14 @@ void list_checkpoint(const char *fn, FILE *out)
 
     if (ret == 0)
     {
-        ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, nED, &state.edsamstate, out);
+        edsamhistory_t edsamhist = {};
+        ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, nED, &edsamhist, out);
     }
 
     if (ret == 0)
     {
-        ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, eSwapCoords, &state.swapstate, out);
+        swaphistory_t swaphist = {};
+        ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, eSwapCoords, &swaphist, out);
     }
 
     if (ret == 0)
