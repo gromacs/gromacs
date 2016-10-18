@@ -258,7 +258,7 @@
                 {
                     real skipmask_rvdw;
 
-                    skipmask_rvdw = (rsq < rvdw2);
+                    skipmask_rvdw = (rsq < rvdw2) ? 1.0 : 0.0;
                     frLJ         *= skipmask_rvdw;
 #ifdef CALC_ENERGIES
                     VLJ    *= skipmask_rvdw;

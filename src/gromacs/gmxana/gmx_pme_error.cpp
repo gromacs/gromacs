@@ -51,6 +51,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -64,10 +65,6 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-/* We use the same defines as in broadcaststructs.cpp here */
-#define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
-#define nblock_bc(cr, nr, d) gmx_bcast((nr)*sizeof((d)[0]), (d), (cr))
-#define   snew_bc(cr, d, nr) { if (!MASTER(cr)) {snew((d), (nr)); }}
 /* #define TAKETIME */
 /* #define DEBUG  */
 

@@ -44,6 +44,7 @@
 
 #include "config.h"
 
+#include <cassert>
 #include <cctype>
 #include <cmath>
 #include <cstdio>
@@ -2295,6 +2296,7 @@ void read_pull_xf(const char *fn, t_UmbrellaHeader * header,
 
     if (!bGetMinMax)
     {
+        assert(window);
         bins = opt->bins;
         min  = opt->min;
         max  = opt->max;
