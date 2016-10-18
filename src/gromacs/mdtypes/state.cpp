@@ -48,6 +48,7 @@
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
@@ -79,7 +80,7 @@ ekinstate_t::ekinstate_t() : bUpToDate(FALSE),
     clear_mat(ekin_total);
 };
 
-static void init_swapstate(swapstate_t *swapstate)
+static void init_swapstate(swaphistory_t *swapstate)
 {
     /* Ion/water position swapping */
     swapstate->eSwapCoords            = 0;
@@ -263,9 +264,7 @@ t_state::t_state() : natoms(0),
                      cg_p(),
                      ekinstate(),
                      hist(),
-                     swapstate(nullptr),
                      dfhist(nullptr),
-                     edsamstate(nullptr),
                      ddp_count(0),
                      ddp_count_cg_gl(0),
                      cg_gl()
