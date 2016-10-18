@@ -501,7 +501,7 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
                           t_inputrec *ir, gmx_int64_t step,
                           em_state_t *state,
                           t_state *state_global,
-                          energyhistory_t *energyHistory)
+                          ObservablesHistory *observablesHistory)
 {
     int mdof_flags = 0;
 
@@ -522,7 +522,7 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
 
     mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
                                      top_global, step, (double)step,
-                                     &state->s, state_global, energyHistory,
+                                     &state->s, state_global, observablesHistory,
                                      &state->f);
 
     if (confout != NULL && MASTER(cr))
@@ -987,7 +987,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
              t_inputrec *inputrec,
              gmx_mtop_t *top_global, t_fcdata *fcd,
              t_state *state_global,
-             energyhistory_t *energyHistory,
+             ObservablesHistory *observablesHistory,
              t_mdatoms *mdatoms,
              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
              gmx_edsam_t gmx_unused ed,
@@ -1196,7 +1196,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
         write_em_traj(fplog, cr, outf, do_x, do_f, NULL,
                       top_global, inputrec, step,
-                      s_min, state_global, energyHistory);
+                      s_min, state_global, observablesHistory);
 
         /* Take a step downhill.
          * In theory, we should minimize the function along this direction.
@@ -1582,7 +1582,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     write_em_traj(fplog, cr, outf, do_x, do_f, ftp2fn(efSTO, nfile, fnm),
                   top_global, inputrec, step,
-                  s_min, state_global, energyHistory);
+                  s_min, state_global, observablesHistory);
 
 
     if (MASTER(cr))
@@ -1634,7 +1634,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                 t_inputrec *inputrec,
                 gmx_mtop_t *top_global, t_fcdata *fcd,
                 t_state *state_global,
-                energyhistory_t *energyHistory,
+                ObservablesHistory *observablesHistory,
                 t_mdatoms *mdatoms,
                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                 gmx_edsam_t gmx_unused ed,
@@ -1861,7 +1861,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
         }
 
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags,
-                                         top_global, step, (real)step, &ems.s, state_global, energyHistory, &ems.f);
+                                         top_global, step, (real)step, &ems.s, state_global, observablesHistory, &ems.f);
 
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 
@@ -2355,7 +2355,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     do_f = !do_per_step(step, inputrec->nstfout);
     write_em_traj(fplog, cr, outf, do_x, do_f, ftp2fn(efSTO, nfile, fnm),
                   top_global, inputrec, step,
-                  &ems, state_global, energyHistory);
+                  &ems, state_global, observablesHistory);
 
     if (MASTER(cr))
     {
@@ -2405,7 +2405,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                 t_inputrec *inputrec,
                 gmx_mtop_t *top_global, t_fcdata *fcd,
                 t_state *state_global,
-                energyhistory_t *energyHistory,
+                ObservablesHistory *observablesHistory,
                 t_mdatoms *mdatoms,
                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                 gmx_edsam_t gmx_unused  ed,
@@ -2570,7 +2570,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
             do_f = do_per_step(steps_accepted, inputrec->nstfout);
             write_em_traj(fplog, cr, outf, do_x, do_f, NULL,
                           top_global, inputrec, count,
-                          s_min, state_global, energyHistory);
+                          s_min, state_global, observablesHistory);
         }
         else
         {
@@ -2623,7 +2623,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     }
     write_em_traj(fplog, cr, outf, TRUE, inputrec->nstfout, ftp2fn(efSTO, nfile, fnm),
                   top_global, inputrec, count,
-                  s_min, state_global, energyHistory);
+                  s_min, state_global, observablesHistory);
 
     if (MASTER(cr))
     {
@@ -2674,7 +2674,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
              t_inputrec *inputrec,
              gmx_mtop_t *top_global, t_fcdata *fcd,
              t_state *state_global,
-             energyhistory_t gmx_unused *energyHistory,
+             ObservablesHistory gmx_unused *observablesHistory,
              t_mdatoms *mdatoms,
              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
              gmx_edsam_t  gmx_unused ed,

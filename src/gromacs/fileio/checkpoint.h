@@ -49,6 +49,7 @@ extern "C" {
 
 class energyhistory_t;
 struct gmx_file_position_t;
+struct ObservablesHistory;
 struct t_commrec;
 struct t_fileio;
 struct t_inputrec;
@@ -68,7 +69,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
                       gmx_int64_t step, double t,
-                      t_state *state, energyhistory_t *enerhist);
+                      t_state *state, ObservablesHistory *observablesHistory);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.
@@ -85,7 +86,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
                      const t_commrec *cr, ivec dd_nc, int *npme,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
-                     energyhistory_t *enerhist,
+                     ObservablesHistory *observablesHistory,
                      gmx_bool bAppend, gmx_bool bForceAppend,
                      gmx_bool reproducibilityRequested);
 
