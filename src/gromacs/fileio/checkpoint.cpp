@@ -66,6 +66,7 @@
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/baseversion.h"
@@ -1252,9 +1253,13 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
             enerhist->dht->start_lambda_set = FALSE;
         }
     }
-    else
+    else if (enerhist != nullptr)
     {
         energyHistoryNumEnergies = enerhist->ener_sum_sim.size();
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(fflags == 0, "Without energy history, all flags should be off");
     }
 
     const StatePart part = StatePart::energyHistory;
@@ -1540,7 +1545,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                       int eIntegrator, int simulation_part,
                       gmx_bool bExpanded, int elamstats,
                       gmx_int64_t step, double t,
-                      t_state *state, energyhistory_t *enerhist)
+                      t_state *state, ObservablesHistory *observablesHistory)
 {
     t_fileio            *fp;
     int                  file_version;
@@ -1557,7 +1562,6 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     gmx_file_position_t *outputfiles;
     int                  noutputfiles;
     char                *ftime;
-    int                  flags_eks, flags_enh, flags_dfh;
     t_fileio            *ret;
 
     if (DOMAINDECOMP(cr))
@@ -1597,6 +1601,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     fp = gmx_fio_open(fntemp, "w");
 
+    int flags_eks;
     if (state->ekinstate.bUpToDate)
     {
         flags_eks =
@@ -1609,8 +1614,9 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         flags_eks = 0;
     }
 
-    flags_enh = 0;
-    if (enerhist->nsum > 0 || enerhist->nsum_sim > 0)
+    energyhistory_t *enerhist  = observablesHistory->energyHistory.get();
+    int              flags_enh = 0;
+    if (enerhist != nullptr && (enerhist->nsum > 0 || enerhist->nsum_sim > 0))
     {
         flags_enh |= (1<<eenhENERGY_N) | (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSTEPS_SIM);
         if (enerhist->nsum > 0)
@@ -1631,6 +1637,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         }
     }
 
+    int flags_dfh;
     if (bExpanded)
     {
         flags_dfh = ((1<<edfhBEQUIL) | (1<<edfhNATLAMBDA) | (1<<edfhSUMWEIGHTS) |  (1<<edfhSUMDG)  |
@@ -1933,7 +1940,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                             ivec dd_nc, int *npme,
                             int eIntegrator, int *init_fep_state, gmx_int64_t *step, double *t,
                             t_state *state, gmx_bool *bReadEkin,
-                            energyhistory_t *enerhist,
+                            ObservablesHistory *observablesHistory,
                             int *simulation_part,
                             gmx_bool bAppendOutputFiles, gmx_bool bForceAppend,
                             gmx_bool reproducibilityRequested)
@@ -2128,8 +2135,12 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     *bReadEkin = ((flags_eks & (1<<eeksEKINH)) || (flags_eks & (1<<eeksEKINF)) || (flags_eks & (1<<eeksEKINO)) ||
                   ((flags_eks & (1<<eeksEKINSCALEF)) | (flags_eks & (1<<eeksEKINSCALEH)) | (flags_eks & (1<<eeksVSCALE))));
 
+    if (flags_enh && observablesHistory->energyHistory == nullptr)
+    {
+        observablesHistory->energyHistory = std::unique_ptr<energyhistory_t>(new energyhistory_t {});
+    }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
-                          flags_enh, enerhist, NULL);
+                          flags_enh, observablesHistory->energyHistory.get(), NULL);
     if (ret)
     {
         cp_error();
@@ -2144,8 +2155,8 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         {
             fprintf(fplog, "\nWARNING: %s\n\n", warn);
         }
-        enerhist->nsum     = *step;
-        enerhist->nsum_sim = *step;
+        observablesHistory->energyHistory->nsum     = *step;
+        observablesHistory->energyHistory->nsum_sim = *step;
     }
 
     ret = do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, NULL);
@@ -2336,7 +2347,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
                      const t_commrec *cr, ivec dd_nc, int *npme,
                      t_inputrec *ir, t_state *state,
                      gmx_bool *bReadEkin,
-                     energyhistory_t *enerhist,
+                     ObservablesHistory *observablesHistory,
                      gmx_bool bAppend, gmx_bool bForceAppend,
                      gmx_bool reproducibilityRequested)
 {
@@ -2349,7 +2360,7 @@ void load_checkpoint(const char *fn, FILE **fplog,
         read_checkpoint(fn, fplog,
                         cr, dd_nc, npme,
                         ir->eI, &(ir->fepvals->init_fep_state), &step, &t,
-                        state, bReadEkin, enerhist,
+                        state, bReadEkin, observablesHistory,
                         &ir->simulation_part, bAppend, bForceAppend,
                         reproducibilityRequested);
     }

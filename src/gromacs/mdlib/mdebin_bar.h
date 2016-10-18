@@ -170,12 +170,12 @@ void mde_delta_h_coll_reset(t_mde_delta_h_coll *dhc);
 
 
 /* set the energyhistory variables to save state */
-void mde_delta_h_coll_update_energyhistory(t_mde_delta_h_coll *dhc,
-                                           energyhistory_t    *enerhist);
+void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll *dhc,
+                                           energyhistory_t          *enerhist);
 
 /* restore the variables from an energyhistory */
-void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
-                                            energyhistory_t    *enerhist);
+void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll    *dhc,
+                                            const energyhistory_t *enerhist);
 
 
 #ifdef __cplusplus
