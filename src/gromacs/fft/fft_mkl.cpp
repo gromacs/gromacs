@@ -424,10 +424,12 @@ gmx_fft_init_2d_real(gmx_fft_t *             pfft,
 
     if (status == 0)
     {
-        if ((fft->work = (t_complex *)malloc(sizeof(t_complex)*(nx*(ny/2+1)))) == NULL)
+        void *memory = malloc(sizeof(t_complex)*(nx*(ny/2+1)));
+        if (nullptr == memory)
         {
             status = ENOMEM;
         }
+        fft->work = static_cast<t_complex *>(memory);
     }
 
     if (status != 0)

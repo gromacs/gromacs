@@ -1647,7 +1647,7 @@ L65:
         F77_FUNC(dgemv, DGEMV) ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[8]],
                                 &c__1, &c_b42, &workd[iwork[9]], &c__1);
     }
-    else if (*mode == 2)
+    else
     {
         F77_FUNC(dgemv, DGEMV) ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[10]
                                 ], &c__1, &c_b42, &workd[iwork[9]], &c__1);
@@ -4510,7 +4510,7 @@ L65:
         F77_FUNC(sgemv, SGEMV) ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[8]],
                                 &c__1, &c_b42, &workd[iwork[9]], &c__1);
     }
-    else if (*mode == 2)
+    else
     {
         F77_FUNC(sgemv, SGEMV) ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[10]
                                 ], &c__1, &c_b42, &workd[iwork[9]], &c__1);

@@ -262,10 +262,10 @@ static void check_rtp(int nrtp, t_restp rtp[], char *libfn)
 
 static int comprtp(const void *a, const void *b)
 {
-    t_restp *ra, *rb;
+    const t_restp *ra, *rb;
 
-    ra = (t_restp *)a;
-    rb = (t_restp *)b;
+    ra = static_cast<const t_restp *>(a);
+    rb = static_cast<const t_restp *>(b);
 
     return gmx_strcasecmp(ra->resname, rb->resname);
 }

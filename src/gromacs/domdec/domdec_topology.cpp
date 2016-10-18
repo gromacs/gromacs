@@ -49,6 +49,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <cassert>
+
 #include <algorithm>
 #include <string>
 
@@ -555,6 +557,8 @@ static int low_make_reverse_ilist(const t_ilist *il_mt, const t_atom *atom,
                     a = ia[1+link];
                     if (bAssign)
                     {
+                        assert(r_il);
+                        assert(r_index);
                         r_il[r_index[a]+count[a]] =
                             (ftype == F_CONSTRNC ? F_CONSTR : ftype);
                         r_il[r_index[a]+count[a]+1] = ia[0];
