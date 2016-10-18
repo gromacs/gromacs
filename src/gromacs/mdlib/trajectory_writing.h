@@ -45,6 +45,7 @@
 
 struct gmx_ekindata_t;
 struct gmx_mtop_t;
+struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 
@@ -67,7 +68,7 @@ do_md_trajectory_writing(FILE                     *fplog,
                          t_inputrec               *ir,
                          t_state                  *state,
                          t_state                  *state_global,
-                         energyhistory_t          *energyHistory,
+                         ObservablesHistory       *observablesHistory,
                          struct gmx_mtop_t        *top_global,
                          t_forcerec               *fr,
                          gmx_mdoutf_t              outf,

@@ -91,10 +91,13 @@
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/edsamhistory.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
@@ -1001,7 +1004,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
     }
 
-    energyhistory_t energyHistory = {};
+    ObservablesHistory observablesHistory = {};
 
     if (Flags & MD_STARTFROMCPT)
     {
@@ -1012,7 +1015,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         load_checkpoint(opt2fn_master("-cpi", nfile, fnm, cr), &fplog,
                         cr, ddxyz, &npme,
-                        inputrec, state, &bReadEkin, &energyHistory,
+                        inputrec, state, &bReadEkin, &observablesHistory,
                         (Flags & MD_APPENDFILES),
                         (Flags & MD_APPENDFILESSET),
                         (Flags & MD_REPRODUCIBLE));
@@ -1051,7 +1054,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (opt2bSet("-ei", nfile, fnm))
     {
         /* Open input and output files, allocate space for ED data structure */
-        ed = ed_open(mtop->natoms, &state->edsamstate, nfile, fnm, Flags, oenv, cr);
+        ed = ed_open(mtop->natoms, &observablesHistory, nfile, fnm, Flags, oenv, cr);
     }
 
     if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
@@ -1358,7 +1361,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                      bVerbose, Flags);
         }
 
-        constr = init_constraints(fplog, mtop, inputrec, ed, state, cr);
+        constr = init_constraints(fplog, mtop, inputrec, ed, observablesHistory.edsamHistory.get(), state, cr);
 
         if (DOMAINDECOMP(cr))
         {
@@ -1376,7 +1379,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                      nstglobalcomm,
                                      vsite, constr,
                                      nstepout, inputrec, mtop,
-                                     fcd, state, &energyHistory,
+                                     fcd, state, &observablesHistory,
                                      mdatoms, nrnb, wcycle, ed, fr,
                                      repl_ex_nst, repl_ex_nex, repl_ex_seed,
                                      membed,
