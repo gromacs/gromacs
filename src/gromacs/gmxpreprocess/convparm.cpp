@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
 
 #include <string.h>
 
+#include <cassert>
 #include <cmath>
 
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -560,6 +561,7 @@ static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
         /* Type==-1 is used as a signal that this interaction is all-zero and should not be added. */
         if (!bNB && type >= 0)
         {
+            assert(il);
             nral  = NRAL(ftype);
             delta = nr*(nral+1);
             srenew(il->iatoms, il->nr+delta);

@@ -121,6 +121,7 @@ F77_FUNC(sstebz,SSTEBZ)(const char *range,
     ulp = 2*GMX_FLOAT_EPS;
     rtoli = ulp * 2.;
     nb = DSTEBZ_BLOCKSIZE;
+    // cppcheck-suppress knownConditionTrueFalse
     if (nb <= 1) {
 	nb = 0;
     }

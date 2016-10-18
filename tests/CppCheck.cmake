@@ -105,7 +105,17 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=passedByValue:src/gromacs/simd/tests/*
         --suppress=redundantAssignment:src/gromacs/simd/simd_math.h #seems to be a bug in cppcheck
         --suppress=noExplicitConstructor # can't be selective about this, see http://sourceforge.net/p/cppcheck/discussion/general/thread/db1e4ba7/
+        --suppress=unusedStructMember:src/gromacs/onlinehelp/tests/helpmanager.cpp
+        --suppress=unusedStructMember:src/gromacs/commandline/cmdlinehelpmodule.cpp
+        --suppress=unusedStructMember:src/gromacs/selection/selhelp.cpp
+        --suppress=passedByValue # See comment below
         )
+        # Passing non-trivial objects by value is rarely a problem for
+        # GROMACS in performance-sensitive code, and shouldn't be
+        # enforced for types that are intended to be used like value
+        # types (e.g. SIMD wrapper types, ArrayRef) , nor for
+        # move-enabled types. cppcheck isn't sensitive to these
+        # subtleties yet.
 
     # This list will hold the list of all files with cppcheck errors
     # (one per input file)
