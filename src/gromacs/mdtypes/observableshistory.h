@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,9 +35,14 @@
 
 /*! \libinternal \file
  *
- *
  * \brief
- * This file contains datatypes for energy statistics history.
+ * This file contains the definition of a container for history data
+ * for simulation observables.
+ *
+ * The container is used for storing the simulation state data that needs
+ * to be written to / read from checkpoint file. This struct should only
+ * contain pure observable data. Microstate data should be in t_state.
+ * The state of the mdrun machinery is also stored elsewhere.
  *
  * \author Berk Hess
  *
@@ -45,43 +50,18 @@
  * \ingroup module_mdtypes
  */
 
-#ifndef GMX_MDLIB_ENERGYHISTORY_H
-#define GMX_MDLIB_ENERGYHISTORY_H
+#ifndef GMX_MDLIB_OBSERVABLESHISTORY_H
+#define GMX_MDLIB_OBSERVABLESHISTORY_H
 
 #include <memory>
-#include <vector>
 
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
+struct energyhistory_t;
 
-//! \brief Energy history for delta_h histograms in between energy file frames
-typedef struct delta_h_history_t
+//! \brief Observables history, for writing/reading to/from checkpoint file
+struct ObservablesHistory
 {
-    //! Vector (size number of intermediate data points) of vector of Hamiltonian differences for each foreign lambda
-    std::vector<std::vector<real> > dh;
-    //! The start time of these energy diff blocks
-    double                          start_time;
-    //! Lambda at start time
-    double                          start_lambda;
-    //! Whether the lambda value is set. Here for backward-compatibility.
-    gmx_bool                        start_lambda_set;
-} delta_h_history_t;
-
-
-//! \brief Energy statistics history, only used for output and reporting
-typedef struct energyhistory_t
-{
-    gmx_int64_t         nsteps;       //!< The number of steps in the history
-    gmx_int64_t         nsum;         //!< Nr. of steps in the ener_ave and ener_sum
-    std::vector<double> ener_ave;     //!< Energy terms difference^2 sum to get fluctuations
-    std::vector<double> ener_sum;     //!< Energy terms sum
-    gmx_int64_t         nsteps_sim;   //!< The number of steps in ener_sum_sim
-    gmx_int64_t         nsum_sim;     //!< The number of frames in ener_sum_sim
-    std::vector<double> ener_sum_sim; //!< Energy term history sum of the whole sim
-
-    //! The BAR energy differences history in between energy file frames
-    std::unique_ptr<delta_h_history_t> dht;
-}
-energyhistory_t;
+    //! History for energy observables, used for output only
+    std::unique_ptr<energyhistory_t> energyHistory;
+};
 
 #endif

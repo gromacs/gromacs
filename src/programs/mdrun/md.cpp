@@ -99,6 +99,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -219,7 +220,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
                   gmx_mtop_t *top_global,
                   t_fcdata *fcd,
                   t_state *state_global,
-                  energyhistory_t *energyHistory,
+                  ObservablesHistory *observablesHistory,
                   t_mdatoms *mdatoms,
                   t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                   gmx_edsam_t ed, t_forcerec *fr,
@@ -465,18 +466,23 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             /* Update mdebin with energy history if appending to output files */
             if (Flags & MD_APPENDFILES)
             {
-                restore_energyhistory_from_state(mdebin, energyHistory);
+                restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
             }
-            else
+            else if (observablesHistory->energyHistory.get() != nullptr)
             {
-                /* We might have read an energy history from checkpoint,
-                 * free the allocated memory and reset the counts.
+                /* We might have read an energy history from checkpoint.
+                 * As we are not appending, we want to restart the statistics.
+                 * Free the allocated memory and reset the counts.
                  */
-                energyHistory = {};
+                observablesHistory->energyHistory = {};
             }
         }
+        if (observablesHistory->energyHistory.get() == nullptr)
+        {
+            observablesHistory->energyHistory = std::unique_ptr<energyhistory_t>(new energyhistory_t {});
+        }
         /* Set the initial energy history in state by updating once */
-        update_energyhistory(energyHistory, mdebin);
+        update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
     }
 
     /* Initialize constraints */
@@ -1258,7 +1264,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
          * the update.
          */
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
-                                 ir, state, state_global, energyHistory,
+                                 ir, state, state_global, observablesHistory,
                                  top_global, fr,
                                  outf, mdebin, ekind, &f,
                                  &nchkpt,
