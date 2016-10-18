@@ -365,26 +365,26 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
                     case GMX_NBKERNEL_VDW_BUCKINGHAM:
                         /* Modiefied Buckingham: JCTC  Volume: 9  Page: 452  Year: 2012 */
-		        c                = vdwparam[tj+1];   /*sigma*/
+                        c                = vdwparam[tj+1];   /*sigma*/
                         cexp1            = vdwparam[tj+2];   /*epsilon*/
                         cexp2            = vdwparam[tj];     /*gamma*/
-			rinvsix          = rinvsq*rinvsq*rinvsq;
-			r                = rsq*rinv;
-			r5               = rsq*rsq*r;
-			r6               = r5*r;
-			c2               = c*c;
-			c6               = c2*c2*c2;
-			c5               = c2*c2*c;
-			vdw_wang1        = std::exp(cexp2*(1-(r/c)));
-			vdw_wang2        = c6 + rinvsix;
-			vdw_wang3        = cexp2 + 3;
+                        rinvsix          = rinvsq*rinvsq*rinvsq;
+                        r                = rsq*rinv;
+                        r5               = rsq*rsq*r;
+                        r6               = r5*r;
+                        c2               = c*c;
+                        c6               = c2*c2*c2;
+                        c5               = c2*c2*c;
+                        vdw_wang1        = std::exp(cexp2*(1-(r/c)));
+                        vdw_wang2        = c6 + rinvsix;
+                        vdw_wang3        = cexp2 + 3;
                         
                         vvdw_disp        = -2*cexp1*(1.0/(1-(3.0/vdw_wang3))*(c6/vdw_wang2));
                         vvdw_rep         = -vvdw_disp*((3.0/vdw_wang3)*vdw_wang1);
-			fvdw_disp        = -2*cexp1*((6*vdw_wang3*r5*c6)/(cexp2*(vdw_wang2*vdw_wang2)));
-			fvdw_rep         = (6*vdw_wang1*cexp1*c5*(cexp2*r6 + 6*r5*c + cexp2*c6))/(cexp2*(vdw_wang2*vdw_wang2));
+                        fvdw_disp        = -2*cexp1*((6*vdw_wang3*r5*c6)/(cexp2*(vdw_wang2*vdw_wang2)));
+                        fvdw_rep         = (6*vdw_wang1*cexp1*c5*(cexp2*r6 + 6*r5*c + cexp2*c6))/(cexp2*(vdw_wang2*vdw_wang2));
                         fvdw             = fvdw_rep - fvdw_disp;
-
+                        
                         if (fr->vdw_modifier == eintmodPOTSHIFT)
                         {
                             vvdw             = (vvdw_rep-cexp1*std::exp(-cexp2*rvdw))-(vvdw_disp + c6*sh_dispersion)/6.0;
@@ -394,7 +394,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                             vvdw             = vvdw_rep-vvdw_disp/6.0;
                         }
                         break;
-
+                        
                     case GMX_NBKERNEL_VDW_CUBICSPLINETABLE:
                         /* Tabulated VdW */
                         c6               = vdwparam[tj];
