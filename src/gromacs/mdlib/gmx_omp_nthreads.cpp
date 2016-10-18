@@ -128,6 +128,7 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
     {
         sscanf(env, "%d", &nth);
 
+        // cppcheck-suppress knownConditionTrueFalse
         if (!bOMP)
         {
             gmx_warning("%s=%d is set, but %s is compiled without OpenMP!",
