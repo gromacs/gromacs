@@ -57,9 +57,11 @@
 
 struct gmx_mtop_t;
 struct gmx_output_env_t;
-struct swapstate_t;
+struct swaphistory_t;
 struct t_inputrec;
 struct t_swapcoords;
+struct ObservablesHistory;
+
 
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
  *
@@ -74,7 +76,7 @@ struct t_swapcoords;
  * \param[in] mtop          Molecular topology.
  * \param[in] x             The initial positions of all particles.
  * \param[in] box           The simulation box.
- * \param[in] swapstatePtr  Swap-related data that is read from or written to checkpoint.
+ * \param[in] oh            Contains struct with swap data that is read from or written to checkpoint.
  * \param[in] cr            Pointer to MPI communication data.
  * \param[in] oenv          Needed to open the swap output XVGR file.
  * \param[in] Flags         Flags passed over from main, used to determine
@@ -88,7 +90,7 @@ void init_swapcoords(
         gmx_mtop_t             *mtop,
         rvec                    x[],
         matrix                  box,
-        swapstate_t           **swapstatePtr,
+        ObservablesHistory     *oh,
         t_commrec              *cr,
         const gmx_output_env_t *oenv,
         unsigned long           Flags);

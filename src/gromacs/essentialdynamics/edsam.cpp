@@ -59,8 +59,10 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/edsamhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
@@ -226,8 +228,8 @@ static void fit_to_reference(rvec *xcoll, rvec transvec, matrix rotmat, t_edpar 
 static void translate_and_rotate(rvec *x, int nat, rvec transvec, matrix rotmat);
 static real rmsd_from_structure(rvec *x, struct gmx_edx *s);
 static int read_edi_file(const char *fn, t_edpar *edi, int nr_mdatoms);
-static void crosscheck_edi_file_vs_checkpoint(gmx_edsam_t ed, edsamstate_t *EDstate);
-static void init_edsamstate(gmx_edsam_t ed, edsamstate_t *EDstate);
+static void crosscheck_edi_file_vs_checkpoint(gmx_edsam_t ed, edsamhistory_t *EDstate);
+static void init_edsamstate(gmx_edsam_t ed, edsamhistory_t *EDstate);
 static void write_edo_legend(gmx_edsam_t ed, int nED, const gmx_output_env_t *oenv);
 /* End function declarations */
 
@@ -1180,7 +1182,7 @@ static void get_flood_energies(t_edpar *edi, real Vfl[], int nnames)
 #endif
 
 
-gmx_edsam_t ed_open(int natoms, edsamstate_t **EDstatePtr, int nfile, const t_filenm fnm[], unsigned long Flags, const gmx_output_env_t *oenv, t_commrec *cr)
+gmx_edsam_t ed_open(int natoms, ObservablesHistory *oh, int nfile, const t_filenm fnm[], unsigned long Flags, const gmx_output_env_t *oenv, t_commrec *cr)
 {
     gmx_edsam_t ed;
     int         nED;
@@ -1189,12 +1191,6 @@ gmx_edsam_t ed_open(int natoms, edsamstate_t **EDstatePtr, int nfile, const t_fi
     /* Allocate space for the ED data structure */
     snew(ed, 1);
 
-    if (*EDstatePtr == NULL)
-    {
-        snew(*EDstatePtr, 1);
-    }
-    edsamstate_t *EDstate = *EDstatePtr;
-
     /* We want to perform ED (this switch might later be upgraded to eEDflood) */
     ed->eEDtype = eEDedsam;
 
@@ -1202,6 +1198,13 @@ gmx_edsam_t ed_open(int natoms, edsamstate_t **EDstatePtr, int nfile, const t_fi
     {
         fprintf(stderr, "ED sampling will be performed!\n");
         snew(ed->edpar, 1);
+
+        // If we start from a checkpoint file, we already have an edsamHistory struct
+        if (oh->edsamHistory.get() == nullptr)
+        {
+            oh->edsamHistory = std::unique_ptr<edsamhistory_t>(new edsamhistory_t {});
+        }
+        edsamhistory_t *EDstate = oh->edsamHistory.get();
 
         /* Read the edi input file: */
         nED = read_edi_file(ftp2fn(efEDI, nfile, fnm), ed->edpar, natoms);
@@ -2317,7 +2320,7 @@ static void copyEvecReference(t_eigvec* floodvecs)
 
 /* Call on MASTER only. Check whether the essential dynamics / flooding
  * groups of the checkpoint file are consistent with the provided .edi file. */
-static void crosscheck_edi_file_vs_checkpoint(gmx_edsam_t ed, edsamstate_t *EDstate)
+static void crosscheck_edi_file_vs_checkpoint(gmx_edsam_t ed, edsamhistory_t *EDstate)
 {
     t_edpar *edi = NULL;    /* points to a single edi data set */
     int      edinum;
@@ -2369,7 +2372,7 @@ static void crosscheck_edi_file_vs_checkpoint(gmx_edsam_t ed, edsamstate_t *EDst
  * c) in any case, for subsequent checkpoint writing, we set the pointers in
  * edsamstate to the x_old arrays, which contain the correct PBC representation of
  * all ED structures at the last time step. */
-static void init_edsamstate(gmx_edsam_t ed, edsamstate_t *EDstate)
+static void init_edsamstate(gmx_edsam_t ed, edsamhistory_t *EDstate)
 {
     int      i, nr_edi;
     t_edpar *edi;
@@ -2651,15 +2654,17 @@ void init_edsam(const gmx_mtop_t *mtop,
                 gmx_edsam_t       ed,
                 rvec              x[],
                 matrix            box,
-                edsamstate_t     *EDstate)
+                edsamhistory_t   *EDstate)  // Used on MASTER only
 {
     t_edpar *edi = NULL;                    /* points to a single edi data set */
-    int      i, nr_edi, avindex;
+    int      i, avindex;
+    int      nED    = 0;                    // Number of ED data sets
     rvec    *x_pbc  = NULL;                 /* positions of the whole MD system with pbc removed  */
     rvec    *xfit   = NULL, *xstart = NULL; /* dummy arrays to determine initial RMSDs  */
     rvec     fit_transvec;                  /* translation ... */
     matrix   fit_rotmat;                    /* ... and rotation from fit to reference structure */
     rvec    *ref_x_old = NULL;              /* helper pointer */
+
 
     if (MASTER(cr))
     {
@@ -2709,8 +2714,9 @@ void init_edsam(const gmx_mtop_t *mtop,
         GMX_ASSERT(NULL != edi,
                    "The pointer to the essential dynamics parameters is undefined");
 
+        nED = EDstate->nED;
         /* Loop over all ED/flooding data sets (usually only one, though) */
-        for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
+        for (int nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
         {
             /* For multiple ED groups we use the output frequency that was specified
              * in the first set */
@@ -2904,9 +2910,9 @@ void init_edsam(const gmx_mtop_t *mtop,
     if (PAR(cr))
     {
         /* First let everybody know how many ED data sets to expect */
-        gmx_bcast(sizeof(EDstate->nED), &EDstate->nED, cr);
+        gmx_bcast(sizeof(nED), &nED, cr);
         /* Broadcast the essential dynamics / flooding data to all nodes */
-        broadcast_ed_data(cr, ed, EDstate->nED);
+        broadcast_ed_data(cr, ed, nED);
     }
     else
     {
@@ -2915,7 +2921,7 @@ void init_edsam(const gmx_mtop_t *mtop,
 
         /* Loop over all ED data sets (usually only one, though) */
         edi = ed->edpar;
-        for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
+        for (int nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
         {
             edi->sref.anrs_loc = edi->sref.anrs;
             edi->sav.anrs_loc  = edi->sav.anrs;
@@ -2954,7 +2960,7 @@ void init_edsam(const gmx_mtop_t *mtop,
     /* Allocate space for ED buffer variables */
     /* Again, loop over ED data sets */
     edi = ed->edpar;
-    for (nr_edi = 1; nr_edi <= EDstate->nED; nr_edi++)
+    for (int nr_edi = 1; nr_edi <= nED; nr_edi++)
     {
         /* Allocate space for ED buffer variables */
         snew_bc(cr, edi->buf, 1); /* MASTER has already allocated edi->buf in init_edi() */
