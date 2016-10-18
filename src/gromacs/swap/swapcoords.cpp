@@ -60,6 +60,8 @@
 #include "gromacs/mdlib/sim_util.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -842,7 +844,7 @@ static void get_initial_ioncounts(
  * over the values from .cpt file to the swap data structure.
  */
 static void get_initial_ioncounts_from_cpt(
-        t_inputrec *ir, swapstate_t *swapstate,
+        t_inputrec *ir, swaphistory_t *swapstate,
         t_commrec *cr, gmx_bool bVerbose)
 {
     t_swapcoords    *sc;
@@ -1088,29 +1090,23 @@ static void print_ionlist_legend(t_inputrec             *ir,
  * they go.
  */
 static void detect_flux_per_channel_init(
-        t_commrec   *cr,
-        t_swap      *s,
-        swapstate_t *swapstate,
-        gmx_bool     bStartFromCpt)
+        t_swap        *s,
+        swaphistory_t *swapstate,
+        gmx_bool       bStartFromCpt)
 {
     t_swapgrp       *g;
     swapstateIons_t *gs;
 
+    /* All these flux detection routines run on the master only */
+    if (swapstate == nullptr)
+    {
+        return;
+    }
 
     for (int ig = eSwapFixedGrpNR; ig < s->ngrp; ig++)
     {
         g  = &s->group[ig];
         gs = &swapstate->ionType[ig - eSwapFixedGrpNR];
-
-        /* All these flux detection routines run on the master only */
-        if (!MASTER(cr))
-        {
-            g->comp_now      = NULL;
-            g->comp_from     = NULL;
-            g->channel_label = NULL;
-
-            return;
-        }
 
         /******************************************************/
         /* Channel and domain history for the individual ions */
@@ -1226,12 +1222,12 @@ static void outputStartStructureIfWanted(gmx_mtop_t *mtop, rvec *x, int ePBC, ma
  * multimeric channels at the last time step.
  */
 static void init_swapstate(
-        swapstate_t      *swapstate,
+        swaphistory_t    *swapstate,
         t_swapcoords     *sc,
         gmx_mtop_t       *mtop,
         rvec              x[],      /* the initial positions */
         matrix            box,
-        int               ePBC)
+        t_inputrec       *ir)
 {
     rvec      *x_pbc  = NULL; /* positions of the whole MD system with molecules made whole */
     t_swapgrp *g;
@@ -1258,6 +1254,8 @@ static void init_swapstate(
     }
     else
     {
+        swapstate->eSwapCoords = ir->eSwapCoords;
+
         /* Set the number of ion types and allocate memory for checkpointing */
         swapstate->nIonTypes = s->ngrp - eSwapFixedGrpNR;
         snew(swapstate->ionType, swapstate->nIonTypes);
@@ -1277,10 +1275,10 @@ static void init_swapstate(
         copy_rvecn(x, x_pbc, 0, mtop->natoms);
 
         /* This can only make individual molecules whole, not multimers */
-        do_pbc_mtop(NULL, ePBC, box, mtop, x_pbc);
+        do_pbc_mtop(NULL, ir->ePBC, box, mtop, x_pbc);
 
         /* Output the starting structure? */
-        outputStartStructureIfWanted(mtop, x_pbc, ePBC, box);
+        outputStartStructureIfWanted(mtop, x_pbc, ir->ePBC, box);
 
         /* If this is the first run (i.e. no checkpoint present) we assume
          * that the starting positions give us the correct PBC representation */
@@ -1457,7 +1455,7 @@ void init_swapcoords(
         gmx_mtop_t             *mtop,
         rvec                    x[],
         matrix                  box,
-        swapstate_t           **swapstatePtr,
+        ObservablesHistory     *oh,
         t_commrec              *cr,
         const gmx_output_env_t *oenv,
         unsigned long           Flags)
@@ -1468,6 +1466,7 @@ void init_swapcoords(
     swapstateIons_t       *gs;
     gmx_bool               bAppend, bStartFromCpt, bRerun;
     matrix                 boxCopy;
+    swaphistory_t         *swapstate = nullptr;
 
 
     if ( (PAR(cr)) && !DOMAINDECOMP(cr) )
@@ -1556,15 +1555,15 @@ void init_swapcoords(
         }
     }
 
-    if (*swapstatePtr == NULL)
-    {
-        snew(*swapstatePtr, 1);
-    }
-    swapstate_t *swapstate = *swapstatePtr;
-
     if (MASTER(cr))
     {
-        init_swapstate(swapstate, sc, mtop, x, box, ir->ePBC);
+        if (oh->swapHistory == nullptr)
+        {
+            oh->swapHistory = std::unique_ptr<swaphistory_t>(new swaphistory_t {});
+        }
+        swapstate = oh->swapHistory.get();
+
+        init_swapstate(swapstate, sc, mtop, x, box, ir);
     }
 
     /* After init_swapstate we have a set of (old) whole positions for our
@@ -1818,7 +1817,7 @@ void init_swapcoords(
     }
 
     /* Initialize arrays that keep track of through which channel the ions go */
-    detect_flux_per_channel_init(cr, s, swapstate, bStartFromCpt);
+    detect_flux_per_channel_init(s, swapstate, bStartFromCpt);
 
     /* We need to print the legend if we open this file for the first time. */
     if (MASTER(cr) && !bAppend)

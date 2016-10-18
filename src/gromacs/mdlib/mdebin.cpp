@@ -1493,7 +1493,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
 }
 
-void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)
+void update_energyhistory(energyhistory_t * enerhist, const t_mdebin * mdebin)
 {
     const t_ebin *ebin = mdebin->ebin;
 
@@ -1531,8 +1531,8 @@ void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)
     }
 }
 
-void restore_energyhistory_from_state(t_mdebin        * mdebin,
-                                      energyhistory_t * enerhist)
+void restore_energyhistory_from_state(t_mdebin              * mdebin,
+                                      const energyhistory_t * enerhist)
 {
     unsigned int nener = static_cast<unsigned int>(mdebin->ebin->nener);
 
