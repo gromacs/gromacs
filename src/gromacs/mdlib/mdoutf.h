@@ -45,6 +45,7 @@
 class energyhistory_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
+struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
@@ -98,7 +99,7 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mtop_t *top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      energyhistory_t *energyHistory,
+                                      ObservablesHistory *observablesHistory,
                                       PaddedRVecVector *f_local);
 
 #define MDOF_X            (1<<0)

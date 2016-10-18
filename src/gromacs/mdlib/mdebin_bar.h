@@ -172,6 +172,6 @@ void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll *dhc,
 
 /* restore the variables from an energyhistory */
 void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll      *dhc,
-                                            const delta_h_history_t *enerhist);
+                                            const delta_h_history_t *deltaH);
 
 #endif  /* _mdebin_bar_h */
