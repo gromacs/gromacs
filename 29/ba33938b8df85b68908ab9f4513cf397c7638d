@@ -1,0 +1,7 @@
+Code-Review+2: Szilárd Páll <pall.szilard@gmail.com>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Wed, 19 Oct 2016 14:24:43 +0200
+Reviewed-on: https://gerrit.gromacs.org/6281
+Project: gromacs
+Branch: refs/heads/release-2016
