@@ -1613,6 +1613,29 @@ applicable pulling coordinate.
    system, *e.g.* a water slab (see Engin et al. J. Chem. Phys. B
    2010).
 
+.. mdp:: pull-group1-sliced
+
+   .. mdp-value:: no
+
+      No slicing of the pull group. All the following pull options will be
+      ignored (and if present in the :ref:`mdp` file, they will unfortunately
+      generate warnings).
+
+   .. mdp-value:: yes
+
+      Pull group will be sliced in x coordinate. Force will be applied only
+      on the atoms in the slice.
+
+.. mdp:: pull-group1-slice-x-min
+
+   (0.0) \[nm\]
+   the x coordinate for the beginning of the slice.
+
+.. mdp:: pull-group1-slice-x-max
+
+   (0.0) \[nm\]
+   the x coordinate for the end of the slice.
+
 .. mdp:: pull-coord1-type
 
    .. mdp-value:: umbrella
@@ -1701,7 +1724,7 @@ applicable pulling coordinate.
       box size since the distance of an atom in the reference group
       from the COM of the pull group has both a radial and an axial
       component. This geometry is not supported with constraint
-      pulling.
+      pulling or when using slicing of pull groups.
 
    .. mdp-value:: angle
 

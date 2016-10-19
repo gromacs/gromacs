@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -464,6 +464,12 @@ static void pr_pull_group(FILE *fp, int indent, int g, const t_pull_group *pgrp)
     pr_ivec_block(fp, indent, "atom", pgrp->ind, pgrp->nat, TRUE);
     pr_rvec(fp, indent, "weight", pgrp->weight, pgrp->nweight, TRUE);
     PI("pbcatom", pgrp->pbcatom);
+    if (pgrp->bSliced)
+    {
+        PS("sliced", EBOOL(pgrp->bSliced));
+        PD("slice-x-min", pgrp->slice_x_min);
+        PD("slice-x-max", pgrp->slice_x_max);
+    }
 }
 
 static void pr_pull_coord(FILE *fp, int indent, int c, const t_pull_coord *pcrd)

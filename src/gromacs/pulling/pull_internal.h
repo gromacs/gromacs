@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,21 +77,26 @@ typedef struct
 {
     t_pull_group  params;
 
-    gmx_bool      bCalcCOM;   /* Calculate COM? Not if only used as cylinder group */
-    int           epgrppbc;   /* The type of pbc for this pull group, see enum above */
+    gmx_bool      bCalcCOM;          /* Calculate COM? Not if only used as cylinder group */
+    int           epgrppbc;          /* The type of pbc for this pull group, see enum above */
 
-    int           nat_loc;    /* Number of local pull atoms */
-    int           nalloc_loc; /* Allocation size for ind_loc and weight_loc */
-    int          *ind_loc;    /* Local pull indices */
-    real         *weight_loc; /* Weights for the local indices */
+    int           nat_loc;           /* Number of local pull atoms */
+    int           nalloc_loc;        /* Allocation size for ind_loc and weight_loc */
+    int          *ind_loc;           /* Local pull indices */
+    real         *weight_loc;        /* Weights for the local indices */
 
-    real          mwscale;    /* mass*weight scaling factor 1/sum w m */
-    real          wscale;     /* scaling factor for the weights: sum w m/sum w w m */
-    real          invtm;      /* inverse total mass of the group: 1/wscale sum w m */
-    dvec         *mdw;        /* mass*gradient(weight) for atoms */
-    double       *dv;         /* distance to the other group along vec */
-    dvec          x;          /* center of mass before update */
-    dvec          xp;         /* center of mass after update before constraining */
+    int           nat_loc_sliced;    /* Number of local pull atoms in the slice */
+    int           nalloc_loc_sliced; /* Allocation size for ind_loc and weight_loc in the slice */
+    int          *ind_loc_sliced;    /* Local pull indices in the slice */
+    real         *weight_loc_sliced; /* Weights for the local indices in the slice */
+
+    real          mwscale;           /* mass*weight scaling factor 1/sum w m */
+    real          wscale;            /* scaling factor for the weights: sum w m/sum w w m */
+    real          invtm;             /* inverse total mass of the group: 1/wscale sum w m */
+    dvec         *mdw;               /* mass*gradient(weight) for atoms */
+    double       *dv;                /* distance to the other group along vec */
+    dvec          x;                 /* center of mass before update */
+    dvec          xp;                /* center of mass after update before constraining */
 }
 pull_group_work_t;
 

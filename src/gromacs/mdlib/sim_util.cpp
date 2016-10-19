@@ -281,7 +281,7 @@ static void pull_potential_wrapper(t_commrec *cr,
     dvdl                     = 0;
     enerd->term[F_COM_PULL] +=
         pull_potential(ir->pull_work, mdatoms, &pbc,
-                       cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
+                       cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl, wcycle);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
     wallcycle_stop(wcycle, ewcPULLPOT);
 }

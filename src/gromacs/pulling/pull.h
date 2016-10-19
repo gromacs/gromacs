@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/pulling/pull_internal.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -175,12 +176,14 @@ void clear_pull_forces(struct pull_t *pull);
  * \param[in]     f      Forces.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
  * \param[out] dvdlambda Pull contribution to dV/d(lambda).
+ * \param[in, out] wcycle Wallcycle.
  *
  * \returns The pull potential energy.
  */
 real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
                     t_commrec *cr, double t, real lambda,
-                    rvec *x, rvec *f, tensor vir, real *dvdlambda);
+                    rvec *x, rvec *f, tensor vir, real *dvdlambda,
+                    gmx_wallcycle_t wcycle);
 
 
 /*! \brief Constrain the coordinates xp in the directions in x
@@ -276,6 +279,30 @@ void pull_calc_coms(t_commrec        *cr,
                     rvec              x[],
                     rvec             *xp);
 
+/*! \brief Update list of atom indices located in the defined slice.
+ *
+ * \param[in] cr       Struct for communication info.
+ * \param[in] pull     The pull data structure.
+ * \param[in] x        The local positions.
+ *
+ */
+void update_sliced_pull_groups(t_commrec *cr, struct pull_t *pull, rvec x[]);
+
+/*! \brief Get either regular or sliced pull group variables.
+ *
+ * Sliced group variables are returned by reference if group is sliced,
+ * and regular group variables are returned otherwise.
+ *
+ * \param[in] pgrp         The pull group.
+ * \param[out] nat_loc     The number of atoms.
+ * \param[out] nalloc_loc  The number of allocated indices.
+ * \param[out] ind_loc     The array of indices.
+ * \param[out] weight_loc  The weights.
+ *
+ */
+void pull_get_indices_weights(const pull_group_work_t *pgrp,
+                              int &nat_loc, int &nalloc_loc,
+                              int * &ind_loc, real * &weight_loc);
 
 /*! \brief Returns if we have pull coordinates with potential pulling.
  *
