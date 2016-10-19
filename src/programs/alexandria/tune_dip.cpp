@@ -221,7 +221,7 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
     std::vector<AtomTypeLsq>  lsqt;
     const char               *eprnm[eprNR] = { "EEM", "ESP" };
     gmx_mtop_atomloop_all_t   aloop;
-    t_atom                   *atom;
+    const t_atom             *atom;
     int                       at_global, resnr;
 
 

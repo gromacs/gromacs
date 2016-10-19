@@ -239,7 +239,7 @@ static int check_data_sufficiency(FILE                           *fp,
 {
     int                      j, nremove, nsupported;
     gmx_mtop_atomloop_all_t  aloop;
-    t_atom                  *atom;
+    const t_atom            *atom;
     int                      k, at_global;
 
     /* Parse opt_elem list to test which elements to optimize */
@@ -758,25 +758,25 @@ void MolDip::Read(FILE            *fp,
     }
 }
 
-static void split_shell_charges(gmx_mtop_t *mtop, t_idef *idef)
+static void split_shell_charges(gmx_mtop_t *mtop, 
+                                t_idef     *idef, 
+                                t_topology *topology)
 {
     int                     k, ai, aj;
     real                    q, Z;
     gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom, *atom_i, *atom_j;
+    const t_atom           *atom;
+    t_atom                 *atom_i, *atom_j;
     int                     at_global;
-    gmx_mtop_atomlookup_t   alook;
-
-    alook = gmx_mtop_atomlookup_init(mtop);
 
     for (k = 0; (k < idef->il[F_POLARIZATION].nr); )
     {
         k++; // Skip over the type.
         ai = idef->il[F_POLARIZATION].iatoms[k++];
         aj = idef->il[F_POLARIZATION].iatoms[k++];
-
-        gmx_mtop_atomnr_to_atom(alook, ai, &atom_i);
-        gmx_mtop_atomnr_to_atom(alook, aj, &atom_j);
+        
+        atom_i = &topology->atoms.atom[ai];
+        atom_j = &topology->atoms.atom[aj];
 
         if ((atom_i->ptype == eptAtom) &&
             (atom_j->ptype == eptShell))
@@ -786,8 +786,8 @@ static void split_shell_charges(gmx_mtop_t *mtop, t_idef *idef)
             atom_i->q = Z;
             atom_j->q = q-Z;
         }
-        else if ((atom_i->ptype == eptAtom) &&
-                 (atom_j->ptype == eptShell))
+        else if ((atom_j->ptype == eptAtom) &&
+                 (atom_i->ptype == eptShell))
         {
             q         = atom_j->q;
             Z         = atom_j->atomnumber;
@@ -810,7 +810,6 @@ static void split_shell_charges(gmx_mtop_t *mtop, t_idef *idef)
     {
         gmx_fatal(FARGS, "Total charge in molecule is not zero, but %f", q-Z);
     }
-    gmx_mtop_atomlookup_destroy(alook);
 }
 
 void MolDip::CalcDeviation()
@@ -825,9 +824,9 @@ void MolDip::CalcDeviation()
     t_nrnb                  my_nrnb;
     gmx_wallcycle_t         wcycle;
     int                     eQ;
-    gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
-    int                     at_global;
+    //gmx_mtop_atomloop_all_t aloop;
+    //const t_atom            *atom;
+    //int                     at_global;
 
     if (PAR(_cr))
     {
@@ -852,7 +851,7 @@ void MolDip::CalcDeviation()
         etot[j]  = 0;
         _ener[j] = 0;
     }
-    for (std::vector<MyMol>::iterator mymol = _mymol.begin(); (mymol < _mymol.end()); mymol++)
+    for (auto mymol = _mymol.begin(); (mymol < _mymol.end()); mymol++)
     {
         if ((mymol->eSupp == eSupportLocal) ||
             (_bFinal && (mymol->eSupp == eSupportRemote)))
@@ -880,20 +879,20 @@ void MolDip::CalcDeviation()
             }
             else
             {
-                aloop = gmx_mtop_atomloop_all_init(mymol->mtop_);
-                j     = 0;
-                while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
-                {
-                    atom->q = mymol->topology_->atoms.atom[j].q;
-                    j++;
-                }
-                GMX_RELEASE_ASSERT(j == mymol->topology_->atoms.nr, "Inconsistency 3 in moldip.cpp");
+                //aloop = gmx_mtop_atomloop_all_init(mymol->mtop_);
+                //j     = 0;
+                //while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
+                //{
+                    //atom->q = mymol->topology_->atoms.atom[j].q;
+                    //j++;
+                //}
+                GMX_RELEASE_ASSERT(mymol->mtop_->natoms == mymol->topology_->atoms.nr, "Inconsistency 3 in moldip.cpp");
             }
 
             /* Now optimize the shell positions */
             if (mymol->shellfc_)
             {
-                split_shell_charges(mymol->mtop_, &mymol->ltop_->idef);
+                split_shell_charges(mymol->mtop_, &mymol->ltop_->idef, mymol->topology_);
                 fprintf(stderr, "Check whether we need atoms2md here %s %d\n", __FILE__, __LINE__);
                 atoms2md(mymol->mtop_, mymol->inputrec_, 0, nullptr, 0,
                          mymol->mdatoms_);
@@ -901,13 +900,16 @@ void MolDip::CalcDeviation()
                 relax_shell_flexcon(debug, _cr, FALSE, 0,
                                     mymol->inputrec_, true,
                                     GMX_FORCE_ALLFORCES,
-                                    mymol->ltop_, nullptr, nullptr, nullptr,
+                                    mymol->ltop_, nullptr, 
+                                    nullptr, nullptr,
                                     mymol->state_,
-                                    mymol->f_, force_vir, mymol->mdatoms_,
+                                    (PaddedRVecVector *)mymol->f_, 
+                                    force_vir, mymol->mdatoms_,
                                     &my_nrnb, wcycle, nullptr,
                                     &(mymol->mtop_->groups),
-                                    mymol->shellfc_, mymol->fr_, false, t, mu_tot,
-                                    nullptr, nullptr);
+                                    mymol->shellfc_, mymol->fr_, 
+                                    false, t, mu_tot,
+                                    nullptr);
             }
             /* Compute the molecular dipole */
             mymol->CalcMultipoles();

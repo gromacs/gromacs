@@ -350,9 +350,9 @@ static real calc_r13(const Poldata     &pd,
     std::string              params;
     size_t                   ntrain;
     double                   sigma;
-    real                     rij = 0, rjk = 0;
-    real                     r12 = 0, r23 = 0;
-    real                     r13 = 0;
+    double                   rij = 0, rjk = 0;
+    double                   r12 = 0, r23 = 0;
+    double                   r13 = 0;
 
     std::vector<std::string> aij = {aai, aaj};
     std::vector<std::string> ajk = {aaj, aak};
@@ -379,9 +379,9 @@ static real calc_relposition(const Poldata     &pd,
     std::string              params;
     size_t                   ntrain;
     double                   sigma;
-    real                     rij               = 0, rjk = 0;
-    real                     b0                = 0, b1 = 0;
-    real                     relative_position = 0;
+    double                   rij               = 0, rjk = 0;
+    double                   b0                = 0, b1 = 0;
+    double                   relative_position = 0;
 
     std::vector<std::string> aij = {aai, aaj};
     std::vector<std::string> ajk = {aaj, aak};
@@ -1217,7 +1217,7 @@ void MyMol::CalcMultipoles()
     rvec                    mu, mm;
     real                    r2, dfac, q;
     gmx_mtop_atomloop_all_t aloop;
-    t_atom                 *atom;
+    const t_atom           *atom;
     int                     at_global;
 
     clear_rvec(mu);
@@ -1276,11 +1276,11 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
                             inputrec_, TRUE, ~0,
                             ltop_, nullptr, enerd_,
                             nullptr, state_,
-                            f_, force_vir, mdatoms_,
+                            (PaddedRVecVector *)f_, force_vir, mdatoms_,
                             &my_nrnb, wcycle, nullptr,
                             &(mtop_->groups),
                             shellfc_, fr_, false, t, mu_tot,
-                            nullptr, nullptr);
+                            nullptr);
 
         for (int i = 0; i < mtop_->natoms; i++)
         {
@@ -1293,12 +1293,12 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
         do_force(fplog, cr, inputrec_, 0,
                  &my_nrnb, wcycle, ltop_,
                  &(mtop_->groups),
-                 box_, x_, nullptr,
-                 f_, force_vir, mdatoms_,
+                 box_, (PaddedRVecVector *)x_, nullptr,
+                 (PaddedRVecVector *)f_, force_vir, mdatoms_,
                  enerd_, nullptr,
-                 state_->lambda, nullptr,
+                 &(state_->lambda), nullptr,
                  fr_, nullptr, mu_tot, t,
-                 nullptr, nullptr, false,
+                 nullptr, false,
                  flags);
     }
 }
@@ -1337,10 +1337,10 @@ std::vector<double> MyMol::computePolarizability(double efield,
 
     for (dim = 0; (dim < DIM); dim++)
     {
-        inputrec_->ex[dim].a[0] = efield;
+        //inputrec_->efield[dim].setField(efield, 0, 0, 0);
         computeForces(fplog, cr, mu_tot);
         pols.push_back(((mu_tot[dim]-mu_ref[dim])/efield)*(unit_factor));
-        inputrec_->ex[dim].a[0] = 0;
+        //inputrec_->efield[dim].setField(0, 0, 0, 0);
     }
     return pols;
 }
@@ -1519,7 +1519,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
 
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, nullptr, nullptr, true, -1);
-    snew(state_, 1);
+    //snew(state_, 1);
     init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
     mdatoms_   = init_mdatoms(nullptr, mtop_, false);
     atoms2md(mtop_, inputrec_, 0, nullptr, topology_->atoms.nr, mdatoms_);
