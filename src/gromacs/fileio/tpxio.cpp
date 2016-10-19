@@ -265,6 +265,9 @@ static void do_pull_group(t_fileio *fio, t_pull_group *pgrp, gmx_bool bRead)
     }
     gmx_fio_ndo_real(fio, pgrp->weight, pgrp->nweight);
     gmx_fio_do_int(fio, pgrp->pbcatom);
+    gmx_fio_do_gmx_bool(fio, pgrp->bSliced);
+    gmx_fio_do_double(fio, pgrp->slice_x_min);
+    gmx_fio_do_double(fio, pgrp->slice_x_max);
 }
 
 static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd,

@@ -276,6 +276,18 @@ void pull_calc_coms(t_commrec        *cr,
                     rvec              x[],
                     rvec             *xp);
 
+/*! \brief Update list of atom indices located in the defined slice.
+ *
+ * \param[in] cr       Struct for communication info.
+ * \param[in] pull     The pull data structure.
+ * \param[in] x        The local positions.
+ *
+ */
+void update_sliced_pull_groups(t_commrec *cr, struct pull_t *pull, rvec x[]);
+
+void pull_get_indices_weights(const pull_group_work_t *pgrp,
+                              int &nat_loc, int &nalloc_loc,
+                              int *&ind_loc, real *&weight_loc);
 
 /*! \brief Returns if we have pull coordinates with potential pulling.
  *

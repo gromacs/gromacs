@@ -62,6 +62,9 @@ typedef struct {
     int   nweight; /**< The number of weights (0 or nat) */
     real *weight;  /**< Weights (use all 1 when weight==NULL) */
     int   pbcatom; /**< The reference atom for pbc (global number) */
+    gmx_bool bSliced;     /**< Sliced group */
+    double   slice_x_min; /**< Min of the slice interval in x coordinate */
+    double   slice_x_max; /**< Max of the slice interval in x coordinate */
 } t_pull_group;
 
 /*! Maximum number of pull groups that can be used in a pull coordinate */

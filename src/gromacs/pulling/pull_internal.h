@@ -85,6 +85,11 @@ typedef struct
     int          *ind_loc;    /* Local pull indices */
     real         *weight_loc; /* Weights for the local indices */
 
+    int           nat_loc_sliced;    /* Number of local pull atoms in the slice */
+    int           nalloc_loc_sliced; /* Allocation size for ind_loc and weight_loc in the slice */
+    int          *ind_loc_sliced;    /* Local pull indices in the slice */
+    real         *weight_loc_sliced; /* Weights for the local indices in the slice */
+
     real          mwscale;    /* mass*weight scaling factor 1/sum w m */
     real          wscale;     /* scaling factor for the weights: sum w m/sum w w m */
     real          invtm;      /* inverse total mass of the group: 1/wscale sum w m */

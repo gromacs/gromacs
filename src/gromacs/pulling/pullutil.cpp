@@ -434,12 +434,17 @@ static void sum_com_part(const pull_group_work_t *pgrp,
     double sum_wwm  = 0;
     dvec   sum_wmx  = { 0, 0, 0 };
     dvec   sum_wmxp = { 0, 0, 0 };
+    int nat_grp, nalloc_grp;
+    int *ind_grp;
+    real *weight_grp;
+
+    pull_get_indices_weights(pgrp, nat_grp, nalloc_grp, ind_grp, weight_grp);
 
     for (int i = ind_start; i < ind_end; i++)
     {
-        int  ii = pgrp->ind_loc[i];
+        int  ii = ind_grp[i];
         real wm;
-        if (pgrp->weight_loc == NULL)
+        if (weight_grp == NULL)
         {
             wm      = mass[ii];
             sum_wm += wm;
@@ -448,7 +453,7 @@ static void sum_com_part(const pull_group_work_t *pgrp,
         {
             real w;
 
-            w        = pgrp->weight_loc[i];
+            w        = weight_grp[i];
             wm       = w*mass[ii];
             sum_wm  += wm;
             sum_wwm += wm*w;
@@ -516,10 +521,15 @@ static void sum_com_part_cosweight(const pull_group_work_t *pgrp,
     double sum_ssm = 0;
     double sum_cmp = 0;
     double sum_smp = 0;
+    int nat_grp, nalloc_grp;
+    int *ind_grp;
+    real *weight_grp;
+
+    pull_get_indices_weights(pgrp, nat_grp, nalloc_grp, ind_grp, weight_grp);
 
     for (int i = ind_start; i < ind_end; i++)
     {
-        int  ii  = pgrp->ind_loc[i];
+        int  ii  = ind_grp[i];
         real m   = mass[ii];
         /* Determine cos and sin sums */
         real cw  = std::cos(x[ii][cosdim]*twopi_box);
@@ -604,8 +614,12 @@ void pull_calc_coms(t_commrec *cr,
     for (g = 0; g < pull->ngroup; g++)
     {
         pull_group_work_t *pgrp;
+        int nat_grp, nalloc_grp;
+        int *ind_grp;
+        real *weight_grp;
 
         pgrp = &pull->group[g];
+        pull_get_indices_weights(pgrp, nat_grp, nalloc_grp, ind_grp, weight_grp);
 
         if (pgrp->bCalcCOM)
         {
@@ -628,23 +642,23 @@ void pull_calc_coms(t_commrec *cr,
                  * in that case a check group mass != 0 has been done before.
                  */
                 if (pgrp->params.nat == 1 &&
-                    pgrp->nat_loc == 1 &&
-                    md->massT[pgrp->ind_loc[0]] == 0)
+                    nat_grp == 1 &&
+                    md->massT[ind_grp[0]] == 0)
                 {
                     GMX_ASSERT(xp == NULL, "We should not have groups with zero mass with constraints, i.e. xp!=NULL");
 
                     /* Copy the single atom coordinate */
                     for (int d = 0; d < DIM; d++)
                     {
-                        sum_com->sum_wmx[d] = x[pgrp->ind_loc[0]][d];
+                        sum_com->sum_wmx[d] = x[ind_grp[0]][d];
                     }
                     /* Set all mass factors to 1 to get the correct COM */
                     sum_com->sum_wm  = 1;
                     sum_com->sum_wwm = 1;
                 }
-                else if (pgrp->nat_loc <= c_pullMaxNumLocalAtomsSingleThreaded)
+                else if (nat_grp <= c_pullMaxNumLocalAtomsSingleThreaded)
                 {
-                    sum_com_part(pgrp, 0, pgrp->nat_loc,
+                    sum_com_part(pgrp, 0, nat_grp,
                                  x, xp, md->massT,
                                  pbc, x_pbc,
                                  sum_com);
@@ -654,8 +668,8 @@ void pull_calc_coms(t_commrec *cr,
 #pragma omp parallel for num_threads(pull->nthreads) schedule(static)
                     for (int t = 0; t < pull->nthreads; t++)
                     {
-                        int ind_start = (pgrp->nat_loc*(t + 0))/pull->nthreads;
-                        int ind_end   = (pgrp->nat_loc*(t + 1))/pull->nthreads;
+                        int ind_start = (nat_grp*(t + 0))/pull->nthreads;
+                        int ind_end   = (nat_grp*(t + 1))/pull->nthreads;
                         sum_com_part(pgrp, ind_start, ind_end,
                                      x, xp, md->massT,
                                      pbc, x_pbc,
@@ -672,7 +686,7 @@ void pull_calc_coms(t_commrec *cr,
                     }
                 }
 
-                if (pgrp->weight_loc == NULL)
+                if (weight_grp == NULL)
                 {
                     sum_com->sum_wwm = sum_com->sum_wm;
                 }
@@ -693,8 +707,8 @@ void pull_calc_coms(t_commrec *cr,
 #pragma omp parallel for num_threads(pull->nthreads) schedule(static)
                 for (int t = 0; t < pull->nthreads; t++)
                 {
-                    int ind_start = (pgrp->nat_loc*(t + 0))/pull->nthreads;
-                    int ind_end   = (pgrp->nat_loc*(t + 1))/pull->nthreads;
+                    int ind_start = (nat_grp*(t + 0))/pull->nthreads;
+                    int ind_end   = (nat_grp*(t + 1))/pull->nthreads;
                     sum_com_part_cosweight(pgrp, ind_start, ind_end,
                                            pull->cosdim, twopi_box,
                                            x, xp, md->massT,
@@ -733,8 +747,13 @@ void pull_calc_coms(t_commrec *cr,
     for (g = 0; g < pull->ngroup; g++)
     {
         pull_group_work_t *pgrp;
+        int nat_grp, nalloc_grp;
+        int *ind_grp;
+        real *weight_grp;
 
         pgrp = &pull->group[g];
+        pull_get_indices_weights(pgrp, nat_grp, nalloc_grp, ind_grp, weight_grp);
+
         if (pgrp->params.nat > 0 && pgrp->bCalcCOM)
         {
             if (pgrp->epgrppbc != epgrppbcCOS)
@@ -792,10 +811,10 @@ void pull_calc_coms(t_commrec *cr,
                 /* Set the weights for the local atoms */
                 csw *= pgrp->invtm;
                 snw *= pgrp->invtm;
-                for (i = 0; i < pgrp->nat_loc; i++)
+                for (i = 0; i < nat_grp; i++)
                 {
-                    ii                  = pgrp->ind_loc[i];
-                    pgrp->weight_loc[i] = csw*cos(twopi_box*x[ii][pull->cosdim]) +
+                    ii                  = ind_grp[i];
+                    weight_grp[i] = csw*cos(twopi_box*x[ii][pull->cosdim]) +
                         snw*sin(twopi_box*x[ii][pull->cosdim]);
                 }
                 if (xp)
@@ -807,6 +826,8 @@ void pull_calc_coms(t_commrec *cr,
             }
             if (debug)
             {
+                fprintf(debug, "Pull group %d center of mass before update (%f, %f, %f)\n",
+                        g, pgrp->x[0], pgrp->x[1], pgrp->x[2]);
                 fprintf(debug, "Pull group %d wmass %f invtm %f\n",
                         g, 1.0/pgrp->mwscale, pgrp->invtm);
             }
@@ -817,5 +838,25 @@ void pull_calc_coms(t_commrec *cr,
     {
         /* Calculate the COMs for the cyclinder reference groups */
         make_cyl_refgrps(cr, pull, md, pbc, t, x);
+    }
+}
+
+void pull_get_indices_weights(const pull_group_work_t *pgrp,
+                              int &nat_loc, int &nalloc_loc,
+                              int *&ind_loc, real *&weight_loc)
+{
+    if (pgrp->params.bSliced)
+    {
+        nat_loc = pgrp->nat_loc_sliced;
+        nalloc_loc = pgrp->nalloc_loc_sliced;
+        ind_loc = pgrp->ind_loc_sliced;
+        weight_loc = pgrp->weight_loc_sliced;
+    }
+    else
+    {
+        nat_loc = pgrp->nat_loc;
+        nalloc_loc = pgrp->nalloc_loc;
+        ind_loc = pgrp->ind_loc;
+        weight_loc = pgrp->weight_loc;
     }
 }
