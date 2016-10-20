@@ -67,13 +67,13 @@ class Options;
  *
  * \tparam T Assignable type that stores a single option value.
  *
- * Provides an implementation of the clearSet(), valueCount(), and processSet()
- * methods of AbstractOptionStorage, as well as a basic no-action
- * implementation of processAll().  One new virtual method is added:
- * processSetValues().  The default implementation does nothing.
- * This leaves typeString(), formatValue(), and convertValue() to be
- * implemented in derived classes.  processSetValues() and processAll() can
- * also be implemented if necessary.
+ * Provides an implementation of the clearSet(), valueCount(), processSet(),
+ * and defaultValuesAsStrings() methods of AbstractOptionStorage, as well as a
+ * basic no-action implementation of processAll().  Two new virtual methods are
+ * added: processSetValues() and formatSingleValue().
+ * This leaves typeString(), convertValue() and formatStringValue() to be
+ * implemented in derived classes.
+ * processSetValues() and processAll() can also be implemented if necessary.
  *
  * Implements transaction support for adding values within a set: all calls to
  * addValue() add the value to a temporary storage, processSetValues() operates
@@ -100,14 +100,14 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual std::string typeString() const = 0;
         //! \copydoc gmx::AbstractOptionStorage::valueCount()
         virtual int valueCount() const { return store_->valueCount(); }
-        /*! \copydoc gmx::AbstractOptionStorage::formatValue()
+        /*! \copydoc gmx::AbstractOptionStorage::defaultValuesAsStrings()
          *
-         * OptionStorageTemplate implements handling of DefaultValueIfSetIndex
-         * in this method, as well as checking that \p i is a valid index.
+         * OptionStorageTemplate implements handling of defaultValueIfSet()
+         * cases and composing the vector.
          * Derived classes must implement formatSingleValue() to provide the
          * actual formatting for a value of type \p T.
          */
-        virtual std::string formatValue(int i) const;
+        virtual std::vector<std::string> defaultValuesAsStrings() const;
 
     protected:
         //! Smart pointer for managing the final storage interface.
@@ -189,7 +189,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * \returns   \p value formatted as a string.
          *
          * The derived class must provide this method to format values a
-         * strings.  Called by formatValue() to do the actual formatting.
+         * strings.  Called by defaultValuesAsStrings() to do the actual
+         * formatting.
          */
         virtual std::string formatSingleValue(const T &value) const = 0;
 
@@ -436,19 +437,28 @@ std::unique_ptr<IOptionValueStore<T> > OptionStorageTemplate<T>::createStore(
 
 
 template <typename T>
-std::string OptionStorageTemplate<T>::formatValue(int i) const
+std::vector<std::string> OptionStorageTemplate<T>::defaultValuesAsStrings() const
 {
-    GMX_RELEASE_ASSERT(i == DefaultValueIfSetIndex || (i >= 0 && i < valueCount()),
-                       "Invalid value index");
-    if (i == DefaultValueIfSetIndex)
+    std::vector<std::string> result;
+    if (hasFlag(efOption_NoDefaultValue))
     {
+        return result;
+    }
+    GMX_RELEASE_ASSERT(hasFlag(efOption_HasDefaultValue),
+                       "Current option implementation can only provide default values before assignment");
+    for (const auto &value : values())
+    {
+        result.push_back(formatSingleValue(value));
+    }
+    if (result.empty() || (result.size() == 1 && result[0].empty()))
+    {
+        result.clear();
         if (defaultValueIfSet_.get() != NULL)
         {
-            return formatSingleValue(*defaultValueIfSet_);
+            result.push_back(formatSingleValue(*defaultValueIfSet_));
         }
-        return std::string();
     }
-    return formatSingleValue(values()[i]);
+    return result;
 }
 
 
