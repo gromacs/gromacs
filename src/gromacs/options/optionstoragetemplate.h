@@ -102,12 +102,12 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual int valueCount() const { return store_->valueCount(); }
         /*! \copydoc gmx::AbstractOptionStorage::formatValue()
          *
-         * OptionStorageTemplate implements handling of DefaultValueIfSetIndex
-         * in this method, as well as checking that \p i is a valid index.
+         * OptionStorageTemplate implements handling of defaultValueIfSet()
+         * cases and composing the vector.
          * Derived classes must implement formatSingleValue() to provide the
          * actual formatting for a value of type \p T.
          */
-        virtual std::string formatValue(int i) const;
+        virtual std::vector<std::string> defaultValuesAsStrings() const;
 
     protected:
         //! Smart pointer for managing the final storage interface.
@@ -436,19 +436,28 @@ std::unique_ptr<IOptionValueStore<T> > OptionStorageTemplate<T>::createStore(
 
 
 template <typename T>
-std::string OptionStorageTemplate<T>::formatValue(int i) const
+std::vector<std::string> OptionStorageTemplate<T>::defaultValuesAsStrings() const
 {
-    GMX_RELEASE_ASSERT(i == DefaultValueIfSetIndex || (i >= 0 && i < valueCount()),
-                       "Invalid value index");
-    if (i == DefaultValueIfSetIndex)
+    std::vector<std::string> result;
+    if (hasFlag(efOption_NoDefaultValue))
     {
+        return result;
+    }
+    GMX_RELEASE_ASSERT(hasFlag(efOption_HasDefaultValue),
+                       "Current option implementation can only provide default values before assignment");
+    for (const auto &value : values())
+    {
+        result.push_back(formatSingleValue(value));
+    }
+    if (result.empty() || (result.size() == 1 && result[0].empty()))
+    {
+        result.clear();
         if (defaultValueIfSet_.get() != NULL)
         {
-            return formatSingleValue(*defaultValueIfSet_);
+            result.push_back(formatSingleValue(*defaultValueIfSet_));
         }
-        return std::string();
     }
-    return formatSingleValue(values()[i]);
+    return result;
 }
 
 

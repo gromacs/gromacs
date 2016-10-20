@@ -261,19 +261,9 @@ std::string OptionInfo::formatDescription() const
     return description;
 }
 
-std::string OptionInfo::formatDefaultValueIfSet() const
+std::vector<std::string> OptionInfo::defaultValuesAsStrings() const
 {
-    return option().formatDefaultValueIfSet();
-}
-
-int OptionInfo::valueCount() const
-{
-    return option().valueCount();
-}
-
-std::string OptionInfo::formatValue(int i) const
-{
-    return option().formatValue(i);
+    return option().defaultValuesAsStrings();
 }
 
 } // namespace gmx

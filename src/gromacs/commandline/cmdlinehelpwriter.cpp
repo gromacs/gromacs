@@ -248,27 +248,9 @@ void formatOptionNameAndValue(const OptionInfo &option, std::string *name,
 }
 
 //! Formats the default option value as a string.
-std::string
-defaultOptionValue(const OptionInfo &option)
+std::string defaultOptionValue(const OptionInfo &option)
 {
-    if (option.valueCount() == 0
-        || (option.valueCount() == 1 && option.formatValue(0).empty()))
-    {
-        return option.formatDefaultValueIfSet();
-    }
-    else
-    {
-        std::string result;
-        for (int i = 0; i < option.valueCount(); ++i)
-        {
-            if (i != 0)
-            {
-                result.append(" ");
-            }
-            result.append(option.formatValue(i));
-        }
-        return result;
-    }
+    return joinStrings(option.defaultValuesAsStrings(), " ");
 }
 
 //! Formats the flags for a file option as a string.

@@ -44,6 +44,7 @@
 #define GMX_OPTIONS_ABSTRACTOPTIONSTORAGE_H
 
 #include <string>
+#include <vector>
 
 #include "gromacs/options/optionflags.h"
 #include "gromacs/utility/classhelpers.h"
@@ -138,16 +139,8 @@ class AbstractOptionStorage
          * Returns the number of option values added so far.
          */
         virtual int valueCount() const = 0;
-        /*! \brief
-         * Returns the i'th value formatted as a string.
-         *
-         * If \p i is DefaultValueIfSetIndex, should format the default value
-         * if set (see OptionTemplate::defaultValueIfSet()).
-         */
-        virtual std::string formatValue(int i) const = 0;
-        //! \copydoc OptionInfo::formatDefaultValueIfSet()
-        std::string formatDefaultValueIfSet() const
-        { return formatValue(DefaultValueIfSetIndex); }
+        //! \copydoc OptionInfo::defaultValuesAsStrings()
+        virtual std::vector<std::string> defaultValuesAsStrings() const = 0;
 
         /*! \brief
          * Starts adding values from a new source for the option.
@@ -206,9 +199,6 @@ class AbstractOptionStorage
         void finish();
 
     protected:
-        //! Index used with formatValue() for formatting default value if set.
-        static const int DefaultValueIfSetIndex = -1;
-
         /*! \brief
          * Initializes the storage object from the settings object.
          *
