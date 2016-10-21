@@ -67,7 +67,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
     real         xf;
     matrix       box, R;
     real        *w_rls;
-    gmx_rmpbc_t  gpbc = NULL;
+    gmx_rmpbc_t  gpbc = nullptr;
 
 
     nfr_all = 0;
@@ -99,7 +99,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
             {
                 copy_rvec(x[index[i]], xi[nfr][i]);
             }
-            reset_x(gnx, NULL, gnx, NULL, xi[nfr], w_rls);
+            reset_x(gnx, nullptr, gnx, nullptr, xi[nfr], w_rls);
             nfr++;
             if (nfr % 100 == 0)
             {
@@ -204,7 +204,7 @@ int gmx_rotmat(int argc, char *argv[])
         "the rotation matrix."
     };
     const char       *reffit[] =
-    { NULL, "none", "xyz", "xy", NULL };
+    { nullptr, "none", "xyz", "xy", nullptr };
     static int        skip   = 1;
     static gmx_bool   bFitXY = FALSE, bMW = TRUE;
     t_pargs           pa[]   = {
@@ -227,27 +227,27 @@ int gmx_rotmat(int argc, char *argv[])
     int               natoms, i;
     char             *grpname;
     int               gnx;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
     int              *index;
     gmx_output_env_t *oenv;
     real             *w_rls;
     const char       *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
 #define NLEG asize(leg)
     t_filenm          fnm[] = {
-        { efTRX, "-f",   NULL,       ffREAD },
-        { efTPS, NULL,   NULL,       ffREAD },
-        { efNDX, NULL,   NULL,       ffOPTRD },
-        { efXVG, NULL,   "rotmat",   ffWRITE }
+        { efTRX, "-f",   nullptr,       ffREAD },
+        { efTPS, nullptr,   nullptr,       ffREAD },
+        { efNDX, nullptr,   nullptr,       ffOPTRD },
+        { efXVG, nullptr,   "rotmat",   ffWRITE }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x_ref, NULL, box, bMW);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x_ref, nullptr, box, bMW);
 
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
 
@@ -255,7 +255,7 @@ int gmx_rotmat(int argc, char *argv[])
 
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
-    GMX_RELEASE_ASSERT(reffit[0] != NULL, "Options inconsistency; reffit[0] is NULL");
+    GMX_RELEASE_ASSERT(reffit[0] != nullptr, "Options inconsistency; reffit[0] is NULL");
     if (reffit[0][0] != 'n')
     {
         get_refx(oenv, ftp2fn(efTRX, NFILE, fnm), reffit[0][2] == 'z' ? 3 : 2, skip,
@@ -276,7 +276,7 @@ int gmx_rotmat(int argc, char *argv[])
 
     if (reffit[0][0] == 'n')
     {
-        reset_x(gnx, index, natoms, NULL, x_ref, w_rls);
+        reset_x(gnx, index, natoms, nullptr, x_ref, w_rls);
     }
 
     out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
@@ -287,7 +287,7 @@ int gmx_rotmat(int argc, char *argv[])
     {
         gmx_rmpbc(gpbc, natoms, box, x);
 
-        reset_x(gnx, index, natoms, NULL, x, w_rls);
+        reset_x(gnx, index, natoms, nullptr, x, w_rls);
 
         if (bFitXY)
         {

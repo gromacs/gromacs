@@ -263,7 +263,7 @@ void gmx_espresso_read_conf(const char *infile,
                                 break;
                             case espTYPE:
                                 r                   = get_espresso_word(fp, word);
-                                atoms->atom[i].type = std::strtol(word, NULL, 10);
+                                atoms->atom[i].type = std::strtol(word, nullptr, 10);
                                 break;
                             case espQ:
                                 r = get_espresso_word(fp, word);
@@ -287,7 +287,7 @@ void gmx_espresso_read_conf(const char *infile,
                                 break;
                             case espMOLECULE:
                                 r     = get_espresso_word(fp, word);
-                                molnr = std::strtol(word, NULL, 10);
+                                molnr = std::strtol(word, nullptr, 10);
                                 if (i == 0 ||
                                     atoms->resinfo[atoms->atom[i-1].resind].nr != molnr)
                                 {

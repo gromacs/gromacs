@@ -275,12 +275,12 @@ static void nbnxn_init_pairlist_fep(t_nblist *nl)
     nl->maxnrj      = 0;
     nl->nri         = 0;
     nl->nrj         = 0;
-    nl->iinr        = NULL;
-    nl->gid         = NULL;
-    nl->shift       = NULL;
-    nl->jindex      = NULL;
-    nl->jjnr        = NULL;
-    nl->excl_fep    = NULL;
+    nl->iinr        = nullptr;
+    nl->gid         = nullptr;
+    nl->shift       = nullptr;
+    nl->jindex      = nullptr;
+    nl->jjnr        = nullptr;
+    nl->excl_fep    = nullptr;
 
 }
 
@@ -298,7 +298,7 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
 
     nbs->bFEP   = bFEP;
 
-    nbs->DomDec = (n_dd_cells != NULL);
+    nbs->DomDec = (n_dd_cells != nullptr);
 
     clear_ivec(nbs->dd_dim);
     ngrid = 1;
@@ -319,9 +319,9 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
 
     nbnxn_grids_init(nbs, ngrid);
 
-    nbs->cell        = NULL;
+    nbs->cell        = nullptr;
     nbs->cell_nalloc = 0;
-    nbs->a           = NULL;
+    nbs->a           = nullptr;
     nbs->a_nalloc    = 0;
 
     nbs->nthread_max = nthread_max;
@@ -330,9 +330,9 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
     snew(nbs->work, nbs->nthread_max);
     for (int t = 0; t < nbs->nthread_max; t++)
     {
-        nbs->work[t].cxy_na           = NULL;
+        nbs->work[t].cxy_na           = nullptr;
         nbs->work[t].cxy_na_nalloc    = 0;
-        nbs->work[t].sort_work        = NULL;
+        nbs->work[t].sort_work        = nullptr;
         nbs->work[t].sort_work_nalloc = 0;
 
         snew(nbs->work[t].nbl_fep, 1);
@@ -340,7 +340,7 @@ void nbnxn_init_search(nbnxn_search_t           * nbs_ptr,
     }
 
     /* Initialize detailed nbsearch cycle counting */
-    nbs->print_cycles = (getenv("GMX_NBNXN_CYCLE") != 0);
+    nbs->print_cycles = (getenv("GMX_NBNXN_CYCLE") != nullptr);
     nbs->search_count = 0;
     nbs_cycle_clear(nbs->cc);
     for (int t = 0; t < nbs->nthread_max; t++)
@@ -793,7 +793,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
                                 nbnxn_alloc_t    *alloc,
                                 nbnxn_free_t     *free)
 {
-    if (alloc == NULL)
+    if (alloc == nullptr)
     {
         nbl->alloc = nbnxn_alloc_aligned;
     }
@@ -801,7 +801,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     {
         nbl->alloc = alloc;
     }
-    if (free == NULL)
+    if (free == nullptr)
     {
         nbl->free = nbnxn_free_aligned;
     }
@@ -815,19 +815,19 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     nbl->na_ci       = 0;
     nbl->na_cj       = 0;
     nbl->nci         = 0;
-    nbl->ci          = NULL;
+    nbl->ci          = nullptr;
     nbl->ci_nalloc   = 0;
     nbl->nsci        = 0;
-    nbl->sci         = NULL;
+    nbl->sci         = nullptr;
     nbl->sci_nalloc  = 0;
     nbl->ncj         = 0;
     nbl->ncjInUse    = 0;
-    nbl->cj          = NULL;
+    nbl->cj          = nullptr;
     nbl->cj_nalloc   = 0;
     nbl->ncj4        = 0;
     /* We need one element extra in sj, so alloc initially with 1 */
     nbl->cj4_nalloc  = 0;
-    nbl->cj4         = NULL;
+    nbl->cj4         = nullptr;
     nbl->nci_tot     = 0;
 
     if (!nbl->bSimple)
@@ -837,7 +837,7 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
         GMX_ASSERT(sizeof(nbl->cj4[0].imei[0].imask)*8 >= c_nbnxnGpuJgroupSize*c_gpuNumClusterPerCell, "The i super-cluster cluster interaction mask does not contain a sufficient number of bits");
         GMX_ASSERT(sizeof(nbl->excl[0])*8 >= c_nbnxnGpuJgroupSize*c_gpuNumClusterPerCell, "The GPU exclusion mask does not contain a sufficient number of bits");
 
-        nbl->excl        = NULL;
+        nbl->excl        = nullptr;
         nbl->excl_nalloc = 0;
         nbl->nexcl       = 0;
         check_excl_space(nbl, 1);
@@ -868,9 +868,9 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 #endif
     snew_aligned(nbl->work->d2, c_gpuNumClusterPerCell, NBNXN_SEARCH_BB_MEM_ALIGN);
 
-    nbl->work->sort            = NULL;
+    nbl->work->sort            = nullptr;
     nbl->work->sort_nalloc     = 0;
-    nbl->work->sci_sort        = NULL;
+    nbl->work->sci_sort        = nullptr;
     nbl->work->sci_sort_nalloc = 0;
 }
 
@@ -915,11 +915,11 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
             }
             else
             {
-                nbnxn_init_pairlist(nbl_list->nbl[i], nbl_list->bSimple, NULL, NULL);
+                nbnxn_init_pairlist(nbl_list->nbl[i], nbl_list->bSimple, nullptr, nullptr);
                 if (bSimple && nbl_list->nnbl > 1)
                 {
                     snew(nbl_list->nbl_work[i], 1);
-                    nbnxn_init_pairlist(nbl_list->nbl_work[i], nbl_list->bSimple, NULL, NULL);
+                    nbnxn_init_pairlist(nbl_list->nbl_work[i], nbl_list->bSimple, nullptr, nullptr);
                 }
             }
 
@@ -2401,7 +2401,7 @@ static void clear_pairlist_fep(t_nblist *nl)
 {
     nl->nri = 0;
     nl->nrj = 0;
-    if (nl->jindex == NULL)
+    if (nl->jindex == nullptr)
     {
         snew(nl->jindex, 1);
     }
@@ -3173,9 +3173,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     int               shift;
     real              shx, shy, shz;
     int               conv_i, cell0_i;
-    const nbnxn_bb_t *bb_i = NULL;
+    const nbnxn_bb_t *bb_i = nullptr;
 #if NBNXN_BBXXXX
-    const float      *pbb_i = NULL;
+    const float      *pbb_i = nullptr;
 #endif
     const float      *bbcz_i, *bbcz_j;
     const int        *flags_i;
@@ -3187,7 +3187,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     int               ndistc;
     int               ncpcheck;
     int               gridi_flag_shift = 0, gridj_flag_shift = 0;
-    gmx_bitmask_t    *gridj_flag       = NULL;
+    gmx_bitmask_t    *gridj_flag       = nullptr;
     int               ncj_old_i, ncj_old_j;
 
     nbs_cycle_start(&work->cc[enbsCCsearch]);

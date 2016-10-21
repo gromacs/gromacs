@@ -156,14 +156,14 @@ evaluate_same_str(const gmx::SelMethodEvalContext &context,
 
 /** Parameters for the \p same selection method. */
 static gmx_ana_selparam_t smparams_same_int[] = {
-    {NULL, {INT_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_ATOMVAL},
-    {"as", {INT_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
+    {nullptr, {INT_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_ATOMVAL},
+    {"as", {INT_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
 /** Parameters for the \p same selection method. */
 static gmx_ana_selparam_t smparams_same_str[] = {
-    {NULL, {STR_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_ATOMVAL},
-    {"as", {STR_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
+    {nullptr, {STR_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_ATOMVAL},
+    {"as", {STR_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
 /** Help text for the \p same selection method. */
@@ -183,13 +183,13 @@ gmx_ana_selmethod_t sm_same = {
     "same", GROUP_VALUE, 0,
     asize(smparams_same_int), smparams_same_int,
     &init_data_same,
-    NULL,
+    nullptr,
     &init_same,
-    NULL,
+    nullptr,
     &free_data_same,
     &init_frame_same_int,
     &evaluate_same_int,
-    NULL,
+    nullptr,
     {"same KEYWORD as ATOM_EXPR",
      "Extending selections", asize(help_same), help_same},
 };
@@ -205,14 +205,14 @@ static gmx_ana_selmethod_t sm_same_str = {
     "same", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_same_str), smparams_same_str,
     &init_data_same,
-    NULL,
+    nullptr,
     &init_same,
-    NULL,
+    nullptr,
     &free_data_same,
     &init_frame_same_str,
     &evaluate_same_str,
-    NULL,
-    {NULL, NULL, 0, NULL},
+    nullptr,
+    {nullptr, nullptr, 0, nullptr},
 };
 
 static void *
@@ -221,7 +221,7 @@ init_data_same(int /* npar */, gmx_ana_selparam_t *param)
     t_methoddata_same *data;
 
     snew(data, 1);
-    data->as_s_sorted = NULL;
+    data->as_s_sorted = nullptr;
     param[1].nvalptr  = &data->nas;
     return data;
 }
@@ -519,7 +519,7 @@ evaluate_same_str(const gmx::SelMethodEvalContext & /*context*/,
         ptr = bsearch(&d->val.s[j], d->as_s_sorted, d->nas,
                       sizeof(d->as_s_sorted[0]), &cmp_str);
         /* Check whether the value was found in the as list. */
-        if (ptr == NULL)
+        if (ptr == nullptr)
         {
             /* If not, skip all atoms with the same value. */
             const char *tmpval = d->val.s[j];

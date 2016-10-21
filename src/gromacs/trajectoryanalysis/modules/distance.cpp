@@ -334,7 +334,7 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             const SelectionPosition &p1 = sel[g].position(i);
             const SelectionPosition &p2 = sel[g].position(i+1);
             rvec                     dx;
-            if (pbc != NULL)
+            if (pbc != nullptr)
             {
                 pbc_dx(pbc, p2.x(), p1.x(), dx);
             }

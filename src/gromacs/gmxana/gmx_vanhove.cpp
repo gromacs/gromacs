@@ -122,9 +122,9 @@ int gmx_vanhove(int argc, char *argv[])
 #define NPA asize(pa)
 
     t_filenm fnm[] = {
-        { efTRX, NULL, NULL,  ffREAD },
-        { efTPS, NULL, NULL,  ffREAD },
-        { efNDX, NULL, NULL,  ffOPTRD },
+        { efTRX, nullptr, nullptr,  ffREAD },
+        { efTPS, nullptr, nullptr,  ffREAD },
+        { efNDX, nullptr, nullptr,  ffOPTRD },
         { efXPM, "-om", "vanhove", ffOPTWR },
         { efXVG, "-or", "vanhove_r", ffOPTWR },
         { efXVG, "-ot", "vanhove_t", ffOPTWR }
@@ -145,13 +145,13 @@ int gmx_vanhove(int argc, char *argv[])
     real             *time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
     real              invsbin = 0, matmax, normfac, dt, *tickx, *ticky;
     char              buf[STRLEN], **legend;
-    real            **mat = NULL;
-    int              *pt  = NULL, **pr = NULL, *mcount = NULL, *tcount = NULL, *rcount = NULL;
+    real            **mat = nullptr;
+    int              *pt  = nullptr, **pr = nullptr, *mcount = nullptr, *tcount = nullptr, *rcount = nullptr;
     FILE             *fp;
     t_rgb             rlo = {1, 1, 1}, rhi = {0, 0, 0};
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -181,14 +181,14 @@ int gmx_vanhove(int argc, char *argv[])
         exit(0);
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, boxtop,
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, boxtop,
                   FALSE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 
     nalloc = 0;
-    time   = NULL;
-    sbox   = NULL;
-    sx     = NULL;
+    time   = nullptr;
+    sbox   = nullptr;
+    sx     = nullptr;
     clear_mat(avbox);
 
     read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
@@ -202,8 +202,8 @@ int gmx_vanhove(int argc, char *argv[])
             srenew(sbox, nalloc);
             srenew(sx, nalloc);
         }
-        GMX_RELEASE_ASSERT(time != NULL, "Memory allocation failure; time array is NULL");
-        GMX_RELEASE_ASSERT(sbox != NULL, "Memory allocation failure; sbox array is NULL");
+        GMX_RELEASE_ASSERT(time != nullptr, "Memory allocation failure; time array is NULL");
+        GMX_RELEASE_ASSERT(sbox != nullptr, "Memory allocation failure; sbox array is NULL");
 
         time[nfr] = t;
         copy_mat(box, sbox[nfr]);
@@ -481,9 +481,9 @@ int gmx_vanhove(int argc, char *argv[])
         xvgrclose(fp);
     }
 
-    do_view(oenv, matfile, NULL);
-    do_view(oenv, orfile, NULL);
-    do_view(oenv, otfile, NULL);
+    do_view(oenv, matfile, nullptr);
+    do_view(oenv, orfile, nullptr);
+    do_view(oenv, otfile, nullptr);
 
     return 0;
 }

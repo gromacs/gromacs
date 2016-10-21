@@ -96,9 +96,9 @@ TopologyManager::~TopologyManager()
 
 void TopologyManager::requestFrame()
 {
-    GMX_RELEASE_ASSERT(mtop_ == NULL,
+    GMX_RELEASE_ASSERT(mtop_ == nullptr,
                        "Frame must be requested before initializing topology");
-    if (frame_ == NULL)
+    if (frame_ == nullptr)
     {
         snew(frame_, 1);
     }
@@ -106,7 +106,7 @@ void TopologyManager::requestFrame()
 
 void TopologyManager::requestVelocities()
 {
-    GMX_RELEASE_ASSERT(frame_ != NULL,
+    GMX_RELEASE_ASSERT(frame_ != nullptr,
                        "Velocities requested before requesting a frame");
     frame_->bV = TRUE;
     if (frame_->natoms > 0)
@@ -117,7 +117,7 @@ void TopologyManager::requestVelocities()
 
 void TopologyManager::requestForces()
 {
-    GMX_RELEASE_ASSERT(frame_ != NULL,
+    GMX_RELEASE_ASSERT(frame_ != nullptr,
                        "Forces requested before requesting a frame");
     frame_->bF = TRUE;
     if (frame_->natoms > 0)
@@ -130,17 +130,17 @@ void TopologyManager::loadTopology(const char *filename)
 {
     bool    fullTopology;
     int     ePBC;
-    rvec   *xtop = NULL;
+    rvec   *xtop = nullptr;
     matrix  box;
 
     GMX_RELEASE_ASSERT(mtop_ == nullptr, "Topology initialized more than once");
     snew(mtop_, 1);
     readConfAndTopology(
             gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
-            &fullTopology, mtop_, &ePBC, frame_ != NULL ? &xtop : NULL,
-            NULL, box);
+            &fullTopology, mtop_, &ePBC, frame_ != nullptr ? &xtop : nullptr,
+            nullptr, box);
 
-    if (frame_ != NULL)
+    if (frame_ != nullptr)
     {
         frame_->natoms = mtop_->natoms;
         frame_->bX     = TRUE;
@@ -155,7 +155,7 @@ void TopologyManager::loadTopology(const char *filename)
 
 void TopologyManager::initAtoms(int count)
 {
-    GMX_RELEASE_ASSERT(mtop_ == NULL, "Topology initialized more than once");
+    GMX_RELEASE_ASSERT(mtop_ == nullptr, "Topology initialized more than once");
     snew(mtop_, 1);
     mtop_->nmoltype = 1;
     snew(mtop_->moltype, 1);
@@ -175,7 +175,7 @@ void TopologyManager::initAtoms(int count)
         atoms.atom[i].m = (i % 3 == 0 ? 2.0 : 1.0);
     }
     atoms.haveMass = TRUE;
-    if (frame_ != NULL)
+    if (frame_ != nullptr)
     {
         frame_->natoms = count;
         frame_->bX     = TRUE;
@@ -215,7 +215,7 @@ void TopologyManager::initAtomTypes(const ConstArrayRef<const char *> &types)
 
 void TopologyManager::initUniformResidues(int residueSize)
 {
-    GMX_RELEASE_ASSERT(mtop_ != NULL, "Topology not initialized");
+    GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
     t_atoms &atoms        = this->atoms();
     int      residueIndex = -1;
     for (int i = 0; i < atoms.nr; ++i)
@@ -230,7 +230,7 @@ void TopologyManager::initUniformResidues(int residueSize)
 
 void TopologyManager::initUniformMolecules(int moleculeSize)
 {
-    GMX_RELEASE_ASSERT(mtop_ != NULL, "Topology not initialized");
+    GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
     int index = 0;
     mtop_->mols.nalloc_index = (mtop_->natoms + moleculeSize - 1) / moleculeSize + 1;
     srenew(mtop_->mols.index, mtop_->mols.nalloc_index);

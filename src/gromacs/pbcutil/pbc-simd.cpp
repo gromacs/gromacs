@@ -54,7 +54,7 @@ void set_pbc_simd(const t_pbc gmx_unused *pbc,
                   real gmx_unused        *pbc_simd)
 {
 #if GMX_SIMD_HAVE_REAL
-    if (pbc != NULL && pbc->ePBC != epbcNONE)
+    if (pbc != nullptr && pbc->ePBC != epbcNONE)
     {
         rvec inv_box_diag = {0, 0, 0};
 

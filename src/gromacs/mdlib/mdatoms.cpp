@@ -204,11 +204,11 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
          * Therefore, when adding code, the user should use something like:
          * gprnrU1 = (md->cU1==NULL ? 0 : md->cU1[localatindex])
          */
-        if (mtop->groups.grpnr[egcUser1] != NULL)
+        if (mtop->groups.grpnr[egcUser1] != nullptr)
         {
             srenew(md->cU1, md->nalloc);
         }
-        if (mtop->groups.grpnr[egcUser2] != NULL)
+        if (mtop->groups.grpnr[egcUser2] != nullptr)
         {
             srenew(md->cU2, md->nalloc);
         }
@@ -232,7 +232,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             real     mA, mB, fac;
             real     c6, c12;
 
-            if (index == NULL)
+            if (index == nullptr)
             {
                 ag = i;
             }
@@ -397,7 +397,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
             if (ir->bQMMM)
             {
-                if (groups->grpnr[egcQMMM] == 0 ||
+                if (groups->grpnr[egcQMMM] == nullptr ||
                     groups->grpnr[egcQMMM][ag] < groups->grps[egcQMMM].nr-1)
                 {
                     md->bQM[i]      = TRUE;

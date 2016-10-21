@@ -266,7 +266,7 @@ static gmx_bool HavePotFitGroups(t_rot *rot)
 static double** allocate_square_matrix(int dim)
 {
     int      i;
-    double** mat = NULL;
+    double** mat = nullptr;
 
 
     snew(mat, dim);
@@ -665,7 +665,7 @@ static void get_slab_centers(
     } /* END of loop over slabs */
 
     /* Output on the master */
-    if ( (NULL != out_slabs) && bOutStep)
+    if ( (nullptr != out_slabs) && bOutStep)
     {
         fprintf(out_slabs, "%12.3e%6d", time, g);
         for (j = erg->slab_first; j <= erg->slab_last; j++)
@@ -861,7 +861,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const gmx_output_env_t *oe
     char            buf[50], buf2[75];
     gmx_enfrotgrp_t erg;       /* Pointer to enforced rotation group data */
     gmx_bool        bFlex;
-    char           *LegendStr = NULL;
+    char           *LegendStr = nullptr;
 
 
     if (rot->enfrot->Flags & MD_APPENDFILES)
@@ -1188,7 +1188,7 @@ static void align_with_z(
     int     i, j, k;
     rvec    zet         = {0.0, 0.0, 1.0};
     rvec    rot_axis    = {0.0, 0.0, 0.0};
-    rvec   *rotated_str = NULL;
+    rvec   *rotated_str = nullptr;
     real    ooanorm;
     real    angle;
     matrix  rotmat;
@@ -1287,8 +1287,8 @@ static real opt_angle_analytic(
         rvec  axis)
 {
     int      i, j, k;
-    rvec    *ref_s_1 = NULL;
-    rvec    *act_s_1 = NULL;
+    rvec    *ref_s_1 = nullptr;
+    rvec    *act_s_1 = nullptr;
     rvec     shift;
     double **Rmat, **RtR, **eigvec;
     double   eigval[3];
@@ -1331,7 +1331,7 @@ static real opt_angle_analytic(
     }
 
     /* Weight positions with sqrt(weight) */
-    if (NULL != weight)
+    if (nullptr != weight)
     {
         weigh_coords(ref_s_1, weight, natoms);
         weigh_coords(act_s_1, weight, natoms);
@@ -1454,7 +1454,7 @@ static real opt_angle_analytic(
 static real flex_fit_angle(t_rotgrp *rotg)
 {
     int             i;
-    rvec           *fitcoords = NULL;
+    rvec           *fitcoords = nullptr;
     rvec            center;     /* Center of positions passed to the fit routine */
     real            fitangle;   /* Angle of the rotation group derived by fitting */
     rvec            coord;
@@ -3283,7 +3283,7 @@ static void allocate_slabs(
     /* Remember how many we allocated */
     erg->nslabs_alloc = nslabs;
 
-    if ( (NULL != fplog) && bVerbose)
+    if ( (nullptr != fplog) && bVerbose)
     {
         fprintf(fplog, "%s allocating memory to store data for %d slabs (rotation group %d).\n",
                 RotStr, nslabs, g);
@@ -3445,7 +3445,7 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
     }
     else
     {
-        erg->PotAngleFit = NULL;
+        erg->PotAngleFit = nullptr;
     }
 
     /* xc_ref_ind needs to be set to identity in the serial case */
@@ -3662,10 +3662,10 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
     t_rot          *rot;
     t_rotgrp       *rotg;
     int             g;
-    int             nat_max = 0;  /* Size of biggest rotation group */
-    gmx_enfrot_t    er;           /* Pointer to the enforced rotation buffer variables */
-    gmx_enfrotgrp_t erg;          /* Pointer to enforced rotation group data */
-    rvec           *x_pbc = NULL; /* Space for the pbc-correct atom positions */
+    int             nat_max = 0;     /* Size of biggest rotation group */
+    gmx_enfrot_t    er;              /* Pointer to the enforced rotation buffer variables */
+    gmx_enfrotgrp_t erg;             /* Pointer to enforced rotation group data */
+    rvec           *x_pbc = nullptr; /* Space for the pbc-correct atom positions */
 
 
     if (MASTER(cr) && bVerbose)
@@ -3696,7 +3696,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
     /* Output every step for reruns */
     if (er->Flags & MD_RERUN)
     {
-        if (NULL != fplog)
+        if (nullptr != fplog)
         {
             fprintf(fplog, "%s rerun - will write rotation output every available step.\n", RotStr);
         }
@@ -3704,7 +3704,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
         rot->nstsout = 1;
     }
 
-    er->out_slabs = NULL;
+    er->out_slabs = nullptr;
     if (MASTER(cr) && HaveFlexibleGroups(rot) )
     {
         er->out_slabs = open_slab_out(opt2fn("-rs", nfile, fnm), rot);
@@ -3716,7 +3716,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
          * When ir->bContinuation=TRUE this has already been done, but ok. */
         snew(x_pbc, mtop->natoms);
         copy_rvecn(x, x_pbc, 0, mtop->natoms);
-        do_pbc_first_mtop(NULL, ir->ePBC, box, mtop, x_pbc);
+        do_pbc_first_mtop(nullptr, ir->ePBC, box, mtop, x_pbc);
         /* All molecules will be whole now, but not necessarily in the home box.
          * Additionally, if a rotation group consists of more than one molecule
          * (e.g. two strands of DNA), each one of them can end up in a different
@@ -3727,7 +3727,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
     {
         rotg = &rot->grp[g];
 
-        if (NULL != fplog)
+        if (nullptr != fplog)
         {
             fprintf(fplog, "%s group %d type '%s'\n", RotStr, g, erotg_names[rotg->eType]);
         }
@@ -3744,7 +3744,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
             {
                 erg->nat_loc    = 0;
                 erg->nalloc_loc = 0;
-                erg->ind_loc    = NULL;
+                erg->ind_loc    = nullptr;
             }
             else
             {
@@ -3773,14 +3773,14 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
     else
     {
         er->mpi_bufsize = 0;
-        er->mpi_inbuf   = NULL;
-        er->mpi_outbuf  = NULL;
+        er->mpi_inbuf   = nullptr;
+        er->mpi_outbuf  = nullptr;
     }
 
     /* Only do I/O on the MASTER */
-    er->out_angles  = NULL;
-    er->out_rot     = NULL;
-    er->out_torque  = NULL;
+    er->out_angles  = nullptr;
+    er->out_rot     = nullptr;
+    er->out_torque  = nullptr;
     if (MASTER(cr))
     {
         er->out_rot = open_rot_out(opt2fn("-ro", nfile, fnm), rot, oenv);
@@ -3896,11 +3896,11 @@ extern void do_rotation(
     t_rotgrp       *rotg;
     gmx_bool        outstep_slab, outstep_rot;
     gmx_bool        bColl;
-    gmx_enfrot_t    er;         /* Pointer to the enforced rotation buffer variables */
-    gmx_enfrotgrp_t erg;        /* Pointer to enforced rotation group data           */
+    gmx_enfrot_t    er;            /* Pointer to the enforced rotation buffer variables */
+    gmx_enfrotgrp_t erg;           /* Pointer to enforced rotation group data           */
     rvec            transvec;
-    t_gmx_potfit   *fit = NULL; /* For fit type 'potential' determine the fit
-                                   angle via the potential minimum            */
+    t_gmx_potfit   *fit = nullptr; /* For fit type 'potential' determine the fit
+                                      angle via the potential minimum            */
 
     /* Enforced rotation cycle counting: */
     gmx_cycles_t cycles_comp;   /* Cycles for the enf. rotation computation

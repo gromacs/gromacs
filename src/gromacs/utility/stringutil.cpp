@@ -105,7 +105,7 @@ bool endsWith(const char *str, const char *suffix)
 
 std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
 {
-    if (suffix != NULL)
+    if (suffix != nullptr)
     {
         size_t suffixLength = std::strlen(suffix);
         if (suffixLength > 0 && endsWith(str, suffix))
@@ -247,7 +247,7 @@ std::string
 replaceInternal(const std::string &input, const char *from, const char *to,
                 bool bWholeWords)
 {
-    GMX_RELEASE_ASSERT(from != NULL && to != NULL,
+    GMX_RELEASE_ASSERT(from != nullptr && to != nullptr,
                        "Replacement strings must not be NULL");
     size_t      matchLength = std::strlen(from);
     std::string result;
@@ -352,7 +352,7 @@ TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
     {
         const char *nextBreakPtr = std::strpbrk(input + lineEnd, " \n");
         size_t      nextBreak
-            = (nextBreakPtr != NULL ? nextBreakPtr - input : inputLength);
+            = (nextBreakPtr != nullptr ? nextBreakPtr - input : inputLength);
         if (nextBreak > lastAllowedBreakPoint && lineEnd > lineStart)
         {
             break;

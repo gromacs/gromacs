@@ -89,7 +89,7 @@ void nbnxn_realloc_void(void **ptr,
 
     ma(&ptr_new, nbytes_new);
 
-    if (nbytes_new > 0 && ptr_new == NULL)
+    if (nbytes_new > 0 && ptr_new == nullptr)
     {
         gmx_fatal(FARGS, "Allocation of %d bytes failed", nbytes_new);
     }
@@ -102,7 +102,7 @@ void nbnxn_realloc_void(void **ptr,
         }
         memcpy(ptr_new, *ptr, nbytes_copy);
     }
-    if (*ptr != NULL)
+    if (*ptr != nullptr)
     {
         mf(*ptr);
     }
@@ -157,7 +157,7 @@ static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
                                        int nenergrp, int stride,
                                        nbnxn_alloc_t *ma)
 {
-    out->f = NULL;
+    out->f = nullptr;
     ma((void **)&out->fshift, SHIFTS*DIM*sizeof(*out->fshift));
     out->nV = nenergrp*nenergrp;
     ma((void **)&out->Vvdw, out->nV*sizeof(*out->Vvdw));
@@ -557,7 +557,7 @@ void nbnxn_atomdata_init(FILE *fp,
     char    *ptr;
     gmx_bool simple, bCombGeom, bCombLB, bSIMD;
 
-    if (alloc == NULL)
+    if (alloc == nullptr)
     {
         nbat->alloc = nbnxn_alloc_aligned;
     }
@@ -565,7 +565,7 @@ void nbnxn_atomdata_init(FILE *fp,
     {
         nbat->alloc = alloc;
     }
-    if (free == NULL)
+    if (free == nullptr)
     {
         nbat->free = nbnxn_free_aligned;
     }
@@ -588,7 +588,7 @@ void nbnxn_atomdata_init(FILE *fp,
      */
     tol = 1e-5;
     ptr = getenv("GMX_LJCOMB_TOL");
-    if (ptr != NULL)
+    if (ptr != nullptr)
     {
         double dbl;
 
@@ -723,8 +723,8 @@ void nbnxn_atomdata_init(FILE *fp,
     set_lj_parameter_data(nbat, bSIMD);
 
     nbat->natoms  = 0;
-    nbat->type    = NULL;
-    nbat->lj_comb = NULL;
+    nbat->type    = nullptr;
+    nbat->lj_comb = nullptr;
     if (simple)
     {
         int pack_x;
@@ -757,12 +757,12 @@ void nbnxn_atomdata_init(FILE *fp,
         nbat->XFormat = nbatXYZQ;
         nbat->FFormat = nbatXYZ;
     }
-    nbat->q        = NULL;
+    nbat->q        = nullptr;
     nbat->nenergrp = n_energygroups;
     if (!simple)
     {
         /* Energy groups not supported yet for super-sub lists */
-        if (n_energygroups > 1 && fp != NULL)
+        if (n_energygroups > 1 && fp != nullptr)
         {
             fprintf(fp, "\nNOTE: With GPUs, reporting energy group contributions is not supported\n\n");
         }
@@ -778,11 +778,11 @@ void nbnxn_atomdata_init(FILE *fp,
     {
         nbat->neg_2log++;
     }
-    nbat->energrp = NULL;
+    nbat->energrp = nullptr;
     nbat->alloc((void **)&nbat->shift_vec, SHIFTS*sizeof(*nbat->shift_vec));
     nbat->xstride = (nbat->XFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
     nbat->fstride = (nbat->FFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
-    nbat->x       = NULL;
+    nbat->x       = nullptr;
 
 #if GMX_SIMD
     if (simple)
@@ -802,15 +802,15 @@ void nbnxn_atomdata_init(FILE *fp,
                                    nbat->nenergrp, 1<<nbat->neg_2log,
                                    nbat->alloc);
     }
-    nbat->buffer_flags.flag        = NULL;
+    nbat->buffer_flags.flag        = nullptr;
     nbat->buffer_flags.flag_nalloc = 0;
 
     nth = gmx_omp_nthreads_get(emntNonbonded);
 
     ptr = getenv("GMX_USE_TREEREDUCE");
-    if (ptr != NULL)
+    if (ptr != nullptr)
     {
-        nbat->bUseTreeReduce = strtol(ptr, 0, 10);
+        nbat->bUseTreeReduce = strtol(ptr, nullptr, 10);
     }
 #if defined __MIC__
     else if (nth > 8) /*on the CPU we currently don't benefit even at 32*/

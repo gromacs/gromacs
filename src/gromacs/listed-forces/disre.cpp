@@ -201,7 +201,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
     dd->Rtav_6 = &(dd->Rt_6[dd->nres]);
 
     ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
-    if (cr && cr->ms != NULL && ptr != NULL && !bIsREMD)
+    if (cr && cr->ms != nullptr && ptr != nullptr && !bIsREMD)
     {
 #if GMX_MPI
         dd->nsystems = 0;

@@ -133,13 +133,13 @@ evaluate_pos(const gmx::SelMethodEvalContext &context,
 
 /** Parameters for position keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_pos[] = {
-    {NULL,   {GROUP_VALUE, 1, {NULL}}, NULL, SPAR_DYNAMIC},
+    {nullptr,   {GROUP_VALUE, 1, {nullptr}}, nullptr, SPAR_DYNAMIC},
 };
 
 /** Parameters for the \p cog and \p com selection methods. */
 static gmx_ana_selparam_t smparams_com[] = {
-    {"of",   {GROUP_VALUE, 1, {NULL}}, NULL, SPAR_DYNAMIC},
-    {"pbc",  {NO_VALUE,    0, {NULL}}, NULL, 0},
+    {"of",   {GROUP_VALUE, 1, {nullptr}}, nullptr, SPAR_DYNAMIC},
+    {"pbc",  {NO_VALUE,    0, {nullptr}}, nullptr, 0},
 };
 
 /** Selection method data for position keyword evaluation. */
@@ -151,10 +151,10 @@ gmx_ana_selmethod_t sm_keyword_pos = {
     &init_kwpos,
     &init_output_pos,
     &free_data_pos,
-    NULL,
+    nullptr,
     &evaluate_pos,
-    NULL,
-    {NULL, NULL, 0, NULL},
+    nullptr,
+    {nullptr, nullptr, 0, nullptr},
 };
 
 /** Selection method data for the \p cog method. */
@@ -166,10 +166,10 @@ gmx_ana_selmethod_t sm_cog = {
     &init_cog,
     &init_output_pos,
     &free_data_pos,
-    NULL,
+    nullptr,
     &evaluate_pos,
-    NULL,
-    {"cog of ATOM_EXPR [pbc]", NULL, 0, NULL},
+    nullptr,
+    {"cog of ATOM_EXPR [pbc]", nullptr, 0, nullptr},
 };
 
 /** Selection method data for the \p com method. */
@@ -181,10 +181,10 @@ gmx_ana_selmethod_t sm_com = {
     &init_com,
     &init_output_pos,
     &free_data_pos,
-    NULL,
+    nullptr,
     &evaluate_pos,
-    NULL,
-    {"com of ATOM_EXPR [pbc]", NULL, 0, NULL},
+    nullptr,
+    {"com of ATOM_EXPR [pbc]", nullptr, 0, nullptr},
 };
 
 /*!
@@ -209,9 +209,9 @@ init_data_pos(int npar, gmx_ana_selparam_t *param)
     {
         param[1].val.u.b = &data->bPBC;
     }
-    data->pc       = NULL;
+    data->pc       = nullptr;
     data->bPBC     = false;
-    data->type     = NULL;
+    data->type     = nullptr;
     data->flags    = -1;
     return data;
 }
@@ -236,7 +236,7 @@ _gmx_selelem_is_default_kwpos(const gmx::SelectionTreeElement &sel)
     }
 
     t_methoddata_pos *d = static_cast<t_methoddata_pos *>(sel.u.expr.mdata);
-    return d->type == NULL;
+    return d->type == nullptr;
 }
 
 /*! \brief

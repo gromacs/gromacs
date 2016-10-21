@@ -165,7 +165,7 @@ class ArrayRef
         fromVector(typename std::vector<value_type>::iterator begin,
                    typename std::vector<value_type>::iterator end)
         {
-            value_type *p_begin = (begin != end) ? &*begin : NULL;
+            value_type *p_begin = (begin != end) ? &*begin : nullptr;
             value_type *p_end   = p_begin + (end-begin);
             return ArrayRef<value_type>(p_begin, p_end);
         }
@@ -181,7 +181,7 @@ class ArrayRef
          * used to initialize any ArrayRef, without specifying the template
          * type.  It is not explicit to enable that usage.
          */
-        ArrayRef(const EmptyArrayRef &) : begin_(NULL), end_(NULL) {}
+        ArrayRef(const EmptyArrayRef &) : begin_(nullptr), end_(nullptr) {}
         /*! \brief
          * Constructs a reference to a particular range.
          *
@@ -210,8 +210,8 @@ class ArrayRef
          * std::vector to a method that takes ArrayRef.
          */
         ArrayRef(std::vector<T> &v)
-            : begin_((!v.empty()) ? &v[0] : NULL),
-              end_((!v.empty()) ? &v[0] + v.size() : NULL)
+            : begin_((!v.empty()) ? &v[0] : nullptr),
+              end_((!v.empty()) ? &v[0] + v.size() : nullptr)
         {
         }
         //! \cond
@@ -389,7 +389,7 @@ class ConstArrayRef
         fromVector(typename std::vector<value_type>::const_iterator begin,
                    typename std::vector<value_type>::const_iterator end)
         {
-            const value_type *p_begin = (begin != end) ? &*begin : NULL;
+            const value_type *p_begin = (begin != end) ? &*begin : nullptr;
             const value_type *p_end   = p_begin + (end-begin);
             return ConstArrayRef<value_type>(p_begin, p_end);
         }
@@ -397,7 +397,7 @@ class ConstArrayRef
         /*! \brief
          * Constructs an empty reference.
          */
-        ConstArrayRef() : begin_(NULL), end_(NULL) {}
+        ConstArrayRef() : begin_(nullptr), end_(nullptr) {}
         /*! \brief
          * Constructs an empty reference.
          *
@@ -405,7 +405,7 @@ class ConstArrayRef
          * used to initialize any Const ArrayRef, without specifying the
          * template type.  It is not explicit to enable that usage.
          */
-        ConstArrayRef(const EmptyArrayRef &) : begin_(NULL), end_(NULL) {}
+        ConstArrayRef(const EmptyArrayRef &) : begin_(nullptr), end_(nullptr) {}
         /*! \brief
          * Constructs a const reference from a non-const reference.
          */
@@ -438,8 +438,8 @@ class ConstArrayRef
          * std::vector to a method that takes ConstArrayRef.
          */
         ConstArrayRef(const std::vector<T> &v)
-            : begin_((!v.empty()) ? &v[0] : NULL),
-              end_((!v.empty()) ? &v[0] + v.size() : NULL)
+            : begin_((!v.empty()) ? &v[0] : nullptr),
+              end_((!v.empty()) ? &v[0] + v.size() : nullptr)
         {
         }
         //! \cond

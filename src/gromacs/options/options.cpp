@@ -111,7 +111,7 @@ OptionSectionImpl::addSectionImpl(const AbstractOptionSection &section)
 {
     const char *name = section.name_;
     // Make sure that there are no duplicate sections.
-    GMX_RELEASE_ASSERT(findSection(name) == NULL, "Duplicate subsection name");
+    GMX_RELEASE_ASSERT(findSection(name) == nullptr, "Duplicate subsection name");
     std::unique_ptr<IOptionSectionStorage> storage(section.createStorage());
     subsections_.push_back(SectionPointer(new OptionSectionImpl(managers_, std::move(storage), name)));
     return subsections_.back().get();

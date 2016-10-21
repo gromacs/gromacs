@@ -124,7 +124,7 @@ class LogWriteHelper
          * Note that the return value is unintuitively `false` when the target
          * is active, to allow implementing ::GMX_LOG like it is now.
          */
-        operator bool() const { return target_ == NULL; }
+        operator bool() const { return target_ == nullptr; }
 
         /*! \brief
          * Writes the entry from the given writer to the log target.
@@ -159,7 +159,7 @@ class LogLevelHelper
 
         // Both of the below should be explicit, once that works in CUDA.
         //! Returns whether the output for this log level goes anywhere.
-        operator bool() const { return target_ != NULL; }
+        operator bool() const { return target_ != nullptr; }
 
         //! Creates a helper for ::GMX_LOG.
         operator LogWriteHelper() const { return LogWriteHelper(target_); }

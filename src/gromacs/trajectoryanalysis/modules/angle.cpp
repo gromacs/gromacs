@@ -314,7 +314,7 @@ class Angle : public TrajectoryAnalysisModule
 };
 
 Angle::Angle()
-    : sel1info_(NULL), sel2info_(NULL),
+    : sel1info_(nullptr), sel2info_(nullptr),
       g1type_(Group1Type_Angle), g2type_(Group2Type_None),
       binWidth_(1.0), natoms1_(0), natoms2_(0)
 {

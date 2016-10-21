@@ -75,7 +75,7 @@ namespace
  */
 std::string quoteIfNecessary(const char *str)
 {
-    const bool bSpaces = (std::strchr(str, ' ') != NULL);
+    const bool bSpaces = (std::strchr(str, ' ') != nullptr);
     if (bSpaces)
     {
         return formatString("'%s'", str);

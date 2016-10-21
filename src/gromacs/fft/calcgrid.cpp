@@ -107,7 +107,7 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
 
     if ((*nx <= 0) || (*ny <= 0) || (*nz <= 0))
     {
-        if (NULL != fp)
+        if (nullptr != fp)
         {
             fprintf(fp, "Calculating fourier grid dimensions for%s%s%s\n",
                     *nx > 0 ? "" : " X", *ny > 0 ? "" : " Y", *nz > 0 ? "" : " Z");
@@ -162,7 +162,7 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
     *nx = n[XX];
     *ny = n[YY];
     *nz = n[ZZ];
-    if (NULL != fp)
+    if (nullptr != fp)
     {
         fprintf(fp, "Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
                 *nx, *ny, *nz, spacing[XX], spacing[YY], spacing[ZZ]);

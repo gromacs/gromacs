@@ -74,7 +74,7 @@ AtomsBuilder::~AtomsBuilder()
 
 char **AtomsBuilder::symtabString(char **source)
 {
-    if (symtab_ != NULL)
+    if (symtab_ != nullptr)
     {
         return put_symtab(symtab_, *source);
     }
@@ -268,7 +268,7 @@ void AtomsRemover::removeMarkedElements(std::vector<real> *container) const
 void AtomsRemover::removeMarkedAtoms(t_atoms *atoms) const
 {
     const int    originalAtomCount = atoms->nr;
-    AtomsBuilder builder(atoms, NULL);
+    AtomsBuilder builder(atoms, nullptr);
     if (atoms->nr > 0)
     {
         builder.setNextResidueNumber(atoms->resinfo[0].nr);
