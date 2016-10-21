@@ -46,6 +46,15 @@ fast. If you want to get the maximum value for your hardware with
 hardware, libraries, and compilers are only going to continue to get
 more complex.
 
+Quick and dirty cluster installation
+------------------------------------
+
+On a cluster where users are expected to be running across multiple
+nodes using MPI, make one installation similar to the above, and
+another using an MPI wrapper compiler and which is `building only
+mdrun`_, because that is the only component of |Gromacs| that uses
+MPI.
+
 Typical installation
 --------------------
 As above, and with further details below, but you should consider
@@ -54,7 +63,7 @@ appropriate value instead of ``xxx`` :
 
 * ``-DCMAKE_C_COMPILER=xxx`` equal to the name of the C99 `Compiler`_ you wish to use (or the environment variable ``CC``)
 * ``-DCMAKE_CXX_COMPILER=xxx`` equal to the name of the C++98 `compiler`_ you wish to use (or the environment variable ``CXX``)
-* ``-DGMX_MPI=on`` to build using `MPI support`_
+* ``-DGMX_MPI=on`` to build using `MPI support`_ (generally good to combine with `building only mdrun`_)
 * ``-DGMX_GPU=on`` to build using nvcc to run using NVIDIA `CUDA GPU acceleration`_ or an OpenCL_ GPU
 * ``-DGMX_USE_OPENCL=on`` to build with OpenCL_ support enabled. ``GMX_GPU`` must also be set.
 * ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which |Gromacs| will run
@@ -786,24 +795,14 @@ supported by ``cmake`` (e.g. ``ninja``) also work well.
 
 Building only mdrun
 ^^^^^^^^^^^^^^^^^^^
-Past versions of the build system offered "mdrun" and "install-mdrun"
-targets (similarly for other programs too) to build and install only
-the mdrun program, respectively. Such a build is useful when the
-configuration is only relevant for mdrun (such as with
-parallelization options for MPI, SIMD, GPUs, or on BlueGene or Cray),
-or the length of time for the compile-link-install cycle is relevant
-when developing.
 
 This is now supported with the ``cmake`` option
-``-DGMX_BUILD_MDRUN_ONLY=ON``, which will build a cut-down version of
-``libgromacs`` and/or the mdrun program.
+``-DGMX_BUILD_MDRUN_ONLY=ON``, which will build a different version of
+``libgromacs`` and the ``mdrun`` program.
 Naturally, now ``make install`` installs only those
 products. By default, mdrun-only builds will default to static linking
 against |Gromacs| libraries, because this is generally a good idea for
-the targets for which an mdrun-only build is desirable. If you re-use
-a build tree and change to the mdrun-only build, then you will inherit
-the setting for ``BUILD_SHARED_LIBS`` from the old build, and will be
-warned that you may wish to manage ``BUILD_SHARED_LIBS`` yourself.
+the targets for which an mdrun-only build is desirable.
 
 Installing |Gromacs|
 --------------------
@@ -915,8 +914,9 @@ be run. You can use ``./gmxtest.pl -mpirun srun`` if your command to
 run an MPI program is called ``srun``.
 
 The ``make check`` target also runs integration-style tests that may run
-with MPI if ``GMX_MPI=ON`` was set. To make these work, you may need to
-set the CMake variables ``MPIEXEC``, ``MPIEXEC_NUMPROC_FLAG``, ``NUMPROC``,
+with MPI if ``GMX_MPI=ON`` was set. To make these work with various possible
+MPI libraries, you may need to
+set the CMake variables ``MPIEXEC``, ``MPIEXEC_NUMPROC_FLAG``,
 ``MPIEXEC_PREFLAGS`` and ``MPIEXEC_POSTFLAGS`` so that
 ``mdrun-mpi-test_mpi`` would run on multiple ranks via the shell command
 
@@ -925,8 +925,11 @@ set the CMake variables ``MPIEXEC``, ``MPIEXEC_NUMPROC_FLAG``, ``NUMPROC``,
     ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NUMPROC} ${MPIEXEC_PREFLAGS} \
           mdrun-mpi-test_mpi ${MPIEXEC_POSTFLAGS} -otherflags
 
-Typically, one might use variable values ``mpirun``, ``-np``, ``2``, ``''``,
-``''`` respectively, in order to run on two ranks.
+A typical example for SLURM is
+
+::
+
+     cmake .. -DGMX_MPI=on -DMPIEXEC=srun -DMPIEXEC_NUMPROC_FLAG=-n -DMPIEXEC_PREFLAGS= -DMPIEXEC_POSTFLAGS=
 
 
 Testing |Gromacs| for performance
