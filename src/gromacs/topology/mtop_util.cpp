@@ -121,7 +121,7 @@ void gmx_mtop_finalize(gmx_mtop_t *mtop)
     }
 
     env = getenv("GMX_MAXRESRENUM");
-    if (env != NULL)
+    if (env != nullptr)
     {
         sscanf(env, "%d", &mtop->maxres_renum);
     }
@@ -251,7 +251,7 @@ static void gmx_mtop_atomloop_all_destroy(gmx_mtop_atomloop_all_t aloop)
 gmx_bool gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
                                     int *at_global, const t_atom **atom)
 {
-    if (aloop == NULL)
+    if (aloop == nullptr)
     {
         gmx_incons("gmx_mtop_atomloop_all_next called without calling gmx_mtop_atomloop_all_init");
     }
@@ -340,7 +340,7 @@ static void gmx_mtop_atomloop_block_destroy(gmx_mtop_atomloop_block_t aloop)
 gmx_bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
                                       const t_atom **atom, int *nmol)
 {
-    if (aloop == NULL)
+    if (aloop == nullptr)
     {
         gmx_incons("gmx_mtop_atomloop_all_next called without calling gmx_mtop_atomloop_all_init");
     }
@@ -392,7 +392,7 @@ static void gmx_mtop_ilistloop_destroy(gmx_mtop_ilistloop_t iloop)
 gmx_bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
                                  t_ilist **ilist_mol, int *nmol)
 {
-    if (iloop == NULL)
+    if (iloop == nullptr)
     {
         gmx_incons("gmx_mtop_ilistloop_next called without calling gmx_mtop_ilistloop_init");
     }
@@ -451,7 +451,7 @@ gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
                                      t_ilist **ilist_mol, int *atnr_offset)
 {
 
-    if (iloop == NULL)
+    if (iloop == nullptr)
     {
         gmx_incons("gmx_mtop_ilistloop_all_next called without calling gmx_mtop_ilistloop_all_init");
     }
@@ -857,9 +857,9 @@ static void gen_local_top(const gmx_mtop_t *mtop,
     idef->atnr                    = ffp->atnr;
     idef->functype                = ffp->functype;
     idef->iparams                 = ffp->iparams;
-    idef->iparams_posres          = NULL;
+    idef->iparams_posres          = nullptr;
     idef->iparams_posres_nalloc   = 0;
-    idef->iparams_fbposres        = NULL;
+    idef->iparams_fbposres        = nullptr;
     idef->iparams_fbposres_nalloc = 0;
     idef->fudgeQQ                 = ffp->fudgeQQ;
     idef->cmap_grid               = ffp->cmap_grid;
@@ -871,7 +871,7 @@ static void gen_local_top(const gmx_mtop_t *mtop,
     {
         idef->il[ftype].nr     = 0;
         idef->il[ftype].nalloc = 0;
-        idef->il[ftype].iatoms = NULL;
+        idef->il[ftype].iatoms = nullptr;
     }
 
     natoms = 0;

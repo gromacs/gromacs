@@ -77,7 +77,7 @@ do_md_trajectory_writing(FILE             *fplog,
                          )
 {
     int   mdof_flags;
-    rvec *x_for_confout = NULL;
+    rvec *x_for_confout = nullptr;
 
     mdof_flags = 0;
     if (do_per_step(step, ir->nstxout))

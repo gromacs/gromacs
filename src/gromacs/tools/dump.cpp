@@ -92,12 +92,12 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
     read_tpx_state(fn,
                    ir,
                    &state,
-                   tpx.bTop ? &mtop : NULL);
+                   tpx.bTop ? &mtop : nullptr);
 
     if (mdpfn && tpx.bIr)
     {
         gp = gmx_fio_fopen(mdpfn, "w");
-        pr_inputrec(gp, 0, NULL, ir, TRUE);
+        pr_inputrec(gp, 0, nullptr, ir, TRUE);
         gmx_fio_fclose(gp);
     }
 
@@ -125,18 +125,18 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
                 pr_top(stdout, indent, "topology", &(top), bShowNumbers);
             }
 
-            pr_rvecs(stdout, indent, "box", tpx.bBox ? state.box : NULL, DIM);
-            pr_rvecs(stdout, indent, "box_rel", tpx.bBox ? state.box_rel : NULL, DIM);
-            pr_rvecs(stdout, indent, "boxv", tpx.bBox ? state.boxv : NULL, DIM);
-            pr_rvecs(stdout, indent, "pres_prev", tpx.bBox ? state.pres_prev : NULL, DIM);
-            pr_rvecs(stdout, indent, "svir_prev", tpx.bBox ? state.svir_prev : NULL, DIM);
-            pr_rvecs(stdout, indent, "fvir_prev", tpx.bBox ? state.fvir_prev : NULL, DIM);
+            pr_rvecs(stdout, indent, "box", tpx.bBox ? state.box : nullptr, DIM);
+            pr_rvecs(stdout, indent, "box_rel", tpx.bBox ? state.box_rel : nullptr, DIM);
+            pr_rvecs(stdout, indent, "boxv", tpx.bBox ? state.boxv : nullptr, DIM);
+            pr_rvecs(stdout, indent, "pres_prev", tpx.bBox ? state.pres_prev : nullptr, DIM);
+            pr_rvecs(stdout, indent, "svir_prev", tpx.bBox ? state.svir_prev : nullptr, DIM);
+            pr_rvecs(stdout, indent, "fvir_prev", tpx.bBox ? state.fvir_prev : nullptr, DIM);
             /* leave nosehoover_xi in for now to match the tpr version */
             pr_doubles(stdout, indent, "nosehoover_xi", state.nosehoover_xi.data(), state.ngtc);
             /*pr_doubles(stdout,indent,"nosehoover_vxi",state.nosehoover_vxi,state.ngtc);*/
             /*pr_doubles(stdout,indent,"therm_integral",state.therm_integral,state.ngtc);*/
-            pr_rvecs(stdout, indent, "x", tpx.bX ? as_rvec_array(state.x.data()) : NULL, state.natoms);
-            pr_rvecs(stdout, indent, "v", tpx.bV ? as_rvec_array(state.v.data()) : NULL, state.natoms);
+            pr_rvecs(stdout, indent, "x", tpx.bX ? as_rvec_array(state.x.data()) : nullptr, state.natoms);
+            pr_rvecs(stdout, indent, "v", tpx.bV ? as_rvec_array(state.v.data()) : nullptr, state.natoms);
         }
 
         groups = &mtop.groups;
@@ -177,7 +177,7 @@ static void list_top(const char *fn)
 #define BUFLEN 256
     char      buf[BUFLEN];
     gmx_cpp_t handle;
-    char     *cppopts[] = { NULL };
+    char     *cppopts[] = { nullptr };
 
     status = cpp_open_file(fn, &handle, cppopts);
     if (status != 0)
@@ -227,10 +227,10 @@ static void list_trr(const char *fn)
         snew(v, trrheader.natoms);
         snew(f, trrheader.natoms);
         if (gmx_trr_read_frame_data(fpread, &trrheader,
-                                    trrheader.box_size ? box : NULL,
-                                    trrheader.x_size   ? x : NULL,
-                                    trrheader.v_size   ? v : NULL,
-                                    trrheader.f_size   ? f : NULL))
+                                    trrheader.box_size ? box : nullptr,
+                                    trrheader.x_size   ? x : nullptr,
+                                    trrheader.v_size   ? v : nullptr,
+                                    trrheader.f_size   ? f : nullptr))
         {
             sprintf(buf, "%s frame %d", fn, nframe);
             indent = 0;
@@ -348,7 +348,7 @@ static void list_tng(const char gmx_unused *fn)
 #ifdef GMX_USE_TNG
     tng_trajectory_t     tng;
     gmx_int64_t          nframe = 0;
-    gmx_int64_t          i, *block_ids = NULL, step, ndatablocks;
+    gmx_int64_t          i, *block_ids = nullptr, step, ndatablocks;
     gmx_bool             bOK;
 
     gmx_tng_open(fn, 'r', &tng);
@@ -356,7 +356,7 @@ static void list_tng(const char gmx_unused *fn)
 
     bOK    = gmx_get_tng_data_block_types_of_next_frame(tng, -1,
                                                         0,
-                                                        NULL,
+                                                        nullptr,
                                                         &step, &ndatablocks,
                                                         &block_ids);
     do
@@ -364,7 +364,7 @@ static void list_tng(const char gmx_unused *fn)
         for (i = 0; i < ndatablocks; i++)
         {
             double               frame_time;
-            real                 prec, *values = NULL;
+            real                 prec, *values = nullptr;
             gmx_int64_t          n_values_per_frame, n_atoms;
             char                 block_name[STRLEN];
 
@@ -389,7 +389,7 @@ static void list_tng(const char gmx_unused *fn)
     }
     while (gmx_get_tng_data_block_types_of_next_frame(tng, step,
                                                       0,
-                                                      NULL,
+                                                      nullptr,
                                                       &step,
                                                       &ndatablocks,
                                                       &block_ids));
@@ -426,7 +426,7 @@ void list_ene(const char *fn)
 {
     ener_file_t    in;
     gmx_bool       bCont;
-    gmx_enxnm_t   *enm = NULL;
+    gmx_enxnm_t   *enm = nullptr;
     t_enxframe    *fr;
     int            i, j, nre, b;
     char           buf[22];
@@ -554,12 +554,12 @@ void list_ene(const char *fn)
 static void list_mtx(const char *fn)
 {
     int                  nrow, ncol, i, j, k;
-    real                *full   = NULL, value;
-    gmx_sparsematrix_t * sparse = NULL;
+    real                *full   = nullptr, value;
+    gmx_sparsematrix_t * sparse = nullptr;
 
     gmx_mtxio_read(fn, &nrow, &ncol, &full, &sparse);
 
-    if (full == NULL)
+    if (full == nullptr)
     {
         snew(full, nrow*ncol);
         for (i = 0; i < nrow*ncol; i++)
@@ -610,13 +610,13 @@ int gmx_dump(int argc, char *argv[])
         "Position restraint output from -sys -s is broken"
     };
     t_filenm    fnm[] = {
-        { efTPR, "-s", NULL, ffOPTRD },
-        { efTRX, "-f", NULL, ffOPTRD },
-        { efEDR, "-e", NULL, ffOPTRD },
-        { efCPT, NULL, NULL, ffOPTRD },
-        { efTOP, "-p", NULL, ffOPTRD },
+        { efTPR, "-s", nullptr, ffOPTRD },
+        { efTRX, "-f", nullptr, ffOPTRD },
+        { efEDR, "-e", nullptr, ffOPTRD },
+        { efCPT, nullptr, nullptr, ffOPTRD },
+        { efTOP, "-p", nullptr, ffOPTRD },
         { efMTX, "-mtx", "hessian", ffOPTRD },
-        { efMDP, "-om", NULL, ffOPTWR }
+        { efMDP, "-om", nullptr, ffOPTWR }
     };
 #define NFILE asize(fnm)
 

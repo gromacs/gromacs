@@ -156,7 +156,7 @@ gmx_ctime_r(const time_t *clock, char *buf, size_t len)
 
 void gmx_format_current_time(char *buf, size_t len)
 {
-    time_t clock = time(NULL);
+    time_t clock = time(nullptr);
     gmx_ctime_r(&clock, buf, len);
 }
 

@@ -101,12 +101,12 @@ static void enxsubblock_init(t_enxsubblock *sb)
 #else
     sb->type = xdr_datatype_float;
 #endif
-    sb->fval       = NULL;
-    sb->dval       = NULL;
-    sb->ival       = NULL;
-    sb->lval       = NULL;
-    sb->cval       = NULL;
-    sb->sval       = NULL;
+    sb->fval       = nullptr;
+    sb->dval       = nullptr;
+    sb->ival       = nullptr;
+    sb->lval       = nullptr;
+    sb->cval       = nullptr;
+    sb->sval       = nullptr;
     sb->fval_alloc = 0;
     sb->dval_alloc = 0;
     sb->ival_alloc = 0;
@@ -121,31 +121,31 @@ static void enxsubblock_free(t_enxsubblock *sb)
     {
         sfree(sb->fval);
         sb->fval_alloc = 0;
-        sb->fval       = NULL;
+        sb->fval       = nullptr;
     }
     if (sb->dval_alloc)
     {
         sfree(sb->dval);
         sb->dval_alloc = 0;
-        sb->dval       = NULL;
+        sb->dval       = nullptr;
     }
     if (sb->ival_alloc)
     {
         sfree(sb->ival);
         sb->ival_alloc = 0;
-        sb->ival       = NULL;
+        sb->ival       = nullptr;
     }
     if (sb->lval_alloc)
     {
         sfree(sb->lval);
         sb->lval_alloc = 0;
-        sb->lval       = NULL;
+        sb->lval       = nullptr;
     }
     if (sb->cval_alloc)
     {
         sfree(sb->cval);
         sb->cval_alloc = 0;
-        sb->cval       = NULL;
+        sb->cval       = nullptr;
     }
     if (sb->sval_alloc)
     {
@@ -160,7 +160,7 @@ static void enxsubblock_free(t_enxsubblock *sb)
         }
         sfree(sb->sval);
         sb->sval_alloc = 0;
-        sb->sval       = NULL;
+        sb->sval       = nullptr;
     }
 }
 
@@ -213,7 +213,7 @@ static void enxsubblock_alloc(t_enxsubblock *sb)
                 srenew(sb->sval, sb->nr);
                 for (i = sb->sval_alloc; i < sb->nr; i++)
                 {
-                    sb->sval[i] = NULL;
+                    sb->sval[i] = nullptr;
                 }
                 sb->sval_alloc = sb->nr;
             }
@@ -227,7 +227,7 @@ static void enxblock_init(t_enxblock *eb)
 {
     eb->id         = enxOR;
     eb->nsub       = 0;
-    eb->sub        = NULL;
+    eb->sub        = nullptr;
     eb->nsub_alloc = 0;
 }
 
@@ -242,21 +242,21 @@ static void enxblock_free(t_enxblock *eb)
         }
         sfree(eb->sub);
         eb->nsub_alloc = 0;
-        eb->sub        = NULL;
+        eb->sub        = nullptr;
     }
 }
 
 void init_enxframe(t_enxframe *fr)
 {
     fr->e_alloc = 0;
-    fr->ener    = NULL;
+    fr->ener    = nullptr;
 
     /*fr->d_alloc=0;*/
     /*fr->ndisre=0;*/
 
     fr->nblock       = 0;
     fr->nblock_alloc = 0;
-    fr->block        = NULL;
+    fr->block        = nullptr;
 }
 
 
@@ -307,7 +307,7 @@ t_enxblock *find_block_id_enxframe(t_enxframe *ef, int id, t_enxblock *prev)
             return &(ef->block[i]);
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 void add_subblocks_enxblock(t_enxblock *eb, int n)
@@ -328,7 +328,7 @@ void add_subblocks_enxblock(t_enxblock *eb, int n)
 
 static void enx_warning(const char *msg)
 {
-    if (getenv("GMX_ENX_NO_FATAL") != NULL)
+    if (getenv("GMX_ENX_NO_FATAL") != nullptr)
     {
         gmx_warning(msg);
     }
@@ -346,7 +346,7 @@ static void edr_strings(XDR *xdr, gmx_bool bRead, int file_version,
     int          i;
     gmx_enxnm_t *nm;
 
-    if (*nms == NULL)
+    if (*nms == nullptr)
     {
         snew(*nms, n);
     }
@@ -358,12 +358,12 @@ static void edr_strings(XDR *xdr, gmx_bool bRead, int file_version,
             if (nm->name)
             {
                 sfree(nm->name);
-                nm->name = NULL;
+                nm->name = nullptr;
             }
             if (nm->unit)
             {
                 sfree(nm->unit);
-                nm->unit = NULL;
+                nm->unit = nullptr;
             }
         }
         if (!xdr_string(xdr, &(nm->name), STRLEN))
@@ -746,7 +746,7 @@ void free_enxnms(int n, gmx_enxnm_t *nms)
 
 void close_enx(ener_file_t ef)
 {
-    if (ef == NULL)
+    if (ef == nullptr)
     {
         // Nothing to do
         return;
@@ -795,7 +795,7 @@ empty_file(const char *fn)
 ener_file_t open_enx(const char *fn, const char *mode)
 {
     int               nre;
-    gmx_enxnm_t      *nms          = NULL;
+    gmx_enxnm_t      *nms          = nullptr;
     int               file_version = -1;
     t_enxframe       *fr;
     gmx_bool          bWrongPrecision, bOK = TRUE;
@@ -959,7 +959,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
         /*d_size = fr->ndisre*(sizeof(real)*2);*/
     }
 
-    if (!do_eheader(ef, &file_version, fr, -1, NULL, &bOK))
+    if (!do_eheader(ef, &file_version, fr, -1, nullptr, &bOK))
     {
         if (bRead)
         {
@@ -1168,7 +1168,7 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
     int          nre, nfr, i, j, ni, npcoupl;
     char         buf[STRLEN];
     const char  *bufi;
-    gmx_enxnm_t *enm = NULL;
+    gmx_enxnm_t *enm = nullptr;
     t_enxframe  *fr;
     ener_file_t  in;
 
@@ -1496,7 +1496,7 @@ void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const ch
     int            nre, nre1, nre2;
     ener_file_t    in1, in2;
     int            i, j, maxener, *ind1, *ind2, *have;
-    gmx_enxnm_t   *enm1 = NULL, *enm2 = NULL;
+    gmx_enxnm_t   *enm1 = nullptr, *enm2 = nullptr;
     t_enxframe    *fr1, *fr2;
     gmx_bool       b1, b2;
 
@@ -1549,7 +1549,7 @@ void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const ch
     maxener = nre;
     for (i = 0; i < nre; i++)
     {
-        if ((lastener != NULL) && (std::strstr(enm1[i].name, lastener) != NULL))
+        if ((lastener != nullptr) && (std::strstr(enm1[i].name, lastener) != nullptr))
         {
             maxener = i+1;
             break;

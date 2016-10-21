@@ -214,7 +214,7 @@ class OptionsModifyingTypeVisitor : public OptionsModifyingVisitor
         virtual void visitOption(OptionInfo *option)
         {
             InfoType *subtype = option->toType<InfoType>();
-            if (subtype != NULL)
+            if (subtype != nullptr)
             {
                 visitOptionType(subtype);
             }

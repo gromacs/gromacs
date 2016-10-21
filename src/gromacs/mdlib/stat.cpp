@@ -156,7 +156,7 @@ void global_stat(gmx_global_stat_t gs,
     int        inn[egNR];
     real       copyenerd[F_NRE];
     int        nener, j;
-    real      *rmsd_data = NULL;
+    real      *rmsd_data = nullptr;
     double     nb;
     gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
     bool       checkNumberOfBondedInteractions = flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS;

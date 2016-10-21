@@ -112,7 +112,7 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
                                struct gmx_pme_t **pme_ret)
 {
     int               ind;
-    struct gmx_pme_t *pme = NULL;
+    struct gmx_pme_t *pme = nullptr;
 
     ind = 0;
     while (ind < *npmedata)
@@ -152,10 +152,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     int                ret;
     int                natoms;
     matrix             box;
-    rvec              *x_pp       = NULL, *f_pp = NULL;
-    real              *chargeA    = NULL, *chargeB = NULL;
-    real              *c6A        = NULL, *c6B = NULL;
-    real              *sigmaA     = NULL, *sigmaB = NULL;
+    rvec              *x_pp       = nullptr, *f_pp = nullptr;
+    real              *chargeA    = nullptr, *chargeB = nullptr;
+    real              *c6A        = nullptr, *c6B = nullptr;
+    real              *sigmaA     = nullptr, *sigmaB = nullptr;
     real               lambda_q   = 0;
     real               lambda_lj  = 0;
     int                maxshift_x = 0, maxshift_y = 0;

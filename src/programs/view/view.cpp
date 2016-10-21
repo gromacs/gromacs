@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -396,14 +396,14 @@ int gmx_view(int argc, char *argv[])
 
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
-        { efTRX, "-f", NULL, ffREAD },
-        { efTPR, NULL, NULL, ffREAD },
-        { efNDX, NULL, NULL, ffOPTRD }
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPR, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD }
     };
 #define NFILE asize(fnm)
 
     if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
-                          0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
+                          0, nullptr, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
 #if !GMX_X11
         std::fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");

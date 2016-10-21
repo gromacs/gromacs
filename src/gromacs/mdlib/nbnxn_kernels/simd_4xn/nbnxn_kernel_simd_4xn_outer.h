@@ -563,7 +563,7 @@
 #else
         const real *nbfp0     = nbfp_ptr + type[sci  ]*nbat->ntype*c_simdBestPairAlignment;
         const real *nbfp1     = nbfp_ptr + type[sci+1]*nbat->ntype*c_simdBestPairAlignment;
-        const real *nbfp2     = NULL, *nbfp3 = NULL;
+        const real *nbfp2     = nullptr, *nbfp3 = nullptr;
         if (!half_LJ)
         {
             nbfp2 = nbfp_ptr + type[sci+2]*nbat->ntype*c_simdBestPairAlignment;

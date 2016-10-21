@@ -75,7 +75,7 @@ class TextTableFormatter::Impl
         {
             //! Initializes a text table column with given values.
             ColumnData(const char *title, int width, bool bWrap)
-                : title_(title != NULL ? title : ""),
+                : title_(title != nullptr ? title : ""),
                   width_(width), bWrap_(bWrap), firstLine_(0),
                   nextLineIndex_(0), nextLineOffset_(0)
             {
@@ -225,7 +225,7 @@ TextTableFormatter::~TextTableFormatter()
 
 void TextTableFormatter::addColumn(const char *title, int width, bool bWrap)
 {
-    if (title != NULL && title[0] != '\0')
+    if (title != nullptr && title[0] != '\0')
     {
         impl_->bPrintHeader_ = true;
     }

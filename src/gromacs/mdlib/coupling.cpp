@@ -82,11 +82,11 @@ static const double  sy_const_3[] = { 0.828981543588751, -0.657963087177502, 0.8
 static const double  sy_const_5[] = { 0.2967324292201065, 0.2967324292201065, -0.186929716880426, 0.2967324292201065, 0.2967324292201065 };
 
 static const double* sy_const[] = {
-    NULL,
+    nullptr,
     sy_const_1,
-    NULL,
+    nullptr,
     sy_const_3,
-    NULL,
+    nullptr,
     sy_const_5
 };
 
@@ -125,7 +125,7 @@ static void NHC_trotter(t_grpopts *opts, int nvar, gmx_ekindata_t *ekind, real d
 /* if scalefac is NULL, we are doing the NHC of the barostat */
 
     bBarostat = FALSE;
-    if (scalefac == NULL)
+    if (scalefac == nullptr)
     {
         bBarostat = TRUE;
     }
@@ -675,7 +675,7 @@ void berendsen_pscale(const t_inputrec *ir, const matrix mu,
         // Trivial OpenMP region that does not throw
         int g;
 
-        if (cFREEZE == NULL)
+        if (cFREEZE == nullptr)
         {
             g = 0;
         }
@@ -754,7 +754,7 @@ void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt)
 void andersen_tcoupl(t_inputrec *ir, gmx_int64_t step,
                      const t_commrec *cr, const t_mdatoms *md, t_state *state, real rate, const gmx_bool *randomize, const real *boltzfac)
 {
-    const int                                 *gatindex = (DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
+    const int                                 *gatindex = (DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr);
     int                                        i;
     int                                        gc = 0;
     gmx::ThreeFry2x64<0>                       rng(ir->andersen_seed, gmx::RandomDomain::Thermostat);
@@ -893,12 +893,12 @@ void trotter_update(t_inputrec *ir, gmx_int64_t step, gmx_ekindata_t *ekind,
             case etrtBARONHC:
             case etrtBARONHC2:
                 NHC_trotter(opts, state->nnhpres, ekind, dt, state->nhpres_xi.data(),
-                            state->nhpres_vxi.data(), NULL, &(state->veta), MassQ, FALSE);
+                            state->nhpres_vxi.data(), nullptr, &(state->veta), MassQ, FALSE);
                 break;
             case etrtNHC:
             case etrtNHC2:
                 NHC_trotter(opts, opts->ngtc, ekind, dt, state->nosehoover_xi.data(),
-                            state->nosehoover_vxi.data(), scalefac, NULL, MassQ, (ir->eI == eiVV));
+                            state->nosehoover_vxi.data(), scalefac, nullptr, MassQ, (ir->eI == eiVV));
                 /* need to rescale the kinetic energies and velocities here.  Could
                    scale the velocities later, but we need them scaled in order to
                    produce the correct outputs, so we'll scale them here. */
