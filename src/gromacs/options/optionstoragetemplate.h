@@ -54,6 +54,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/variant.h"
 
 #include "valueconverter.h"
 
@@ -100,6 +101,8 @@ class OptionStorageTemplate : public AbstractOptionStorage
         virtual std::string typeString() const = 0;
         //! \copydoc gmx::AbstractOptionStorage::valueCount()
         virtual int valueCount() const { return store_->valueCount(); }
+        //! \copydoc gmx::AbstractOptionStorage::defaultValues()
+        virtual std::vector<Variant> defaultValues() const;
         /*! \copydoc gmx::AbstractOptionStorage::defaultValuesAsStrings()
          *
          * OptionStorageTemplate implements handling of defaultValueIfSet()
@@ -433,6 +436,24 @@ std::unique_ptr<IOptionValueStore<T> > OptionStorageTemplate<T>::createStore(
     GMX_RELEASE_ASSERT(storeCount == nullptr,
                        "Cannot specify count storage without value storage");
     return StorePointer(new OptionValueStoreNull<T>());
+}
+
+
+template <typename T>
+std::vector<Variant> OptionStorageTemplate<T>::defaultValues() const
+{
+    std::vector<Variant> result;
+    if (hasFlag(efOption_NoDefaultValue))
+    {
+        return result;
+    }
+    GMX_RELEASE_ASSERT(hasFlag(efOption_HasDefaultValue),
+                       "Current option implementation can only provide default values before assignment");
+    for (const auto &value : values())
+    {
+        result.push_back(Variant::create<T>(value));
+    }
+    return result;
 }
 
 
