@@ -106,7 +106,7 @@ static void print_IMD_error(const char *file, int line, char *msg)
 {
     fprintf(stderr, "%s Error in file %s on line %d.\n", IMDstr, file, line);
 
-    if (NULL != msg)
+    if (nullptr != msg)
     {
         fprintf(stderr, "%s\n", msg);
     }
@@ -141,7 +141,7 @@ static uint16_t gmx_ntohs(uint16_t src)
 
 extern IMDSocket* imdsock_create()
 {
-    IMDSocket *sock = NULL;
+    IMDSocket *sock = nullptr;
 
 
 #ifdef GMX_IMD
@@ -152,7 +152,7 @@ extern IMDSocket* imdsock_create()
         print_IMD_error(ERR_ARGS);
         sfree(sock);
 
-        return NULL;
+        return nullptr;
     }
     else
 #endif
@@ -235,7 +235,7 @@ extern IMDSocket* imdsock_accept(IMDSocket *sock)
     {
         print_IMD_error(ERR_ARGS);
 
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -303,7 +303,7 @@ extern void imdsock_shutdown(IMDSocket *sock)
 
 
     /* is the socket already NULL? */
-    if (sock == NULL)
+    if (sock == nullptr)
     {
         return;
     }
@@ -326,7 +326,7 @@ extern int imdsock_destroy(IMDSocket *sock)
     int ret = -1;
 
 
-    if (sock == NULL)
+    if (sock == nullptr)
     {
         return 1;
     }
@@ -376,7 +376,7 @@ extern int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec)
     do
     {
         /* check the set for read readiness. */
-        ret = select(sock->sockfd + 1, &readfds, NULL, NULL, tval);
+        ret = select(sock->sockfd + 1, &readfds, nullptr, nullptr, tval);
         /* redo on system interrupt */
     }
     while (ret < 0 && errno == EINTR);

@@ -195,7 +195,7 @@ typedef double dvec[3];
 //! Helper function for HandlesSequenceOfCustomData
 void checkCustomVector(TestReferenceChecker *checker, const dvec &value)
 {
-    checker->checkVector(value, NULL);
+    checker->checkVector(value, nullptr);
 }
 
 TEST(ReferenceDataTest, HandlesSequenceOfCustomData)
@@ -514,8 +514,8 @@ TEST(ReferenceDataTest, HandlesStringsWithTextAndWhitespace)
         TestReferenceChecker checker(data.rootChecker());
         for (const auto &s : strings)
         {
-            checker.checkString(s, NULL);
-            checker.checkTextBlock(s, NULL);
+            checker.checkString(s, nullptr);
+            checker.checkTextBlock(s, nullptr);
         }
     }
     {
@@ -523,8 +523,8 @@ TEST(ReferenceDataTest, HandlesStringsWithTextAndWhitespace)
         TestReferenceChecker checker(data.rootChecker());
         for (const auto &s : strings)
         {
-            checker.checkString(s, NULL);
-            checker.checkTextBlock(s, NULL);
+            checker.checkString(s, nullptr);
+            checker.checkTextBlock(s, nullptr);
         }
     }
 }
@@ -625,15 +625,15 @@ TEST(ReferenceDataTest, HandlesMultipleNullIds)
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkString("Test", NULL);
-        checker.checkString("Test2", NULL);
+        checker.checkString("Test", nullptr);
+        checker.checkString("Test2", nullptr);
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
-        checker.checkString("Test", NULL);
-        checker.checkString("Test2", NULL);
-        EXPECT_NONFATAL_FAILURE(checker.checkString("Test", NULL), "");
+        checker.checkString("Test", nullptr);
+        checker.checkString("Test2", nullptr);
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test", nullptr), "");
     }
 }
 
@@ -644,26 +644,26 @@ TEST(ReferenceDataTest, HandlesMultipleComparisonsAgainstNullIds)
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkInteger(1, "int1");
-        checker.checkString("Test", NULL);
-        checker.checkString("Test2", NULL);
+        checker.checkString("Test", nullptr);
+        checker.checkString("Test2", nullptr);
         checker.checkInteger(2, "int2");
-        EXPECT_NONFATAL_FAILURE(checker.checkString("Test3", NULL), "");
-        checker.checkString("Test2", NULL);
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test3", nullptr), "");
+        checker.checkString("Test2", nullptr);
     }
     {
         TestReferenceData    data(gmx::test::erefdataCompare);
         TestReferenceChecker checker(data.rootChecker());
         checker.checkInteger(1, "int1");
-        checker.checkString("Test", NULL);
-        checker.checkString("Test2", NULL);
+        checker.checkString("Test", nullptr);
+        checker.checkString("Test2", nullptr);
         checker.checkInteger(2, "int2");
-        EXPECT_NONFATAL_FAILURE(checker.checkString("Test3", NULL), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test3", nullptr), "");
         checker.checkInteger(1, "int1");
-        checker.checkString("Test", NULL);
-        checker.checkString("Test2", NULL);
-        EXPECT_NONFATAL_FAILURE(checker.checkString("Test", NULL), "");
+        checker.checkString("Test", nullptr);
+        checker.checkString("Test2", nullptr);
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test", nullptr), "");
         checker.checkInteger(2, "int2");
-        EXPECT_NONFATAL_FAILURE(checker.checkString("Test3", NULL), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test3", nullptr), "");
     }
 }
 

@@ -62,7 +62,7 @@ namespace gmx
  */
 static inline bool isNullOrEmpty(const char *str)
 {
-    return str == NULL || str[0] == '\0';
+    return str == nullptr || str[0] == '\0';
 }
 
 /*! \brief

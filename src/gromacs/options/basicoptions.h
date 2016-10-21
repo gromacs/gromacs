@@ -298,7 +298,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
         //! Initializes an option with the given name.
         explicit StringOption(const char *name)
-            : MyBase(name), enumValues_(NULL), enumValuesCount_(0),
+            : MyBase(name), enumValues_(nullptr), enumValuesCount_(0),
               defaultEnumIndex_(-1)
         {
         }
@@ -515,7 +515,7 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
 
         //! Initializes an option with the given name.
         explicit EnumOption(const char *name)
-            : MyBase(name), enumValues_(NULL), enumValuesCount_(0)
+            : MyBase(name), enumValues_(nullptr), enumValuesCount_(0)
         {
         }
 
@@ -564,7 +564,7 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
         //! Helper function to convert default values for storate initialization.
         static int convertToInt(const EnumType *defaultValue)
         {
-            return defaultValue != NULL ? static_cast<int>(*defaultValue) : -1;
+            return defaultValue != nullptr ? static_cast<int>(*defaultValue) : -1;
         }
 
         //! Creates a EnumOptionStorage object.

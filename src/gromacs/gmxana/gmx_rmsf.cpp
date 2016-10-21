@@ -73,7 +73,7 @@ static real find_pdb_bfac(const t_atoms *atoms, t_resinfo *ri, char *atomnm)
         if ((ri->nr == atoms->resinfo[atoms->atom[i].resind].nr) &&
             (ri->ic == atoms->resinfo[atoms->atom[i].resind].ic) &&
             (std::strcmp(*atoms->resinfo[atoms->atom[i].resind].name, rresnm) == 0) &&
-            (std::strstr(*atoms->atomname[i], atomnm) != NULL))
+            (std::strstr(*atoms->atomname[i], atomnm) != nullptr))
         {
             break;
         }
@@ -126,13 +126,13 @@ static void average_residues(double f[], double **U, int uind,
     }
     for (i = 0; i < isize; i++)
     {
-        av += w_rls[index[i]]*(f != NULL ? f[i] : U[i][uind]);
+        av += w_rls[index[i]]*(f != nullptr ? f[i] : U[i][uind]);
         m  += w_rls[index[i]];
         if (i+1 == isize ||
             atoms->atom[index[i]].resind != atoms->atom[index[i+1]].resind)
         {
             av /= m;
-            if (f != NULL)
+            if (f != nullptr)
             {
                 for (j = start; j <= i; j++)
                 {
@@ -254,22 +254,22 @@ int gmx_rmsf(int argc, char *argv[])
     real              bfac, pdb_bfac, *Uaver;
     double          **U, *xav;
     int               aid;
-    rvec             *rmsd_x = NULL;
+    rvec             *rmsd_x = nullptr;
     double           *rmsf, invcount, totmass;
     int               d;
     real              count = 0;
     rvec              xcm;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
 
     gmx_output_env_t *oenv;
 
     const char       *leg[2] = { "MD", "X-Ray" };
 
     t_filenm          fnm[] = {
-        { efTRX, "-f",  NULL,     ffREAD  },
-        { efTPS, NULL,  NULL,     ffREAD  },
-        { efNDX, NULL,  NULL,     ffOPTRD },
-        { efPDB, "-q",  NULL,     ffOPTRD },
+        { efTRX, "-f",  nullptr,     ffREAD  },
+        { efTPS, nullptr,  nullptr,     ffREAD  },
+        { efNDX, nullptr,  nullptr,     ffOPTRD },
+        { efPDB, "-q",  nullptr,     ffOPTRD },
         { efPDB, "-oq", "bfac",   ffOPTWR },
         { efPDB, "-ox", "xaver",  ffOPTWR },
         { efXVG, "-o",  "rmsf",   ffWRITE },
@@ -280,7 +280,7 @@ int gmx_rmsf(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pargs), pargs, asize(desc), desc, 0, NULL,
+                           NFILE, fnm, asize(pargs), pargs, asize(desc), desc, 0, nullptr,
                            &oenv))
     {
         return 0;
@@ -290,7 +290,7 @@ int gmx_rmsf(int argc, char *argv[])
     devfn    = opt2fn_null("-od", NFILE, fnm);
     dirfn    = opt2fn_null("-dir", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xref, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xref, nullptr, box, TRUE);
     const char *title = *top.name;
     snew(w_rls, top.atoms.nr);
 
@@ -321,10 +321,10 @@ int gmx_rmsf(int argc, char *argv[])
         t_topology *top_pdb;
         snew(top_pdb, 1);
         /* Read coordinates twice */
-        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, NULL, NULL, NULL, pdbbox, FALSE);
+        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, nullptr, nullptr, pdbbox, FALSE);
         snew(pdbatoms, 1);
         *pdbatoms = top_pdb->atoms;
-        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, NULL, &pdbx, NULL, pdbbox, FALSE);
+        read_tps_conf(opt2fn("-q", NFILE, fnm), top_pdb, nullptr, &pdbx, nullptr, pdbbox, FALSE);
         title = *top_pdb->name;
         snew(refatoms, 1);
         *refatoms = top_pdb->atoms;
@@ -435,7 +435,7 @@ int gmx_rmsf(int argc, char *argv[])
     {
         for (d = 0; d < DIM*DIM; d++)
         {
-            average_residues(NULL, U, d, isize, index, w_rls, &top.atoms);
+            average_residues(nullptr, U, d, isize, index, w_rls, &top.atoms);
         }
     }
 
@@ -533,7 +533,7 @@ int gmx_rmsf(int argc, char *argv[])
         }
         if (bRes)
         {
-            average_residues(rmsf, NULL, 0, isize, index, w_rls, &top.atoms);
+            average_residues(rmsf, nullptr, 0, isize, index, w_rls, &top.atoms);
         }
         /* Write RMSD output */
         fp = xvgropen(devfn, "RMS Deviation", label, "(nm)", oenv);
@@ -557,7 +557,7 @@ int gmx_rmsf(int argc, char *argv[])
             rvec_inc(xref[index[i]], xcm);
         }
         write_sto_conf_indexed(opt2fn("-oq", NFILE, fnm), title, pdbatoms, pdbx,
-                               NULL, ePBC, pdbbox, isize, index);
+                               nullptr, ePBC, pdbbox, isize, index);
     }
     if (opt2bSet("-ox", NFILE, fnm))
     {
@@ -570,7 +570,7 @@ int gmx_rmsf(int argc, char *argv[])
             }
         }
         /* Write a .pdb file with B-factors and optionally anisou records */
-        write_sto_conf_indexed(opt2fn("-ox", NFILE, fnm), title, pdbatoms, xref, NULL,
+        write_sto_conf_indexed(opt2fn("-ox", NFILE, fnm), title, pdbatoms, xref, nullptr,
                                ePBC, pdbbox, isize, index);
     }
     if (bAniso)

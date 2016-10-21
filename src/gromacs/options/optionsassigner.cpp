@@ -115,7 +115,7 @@ class OptionsAssigner::Impl
 
 OptionsAssigner::Impl::Impl(Options *options)
     : options_(*options), bAcceptBooleanNoPrefix_(false),
-      currentOption_(NULL), currentValueCount_(0), reverseBoolean_(false)
+      currentOption_(nullptr), currentValueCount_(0), reverseBoolean_(false)
 {
     sectionStack_.push_back(&options_.impl_->rootSection_);
 }
@@ -123,22 +123,22 @@ OptionsAssigner::Impl::Impl(Options *options)
 AbstractOptionStorage *
 OptionsAssigner::Impl::findOption(const char *name)
 {
-    GMX_RELEASE_ASSERT(currentOption_ == NULL,
+    GMX_RELEASE_ASSERT(currentOption_ == nullptr,
                        "Cannot search for another option while processing one");
     const Section         &section = currentSection();
     AbstractOptionStorage *option  = section.findOption(name);
-    if (option == NULL && bAcceptBooleanNoPrefix_)
+    if (option == nullptr && bAcceptBooleanNoPrefix_)
     {
         if (name[0] == 'n' && name[1] == 'o')
         {
             option = section.findOption(name + 2);
-            if (option != NULL && option->isBoolean())
+            if (option != nullptr && option->isBoolean())
             {
                 reverseBoolean_ = true;
             }
             else
             {
-                option = NULL;
+                option = nullptr;
             }
         }
     }
@@ -171,7 +171,7 @@ void OptionsAssigner::start()
 void OptionsAssigner::startSection(const char *name)
 {
     Impl::Section *section = impl_->currentSection().findSection(name);
-    if (section == NULL)
+    if (section == nullptr)
     {
         GMX_THROW(InvalidInputError("Unknown subsection"));
     }
@@ -189,9 +189,9 @@ void OptionsAssigner::startOption(const char *name)
 
 bool OptionsAssigner::tryStartOption(const char *name)
 {
-    GMX_RELEASE_ASSERT(impl_->currentOption_ == NULL, "finishOption() not called");
+    GMX_RELEASE_ASSERT(impl_->currentOption_ == nullptr, "finishOption() not called");
     AbstractOptionStorage *option = impl_->findOption(name);
-    if (option == NULL)
+    if (option == nullptr)
     {
         return false;
     }
@@ -209,7 +209,7 @@ void OptionsAssigner::appendValue(const std::string &value)
 void OptionsAssigner::appendValue(const Variant &value)
 {
     AbstractOptionStorage *option = impl_->currentOption_;
-    GMX_RELEASE_ASSERT(option != NULL, "startOption() not called");
+    GMX_RELEASE_ASSERT(option != nullptr, "startOption() not called");
     ++impl_->currentValueCount_;
     option->appendValue(value);
 }
@@ -217,7 +217,7 @@ void OptionsAssigner::appendValue(const Variant &value)
 void OptionsAssigner::finishOption()
 {
     AbstractOptionStorage *option = impl_->currentOption_;
-    GMX_RELEASE_ASSERT(option != NULL, "startOption() not called");
+    GMX_RELEASE_ASSERT(option != nullptr, "startOption() not called");
     bool                   bBoolReverseValue = false;
     if (option->isBoolean())
     {
@@ -231,7 +231,7 @@ void OptionsAssigner::finishOption()
             bBoolReverseValue = true;
         }
     }
-    impl_->currentOption_  = NULL;
+    impl_->currentOption_  = nullptr;
     impl_->reverseBoolean_ = false;
     option->finishSet();
     if (bBoolReverseValue)
@@ -251,7 +251,7 @@ void OptionsAssigner::finishSection()
 
 void OptionsAssigner::finish()
 {
-    GMX_RELEASE_ASSERT(impl_->currentOption_ == NULL, "finishOption() not called");
+    GMX_RELEASE_ASSERT(impl_->currentOption_ == nullptr, "finishOption() not called");
     GMX_RELEASE_ASSERT(!impl_->inSection(), "finishSection() not called");
 }
 

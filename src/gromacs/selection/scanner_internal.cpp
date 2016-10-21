@@ -94,7 +94,7 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
 {
     if (bBoolNo)
     {
-        GMX_RELEASE_ASSERT(param->name != NULL,
+        GMX_RELEASE_ASSERT(param->name != nullptr,
                            "bBoolNo should only be set for a parameters with a name");
         snew(yylval->str, strlen(param->name) + 3);
         yylval->str[0] = 'n';
@@ -103,7 +103,7 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     }
     else
     {
-        yylval->str = param->name ? gmx_strdup(param->name) : NULL;
+        yylval->str = param->name ? gmx_strdup(param->name) : nullptr;
     }
     return PARAM;
 }
@@ -122,7 +122,7 @@ init_method_token(YYSTYPE *yylval, YYLTYPE *yylloc,
     if (!bPosMod && method->type != POS_VALUE)
     {
         state->nextMethodSymbol = symbol;
-        _gmx_sel_lexer_add_token(yylloc, NULL, 0, state);
+        _gmx_sel_lexer_add_token(yylloc, nullptr, 0, state);
         return EMPTY_POSMOD;
     }
     _gmx_sel_lexer_add_token(yylloc, symbol->name().c_str(), -1, state);
@@ -149,14 +149,14 @@ init_method_token(YYSTYPE *yylval, YYLTYPE *yylloc,
         {
             /* Remove all methods from the stack */
             state->msp = -1;
-            if (method->param[1].name == NULL)
+            if (method->param[1].name == nullptr)
             {
                 state->nextparam = &method->param[1];
             }
         }
         else
         {
-            if (method->param[0].name == NULL)
+            if (method->param[0].name == nullptr)
             {
                 state->nextparam = &method->param[0];
             }
@@ -198,10 +198,10 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, YYLTYPE *yylloc,
         if (state->neom > 0)
         {
             --state->neom;
-            _gmx_sel_lexer_add_token(yylloc, NULL, 0, state);
+            _gmx_sel_lexer_add_token(yylloc, nullptr, 0, state);
             return END_OF_METHOD;
         }
-        state->nextparam = NULL;
+        state->nextparam = nullptr;
         state->bBoolNo   = false;
         _gmx_sel_lexer_add_token(yylloc, param->name, -1, state);
         return init_param_token(yylval, param, bBoolNo);
@@ -213,7 +213,7 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, YYLTYPE *yylloc,
     if (state->nextMethodSymbol)
     {
         const gmx::SelectionParserSymbol *symbol = state->nextMethodSymbol;
-        state->nextMethodSymbol = NULL;
+        state->nextMethodSymbol = nullptr;
         return init_method_token(yylval, yylloc, symbol, true, state);
     }
     return 0;
@@ -227,7 +227,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
     /* Check if the identifier matches with a parameter name */
     if (state->msp >= 0)
     {
-        gmx_ana_selparam_t *param   = NULL;
+        gmx_ana_selparam_t *param   = nullptr;
         bool                bBoolNo = false;
         int                 sp      = state->msp;
         while (!param && sp >= 0)
@@ -236,7 +236,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
             for (i = 0; i < state->mstack[sp]->nparams; ++i)
             {
                 /* Skip NULL parameters and too long parameters */
-                if (state->mstack[sp]->param[i].name == NULL
+                if (state->mstack[sp]->param[i].name == nullptr
                     || strlen(state->mstack[sp]->param[i].name) > yyleng)
                 {
                     continue;
@@ -418,8 +418,8 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
     state->mstack_alloc     = 20;
     state->msp              = -1;
     state->neom             = 0;
-    state->nextparam        = NULL;
-    state->nextMethodSymbol = NULL;
+    state->nextparam        = nullptr;
+    state->nextMethodSymbol = nullptr;
     state->prev_pos_kw      = 0;
     state->bBoolNo          = false;
     state->bMatchOf         = false;

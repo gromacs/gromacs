@@ -442,7 +442,7 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
         { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 },
         { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 }
     };
-    static int *edge = NULL;
+    static int *edge = nullptr;
     int         i, j, k, i0, i1;
     rvec        corner[NCUCEDGE], box_center;
     vec4        x4;
@@ -452,7 +452,7 @@ static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
     if (boxtype == esbTrunc)
     {
         calc_compact_unitcell_vertices(view->ecenter, box, corner);
-        if (edge == NULL)
+        if (edge == nullptr)
         {
             edge = compact_unitcell_edges();
         }

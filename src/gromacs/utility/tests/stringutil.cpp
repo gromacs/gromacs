@@ -84,7 +84,7 @@ TEST(StringUtilityTest, StartsWith)
 TEST(StringUtilityTest, EndsWith)
 {
     EXPECT_TRUE(gmx::endsWith("foobar", "bar"));
-    EXPECT_TRUE(gmx::endsWith("foobar", NULL));
+    EXPECT_TRUE(gmx::endsWith("foobar", nullptr));
     EXPECT_TRUE(gmx::endsWith("foobar", ""));
     EXPECT_TRUE(gmx::endsWith("", ""));
     EXPECT_FALSE(gmx::endsWith("", "foobar"));
@@ -96,7 +96,7 @@ TEST(StringUtilityTest, EndsWith)
 TEST(StringUtilityTest, StripSuffixIfPresent)
 {
     EXPECT_EQ("foo", gmx::stripSuffixIfPresent("foobar", "bar"));
-    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", NULL));
+    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", nullptr));
     EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", ""));
     EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", "bbar"));
     EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", "barr"));

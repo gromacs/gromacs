@@ -316,8 +316,8 @@ class CommandLineModuleManager::Impl
 CommandLineModuleManager::Impl::Impl(const char                *binaryName,
                                      CommandLineProgramContext *programContext)
     : programContext_(*programContext),
-      binaryName_(binaryName != NULL ? binaryName : ""),
-      helpModule_(NULL), singleModule_(NULL),
+      binaryName_(binaryName != nullptr ? binaryName : ""),
+      helpModule_(nullptr), singleModule_(nullptr),
       bQuiet_(false)
 {
     GMX_RELEASE_ASSERT(binaryName_.find('-') == std::string::npos,
@@ -337,7 +337,7 @@ void CommandLineModuleManager::Impl::addModule(CommandLineModulePointer module)
 
 void CommandLineModuleManager::Impl::ensureHelpModuleExists()
 {
-    if (helpModule_ == NULL)
+    if (helpModule_ == nullptr)
     {
         helpModule_ = new CommandLineHelpModule(programContext_, binaryName_,
                                                 modules_, moduleGroups_);
@@ -362,7 +362,7 @@ CommandLineModuleManager::Impl::processCommonOptions(
     // TODO: It would be nice to propagate at least the -quiet option to
     // the modules so that they can also be quiet in response to this.
 
-    if (module == NULL)
+    if (module == nullptr)
     {
         // If not in single-module mode, process options to the wrapper binary.
         // TODO: Ideally, this could be done by CommandLineParser.
@@ -395,9 +395,9 @@ CommandLineModuleManager::Impl::processCommonOptions(
             // which path is taken: (*argv)[0] is the module name.
         }
     }
-    if (module != NULL)
+    if (module != nullptr)
     {
-        if (singleModule_ == NULL)
+        if (singleModule_ == nullptr)
         {
             programContext_.setDisplayName(binaryName_ + " " + module->name());
         }
@@ -409,14 +409,14 @@ CommandLineModuleManager::Impl::processCommonOptions(
     }
     if (!optionsHolder->finishOptions())
     {
-        return NULL;
+        return nullptr;
     }
     // If no module specified and no other action, show the help.
     // Also explicitly specifying -h for the wrapper binary goes here.
-    if (module == NULL || optionsHolder->shouldShowHelp())
+    if (module == nullptr || optionsHolder->shouldShowHelp())
     {
         ensureHelpModuleExists();
-        if (module != NULL)
+        if (module != nullptr)
         {
             helpModule_->setModuleOverride(*module);
         }
@@ -536,7 +536,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
                                optionsHolder.binaryInfoSettings());
         fprintf(out, "\n");
     }
-    if (module == NULL)
+    if (module == nullptr)
     {
         return 0;
     }
@@ -596,7 +596,7 @@ int CommandLineModuleManager::runAsMainSingleModule(
     CommandLineProgramContext &programContext = gmx::initForCommandLine(&argc, &argv);
     try
     {
-        CommandLineModuleManager manager(NULL, &programContext);
+        CommandLineModuleManager manager(nullptr, &programContext);
         manager.setSingleModule(module);
         int rc = manager.run(argc, argv);
         gmx::finalizeForCommandLine();
@@ -636,10 +636,10 @@ void CommandLineModuleGroupData::addModule(const char *name,
     CommandLineModuleMap::const_iterator moduleIter = allModules_.find(name);
     GMX_RELEASE_ASSERT(moduleIter != allModules_.end(),
                        "Non-existent module added to a group");
-    if (description == NULL)
+    if (description == nullptr)
     {
         description = moduleIter->second->shortDescription();
-        GMX_RELEASE_ASSERT(description != NULL,
+        GMX_RELEASE_ASSERT(description != nullptr,
                            "Module without a description added to a group");
     }
     std::string       tag(formatString("%s-%s", binaryName_, name));
@@ -652,7 +652,7 @@ void CommandLineModuleGroupData::addModule(const char *name,
 
 void CommandLineModuleGroup::addModule(const char *name)
 {
-    impl_->addModule(name, NULL);
+    impl_->addModule(name, nullptr);
 }
 
 void CommandLineModuleGroup::addModuleWithDescription(const char *name,

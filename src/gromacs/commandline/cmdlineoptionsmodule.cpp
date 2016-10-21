@@ -131,7 +131,7 @@ void CommandLineOptionsModule::init(CommandLineModuleSettings *settings)
 {
     if (!module_)
     {
-        GMX_RELEASE_ASSERT(factory_ != NULL, "Neither factory nor module provided");
+        GMX_RELEASE_ASSERT(factory_ != nullptr, "Neither factory nor module provided");
         module_ = factory_();
     }
     module_->init(settings);
@@ -150,7 +150,7 @@ void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) 
     ICommandLineOptionsModule        *module = module_.get();
     if (!module)
     {
-        GMX_RELEASE_ASSERT(factory_ != NULL, "Neither factory nor module provided");
+        GMX_RELEASE_ASSERT(factory_ != nullptr, "Neither factory nor module provided");
         moduleGuard = factory_();
         module      = moduleGuard.get();
     }

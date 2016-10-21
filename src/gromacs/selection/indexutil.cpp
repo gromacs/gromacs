@@ -71,7 +71,7 @@
 struct gmx_ana_indexgrps_t
 {
     //! Initializes an empty set of groups.
-    explicit gmx_ana_indexgrps_t(int nr) : nr(nr), g(NULL)
+    explicit gmx_ana_indexgrps_t(int nr) : nr(nr), g(nullptr)
     {
         names.reserve(nr);
         snew(g, nr);
@@ -110,8 +110,8 @@ void
 gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
                        const char *fnm)
 {
-    t_blocka *block = NULL;
-    char    **names = NULL;
+    t_blocka *block = nullptr;
+    char    **names = nullptr;
 
     if (fnm)
     {
@@ -201,7 +201,7 @@ gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n)
 {
     if (n < 0 || n >= g->nr)
     {
-        return NULL;
+        return nullptr;
     }
     return &g->g[n];
 }
@@ -224,7 +224,7 @@ gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, std::string *destName,
         return false;
     }
 
-    if (destName != NULL)
+    if (destName != nullptr)
     {
         *destName = src->names[n];
     }
@@ -324,7 +324,7 @@ void
 gmx_ana_index_clear(gmx_ana_index_t *g)
 {
     g->isize        = 0;
-    g->index        = NULL;
+    g->index        = nullptr;
     g->nalloc_index = 0;
 }
 
@@ -859,14 +859,14 @@ gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
         t->index[0]     = 0;
         t->index[1]     = 0;
         t->nra          = 0;
-        t->a            = NULL;
+        t->a            = nullptr;
         t->nalloc_a     = 0;
         return;
     }
 
     // TODO: Check callers and either check these there as well, or turn these
     // into exceptions.
-    GMX_RELEASE_ASSERT(top != NULL || (type != INDEX_RES && type != INDEX_MOL),
+    GMX_RELEASE_ASSERT(top != nullptr || (type != INDEX_RES && type != INDEX_MOL),
                        "Topology must be provided for residue or molecule blocks");
     GMX_RELEASE_ASSERT(!(type == INDEX_MOL && top->mols.nr == 0),
                        "Molecule information must be present for molecule blocks");
@@ -1168,19 +1168,19 @@ void
 gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m)
 {
     m->type              = INDEX_UNKNOWN;
-    m->refid             = NULL;
-    m->mapid             = NULL;
+    m->refid             = nullptr;
+    m->mapid             = nullptr;
     m->mapb.nr           = 0;
-    m->mapb.index        = NULL;
+    m->mapb.index        = nullptr;
     m->mapb.nalloc_index = 0;
     m->mapb.nra          = 0;
-    m->mapb.a            = NULL;
+    m->mapb.a            = nullptr;
     m->mapb.nalloc_a     = 0;
-    m->orgid             = NULL;
+    m->orgid             = nullptr;
     m->b.nr              = 0;
-    m->b.index           = NULL;
+    m->b.index           = nullptr;
     m->b.nra             = 0;
-    m->b.a               = NULL;
+    m->b.a               = nullptr;
     m->b.nalloc_index    = 0;
     m->b.nalloc_a        = 0;
     m->bStatic           = true;
@@ -1255,7 +1255,7 @@ gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, const gmx_mtop_t *top,
     GMX_RELEASE_ASSERT(m->bStatic,
                        "Changing original IDs is not supported after starting "
                        "to use the mapping");
-    GMX_RELEASE_ASSERT(top != NULL || (type != INDEX_RES && type != INDEX_MOL),
+    GMX_RELEASE_ASSERT(top != nullptr || (type != INDEX_RES && type != INDEX_MOL),
                        "Topology must be provided for residue or molecule blocks");
     GMX_RELEASE_ASSERT(!(type == INDEX_MOL && top->mols.nr == 0),
                        "Molecule information must be present for molecule blocks");
