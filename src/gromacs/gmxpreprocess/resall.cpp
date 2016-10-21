@@ -260,16 +260,6 @@ static void check_rtp(int nrtp, t_restp rtp[], char *libfn)
     }
 }
 
-static int comprtp(const void *a, const void *b)
-{
-    const t_restp *ra, *rb;
-
-    ra = static_cast<const t_restp *>(a);
-    rb = static_cast<const t_restp *>(b);
-
-    return gmx_strcasecmp(ra->resname, rb->resname);
-}
-
 int get_bt(char* header)
 {
     int i;
@@ -551,7 +541,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
     srenew(rrtp, nrtp);
 
     fprintf(stderr, "\nSorting it all out...\n");
-    qsort(rrtp, nrtp, (size_t)sizeof(rrtp[0]), comprtp);
+    std::sort(rrtp, rrtp+nrtp, [](const t_restp &a, const t_restp &b) {return gmx_strcasecmp(a.resname, b.resname) < 0; });
 
     check_rtp(nrtp, rrtp, rrdb);
 
