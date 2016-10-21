@@ -330,43 +330,20 @@ static real rms_dist(int isize, real **d, real **d_r)
     return std::sqrt(r2);
 }
 
-static int rms_dist_comp(const void *a, const void *b)
+static bool rms_dist_comp(const t_dist &a, const t_dist &b)
 {
-    const t_dist *da, *db;
-
-    da = static_cast<const t_dist *>(a);
-    db = static_cast<const t_dist *>(b);
-
-    if (da->dist - db->dist < 0)
-    {
-        return -1;
-    }
-    else if (da->dist - db->dist > 0)
-    {
-        return 1;
-    }
-    return 0;
+    return a.dist < b.dist;
 }
 
-static int clust_id_comp(const void *a, const void *b)
+static bool clust_id_comp(const t_clustid &a, const t_clustid &b)
 {
-    const t_clustid *da, *db;
-
-    da = static_cast<const t_clustid *>(a);
-    db = static_cast<const t_clustid *>(b);
-
-    return da->clust - db->clust;
+    return a.clust < b.clust;
 }
 
-static int nrnb_comp(const void *a, const void *b)
+static bool nrnb_comp(const t_nnb &a, const t_nnb &b)
 {
-    const t_nnb *da, *db;
-
-    da = static_cast<const t_nnb *>(a);
-    db = static_cast<const t_nnb *>(b);
-
-    /* return the b-a, we want highest first */
-    return db->nr - da->nr;
+    /* return b<a, we want highest first */
+    return b.nr < a.nr;
 }
 
 void gather(t_mat *m, real cutoff, t_clusters *clust)
@@ -393,7 +370,7 @@ void gather(t_mat *m, real cutoff, t_clusters *clust)
     {
         gmx_incons("gather algortihm");
     }
-    qsort(d, nn, sizeof(d[0]), rms_dist_comp);
+    std::sort(d, d+nn, rms_dist_comp);
 
     /* Now we make a cluster index for all of the conformations */
     c = new_clustid(n1);
@@ -424,7 +401,7 @@ void gather(t_mat *m, real cutoff, t_clusters *clust)
     while (bChange);
     fprintf(stderr, "\nSorting and renumbering clusters\n");
     /* Sort on cluster number */
-    qsort(c, n1, sizeof(c[0]), clust_id_comp);
+    std::sort(c, c+n1, clust_id_comp);
 
     /* Renumber clusters */
     cid = 1;
@@ -526,7 +503,7 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
             row[j].j    = j;
             row[j].dist = mat[i][j];
         }
-        qsort(row, n1, sizeof(row[0]), rms_dist_comp);
+        std::sort(row, row+n1, rms_dist_comp);
         if (M > 0)
         {
             /* Put the M nearest neighbors in the list */
@@ -623,7 +600,7 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
 
     fprintf(stderr, "\nSorting and renumbering clusters\n");
     /* Sort on cluster number */
-    qsort(c, n1, sizeof(c[0]), clust_id_comp);
+    std::sort(c, c+n1, clust_id_comp);
 
     /* Renumber clusters */
     cid = 1;
@@ -720,7 +697,7 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
     sfree(row);
 
     /* sort neighbor list on number of neighbors, largest first */
-    qsort(nnb, n1, sizeof(nnb[0]), nrnb_comp);
+    std::sort(nnb, nnb+n1, nrnb_comp);
 
     if (debug)
     {
@@ -763,7 +740,7 @@ static void gromos(int n1, real **mat, real rmsdcut, t_clusters *clust)
         }
         /* sort again on nnb[].nr, because we have new # neighbors: */
         /* but we only need to sort upto i, i.e. when nnb[].nr>0 */
-        qsort(nnb, i, sizeof(nnb[0]), nrnb_comp);
+        std::sort(nnb, nnb+i, nrnb_comp);
 
         fprintf(stderr, "\b\b\b\b%4d", k);
         /* new cluster id */
