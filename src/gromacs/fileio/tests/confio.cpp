@@ -81,8 +81,8 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         {
             generateReferenceTopology();
             generateReferenceCoordinates();
-            testTop_ = NULL;
-            testX_   = NULL;
+            testTop_ = nullptr;
+            testX_   = nullptr;
             clear_mat(testBox_);
             referenceFilename_ =
                 fileManager_.getTemporaryFilePath(getFileSuffix("ref"));
@@ -91,7 +91,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         }
         ~StructureIORoundtripTest()
         {
-            if (testTop_ != NULL)
+            if (testTop_ != nullptr)
             {
                 done_top(testTop_);
                 sfree(testTop_);
@@ -104,7 +104,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         void writeReferenceFile()
         {
             write_sto_conf(referenceFilename_.c_str(), *refTop_->name,
-                           &refTop_->atoms, as_rvec_array(refX_.data()), NULL, -1,
+                           &refTop_->atoms, as_rvec_array(refX_.data()), nullptr, -1,
                            refBox_);
         }
 
@@ -113,7 +113,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             snew(testTop_, 1);
             int  ePBC = -2;
             read_tps_conf(referenceFilename_.c_str(), testTop_,
-                          &ePBC, &testX_, NULL, testBox_, FALSE);
+                          &ePBC, &testX_, nullptr, testBox_, FALSE);
         }
 
         void testTopologies()
@@ -124,7 +124,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
         void writeTestFileAndTest()
         {
             write_sto_conf(testFilename_.c_str(), *testTop_->name,
-                           &testTop_->atoms, testX_, NULL, -1, testBox_);
+                           &testTop_->atoms, testX_, nullptr, -1, testBox_);
             testFilesEqual(referenceFilename_, testFilename_);
         }
 

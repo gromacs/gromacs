@@ -209,7 +209,7 @@ SelectionData::initializeMassesAndCharges(const gmx_mtop_t *top)
                "Should not be called more than once");
     posMass_.reserve(posCount());
     posCharge_.reserve(posCount());
-    if (top == NULL)
+    if (top == nullptr)
     {
         posMass_.resize(posCount(), 1.0);
         posCharge_.resize(posCount(), 0.0);
@@ -224,7 +224,7 @@ SelectionData::initializeMassesAndCharges(const gmx_mtop_t *top)
 void
 SelectionData::refreshMassesAndCharges(const gmx_mtop_t *top)
 {
-    if (top != NULL && isDynamic() && !hasFlag(efSelection_DynamicMask))
+    if (top != nullptr && isDynamic() && !hasFlag(efSelection_DynamicMask))
     {
         computeMassesAndCharges(top, rawPositions_, &posMass_, &posCharge_);
     }

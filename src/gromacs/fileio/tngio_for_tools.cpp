@@ -436,9 +436,9 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
     gmx_bool                bOK = TRUE;
     tng_function_status     stat;
     gmx_int64_t             numberOfAtoms = -1, frameNumber = -1;
-    gmx_int64_t             nBlocks, blockId, *blockIds = NULL, codecId;
+    gmx_int64_t             nBlocks, blockId, *blockIds = nullptr, codecId;
     char                    datatype      = -1;
-    void                   *values        = NULL;
+    void                   *values        = nullptr;
     double                  frameTime     = -1.0;
     int                     size, blockDependency;
     double                  prec;
@@ -791,7 +791,7 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
     char                datatype = -1;
     gmx_int64_t         codecId;
     int                 blockDependency;
-    void               *data = 0;
+    void               *data = nullptr;
     double              localPrec;
 
     stat = tng_data_block_name_get(input, blockId, name, maxLen);

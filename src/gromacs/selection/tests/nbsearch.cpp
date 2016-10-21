@@ -274,7 +274,7 @@ void NeighborhoodSearchTestData::computeReferencesInternal(t_pbc *pbc, bool bXY)
         for (int j = 0; j < refPosCount_; ++j)
         {
             rvec dx;
-            if (pbc != NULL)
+            if (pbc != nullptr)
             {
                 pbc_dx(pbc, i->x, refPos_[j], dx);
             }
@@ -372,9 +372,9 @@ ExclusionsHelper::ExclusionsHelper(int refPosCount, int testPosCount)
                      exclusionIds_.begin());
 
     excls_.nr           = 0;
-    excls_.index        = NULL;
+    excls_.index        = nullptr;
     excls_.nra          = 0;
-    excls_.a            = NULL;
+    excls_.a            = nullptr;
     excls_.nalloc_index = 0;
     excls_.nalloc_a     = 0;
 }
@@ -518,7 +518,7 @@ void NeighborhoodSearchTest::testPairSearch(
         gmx::AnalysisNeighborhoodSearch  *search,
         const NeighborhoodSearchTestData &data)
 {
-    testPairSearchFull(search, data, data.testPositions(), NULL,
+    testPairSearchFull(search, data, data.testPositions(), nullptr,
                        gmx::EmptyArrayRef(), gmx::EmptyArrayRef());
 }
 
@@ -532,7 +532,7 @@ void NeighborhoodSearchTest::testPairSearchIndexed(
     gmx::AnalysisNeighborhoodSearch search =
         nb->initSearch(&data.pbc_,
                        data.refPositions().indexed(refIndices));
-    testPairSearchFull(&search, data, data.testPositions(), NULL,
+    testPairSearchFull(&search, data, data.testPositions(), nullptr,
                        refIndices, testIndices);
 }
 
@@ -591,7 +591,7 @@ void NeighborhoodSearchTest::testPairSearchFull(
             }
             remainingTestPositions.erase(testIndex);
             refPairs = data.testPositions_[testIndex].refPairs;
-            if (excls != NULL)
+            if (excls != nullptr)
             {
                 ExclusionsHelper::markExcludedPairs(&refPairs, testIndex, excls);
             }
@@ -742,7 +742,7 @@ class TrivialNoPBCTestData
         {
             data_.generateRandomRefPositions(10);
             data_.generateRandomTestPositions(5);
-            data_.computeReferences(NULL);
+            data_.computeReferences(nullptr);
         }
 
     private:
@@ -875,7 +875,7 @@ class RandomBoxNoPBCData
             data_.generateRandomRefPositions(1000);
             data_.generateRandomTestPositions(100);
             set_pbc(&data_.pbc_, epbcNONE, data_.box_);
-            data_.computeReferences(NULL);
+            data_.computeReferences(nullptr);
         }
 
     private:
@@ -1059,7 +1059,7 @@ TEST_F(NeighborhoodSearchTest, HandlesNullPBC)
 
     nb_.setCutoff(data.cutoff_);
     gmx::AnalysisNeighborhoodSearch search =
-        nb_.initSearch(NULL, data.refPositions());
+        nb_.initSearch(nullptr, data.refPositions());
     ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Simple, search.mode());
 
     testIsWithin(&search, data);

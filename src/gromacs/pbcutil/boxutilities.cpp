@@ -100,7 +100,7 @@ void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix b)
 void set_box_rel(const t_inputrec *ir, t_state *state)
 {
     /* Make sure the box obeys the restrictions before we fix the ratios */
-    correct_box(NULL, 0, state->box, NULL);
+    correct_box(nullptr, 0, state->box, nullptr);
 
     clear_mat(state->box_rel);
 

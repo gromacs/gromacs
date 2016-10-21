@@ -98,7 +98,7 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
 {
     bool shouldSetAffinity = true;
 
-    *message = NULL;
+    *message = nullptr;
 #if GMX_OPENMP
     /* We assume that the affinity setting is available on all platforms
      * gcc supports. Even if this is not the case (e.g. Mac OS) the user
@@ -112,7 +112,7 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     const char *const gomp_env            = getenv("GOMP_CPU_AFFINITY");
-    const bool        bGompCpuAffinitySet = (gomp_env != NULL);
+    const bool        bGompCpuAffinitySet = (gomp_env != nullptr);
 
     /* turn off internal pinning if GOMP_CPU_AFFINITY is set & non-empty */
     if (bGompCpuAffinitySet && *gomp_env != '\0')

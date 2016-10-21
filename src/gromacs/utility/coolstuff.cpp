@@ -65,7 +65,7 @@ bool beCool(void)
      * a mutex for locking the variable...
      */
 #if GMX_COOL_QUOTES
-    return (getenv("GMX_NO_QUOTES") == NULL);
+    return (getenv("GMX_NO_QUOTES") == nullptr);
 #else
     /*be uncool*/
     return false;

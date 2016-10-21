@@ -234,7 +234,7 @@ const char *eIMDType_names[IMD_NR + 1] = {
     "IMD_PAUSE",
     "IMD_TRATE",
     "IMD_IOERROR",
-    NULL
+    nullptr
 };
 
 
@@ -492,7 +492,7 @@ static int imd_send_rvecs(IMDSocket *socket, int nat, rvec *x, char *buffer)
 /*! \brief Initializes the IMD private data. */
 static t_gmx_IMD_setup* imd_create(int imdatoms, int nstimddef, int imdport)
 {
-    t_gmx_IMD_setup *IMDsetup = NULL;
+    t_gmx_IMD_setup *IMDsetup = nullptr;
 
 
     snew(IMDsetup, 1);
@@ -582,7 +582,7 @@ static void imd_disconnect(t_gmx_IMD_setup *IMDsetup)
 
     /* then we reset the IMD step to its default, and reset the connection boolean */
     IMDsetup->nstimd_new   = IMDsetup->nstimd_def;
-    IMDsetup->clientsocket = NULL;
+    IMDsetup->clientsocket = nullptr;
     IMDsetup->bConnected   = FALSE;
 }
 
@@ -1051,7 +1051,7 @@ static FILE *open_imd_out(const char             *fn,
     fprintf(stdout, "%s For a log of the IMD pull forces explicitly specify '-if' on the command line.\n"
             "%s (Not possible with energy minimization.)\n", IMDstr, IMDstr);
 
-    return NULL;
+    return nullptr;
 }
 #endif
 

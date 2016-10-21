@@ -68,7 +68,7 @@ class DataFileFinder::Impl
     public:
         static std::string getDefaultPath();
 
-        Impl() : envName_(NULL), bEnvIsSet_(false) {}
+        Impl() : envName_(nullptr), bEnvIsSet_(false) {}
 
         const char               *envName_;
         bool                      bEnvIsSet_;
@@ -125,7 +125,7 @@ FILE *DataFileFinder::openFile(const DataFileOptions &options) const
     std::string filename = findFile(options);
     if (filename.empty())
     {
-        return NULL;
+        return nullptr;
     }
 #if 0
     if (debug)
@@ -201,7 +201,7 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
             message.append(defaultPath);
             message.append(" (default)");
         }
-        if (!bEnvIsSet && envName != NULL)
+        if (!bEnvIsSet && envName != nullptr)
         {
             message.append(
                     formatString("\nYou can set additional directories to search "

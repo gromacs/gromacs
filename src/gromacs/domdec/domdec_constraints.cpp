@@ -105,7 +105,7 @@ int *dd_constraints_nlocalatoms(gmx_domdec_t *dd)
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -254,7 +254,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
             {
                 int a_gl = dd->gatindex[a];
                 int a_mol;
-                mtopGetMolblockIndex(mtop, a_gl, &mb, NULL, &a_mol);
+                mtopGetMolblockIndex(mtop, a_gl, &mb, nullptr, &a_mol);
 
                 const gmx_molblock_t *molb   = &mtop->molblock[mb];
                 int                   settle = at2settle_mt[molb->type][a_mol];
@@ -474,8 +474,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     else
     {
         // Currently unreachable
-        at2con_mt = NULL;
-        ireq      = NULL;
+        at2con_mt = nullptr;
+        ireq      = nullptr;
     }
 
     if (dd->bInterCGsettles)
@@ -486,10 +486,10 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
     else
     {
         /* Settle works inside charge groups, we assigned them already */
-        at2settle_mt = NULL;
+        at2settle_mt = nullptr;
     }
 
-    if (at2settle_mt == NULL)
+    if (at2settle_mt == nullptr)
     {
         atoms_to_constraints(dd, mtop, cginfo, at2con_mt, nrec,
                              ilc_local, ireq);
@@ -502,7 +502,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
         /* Do the constraints, if present, on the first thread.
          * Do the settles on all other threads.
          */
-        t0_set = ((at2con_mt != NULL && dc->nthread > 1) ? 1 : 0);
+        t0_set = ((at2con_mt != nullptr && dc->nthread > 1) ? 1 : 0);
 
 #pragma omp parallel for num_threads(dc->nthread) schedule(static)
         for (thread = 0; thread < dc->nthread; thread++)

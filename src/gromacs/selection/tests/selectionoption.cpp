@@ -263,7 +263,7 @@ TEST_F(SelectionOptionTest, HandlesDefaultSelectionText)
 
     ASSERT_TRUE(sel.isValid());
 
-    EXPECT_NO_THROW_GMX(sc_.setTopology(NULL, 10));
+    EXPECT_NO_THROW_GMX(sc_.setTopology(nullptr, 10));
     EXPECT_NO_THROW_GMX(sc_.compile());
 
     EXPECT_STREQ("all", sel.selectionText());

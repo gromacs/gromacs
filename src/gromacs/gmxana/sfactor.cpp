@@ -282,7 +282,7 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
     snew(gsf->b, nralloc);
     snew(gsf->c, nralloc);
     snew(gsf->p, nralloc);
-    gsf->n       = NULL;
+    gsf->n       = nullptr;
     gsf->nratoms = line_no;
     while (get_a_line(fp, line, STRLEN))
     {
@@ -475,7 +475,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
     sf->energy = energy;
 
     /* Read the topology informations */
-    read_tps_conf (fnTPS, &top, &ePBC, &xtop, NULL, box, TRUE);
+    read_tps_conf (fnTPS, &top, &ePBC, &xtop, nullptr, box, TRUE);
     sfree (xtop);
 
     /* groups stuff... */

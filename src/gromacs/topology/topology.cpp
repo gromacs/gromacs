@@ -54,29 +54,29 @@
 
 const char *gtypes[egcNR+1] = {
     "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
-    "User1", "User2", "VCM", "Compressed X", "Or. Res. Fit", "QMMM", NULL
+    "User1", "User2", "VCM", "Compressed X", "Or. Res. Fit", "QMMM", nullptr
 };
 
 static void init_groups(gmx_groups_t *groups)
 {
     groups->ngrpname = 0;
-    groups->grpname  = NULL;
+    groups->grpname  = nullptr;
     for (int g = 0; g < egcNR; g++)
     {
-        groups->grps[g].nm_ind = NULL;
+        groups->grps[g].nm_ind = nullptr;
         groups->ngrpnr[g]      = 0;
-        groups->grpnr[g]       = NULL;
+        groups->grpnr[g]       = nullptr;
     }
 
 }
 
 void init_mtop(gmx_mtop_t *mtop)
 {
-    mtop->name         = NULL;
+    mtop->name         = nullptr;
     mtop->nmoltype     = 0;
-    mtop->moltype      = NULL;
+    mtop->moltype      = nullptr;
     mtop->nmolblock    = 0;
-    mtop->molblock     = NULL;
+    mtop->molblock     = nullptr;
     mtop->maxres_renum = 0;
     mtop->maxresnr     = -1;
     init_groups(&mtop->groups);
@@ -86,7 +86,7 @@ void init_mtop(gmx_mtop_t *mtop)
 
 void init_top(t_topology *top)
 {
-    top->name = NULL;
+    top->name = nullptr;
     init_atom(&(top->atoms));
     init_atomtypes(&(top->atomtypes));
     init_block(&top->cgs);
@@ -129,15 +129,15 @@ void done_gmx_groups_t(gmx_groups_t *g)
 
     for (i = 0; (i < egcNR); i++)
     {
-        if (NULL != g->grps[i].nm_ind)
+        if (nullptr != g->grps[i].nm_ind)
         {
             sfree(g->grps[i].nm_ind);
-            g->grps[i].nm_ind = NULL;
+            g->grps[i].nm_ind = nullptr;
         }
-        if (NULL != g->grpnr[i])
+        if (nullptr != g->grpnr[i])
         {
             sfree(g->grpnr[i]);
-            g->grpnr[i] = NULL;
+            g->grpnr[i] = nullptr;
         }
     }
     /* The contents of this array is in symtab, don't free it here */
@@ -173,7 +173,7 @@ void done_top(t_topology *top)
     for (int f = 0; f < F_NRE; ++f)
     {
         sfree(top->idef.il[f].iatoms);
-        top->idef.il[f].iatoms = NULL;
+        top->idef.il[f].iatoms = nullptr;
         top->idef.il[f].nalloc = 0;
     }
 
@@ -197,7 +197,7 @@ void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
             for (int f = 0; f < F_NRE; ++f)
             {
                 sfree(top->idef.il[f].iatoms);
-                top->idef.il[f].iatoms = NULL;
+                top->idef.il[f].iatoms = nullptr;
                 top->idef.il[f].nalloc = 0;
             }
             done_atom(&top->atoms);
@@ -583,8 +583,8 @@ void cmp_top(FILE *fp, const t_topology *t1, const t_topology *t2, real ftol, re
     }
     else
     {
-        cmp_idef(fp, &(t1->idef), NULL, ftol, abstol);
-        cmp_atoms(fp, &(t1->atoms), NULL, ftol, abstol);
+        cmp_idef(fp, &(t1->idef), nullptr, ftol, abstol);
+        cmp_atoms(fp, &(t1->atoms), nullptr, ftol, abstol);
     }
 }
 
@@ -612,7 +612,7 @@ void cmp_groups(FILE *fp, const gmx_groups_t *g0, const gmx_groups_t *g1,
         }
         cmp_int(fp, "ngrpnr", i, g0->ngrpnr[i], g1->ngrpnr[i]);
         if (g0->ngrpnr[i] == g1->ngrpnr[i] && natoms0 == natoms1 &&
-            (g0->grpnr[i] != NULL || g1->grpnr[i] != NULL))
+            (g0->grpnr[i] != nullptr || g1->grpnr[i] != nullptr))
         {
             for (j = 0; j < natoms0; j++)
             {

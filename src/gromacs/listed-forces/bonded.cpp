@@ -947,7 +947,7 @@ real angles(int nbonds,
                 f[aj][m] += f_j[m];
                 f[ak][m] += f_k[m];
             }
-            if (g != NULL)
+            if (g != nullptr)
             {
                 copy_ivec(SHIFT_IVEC(g, aj), jt);
 

@@ -355,12 +355,12 @@ int gmx_convert_tpr(int argc, char *argv[])
     t_state           state;
     int               gnx;
     char             *grpname;
-    int              *index = NULL;
+    int              *index = nullptr;
     char              buf[200], buf2[200];
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
-        { efTPR, NULL,  NULL,    ffREAD  },
-        { efNDX, NULL,  NULL,    ffOPTRD },
+        { efTPR, nullptr,  nullptr,    ffREAD  },
+        { efNDX, nullptr,  nullptr,    ffOPTRD },
         { efTPR, "-o",  "tprout", ffWRITE }
     };
 #define NFILE asize(fnm)
@@ -382,7 +382,7 @@ int gmx_convert_tpr(int argc, char *argv[])
 
     /* Parse the command line */
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }

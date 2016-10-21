@@ -145,7 +145,7 @@ void printHelp(const Options &options)
                  "\nYou can use the following GROMACS-specific command-line flags\n"
                  "to control the behavior of the tests:\n\n");
     TextWriter             writer(&TextOutputFile::standardError());
-    CommandLineHelpContext context(&writer, eHelpOutputFormat_Console, NULL, program);
+    CommandLineHelpContext context(&writer, eHelpOutputFormat_Console, nullptr, program);
     context.setModuleDisplayName(program);
     CommandLineHelpWriter(options).writeHelp(context);
 }
@@ -185,14 +185,14 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
         setProgramContext(g_testContext.get());
         // Use the default finder that does not respect GMXLIB, since the tests
         // generally can only get confused by a different set of data files.
-        setLibraryFileFinder(NULL);
+        setLibraryFileFinder(nullptr);
         ::testing::InitGoogleMock(argc, *argv);
-        if (dataPath != NULL)
+        if (dataPath != nullptr)
         {
             TestFileManager::setInputDataDirectory(
                     Path::join(CMAKE_SOURCE_DIR, dataPath));
         }
-        if (tempPath != NULL)
+        if (tempPath != nullptr)
         {
             TestFileManager::setGlobalOutputTempDirectory(tempPath);
         }
@@ -256,7 +256,7 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
 
 void finalizeTestUtils()
 {
-    setProgramContext(NULL);
+    setProgramContext(nullptr);
     g_testContext.reset();
     finalizeForCommandLine();
 }

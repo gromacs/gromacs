@@ -211,7 +211,7 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
             vi = v_inrange - dc*(i - i_inrange)*dx;
         }
 
-        if (table_v != NULL)
+        if (table_v != nullptr)
         {
             table_v[i] = vi;
         }
@@ -281,7 +281,7 @@ void table_spline3_fill_ewald_lr(real                                 *table_f,
     /* Currently the last value only contains half the force: double it */
     table_f[0] *= 2;
 
-    if (table_v != NULL && table_fdv0 != NULL)
+    if (table_v != nullptr && table_fdv0 != nullptr)
     {
         /* Copy to FDV0 table too. Allocation occurs in forcerec.c,
          * init_ewald_f_table().
@@ -609,7 +609,7 @@ static void read_tables(FILE *fp, const char *fn,
 {
     char    *libfn;
     char     buf[STRLEN];
-    double **yy = NULL, start, end, dx0, dx1, ssd, vm, vp, f, numf;
+    double **yy = nullptr, start, end, dx0, dx1, ssd, vm, vp, f, numf;
     int      k, i, nx, nx0 = 0, ny, nny, ns;
     gmx_bool bAllZero, bZeroV, bZeroF;
     double   tabscale;
@@ -1573,9 +1573,9 @@ t_forcetable *makeDispersionCorrectionTable(FILE *fp,
                                             t_forcerec *fr, real rtab,
                                             const char *tabfn)
 {
-    t_forcetable *dispersionCorrectionTable = NULL;
+    t_forcetable *dispersionCorrectionTable = nullptr;
 
-    if (tabfn == NULL)
+    if (tabfn == nullptr)
     {
         if (debug)
         {

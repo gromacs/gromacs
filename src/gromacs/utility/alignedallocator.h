@@ -180,7 +180,7 @@ class AlignedAllocator
          *  \throws std::bad_alloc if the allocation fails.
          */
         pointer
-        allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = 0)
+        allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
         {
             void *p = internal::alignedMalloc(n*sizeof(T));
 
