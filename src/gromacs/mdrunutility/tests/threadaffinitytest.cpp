@@ -61,8 +61,7 @@ MockThreadAffinityAccess::MockThreadAffinityAccess()
 }
 
 MockThreadAffinityAccess::~MockThreadAffinityAccess()
-{
-}
+    = default;
 
 
 ThreadAffinityTestHelper::ThreadAffinityTestHelper()

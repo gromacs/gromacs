@@ -69,8 +69,7 @@ namespace internal
 {
 
 IExceptionInfo::~IExceptionInfo()
-{
-}
+    = default;
 
 class ExceptionData
 {
@@ -298,7 +297,7 @@ namespace
 class IMessageWriter
 {
     public:
-        virtual ~IMessageWriter() {}
+        virtual ~IMessageWriter() = default;
 
         /*! \brief
          * Writes a single line of text into the output.

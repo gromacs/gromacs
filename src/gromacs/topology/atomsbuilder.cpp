@@ -69,8 +69,7 @@ AtomsBuilder::AtomsBuilder(t_atoms *atoms, t_symtab *symtab)
 }
 
 AtomsBuilder::~AtomsBuilder()
-{
-}
+    = default;
 
 char **AtomsBuilder::symtabString(char **source)
 {
@@ -206,8 +205,7 @@ AtomsRemover::AtomsRemover(const t_atoms &atoms)
 }
 
 AtomsRemover::~AtomsRemover()
-{
-}
+    = default;
 
 void AtomsRemover::refreshAtomCount(const t_atoms &atoms)
 {

@@ -688,8 +688,7 @@ AnalysisDataStorageFrame::AnalysisDataStorageFrame(
 
 
 AnalysisDataStorageFrame::~AnalysisDataStorageFrame()
-{
-}
+    = default;
 
 
 void
@@ -778,8 +777,7 @@ AnalysisDataStorage::AnalysisDataStorage()
 
 
 AnalysisDataStorage::~AnalysisDataStorage()
-{
-}
+    = default;
 
 
 int

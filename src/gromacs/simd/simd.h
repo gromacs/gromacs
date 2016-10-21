@@ -727,7 +727,7 @@ class SimdSetZeroProxyInternal
 
     private:
         //! \brief Private constructor can only be called from setZero()
-        SimdSetZeroProxyInternal() {}
+        SimdSetZeroProxyInternal() = default;
 
         friend const SimdSetZeroProxyInternal gmx_simdcall
         setZero();

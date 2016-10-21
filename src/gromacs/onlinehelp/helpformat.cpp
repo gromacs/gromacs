@@ -220,8 +220,7 @@ TextTableFormatter::TextTableFormatter()
 }
 
 TextTableFormatter::~TextTableFormatter()
-{
-}
+    = default;
 
 void TextTableFormatter::addColumn(const char *title, int width, bool bWrap)
 {

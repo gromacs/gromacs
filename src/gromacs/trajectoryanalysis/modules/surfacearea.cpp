@@ -745,8 +745,7 @@ SurfaceAreaCalculator::SurfaceAreaCalculator()
 }
 
 SurfaceAreaCalculator::~SurfaceAreaCalculator()
-{
-}
+    = default;
 
 void SurfaceAreaCalculator::setDotCount(int dotCount)
 {

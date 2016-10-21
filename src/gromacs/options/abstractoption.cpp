@@ -88,8 +88,7 @@ AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
 }
 
 AbstractOptionStorage::~AbstractOptionStorage()
-{
-}
+    = default;
 
 bool AbstractOptionStorage::isBoolean() const
 {
@@ -208,8 +207,7 @@ OptionInfo::OptionInfo(AbstractOptionStorage *option)
 //! \endcond
 
 OptionInfo::~OptionInfo()
-{
-}
+    = default;
 
 bool OptionInfo::isSet() const
 {

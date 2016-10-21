@@ -257,8 +257,7 @@ AbstractAverageHistogram::AbstractAverageHistogram(
 
 
 AbstractAverageHistogram::~AbstractAverageHistogram()
-{
-}
+    = default;
 
 
 void
@@ -575,8 +574,7 @@ BasicHistogramImpl::BasicHistogramImpl(const AnalysisHistogramSettings &settings
 
 
 BasicHistogramImpl::~BasicHistogramImpl()
-{
-}
+    = default;
 
 
 void BasicHistogramImpl::init(const AnalysisHistogramSettings &settings)
@@ -628,8 +626,7 @@ AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule(
 
 
 AnalysisDataSimpleHistogramModule::~AnalysisDataSimpleHistogramModule()
-{
-}
+    = default;
 
 
 void AnalysisDataSimpleHistogramModule::init(const AnalysisHistogramSettings &settings)
@@ -802,8 +799,7 @@ AnalysisDataWeightedHistogramModule::AnalysisDataWeightedHistogramModule(
 
 
 AnalysisDataWeightedHistogramModule::~AnalysisDataWeightedHistogramModule()
-{
-}
+    = default;
 
 
 void AnalysisDataWeightedHistogramModule::init(const AnalysisHistogramSettings &settings)
@@ -973,8 +969,7 @@ AnalysisDataBinAverageModule::AnalysisDataBinAverageModule(
 
 
 AnalysisDataBinAverageModule::~AnalysisDataBinAverageModule()
-{
-}
+    = default;
 
 
 void

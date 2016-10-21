@@ -51,7 +51,7 @@ namespace gmx
 class ISerializer
 {
     public:
-        virtual ~ISerializer() {}
+        virtual ~ISerializer() = default;
 
         virtual bool reading() const = 0;
 

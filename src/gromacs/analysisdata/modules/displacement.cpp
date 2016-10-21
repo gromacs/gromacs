@@ -125,8 +125,7 @@ AnalysisDataDisplacementModule::AnalysisDataDisplacementModule()
 
 
 AnalysisDataDisplacementModule::~AnalysisDataDisplacementModule()
-{
-}
+    = default;
 
 
 void

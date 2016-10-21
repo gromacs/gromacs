@@ -74,7 +74,7 @@ namespace gmx
 class IExecutableEnvironment
 {
     public:
-        virtual ~IExecutableEnvironment() {}
+        virtual ~IExecutableEnvironment() = default;
 
         /*! \brief
          * Returns the working directory when the program was launched.

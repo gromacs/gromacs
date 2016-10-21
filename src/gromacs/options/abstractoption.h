@@ -94,7 +94,7 @@ class AbstractOption
 {
     public:
         // Virtual only for completeness, in normal use should not be needed.
-        virtual ~AbstractOption() { }
+        virtual ~AbstractOption() = default;
 
     protected:
         /*! \cond libapi */

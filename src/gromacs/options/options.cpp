@@ -63,32 +63,28 @@ namespace gmx
  */
 
 IOptionManager::~IOptionManager()
-{
-}
+    = default;
 
 /********************************************************************
  * IOptionsContainer
  */
 
 IOptionsContainer::~IOptionsContainer()
-{
-}
+    = default;
 
 /********************************************************************
  * IOptionsContainerWithSections
  */
 
 IOptionsContainerWithSections::~IOptionsContainerWithSections()
-{
-}
+    = default;
 
 /********************************************************************
  * IOptionSectionStorage
  */
 
 IOptionSectionStorage::~IOptionSectionStorage()
-{
-}
+    = default;
 
 /********************************************************************
  * OptionsImpl
@@ -236,8 +232,7 @@ Options::Options()
 }
 
 Options::~Options()
-{
-}
+    = default;
 
 
 void Options::addManager(IOptionManager *manager)

@@ -182,7 +182,7 @@ class IHelpExport
         //! Shorthand for a list of modules contained in a group.
         typedef CommandLineModuleGroupData::ModuleList ModuleGroupContents;
 
-        virtual ~IHelpExport() {};
+        virtual ~IHelpExport() = default;;
 
         /*! \brief
          * Called once before exporting individual modules.
@@ -911,8 +911,7 @@ CommandLineHelpModule::CommandLineHelpModule(
 }
 
 CommandLineHelpModule::~CommandLineHelpModule()
-{
-}
+    = default;
 
 HelpTopicPointer CommandLineHelpModule::createModuleHelpTopic(
         const ICommandLineModule &module) const

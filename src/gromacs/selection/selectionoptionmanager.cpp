@@ -262,8 +262,7 @@ SelectionOptionManager::SelectionOptionManager(SelectionCollection *collection)
 }
 
 SelectionOptionManager::~SelectionOptionManager()
-{
-}
+    = default;
 
 void
 SelectionOptionManager::registerOption(SelectionOptionStorage *storage)

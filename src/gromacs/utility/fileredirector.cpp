@@ -50,12 +50,10 @@ namespace gmx
 {
 
 IFileInputRedirector::~IFileInputRedirector()
-{
-}
+    = default;
 
 IFileOutputRedirector::~IFileOutputRedirector()
-{
-}
+    = default;
 
 namespace
 {

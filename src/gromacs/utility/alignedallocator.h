@@ -150,7 +150,7 @@ class AlignedAllocator
          * No constructor can be auto-generated in the presence of any
          * user-defined constructor, but we want the default constructor.
          */
-        AlignedAllocator() {};
+        AlignedAllocator() = default;;
 
         /*! \brief Return address of an object
          *

@@ -512,8 +512,7 @@ MockAnalysisDataModule::MockAnalysisDataModule(int flags)
 
 
 MockAnalysisDataModule::~MockAnalysisDataModule()
-{
-}
+    = default;
 
 
 int MockAnalysisDataModule::flags() const

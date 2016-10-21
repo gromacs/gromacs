@@ -217,7 +217,7 @@ std::string repall(const std::string &s, const t_sandr (&sa)[nsr])
 class IWrapper
 {
     public:
-        virtual ~IWrapper() {}
+        virtual ~IWrapper() = default;
 
         /*! \brief
          * Provides the wrapping settings.
@@ -390,8 +390,7 @@ HelpLinks::HelpLinks(HelpOutputFormat format) : impl_(new Impl(format))
 }
 
 HelpLinks::~HelpLinks()
-{
-}
+    = default;
 
 void HelpLinks::addLink(const std::string &linkName,
                         const std::string &targetName,
@@ -629,8 +628,7 @@ HelpWriterContext::HelpWriterContext(const HelpWriterContext &other)
 }
 
 HelpWriterContext::~HelpWriterContext()
-{
-}
+    = default;
 
 void HelpWriterContext::setReplacement(const std::string &search,
                                        const std::string &replace)

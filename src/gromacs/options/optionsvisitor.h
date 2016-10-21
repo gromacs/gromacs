@@ -72,7 +72,7 @@ class OptionSectionImpl;
 class OptionsVisitor
 {
     public:
-        virtual ~OptionsVisitor() {}
+        virtual ~OptionsVisitor() = default;
 
         //! Called for each section.
         virtual void visitSection(const OptionSectionInfo &section) = 0;
@@ -93,7 +93,7 @@ template <class InfoType>
 class OptionsTypeVisitor : public OptionsVisitor
 {
     public:
-        ~OptionsTypeVisitor() override {}
+        ~OptionsTypeVisitor() override = default;
 
         void visitSection(const OptionSectionInfo &section) override = 0;
         /*! \brief
@@ -180,7 +180,7 @@ class OptionsIterator
 class OptionsModifyingVisitor
 {
     public:
-        virtual ~OptionsModifyingVisitor() {}
+        virtual ~OptionsModifyingVisitor() = default;
 
         //! Called for each section.
         virtual void visitSection(OptionSectionInfo *section) = 0;
@@ -202,7 +202,7 @@ template <class InfoType>
 class OptionsModifyingTypeVisitor : public OptionsModifyingVisitor
 {
     public:
-        ~OptionsModifyingTypeVisitor() override {}
+        ~OptionsModifyingTypeVisitor() override = default;
 
         void visitSection(OptionSectionInfo *section) override = 0;
         /*! \brief

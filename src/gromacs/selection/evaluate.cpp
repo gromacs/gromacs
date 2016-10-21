@@ -414,8 +414,7 @@ namespace gmx
 {
 
 SelectionEvaluator::SelectionEvaluator()
-{
-}
+    = default;
 
 /*!
  * \param[in,out] coll  The selection collection to evaluate.

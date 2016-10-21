@@ -2688,8 +2688,7 @@ namespace gmx
 {
 
 SelectionCompiler::SelectionCompiler()
-{
-}
+    = default;
 
 /*!
  * \param[in,out] coll Selection collection to be compiled.

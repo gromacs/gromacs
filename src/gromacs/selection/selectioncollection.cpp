@@ -545,8 +545,7 @@ SelectionCollection::SelectionCollection()
 
 
 SelectionCollection::~SelectionCollection()
-{
-}
+    = default;
 
 
 void

@@ -62,7 +62,7 @@ template <typename T>
 class IOptionValueStore
 {
     public:
-        virtual ~IOptionValueStore() {}
+        virtual ~IOptionValueStore() = default;
 
         //! Returns the number of values stored so far.
         virtual int valueCount() = 0;

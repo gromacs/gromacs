@@ -123,8 +123,7 @@ AnalysisData::AnalysisData()
 
 
 AnalysisData::~AnalysisData()
-{
-}
+    = default;
 
 
 void
