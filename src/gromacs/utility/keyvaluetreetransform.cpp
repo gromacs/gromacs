@@ -55,16 +55,14 @@ namespace gmx
  */
 
 IKeyValueTreeTransformRules::~IKeyValueTreeTransformRules()
-{
-}
+    = default;
 
 /********************************************************************
  * IKeyValueTreeBackMapping
  */
 
 IKeyValueTreeBackMapping::~IKeyValueTreeBackMapping()
-{
-}
+    = default;
 
 namespace
 {
@@ -357,8 +355,7 @@ KeyValueTreeTransformer::KeyValueTreeTransformer()
 }
 
 KeyValueTreeTransformer::~KeyValueTreeTransformer()
-{
-}
+    = default;
 
 IKeyValueTreeTransformRules *KeyValueTreeTransformer::rules()
 {

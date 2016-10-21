@@ -381,8 +381,7 @@ CommandLineProgramContext::CommandLineProgramContext(
 }
 
 CommandLineProgramContext::~CommandLineProgramContext()
-{
-}
+    = default;
 
 void CommandLineProgramContext::setDisplayName(const std::string &name)
 {

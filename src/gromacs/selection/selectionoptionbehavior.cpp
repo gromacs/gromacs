@@ -67,8 +67,7 @@ namespace gmx
  */
 
 ITopologyProvider::~ITopologyProvider()
-{
-}
+    = default;
 
 /********************************************************************
  * SelectionOptionBehavior
@@ -190,8 +189,7 @@ SelectionOptionBehavior::SelectionOptionBehavior(
 }
 
 SelectionOptionBehavior::~SelectionOptionBehavior()
-{
-}
+    = default;
 
 void
 SelectionOptionBehavior::initOptions(IOptionsContainer *options)

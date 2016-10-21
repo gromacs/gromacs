@@ -122,8 +122,7 @@ AnalysisDataLifetimeModule::AnalysisDataLifetimeModule()
 }
 
 AnalysisDataLifetimeModule::~AnalysisDataLifetimeModule()
-{
-}
+    = default;
 
 void AnalysisDataLifetimeModule::setCumulative(bool bCumulative)
 {

@@ -86,7 +86,7 @@ namespace gmx
 class IInputRecExtension
 {
     public:
-        virtual ~IInputRecExtension() {}
+        virtual ~IInputRecExtension() = default;
 
         /*! \brief Read or write tpr file
          *

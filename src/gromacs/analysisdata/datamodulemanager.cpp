@@ -267,8 +267,7 @@ AnalysisDataModuleManager::AnalysisDataModuleManager()
 }
 
 AnalysisDataModuleManager::~AnalysisDataModuleManager()
-{
-}
+    = default;
 
 void
 AnalysisDataModuleManager::dataPropertyAboutToChange(DataProperty property, bool bSet)

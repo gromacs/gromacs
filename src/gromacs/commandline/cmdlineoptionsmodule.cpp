@@ -190,16 +190,14 @@ void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
  */
 
 ICommandLineOptionsModuleSettings::~ICommandLineOptionsModuleSettings()
-{
-}
+    = default;
 
 /********************************************************************
  * ICommandLineOptionsModule
  */
 
 ICommandLineOptionsModule::~ICommandLineOptionsModule()
-{
-}
+    = default;
 
 // static
 std::unique_ptr<ICommandLineModule>

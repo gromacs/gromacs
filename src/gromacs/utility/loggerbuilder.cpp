@@ -131,8 +131,7 @@ LoggerOwner &LoggerOwner::operator=(LoggerOwner &&other)
 }
 
 LoggerOwner::~LoggerOwner()
-{
-}
+    = default;
 
 /********************************************************************
  * LoggerBuilder::Impl
@@ -156,8 +155,7 @@ LoggerBuilder::LoggerBuilder()
 }
 
 LoggerBuilder::~LoggerBuilder()
-{
-}
+    = default;
 
 void LoggerBuilder::addTargetStream(MDLogger::LogLevel level, TextOutputStream *stream)
 {

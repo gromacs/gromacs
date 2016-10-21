@@ -101,8 +101,7 @@ SelectionParserSymbol::SelectionParserSymbol(Impl *impl)
 }
 
 SelectionParserSymbol::~SelectionParserSymbol()
-{
-}
+    = default;
 
 const std::string &
 SelectionParserSymbol::name() const
@@ -267,8 +266,7 @@ SelectionParserSymbolIterator::SelectionParserSymbolIterator(
 }
 
 SelectionParserSymbolIterator::~SelectionParserSymbolIterator()
-{
-}
+    = default;
 
 SelectionParserSymbolIterator &SelectionParserSymbolIterator::operator=(
         const SelectionParserSymbolIterator &other)
@@ -311,8 +309,7 @@ SelectionParserSymbolTable::SelectionParserSymbolTable()
 }
 
 SelectionParserSymbolTable::~SelectionParserSymbolTable()
-{
-}
+    = default;
 
 const SelectionParserSymbol *
 SelectionParserSymbolTable::findSymbol(const std::string &name) const

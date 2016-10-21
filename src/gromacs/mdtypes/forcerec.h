@@ -78,7 +78,7 @@ struct IForceProvider
                                      double            t) = 0;
 
     protected:
-        ~IForceProvider() {}
+        ~IForceProvider() = default;
 };
 #endif
 

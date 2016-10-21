@@ -66,8 +66,7 @@ MessageStringCollector::MessageStringCollector()
 }
 
 MessageStringCollector::~MessageStringCollector()
-{
-}
+    = default;
 
 void MessageStringCollector::startContext(const char *name)
 {

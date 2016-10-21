@@ -122,8 +122,7 @@ SelectionData::SelectionData(SelectionTreeElement *elem,
 
 
 SelectionData::~SelectionData()
-{
-}
+    = default;
 
 
 bool

@@ -682,8 +682,7 @@ TestReferenceData::TestReferenceData(ReferenceDataMode mode)
 
 
 TestReferenceData::~TestReferenceData()
-{
-}
+    = default;
 
 
 TestReferenceChecker TestReferenceData::rootChecker()
@@ -739,8 +738,7 @@ TestReferenceChecker::operator=(TestReferenceChecker &&other)
 }
 
 TestReferenceChecker::~TestReferenceChecker()
-{
-}
+    = default;
 
 bool TestReferenceChecker::isValid() const
 {

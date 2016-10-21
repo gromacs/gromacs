@@ -67,8 +67,7 @@ TestFileInputRedirector::TestFileInputRedirector()
 }
 
 TestFileInputRedirector::~TestFileInputRedirector()
-{
-}
+    = default;
 
 void TestFileInputRedirector::addExistingFile(const char *filename)
 {
@@ -111,8 +110,7 @@ TestFileOutputRedirector::TestFileOutputRedirector()
 }
 
 TestFileOutputRedirector::~TestFileOutputRedirector()
-{
-}
+    = default;
 
 TextOutputStream &TestFileOutputRedirector::standardOutput()
 {

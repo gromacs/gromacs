@@ -81,8 +81,7 @@ MockHelpTopic::MockHelpTopic(const char *name, const char *title, const char *te
 }
 
 MockHelpTopic::~MockHelpTopic()
-{
-}
+    = default;
 
 const char *MockHelpTopic::name() const
 {

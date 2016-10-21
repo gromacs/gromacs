@@ -56,8 +56,7 @@ ILogTarget *getTarget(ILogTarget        *targets[MDLogger::LogLevelCount],
 }   // namespace
 
 ILogTarget::~ILogTarget()
-{
-}
+    = default;
 
 
 LogEntryWriter &LogEntryWriter::appendTextFormatted(const char *fmt, ...)

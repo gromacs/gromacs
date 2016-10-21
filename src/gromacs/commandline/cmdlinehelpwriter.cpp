@@ -83,7 +83,7 @@ namespace
 class IOptionsFormatter
 {
     public:
-        virtual ~IOptionsFormatter() {}
+        virtual ~IOptionsFormatter() = default;
 
         //! Formats a single option option.
         virtual void formatOption(const OptionInfo &option) = 0;
@@ -546,8 +546,7 @@ CommandLineHelpWriter::CommandLineHelpWriter(const Options &options)
 }
 
 CommandLineHelpWriter::~CommandLineHelpWriter()
-{
-}
+    = default;
 
 CommandLineHelpWriter &
 CommandLineHelpWriter::setHelpText(const std::string &help)

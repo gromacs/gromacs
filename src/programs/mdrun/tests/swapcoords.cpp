@@ -62,8 +62,7 @@ SwapTestFixture::SwapTestFixture()
 }
 
 SwapTestFixture::~SwapTestFixture()
-{
-}
+    = default;
 
 
 

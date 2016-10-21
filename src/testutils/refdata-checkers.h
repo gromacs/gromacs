@@ -72,7 +72,7 @@ class IReferenceDataEntryChecker
         checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const = 0;
 
     protected:
-        virtual ~IReferenceDataEntryChecker() {}
+        virtual ~IReferenceDataEntryChecker() = default;
 };
 
 class NullChecker : public IReferenceDataEntryChecker
