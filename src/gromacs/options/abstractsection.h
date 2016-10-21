@@ -155,6 +155,9 @@ class AbstractOptionSectionInfo
         {
         }
 
+        //! Returns the name of the section.
+        const std::string &name() const;
+
         //! Returns the wrapped section storage object.
         internal::OptionSectionImpl       &section() { return section_; }
         //! Returns the wrapped section storage object.

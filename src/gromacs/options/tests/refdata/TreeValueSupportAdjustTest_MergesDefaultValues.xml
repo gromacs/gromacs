@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="Input">
+    <Int Name="b">1</Int>
+  </Object>
+  <Object Name="Output">
+    <Int Name="a">2</Int>
+    <Int Name="b">1</Int>
+  </Object>
+</ReferenceData>

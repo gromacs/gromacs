@@ -261,6 +261,11 @@ std::string OptionInfo::formatDescription() const
     return description;
 }
 
+std::vector<Variant> OptionInfo::defaultValues() const
+{
+    return option().defaultValues();
+}
+
 std::vector<std::string> OptionInfo::defaultValuesAsStrings() const
 {
     return option().defaultValuesAsStrings();
