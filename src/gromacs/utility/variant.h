@@ -233,8 +233,8 @@ class Variant
                 explicit Content(const T &value) : value_(value) {}
                 explicit Content(T &&value) : value_(std::move(value)) {}
 
-                virtual const std::type_info &typeInfo() const { return typeid(T); }
-                virtual IContent *clone() const { return new Content(value_); }
+                const std::type_info &typeInfo() const override { return typeid(T); }
+                IContent *clone() const override { return new Content(value_); }
 
                 T value_;
         };

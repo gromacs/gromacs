@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,7 +84,7 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
 {
     public:
         AnalysisDataAverageModule();
-        virtual ~AnalysisDataAverageModule();
+        ~AnalysisDataAverageModule() override;
 
         using AbstractAnalysisArrayData::setXAxis;
         using AbstractAnalysisArrayData::setXAxisValue;
@@ -103,13 +103,13 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
          */
         void setAverageDataSets(bool bDataSets);
 
-        virtual int flags() const;
+        int flags() const override;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+        void dataStarted(AbstractAnalysisData *data) override;
+        void frameStarted(const AnalysisDataFrameHeader &header) override;
+        void pointsAdded(const AnalysisDataPointSetRef &points) override;
+        void frameFinished(const AnalysisDataFrameHeader &header) override;
+        void dataFinished() override;
 
         /*! \brief
          * Convenience access to the average of a data column.
@@ -166,21 +166,21 @@ class AnalysisDataFrameAverageModule : public AbstractAnalysisData,
 {
     public:
         AnalysisDataFrameAverageModule();
-        virtual ~AnalysisDataFrameAverageModule();
+        ~AnalysisDataFrameAverageModule() override;
 
-        virtual int frameCount() const;
+        int frameCount() const override;
 
-        virtual int flags() const;
+        int flags() const override;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual void frameStarted(const AnalysisDataFrameHeader &header);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void dataFinished();
+        void dataStarted(AbstractAnalysisData *data) override;
+        void frameStarted(const AnalysisDataFrameHeader &header) override;
+        void pointsAdded(const AnalysisDataPointSetRef &points) override;
+        void frameFinished(const AnalysisDataFrameHeader &header) override;
+        void dataFinished() override;
 
     private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
+        AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
+        bool requestStorageInternal(int nframes) override;
 
         class Impl;
 

@@ -68,16 +68,16 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
         SelectionFileOptionStorage(const SelectionFileOption &settings,
                                    SelectionOptionManager    *manager);
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const { return "file"; }
-        virtual int valueCount() const { return 0; }
-        virtual std::string formatValue(int /*i*/) const { return ""; }
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override { return "file"; }
+        int valueCount() const override { return 0; }
+        std::string formatValue(int /*i*/) const override { return ""; }
 
     private:
-        virtual void clearSet();
-        virtual void convertValue(const Variant &value);
-        virtual void processSet();
-        virtual void processAll() {}
+        void clearSet() override;
+        void convertValue(const Variant &value) override;
+        void processSet() override;
+        void processAll() override {}
 
         SelectionFileOptionInfo  info_;
         SelectionOptionManager  &manager_;

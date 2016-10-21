@@ -103,15 +103,15 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         using MyBase::addValue;
         using MyBase::commitValues;
 
-        virtual gmx::OptionInfo &optionInfo() { return info_; }
+        gmx::OptionInfo &optionInfo() override { return info_; }
         // These are not used.
-        virtual std::string typeString() const { return "mock"; }
-        virtual std::string formatSingleValue(const std::string & /*value*/) const
+        std::string typeString() const override { return "mock"; }
+        std::string formatSingleValue(const std::string & /*value*/) const override
         {
             return "";
         }
 
-        virtual void convertValue(const gmx::Variant &value)
+        void convertValue(const gmx::Variant &value) override
         {
             convertValue(value.cast<std::string>());
         }
@@ -142,8 +142,8 @@ class MockOption : public gmx::OptionTemplate<std::string, MockOption>
         }
 
     private:
-        virtual gmx::AbstractOptionStorage *createStorage(
-            const gmx::OptionManagerContainer & /*managers*/) const
+        gmx::AbstractOptionStorage *createStorage(
+            const gmx::OptionManagerContainer & /*managers*/) const override
         {
             return new MockOptionStorage(*this);
         }

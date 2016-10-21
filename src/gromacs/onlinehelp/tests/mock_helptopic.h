@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,10 +61,10 @@ class MockHelpTopic : public AbstractCompositeHelpTopic
             const char *name, const char *title, const char *text);
 
         MockHelpTopic(const char *name, const char *title, const char *text);
-        virtual ~MockHelpTopic();
+        ~MockHelpTopic() override;
 
-        virtual const char *name() const;
-        virtual const char *title() const;
+        const char *name() const override;
+        const char *title() const override;
 
         MOCK_CONST_METHOD1(writeHelp, void(const HelpWriterContext &context));
 
@@ -84,7 +84,7 @@ class MockHelpTopic : public AbstractCompositeHelpTopic
         }
 
     private:
-        virtual std::string helpText() const;
+        std::string helpText() const override;
 
         const char             *name_;
         const char             *title_;

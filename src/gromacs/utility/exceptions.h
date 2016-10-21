@@ -264,7 +264,7 @@ class GromacsException : public std::exception
     public:
         // Explicitly declared because some compiler/library combinations warn
         // about missing noexcept otherwise.
-        virtual ~GromacsException() noexcept {}
+        ~GromacsException() noexcept override {}
 
         GMX_DEFAULT_CONSTRUCTORS(GromacsException);
 
@@ -273,7 +273,7 @@ class GromacsException : public std::exception
          *
          * The return value is the string that was passed to the constructor.
          */
-        virtual const char *what() const noexcept;
+        const char *what() const noexcept override;
         /*! \brief
          * Returns the error code corresponding to the exception type.
          */
@@ -413,7 +413,7 @@ class FileIOError : public GromacsException
         explicit FileIOError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+        int errorCode() const override;
 };
 
 /*! \brief
@@ -444,7 +444,7 @@ class InvalidInputError : public UserInputError
         explicit InvalidInputError(const ExceptionInitializer &details)
             : UserInputError(details) {}
 
-        virtual int errorCode() const;
+        int errorCode() const override;
 };
 
 /*! \brief
@@ -459,7 +459,7 @@ class InconsistentInputError : public UserInputError
         explicit InconsistentInputError(const ExceptionInitializer &details)
             : UserInputError(details) {}
 
-        virtual int errorCode() const;
+        int errorCode() const override;
 };
 
 /*! \brief
@@ -483,7 +483,7 @@ class ToleranceError : public GromacsException
         explicit ToleranceError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+        int errorCode() const override;
 };
 
 /*! \brief
@@ -498,7 +498,7 @@ class SimulationInstabilityError : public GromacsException
         explicit SimulationInstabilityError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+        int errorCode() const override;
 };
 
 /*! \brief
@@ -513,7 +513,7 @@ class InternalError : public GromacsException
         explicit InternalError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+        int errorCode() const override;
 };
 
 /*! \brief
@@ -528,7 +528,7 @@ class APIError : public GromacsException
         explicit APIError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+        int errorCode() const override;
 };
 
 /*! \brief
@@ -543,7 +543,7 @@ class RangeError : public GromacsException
         explicit RangeError(const ExceptionInitializer &details)
             : GromacsException(details) {}
 
-        virtual int errorCode() const;
+        int errorCode() const override;
 };
 
 /*! \brief
@@ -558,7 +558,7 @@ class NotImplementedError : public APIError
         explicit NotImplementedError(const ExceptionInitializer &details)
             : APIError(details) {}
 
-        virtual int errorCode() const;
+        int errorCode() const override;
 };
 
 /*! \brief

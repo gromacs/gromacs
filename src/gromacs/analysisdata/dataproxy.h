@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,23 +80,23 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         AnalysisDataProxy(int firstColumn, int columnSpan,
                           AbstractAnalysisData *data);
 
-        virtual int frameCount() const;
+        int frameCount() const override;
 
-        virtual int flags() const;
+        int flags() const override;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
-        virtual bool parallelDataStarted(
+        void dataStarted(AbstractAnalysisData *data) override;
+        bool parallelDataStarted(
             AbstractAnalysisData              *data,
-            const AnalysisDataParallelOptions &options);
-        virtual void frameStarted(const AnalysisDataFrameHeader &frame);
-        virtual void pointsAdded(const AnalysisDataPointSetRef &points);
-        virtual void frameFinished(const AnalysisDataFrameHeader &header);
-        virtual void frameFinishedSerial(int frameIndex);
-        virtual void dataFinished();
+            const AnalysisDataParallelOptions &options) override;
+        void frameStarted(const AnalysisDataFrameHeader &frame) override;
+        void pointsAdded(const AnalysisDataPointSetRef &points) override;
+        void frameFinished(const AnalysisDataFrameHeader &header) override;
+        void frameFinishedSerial(int frameIndex) override;
+        void dataFinished() override;
 
     private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
+        AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
+        bool requestStorageInternal(int nframes) override;
 
         AbstractAnalysisData   &source_;
         int                     firstColumn_;

@@ -71,7 +71,7 @@ class PositionCalculationTest : public ::testing::Test
 {
     public:
         PositionCalculationTest();
-        ~PositionCalculationTest();
+        ~PositionCalculationTest() override;
 
         void generateCoordinates();
 

@@ -176,7 +176,7 @@ class MdrunTestFixtureBase : public IntegrationTestFixture
 {
     public:
         MdrunTestFixtureBase();
-        virtual ~MdrunTestFixtureBase();
+        ~MdrunTestFixtureBase() override;
 };
 
 /*! \internal
@@ -191,7 +191,7 @@ class MdrunTestFixture : public IntegrationTestFixture
 {
     public:
         MdrunTestFixture();
-        virtual ~MdrunTestFixture();
+        ~MdrunTestFixture() override;
 
         //! Helper object to manage the preparation for and call of mdrun
         SimulationRunner runner_;

@@ -55,7 +55,7 @@ class LogTargetCollection : public ILogTarget
             targets_.push_back(target);
         }
 
-        virtual void writeEntry(const LogEntry &entry)
+        void writeEntry(const LogEntry &entry) override
         {
             for (ILogTarget *target : targets_)
             {
@@ -72,7 +72,7 @@ class LogTargetFormatter : public ILogTarget
     public:
         explicit LogTargetFormatter(TextOutputStream *stream) : writer_(stream) {}
 
-        virtual void writeEntry(const LogEntry &entry);
+        void writeEntry(const LogEntry &entry) override;
 
     private:
         TextWriter writer_;

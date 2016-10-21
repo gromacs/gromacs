@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,8 +80,8 @@ class StandardInputStream : public TextInputStream
         bool isInteractive() const;
 
         // From TextInputStream
-        virtual bool readLine(std::string *line);
-        virtual void close() {}
+        bool readLine(std::string *line) override;
+        void close() override {}
 
         /*! \brief
          * Returns a stream for accessing `stdin`.
@@ -134,7 +134,7 @@ class TextInputFile : public TextInputStream
          * for an object constructed this way.
          */
         explicit TextInputFile(FILE *fp);
-        virtual ~TextInputFile();
+        ~TextInputFile() override;
 
         /*! \brief
          * Returns a raw handle to the input file.
@@ -144,8 +144,8 @@ class TextInputFile : public TextInputStream
         FILE *handle();
 
         // From TextInputStream
-        virtual bool readLine(std::string *line);
-        virtual void close();
+        bool readLine(std::string *line) override;
+        void close() override;
 
     private:
         PrivateImplPointer<internal::FileStreamImpl> impl_;
@@ -167,11 +167,11 @@ class TextOutputFile : public TextOutputStream
         explicit TextOutputFile(const std::string &filename);
         //! \copydoc TextInputFile::TextInputFile(FILE *)
         explicit TextOutputFile(FILE *fp);
-        virtual ~TextOutputFile();
+        ~TextOutputFile() override;
 
         // From TextOutputStream
-        virtual void write(const char *text);
-        virtual void close();
+        void write(const char *text) override;
+        void close() override;
 
         /*! \brief
          * Returns a stream for accessing `stdout`.

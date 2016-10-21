@@ -188,7 +188,7 @@ TestReferenceDataImplPointer initReferenceDataInstanceForSelfTest(ReferenceDataM
 class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
 {
     public:
-        virtual void OnTestEnd(const ::testing::TestInfo &test_info)
+        void OnTestEnd(const ::testing::TestInfo &test_info) override
         {
             if (g_referenceData)
             {
@@ -199,7 +199,7 @@ class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
             }
         }
 
-        virtual void OnTestProgramEnd(const ::testing::UnitTest &)
+        void OnTestProgramEnd(const ::testing::UnitTest &) override
         {
             // Could be used e.g. to free internal buffers allocated by an XML parsing library
         }

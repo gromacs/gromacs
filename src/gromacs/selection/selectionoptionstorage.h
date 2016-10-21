@@ -74,9 +74,9 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         SelectionOptionStorage(const SelectionOption  &settings,
                                SelectionOptionManager *manager);
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const { return "selection"; }
-        virtual std::string formatSingleValue(const Selection &value) const;
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override { return "selection"; }
+        std::string formatSingleValue(const Selection &value) const override;
 
         /*! \brief
          * Adds selections to the storage.
@@ -126,9 +126,9 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         void setSelectionFlag(SelectionFlag flag, bool bSet);
 
     private:
-        virtual void convertValue(const Variant &value);
-        virtual void processSetValues(ValueList *values);
-        virtual void processAll();
+        void convertValue(const Variant &value) override;
+        void processSetValues(ValueList *values) override;
+        void processAll() override;
 
         SelectionOptionInfo     info_;
         SelectionOptionManager &manager_;

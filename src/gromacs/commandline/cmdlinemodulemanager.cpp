@@ -112,27 +112,27 @@ class CMainCommandLineModule : public ICommandLineModule
         {
         }
 
-        virtual const char *name() const
+        const char *name() const override
         {
             return name_;
         }
-        virtual const char *shortDescription() const
+        const char *shortDescription() const override
         {
             return shortDescription_;
         }
 
-        virtual void init(CommandLineModuleSettings *settings)
+        void init(CommandLineModuleSettings *settings) override
         {
             if (settingsFunction_ != nullptr)
             {
                 settingsFunction_(settings);
             }
         }
-        virtual int run(int argc, char *argv[])
+        int run(int argc, char *argv[]) override
         {
             return mainFunction_(argc, argv);
         }
-        virtual void writeHelp(const CommandLineHelpContext &context) const
+        void writeHelp(const CommandLineHelpContext &context) const override
         {
             writeCommandLineHelpCMain(context, name_, mainFunction_);
         }
