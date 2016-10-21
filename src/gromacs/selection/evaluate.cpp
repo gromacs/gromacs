@@ -152,13 +152,13 @@ class MempoolGroupReserver
          * \param    mp  Memory pool from which to reserve memory.
          */
         explicit MempoolGroupReserver(gmx_sel_mempool_t *mp)
-            : mp_(mp), g_(NULL)
+            : mp_(mp), g_(nullptr)
         {
         }
         //! Frees any memory allocated using this reserver.
         ~MempoolGroupReserver()
         {
-            if (g_ != NULL)
+            if (g_ != nullptr)
             {
                 _gmx_sel_mempool_free_group(mp_, g_);
             }
@@ -175,7 +175,7 @@ class MempoolGroupReserver
          */
         void reserve(gmx_ana_index_t *g, int count)
         {
-            GMX_RELEASE_ASSERT(g_ == NULL, "Can only reserve one element with one instance");
+            GMX_RELEASE_ASSERT(g_ == nullptr, "Can only reserve one element with one instance");
             _gmx_sel_mempool_alloc_group(mp_, g, count);
             g_ = g;
         }
@@ -198,7 +198,7 @@ class SelelemTemporaryValueAssigner
     public:
         //! Constructs an assigner without an initial assignment.
         SelelemTemporaryValueAssigner()
-            : old_ptr_(NULL), old_nalloc_(0)
+            : old_ptr_(nullptr), old_nalloc_(0)
         {
         }
         /*! \brief
@@ -445,7 +445,7 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
     {
         /* Clear the evaluation group of subexpressions */
         if (sel->child && sel->child->type == SEL_SUBEXPR
-            && sel->child->evaluate != NULL)
+            && sel->child->evaluate != nullptr)
         {
             sel->child->u.cgrp.isize = 0;
             /* Not strictly necessary, because the value will be overwritten
@@ -461,7 +461,7 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
         }
         if (sel->evaluate)
         {
-            sel->evaluate(&data, sel, NULL);
+            sel->evaluate(&data, sel, nullptr);
         }
         sel = sel->next;
     }
@@ -530,7 +530,7 @@ _gmx_sel_evaluate_root(gmx_sel_evaluate_t                     *data,
     }
 
     sel->child->evaluate(data, sel->child,
-                         sel->u.cgrp.isize < 0 ? NULL : &sel->u.cgrp);
+                         sel->u.cgrp.isize < 0 ? nullptr : &sel->u.cgrp);
 }
 
 void
@@ -796,7 +796,7 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t                     *data,
 {
     int        i, j;
 
-    if (g != NULL && sel->child->evaluate != NULL)
+    if (g != nullptr && sel->child->evaluate != nullptr)
     {
         sel->child->evaluate(data, sel->child, g);
     }
@@ -931,7 +931,7 @@ _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t                     *data,
             else
             {
                 child->flags |= SEL_EVALFRAME;
-                child->evaluate(data, child, NULL);
+                child->evaluate(data, child, nullptr);
             }
         }
         child = child->next;
@@ -1023,7 +1023,7 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t                     *data,
     {
         GMX_THROW(gmx::NotImplementedError("Non-position valued modifiers not implemented"));
     }
-    sel->u.expr.method->pupdate(context, NULL, &sel->v, sel->u.expr.mdata);
+    sel->u.expr.method->pupdate(context, nullptr, &sel->v, sel->u.expr.mdata);
 }
 
 

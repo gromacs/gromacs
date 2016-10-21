@@ -455,7 +455,7 @@ static real estimate_reciprocal(
     real      tmp2   = 0;
     gmx_bool  bFraction;
 
-    int      *numbers = NULL;
+    int      *numbers = nullptr;
 
     /* Index variables for parallel work distribution */
     int startglobal, stopglobal;
@@ -923,17 +923,17 @@ static void estimate_PME_error(t_inputinfo *info, const t_state *state,
                                const gmx_mtop_t *mtop, FILE *fp_out, gmx_bool bVerbose, unsigned int seed,
                                t_commrec *cr)
 {
-    rvec *x     = NULL; /* The coordinates */
-    real *q     = NULL; /* The charges     */
-    real  edir  = 0.0;  /* real space error */
-    real  erec  = 0.0;  /* reciprocal space error */
-    real  derr  = 0.0;  /* difference of real and reciprocal space error */
-    real  derr0 = 0.0;  /* difference of real and reciprocal space error */
-    real  beta  = 0.0;  /* splitting parameter beta */
-    real  beta0 = 0.0;  /* splitting parameter beta */
-    int   ncharges;     /* The number of atoms with charges */
-    int   nsamples;     /* The number of samples used for the calculation of the
-                         * self-energy error term */
+    rvec *x     = nullptr; /* The coordinates */
+    real *q     = nullptr; /* The charges     */
+    real  edir  = 0.0;     /* real space error */
+    real  erec  = 0.0;     /* reciprocal space error */
+    real  derr  = 0.0;     /* difference of real and reciprocal space error */
+    real  derr0 = 0.0;     /* difference of real and reciprocal space error */
+    real  beta  = 0.0;     /* splitting parameter beta */
+    real  beta0 = 0.0;     /* splitting parameter beta */
+    int   ncharges;        /* The number of atoms with charges */
+    int   nsamples;        /* The number of samples used for the calculation of the
+                            * self-energy error term */
     int   i = 0;
 
     if (MASTER(cr))
@@ -1091,10 +1091,10 @@ int gmx_pme_error(int argc, char *argv[])
     real            user_beta = -1.0;
     real            fracself  = 1.0;
     t_inputinfo     info;
-    t_state         state;     /* The state from the tpr input file */
-    gmx_mtop_t      mtop;      /* The topology from the tpr input file */
-    t_inputrec     *ir = NULL; /* The inputrec from the tpr file */
-    FILE           *fp = NULL;
+    t_state         state;        /* The state from the tpr input file */
+    gmx_mtop_t      mtop;         /* The topology from the tpr input file */
+    t_inputrec     *ir = nullptr; /* The inputrec from the tpr file */
+    FILE           *fp = nullptr;
     t_commrec      *cr;
     unsigned long   PCA_Flags;
     gmx_bool        bTUNE    = FALSE;
@@ -1103,12 +1103,12 @@ int gmx_pme_error(int argc, char *argv[])
 
 
     static t_filenm   fnm[] = {
-        { efTPR, "-s",     NULL,    ffREAD },
+        { efTPR, "-s",     nullptr,    ffREAD },
         { efOUT, "-o",    "error",  ffWRITE },
         { efTPR, "-so",   "tuned",  ffOPTWR }
     };
 
-    gmx_output_env_t *oenv = NULL;
+    gmx_output_env_t *oenv = nullptr;
 
     t_pargs           pa[] = {
         { "-beta",     FALSE, etREAL, {&user_beta},
@@ -1131,7 +1131,7 @@ int gmx_pme_error(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv, PCA_Flags,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           0, NULL, &oenv))
+                           0, nullptr, &oenv))
     {
         sfree(cr);
         return 0;

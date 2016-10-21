@@ -135,7 +135,7 @@ int gmx_sorient(int argc, char *argv[])
     char              str[STRLEN];
     gmx_bool          bTPS;
     rvec              xref, dx, dxh1, dxh2, outer;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
     t_pbc             pbc;
     const char       *legr[] = {
         "<cos(\\8q\\4\\s1\\N)>",
@@ -187,10 +187,10 @@ int gmx_sorient(int argc, char *argv[])
     };
 
     t_filenm          fnm[] = {
-        { efTRX, NULL,  NULL,  ffREAD },
-        { efTPS, NULL,  NULL,  ffREAD },
-        { efNDX, NULL,  NULL,  ffOPTRD },
-        { efXVG, NULL,  "sori",   ffWRITE },
+        { efTRX, nullptr,  nullptr,  ffREAD },
+        { efTPS, nullptr,  nullptr,  ffREAD },
+        { efNDX, nullptr,  nullptr,  ffOPTRD },
+        { efXVG, nullptr,  "sori",   ffWRITE },
         { efXVG, "-no", "snor",   ffWRITE },
         { efXVG, "-ro", "sord",   ffWRITE },
         { efXVG, "-co", "scum",   ffWRITE },
@@ -199,7 +199,7 @@ int gmx_sorient(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -207,7 +207,7 @@ int gmx_sorient(int argc, char *argv[])
     bTPS = (opt2bSet("-s", NFILE, fnm) || !opt2bSet("-n", NFILE, fnm) || bCom);
     if (bTPS)
     {
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box,
+        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box,
                       bCom);
     }
 
@@ -222,7 +222,7 @@ int gmx_sorient(int argc, char *argv[])
     }
     else
     {
-        get_index(NULL, ftp2fn(efNDX, NFILE, fnm), 2, isize, index, grpname);
+        get_index(nullptr, ftp2fn(efNDX, NFILE, fnm), 2, isize, index, grpname);
     }
 
     if (bCom)
@@ -462,8 +462,8 @@ int gmx_sorient(int argc, char *argv[])
     }
     xvgrclose(fp);
 
-    do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);
-    do_view(oenv, opt2fn("-no", NFILE, fnm), NULL);
+    do_view(oenv, opt2fn("-o", NFILE, fnm), nullptr);
+    do_view(oenv, opt2fn("-no", NFILE, fnm), nullptr);
     do_view(oenv, opt2fn("-ro", NFILE, fnm), "-nxy");
     do_view(oenv, opt2fn("-co", NFILE, fnm), "-nxy");
 

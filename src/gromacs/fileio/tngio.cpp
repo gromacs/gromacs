@@ -178,8 +178,8 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
                                        gmx_int64_t          numMolecules,
                                        tng_molecule_t      *tngMol)
 {
-    tng_chain_t      tngChain = NULL;
-    tng_residue_t    tngRes   = NULL;
+    tng_chain_t      tngChain = nullptr;
+    tng_residue_t    tngRes   = nullptr;
 
     if (tng_molecule_add(tng, moleculeName, tngMol) != TNG_SUCCESS)
     {
@@ -197,7 +197,7 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
         {
             const t_resinfo *resInfo        = &atoms->resinfo[at->resind];
             char             chainName[2]   = {resInfo->chainid, 0};
-            tng_atom_t       tngAtom        = NULL;
+            tng_atom_t       tngAtom        = nullptr;
             t_atom          *prevAtom;
 
             if (atomIndex > 0)
@@ -206,7 +206,7 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
             }
             else
             {
-                prevAtom = 0;
+                prevAtom = nullptr;
             }
 
             /* If this is the first atom or if the residue changed add the
@@ -246,7 +246,7 @@ void gmx_tng_add_mtop(tng_trajectory_t  tng,
 
     for (int molIndex = 0; molIndex < mtop->nmolblock; molIndex++)
     {
-        tng_molecule_t       tngMol  = NULL;
+        tng_molecule_t       tngMol  = nullptr;
         const gmx_moltype_t *molType =
             &mtop->moltype[mtop->molblock[molIndex].type];
 

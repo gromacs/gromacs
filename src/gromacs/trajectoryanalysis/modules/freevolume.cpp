@@ -317,7 +317,7 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     const Selection                     &sel  = pdata->parallelSelection(sel_);
     gmx::UniformRealDistribution<real>   dist;
 
-    GMX_RELEASE_ASSERT(NULL != pbc, "You have no periodic boundary conditions");
+    GMX_RELEASE_ASSERT(nullptr != pbc, "You have no periodic boundary conditions");
 
     // Analysis framework magic
     dh.startFrame(frnr, fr.time);

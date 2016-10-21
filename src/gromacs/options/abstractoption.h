@@ -102,7 +102,7 @@ class AbstractOption
         //! Initializes the name and default values for an option.
         explicit AbstractOption(const char *name)
             : minValueCount_(1), maxValueCount_(1),
-              name_(name), descr_(NULL), storeIsSet_(NULL)
+              name_(name), descr_(nullptr), storeIsSet_(nullptr)
         { }
 
         /*! \brief
@@ -360,8 +360,8 @@ class OptionTemplate : public AbstractOption
         //! Initializes the name and default values for an option.
         explicit OptionTemplate(const char *name)
             : AbstractOption(name),
-              defaultValue_(NULL), defaultValueIfSet_(NULL), store_(NULL),
-              countptr_(NULL), storeVector_(NULL)
+              defaultValue_(nullptr), defaultValueIfSet_(nullptr), store_(nullptr),
+              countptr_(nullptr), storeVector_(nullptr)
         { }
 
         /*! \brief
@@ -448,7 +448,7 @@ class OptionInfo
         template <class InfoType>
         bool isType() const
         {
-            return toType<InfoType>() != NULL;
+            return toType<InfoType>() != nullptr;
         }
         /*! \brief
          * Convert the info object to a particular type if the type is correct.

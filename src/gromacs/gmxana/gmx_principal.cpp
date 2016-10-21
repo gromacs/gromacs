@@ -102,13 +102,13 @@ int gmx_principal(int argc, char *argv[])
     FILE        *     fmoi;
     matrix            axes, box;
     gmx_output_env_t *oenv;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
     char   **         legend;
 
     t_filenm          fnm[] = {
-        { efTRX, "-f",   NULL,       ffREAD },
-        { efTPS, NULL,   NULL,       ffREAD },
-        { efNDX, NULL,   NULL,       ffOPTRD },
+        { efTRX, "-f",   nullptr,       ffREAD },
+        { efTPS, nullptr,   nullptr,       ffREAD },
+        { efNDX, nullptr,   nullptr,       ffOPTRD },
         { efXVG, "-a1",  "paxis1",   ffWRITE },
         { efXVG, "-a2",  "paxis2",   ffWRITE },
         { efXVG, "-a3",  "paxis3",   ffWRITE },
@@ -118,7 +118,7 @@ int gmx_principal(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -156,7 +156,7 @@ int gmx_principal(int argc, char *argv[])
     }
     sfree(legend);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, NULL, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
 
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 

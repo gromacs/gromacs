@@ -165,7 +165,7 @@ TEST_F(CommandLineParserTest, HandlesSkipUnknown)
     EXPECT_STREQ("-opt2", args.arg(2));
     EXPECT_STREQ("value", args.arg(3));
     EXPECT_STREQ("-opt3", args.arg(4));
-    EXPECT_TRUE(args.arg(5) == NULL);
+    EXPECT_TRUE(args.arg(5) == nullptr);
 
     EXPECT_TRUE(flag_);
     ASSERT_EQ(1U, ivalues_.size());

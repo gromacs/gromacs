@@ -586,13 +586,13 @@ void convert_params(int atnr, t_params nbtypes[],
     ffp           = &mtop->ffparams;
     ffp->ntypes   = 0;
     ffp->atnr     = atnr;
-    ffp->functype = NULL;
-    ffp->iparams  = NULL;
+    ffp->functype = nullptr;
+    ffp->iparams  = nullptr;
     ffp->reppow   = reppow;
 
-    enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,    comb, reppow, ffp, NULL,
+    enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,    comb, reppow, ffp, nullptr,
                    &maxtypes, TRUE, TRUE);
-    enter_function(&(nbtypes[F_BHAM]), (t_functype)F_BHAM,  comb, reppow, ffp, NULL,
+    enter_function(&(nbtypes[F_BHAM]), (t_functype)F_BHAM,  comb, reppow, ffp, nullptr,
                    &maxtypes, TRUE, TRUE);
 
     for (mt = 0; mt < mtop->nmoltype; mt++)
@@ -601,7 +601,7 @@ void convert_params(int atnr, t_params nbtypes[],
         for (i = 0; (i < F_NRE); i++)
         {
             molt->ilist[i].nr     = 0;
-            molt->ilist[i].iatoms = NULL;
+            molt->ilist[i].iatoms = nullptr;
 
             plist = mi[mt].plist;
 
@@ -618,7 +618,7 @@ void convert_params(int atnr, t_params nbtypes[],
     }
 
     mtop->bIntermolecularInteractions = FALSE;
-    if (intermolecular_interactions != NULL)
+    if (intermolecular_interactions != nullptr)
     {
         /* Process the intermolecular interaction list */
         snew(mtop->intermolecular_ilist, F_NRE);
@@ -626,7 +626,7 @@ void convert_params(int atnr, t_params nbtypes[],
         for (i = 0; (i < F_NRE); i++)
         {
             mtop->intermolecular_ilist[i].nr     = 0;
-            mtop->intermolecular_ilist[i].iatoms = NULL;
+            mtop->intermolecular_ilist[i].iatoms = nullptr;
 
             plist = intermolecular_interactions->plist;
 

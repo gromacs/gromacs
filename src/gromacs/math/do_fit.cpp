@@ -97,7 +97,7 @@ real rmsdev_ind(int nind, int index[], real mass[], rvec x[], rvec xp[])
 
 real rmsdev(int natoms, real mass[], rvec x[], rvec xp[])
 {
-    return calc_similar_ind(FALSE, natoms, NULL, mass, x, xp);
+    return calc_similar_ind(FALSE, natoms, nullptr, mass, x, xp);
 }
 
 real rhodev_ind(int nind, int index[], real mass[], rvec x[], rvec xp[])
@@ -107,7 +107,7 @@ real rhodev_ind(int nind, int index[], real mass[], rvec x[], rvec xp[])
 
 real rhodev(int natoms, real mass[], rvec x[], rvec xp[])
 {
-    return calc_similar_ind(TRUE, natoms, NULL, mass, x, xp);
+    return calc_similar_ind(TRUE, natoms, nullptr, mass, x, xp);
 }
 
 void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matrix R)
@@ -305,7 +305,7 @@ void reset_x_ndim(int ndim, int ncm, const int *ind_cm,
     }
     tm = 0.0;
     clear_rvec(xcm);
-    if (ind_cm != NULL)
+    if (ind_cm != nullptr)
     {
         for (i = 0; i < ncm; i++)
         {
@@ -335,7 +335,7 @@ void reset_x_ndim(int ndim, int ncm, const int *ind_cm,
         xcm[m] /= tm;
     }
 
-    if (ind_reset != NULL)
+    if (ind_reset != nullptr)
     {
         for (i = 0; i < nreset; i++)
         {

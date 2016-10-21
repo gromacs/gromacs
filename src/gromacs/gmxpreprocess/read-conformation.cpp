@@ -80,9 +80,9 @@ void readConformation(const char *confin, gmx_mtop_t *top,
 {
     fprintf(stderr, "Reading %s configuration%s\n", statusTitle,
             v ? " and velocities" : "");
-    rvec                   *x_tmp = NULL, *v_tmp = NULL;
+    rvec                   *x_tmp = nullptr, *v_tmp = nullptr;
     bool                    dummy;
-    readConfAndTopology(confin, &dummy, top, ePBC, x ? &x_tmp : NULL, v ? &v_tmp : NULL, box);
+    readConfAndTopology(confin, &dummy, top, ePBC, x ? &x_tmp : nullptr, v ? &v_tmp : nullptr, box);
     gmx::scoped_guard_sfree xguard(x_tmp);
     gmx::scoped_guard_sfree vguard(v_tmp);
     if (x && x_tmp)
@@ -103,8 +103,8 @@ void readConformation(const char *confin, t_topology *top,
 {
     fprintf(stderr, "Reading %s configuration%s\n", statusTitle,
             v ? " and velocities" : "");
-    rvec                   *x_tmp = NULL, *v_tmp = NULL;
-    read_tps_conf(confin, top, ePBC, x ? &x_tmp : NULL, v ? &v_tmp : NULL, box, FALSE);
+    rvec                   *x_tmp = nullptr, *v_tmp = nullptr;
+    read_tps_conf(confin, top, ePBC, x ? &x_tmp : nullptr, v ? &v_tmp : nullptr, box, FALSE);
     gmx::scoped_guard_sfree xguard(x_tmp);
     gmx::scoped_guard_sfree vguard(v_tmp);
     if (x && x_tmp)

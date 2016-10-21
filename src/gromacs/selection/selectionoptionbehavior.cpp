@@ -80,12 +80,12 @@ class SelectionOptionBehavior::Impl
         Impl(SelectionCollection *selections,
              ITopologyProvider   *topologyProvider)
             : selections_(*selections), topologyProvider_(*topologyProvider),
-              manager_(selections), grps_(NULL)
+              manager_(selections), grps_(nullptr)
         {
         }
         ~Impl()
         {
-            if (grps_ != NULL)
+            if (grps_ != nullptr)
             {
                 gmx_ana_indexgrps_free(grps_);
             }
@@ -109,27 +109,27 @@ class SelectionOptionBehavior::Impl
                                  "  %s\n(with -n), but it was not used by any selection.\n",
                                  ndxfile_.c_str());
                 }
-                selections_.setIndexGroups(NULL);
+                selections_.setIndexGroups(nullptr);
                 return;
             }
             if (ndxfile_.empty())
             {
                 gmx_mtop_t *top = topologyProvider_.getTopology(false);
-                gmx_ana_indexgrps_init(&grps_, top, NULL);
+                gmx_ana_indexgrps_init(&grps_, top, nullptr);
             }
             else
             {
-                gmx_ana_indexgrps_init(&grps_, NULL, ndxfile_.c_str());
+                gmx_ana_indexgrps_init(&grps_, nullptr, ndxfile_.c_str());
             }
             selections_.setIndexGroups(grps_);
         }
         void doneIndexGroups()
         {
-            if (grps_ != NULL)
+            if (grps_ != nullptr)
             {
-                selections_.setIndexGroups(NULL);
+                selections_.setIndexGroups(nullptr);
                 gmx_ana_indexgrps_free(grps_);
-                grps_ = NULL;
+                grps_ = nullptr;
             }
         }
 
@@ -138,7 +138,7 @@ class SelectionOptionBehavior::Impl
             const bool  topRequired = selections_.requiredTopologyProperties().needsTopology;
             gmx_mtop_t *top         = topologyProvider_.getTopology(topRequired);
             int         natoms      = -1;
-            if (top == NULL)
+            if (top == nullptr)
             {
                 natoms = topologyProvider_.getAtomCount();
             }

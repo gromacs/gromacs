@@ -293,7 +293,7 @@ static void lincs_update_atoms_noind(int ncons, const int *bla,
     int  b, i, j;
     real mvb, im1, im2, tmp0, tmp1, tmp2;
 
-    if (invmass != NULL)
+    if (invmass != nullptr)
     {
         for (b = 0; b < ncons; b++)
         {
@@ -342,7 +342,7 @@ static void lincs_update_atoms_ind(int ncons, const int *ind, const int *bla,
     int  bi, b, i, j;
     real mvb, im1, im2, tmp0, tmp1, tmp2;
 
-    if (invmass != NULL)
+    if (invmass != nullptr)
     {
         for (bi = 0; bi < ncons; bi++)
         {
@@ -637,7 +637,7 @@ static void do_lincsp(rvec *x, rvec *f, rvec *fp, t_pbc *pbc,
      * so we pass invmass=NULL, which results in the use of 1 for all atoms.
      */
     lincs_update_atoms(lincsd, th, 1.0, sol, r,
-                       (econq != econqForce) ? invmass : NULL, fp);
+                       (econq != econqForce) ? invmass : nullptr, fp);
 
     if (bCalcDHDL)
     {
@@ -1042,7 +1042,7 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
                 /* Communicate the corrected non-local coordinates */
                 if (DOMAINDECOMP(cr))
                 {
-                    dd_move_x_constraints(cr->dd, box, xp, NULL, FALSE);
+                    dd_move_x_constraints(cr->dd, box, xp, nullptr, FALSE);
                 }
             }
 #pragma omp barrier
@@ -1089,14 +1089,14 @@ static void do_lincs(rvec *x, rvec *xp, matrix box, t_pbc *pbc,
     }
     /* nit*ncons*(37+9*nrec) flops */
 
-    if (v != NULL)
+    if (v != nullptr)
     {
         /* Update the velocities */
         lincs_update_atoms(lincsd, th, invdt, mlambda, r, invmass, v);
         /* 16 ncons flops */
     }
 
-    if (nlocat != NULL && (bCalcDHDL || bCalcVir))
+    if (nlocat != nullptr && (bCalcDHDL || bCalcVir))
     {
         if (lincsd->bTaskDep)
         {
@@ -2153,7 +2153,7 @@ void set_lincs(const t_idef         *idef,
 
     done_blocka(&at2con);
 
-    if (cr->dd == NULL)
+    if (cr->dd == nullptr)
     {
         /* Since the matrix is static, we should free some memory */
         li->ncc_alloc = li->ncc;
@@ -2167,7 +2167,7 @@ void set_lincs(const t_idef         *idef,
         srenew(li->tmpncc, li->ncc_alloc);
     }
 
-    if (DOMAINDECOMP(cr) && dd_constraints_nlocalatoms(cr->dd) != NULL)
+    if (DOMAINDECOMP(cr) && dd_constraints_nlocalatoms(cr->dd) != nullptr)
     {
         int *nlocat_dd;
 
@@ -2181,7 +2181,7 @@ void set_lincs(const t_idef         *idef,
     }
     else
     {
-        li->nlocat = NULL;
+        li->nlocat = nullptr;
     }
 
     if (debug)
@@ -2297,12 +2297,12 @@ static void cconerr(const struct gmx_lincsdata *lincsd,
             r2  = norm2(dx);
             len = r2*gmx::invsqrt(r2);
             d   = std::abs(len/bllen[b]-1);
-            if (d > ma && (nlocat == NULL || nlocat[b]))
+            if (d > ma && (nlocat == nullptr || nlocat[b]))
             {
                 ma = d;
                 im = b;
             }
-            if (nlocat == NULL)
+            if (nlocat == nullptr)
             {
                 ssd2 += d*d;
                 count++;
@@ -2348,9 +2348,9 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
      * We can also easily check if any constraint length is changed,
      * if not dH/dlambda=0 and we can also set the boolean to FALSE.
      */
-    bCalcDHDL = (ir->efep != efepNO && dvdlambda != NULL);
+    bCalcDHDL = (ir->efep != efepNO && dvdlambda != nullptr);
 
-    if (lincsd->nc == 0 && cr->dd == NULL)
+    if (lincsd->nc == 0 && cr->dd == nullptr)
     {
         if (bLog || bEner)
         {
@@ -2382,7 +2382,7 @@ gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         if (lincsd->ncg_flex)
         {
             /* Set the flexible constraint lengths to the old lengths */
-            if (pbc != NULL)
+            if (pbc != nullptr)
             {
                 for (i = 0; i < lincsd->nc; i++)
                 {

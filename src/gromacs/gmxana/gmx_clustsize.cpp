@@ -71,10 +71,10 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                        const gmx_output_env_t *oenv)
 {
     FILE                 *fp, *gp, *hp, *tp;
-    int                  *index = NULL;
+    int                  *index = nullptr;
     int                   nindex, natoms;
     t_trxstatus          *status;
-    rvec                 *x = NULL, *v = NULL, dx;
+    rvec                 *x = nullptr, *v = nullptr, dx;
     t_pbc                 pbc;
     char                 *gname;
     char                  timebuf[32];
@@ -82,14 +82,14 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     /* Topology stuff */
     t_trxframe            fr;
     t_tpxheader           tpxh;
-    gmx_mtop_t           *mtop = NULL;
+    gmx_mtop_t           *mtop = nullptr;
     int                   ePBC = -1;
-    t_block              *mols = NULL;
+    t_block              *mols = nullptr;
     int                   ii, jj;
     real                  temp, tfac;
     /* Cluster size distribution (matrix) */
-    real                **cs_dist = NULL;
-    real                  tf, dx2, cut2, *t_x = NULL, *t_y, cmid, cmax, cav, ekin;
+    real                **cs_dist = nullptr;
+    real                  tf, dx2, cut2, *t_x = nullptr, *t_y, cmid, cmax, cav, ekin;
     int                   i, j, k, ai, aj, ci, cj, nframe, nclust, n_x, max_size = 0;
     int                  *clust_index, *clust_size, max_clust_size, max_clust_ind, nav, nhisto;
     t_rgb                 rlo = { 1.0, 1.0, 1.0 };
@@ -120,7 +120,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
             gmx_fatal(FARGS, "tpr (%d atoms) and trajectory (%d atoms) do not match!",
                       tpxh.natoms, natoms);
         }
-        ePBC = read_tpx(tpr, NULL, NULL, &natoms, NULL, NULL, mtop);
+        ePBC = read_tpx(tpr, nullptr, nullptr, &natoms, nullptr, nullptr, mtop);
     }
     if (ndf <= -1)
     {
@@ -138,7 +138,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
             printf("Using molecules rather than atoms. Not reading index file %s\n",
                    ndx);
         }
-        GMX_RELEASE_ASSERT(mtop != NULL, "Trying to access mtop->mols from NULL mtop pointer");
+        GMX_RELEASE_ASSERT(mtop != nullptr, "Trying to access mtop->mols from NULL mtop pointer");
         mols = &(mtop->mols);
 
         /* Make dummy index */
@@ -207,7 +207,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                         /* Compute distance */
                         if (bMol)
                         {
-                            GMX_RELEASE_ASSERT(mols != NULL, "Cannot access index[] from NULL mols pointer");
+                            GMX_RELEASE_ASSERT(mols != nullptr, "Cannot access index[] from NULL mols pointer");
                             bSame = FALSE;
                             for (ii = mols->index[ai]; !bSame && (ii < mols->index[ai+1]); ii++)
                             {
@@ -349,7 +349,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
             {
                 if (bMol)
                 {
-                    GMX_RELEASE_ASSERT(mols != NULL, "Cannot access index[] from NULL mols pointer");
+                    GMX_RELEASE_ASSERT(mols != nullptr, "Cannot access index[] from NULL mols pointer");
                     for (j = mols->index[i]; (j < mols->index[i+1]); j++)
                     {
                         fprintf(fp, "%d\n", j+1);
@@ -487,9 +487,9 @@ int gmx_clustsize(int argc, char *argv[])
     t_rgb             rgblo, rgbhi;
 
     t_filenm          fnm[] = {
-        { efTRX, "-f",  NULL,         ffREAD  },
-        { efTPR, NULL,  NULL,         ffOPTRD },
-        { efNDX, NULL,  NULL,         ffOPTRD },
+        { efTRX, "-f",  nullptr,         ffREAD  },
+        { efTPR, nullptr,  nullptr,         ffOPTRD },
+        { efNDX, nullptr,  nullptr,         ffOPTRD },
         { efXPM, "-o", "csize",       ffWRITE },
         { efXPM, "-ow", "csizew",      ffWRITE },
         { efXVG, "-nc", "nclust",      ffWRITE },
@@ -503,7 +503,7 @@ int gmx_clustsize(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }

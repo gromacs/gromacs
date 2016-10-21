@@ -192,7 +192,7 @@ static void read_cryst1(char *line, int *ePBC, matrix box)
         sscanf(sg, "%c %d %d %d", &ident, &syma, &symb, &symc);
         if (ident == 'P' && syma ==  1 && symb <= 1 && symc <= 1)
         {
-            fc        = strtod(sc, NULL)*0.1;
+            fc        = strtod(sc, nullptr)*0.1;
             ePBC_file = (fc > 0 ? epbcXYZ : epbcXY);
         }
         if (ident == 'P' && syma == 21 && symb == 1 && symc == 1)
@@ -207,9 +207,9 @@ static void read_cryst1(char *line, int *ePBC, matrix box)
 
     if (box)
     {
-        fa = strtod(sa, NULL)*0.1;
-        fb = strtod(sb, NULL)*0.1;
-        fc = strtod(sc, NULL)*0.1;
+        fa = strtod(sa, nullptr)*0.1;
+        fb = strtod(sb, nullptr)*0.1;
+        fc = strtod(sc, nullptr)*0.1;
         if (ePBC_file == epbcSCREW)
         {
             fa *= 0.5;
@@ -306,7 +306,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     fprintf(out, "MODEL %8d\n", model_nr > 0 ? model_nr : 1);
 
     lastchainnum      = -1;
-    p_restype         = NULL;
+    p_restype         = nullptr;
 
     for (ii = 0; ii < nindex; ii++)
     {
@@ -399,7 +399,7 @@ void write_pdbfile_indexed(FILE *out, const char *title,
     fprintf(out, "TER\n");
     fprintf(out, "ENDMDL\n");
 
-    if (NULL != gc)
+    if (nullptr != gc)
     {
         /* Write conect records */
         for (i = 0; (i < gc->nconect); i++)
@@ -473,7 +473,7 @@ static void read_anisou(char line[], int natom, t_atoms *atoms)
     trim(anm);
 
     /* Search backwards for number and name only */
-    atomnr = std::strtol(anr, NULL, 10);
+    atomnr = std::strtol(anr, nullptr, 10);
     for (i = natom-1; (i >= 0); i--)
     {
         if ((std::strcmp(anm, *(atoms->atomname[i])) == 0) &&
@@ -568,9 +568,9 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
         }
         else
         {
-            ptr = NULL;
+            ptr = nullptr;
         }
-        std::strncpy(atoms->atom[i].elem, ptr == NULL ? "" : ptr, 4);
+        std::strncpy(atoms->atom[i].elem, ptr == nullptr ? "" : ptr, 4);
     }
 }
 
@@ -629,7 +629,7 @@ static int read_atom(t_symtab *symtab,
     }
     rnr[k] = nc;
     trim(rnr);
-    resnr = std::strtol(rnr, NULL, 10);
+    resnr = std::strtol(rnr, nullptr, 10);
     resic = line[j];
     j    += 4;
 
@@ -708,17 +708,17 @@ static int read_atom(t_symtab *symtab,
         atomn->atomnumber      = atomnumber;
         strncpy(atomn->elem, elem, 4);
     }
-    x[natom][XX] = strtod(xc, NULL)*0.1;
-    x[natom][YY] = strtod(yc, NULL)*0.1;
-    x[natom][ZZ] = strtod(zc, NULL)*0.1;
+    x[natom][XX] = strtod(xc, nullptr)*0.1;
+    x[natom][YY] = strtod(yc, nullptr)*0.1;
+    x[natom][ZZ] = strtod(zc, nullptr)*0.1;
     if (atoms->pdbinfo)
     {
         atoms->pdbinfo[natom].type   = type;
-        atoms->pdbinfo[natom].atomnr = strtol(anr, NULL, 10);
+        atoms->pdbinfo[natom].atomnr = strtol(anr, nullptr, 10);
         atoms->pdbinfo[natom].altloc = altloc;
         strcpy(atoms->pdbinfo[natom].atomnm, anm_copy);
-        atoms->pdbinfo[natom].bfac  = strtod(bfac, NULL);
-        atoms->pdbinfo[natom].occup = strtod(occup, NULL);
+        atoms->pdbinfo[natom].bfac  = strtod(bfac, nullptr);
+        atoms->pdbinfo[natom].occup = strtod(occup, nullptr);
     }
     natom++;
 
@@ -865,7 +865,7 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
         /* Only assume pbc when there is a CRYST1 entry */
         *ePBC = epbcNONE;
     }
-    if (box != NULL)
+    if (box != nullptr)
     {
         clear_mat(box);
     }
@@ -874,13 +874,13 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
     atoms->haveCharge  = FALSE;
     atoms->haveType    = FALSE;
     atoms->haveBState  = FALSE;
-    atoms->havePdbInfo = (atoms->pdbinfo != NULL);
+    atoms->havePdbInfo = (atoms->pdbinfo != nullptr);
 
     bCOMPND  = FALSE;
     title[0] = '\0';
     natom    = 0;
     chainnum = 0;
-    while (!bStop && (fgets2(line, STRLEN, in) != NULL))
+    while (!bStop && (fgets2(line, STRLEN, in) != nullptr))
     {
         line_type = line2type(line);
 
@@ -1029,7 +1029,7 @@ void gmx_pdb_read_conf(const char *infile,
 {
     FILE *in = gmx_fio_fopen(infile, "r");
     char  title[STRLEN];
-    read_pdbfile(in, title, NULL, atoms, symtab, x, ePBC, box, TRUE, NULL);
+    read_pdbfile(in, title, nullptr, atoms, symtab, x, ePBC, box, TRUE, nullptr);
     *name = put_symtab(symtab, title);
     gmx_fio_fclose(in);
 }
@@ -1083,12 +1083,12 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
     }
 
     /* Format atom name */
-    if (atom_name != NULL)
+    if (atom_name != nullptr)
     {
         /* If the atom name is an element name with two chars, it should start already in column 13.
          * Otherwise it should start in column 14, unless the name length is 4 chars.
          */
-        if ( (element != NULL) && (std::strlen(element) >= 2) && (gmx_strncasecmp(atom_name, element, 2) == 0) )
+        if ( (element != nullptr) && (std::strlen(element) >= 2) && (gmx_strncasecmp(atom_name, element, 2) == 0) )
         {
             start_name_in_col13 = TRUE;
         }
@@ -1106,7 +1106,7 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
     }
 
     /* Format residue name */
-    std::strncpy(tmp_resname, (res_name != NULL) ? res_name : "", 4);
+    std::strncpy(tmp_resname, (res_name != nullptr) ? res_name : "", 4);
     /* Make sure the string is terminated if strlen was > 4 */
     tmp_resname[4] = '\0';
     /* String is properly terminated, so now we can use strcat. By adding a
@@ -1132,7 +1132,7 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
                 x, y, z,
                 occupancy,
                 b_factor,
-                (element != NULL) ? element : "");
+                (element != nullptr) ? element : "");
 
     return n;
 }

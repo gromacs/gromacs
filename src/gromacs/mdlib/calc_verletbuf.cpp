@@ -351,10 +351,10 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
     real                          *vsite_m;
     int                            n_nonlin_vsite_mol;
 
-    att  = NULL;
+    att  = nullptr;
     natt = 0;
 
-    if (n_nonlin_vsite != NULL)
+    if (n_nonlin_vsite != nullptr)
     {
         *n_nonlin_vsite = 0;
     }
@@ -420,7 +420,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
                          &mtop->ffparams,
                          vsite_m,
                          &n_nonlin_vsite_mol);
-        if (n_nonlin_vsite != NULL)
+        if (n_nonlin_vsite != nullptr)
         {
             *n_nonlin_vsite += nmol*n_nonlin_vsite_mol;
         }
@@ -832,7 +832,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     real                  particle_distance;
     real                  nb_clust_frac_pairs_not_in_list_at_cutoff;
 
-    verletbuf_atomtype_t *att  = NULL;
+    verletbuf_atomtype_t *att  = nullptr;
     int                   natt = -1, i;
     real                  elfac;
     real                  kT_fac, mass_min;
@@ -876,7 +876,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
     resolution = 0.001;
 
     env = getenv("GMX_VERLET_BUFFER_RES");
-    if (env != NULL)
+    if (env != nullptr)
     {
         sscanf(env, "%lf", &resolution);
     }

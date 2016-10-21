@@ -426,7 +426,7 @@ static void do_sham(const char *fn, const char *ndx,
 {
     FILE        *fp;
     real        *min_eig, *max_eig;
-    real        *axis_x, *axis_y, *axis_z, *axis = NULL;
+    real        *axis_x, *axis_y, *axis_z, *axis = nullptr;
     double      *P;
     real       **PP, *W, *E, **WW, **EE, *S, **SS, *M, *bE;
     rvec         xxx;
@@ -990,7 +990,7 @@ int gmx_sham(int argc, char *argv[])
 
     npargs = asize(pa);
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm, npargs, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -1038,7 +1038,7 @@ int gmx_sham(int argc, char *argv[])
     }
     else
     {
-        et_val = NULL;
+        et_val = nullptr;
     }
 
     if (fn_ene && et_val)
@@ -1084,10 +1084,10 @@ int gmx_sham(int argc, char *argv[])
             opt2fn("-ls", NFILE, fnm), opt2fn("-lsh", NFILE, fnm),
             opt2fn("-lss", NFILE, fnm),
             opt2fn("-ls3", NFILE, fnm), opt2fn("-g", NFILE, fnm),
-            n, nset, val, fn_ge != NULL, e_nset, et_val, Tref,
+            n, nset, val, fn_ge != nullptr, e_nset, et_val, Tref,
             pmax, gmax,
-            opt2parg_bSet("-emin", NPA, pa) ? &emin : NULL,
-            opt2parg_bSet("-emax", NPA, pa) ? &emax : NULL,
+            opt2parg_bSet("-emin", NPA, pa) ? &emin : nullptr,
+            opt2parg_bSet("-emax", NPA, pa) ? &emax : nullptr,
             nlevels, pmin,
             idim, ibox,
             opt2parg_bSet("-xmin", NPA, pa), rmin,

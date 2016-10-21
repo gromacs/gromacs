@@ -492,7 +492,7 @@ class TestReferenceChecker
             TestReferenceChecker compound(checkSequenceCompound(id, length));
             for (Iterator i = begin; i != end; ++i)
             {
-                compound.checkValue(*i, NULL);
+                compound.checkValue(*i, nullptr);
             }
         }
         /*! \brief

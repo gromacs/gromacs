@@ -205,8 +205,8 @@ read_checkpoint_data(const char *filename, int *simulation_part,
                  */
                 strcpy(suf_up, part_suffix);
                 upstring(suf_up);
-                *bAddPart = (strstr(fn, part_suffix) != NULL ||
-                             strstr(fn, suf_up) != NULL);
+                *bAddPart = (strstr(fn, part_suffix) != nullptr ||
+                             strstr(fn, suf_up) != nullptr);
             }
 
             sfree(outputfiles);
@@ -270,7 +270,7 @@ handleRestart(t_commrec *cr,
             }
             else
             {
-                fpmulti = NULL;
+                fpmulti = nullptr;
             }
             check_multi_int(fpmulti, cr->ms, sim_part, "simulation part", TRUE);
         }

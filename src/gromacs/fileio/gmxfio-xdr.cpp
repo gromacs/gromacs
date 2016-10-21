@@ -72,9 +72,9 @@ void gmx_fio_setprecision(t_fileio *fio, gmx_bool bDouble)
 
 XDR *gmx_fio_getxdr(t_fileio *fio)
 {
-    XDR *ret = NULL;
+    XDR *ret = nullptr;
     gmx_fio_lock(fio);
-    GMX_RELEASE_ASSERT( fio->xdr != NULL, "Implementation error: NULL XDR pointers");
+    GMX_RELEASE_ASSERT( fio->xdr != nullptr, "Implementation error: NULL XDR pointers");
     ret = fio->xdr;
     gmx_fio_unlock(fio);
     return ret;
@@ -118,7 +118,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
     double          d = 0;
     float           f = 0;
 
-    GMX_RELEASE_ASSERT( fio->xdr != NULL, "Implementation error: NULL XDR pointers");
+    GMX_RELEASE_ASSERT( fio->xdr != nullptr, "Implementation error: NULL XDR pointers");
     gmx_fio_check_nitem(eio, nitem, srcfile, line);
     switch (eio)
     {
@@ -265,7 +265,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
             }
             break;
         case eioNRVEC:
-            ptr = NULL;
+            ptr = nullptr;
             res = 1;
             for (j = 0; (j < nitem) && res; j++)
             {
