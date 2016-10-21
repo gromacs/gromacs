@@ -66,6 +66,7 @@ namespace gmx
 class AbstractOptionStorage;
 template <typename T> class OptionStorageTemplate;
 class OptionManagerContainer;
+class Variant;
 
 namespace internal
 {
@@ -486,6 +487,16 @@ class OptionInfo
         //! Returns the description of the option.
         std::string formatDescription() const;
 
+        /*! \brief
+         * Returns the default value(s) of the option.
+         *
+         * The returned values should all be of the same type, but returning
+         * each as a separate variant is currently simpler.
+         *
+         * Currently, this can only be called before option values have been
+         * assigned.
+         */
+        std::vector<Variant> defaultValues() const;
         /*! \brief
          * Returns the default value(s) of the option as strings.
          *

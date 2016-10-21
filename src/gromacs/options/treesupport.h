@@ -64,6 +64,22 @@ class Options;
 void assignOptionsFromKeyValueTree(Options                   *options,
                                    const KeyValueTreeObject  &tree,
                                    IKeyValueTreeErrorHandler *errorHandler);
+/*! \libinternal \brief
+ * Adjusts a KeyValueTreeObject to the structure of given Options.
+ *
+ * Assumes that all values in the input KeyValueTreeObject are valid values for
+ * the options.  The output has all the values in the input, but in the order
+ * they are in the options.  For any option that does not have a corresponding
+ * value in the input, the output has it with a default value (if one exists
+ * for the option).
+ *
+ * Does not currently work for option sections in an array.
+ *
+ * \ingroup module_options
+ */
+KeyValueTreeObject
+adjustKeyValueTreeFromOptions(const KeyValueTreeObject &tree,
+                              const Options            &options);
 
 //! \endcond
 

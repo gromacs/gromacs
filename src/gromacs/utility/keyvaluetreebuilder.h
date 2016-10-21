@@ -112,6 +112,13 @@ class KeyValueTreeArrayBuilderBase
         {
         }
 
+        KeyValueTreeValue &addRawValue(Variant &&value)
+        {
+            KeyValueTreeValueBuilder builder;
+            builder.setVariantValue(std::move(value));
+            array_->values_.push_back(builder.build());
+            return array_->values_.back();
+        }
         KeyValueTreeValue &addRawValue(KeyValueTreeValue &&value)
         {
             array_->values_.push_back(std::move(value));
@@ -133,6 +140,7 @@ class KeyValueTreeArrayBuilder : public KeyValueTreeArrayBuilderBase
         {
         }
 
+        friend class KeyValueTreeObjectBuilder;
         friend class KeyValueTreeValueBuilder;
 };
 
@@ -175,6 +183,10 @@ class KeyValueTreeObjectBuilder
         {
             object_->addProperty(key, std::move(value));
         }
+        void addRawValue(const std::string &key, Variant &&value)
+        {
+            object_->addProperty(key, KeyValueTreeValue(std::move(value)));
+        }
         template <typename T>
         void addValue(const std::string &key, const T &value)
         {
@@ -184,6 +196,11 @@ class KeyValueTreeObjectBuilder
         {
             auto iter = object_->addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeObject>());
             return KeyValueTreeObjectBuilder(&iter->second);
+        }
+        KeyValueTreeArrayBuilder addArray(const std::string &key)
+        {
+            auto iter = object_->addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
+            return KeyValueTreeArrayBuilder(&iter->second.asArray());
         }
         template <typename T>
         KeyValueTreeUniformArrayBuilder<T> addUniformArray(const std::string &key)
