@@ -120,14 +120,14 @@ void *save_malloc(const char *name, const char *file, int line, size_t size)
 {
     void *p;
 
-    p = NULL;
+    p = nullptr;
     if (size == 0)
     {
-        p = NULL;
+        p = nullptr;
     }
     else
     {
-        if ((p = malloc(size)) == NULL)
+        if ((p = malloc(size)) == nullptr)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
                       "Not enough memory. Failed to malloc %" GMX_PRId64 " bytes for %s\n"
@@ -147,10 +147,10 @@ void *save_calloc(const char *name, const char *file, int line,
 {
     void *p;
 
-    p = NULL;
+    p = nullptr;
     if ((nelem == 0) || (elsize == 0))
     {
-        p = NULL;
+        p = nullptr;
     }
     else
     {
@@ -176,7 +176,7 @@ void *save_calloc(const char *name, const char *file, int line,
         }
         memset(p, 0, (size_t) (nelem * elsize));
 #else
-        if ((p = calloc((size_t)nelem, (size_t)elsize)) == NULL)
+        if ((p = calloc((size_t)nelem, (size_t)elsize)) == nullptr)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
                       "Not enough memory. Failed to calloc %" GMX_PRId64
@@ -198,7 +198,7 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
     void  *p;
     size_t size = nelem*elsize;
 
-    p = NULL;
+    p = nullptr;
     if (size == 0)
     {
         save_free(name, file, line, ptr);
@@ -213,7 +213,7 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
                    size/1048576.0, name, file, line, rank);
         }
 #endif
-        if (ptr == NULL)
+        if (ptr == nullptr)
         {
             p = malloc((size_t)size);
         }
@@ -221,7 +221,7 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
         {
             p = realloc(ptr, (size_t)size);
         }
-        if (p == NULL)
+        if (p == nullptr)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
                       "Not enough memory. Failed to realloc %" GMX_PRId64 " bytes for %s, %s=%x\n"
@@ -240,7 +240,7 @@ void save_free(const char gmx_unused *name, const char gmx_unused *file, int gmx
 #ifdef DEBUG
     log_action(0, name, file, line, 0, 0, ptr);
 #endif
-    if (ptr != NULL)
+    if (ptr != nullptr)
     {
         free(ptr);
     }
@@ -300,7 +300,7 @@ void *save_calloc_aligned(const char *name, const char *file, int line,
                           size_t nelem, size_t elsize, size_t alignment)
 {
     void *aligned = save_malloc_aligned(name, file, line, nelem, elsize, alignment);
-    if (aligned != NULL)
+    if (aligned != nullptr)
     {
         memset(aligned, 0, (size_t)(nelem * elsize));
     }

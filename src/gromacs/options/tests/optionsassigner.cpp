@@ -768,7 +768,7 @@ TEST(OptionsAssignerStringTest, HandlesEnumValueFromNullTerminatedArray)
 {
     gmx::Options           options;
     std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
+    const char * const     allowed[] = { "none", "test", "value", nullptr };
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
                             StringOption("p").store(&value)

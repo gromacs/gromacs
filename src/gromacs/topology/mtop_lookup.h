@@ -129,7 +129,7 @@ mtopGetAtomParameters(const gmx_mtop_t  *mtop,
 {
     int atomIndexInMolecule;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
-                         NULL, &atomIndexInMolecule);
+                         nullptr, &atomIndexInMolecule);
     const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
     return moltype.atoms.atom[atomIndexInMolecule];
 }
@@ -236,7 +236,7 @@ mtopGetResidueInfo(const gmx_mtop_t  *mtop,
 {
     int atomIndexInMolecule;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
-                         NULL, &atomIndexInMolecule);
+                         nullptr, &atomIndexInMolecule);
     const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
     const int            resind  = moltype.atoms.atom[atomIndexInMolecule].resind;
     return moltype.atoms.resinfo[resind];
@@ -261,7 +261,7 @@ mtopGetAtomPdbInfo(const gmx_mtop_t  *mtop,
 {
     int atomIndexInMolecule;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock,
-                         NULL, &atomIndexInMolecule);
+                         nullptr, &atomIndexInMolecule);
     const gmx_moltype_t &moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
     GMX_ASSERT(moltype.atoms.havePdbInfo, "PDB information not present when requested");
     return moltype.atoms.pdbinfo[atomIndexInMolecule];

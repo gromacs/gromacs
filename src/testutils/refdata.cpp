@@ -492,7 +492,7 @@ class TestReferenceChecker::Impl
         {
             GMX_RELEASE_ASSERT(initialized(),
                                "Accessing uninitialized reference data checker.");
-            return compareRootEntry_ == NULL;
+            return compareRootEntry_ == nullptr;
         }
 
         //! Whether initialized with other means than the default constructor.
@@ -567,7 +567,7 @@ const char *const TestReferenceChecker::Impl::cSequenceLengthName = "Length";
 
 TestReferenceChecker::Impl::Impl(bool initialized)
     : initialized_(initialized), defaultTolerance_(defaultRealTolerance()),
-      compareRootEntry_(NULL), outputRootEntry_(NULL),
+      compareRootEntry_(nullptr), outputRootEntry_(nullptr),
       updateMismatchingEntries_(false), bSelfTestMode_(false), seqIndex_(-1)
 {
 }
@@ -605,7 +605,7 @@ ReferenceDataEntry *TestReferenceChecker::Impl::findEntry(const char *id)
         lastFoundEntry_ = entry;
         return entry->get();
     }
-    return NULL;
+    return nullptr;
 }
 
 ReferenceDataEntry *
@@ -614,7 +614,7 @@ TestReferenceChecker::Impl::findOrCreateEntry(
         const IReferenceDataEntryChecker &checker)
 {
     ReferenceDataEntry *entry = findEntry(id);
-    if (entry == NULL && outputRootEntry_ != NULL)
+    if (entry == nullptr && outputRootEntry_ != nullptr)
     {
         lastFoundEntry_ = compareRootEntry_->addChild(createEntry(type, id, checker));
         entry           = lastFoundEntry_->get();
@@ -632,14 +632,14 @@ TestReferenceChecker::Impl::processItem(const char *type, const char *id,
     }
     std::string         fullId = appendPath(id);
     ReferenceDataEntry *entry  = findOrCreateEntry(type, id, checker);
-    if (entry == NULL)
+    if (entry == nullptr)
     {
         return ::testing::AssertionFailure()
                << "Reference data item " << fullId << " not found";
     }
     entry->setChecked();
     ::testing::AssertionResult result(checkEntry(*entry, fullId, type, checker));
-    if (outputRootEntry_ != NULL && entry->correspondingOutputEntry() == NULL)
+    if (outputRootEntry_ != nullptr && entry->correspondingOutputEntry() == nullptr)
     {
         if (!updateMismatchingEntries_ || result)
         {
@@ -768,7 +768,7 @@ void TestReferenceChecker::checkUnusedEntries()
 
 bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
 {
-    if (impl_->shouldIgnore() || impl_->outputRootEntry_ != NULL)
+    if (impl_->shouldIgnore() || impl_->outputRootEntry_ != nullptr)
     {
         return bPresent;
     }
@@ -801,7 +801,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
     std::string         fullId = impl_->appendPath(id);
     NullChecker         checker;
     ReferenceDataEntry *entry  = impl_->findOrCreateEntry(type, id, checker);
-    if (entry == NULL)
+    if (entry == nullptr)
     {
         ADD_FAILURE() << "Reference data item " << fullId << " not found";
         return TestReferenceChecker(new Impl(true));
@@ -820,7 +820,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
             return TestReferenceChecker(new Impl(true));
         }
     }
-    if (impl_->outputRootEntry_ != NULL && entry->correspondingOutputEntry() == NULL)
+    if (impl_->outputRootEntry_ != nullptr && entry->correspondingOutputEntry() == nullptr)
     {
         impl_->outputRootEntry_->addChild(entry->cloneToOutputEntry());
     }

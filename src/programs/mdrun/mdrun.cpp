@@ -229,11 +229,11 @@ int gmx_mdrun(int argc, char *argv[])
     };
     t_commrec    *cr;
     t_filenm      fnm[] = {
-        { efTPR, NULL,      NULL,       ffREAD },
-        { efTRN, "-o",      NULL,       ffWRITE },
-        { efCOMPRESSED, "-x", NULL,     ffOPTWR },
-        { efCPT, "-cpi",    NULL,       ffOPTRD | ffALLOW_MISSING },
-        { efCPT, "-cpo",    NULL,       ffOPTWR },
+        { efTPR, nullptr,      nullptr,       ffREAD },
+        { efTRN, "-o",      nullptr,       ffWRITE },
+        { efCOMPRESSED, "-x", nullptr,     ffOPTWR },
+        { efCPT, "-cpi",    nullptr,       ffOPTRD | ffALLOW_MISSING },
+        { efCPT, "-cpo",    nullptr,       ffOPTWR },
         { efSTO, "-c",      "confout",  ffWRITE },
         { efEDR, "-e",      "ener",     ffWRITE },
         { efLOG, "-g",      "md",       ffWRITE },
@@ -256,7 +256,7 @@ int gmx_mdrun(int argc, char *argv[])
         { efLOG, "-rs",     "rotslabs", ffOPTWR },
         { efLOG, "-rt",     "rottorque", ffOPTWR },
         { efMTX, "-mtx",    "nm",       ffOPTWR },
-        { efRND, "-multidir", NULL,      ffOPTRDMULT},
+        { efRND, "-multidir", nullptr,      ffOPTRDMULT},
         { efDAT, "-membed", "membed",   ffOPTRD },
         { efTOP, "-mp",     "membed",   ffOPTRD },
         { efNDX, "-mn",     "membed",   ffOPTRD },
@@ -291,20 +291,20 @@ int gmx_mdrun(int argc, char *argv[])
 
     rvec              realddxyz                   = {0, 0, 0};
     const char       *ddrank_opt[ddrankorderNR+1] =
-    { NULL, "interleave", "pp_pme", "cartesian", NULL };
+    { nullptr, "interleave", "pp_pme", "cartesian", nullptr };
     const char       *dddlb_opt[] =
-    { NULL, "auto", "no", "yes", NULL };
+    { nullptr, "auto", "no", "yes", nullptr };
     const char       *thread_aff_opt[threadaffNR+1] =
-    { NULL, "auto", "on", "off", NULL };
+    { nullptr, "auto", "on", "off", nullptr };
     const char       *nbpu_opt[] =
-    { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
+    { nullptr, "auto", "cpu", "gpu", "gpu_cpu", nullptr };
     real              rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
-    char             *ddcsx                 = NULL, *ddcsy = NULL, *ddcsz = NULL;
+    char             *ddcsx                 = nullptr, *ddcsy = nullptr, *ddcsz = nullptr;
     real              cpt_period            = 15.0, max_hours = -1;
     gmx_bool          bTryToAppendFiles     = TRUE;
     gmx_bool          bKeepAndNumCPT        = FALSE;
     gmx_bool          bResetCountersHalfWay = FALSE;
-    gmx_output_env_t *oenv                  = NULL;
+    gmx_output_env_t *oenv                  = nullptr;
 
     /* Non transparent initialization of a complex gmx_hw_opt_t struct.
      * But unfortunately we are not allowed to call a function here,
@@ -312,7 +312,7 @@ int gmx_mdrun(int argc, char *argv[])
      */
     gmx_hw_opt_t    hw_opt = {
         0, 0, 0, 0, threadaffSEL, 0, 0,
-        { NULL, FALSE, 0, NULL }
+        { nullptr, FALSE, 0, nullptr }
     };
 
     t_pargs         pa[] = {
@@ -421,7 +421,7 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bDoAppendFiles, bStartFromCpt;
     FILE           *fplog;
     int             rc;
-    char          **multidir = NULL;
+    char          **multidir = nullptr;
 
     cr = init_commrec();
 
@@ -448,7 +448,7 @@ int gmx_mdrun(int argc, char *argv[])
      */
 
     if (!parse_common_args(&argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(cr);
         return 0;
@@ -535,7 +535,7 @@ int gmx_mdrun(int argc, char *argv[])
     }
     else
     {
-        fplog = NULL;
+        fplog = nullptr;
     }
 
     ddxyz[XX] = (int)(realddxyz[XX] + 0.5);

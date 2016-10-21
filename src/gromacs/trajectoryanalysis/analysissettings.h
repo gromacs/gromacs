@@ -254,7 +254,7 @@ class TopologyInformation
 {
     public:
         //! Returns true if a topology file was loaded.
-        bool hasTopology() const { return mtop_ != NULL; }
+        bool hasTopology() const { return mtop_ != nullptr; }
         //! Returns true if a full topology file was loaded.
         bool hasFullTopology() const { return bTop_; }
         //! Returns the loaded topology, or NULL if not loaded.

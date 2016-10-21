@@ -70,7 +70,7 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption  &settings,
       info_(this), manager_(*manager), defaultText_(settings.defaultText_),
       selectionFlags_(settings.selectionFlags_)
 {
-    GMX_RELEASE_ASSERT(manager != NULL,
+    GMX_RELEASE_ASSERT(manager != nullptr,
                        "SelectionOptionManager must be added before SelectionOption");
     GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
                        "allowMultiple() is not supported for selection options");
@@ -271,7 +271,7 @@ SelectionFileOptionStorage::SelectionFileOptionStorage(
                             | efOption_DontCheckMinimumCount),
       info_(this), manager_(*manager), bValueParsed_(false)
 {
-    GMX_RELEASE_ASSERT(manager != NULL,
+    GMX_RELEASE_ASSERT(manager != nullptr,
                        "SelectionOptionManager must be added before SelectionFileOption");
 }
 

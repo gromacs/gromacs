@@ -183,7 +183,7 @@ static void read_vsite_database(const char *ddbname,
     snew(vsiteconflist, 1);
     snew(vsitetoplist, 1);
 
-    while (fgets2(pline, STRLEN-2, ddb) != NULL)
+    while (fgets2(pline, STRLEN-2, ddb) != nullptr)
     {
         strip_comment(pline);
         trim(pline);
@@ -192,7 +192,7 @@ static void read_vsite_database(const char *ddbname,
             if (pline[0] == OPENDIR)
             {
                 strncpy(dirstr, pline+1, STRLEN-2);
-                if ((ch = strchr (dirstr, CLOSEDIR)) != NULL)
+                if ((ch = strchr (dirstr, CLOSEDIR)) != nullptr)
                 {
                     (*ch) = 0;
                 }
@@ -292,7 +292,7 @@ static void read_vsite_database(const char *ddbname,
                             srenew(vsitetoplist[i].bond, k+1);
                             strncpy(vsitetoplist[i].bond[k].atom1, s1, MAXNAME-1);
                             strncpy(vsitetoplist[i].bond[k].atom2, s2, MAXNAME-1);
-                            vsitetoplist[i].bond[k].value = strtod(s3, NULL);
+                            vsitetoplist[i].bond[k].value = strtod(s3, nullptr);
                         }
                         else if (n == 4)
                         {
@@ -302,7 +302,7 @@ static void read_vsite_database(const char *ddbname,
                             strncpy(vsitetoplist[i].angle[k].atom1, s1, MAXNAME-1);
                             strncpy(vsitetoplist[i].angle[k].atom2, s2, MAXNAME-1);
                             strncpy(vsitetoplist[i].angle[k].atom3, s3, MAXNAME-1);
-                            vsitetoplist[i].angle[k].value = strtod(s4, NULL);
+                            vsitetoplist[i].angle[k].value = strtod(s4, nullptr);
                         }
                         else
                         {
@@ -363,7 +363,7 @@ static char *get_dummymass_name(t_vsiteconf vsiteconflist[], int nvsiteconf, cha
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -582,7 +582,7 @@ static void my_add_param(t_params *plist, int ai, int aj, real b)
     { NOTSET, NOTSET, NOTSET, NOTSET, NOTSET, NOTSET };
 
     c[0] = b;
-    add_param(plist, ai, aj, c, NULL);
+    add_param(plist, ai, aj, c, nullptr);
 }
 
 static void add_vsites(t_params plist[], int vsite_type[],
@@ -1030,7 +1030,7 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
     srenew(*newcgnr, at->nr+*nadd);
     for (j = 0; j < NMASS; j++)
     {
-        (*newatomname)[at->nr+*nadd-1-j] = NULL;
+        (*newatomname)[at->nr+*nadd-1-j] = nullptr;
     }
 
     /* Dummy masses will be placed at the center-of-mass in each ring. */
@@ -1225,7 +1225,7 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     srenew(*newatomname, at->nr+*nadd);
     srenew(*newvsite_type, at->nr+*nadd);
     srenew(*newcgnr, at->nr+*nadd);
-    (*newatomname)[at->nr+*nadd-1] = NULL;
+    (*newatomname)[at->nr+*nadd-1] = nullptr;
 
     /* Calc the dummy mass initial position */
     rvec_sub(x[ats[atHH]], x[ats[atOH]], r1);
@@ -1536,7 +1536,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     t_atom           *newatom;
     t_params         *params;
     char           ***newatomname;
-    char             *resnm = NULL;
+    char             *resnm = nullptr;
     int               ndb, f;
     char            **db;
     int               nvsiteconf, nvsitetop, cmplength;
@@ -1576,20 +1576,20 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
         { "CG", /* PHE */
           "CD1", "HD1", "CD2", "HD2",
           "CE1", "HE1", "CE2", "HE2",
-          "CZ", "HZ", NULL },
+          "CZ", "HZ", nullptr },
         { "CB", /* TRP */
           "CG",
           "CD1", "HD1", "CD2",
           "NE1", "HE1", "CE2", "CE3", "HE3",
           "CZ2", "HZ2", "CZ3", "HZ3",
-          "CH2", "HH2", NULL },
+          "CH2", "HH2", nullptr },
         { "CG", /* TYR */
           "CD1", "HD1", "CD2", "HD2",
           "CE1", "HE1", "CE2", "HE2",
-          "CZ", "OH", "HH", NULL },
+          "CZ", "OH", "HH", nullptr },
         { "CG", /* HIS */
           "ND1", "HD1", "CD2", "HD2",
-          "CE1", "HE1", "NE2", "HE2", NULL }
+          "CE1", "HE1", "NE2", "HE2", nullptr }
     };
 
     if (debug)
@@ -1600,9 +1600,9 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 
     ndb           = fflib_search_file_end(ffdir, ".vsd", FALSE, &db);
     nvsiteconf    = 0;
-    vsiteconflist = NULL;
+    vsiteconflist = nullptr;
     nvsitetop     = 0;
-    vsitetop      = NULL;
+    vsitetop      = nullptr;
     for (f = 0; f < ndb; f++)
     {
         read_vsite_database(db[f], &vsiteconflist, &nvsiteconf, &vsitetop, &nvsitetop);
@@ -1873,7 +1873,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     strcpy(nexttpname, get_atomtype_name(get_atype(heavies[0], at, nrtp, rtp, rt), atype));
                     ch = get_dummymass_name(vsiteconflist, nvsiteconf, tpname, nexttpname);
 
-                    if (ch == NULL)
+                    if (ch == nullptr)
                     {
                         if (ndb > 0)
                         {
@@ -1912,7 +1912,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 
                     for (j = 0; j < NMASS; j++)
                     {
-                        newatomname[at->nr+nadd-1-j] = NULL;
+                        newatomname[at->nr+nadd-1-j] = nullptr;
                     }
 
                     /* calculate starting position for the masses */

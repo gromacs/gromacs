@@ -153,7 +153,7 @@ static gmx_bool is_name_char(char c)
      */
     const char *spec = " !&|";
 
-    return (c != '\0' && std::strchr(spec, c) == NULL);
+    return (c != '\0' && std::strchr(spec, c) == nullptr);
 }
 
 static int parse_names(char **string, int *n_names, char **names)
@@ -283,7 +283,7 @@ static gmx_bool parse_string(char **string, int *nr, int ngrps, char **grpname)
         (*string)++;
         s  = gmx_strdup((*string));
         sp = std::strchr(s, c);
-        if (sp != NULL)
+        if (sp != nullptr)
         {
             (*string) += sp-s + 1;
             sp[0]      = '\0';
@@ -816,7 +816,7 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
 {
     char    buf[STRLEN];
     int     j, nchain;
-    int     i, a, natoms, *start = NULL, *end = NULL, ca_start, ca_end;
+    int     i, a, natoms, *start = nullptr, *end = nullptr, ca_start, ca_end;
     rvec    vec;
 
     natoms   = atoms->nr;
@@ -919,7 +919,7 @@ static int split_chain(const t_atoms *atoms, const rvec *x,
 
 static gmx_bool check_have_atoms(const t_atoms *atoms, char *string)
 {
-    if (atoms == NULL)
+    if (atoms == nullptr)
     {
         printf("Can not process '%s' without atom info, use option -f\n", string);
         return FALSE;
@@ -1180,7 +1180,7 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
         }
     }
 
-    string = NULL;
+    string = nullptr;
 
     snew(index, natoms);
     snew(index1, natoms);
@@ -1225,7 +1225,7 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
         }
         printf("\n");
         printf("> ");
-        if (NULL == fgets(inp_string, STRLEN, stdin))
+        if (nullptr == fgets(inp_string, STRLEN, stdin))
         {
             gmx_fatal(FARGS, "Error reading user input");
         }
@@ -1566,14 +1566,14 @@ int gmx_make_ndx(int argc, char *argv[])
     t_blocka         *block, *block2;
     char            **gnames, **gnames2;
     t_filenm          fnm[] = {
-        { efSTX, "-f", NULL,     ffOPTRD  },
-        { efNDX, "-n", NULL,     ffOPTRDMULT },
-        { efNDX, "-o", NULL,     ffWRITE }
+        { efSTX, "-f", nullptr,     ffOPTRD  },
+        { efNDX, "-n", nullptr,     ffOPTRDMULT },
+        { efNDX, "-o", nullptr,     ffWRITE }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc,
-                           0, NULL, &oenv))
+                           0, nullptr, &oenv))
     {
         return 0;
     }
@@ -1602,7 +1602,7 @@ int gmx_make_ndx(int argc, char *argv[])
         fprintf(stderr, "\nReading structure file\n");
         read_tps_conf(stxfile, top, &ePBC, &x, &v, box, FALSE);
         atoms = &top->atoms;
-        if (atoms->pdbinfo == NULL)
+        if (atoms->pdbinfo == nullptr)
         {
             snew(atoms->pdbinfo, atoms->nr);
         }
@@ -1611,13 +1611,13 @@ int gmx_make_ndx(int argc, char *argv[])
     }
     else
     {
-        atoms = NULL;
-        x     = NULL;
+        atoms = nullptr;
+        x     = nullptr;
     }
 
     /* read input file(s) */
     block  = new_blocka();
-    gnames = NULL;
+    gnames = nullptr;
     printf("Going to read %d old index file(s)\n", nndxin);
     if (nndxin)
     {

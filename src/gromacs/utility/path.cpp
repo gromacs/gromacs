@@ -418,7 +418,7 @@ std::vector<std::string> Path::getExecutablePaths()
     result.push_back("");
 #endif
     const char *path = std::getenv("PATH");
-    if (path != NULL)
+    if (path != nullptr)
     {
         splitPathEnvironment(path, &result);
     }
@@ -481,12 +481,12 @@ void File::throwOnNotFound(const NotFoundInfo &info)
 // static
 bool File::exists(const char *filename, NotFoundHandler onNotFound)
 {
-    if (filename == NULL)
+    if (filename == nullptr)
     {
         return false;
     }
     FILE *test = std::fopen(filename, "r");
-    if (test == NULL)
+    if (test == nullptr)
     {
         const bool   wasError = (errno != ENOENT && errno != ENOTDIR);
         NotFoundInfo info(filename, "The file could not be opened.",
@@ -512,7 +512,7 @@ bool File::exists(const char *filename, NotFoundHandler onNotFound)
         if (!S_ISREG(st_buf.st_mode))
         {
             NotFoundInfo info(filename, "The file is not a regular file.",
-                              NULL, true, 0);
+                              nullptr, true, 0);
             onNotFound(info);
             return false;
         }

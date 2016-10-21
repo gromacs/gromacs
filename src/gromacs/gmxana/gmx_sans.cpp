@@ -84,8 +84,8 @@ int gmx_sans(int argc, char *argv[])
     static unsigned int  seed     = 0;
     static int           nthreads = -1;
 
-    static const char   *emode[]   = { NULL, "direct", "mc", NULL };
-    static const char   *emethod[] = { NULL, "debye", "fft", NULL };
+    static const char   *emode[]   = { nullptr, "direct", "mc", nullptr };
+    static const char   *emethod[] = { nullptr, "debye", "fft", nullptr };
 
     gmx_neutron_atomic_structurefactors_t    *gnsf;
     gmx_sans_t                               *gsans;
@@ -119,10 +119,10 @@ int gmx_sans(int argc, char *argv[])
 #endif
     };
     FILE                                 *fp;
-    const char                           *fnTPX, *fnTRX, *fnDAT = NULL;
+    const char                           *fnTPX, *fnTRX, *fnDAT = nullptr;
     t_trxstatus                          *status;
-    t_topology                           *top  = NULL;
-    gmx_rmpbc_t                           gpbc = NULL;
+    t_topology                           *top  = nullptr;
+    gmx_rmpbc_t                           gpbc = nullptr;
     gmx_bool                              bFFT = FALSE, bDEBYE = FALSE;
     gmx_bool                              bMC  = FALSE;
     int                                   ePBC = -1;
@@ -130,23 +130,23 @@ int gmx_sans(int argc, char *argv[])
     rvec                                 *x;
     int                                   natoms;
     real                                  t;
-    char                                **grpname = NULL;
-    int                                  *index   = NULL;
+    char                                **grpname = nullptr;
+    int                                  *index   = nullptr;
     int                                   isize;
     int                                   i;
-    char                                 *hdr            = NULL;
-    char                                 *suffix         = NULL;
-    t_filenm                             *fnmdup         = NULL;
-    gmx_radial_distribution_histogram_t  *prframecurrent = NULL, *pr = NULL;
-    gmx_static_structurefactor_t         *sqframecurrent = NULL, *sq = NULL;
+    char                                 *hdr            = nullptr;
+    char                                 *suffix         = nullptr;
+    t_filenm                             *fnmdup         = nullptr;
+    gmx_radial_distribution_histogram_t  *prframecurrent = nullptr, *pr = nullptr;
+    gmx_static_structurefactor_t         *sqframecurrent = nullptr, *sq = nullptr;
     gmx_output_env_t                     *oenv;
 
 #define NFILE asize(fnm)
 
     t_filenm   fnm[] = {
-        { efTPR,  "-s",       NULL,       ffREAD },
-        { efTRX,  "-f",       NULL,       ffREAD },
-        { efNDX,  NULL,       NULL,       ffOPTRD },
+        { efTPR,  "-s",       nullptr,       ffREAD },
+        { efTRX,  "-f",       nullptr,       ffREAD },
+        { efNDX,  nullptr,       nullptr,       ffOPTRD },
         { efDAT,  "-d",       "nsfactor", ffOPTRD },
         { efXVG,  "-pr",      "pr",       ffWRITE },
         { efXVG,  "-sq",       "sq",      ffWRITE },
@@ -157,7 +157,7 @@ int gmx_sans(int argc, char *argv[])
     nthreads = gmx_omp_get_max_threads();
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -170,7 +170,7 @@ int gmx_sans(int argc, char *argv[])
     gmx_omp_set_num_threads(nthreads);
 
     /* Now try to parse opts for modes */
-    GMX_RELEASE_ASSERT(emethod[0] != NULL, "Options inconsistency; emethod[0] is NULL");
+    GMX_RELEASE_ASSERT(emethod[0] != nullptr, "Options inconsistency; emethod[0] is NULL");
     switch (emethod[0][0])
     {
         case 'd':
@@ -226,7 +226,7 @@ int gmx_sans(int argc, char *argv[])
     snew(grpname, 1);
     snew(index, 1);
 
-    read_tps_conf(fnTPX, top, &ePBC, &x, NULL, box, TRUE);
+    read_tps_conf(fnTPX, top, &ePBC, &x, nullptr, box, TRUE);
 
     printf("\nPlease select group for SANS spectra calculation:\n");
     get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname);
@@ -253,7 +253,7 @@ int gmx_sans(int argc, char *argv[])
             gmx_rmpbc(gpbc, top->atoms.nr, box, x);
         }
         /* allocate memory for pr */
-        if (pr == NULL)
+        if (pr == nullptr)
         {
             /* in case its first frame to read */
             snew(pr, 1);
@@ -262,7 +262,7 @@ int gmx_sans(int argc, char *argv[])
         prframecurrent = calc_radial_distribution_histogram(gsans, x, box, index, isize, binwidth, bMC, bNORM, mcover, seed);
         /* copy prframecurrent -> pr and summ up pr->gr[i] */
         /* allocate and/or resize memory for pr->gr[i] and pr->r[i] */
-        if (pr->gr == NULL)
+        if (pr->gr == nullptr)
         {
             /* check if we use pr->gr first time */
             snew(pr->gr, prframecurrent->grn);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,17 +59,17 @@ void init_energyhistory(energyhistory_t * enerhist)
 {
     enerhist->nener = 0;
 
-    enerhist->ener_ave     = NULL;
-    enerhist->ener_sum     = NULL;
-    enerhist->ener_sum_sim = NULL;
-    enerhist->dht          = NULL;
+    enerhist->ener_ave     = nullptr;
+    enerhist->ener_sum     = nullptr;
+    enerhist->ener_sum_sim = nullptr;
+    enerhist->dht          = nullptr;
 
     enerhist->nsteps     = 0;
     enerhist->nsum       = 0;
     enerhist->nsteps_sim = 0;
     enerhist->nsum_sim   = 0;
 
-    enerhist->dht = NULL;
+    enerhist->dht = nullptr;
 }
 
 void done_energyhistory(energyhistory_t * enerhist)
@@ -78,7 +78,7 @@ void done_energyhistory(energyhistory_t * enerhist)
     sfree(enerhist->ener_sum);
     sfree(enerhist->ener_sum_sim);
 
-    if (enerhist->dht != NULL)
+    if (enerhist->dht != nullptr)
     {
         done_delta_h_history(enerhist->dht);
         sfree(enerhist->dht);

@@ -137,7 +137,7 @@ class IndexFileWriterModule : public AnalysisDataModuleSerial
  */
 
 IndexFileWriterModule::IndexFileWriterModule()
-    : fp_(NULL), currentGroup_(-1), currentSize_(0), bAnyWritten_(false)
+    : fp_(nullptr), currentGroup_(-1), currentSize_(0), bAnyWritten_(false)
 {
 }
 
@@ -150,10 +150,10 @@ IndexFileWriterModule::~IndexFileWriterModule()
 
 void IndexFileWriterModule::closeFile()
 {
-    if (fp_ != NULL)
+    if (fp_ != nullptr)
     {
         gmx_fio_fclose(fp_);
-        fp_ = NULL;
+        fp_ = nullptr;
     }
 }
 
@@ -197,7 +197,7 @@ void IndexFileWriterModule::frameStarted(const AnalysisDataFrameHeader & /*heade
 void
 IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    if (fp_ == NULL)
+    if (fp_ == nullptr)
     {
         return;
     }
@@ -245,7 +245,7 @@ void IndexFileWriterModule::frameFinished(const AnalysisDataFrameHeader & /*head
 
 void IndexFileWriterModule::dataFinished()
 {
-    if (fp_ != NULL)
+    if (fp_ != nullptr)
     {
         std::fprintf(fp_, "\n");
     }
@@ -321,9 +321,9 @@ class Select : public TrajectoryAnalysisModule
 };
 
 Select::Select()
-    : selOpt_(NULL), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
+    : selOpt_(nullptr), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
       bCumulativeLifetimes_(true), resNumberType_(ResidueNumbering_ByNumber),
-      pdbAtoms_(PdbAtomsSelection_All), top_(NULL),
+      pdbAtoms_(PdbAtomsSelection_All), top_(nullptr),
       occupancyModule_(new AnalysisDataAverageModule()),
       lifetimeModule_(new AnalysisDataLifetimeModule())
 {
@@ -712,7 +712,7 @@ Select::writeOutput()
             case PdbAtomsSelection_All:
             {
                 t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
-                write_trxframe(status, &fr, NULL);
+                write_trxframe(status, &fr, nullptr);
                 close_trx(status);
                 break;
             }
@@ -728,7 +728,7 @@ Select::writeOutput()
                                                  atomIndicesSet.end());
                 t_trxstatus      *status = open_trx(fnPDB_.c_str(), "w");
                 write_trxframe_indexed(status, &fr, allAtomIndices.size(),
-                                       allAtomIndices.data(), NULL);
+                                       allAtomIndices.data(), nullptr);
                 close_trx(status);
                 break;
             }
@@ -743,7 +743,7 @@ Select::writeOutput()
                     }
                 }
                 t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
-                write_trxframe_indexed(status, &fr, indices.size(), indices.data(), NULL);
+                write_trxframe_indexed(status, &fr, indices.size(), indices.data(), nullptr);
                 close_trx(status);
                 break;
             }

@@ -308,12 +308,12 @@ void ElectricField::readMdp(int *ninp_p, t_inpfile **inp_p, warninp_t wi)
 
     CCTYPE("Electric fields");
     // Old style inputs for backward compatibility
-    STYPE ("E-x",     efield_x,   NULL);
-    STYPE ("E-xt",    efield_xt,  NULL);
-    STYPE ("E-y",     efield_y,   NULL);
-    STYPE ("E-yt",    efield_yt,  NULL);
-    STYPE ("E-z",     efield_z,   NULL);
-    STYPE ("E-zt",    efield_zt,  NULL);
+    STYPE ("E-x",     efield_x,   nullptr);
+    STYPE ("E-xt",    efield_xt,  nullptr);
+    STYPE ("E-y",     efield_y,   nullptr);
+    STYPE ("E-yt",    efield_yt,  nullptr);
+    STYPE ("E-z",     efield_z,   nullptr);
+    STYPE ("E-zt",    efield_zt,  nullptr);
 
     *ninp_p = ninp;
     *inp_p  = inp;

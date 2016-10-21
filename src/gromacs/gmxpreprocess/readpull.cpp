@@ -362,7 +362,7 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
         {
             sprintf(wbuf, "%s should contain %d pull group indices with geometry %s",
                     buf, pcrd->ngroup, epullg_names[pcrd->eGeom]);
-            set_warning_line(wi, NULL, -1);
+            set_warning_line(wi, nullptr, -1);
             warning_error(wi, wbuf);
         }
         for (int g = 0; g < pcrd->ngroup; g++)
@@ -512,9 +512,9 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
     double         t_start;
 
     pull      = ir->pull;
-    pull_work = init_pull(NULL, pull, ir, 0, NULL, mtop, NULL, oenv, lambda, FALSE, 0);
-    md        = init_mdatoms(NULL, mtop, ir->efep);
-    atoms2md(mtop, ir, -1, NULL, mtop->natoms, md);
+    pull_work = init_pull(nullptr, pull, ir, 0, nullptr, mtop, nullptr, oenv, lambda, FALSE, 0);
+    md        = init_mdatoms(nullptr, mtop, ir->efep);
+    atoms2md(mtop, ir, -1, nullptr, mtop->natoms, md);
     if (ir->efep)
     {
         update_mdatoms(md, lambda);
@@ -524,7 +524,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
 
     t_start = ir->init_t + ir->init_step*ir->delta_t;
 
-    pull_calc_coms(NULL, pull_work, md, &pbc, t_start, x, NULL);
+    pull_calc_coms(nullptr, pull_work, md, &pbc, t_start, x, nullptr);
 
     fprintf(stderr, "Pull group  natoms  pbc atom  distance at start  reference at t=0\n");
     for (c = 0; c < pull->ncoord; c++)

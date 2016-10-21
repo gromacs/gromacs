@@ -154,7 +154,7 @@ get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
     {
         /* topology information not available or invalid, ignore it */
         hwThreads       = hwTop.machine().logicalProcessorCount;
-        *localityOrder  = NULL;
+        *localityOrder  = nullptr;
     }
     // Only warn about the first problem per node.  Otherwise, the first test
     // failing would essentially always cause also the other problems get
@@ -246,7 +246,7 @@ get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
     }
     validLayout = validLayout && !invalidValue;
 
-    if (validLayout && fplog != NULL)
+    if (validLayout && fplog != nullptr)
     {
         fprintf(fplog, "Pinning threads with a%s logical core stride of %d\n",
                 bPickPinStride ? "n auto-selected" : " user-specified",

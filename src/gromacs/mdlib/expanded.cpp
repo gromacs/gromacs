@@ -1024,7 +1024,7 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *
     gmx_bool    bSimTemp            = FALSE;
 
     nlim = fep->n_lambda;
-    if (simtemp != NULL)
+    if (simtemp != nullptr)
     {
         bSimTemp = TRUE;
     }

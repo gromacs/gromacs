@@ -97,13 +97,13 @@ gmx_bool get_header(char line[], char *header)
 
     std::strcpy(temp, line);
     dum = std::strchr(temp, '[');
-    if (dum == NULL)
+    if (dum == nullptr)
     {
         return FALSE;
     }
     dum[0] = ' ';
     dum    = std::strchr(temp, ']');
-    if (dum == NULL)
+    if (dum == nullptr)
     {
         gmx_fatal(FARGS, "header is not terminated on line:\n'%s'\n", line);
         return FALSE;
@@ -141,7 +141,7 @@ static int fget_lines(FILE *in, const char *db, char ***strings)
     char  *pret;
 
     pret = fgets(buf, STRLEN, in);
-    if (pret == NULL  || sscanf(buf, "%d", &nstr) != 1)
+    if (pret == nullptr  || sscanf(buf, "%d", &nstr) != 1)
     {
         gmx_warning("File is empty");
         gmx_ffclose(in);

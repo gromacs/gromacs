@@ -396,8 +396,8 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
 
 int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
 {
-    int     *ip  = NULL;
-    int     *buf = NULL;
+    int     *ip  = nullptr;
+    int     *buf = nullptr;
     gmx_bool bRead;
 
     /* preallocate a small buffer and ip on the stack - if we need more
@@ -468,7 +468,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             bufsize        = static_cast<int>(size3 * 1.2);
             ip             = reinterpret_cast<int *>(malloc(size3 * sizeof(*ip)));
             buf            = reinterpret_cast<int *>(malloc(bufsize * sizeof(*buf)));
-            if (ip == NULL || buf == NULL)
+            if (ip == nullptr || buf == nullptr)
             {
                 fprintf(stderr, "malloc failed\n");
                 exit(1);
@@ -814,7 +814,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             bufsize        = static_cast<int>(size3 * 1.2);
             ip             = reinterpret_cast<int *>(malloc(size3 * sizeof(*ip)));
             buf            = reinterpret_cast<int *>(malloc(bufsize * sizeof(*buf)));
-            if (ip == NULL || buf == NULL)
+            if (ip == nullptr || buf == nullptr)
             {
                 fprintf(stderr, "malloc failed\n");
                 exit(1);

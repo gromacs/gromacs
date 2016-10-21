@@ -345,7 +345,7 @@ AbstractAnalysisData &TrajectoryAnalysisModule::datasetFromName(const char *name
 void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
                                                     const char           *name)
 {
-    GMX_RELEASE_ASSERT(data != NULL, "Attempting to register NULL data");
+    GMX_RELEASE_ASSERT(data != nullptr, "Attempting to register NULL data");
     // TODO: Strong exception safety should be possible to implement.
     GMX_RELEASE_ASSERT(impl_->datasets_.find(name) == impl_->datasets_.end(),
                        "Duplicate data set name registered");

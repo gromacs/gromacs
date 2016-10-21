@@ -306,10 +306,10 @@ void orient_princ(const t_atoms *atoms, int isize, const int *index,
             trans[ZZ][m] = -trans[ZZ][m];
         }
     }
-    rotate_atoms(natoms, NULL, x, trans);
+    rotate_atoms(natoms, nullptr, x, trans);
     if (v)
     {
-        rotate_atoms(natoms, NULL, v, trans);
+        rotate_atoms(natoms, nullptr, v, trans);
     }
 
     for (i = 0; i < natoms; i++)

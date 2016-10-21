@@ -103,8 +103,8 @@ class AnalysisDataDisplacementModule::Impl
 AnalysisDataDisplacementModule::Impl::Impl()
     : nmax(0), tmax(0.0), ndim(3),
       bFirst(true), t0(0.0), dt(0.0), t(0.0), ci(0),
-      max_store(-1), nstored(0), oldval(NULL),
-      histm(NULL)
+      max_store(-1), nstored(0), oldval(nullptr),
+      histm(nullptr)
 {
 }
 
@@ -140,7 +140,7 @@ void
 AnalysisDataDisplacementModule::setMSDHistogram(
         AnalysisDataBinAverageModulePointer histm)
 {
-    GMX_RELEASE_ASSERT(_impl->histm == NULL, "Can only set MSD histogram once");
+    GMX_RELEASE_ASSERT(_impl->histm == nullptr, "Can only set MSD histogram once");
     _impl->histm = histm.get();
     addModule(histm);
 }

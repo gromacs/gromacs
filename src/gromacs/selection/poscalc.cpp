@@ -244,7 +244,7 @@ const char * const gmx::PositionCalculationCollection::typeEnumValues[] = {
     "part_mol_com",  "part_mol_cog",
     "dyn_res_com",   "dyn_res_cog",
     "dyn_mol_com",   "dyn_mol_cog",
-    NULL,
+    nullptr,
 };
 
 /*! \brief
@@ -371,7 +371,7 @@ PositionCalculationCollection::requiredTopologyInfoForType(const char *post,
  */
 
 PositionCalculationCollection::Impl::Impl()
-    : top_(NULL), first_(NULL), last_(NULL), bInit_(false)
+    : top_(nullptr), first_(nullptr), last_(nullptr), bInit_(false)
 {
 }
 
@@ -379,7 +379,7 @@ PositionCalculationCollection::Impl::~Impl()
 {
     // Loop backwards, because there can be internal references in that are
     // correctly handled by this direction.
-    while (last_ != NULL)
+    while (last_ != nullptr)
     {
         GMX_ASSERT(last_->refcount == 1,
                    "Dangling references to position calculations");
@@ -392,11 +392,11 @@ PositionCalculationCollection::Impl::insertCalculation(gmx_ana_poscalc_t *pc,
                                                        gmx_ana_poscalc_t *before)
 {
     GMX_RELEASE_ASSERT(pc->coll == this, "Inconsistent collections");
-    if (before == NULL)
+    if (before == nullptr)
     {
-        pc->next = NULL;
+        pc->next = nullptr;
         pc->prev = last_;
-        if (last_ != NULL)
+        if (last_ != nullptr)
         {
             last_->next = pc;
         }
@@ -412,7 +412,7 @@ PositionCalculationCollection::Impl::insertCalculation(gmx_ana_poscalc_t *pc,
         }
         before->prev = pc;
     }
-    if (pc->prev == NULL)
+    if (pc->prev == nullptr)
     {
         first_ = pc;
     }
@@ -422,7 +422,7 @@ void
 PositionCalculationCollection::Impl::removeCalculation(gmx_ana_poscalc_t *pc)
 {
     GMX_RELEASE_ASSERT(pc->coll == this, "Inconsistent collections");
-    if (pc->prev != NULL)
+    if (pc->prev != nullptr)
     {
         pc->prev->next = pc->next;
     }
@@ -430,7 +430,7 @@ PositionCalculationCollection::Impl::removeCalculation(gmx_ana_poscalc_t *pc)
     {
         first_ = pc->next;
     }
-    if (pc->next != NULL)
+    if (pc->next != nullptr)
     {
         pc->next->prev = pc->prev;
     }
@@ -438,7 +438,7 @@ PositionCalculationCollection::Impl::removeCalculation(gmx_ana_poscalc_t *pc)
     {
         last_ = pc->prev;
     }
-    pc->prev = pc->next = NULL;
+    pc->prev = pc->next = nullptr;
 }
 
 gmx_ana_poscalc_t *
@@ -452,7 +452,7 @@ PositionCalculationCollection::Impl::createCalculation(e_poscalc_t type, int fla
     gmx_ana_poscalc_set_flags(pc, flags);
     pc->refcount = 1;
     pc->coll     = this;
-    insertCalculation(pc, NULL);
+    insertCalculation(pc, nullptr);
     return pc;
 }
 
@@ -1224,7 +1224,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     }
     if (pc->sbase)
     {
-        gmx_ana_poscalc_update(pc->sbase, NULL, NULL, fr, pbc);
+        gmx_ana_poscalc_update(pc->sbase, nullptr, nullptr, fr, pbc);
     }
     if (!p)
     {

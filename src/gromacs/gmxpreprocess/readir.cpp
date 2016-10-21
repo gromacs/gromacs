@@ -99,7 +99,7 @@ typedef struct t_inputrec_strings
 
 } gmx_inputrec_strings;
 
-static gmx_inputrec_strings *is = NULL;
+static gmx_inputrec_strings *is = nullptr;
 
 void init_inputrec_strings()
 {
@@ -113,7 +113,7 @@ void init_inputrec_strings()
 void done_inputrec_strings()
 {
     sfree(is);
-    is = NULL;
+    is = nullptr;
 }
 
 
@@ -128,11 +128,11 @@ enum {
 };
 
 static const char *constraints[eshNR+1]    = {
-    "none", "h-bonds", "all-bonds", "h-angles", "all-angles", NULL
+    "none", "h-bonds", "all-bonds", "h-angles", "all-angles", nullptr
 };
 
 static const char *couple_lam[ecouplamNR+1]    = {
-    "vdw-q", "vdw", "q", "none", NULL
+    "vdw-q", "vdw", "q", "none", nullptr
 };
 
 void init_ir(t_inputrec *ir, t_gromppopts *opts)
@@ -1058,7 +1058,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         CHECK(EEL_FULL(ir->coulombtype) || ir->implicit_solvent == eisGBSA);
     }
 
-    if (getenv("GMX_DO_GALACTIC_DYNAMICS") == NULL)
+    if (getenv("GMX_DO_GALACTIC_DYNAMICS") == nullptr)
     {
         sprintf(err_buf, "epsilon-r must be >= 0 instead of %g\n", ir->epsilon_r);
         CHECK(ir->epsilon_r < 0);
@@ -1423,7 +1423,7 @@ int str_nelem(const char *str, int maxptr, char *ptr[])
         }
         ltrim(copy);
     }
-    if (ptr == NULL)
+    if (ptr == nullptr)
     {
         sfree(copy0);
     }
@@ -1640,8 +1640,8 @@ static void do_wall_params(t_inputrec *ir,
     char  *names[MAXPTR];
     double dbl;
 
-    opts->wall_atomtype[0] = NULL;
-    opts->wall_atomtype[1] = NULL;
+    opts->wall_atomtype[0] = nullptr;
+    opts->wall_atomtype[1] = nullptr;
 
     ir->wall_atomtype[0] = -1;
     ir->wall_atomtype[1] = -1;
@@ -1826,9 +1826,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
     CTYPE ("Preprocessor information: use cpp syntax.");
     CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/roe");
-    STYPE ("include", opts->include,  NULL);
+    STYPE ("include", opts->include,  nullptr);
     CTYPE ("e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)");
-    STYPE ("define",  opts->define,   NULL);
+    STYPE ("define",  opts->define,   nullptr);
 
     CCTYPE ("RUN CONTROL PARAMETERS");
     EETYPE("integrator",  ir->eI,         ei_names);
@@ -1845,7 +1845,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("number of steps for center of mass motion removal");
     ITYPE ("nstcomm", ir->nstcomm,    100);
     CTYPE ("group(s) for center of mass motion removal");
-    STYPE ("comm-grps",   is->vcm,            NULL);
+    STYPE ("comm-grps",   is->vcm,            nullptr);
 
     CCTYPE ("LANGEVIN DYNAMICS OPTIONS");
     CTYPE ("Friction coefficient (amu/ps) and random seed");
@@ -1884,9 +1884,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("This selects the subset of atoms for the compressed");
     CTYPE ("trajectory file. You can select multiple groups. By");
     CTYPE ("default, all atoms will be written.");
-    STYPE ("compressed-x-grps", is->x_compressed_groups, NULL);
+    STYPE ("compressed-x-grps", is->x_compressed_groups, nullptr);
     CTYPE ("Selection of energy groups");
-    STYPE ("energygrps",  is->energy,         NULL);
+    STYPE ("energygrps",  is->energy,         nullptr);
 
     /* Neighbor searching */
     CCTYPE ("NEIGHBORSEARCHING PARAMETERS");
@@ -1928,7 +1928,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("Extension of the potential lookup tables beyond the cut-off");
     RTYPE ("table-extension", ir->tabext, 1.0);
     CTYPE ("Separate tables between energy group pairs");
-    STYPE ("energygrp-table", is->egptable,   NULL);
+    STYPE ("energygrp-table", is->egptable,   nullptr);
     CTYPE ("Spacing for the PME/PPPM FFT grid");
     RTYPE ("fourierspacing", ir->fourier_spacing, 0.12);
     CTYPE ("FFT grid size, when a value is 0 fourierspacing will be used");
@@ -1976,18 +1976,18 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE("nh-chain-length",     ir->opts.nhchainlength, 10);
     EETYPE("print-nose-hoover-chain-variables", ir->bPrintNHChains, yesno_names);
     CTYPE ("Groups to couple separately");
-    STYPE ("tc-grps",     is->tcgrps,         NULL);
+    STYPE ("tc-grps",     is->tcgrps,         nullptr);
     CTYPE ("Time constant (ps) and reference temperature (K)");
-    STYPE ("tau-t",   is->tau_t,      NULL);
-    STYPE ("ref-t",   is->ref_t,      NULL);
+    STYPE ("tau-t",   is->tau_t,      nullptr);
+    STYPE ("ref-t",   is->ref_t,      nullptr);
     CTYPE ("pressure coupling");
     EETYPE("pcoupl",  ir->epc,        epcoupl_names);
     EETYPE("pcoupltype",  ir->epct,       epcoupltype_names);
     ITYPE ("nstpcouple", ir->nstpcouple,  -1);
     CTYPE ("Time constant (ps), compressibility (1/bar) and reference P (bar)");
     RTYPE ("tau-p",   ir->tau_p,  1.0);
-    STYPE ("compressibility", dumstr[0],  NULL);
-    STYPE ("ref-p",       dumstr[1],      NULL);
+    STYPE ("compressibility", dumstr[0],  nullptr);
+    STYPE ("ref-p",       dumstr[1],      nullptr);
     CTYPE ("Scaling of reference coordinates, No, All or COM");
     EETYPE ("refcoord-scaling", ir->refcoord_scaling, erefscaling_names);
 
@@ -1995,41 +1995,41 @@ void get_ir(const char *mdparin, const char *mdparout,
     CCTYPE ("OPTIONS FOR QMMM calculations");
     EETYPE("QMMM", ir->bQMMM, yesno_names);
     CTYPE ("Groups treated Quantum Mechanically");
-    STYPE ("QMMM-grps",  is->QMMM,          NULL);
+    STYPE ("QMMM-grps",  is->QMMM,          nullptr);
     CTYPE ("QM method");
-    STYPE("QMmethod",     is->QMmethod, NULL);
+    STYPE("QMmethod",     is->QMmethod, nullptr);
     CTYPE ("QMMM scheme");
     EETYPE("QMMMscheme",  ir->QMMMscheme,    eQMMMscheme_names);
     CTYPE ("QM basisset");
-    STYPE("QMbasis",      is->QMbasis, NULL);
+    STYPE("QMbasis",      is->QMbasis, nullptr);
     CTYPE ("QM charge");
-    STYPE ("QMcharge",    is->QMcharge, NULL);
+    STYPE ("QMcharge",    is->QMcharge, nullptr);
     CTYPE ("QM multiplicity");
-    STYPE ("QMmult",      is->QMmult, NULL);
+    STYPE ("QMmult",      is->QMmult, nullptr);
     CTYPE ("Surface Hopping");
-    STYPE ("SH",          is->bSH, NULL);
+    STYPE ("SH",          is->bSH, nullptr);
     CTYPE ("CAS space options");
-    STYPE ("CASorbitals",      is->CASorbitals,   NULL);
-    STYPE ("CASelectrons",     is->CASelectrons,  NULL);
-    STYPE ("SAon", is->SAon, NULL);
-    STYPE ("SAoff", is->SAoff, NULL);
-    STYPE ("SAsteps", is->SAsteps, NULL);
+    STYPE ("CASorbitals",      is->CASorbitals,   nullptr);
+    STYPE ("CASelectrons",     is->CASelectrons,  nullptr);
+    STYPE ("SAon", is->SAon, nullptr);
+    STYPE ("SAoff", is->SAoff, nullptr);
+    STYPE ("SAsteps", is->SAsteps, nullptr);
     CTYPE ("Scale factor for MM charges");
     RTYPE ("MMChargeScaleFactor", ir->scalefactor, 1.0);
     CTYPE ("Optimization of QM subsystem");
-    STYPE ("bOPT",          is->bOPT, NULL);
-    STYPE ("bTS",          is->bTS, NULL);
+    STYPE ("bOPT",          is->bOPT, nullptr);
+    STYPE ("bTS",          is->bTS, nullptr);
 
     /* Simulated annealing */
     CCTYPE("SIMULATED ANNEALING");
     CTYPE ("Type of annealing for each temperature group (no/single/periodic)");
-    STYPE ("annealing",   is->anneal,      NULL);
+    STYPE ("annealing",   is->anneal,      nullptr);
     CTYPE ("Number of time points to use for specifying annealing in each group");
-    STYPE ("annealing-npoints", is->anneal_npoints, NULL);
+    STYPE ("annealing-npoints", is->anneal_npoints, nullptr);
     CTYPE ("List of times at the annealing points for each group");
-    STYPE ("annealing-time",       is->anneal_time,       NULL);
+    STYPE ("annealing-time",       is->anneal_time,       nullptr);
     CTYPE ("Temp. at each annealing point, for each group.");
-    STYPE ("annealing-temp",  is->anneal_temp,  NULL);
+    STYPE ("annealing-temp",  is->anneal_temp,  nullptr);
 
     /* Startup run */
     CCTYPE ("GENERATE VELOCITIES FOR STARTUP RUN");
@@ -2063,7 +2063,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     /* Energy group exclusions */
     CCTYPE ("ENERGY GROUP EXCLUSIONS");
     CTYPE ("Pairs of energy groups for which all non-bonded interactions are excluded");
-    STYPE ("energygrp-excl", is->egpexcl,     NULL);
+    STYPE ("energygrp-excl", is->egpexcl,     nullptr);
 
     /* Walls */
     CCTYPE ("WALLS");
@@ -2071,8 +2071,8 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE ("nwall", ir->nwall, 0);
     EETYPE("wall-type",     ir->wall_type,   ewt_names);
     RTYPE ("wall-r-linpot", ir->wall_r_linpot, -1);
-    STYPE ("wall-atomtype", is->wall_atomtype, NULL);
-    STYPE ("wall-density",  is->wall_density,  NULL);
+    STYPE ("wall-atomtype", is->wall_atomtype, nullptr);
+    STYPE ("wall-density",  is->wall_density,  nullptr);
     RTYPE ("wall-ewald-zfac", ir->wall_ewald_zfac, 3);
 
     /* COM pulling */
@@ -2097,7 +2097,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     /* Interactive MD */
     ir->bIMD = FALSE;
     CCTYPE("Group to display and/or manipulate in interactive MD session");
-    STYPE ("IMD-group", is->imd_grp, NULL);
+    STYPE ("IMD-group", is->imd_grp, nullptr);
     if (is->imd_grp[0] != '\0')
     {
         snew(ir->imd, 1);
@@ -2121,14 +2121,14 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("Orientation restraints force constant and tau for time averaging");
     RTYPE ("orire-fc",    ir->orires_fc,  0.0);
     RTYPE ("orire-tau",   ir->orires_tau, 0.0);
-    STYPE ("orire-fitgrp", is->orirefitgrp,    NULL);
+    STYPE ("orire-fitgrp", is->orirefitgrp,    nullptr);
     CTYPE ("Output frequency for trace(SD) and S to energy file");
     ITYPE ("nstorireout", ir->nstorireout, 100);
 
     /* free energy variables */
     CCTYPE ("Free energy variables");
     EETYPE("free-energy", ir->efep, efep_names);
-    STYPE ("couple-moltype",  is->couple_moltype,  NULL);
+    STYPE ("couple-moltype",  is->couple_moltype,  nullptr);
     EETYPE("couple-lambda0", opts->couple_lam0, couple_lam);
     EETYPE("couple-lambda1", opts->couple_lam1, couple_lam);
     EETYPE("couple-intramol", opts->bCoupleIntra, yesno_names);
@@ -2139,15 +2139,15 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE ("init-lambda-state", fep->init_fep_state, -1);
     RTYPE ("delta-lambda", fep->delta_lambda, 0.0);
     ITYPE ("nstdhdl", fep->nstdhdl, 50);
-    STYPE ("fep-lambdas", is->fep_lambda[efptFEP], NULL);
-    STYPE ("mass-lambdas", is->fep_lambda[efptMASS], NULL);
-    STYPE ("coul-lambdas", is->fep_lambda[efptCOUL], NULL);
-    STYPE ("vdw-lambdas", is->fep_lambda[efptVDW], NULL);
-    STYPE ("bonded-lambdas", is->fep_lambda[efptBONDED], NULL);
-    STYPE ("restraint-lambdas", is->fep_lambda[efptRESTRAINT], NULL);
-    STYPE ("temperature-lambdas", is->fep_lambda[efptTEMPERATURE], NULL);
+    STYPE ("fep-lambdas", is->fep_lambda[efptFEP], nullptr);
+    STYPE ("mass-lambdas", is->fep_lambda[efptMASS], nullptr);
+    STYPE ("coul-lambdas", is->fep_lambda[efptCOUL], nullptr);
+    STYPE ("vdw-lambdas", is->fep_lambda[efptVDW], nullptr);
+    STYPE ("bonded-lambdas", is->fep_lambda[efptBONDED], nullptr);
+    STYPE ("restraint-lambdas", is->fep_lambda[efptRESTRAINT], nullptr);
+    STYPE ("temperature-lambdas", is->fep_lambda[efptTEMPERATURE], nullptr);
     ITYPE ("calc-lambda-neighbors", fep->lambda_neighbors, 1);
-    STYPE ("init-lambda-weights", is->lambda_weights, NULL);
+    STYPE ("init-lambda-weights", is->lambda_weights, nullptr);
     EETYPE("dhdl-print-energy", fep->edHdLPrintEnergy, edHdLPrintEnergy_names);
     RTYPE ("sc-alpha", fep->sc_alpha, 0.0);
     ITYPE ("sc-power", fep->sc_power, 1);
@@ -2164,12 +2164,12 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* Non-equilibrium MD stuff */
     CCTYPE("Non-equilibrium MD stuff");
-    STYPE ("acc-grps",    is->accgrps,        NULL);
-    STYPE ("accelerate",  is->acc,            NULL);
-    STYPE ("freezegrps",  is->freeze,         NULL);
-    STYPE ("freezedim",   is->frdim,          NULL);
+    STYPE ("acc-grps",    is->accgrps,        nullptr);
+    STYPE ("accelerate",  is->acc,            nullptr);
+    STYPE ("freezegrps",  is->freeze,         nullptr);
+    STYPE ("freezedim",   is->frdim,          nullptr);
     RTYPE ("cos-acceleration", ir->cos_accel, 0);
-    STYPE ("deform",      is->deform,         NULL);
+    STYPE ("deform",      is->deform,         nullptr);
 
     /* simulated tempering variables */
     CCTYPE("simulated tempering variables");
@@ -2213,14 +2213,14 @@ void get_ir(const char *mdparin, const char *mdparout,
             snew(ir->swap->grp[i].molname, STRLEN);
         }
         CTYPE("Two index groups that contain the compartment-partitioning atoms");
-        STYPE("split-group0", ir->swap->grp[eGrpSplit0].molname, NULL);
-        STYPE("split-group1", ir->swap->grp[eGrpSplit1].molname, NULL);
+        STYPE("split-group0", ir->swap->grp[eGrpSplit0].molname, nullptr);
+        STYPE("split-group1", ir->swap->grp[eGrpSplit1].molname, nullptr);
         CTYPE("Use center of mass of split groups (yes/no), otherwise center of geometry is used");
         EETYPE("massw-split0", ir->swap->massw_split[0], yesno_names);
         EETYPE("massw-split1", ir->swap->massw_split[1], yesno_names);
 
         CTYPE("Name of solvent molecules");
-        STYPE("solvent-group", ir->swap->grp[eGrpSolvent].molname, NULL);
+        STYPE("solvent-group", ir->swap->grp[eGrpSolvent].molname, nullptr);
 
         CTYPE("Split cylinder: radius, upper and lower extension (nm) (this will define the channels)");
         CTYPE("Note that the split cylinder settings do not have an influence on the swapping protocol,");
@@ -2243,7 +2243,7 @@ void get_ir(const char *mdparin, const char *mdparout,
             int ig = eSwapFixedGrpNR + i;
 
             sprintf(buf, "iontype%d-name", i);
-            STYPE(buf, ir->swap->grp[ig].molname, NULL);
+            STYPE(buf, ir->swap->grp[ig].molname, nullptr);
             sprintf(buf, "iontype%d-in-A", i);
             ITYPE(buf, ir->swap->grp[ig].nmolReq[0], -1);
             sprintf(buf, "iontype%d-in-B", i);
@@ -2271,8 +2271,8 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* User defined thingies */
     CCTYPE ("User defined thingies");
-    STYPE ("user1-grps",  is->user1,          NULL);
-    STYPE ("user2-grps",  is->user2,          NULL);
+    STYPE ("user1-grps",  is->user1,          nullptr);
+    STYPE ("user2-grps",  is->user2,          nullptr);
     ITYPE ("userint1",    ir->userint1,   0);
     ITYPE ("userint2",    ir->userint2,   0);
     ITYPE ("userint3",    ir->userint3,   0);
@@ -2365,7 +2365,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         ir->nstcomm = 0;
     }
 
-    opts->couple_moltype = NULL;
+    opts->couple_moltype = nullptr;
     if (strlen(is->couple_moltype) > 0)
     {
         if (ir->efep != efepNO)
@@ -2454,7 +2454,7 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     /* ORIENTATION RESTRAINT PARAMETERS */
 
-    if (opts->bOrire && str_nelem(is->orirefitgrp, MAXPTR, NULL) != 1)
+    if (opts->bOrire && str_nelem(is->orirefitgrp, MAXPTR, nullptr) != 1)
     {
         warning_error(wi, "ERROR: Need one orientation restraint fit group\n");
     }
@@ -2707,7 +2707,7 @@ static gmx_bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptr
     {
         /* All atoms are part of one (or no) group, no index required */
         groups->ngrpnr[gtype] = 0;
-        groups->grpnr[gtype]  = NULL;
+        groups->grpnr[gtype]  = nullptr;
     }
     else
     {
@@ -3157,7 +3157,7 @@ void do_index(const char* mdparin, const char *ndx,
     {
         fprintf(stderr, "processing index file...\n");
     }
-    if (ndx == NULL)
+    if (ndx == nullptr)
     {
         snew(grps, 1);
         snew(grps->index, 1);
@@ -3335,8 +3335,8 @@ void do_index(const char* mdparin, const char *ndx,
         {
             ir->opts.annealing[i]      = eannNO;
             ir->opts.anneal_npoints[i] = 0;
-            ir->opts.anneal_time[i]    = NULL;
-            ir->opts.anneal_temp[i]    = NULL;
+            ir->opts.anneal_time[i]    = nullptr;
+            ir->opts.anneal_temp[i]    = nullptr;
         }
         if (nSA > 0)
         {
@@ -3889,7 +3889,7 @@ check_combination_rule_differences(const gmx_mtop_t *mtop, int state,
      */
     tol = 1e-5;
     ptr = getenv("GMX_LJCOMB_TOL");
-    if (ptr != NULL)
+    if (ptr != nullptr)
     {
         double            dbl;
         double gmx_unused canary;

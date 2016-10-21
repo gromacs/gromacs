@@ -186,7 +186,7 @@ TrajectoryAnalysisSettings::setHelpText(const ConstArrayRef<const char *> &help)
  */
 
 TopologyInformation::TopologyInformation()
-    : mtop_(NULL), top_(NULL), bTop_(false), xtop_(NULL), ePBC_(-1)
+    : mtop_(nullptr), top_(nullptr), bTop_(false), xtop_(nullptr), ePBC_(-1)
 {
     clear_mat(boxtop_);
 }
@@ -223,7 +223,7 @@ TopologyInformation::getTopologyConf(rvec **x, matrix box) const
     {
         if (!xtop_)
         {
-            *x = NULL;
+            *x = nullptr;
             GMX_THROW(APIError("Topology coordinates requested without setting efUseTopX"));
         }
         *x = xtop_;
