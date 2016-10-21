@@ -139,6 +139,8 @@ class AbstractOptionStorage
          * Returns the number of option values added so far.
          */
         virtual int valueCount() const = 0;
+        //! \copydoc OptionInfo::defaultValues()
+        virtual std::vector<Variant> defaultValues() const = 0;
         //! \copydoc OptionInfo::defaultValuesAsStrings()
         virtual std::vector<std::string> defaultValuesAsStrings() const = 0;
 

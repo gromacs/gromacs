@@ -55,12 +55,17 @@
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 
+#include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
 namespace
 {
 
-TEST(TreeValueSupportTest, AssignsFromTree)
+/********************************************************************
+ * Tests for assignOptionsFromKeyValueTree()
+ */
+
+TEST(TreeValueSupportAssignTest, AssignsFromTree)
 {
     int                      a0 = 0, a1 = 0;
     std::string              b1;
@@ -91,7 +96,7 @@ struct SectionData
     int a;
 };
 
-TEST(TreeValueSupportTest, AssignsFromTreeWithArrays)
+TEST(TreeValueSupportAssignTest, AssignsFromTreeWithArrays)
 {
     std::vector<int>         a0;
     std::vector<SectionData> s;
@@ -123,7 +128,7 @@ TEST(TreeValueSupportTest, AssignsFromTreeWithArrays)
     EXPECT_EQ(4, s[1].a);
 }
 
-TEST(TreeValueSupportErrorTest, HandlesInvalidValue)
+TEST(TreeValueSupportAssignErrorTest, HandlesInvalidValue)
 {
     int                      a1 = 0;
 
@@ -138,6 +143,72 @@ TEST(TreeValueSupportErrorTest, HandlesInvalidValue)
 
     EXPECT_THROW_GMX(gmx::assignOptionsFromKeyValueTree(&options, tree, nullptr),
                      gmx::InvalidInputError);
+}
+
+/********************************************************************
+ * Tests for adjustKeyValueTreeFromOptions()
+ */
+
+class TreeValueSupportAdjustTest : public ::testing::Test
+{
+    public:
+        void runTest()
+        {
+            gmx::test::TestReferenceData    refdata;
+            gmx::test::TestReferenceChecker checker(refdata.rootChecker());
+            gmx::KeyValueTreeObject         tree(builder_.build());
+            checker.checkKeyValueTreeObject(tree, "Input");
+            ASSERT_NO_THROW_GMX(tree = gmx::adjustKeyValueTreeFromOptions(tree, options_));
+            checker.checkKeyValueTreeObject(tree, "Output");
+        }
+
+        gmx::Options              options_;
+        gmx::KeyValueTreeBuilder  builder_;
+};
+
+TEST_F(TreeValueSupportAdjustTest, FillsDefaultValues)
+{
+    options_.addOption(gmx::IntegerOption("a").defaultValue(2));
+    runTest();
+}
+
+TEST_F(TreeValueSupportAdjustTest, FillsDefaultVectorValues)
+{
+    int v[3] = {1, 2, 3};
+    options_.addOption(gmx::IntegerOption("a").store(v).vector());
+    runTest();
+}
+
+TEST_F(TreeValueSupportAdjustTest, FillsDefaultObjectValues)
+{
+    auto sec1 = options_.addSection(gmx::OptionSection("s"));
+    sec1.addOption(gmx::IntegerOption("a").defaultValue(1));
+    auto sec2 = options_.addSection(gmx::OptionSection("r"));
+    sec2.addOption(gmx::IntegerOption("a").defaultValue(2));
+    options_.addOption(gmx::IntegerOption("a").defaultValue(3));
+    runTest();
+}
+
+TEST_F(TreeValueSupportAdjustTest, MergesDefaultValues)
+{
+    builder_.rootObject().addValue<int>("b", 1);
+    options_.addOption(gmx::IntegerOption("a").defaultValue(2));
+    options_.addOption(gmx::IntegerOption("b").defaultValue(3));
+    runTest();
+}
+
+TEST_F(TreeValueSupportAdjustTest, OrdersValues)
+{
+    builder_.rootObject().addValue<int>("a", 1);
+    builder_.rootObject().addValue<int>("c", 1);
+    builder_.rootObject().addValue<int>("b", 1);
+    options_.addOption(gmx::IntegerOption("b").defaultValue(2));
+    options_.addOption(gmx::IntegerOption("a").defaultValue(1));
+    options_.addOption(gmx::IntegerOption("c").defaultValue(3));
+    // TODO: This does not actually test the correct ordering, since the
+    // reference data is not currently order-sensitive, but the order can be
+    // checked manually from the reference data.
+    runTest();
 }
 
 } // namespace

@@ -48,6 +48,10 @@
 namespace gmx
 {
 
+/********************************************************************
+ * AbstractOptionSectionHandle
+ */
+
 // static
 IOptionSectionStorage *
 AbstractOptionSectionHandle::getStorage(internal::OptionSectionImpl *section)
@@ -69,6 +73,15 @@ AbstractOptionSectionHandle::addSectionImpl(const AbstractOptionSection &section
 OptionInfo *AbstractOptionSectionHandle::addOptionImpl(const AbstractOption &settings)
 {
     return section_->addOptionImpl(settings);
+}
+
+/********************************************************************
+ * AbstractOptionSectionInfo
+ */
+
+const std::string &AbstractOptionSectionInfo::name() const
+{
+    return section_.name_;
 }
 
 } // namespace gmx
