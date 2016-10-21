@@ -40,6 +40,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <algorithm>
 
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -51,24 +52,19 @@
 static const char *pp_pat[] = { "C", "N", "CA", "C", "N" };
 #define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))
 
-static int d_comp(const void *a, const void *b)
+static int d_comp(const t_dih &a, const t_dih &b)
 {
-    const t_dih *da, *db;
-
-    da = static_cast<const t_dih *>(a);
-    db = static_cast<const t_dih *>(b);
-
-    if (da->ai[1] < db->ai[1])
+    if (a.ai[1] < b.ai[1])
     {
-        return -1;
+        return true;
     }
-    else if (da->ai[1] == db->ai[1])
+    else if (a.ai[1] == b.ai[1])
     {
-        return (da->ai[2] - db->ai[2]);
+        return a.ai[2] < b.ai[2];
     }
     else
     {
-        return 1;
+        return false;
     }
 }
 
@@ -217,7 +213,7 @@ static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
 
         key.ai[1] = ia[2];
         key.ai[2] = ia[3];
-        if ((dd = static_cast<t_dih *>(bsearch(&key, xr->dih, xr->ndih, (size_t)sizeof(key), d_comp)))
+        if ((dd = std::equal_range(xr->dih, xr->dih+xr->ndih, key, d_comp).first)
             != NULL)
         {
             dd->mult = idef->iparams[ft].pdihs.mult;
