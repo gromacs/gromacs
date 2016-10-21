@@ -83,7 +83,7 @@ class IndexBlockTest : public ::testing::Test
 {
     public:
         IndexBlockTest();
-        ~IndexBlockTest();
+        ~IndexBlockTest() override;
 
         void setGroup(int count, const int atoms[]);
         template <int count>
@@ -369,7 +369,7 @@ class IndexMapTest : public ::testing::Test
 {
     public:
         IndexMapTest();
-        ~IndexMapTest();
+        ~IndexMapTest() override;
 
         void testInit(int atomCount, const int atoms[], e_index_t type);
         void testUpdate(int atomCount, const int atoms[], bool bMaskOnly,

@@ -136,8 +136,8 @@ class OptionsFilter : public OptionsVisitor
                             IOptionsFormatter         *formatter,
                             const Options             &options);
 
-        virtual void visitSection(const OptionSectionInfo &section);
-        virtual void visitOption(const OptionInfo &option);
+        void visitSection(const OptionSectionInfo &section) override;
+        void visitOption(const OptionInfo &option) override;
 
     private:
         IOptionsFormatter              *formatter_;
@@ -332,7 +332,7 @@ class SynopsisFormatter : public IOptionsFormatter
         //! Finishes formatting the synopsis.
         void finish();
 
-        virtual void formatOption(const OptionInfo &option);
+        void formatOption(const OptionInfo &option) override;
 
     private:
         const HelpWriterContext &context_;
@@ -429,7 +429,7 @@ class OptionsListFormatter : public IOptionsFormatter
             }
         }
 
-        virtual void formatOption(const OptionInfo &option);
+        void formatOption(const OptionInfo &option) override;
 
     private:
         void writeSectionStartIfNecessary()

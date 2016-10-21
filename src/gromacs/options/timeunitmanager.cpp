@@ -190,14 +190,14 @@ class TimeOptionScaler : public OptionsModifyingTypeVisitor<FloatingPointOptionI
         //! Initializes a scaler with the given factor.
         explicit TimeOptionScaler(double factor) : factor_(factor) {}
 
-        void visitSection(OptionSectionInfo *section)
+        void visitSection(OptionSectionInfo *section) override
         {
             OptionsModifyingIterator iterator(section);
             iterator.acceptSections(this);
             iterator.acceptOptions(this);
         }
 
-        void visitOptionType(FloatingPointOptionInfo *option)
+        void visitOptionType(FloatingPointOptionInfo *option) override
         {
             if (option->isTime())
             {

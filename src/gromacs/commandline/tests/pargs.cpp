@@ -78,7 +78,7 @@ class ParseCommonArgsTest : public ::testing::Test
             : oenv_(nullptr), fileCount_(0)
         {
         }
-        virtual ~ParseCommonArgsTest()
+        ~ParseCommonArgsTest() override
         {
             output_env_done(oenv_);
         }

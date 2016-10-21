@@ -71,7 +71,7 @@ class OptionSection : public AbstractOptionSection
         explicit OptionSection(const char *name) : AbstractOptionSection(name) {}
 
     private:
-        virtual IOptionSectionStorage *createStorage() const;
+        IOptionSectionStorage *createStorage() const override;
 };
 
 /*! \brief

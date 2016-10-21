@@ -70,10 +70,10 @@ class FileNameOptionStorage : public OptionStorageTemplateSimple<std::string>
         FileNameOptionStorage(const FileNameOption  &settings,
                               FileNameOptionManager *manager);
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const;
-        virtual std::string formatExtraDescription() const;
-        virtual std::string formatSingleValue(const std::string &value) const;
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override;
+        std::string formatExtraDescription() const override;
+        std::string formatSingleValue(const std::string &value) const override;
 
         //! \copydoc FileNameOptionInfo::isInputFile()
         bool isInputFile() const { return bRead_ && !bWrite_; }
@@ -100,9 +100,9 @@ class FileNameOptionStorage : public OptionStorageTemplateSimple<std::string>
         ConstArrayRef<int> fileTypes() const;
 
     private:
-        virtual void initConverter(ConverterType *converter);
-        virtual std::string processValue(const std::string &value);
-        virtual void processAll();
+        void initConverter(ConverterType *converter) override;
+        std::string processValue(const std::string &value) override;
+        void processAll() override;
 
         FileNameOptionInfo      info_;
         FileNameOptionManager  *manager_;

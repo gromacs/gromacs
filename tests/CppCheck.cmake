@@ -109,6 +109,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=unusedStructMember:src/gromacs/commandline/cmdlinehelpmodule.cpp
         --suppress=unusedStructMember:src/gromacs/selection/selhelp.cpp
         --suppress=redundantPointerOp:src/gromacs/fileio/gmxfio-xdr.cpp
+        --suppress=unusedPrivateFunction #1.76.1 too often wrong with override
         --suppress=passedByValue # See comment below
         )
         # Passing non-trivial objects by value is rarely a problem for

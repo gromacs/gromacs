@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -151,7 +151,7 @@ class CommandLineProgramContext : public IProgramContext
          */
         CommandLineProgramContext(int argc, const char *const argv[],
                                   ExecutableEnvironmentPointer env);
-        virtual ~CommandLineProgramContext();
+        ~CommandLineProgramContext() override;
 
         /*! \brief
          * Sets a display name for the binary.
@@ -174,7 +174,7 @@ class CommandLineProgramContext : public IProgramContext
          *
          * Does not throw.
          */
-        virtual const char *programName() const;
+        const char *programName() const override;
         /*! \brief
          * Returns a display name of the current module.
          *
@@ -183,7 +183,7 @@ class CommandLineProgramContext : public IProgramContext
          *
          * Does not throw.
          */
-        virtual const char *displayName() const;
+        const char *displayName() const override;
         /*! \brief
          * Returns the full path of the running binary.
          *
@@ -192,7 +192,7 @@ class CommandLineProgramContext : public IProgramContext
          *
          * Returns argv[0] if there was an error in finding the absolute path.
          */
-        virtual const char *fullBinaryPath() const;
+        const char *fullBinaryPath() const override;
         /*! \brief
          * Returns the installation prefix (for finding \Gromacs data files).
          *
@@ -202,13 +202,13 @@ class CommandLineProgramContext : public IProgramContext
          * Returns a hardcoded path set during configuration time if there is
          * an error in finding the library data files.
          */
-        virtual InstallationPrefixInfo installationPrefix() const;
+        InstallationPrefixInfo installationPrefix() const override;
         /*! \brief
          * Returns the full command line used to invoke the binary.
          *
          * Does not throw.
          */
-        virtual const char *commandLine() const;
+        const char *commandLine() const override;
 
     private:
         class Impl;

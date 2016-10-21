@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,8 +71,8 @@ namespace
 class DefaultInputRedirector : public IFileInputRedirector
 {
     public:
-        virtual bool fileExists(const char            *filename,
-                                File::NotFoundHandler  onNotFound) const
+        bool fileExists(const char            *filename,
+                        File::NotFoundHandler  onNotFound) const override
         {
             return File::exists(filename, onNotFound);
         }
@@ -90,11 +90,11 @@ class DefaultInputRedirector : public IFileInputRedirector
 class DefaultOutputRedirector : public IFileOutputRedirector
 {
     public:
-        virtual TextOutputStream &standardOutput()
+        TextOutputStream &standardOutput() override
         {
             return TextOutputFile::standardOutput();
         }
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
+        TextOutputStreamPointer openTextOutputFile(const char *filename) override
         {
             return TextOutputStreamPointer(new TextOutputFile(filename));
         }

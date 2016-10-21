@@ -148,24 +148,24 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         ElectricField() : fpField_(nullptr) {}
 
         // From IInputRecExtension
-        virtual void doTpxIO(t_fileio *fio, bool bRead);
-        virtual void readMdp(int *ninp_p, t_inpfile **inp_p, warninp *wi);
-        virtual void broadCast(const t_commrec *cr);
-        virtual void compare(FILE                     *fp,
-                             const IInputRecExtension *field2,
-                             real                      reltol,
-                             real                      abstol);
-        virtual void printParameters(FILE *fp, int indent);
-        virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
-                                bool bAppendFiles, const gmx_output_env_t *oenv);
-        virtual void finishOutput();
-        virtual void initForcerec(t_forcerec *fr);
+        void doTpxIO(t_fileio *fio, bool bRead) override;
+        void readMdp(int *ninp_p, t_inpfile **inp_p, warninp *wi) override;
+        void broadCast(const t_commrec *cr) override;
+        void compare(FILE                     *fp,
+                     const IInputRecExtension *field2,
+                     real                      reltol,
+                     real                      abstol) override;
+        void printParameters(FILE *fp, int indent) override;
+        void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                        bool bAppendFiles, const gmx_output_env_t *oenv) override;
+        void finishOutput() override;
+        void initForcerec(t_forcerec *fr) override;
 
         // From IForceProvider
-        virtual void calculateForces(const t_commrec  *cr,
-                                     const t_mdatoms  *atoms,
-                                     PaddedRVecVector *force,
-                                     double            t);
+        void calculateForces(const t_commrec  *cr,
+                             const t_mdatoms  *atoms,
+                             PaddedRVecVector *force,
+                             double            t) override;
 
     private:
         /*! \brief Extract relevant fields from an mdp file

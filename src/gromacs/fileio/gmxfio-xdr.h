@@ -143,13 +143,13 @@ class FileIOXdrSerializer : public ISerializer
     public:
         explicit FileIOXdrSerializer(t_fileio *fio) : fio_(fio) {}
 
-        virtual bool reading() const;
+        bool reading() const override;
 
-        virtual void doUChar(unsigned char *value);
-        virtual void doInt(int *value);
-        virtual void doFloat(float *value);
-        virtual void doDouble(double *value);
-        virtual void doString(std::string *value);
+        void doUChar(unsigned char *value) override;
+        void doInt(int *value) override;
+        void doFloat(float *value) override;
+        void doDouble(double *value) override;
+        void doString(std::string *value) override;
 
     private:
         t_fileio *fio_;

@@ -156,7 +156,7 @@ class SelectionOptionBehavior : public IOptionsBehavior
          */
         SelectionOptionBehavior(SelectionCollection *selections,
                                 ITopologyProvider   *topologyProvider);
-        ~SelectionOptionBehavior();
+        ~SelectionOptionBehavior() override;
 
         /*! \brief
          * Add common options for controlling selections.
@@ -167,9 +167,9 @@ class SelectionOptionBehavior : public IOptionsBehavior
         void initOptions(IOptionsContainer *options);
 
         // From IOptionsBehavior
-        virtual void initBehavior(Options *options);
-        virtual void optionsFinishing(Options * /*options*/) {}
-        virtual void optionsFinished();
+        void initBehavior(Options *options) override;
+        void optionsFinishing(Options * /*options*/) override {}
+        void optionsFinished() override;
 
     private:
         class Impl;

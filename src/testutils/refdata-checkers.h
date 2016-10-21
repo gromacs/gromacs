@@ -78,9 +78,9 @@ class IReferenceDataEntryChecker
 class NullChecker : public IReferenceDataEntryChecker
 {
     public:
-        virtual void fillEntry(ReferenceDataEntry *) const {}
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &, const std::string &) const
+        void fillEntry(ReferenceDataEntry *) const override {}
+        ::testing::AssertionResult
+        checkEntry(const ReferenceDataEntry &, const std::string &) const override
         {
             return ::testing::AssertionSuccess();
         }
@@ -94,12 +94,12 @@ class ExactStringChecker : public IReferenceDataEntryChecker
         {
         }
 
-        virtual void fillEntry(ReferenceDataEntry *entry) const
+        void fillEntry(ReferenceDataEntry *entry) const override
         {
             entry->setValue(value_);
         }
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+        ::testing::AssertionResult
+        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const override
         {
             if (entry.value() == value_)
             {
@@ -123,12 +123,12 @@ class ExactStringBlockChecker : public IReferenceDataEntryChecker
         {
         }
 
-        virtual void fillEntry(ReferenceDataEntry *entry) const
+        void fillEntry(ReferenceDataEntry *entry) const override
         {
             entry->setTextBlockValue(value_);
         }
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+        ::testing::AssertionResult
+        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const override
         {
             if (entry.value() == value_)
             {
@@ -167,13 +167,13 @@ class FloatingPointChecker : public IReferenceDataEntryChecker
         {
         }
 
-        virtual void fillEntry(ReferenceDataEntry *entry) const
+        void fillEntry(ReferenceDataEntry *entry) const override
         {
             const int prec = std::numeric_limits<FloatType>::digits10 + 2;
             entry->setValue(formatString("%.*g", prec, value_));
         }
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+        ::testing::AssertionResult
+        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const override
         {
             FloatType               refValue = static_cast<FloatType>(convertDoubleReferenceValue(entry.value()));
             FloatingPointDifference diff(refValue, value_);
@@ -204,12 +204,12 @@ class FloatingPointFromStringChecker : public IReferenceDataEntryChecker
         {
         }
 
-        virtual void fillEntry(ReferenceDataEntry *entry) const
+        void fillEntry(ReferenceDataEntry *entry) const override
         {
             entry->setValue(value_);
         }
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const
+        ::testing::AssertionResult
+        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const override
         {
             FloatType               value    = fromString<FloatType>(value_);
             FloatType               refValue = static_cast<FloatType>(convertDoubleReferenceValue(entry.value()));
@@ -240,12 +240,12 @@ class ValueExtractor : public IReferenceDataEntryChecker
         {
         }
 
-        virtual void fillEntry(ReferenceDataEntry *) const
+        void fillEntry(ReferenceDataEntry *) const override
         {
             GMX_THROW(TestException("Extracting value from non-existent reference data entry"));
         }
-        virtual ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &) const
+        ::testing::AssertionResult
+        checkEntry(const ReferenceDataEntry &entry, const std::string &) const override
         {
             extractValue(entry.value());
             return ::testing::AssertionSuccess();

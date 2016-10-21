@@ -49,7 +49,7 @@ namespace
 class DefaultKeyValueTreeErrorHandler : public IKeyValueTreeErrorHandler
 {
     public:
-        virtual bool onError(UserInputError *ex, const KeyValueTreePath &context)
+        bool onError(UserInputError *ex, const KeyValueTreePath &context) override
         {
             std::string message
                 = formatString("While processing '%s':", context.toString().c_str());

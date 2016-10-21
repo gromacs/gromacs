@@ -89,7 +89,7 @@ class StructureIORoundtripTest : public gmx::test::StringTestBase,
             testFilename_ =
                 fileManager_.getTemporaryFilePath(getFileSuffix("test"));
         }
-        ~StructureIORoundtripTest()
+        ~StructureIORoundtripTest() override
         {
             if (testTop_ != nullptr)
             {

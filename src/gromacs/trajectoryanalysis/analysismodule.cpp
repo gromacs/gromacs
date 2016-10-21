@@ -242,7 +242,7 @@ class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
                                           const AnalysisDataParallelOptions &opt,
                                           const SelectionCollection         &selections);
 
-        virtual void finish();
+        void finish() override;
 };
 
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(

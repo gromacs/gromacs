@@ -89,16 +89,16 @@ class FreeVolume : public TrajectoryAnalysisModule
 {
     public:
         FreeVolume();
-        virtual ~FreeVolume() {};
+        ~FreeVolume() override {};
 
-        virtual void initOptions(IOptionsContainer          *options,
-                                 TrajectoryAnalysisSettings *settings);
-        virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation        &top);
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                  TrajectoryAnalysisModuleData *pdata);
-        virtual void finishAnalysis(int nframes);
-        virtual void writeOutput();
+        void initOptions(IOptionsContainer          *options,
+                         TrajectoryAnalysisSettings *settings) override;
+        void initAnalysis(const TrajectoryAnalysisSettings &settings,
+                          const TopologyInformation        &top) override;
+        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+                          TrajectoryAnalysisModuleData *pdata) override;
+        void finishAnalysis(int nframes) override;
+        void writeOutput() override;
 
     private:
         std::string                       fnFreevol_;
