@@ -68,19 +68,19 @@ int gmx_saxs(int argc, char *argv[])
          "Energy of the incoming X-ray (keV) "}
     };
 #define NPA asize(pa)
-    const char       *fnTPS, *fnTRX, *fnNDX, *fnDAT = NULL;
+    const char       *fnTPS, *fnTRX, *fnNDX, *fnDAT = nullptr;
     gmx_output_env_t *oenv;
 
     t_filenm          fnm[] = {
-        { efTRX, "-f",  NULL,      ffREAD },
-        { efTPS, NULL,  NULL,      ffREAD },
-        { efNDX, NULL,  NULL,      ffOPTRD },
+        { efTRX, "-f",  nullptr,      ffREAD },
+        { efTPS, nullptr,  nullptr,      ffREAD },
+        { efNDX, nullptr,  nullptr,      ffOPTRD },
         { efDAT, "-d",  "sfactor", ffOPTRD },
         { efXVG, "-sq", "sq",      ffWRITE },
     };
 #define NFILE asize(fnm)
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }

@@ -108,7 +108,7 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
     else
     {
         tabscale        = 0;
-        VFtab           = NULL;
+        VFtab           = nullptr;
     }
 
     /* avoid compiler warnings for cases that cannot happen */

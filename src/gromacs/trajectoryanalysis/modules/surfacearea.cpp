@@ -574,7 +574,7 @@ nsc_dclm_pbc(const rvec *coords, const ConstArrayRef<real> &radius, int nat,
         return;
     }
     real        area = 0.0, vol = 0.0;
-    real       *dots = NULL, *atom_area = NULL;
+    real       *dots = nullptr, *atom_area = nullptr;
     int         lfnr = 0, maxdots = 0;
     if (mode & FLAG_VOLUME)
     {
@@ -806,7 +806,7 @@ void SurfaceAreaCalculator::calculate(
 {
     flags |= impl_->flags_;
     *area  = 0;
-    if (volume == NULL)
+    if (volume == nullptr)
     {
         flags &= ~FLAG_VOLUME;
     }
@@ -814,23 +814,23 @@ void SurfaceAreaCalculator::calculate(
     {
         *volume = 0;
     }
-    if (at_area == NULL)
+    if (at_area == nullptr)
     {
         flags &= ~FLAG_ATOM_AREA;
     }
     else
     {
-        *at_area = NULL;
+        *at_area = nullptr;
     }
-    if (lidots == NULL)
+    if (lidots == nullptr)
     {
         flags &= ~FLAG_DOTS;
     }
     else
     {
-        *lidots = NULL;
+        *lidots = nullptr;
     }
-    if (n_dots == NULL)
+    if (n_dots == nullptr)
     {
         flags &= ~FLAG_DOTS;
     }

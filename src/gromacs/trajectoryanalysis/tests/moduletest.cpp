@@ -109,7 +109,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::Impl::module()
 void
 AbstractTrajectoryAnalysisModuleTestFixture::Impl::ensureModuleCreated()
 {
-    if (module_.get() == NULL)
+    if (module_.get() == nullptr)
     {
         module_ = parent_.createModule();
         const std::vector<std::string>          &datasetNames(module_->datasetNames());

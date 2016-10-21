@@ -72,7 +72,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
     const real         *x;
     gmx_bool            bEner;
     gmx_bool            bEwald;
-    const real         *Ftab = NULL;
+    const real         *Ftab = nullptr;
     real                rcut2, rvdw2, rlist2;
     int                 ntype;
     real                facel;

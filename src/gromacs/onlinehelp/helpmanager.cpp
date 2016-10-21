@@ -136,7 +136,7 @@ void HelpManager::enterTopic(const char *name)
                                        impl_->currentTopicAsString().c_str())));
     }
     const IHelpTopic *newTopic = topic.findSubTopic(name);
-    if (newTopic == NULL)
+    if (newTopic == nullptr)
     {
         if (impl_->isAtRootTopic())
         {
@@ -163,7 +163,7 @@ void HelpManager::writeCurrentTopic() const
     const IHelpTopic         &topic = impl_->currentTopic();
     const char               *title = topic.title();
     HelpWriterContext         context(impl_->rootContext_);
-    context.enterSubSection(title != NULL ? title : "");
+    context.enterSubSection(title != nullptr ? title : "");
     topic.writeHelp(context);
 }
 

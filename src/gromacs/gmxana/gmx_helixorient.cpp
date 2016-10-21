@@ -76,9 +76,9 @@ int gmx_helixorient(int argc, char *argv[])
         "purposes, we also write out the actual Euler rotation angles as [TT]theta[1-3].xvg[tt]"
     };
 
-    t_topology       *top = NULL;
+    t_topology       *top = nullptr;
     real              t;
-    rvec             *x = NULL;
+    rvec             *x = nullptr;
     matrix            box;
     t_trxstatus      *status;
     int               natoms;
@@ -132,7 +132,7 @@ int gmx_helixorient(int argc, char *argv[])
     int               ePBC;
 
     gmx_output_env_t *oenv;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
 
     static  gmx_bool  bSC          = FALSE;
     static gmx_bool   bIncremental = FALSE;
@@ -146,9 +146,9 @@ int gmx_helixorient(int argc, char *argv[])
 #define NPA asize(pa)
 
     t_filenm fnm[] = {
-        { efTPR, NULL, NULL, ffREAD },
-        { efTRX, "-f", NULL, ffREAD },
-        { efNDX, NULL, NULL, ffOPTRD },
+        { efTPR, nullptr, nullptr, ffREAD },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
         { efDAT, "-oaxis",    "helixaxis", ffWRITE },
         { efDAT, "-ocenter",  "center", ffWRITE },
         { efXVG, "-orise",    "rise", ffWRITE },
@@ -161,7 +161,7 @@ int gmx_helixorient(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }

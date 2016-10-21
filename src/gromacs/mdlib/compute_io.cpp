@@ -75,7 +75,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
     {
         for (i = 0; i < natoms; i++)
         {
-            if (groups->grpnr[egcCompressedX] == NULL || groups->grpnr[egcCompressedX][i] == 0)
+            if (groups->grpnr[egcCompressedX] == nullptr || groups->grpnr[egcCompressedX][i] == 0)
             {
                 nxtcatoms++;
             }
@@ -145,7 +145,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
             }
         }
     }
-    if (ir->pull != NULL)
+    if (ir->pull != nullptr)
     {
         cio += div_nsteps(nsteps, ir->pull->nstxout)*20; /* roughly 20 chars per line */
         cio += div_nsteps(nsteps, ir->pull->nstfout)*20; /* roughly 20 chars per line */

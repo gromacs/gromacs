@@ -80,7 +80,7 @@ bool TestFileInputRedirector::fileExists(const char            *filename,
 {
     if (existingFiles_.count(filename) == 0)
     {
-        File::NotFoundInfo info(filename, "File not present in test", NULL, false, 0);
+        File::NotFoundInfo info(filename, "File not present in test", nullptr, false, 0);
         onNotFound(info);
         return false;
     }

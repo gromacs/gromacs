@@ -62,7 +62,7 @@ gmx_sparsematrix_init(int                    nrow)
     {
         A->ndata[i]    = 0;
         A->nalloc[i]   = 0;
-        A->data[i]     = NULL;
+        A->data[i]     = nullptr;
     }
     return A;
 }
@@ -77,7 +77,7 @@ gmx_sparsematrix_destroy(gmx_sparsematrix_t *   A)
     /* Release each row */
     for (i = 0; i < A->nrow; i++)
     {
-        if (A->data[i] != NULL)
+        if (A->data[i] != nullptr)
         {
             sfree(A->data[i]);
         }
@@ -186,7 +186,7 @@ gmx_sparsematrix_increment_value(gmx_sparsematrix_t *    A,
         if (A->ndata[row] == A->nalloc[row])
         {
             A->nalloc[row] += 100;
-            if (A->data[row] == NULL)
+            if (A->data[row] == nullptr)
             {
                 snew(A->data[row], A->nalloc[row]);
             }

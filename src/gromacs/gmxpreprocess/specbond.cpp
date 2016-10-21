@@ -70,7 +70,7 @@ t_specbond *get_specbonds(int *nspecbond)
 {
     const char  *sbfile = "specbond.dat";
 
-    t_specbond  *sb = NULL;
+    t_specbond  *sb = nullptr;
     char         r1buf[32], r2buf[32], a1buf[32], a2buf[32], nr1buf[32], nr2buf[32];
     double       length;
     int          nb1, nb2;
@@ -226,8 +226,8 @@ static void rename_1res(t_atoms *pdba, int resind, char *newres, gmx_bool bVerbo
 int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
                  t_ssbond **specbonds, gmx_bool bVerbose)
 {
-    t_specbond *sb    = NULL;
-    t_ssbond   *bonds = NULL;
+    t_specbond *sb    = nullptr;
+    t_ssbond   *bonds = nullptr;
     int         nsb;
     int         nspec, nbonds;
     int        *specp, *sgp;

@@ -457,10 +457,10 @@ class HelpWriterContext::Impl
                     {
                         consoleOptionsFormatter_.reset(new TextTableFormatter());
                         consoleOptionsFormatter_->setFirstColumnIndent(1);
-                        consoleOptionsFormatter_->addColumn(NULL, 7, false);
-                        consoleOptionsFormatter_->addColumn(NULL, 18, false);
-                        consoleOptionsFormatter_->addColumn(NULL, 16, false);
-                        consoleOptionsFormatter_->addColumn(NULL, 28, false);
+                        consoleOptionsFormatter_->addColumn(nullptr, 7, false);
+                        consoleOptionsFormatter_->addColumn(nullptr, 18, false);
+                        consoleOptionsFormatter_->addColumn(nullptr, 16, false);
+                        consoleOptionsFormatter_->addColumn(nullptr, 28, false);
                     }
                     return *consoleOptionsFormatter_;
                 }
@@ -540,7 +540,7 @@ class HelpWriterContext::Impl
 std::string HelpWriterContext::Impl::replaceLinks(const std::string &input) const
 {
     std::string result(input);
-    if (state_->links_ != NULL)
+    if (state_->links_ != nullptr)
     {
         HelpLinks::Impl::LinkList::const_iterator link;
         for (link  = state_->links_->impl_->links_.begin();
@@ -603,7 +603,7 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
  */
 
 HelpWriterContext::HelpWriterContext(TextWriter *writer, HelpOutputFormat format)
-    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(writer, format, NULL)), 0))
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(writer, format, nullptr)), 0))
 {
 }
 
@@ -611,7 +611,7 @@ HelpWriterContext::HelpWriterContext(TextWriter *writer, HelpOutputFormat format
                                      const HelpLinks *links)
     : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(writer, format, links)), 0))
 {
-    if (links != NULL)
+    if (links != nullptr)
     {
         GMX_RELEASE_ASSERT(links->impl_->format_ == format,
                            "Links must have the same output format as the context");

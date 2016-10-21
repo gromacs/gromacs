@@ -224,7 +224,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
             {
                 wallcycle_start(wcycle, ewcMoveE);
                 global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
-                            ir, ekind, constr, bStopCM ? vcm : NULL,
+                            ir, ekind, constr, bStopCM ? vcm : nullptr,
                             signalBuffer.size(), signalBuffer.data(),
                             totalNumberOfBondedInteractions,
                             *bSumEkinhOld, flags);
@@ -631,7 +631,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     }
     if (ir->eSwapCoords != eswapNO)
     {
-        if (state->swapstate == NULL)
+        if (state->swapstate == nullptr)
         {
             snew(state->swapstate, 1);
         }

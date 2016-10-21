@@ -79,7 +79,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
         eb->e_sim[i].eav  = 0;
         eb->e_sim[i].esum = 0;
         eb->enm[i].name   = gmx_strdup(enm[i-index]);
-        if (unit != NULL)
+        if (unit != nullptr)
         {
             eb->enm[i].unit = gmx_strdup(unit);
         }

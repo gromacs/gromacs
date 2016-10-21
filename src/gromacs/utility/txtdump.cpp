@@ -66,7 +66,7 @@ int available(FILE *fp, const void *p, int indent, const char *title)
         }
         fprintf(fp, "%s: not available\n", title);
     }
-    return (p != NULL);
+    return (p != nullptr);
 }
 
 int pr_title(FILE *fp, int indent, const char *title)
@@ -129,7 +129,7 @@ void pr_reals_of_dim(FILE *fp, int indent, const char *title, const real *vec, i
     const char *flong  = "%15.8e";
     const char *format;
 
-    if (getenv("GMX_PRINT_LONGFORMAT") != NULL)
+    if (getenv("GMX_PRINT_LONGFORMAT") != nullptr)
     {
         format = flong;
     }

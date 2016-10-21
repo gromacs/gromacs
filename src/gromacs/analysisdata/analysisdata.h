@@ -260,7 +260,7 @@ class AnalysisDataHandle
         AnalysisDataHandle();
 
         //! Returns whether this data handle is valid.
-        bool isValid() const { return impl_ != NULL; }
+        bool isValid() const { return impl_ != nullptr; }
 
         /*! \brief
          * Start data for a new frame.

@@ -89,7 +89,7 @@ void dd_move_x_vsites(gmx_domdec_t *dd, matrix box, rvec *x)
 {
     if (dd->vsite_comm)
     {
-        dd_move_x_specat(dd, dd->vsite_comm, box, x, NULL, FALSE);
+        dd_move_x_specat(dd, dd->vsite_comm, box, x, nullptr, FALSE);
     }
 }
 

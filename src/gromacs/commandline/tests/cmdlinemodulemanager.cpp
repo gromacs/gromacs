@@ -120,7 +120,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSingleModule)
     };
     CommandLine       args(cmdline);
     initManager(args, "g_module");
-    MockModule        mod(NULL, NULL);
+    MockModule        mod(nullptr, nullptr);
     manager().setSingleModule(&mod);
     using ::testing::_;
     EXPECT_CALL(mod, writeHelp(_));

@@ -87,9 +87,9 @@ void init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir, FILE *fp)
     (*et)->ny       = ir->nky+1;
     (*et)->nz       = ir->nkz+1;
     (*et)->kmax     = std::max((*et)->nx, std::max((*et)->ny, (*et)->nz));
-    (*et)->eir      = NULL;
-    (*et)->tab_xy   = NULL;
-    (*et)->tab_qxyz = NULL;
+    (*et)->eir      = nullptr;
+    (*et)->tab_xy   = nullptr;
+    (*et)->tab_qxyz = nullptr;
 }
 
 //! Calculates wave vectors.
@@ -151,7 +151,7 @@ real do_ewald(t_inputrec *ir,
     real     tmp, cs, ss, ak, akv, mx, my, mz, m2, scale;
     gmx_bool bFreeEnergy;
 
-    if (cr != NULL)
+    if (cr != nullptr)
     {
         if (PAR(cr))
         {

@@ -81,7 +81,7 @@ class SelectionParserSymbol::Impl
          * \a var_ members as appropriate.
          */
         Impl(SymbolType type, const char *name)
-            : name_(name), type_(type), meth_(NULL)
+            : name_(name), type_(type), meth_(nullptr)
         {
         }
 
@@ -204,7 +204,7 @@ SelectionParserSymbolTable::Impl::addPositionSymbols()
 {
     const char *const *postypes
         = gmx::PositionCalculationCollection::typeEnumValues;
-    for (int i = 0; postypes[i] != NULL; ++i)
+    for (int i = 0; postypes[i] != nullptr; ++i)
     {
         SymbolPointer sym(new SelectionParserSymbol(
                                   new SelectionParserSymbol::Impl(
@@ -320,13 +320,13 @@ SelectionParserSymbolTable::findSymbol(const std::string &name) const
     Impl::SymbolMap::const_iterator sym = impl_->symbols_.lower_bound(name);
     if (sym == impl_->symbols_.end())
     {
-        return NULL;
+        return nullptr;
     }
     if (sym->second->name() == name)
     {
         return sym->second.get();
     }
-    return NULL;
+    return nullptr;
 }
 
 SelectionParserSymbolIterator

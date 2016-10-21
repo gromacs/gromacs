@@ -96,8 +96,8 @@ int search_atom(const char *type, int start,
     t_atom         *at     = atoms->atom;
     char ** const * anm    = atoms->atomname;
 
-    bPrevious = (strchr(type, '-') != NULL);
-    bNext     = (strchr(type, '+') != NULL);
+    bPrevious = (strchr(type, '-') != nullptr);
+    bNext     = (strchr(type, '+') != nullptr);
 
     if (!bPrevious)
     {

@@ -96,7 +96,7 @@ bool isRelevantXvgCommand(const std::string &line)
 //! Helper function to check a single xvg value in a sequence.
 void checkXvgDataPoint(TestReferenceChecker *checker, const std::string &value)
 {
-    checker->checkRealFromString(value, NULL);
+    checker->checkRealFromString(value, nullptr);
 }
 
 }       // namespace

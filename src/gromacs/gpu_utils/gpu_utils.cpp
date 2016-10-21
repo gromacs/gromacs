@@ -49,6 +49,6 @@ void gpu_set_host_malloc_and_free(bool,
                                   gmx_host_alloc_t **nb_alloc,
                                   gmx_host_free_t  **nb_free)
 {
-    *nb_alloc = NULL;
-    *nb_free  = NULL;
+    *nb_alloc = nullptr;
+    *nb_free  = nullptr;
 }

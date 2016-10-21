@@ -396,14 +396,14 @@ int gmx_view(int argc, char *argv[])
 
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
-        { efTRX, "-f", NULL, ffREAD },
-        { efTPR, NULL, NULL, ffREAD },
-        { efNDX, NULL, NULL, ffOPTRD }
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPR, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD }
     };
 #define NFILE asize(fnm)
 
     if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
-                          0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
+                          0, nullptr, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
 #if !GMX_X11
         std::fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");

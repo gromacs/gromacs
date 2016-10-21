@@ -66,8 +66,8 @@ gmx_residuetype_init(gmx_residuetype_t **prt)
     *prt = rt;
 
     rt->n        = 0;
-    rt->resname  = NULL;
-    rt->restype  = NULL;
+    rt->resname  = nullptr;
+    rt->restype  = nullptr;
 
     db = libopen("residuetypes.dat");
 
@@ -158,7 +158,7 @@ gmx_residuetype_get_alltypes(gmx_residuetype_t   *rt,
                              int *                ntypes)
 {
     int          n           = 0;
-    const char **my_typename = NULL;
+    const char **my_typename = nullptr;
 
     if (rt->n > 0)
     {
@@ -280,6 +280,6 @@ gmx_residuetype_get_name(gmx_residuetype_t *rt, int index)
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }

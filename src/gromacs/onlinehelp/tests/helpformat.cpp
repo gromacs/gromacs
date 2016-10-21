@@ -88,9 +88,9 @@ TEST_F(TextTableFormatterTest, HandlesBasicCase)
 
 TEST_F(TextTableFormatterTest, HandlesEmptyColumnTitles)
 {
-    formatter_.addColumn(NULL, 4, false);
+    formatter_.addColumn(nullptr, 4, false);
     formatter_.addColumn("", 4, false);
-    formatter_.addColumn(NULL, 14, true);
+    formatter_.addColumn(nullptr, 14, true);
     formatter_.addColumn("", 14, true);
 
     formatter_.clear();

@@ -96,13 +96,13 @@ class OptionManagerContainer
         template <class ManagerType>
         ManagerType *get() const
         {
-            ManagerType *result = NULL;
+            ManagerType *result = nullptr;
             for (ListType::const_iterator i = list_.begin(); i != list_.end(); ++i)
             {
                 ManagerType *curr = dynamic_cast<ManagerType *>(*i);
-                if (curr != NULL)
+                if (curr != nullptr)
                 {
-                    GMX_RELEASE_ASSERT(result == NULL,
+                    GMX_RELEASE_ASSERT(result == nullptr,
                                        "More than one applicable option manager is set");
                     result = curr;
                 }

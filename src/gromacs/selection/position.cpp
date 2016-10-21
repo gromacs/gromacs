@@ -52,9 +52,9 @@
 
 gmx_ana_pos_t::gmx_ana_pos_t()
 {
-    x = NULL;
-    v = NULL;
-    f = NULL;
+    x = nullptr;
+    v = nullptr;
+    f = nullptr;
     gmx_ana_indexmap_clear(&m);
     nalloc_x = 0;
 }
@@ -183,7 +183,7 @@ gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
     copy_rvec(x, pos->x[0]);
     clear_rvec(pos->v[0]);
     clear_rvec(pos->f[0]);
-    gmx_ana_indexmap_init(&pos->m, NULL, NULL, INDEX_UNKNOWN);
+    gmx_ana_indexmap_init(&pos->m, nullptr, nullptr, INDEX_UNKNOWN);
 }
 
 /*!

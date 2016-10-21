@@ -78,14 +78,14 @@ int gmx_rama(int argc, char *argv[])
     int               j;
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
-        { efTRX, "-f", NULL,  ffREAD },
-        { efTPR, NULL, NULL,  ffREAD },
-        { efXVG, NULL, "rama", ffWRITE }
+        { efTRX, "-f", nullptr,  ffREAD },
+        { efTPR, nullptr, nullptr,  ffREAD },
+        { efXVG, nullptr, "rama", ffWRITE }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, 0, NULL, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, 0, nullptr, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -114,7 +114,7 @@ int gmx_rama(int argc, char *argv[])
     fprintf(stderr, "\n");
     xvgrclose(out);
 
-    do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
+    do_view(oenv, ftp2fn(efXVG, NFILE, fnm), nullptr);
 
     return 0;
 }

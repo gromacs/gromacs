@@ -67,10 +67,10 @@ class HelpWriterContextTest : public gmx::test::StringTestBase
                             gmx::HelpOutputFormat  format,
                             const char            *id)
         {
-            gmx::HelpWriterContext context(NULL, format);
+            gmx::HelpWriterContext context(nullptr, format);
             std::string            result
                 = context.substituteMarkupAndWrapToString(settings_, text);
-            if (id == NULL)
+            if (id == nullptr)
             {
                 switch (format)
                 {
@@ -89,8 +89,8 @@ class HelpWriterContextTest : public gmx::test::StringTestBase
         void testFormatting(const gmx::ConstArrayRef<const char *> &text)
         {
             std::string testText = gmx::joinStrings(text, "\n");
-            testFormatting(testText, gmx::eHelpOutputFormat_Console, NULL);
-            testFormatting(testText, gmx::eHelpOutputFormat_Rst, NULL);
+            testFormatting(testText, gmx::eHelpOutputFormat_Console, nullptr);
+            testFormatting(testText, gmx::eHelpOutputFormat_Rst, nullptr);
         }
 
         gmx::TextLineWrapperSettings settings_;

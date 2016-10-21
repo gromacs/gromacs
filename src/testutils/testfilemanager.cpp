@@ -112,7 +112,7 @@ class TestFileManager::Impl
 };
 
 std::string TestFileManager::Impl::s_inputDirectory;
-const char *TestFileManager::Impl::s_globalOutputTempDirectory = NULL;
+const char *TestFileManager::Impl::s_globalOutputTempDirectory = nullptr;
 /** Controls whether TestFileManager should delete temporary files
     after the test finishes. */
 static bool g_bDeleteFilesAfterTest = true;
@@ -206,7 +206,7 @@ const char *TestFileManager::getInputDataDirectory()
 
 const char *TestFileManager::getGlobalOutputTempDirectory()
 {
-    GMX_RELEASE_ASSERT(Impl::s_globalOutputTempDirectory != NULL, "Global path for temporary output files from tests is not set");
+    GMX_RELEASE_ASSERT(Impl::s_globalOutputTempDirectory != nullptr, "Global path for temporary output files from tests is not set");
     return Impl::s_globalOutputTempDirectory;
 }
 

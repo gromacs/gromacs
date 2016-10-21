@@ -54,8 +54,8 @@ static const int   can_view_ftp[] = {
 };
 #define NVIEW asize(can_view_ftp)
 static const char* view_program[] = {
-    NULL,
-    "ghostview",    "display",      NULL,           "xterm -e rasmol"
+    nullptr,
+    "ghostview",    "display",      nullptr,           "xterm -e rasmol"
 };
 
 static int can_view(int ftp)
@@ -81,7 +81,7 @@ void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts)
 
     if (output_env_get_view(oenv) && fn)
     {
-        if (getenv("DISPLAY") == NULL)
+        if (getenv("DISPLAY") == nullptr)
         {
             fprintf(stderr, "Can not view %s, no DISPLAY environment variable.\n", fn);
         }
@@ -141,7 +141,7 @@ void view_all(const gmx_output_env_t *oenv, int nf, t_filenm fnm[])
         if (can_view(fnm[i].ftp) && is_output(&(fnm[i])) &&
             ( !is_optional(&(fnm[i])) || is_set(&(fnm[i])) ) )
         {
-            do_view(oenv, fnm[i].fns[0], NULL);
+            do_view(oenv, fnm[i].fns[0], nullptr);
         }
     }
 }

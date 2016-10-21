@@ -384,7 +384,7 @@ void please_cite(FILE *fp, const char *key)
     char *title;
 #define LINE_WIDTH 79
 
-    if (fp == NULL)
+    if (fp == nullptr)
     {
         return;
     }

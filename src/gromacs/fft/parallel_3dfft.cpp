@@ -87,7 +87,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb, Mb, Kb, rcomm,
                                       (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data, &buf1, &buf2, nthreads);
 
-    return (*pfft_setup)->p1 != 0 && (*pfft_setup)->p2 != 0;
+    return (*pfft_setup)->p1 != nullptr && (*pfft_setup)->p2 != nullptr;
 }
 
 

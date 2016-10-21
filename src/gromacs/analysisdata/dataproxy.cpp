@@ -55,7 +55,7 @@ AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan,
     : source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan),
       bParallel_(false)
 {
-    GMX_RELEASE_ASSERT(data != NULL, "Source data must not be NULL");
+    GMX_RELEASE_ASSERT(data != nullptr, "Source data must not be NULL");
     GMX_RELEASE_ASSERT(firstColumn >= 0 && columnSpan > 0, "Invalid proxy column");
     setMultipoint(source_.isMultipoint());
 }

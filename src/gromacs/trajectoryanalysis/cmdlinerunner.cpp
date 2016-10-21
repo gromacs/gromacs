@@ -128,7 +128,7 @@ int RunnerModule::run()
     module_->initAfterFirstFrame(settings_, common_.frame());
 
     t_pbc  pbc;
-    t_pbc *ppbc = settings_.hasPBC() ? &pbc : NULL;
+    t_pbc *ppbc = settings_.hasPBC() ? &pbc : nullptr;
 
     int    nframes = 0;
     AnalysisDataParallelOptions         dataOptions;
@@ -138,7 +138,7 @@ int RunnerModule::run()
     {
         common_.initFrame();
         t_trxframe &frame = common_.frame();
-        if (ppbc != NULL)
+        if (ppbc != nullptr)
         {
             set_pbc(ppbc, topology.ePBC(), frame.box);
         }
@@ -151,7 +151,7 @@ int RunnerModule::run()
     }
     while (common_.readNextFrame());
     module_->finishFrames(pdata.get());
-    if (pdata.get() != NULL)
+    if (pdata.get() != nullptr)
     {
         pdata->finish();
     }
@@ -191,7 +191,7 @@ TrajectoryAnalysisCommandLineRunner::runAsMain(
     {
         return createModule(factory());
     };
-    return ICommandLineOptionsModule::runAsMain(argc, argv, NULL, NULL, runnerFactory);
+    return ICommandLineOptionsModule::runAsMain(argc, argv, nullptr, nullptr, runnerFactory);
 }
 
 // static

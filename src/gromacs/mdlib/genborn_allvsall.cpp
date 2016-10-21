@@ -377,7 +377,7 @@ genborn_allvsall_calc_still_radii(t_forcerec *           fr,
 
     aadata = *((gmx_allvsallgb2_data_t **)work);
 
-    if (aadata == NULL)
+    if (aadata == nullptr)
     {
         genborn_allvsall_setup(&aadata, top->idef.il, mdatoms->nr,
                                FALSE, FALSE, TRUE);
@@ -590,7 +590,7 @@ genborn_allvsall_calc_hct_obc_radii(t_forcerec *           fr,
 
     aadata = *((gmx_allvsallgb2_data_t **)work);
 
-    if (aadata == NULL)
+    if (aadata == nullptr)
     {
         genborn_allvsall_setup(&aadata, top->idef.il, mdatoms->nr,
                                TRUE, TRUE, TRUE);

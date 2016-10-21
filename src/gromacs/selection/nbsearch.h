@@ -109,14 +109,14 @@ class AnalysisNeighborhoodPositions
          * to methods that accept positions.
          */
         AnalysisNeighborhoodPositions(const rvec &x)
-            : count_(1), index_(-1), x_(&x), exclusionIds_(NULL), indices_(NULL)
+            : count_(1), index_(-1), x_(&x), exclusionIds_(nullptr), indices_(nullptr)
         {
         }
         /*! \brief
          * Initializes positions from an array of position vectors.
          */
         AnalysisNeighborhoodPositions(const rvec x[], int count)
-            : count_(count), index_(-1), x_(x), exclusionIds_(NULL), indices_(NULL)
+            : count_(count), index_(-1), x_(x), exclusionIds_(nullptr), indices_(nullptr)
         {
         }
         /*! \brief
@@ -124,7 +124,7 @@ class AnalysisNeighborhoodPositions
          */
         AnalysisNeighborhoodPositions(const std::vector<RVec> &x)
             : count_(x.size()), index_(-1), x_(as_rvec_array(x.data())),
-              exclusionIds_(NULL), indices_(NULL)
+              exclusionIds_(nullptr), indices_(nullptr)
         {
         }
 

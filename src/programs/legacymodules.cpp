@@ -84,7 +84,7 @@ class ObsoleteToolModule : public gmx::ICommandLineModule
         }
         virtual const char *shortDescription() const
         {
-            return NULL;
+            return nullptr;
         }
 
         virtual void init(gmx::CommandLineModuleSettings * /*settings*/)

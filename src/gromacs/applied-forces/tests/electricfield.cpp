@@ -85,7 +85,7 @@ class ElectricFieldTest : public ::testing::Test
             t_inputrec *inputrec = module.inputrec();
             // Prepare MDP inputs
             int         ninp = 0;
-            t_inpfile  *inp  = NULL;
+            t_inpfile  *inp  = nullptr;
             char        name[128];
             char        value[128];
             const char *dimXYZ[3] = { "X", "Y", "Z" };
@@ -95,8 +95,8 @@ class ElectricFieldTest : public ::testing::Test
             tmp.bSet      = TRUE;
             tmp.inp_count = 0;
             tmp.count     = 0;
-            tmp.name      = NULL;
-            tmp.value     = NULL;
+            tmp.name      = nullptr;
+            tmp.value     = nullptr;
 
             ninp = 2;
             snew(inp, ninp);

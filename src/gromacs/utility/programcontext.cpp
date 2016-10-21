@@ -88,7 +88,7 @@ const DefaultProgramContext    g_defaultContext;
 
 const IProgramContext &getProgramContext()
 {
-    if (g_programContext != NULL)
+    if (g_programContext != nullptr)
     {
         return *g_programContext;
     }

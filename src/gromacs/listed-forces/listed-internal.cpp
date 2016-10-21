@@ -49,7 +49,7 @@ int glatnr(int *global_atom_index, int i)
 {
     int atnr;
 
-    if (global_atom_index == NULL)
+    if (global_atom_index == nullptr)
     {
         atnr = i + 1;
     }

@@ -94,14 +94,14 @@ CommandLine::Impl::Impl(const char *const cmdline[], size_t count)
     for (size_t i = 0; i < count; ++i)
     {
         char *arg = strdup(cmdline[i]);
-        if (arg == NULL)
+        if (arg == nullptr)
         {
             throw std::bad_alloc();
         }
         args_.push_back(arg);
         argv_.push_back(arg);
     }
-    argv_.push_back(NULL);
+    argv_.push_back(nullptr);
 }
 
 CommandLine::Impl::~Impl()
@@ -117,7 +117,7 @@ CommandLine::Impl::~Impl()
  */
 
 CommandLine::CommandLine()
-    : impl_(new Impl(NULL, 0))
+    : impl_(new Impl(nullptr, 0))
 {
 }
 
@@ -148,14 +148,14 @@ void CommandLine::append(const char *arg)
     impl_->args_.reserve(newSize);
     impl_->argv_.reserve(newSize + 1);
     char *newArg = strdup(arg);
-    if (newArg == NULL)
+    if (newArg == nullptr)
     {
         throw std::bad_alloc();
     }
     impl_->args_.push_back(newArg);
     impl_->argv_.pop_back(); // Remove the trailing NULL.
     impl_->argv_.push_back(newArg);
-    impl_->argv_.push_back(NULL);
+    impl_->argv_.push_back(nullptr);
     impl_->argc_ = static_cast<int>(newSize);
 }
 
@@ -298,7 +298,7 @@ int CommandLineTestHelper::runModuleDirect(
 {
     // The name and description are not used in the tests, so they can be NULL.
     const std::unique_ptr<ICommandLineModule> wrapperModule(
-            ICommandLineOptionsModule::createModule(NULL, NULL, std::move(module)));
+            ICommandLineOptionsModule::createModule(nullptr, nullptr, std::move(module)));
     return runModuleDirect(wrapperModule.get(), commandLine);
 }
 

@@ -341,7 +341,7 @@ class SelectionTreeElement
          * \param[in] name  Name to set (can be NULL).
          * \throws    std::bad_alloc if out of memory.
          */
-        void setName(const char *name) { name_ = (name != NULL ? name : ""); }
+        void setName(const char *name) { name_ = (name != nullptr ? name : ""); }
         //! \copydoc setName(const char *)
         void setName(const std::string &name) { name_ = name; }
         /*! \brief

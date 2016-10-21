@@ -74,7 +74,7 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         //! Initializes an option with the given name.
         explicit FileNameOption(const char *name)
             : MyBase(name), optionType_(eftUnknown), legacyType_(-1),
-              defaultBasename_(NULL), defaultType_(-1),
+              defaultBasename_(nullptr), defaultType_(-1),
               bLegacyOptionalBehavior_(false),
               bRead_(false), bWrite_(false), bLibrary_(false),
               bAllowMissing_(false)

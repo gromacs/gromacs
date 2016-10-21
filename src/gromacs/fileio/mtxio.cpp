@@ -89,7 +89,7 @@ void gmx_mtxio_write(const char *             filename,
     int         i, j, prec;
     size_t      sz;
 
-    if (full_matrix != NULL && sparse_matrix != NULL)
+    if (full_matrix != nullptr && sparse_matrix != nullptr)
     {
         gmx_fatal(FARGS, "Both full AND sparse matrix specified to gmx_mtxio_write().\n");
     }
@@ -117,7 +117,7 @@ void gmx_mtxio_write(const char *             filename,
     gmx_fio_do_int(fio, nrow);
     gmx_fio_do_int(fio, ncol);
 
-    if (full_matrix != NULL)
+    if (full_matrix != nullptr)
     {
         /* Full matrix storage format */
         i = GMX_MTXIO_FULL_MATRIX;
@@ -200,7 +200,7 @@ gmx_mtxio_read (const char *            filename,
 
     gmx_fio_do_int(fio, i);
 
-    if (i == GMX_MTXIO_FULL_MATRIX && NULL != full_matrix)
+    if (i == GMX_MTXIO_FULL_MATRIX && nullptr != full_matrix)
     {
         printf("Full matrix storage format, nrow=%d, ncols=%d\n", *nrow, *ncol);
 
@@ -208,7 +208,7 @@ gmx_mtxio_read (const char *            filename,
         snew((*full_matrix), sz);
         gmx_fio_ndo_real(fio, (*full_matrix), sz);
     }
-    else if (NULL != sparse_matrix)
+    else if (nullptr != sparse_matrix)
     {
         /* Sparse storage */
         printf("Sparse matrix storage format, nrow=%d, ncols=%d\n", *nrow, *ncol);

@@ -75,7 +75,7 @@ TEST_F(TngTest, CanOpenTngFile)
 
 TEST_F(TngTest, CloseBeforeOpenIsNotFatal)
 {
-    tng_trajectory_t tng = NULL;
+    tng_trajectory_t tng = nullptr;
     gmx_tng_close(&tng);
 }
 

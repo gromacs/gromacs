@@ -65,7 +65,7 @@ static t_2morse *read_dissociation_energies(int *n2morse)
     char        ai[32], aj[32];
     double      e_diss;
     const char *fn     = "edissoc.dat";
-    t_2morse   *t2m    = NULL;
+    t_2morse   *t2m    = nullptr;
     int         maxn2m = 0, n2m = 0;
     int         nread;
 

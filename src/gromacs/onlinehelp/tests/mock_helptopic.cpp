@@ -69,7 +69,7 @@ MockHelpTopic::addSubTopic(gmx::AbstractCompositeHelpTopic *parent,
 }
 
 MockHelpTopic::MockHelpTopic(const char *name, const char *title, const char *text)
-    : name_(name), title_(title), text_(text != NULL ? text : "")
+    : name_(name), title_(title), text_(text != nullptr ? text : "")
 {
     if (!isNullOrEmpty(text))
     {

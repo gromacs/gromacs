@@ -141,9 +141,9 @@ CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
 void finalizeForCommandLine()
 {
     gmx::finalize();
-    setLibraryFileFinder(NULL);
+    setLibraryFileFinder(nullptr);
     g_libFileFinder.reset();
-    setProgramContext(NULL);
+    setProgramContext(nullptr);
     g_commandLineContext.reset();
 }
 

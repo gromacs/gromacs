@@ -46,7 +46,7 @@ int gmx_int64_to_int(gmx_int64_t step, const char *warn)
 
     i = static_cast<int>(step);
 
-    if (warn != NULL && (static_cast<gmx_int64_t>(i) != step))
+    if (warn != nullptr && (static_cast<gmx_int64_t>(i) != step))
     {
         fprintf(stderr, "\nWARNING during %s:\n", warn);
         fprintf(stderr, "int64 value ");

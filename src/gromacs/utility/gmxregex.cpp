@@ -88,7 +88,7 @@ class Regex::Impl
 
         bool match(const char *value) const
         {
-            int rc = regexec(&regex_, value, 0, NULL, 0);
+            int rc = regexec(&regex_, value, 0, nullptr, 0);
             if (rc != 0 && rc != REG_NOMATCH)
             {
                 // TODO: Handle errors.

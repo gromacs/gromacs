@@ -631,7 +631,7 @@ static real optimize_ncells(FILE *fplog,
          * we can save some time (e.g. 3D DD with pbc=xyz).
          * Here we ignore SIMD bondeds as they always do (fast) PBC.
          */
-        count_bonded_distances(mtop, ir, &pbcdxr, NULL);
+        count_bonded_distances(mtop, ir, &pbcdxr, nullptr);
         pbcdxr /= (double)mtop->natoms;
     }
     else

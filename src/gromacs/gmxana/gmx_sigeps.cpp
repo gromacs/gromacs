@@ -104,7 +104,7 @@ int gmx_sigeps(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, asize(pa), pa, asize(desc),
-                           desc, 0, NULL, &oenv))
+                           desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -184,7 +184,7 @@ int gmx_sigeps(int argc, char *argv[])
     }
     xvgrclose(fp);
 
-    do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
+    do_view(oenv, ftp2fn(efXVG, NFILE, fnm), nullptr);
 
     return 0;
 }

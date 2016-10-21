@@ -299,8 +299,8 @@ parseHwLocCache(const hwloc_topology_t             topo,
 
         if (depth >= 0)
         {
-            hwloc_obj_t cache = hwloc_get_next_obj_by_depth(topo, depth, NULL);
-            if (cache != NULL)
+            hwloc_obj_t cache = hwloc_get_next_obj_by_depth(topo, depth, nullptr);
+            if (cache != nullptr)
             {
                 std::vector<hwloc_obj_t> hwThreads = getHwLocDescendantsByType(cache, HWLOC_OBJ_PU);
 
@@ -376,7 +376,7 @@ parseHwLocNuma(const hwloc_topology_t             topo,
 
         int depth = hwloc_get_type_depth(topo, HWLOC_OBJ_NUMANODE);
         const struct hwloc_distances_s * dist = hwloc_get_whole_distance_matrix_by_depth(topo, depth);
-        if (dist != NULL && dist->nbobjs == hwlocNumaNodes.size())
+        if (dist != nullptr && dist->nbobjs == hwlocNumaNodes.size())
         {
             machine->numa.baseLatency        = dist->latency_base;
             machine->numa.maxRelativeLatency = dist->latency_max;
@@ -398,9 +398,9 @@ parseHwLocNuma(const hwloc_topology_t             topo,
     else
     {
         // No numa nodes found. Use the entire machine as a numa node.
-        const hwloc_obj_t hwlocMachine = hwloc_get_next_obj_by_type(topo, HWLOC_OBJ_MACHINE, NULL);
+        const hwloc_obj_t hwlocMachine = hwloc_get_next_obj_by_type(topo, HWLOC_OBJ_MACHINE, nullptr);
 
-        if (hwlocMachine != NULL)
+        if (hwlocMachine != nullptr)
         {
             machine->numa.nodes.resize(1);
             machine->numa.nodes[0].id           = 0;
@@ -462,7 +462,7 @@ parseHwLocDevices(const hwloc_topology_t             topo,
     {
         const hwloc_obj_t ancestor = hwloc_get_ancestor_obj_by_type(topo, HWLOC_OBJ_NUMANODE, p);
         int               numaId;
-        if (ancestor != NULL)
+        if (ancestor != nullptr)
         {
             numaId = ancestor->logical_index;
         }
@@ -506,7 +506,7 @@ parseHwLoc(HardwareTopology::Machine *        machine,
 
     hwloc_topology_set_flags(topo, HWLOC_TOPOLOGY_FLAG_IO_DEVICES);
 
-    if (hwloc_topology_load(topo) != 0 || hwloc_get_root_obj(topo) == NULL)
+    if (hwloc_topology_load(topo) != 0 || hwloc_get_root_obj(topo) == nullptr)
     {
         hwloc_topology_destroy(topo);
         return; // SupportLevel::None.

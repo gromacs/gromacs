@@ -84,7 +84,7 @@ void dd_make_local_group_indices(gmx_ga2la_t     *ga2la,
             /* Save the atoms index in the local atom numbers array */
             (*anrs_loc)[localnr] = ii;
 
-            if (coll_ind != NULL)
+            if (coll_ind != nullptr)
             {
                 /* Keep track of where this local atom belongs in the collective index array.
                  * This is needed when reducing the local arrays to a collective/global array
@@ -233,7 +233,7 @@ extern void communicate_group_positions(
      * The rest of the code is for making the group whole again in case atoms changed
      * their PBC representation / crossed a box boundary. We only do that if the
      * shifts array is allocated. */
-    if (NULL != shifts)
+    if (nullptr != shifts)
     {
         /* To make the group whole, start with a whole group and each
          * step move the assembled positions at closest distance to the positions
@@ -281,7 +281,7 @@ extern double get_sum_of_positions(rvec x[], real weight[], const int nat, dvec 
     clear_dvec(dsumvec);
 
     /* Loop over all atoms and add their weighted position vectors */
-    if (weight != NULL)
+    if (weight != nullptr)
     {
         for (i = 0; i < nat; i++)
         {
@@ -314,7 +314,7 @@ extern void get_center(rvec x[], real weight[], const int nr, rvec rcenter)
 
     weight_sum = get_sum_of_positions(x, weight, nr, dcenter);
 
-    if (weight != NULL)
+    if (weight != nullptr)
     {
         denom = weight_sum; /* Divide by the sum of weight */
     }
@@ -367,7 +367,7 @@ extern void get_center_comm(
         weight_sum  = buf[3];
     }
 
-    if (weight_loc != NULL)
+    if (weight_loc != nullptr)
     {
         denom = 1.0/weight_sum; /* Divide by the sum of weight to get center of mass e.g. */
     }

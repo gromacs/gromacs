@@ -131,11 +131,11 @@ void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 
     /* here we include the insertion of the additional orca-input */
     snew(buf, 200);
-    if (addInputFile != NULL)
+    if (addInputFile != nullptr)
     {
         while (!feof(addInputFile))
         {
-            if (fgets(buf, 200, addInputFile) != NULL)
+            if (fgets(buf, 200, addInputFile) != nullptr)
             {
                 fputs(buf, out);
             }
@@ -278,17 +278,17 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
     {
         sprintf(orca_xyzFilename, "%s.xyz", qm->orca_basename);
         xyz = fopen(orca_xyzFilename, "r");
-        if (fgets(buf, 300, xyz) == NULL)
+        if (fgets(buf, 300, xyz) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of ORCA output");
         }
-        if (fgets(buf, 300, xyz) == NULL)
+        if (fgets(buf, 300, xyz) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of ORCA output");
         }
         for (i = 0; i < qm->nrQMatoms; i++)
         {
-            if (fgets(buf, 300, xyz) == NULL)
+            if (fgets(buf, 300, xyz) == nullptr)
             {
                 gmx_fatal(FARGS, "Unexpected end of ORCA output");
             }
@@ -320,14 +320,14 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
      */
     for (j = 0; j < 7; j++)
     {
-        if (fgets(buf, 300, engrad) == NULL)
+        if (fgets(buf, 300, engrad) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of ORCA output");
         }
     }
     /* now comes the energy
      */
-    if (fgets(buf, 300, engrad) == NULL)
+    if (fgets(buf, 300, engrad) == nullptr)
     {
         gmx_fatal(FARGS, "Unexpected end of ORCA output");
     }
@@ -340,7 +340,7 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
      */
     for (j = 0; j < 3; j++)
     {
-        if (fgets(buf, 300, engrad) == NULL)
+        if (fgets(buf, 300, engrad) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of ORCA output");
         }
@@ -353,7 +353,7 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
     for (i = 0; i < 3*qm->nrQMatoms; i++)
     {
         k = i/3;
-        if (fgets(buf, 300, engrad) == NULL)
+        if (fgets(buf, 300, engrad) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of ORCA output");
         }
@@ -397,13 +397,13 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
          */
         /* we can skip the first line
          */
-        if (fgets(buf, 300, pcgrad) == NULL)
+        if (fgets(buf, 300, pcgrad) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of ORCA output");
         }
         for (i = 0; i < mm->nrMMatoms; i++)
         {
-            if (fgets(buf, 300, pcgrad) == NULL)
+            if (fgets(buf, 300, pcgrad) == nullptr)
             {
                 gmx_fatal(FARGS, "Unexpected end of ORCA output");
             }

@@ -74,7 +74,7 @@ char *get_bond_atomtype_name(int nt, t_bond_atomtype at)
 
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NULL;
+        return nullptr;
     }
 
     return *(ga->atomname[nt]);
@@ -107,5 +107,5 @@ void done_bond_atomtype(t_bond_atomtype *at)
     ga->nr = 0;
     sfree(ga);
 
-    *at = NULL;
+    *at = nullptr;
 }

@@ -66,8 +66,8 @@ class ReferenceDataEntry
         }
 
         ReferenceDataEntry(const char *type, const char *id)
-            : type_(type), id_(id != NULL ? id : ""), isTextBlock_(false),
-              hasBeenChecked_(false), correspondingOutputEntry_(NULL)
+            : type_(type), id_(id != nullptr ? id : ""), isTextBlock_(false),
+              hasBeenChecked_(false), correspondingOutputEntry_(nullptr)
         {
         }
 
@@ -84,7 +84,7 @@ class ReferenceDataEntry
 
         bool idMatches(const char *id) const
         {
-            return (id == NULL && id_.empty()) || (id != NULL && id_ == id);
+            return (id == nullptr && id_.empty()) || (id != nullptr && id_ == id);
         }
 
         ChildIterator findChild(const char *id, const ChildIterator &prev) const
@@ -97,7 +97,7 @@ class ReferenceDataEntry
             bool           wrappingSearch = true;
             if (child != children_.end())
             {
-                if (id == NULL && (*child)->id().empty())
+                if (id == nullptr && (*child)->id().empty())
                 {
                     wrappingSearch = false;
                     ++child;
@@ -174,7 +174,7 @@ class ReferenceDataEntry
         }
         void setCorrespondingOutputEntry(ReferenceDataEntry *entry)
         {
-            GMX_RELEASE_ASSERT(correspondingOutputEntry_ == NULL,
+            GMX_RELEASE_ASSERT(correspondingOutputEntry_ == nullptr,
                                "Output entry already exists");
             correspondingOutputEntry_ = entry;
         }

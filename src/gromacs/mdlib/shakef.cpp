@@ -66,10 +66,10 @@ gmx_shakedata_t shake_init()
     snew(d, 1);
 
     d->nalloc                      = 0;
-    d->rij                         = NULL;
-    d->half_of_reduced_mass        = NULL;
-    d->distance_squared_tolerance  = NULL;
-    d->constraint_distance_squared = NULL;
+    d->rij                         = nullptr;
+    d->half_of_reduced_mass        = nullptr;
+    d->distance_squared_tolerance  = nullptr;
+    d->constraint_distance_squared = nullptr;
 
     /* SOR initialization */
     d->delta = 0.1;
@@ -301,7 +301,7 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
         i     = ia[1];
         j     = ia[2];
 
-        if ((econq == econqCoord) && v != NULL)
+        if ((econq == econqCoord) && v != nullptr)
         {
             /* Correct the velocities */
             mm = scaled_lagrange_multiplier[ll]*invmass[i]*invdt;

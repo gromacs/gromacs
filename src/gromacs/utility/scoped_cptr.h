@@ -81,17 +81,17 @@ class scoped_cptr
          *
          * \param[in] ptr  Pointer to use for initialization.
          */
-        explicit scoped_cptr(T *ptr = NULL) : ptr_(ptr) {}
+        explicit scoped_cptr(T *ptr = nullptr) : ptr_(ptr) {}
         //! Frees the pointer passed to the constructor.
         ~scoped_cptr() { D(ptr_); }
         //! Returns the stored pointer.
         T *get() const { return ptr_; }
         //! Check for non-null pointer in boolean context.
-        explicit operator bool () const { return ptr_ != 0; }
+        explicit operator bool () const { return ptr_ != nullptr; }
         //! Sets the pointer and frees previous pointer if necessary.
         void reset(T *ptr) { D(ptr_); ptr_ = ptr; }
         //! Clears the pointer without freeing the memory, and returns the old value.
-        T *release() { T *ptr = ptr_; ptr_ = NULL; return ptr; }
+        T *release() { T *ptr = ptr_; ptr_ = nullptr; return ptr; }
 
     private:
         T                    *ptr_;

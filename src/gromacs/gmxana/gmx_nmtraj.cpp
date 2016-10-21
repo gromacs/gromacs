@@ -100,8 +100,8 @@ int gmx_nmtraj(int argc, char *argv[])
     int               ePBC;
     t_atoms          *atoms;
     rvec             *xtop, *xref, *xav, *xout;
-    int               nvec, *eignr = NULL;
-    rvec            **eigvec = NULL;
+    int               nvec, *eignr = nullptr;
+    rvec            **eigvec = nullptr;
     matrix            box;
     int               natoms;
     int               i, j, k, kmode, d;
@@ -124,7 +124,7 @@ int gmx_nmtraj(int argc, char *argv[])
 
     t_filenm          fnm[] =
     {
-        { efTPS, NULL,    NULL,          ffREAD },
+        { efTPS, nullptr,    nullptr,          ffREAD },
         { efTRN, "-v",    "eigenvec",    ffREAD  },
         { efTRO, "-o",    "nmtraj",      ffWRITE }
     };
@@ -132,7 +132,7 @@ int gmx_nmtraj(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, 0,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -140,7 +140,7 @@ int gmx_nmtraj(int argc, char *argv[])
     read_eigenvectors(opt2fn("-v", NFILE, fnm), &natoms, &bFit,
                       &xref, &bDMR, &xav, &bDMA, &nvec, &eignr, &eigvec, &eigval);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box, bDMA);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, bDMA);
 
     /* Find vectors and phases */
 
@@ -322,7 +322,7 @@ int gmx_nmtraj(int argc, char *argv[])
                 }
             }
         }
-        write_trx(out, natoms, dummy, atoms, i, static_cast<real>(i)/nframes, box, xout, NULL, NULL);
+        write_trx(out, natoms, dummy, atoms, i, static_cast<real>(i)/nframes, box, xout, nullptr, nullptr);
     }
 
     fprintf(stderr, "\n");

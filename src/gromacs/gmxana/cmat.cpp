@@ -144,7 +144,7 @@ void done_mat(t_mat **m)
     sfree((*m)->m_ind);
     sfree((*m)->erow);
     sfree(*m);
-    *m = NULL;
+    *m = nullptr;
 }
 
 real mat_energy(t_mat *m)

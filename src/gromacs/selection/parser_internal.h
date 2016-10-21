@@ -167,7 +167,7 @@ yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
 template <typename ValueType> static
 ValueType get(ValueType *src)
 {
-    GMX_RELEASE_ASSERT(src != NULL, "Semantic value pointers should be non-NULL");
+    GMX_RELEASE_ASSERT(src != nullptr, "Semantic value pointers should be non-NULL");
     const std::unique_ptr<ValueType> srcGuard(src);
     return ValueType(std::move(*src));
 }

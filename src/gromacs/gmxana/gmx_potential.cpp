@@ -122,7 +122,7 @@ void calc_potential(const char *fn, int **index, int gnx[],
     real         t;
     double       z;
     rvec         xcm;
-    gmx_rmpbc_t  gpbc = NULL;
+    gmx_rmpbc_t  gpbc = nullptr;
 
     switch (axis)
     {
@@ -457,9 +457,9 @@ int gmx_potential(int argc, char *argv[])
     int         ePBC;
     int       **index;                         /* indices for all groups     */
     t_filenm    fnm[] = {                      /* files for g_order       */
-        { efTRX, "-f", NULL,  ffREAD },        /* trajectory file             */
-        { efNDX, NULL, NULL,  ffREAD },        /* index file          */
-        { efTPR, NULL, NULL,  ffREAD },        /* topology file               */
+        { efTRX, "-f", nullptr,  ffREAD },        /* trajectory file             */
+        { efNDX, nullptr, nullptr,  ffREAD },        /* index file          */
+        { efTPR, nullptr, nullptr,  ffREAD },        /* topology file               */
         { efXVG, "-o", "potential", ffWRITE }, /* xvgr output file    */
         { efXVG, "-oc", "charge", ffWRITE },   /* xvgr output file    */
         { efXVG, "-of", "field", ffWRITE },    /* xvgr output file    */
@@ -495,9 +495,9 @@ int gmx_potential(int argc, char *argv[])
                    opt2fn("-oc", NFILE, fnm), opt2fn("-of", NFILE, fnm),
                    nslices, ngrps, (const char**)grpname, slWidth, oenv);
 
-    do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);  /* view xvgr file */
-    do_view(oenv, opt2fn("-oc", NFILE, fnm), NULL); /* view xvgr file */
-    do_view(oenv, opt2fn("-of", NFILE, fnm), NULL); /* view xvgr file */
+    do_view(oenv, opt2fn("-o", NFILE, fnm), nullptr);  /* view xvgr file */
+    do_view(oenv, opt2fn("-oc", NFILE, fnm), nullptr); /* view xvgr file */
+    do_view(oenv, opt2fn("-of", NFILE, fnm), nullptr); /* view xvgr file */
 
     return 0;
 }

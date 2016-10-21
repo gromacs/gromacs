@@ -84,7 +84,7 @@ void writeCommandLineHelpCMain(
     int   argc = 1;
     // TODO: The constness should not be cast away.
     argv[0] = const_cast<char *>(name);
-    argv[1] = NULL;
+    argv[1] = nullptr;
     GlobalCommandLineHelpContext global(context);
     mainFunction(argc, argv);
 }

@@ -137,7 +137,7 @@ static int mk_sblocks(FILE *fp, t_graph *g, int maxsid, t_sid sid[])
     int     ng, nnodes;
     int     nW, nG, nB; /* Number of Grey, Black, White	*/
     int     fW, fG;     /* First of each category	*/
-    egCol  *egc = NULL; /* The colour of each node	*/
+    egCol  *egc = nullptr; /* The colour of each node	*/
     int     g0, nblock;
 
     if (!g->nbound)
@@ -363,7 +363,7 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
     t_sid   *sid;
     int      nsid;
 
-    g = mk_graph(NULL, idef, at_start, at_end, TRUE, bSettle);
+    g = mk_graph(nullptr, idef, at_start, at_end, TRUE, bSettle);
     if (debug)
     {
         p_graph(debug, "Graaf Dracula", g);

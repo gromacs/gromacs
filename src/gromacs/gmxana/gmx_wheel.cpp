@@ -224,7 +224,7 @@ int gmx_wheel(int argc, char *argv[])
     gmx_output_env_t *oenv;
     static real       rot0  = 0;
     static gmx_bool   bNum  = TRUE;
-    static char      *title = NULL;
+    static char      *title = nullptr;
     static int        r0    = 1;
     t_pargs           pa [] = {
         { "-r0",  FALSE, etINT, {&r0},
@@ -237,8 +237,8 @@ int gmx_wheel(int argc, char *argv[])
           "Toggle numbers" }
     };
     t_filenm          fnm[] = {
-        { efDAT, "-f", NULL,  ffREAD  },
-        { efEPS, "-o", NULL,  ffWRITE }
+        { efDAT, "-f", nullptr,  ffREAD  },
+        { efEPS, "-o", nullptr,  ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -246,7 +246,7 @@ int gmx_wheel(int argc, char *argv[])
     char **resnm;
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -255,12 +255,12 @@ int gmx_wheel(int argc, char *argv[])
     {
         if (std::strcmp(argv[i], "-r0") == 0)
         {
-            r0 = std::strtol(argv[++i], NULL, 10);
+            r0 = std::strtol(argv[++i], nullptr, 10);
             fprintf(stderr, "First residue is %d\n", r0);
         }
         else if (std::strcmp(argv[i], "-rot0") == 0)
         {
-            rot0 = strtod(argv[++i], NULL);
+            rot0 = strtod(argv[++i], nullptr);
             fprintf(stderr, "Initial rotation is %g\n", rot0);
         }
         else if (std::strcmp(argv[i], "-T") == 0)

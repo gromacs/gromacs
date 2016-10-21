@@ -132,5 +132,5 @@ const char *unit2string(int unit)
         return eg2c_names[unit];
     }
 
-    return NULL;
+    return nullptr;
 }

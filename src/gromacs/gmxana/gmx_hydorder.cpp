@@ -251,7 +251,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
                                        real sgang1, real sgang2, real ****intfpos,
                                        gmx_output_env_t *oenv)
 {
-    FILE         *fpsg   = NULL, *fpsk = NULL;
+    FILE         *fpsg   = nullptr, *fpsk = nullptr;
     t_topology    top;
     int           ePBC;
     t_trxstatus  *status;
@@ -260,10 +260,10 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     rvec         *xtop, *x;
     matrix        box;
     real          sg, sk, sgintf;
-    int         **index   = NULL;
-    char        **grpname = NULL;
+    int         **index   = nullptr;
+    char        **grpname = nullptr;
     int           i, j, k, n, *isize, ng, nslicez, framenr;
-    real       ***sg_grid = NULL, ***sk_grid = NULL, ***sg_fravg = NULL, ***sk_fravg = NULL, ****sk_4d = NULL, ****sg_4d = NULL;
+    real       ***sg_grid = nullptr, ***sk_grid = nullptr, ***sg_fravg = nullptr, ***sk_fravg = nullptr, ****sk_4d = nullptr, ****sg_4d = nullptr;
     int          *perm;
     int           ndx1, ndx2;
     int           bins;
@@ -272,7 +272,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
      * i.e 1D Row-major order in (t,x,y) */
 
 
-    read_tps_conf(fnTPS, &top, &ePBC, &xtop, NULL, box, FALSE);
+    read_tps_conf(fnTPS, &top, &ePBC, &xtop, nullptr, box, FALSE);
 
     *nslicex = static_cast<int>(box[XX][XX]/binw + onehalf); /*Calculate slicenr from binwidth*/
     *nslicey = static_cast<int>(box[YY][YY]/binw + onehalf);
@@ -295,7 +295,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)",
                   top.atoms.nr, natoms);
     }
-    check_index(NULL, ng, index[0], NULL, natoms);
+    check_index(nullptr, ng, index[0], nullptr, natoms);
 
 
     /*Prepare structures for temporary storage of frame info*/
@@ -312,8 +312,8 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
         }
     }
 
-    sg_4d    = NULL;
-    sk_4d    = NULL;
+    sg_4d    = nullptr;
+    sk_4d    = nullptr;
     *nframes = 0;
     framenr  = 0;
 
@@ -341,7 +341,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
 
         find_tetra_order_grid(top, ePBC, natoms, box, x, isize[0], index[0],
                               &sg, &sk, *nslicex, *nslicey, nslicez, sg_grid, sk_grid);
-        GMX_RELEASE_ASSERT(sk_fravg != NULL, "Trying to dereference NULL sk_fravg pointer");
+        GMX_RELEASE_ASSERT(sk_fravg != nullptr, "Trying to dereference NULL sk_fravg pointer");
         for (i = 0; i < *nslicex; i++)
         {
             for (j = 0; j < *nslicey; j++)
@@ -358,7 +358,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
 
         if (framenr%tblock == 0)
         {
-            GMX_RELEASE_ASSERT(sk_4d != NULL, "Trying to dereference NULL sk_4d pointer");
+            GMX_RELEASE_ASSERT(sk_4d != nullptr, "Trying to dereference NULL sk_4d pointer");
             sk_4d[*nframes] = sk_fravg;
             sg_4d[*nframes] = sg_fravg;
             (*nframes)++;
@@ -579,7 +579,7 @@ int gmx_hydorder(int argc, char *argv[])
     static gmx_bool    bRawOut   = FALSE;
     int                frames, xslices, yslices; /* Dimensions of interface arrays*/
     real            ***intfpos;                  /* Interface arrays (intfnr,t,xy) -potentially large */
-    static const char *normal_axis[] = { NULL, "z", "x", "y", NULL };
+    static const char *normal_axis[] = { nullptr, "z", "x", "y", nullptr };
 
     t_pargs            pa[] = {
         { "-d",   FALSE, etENUM, {normal_axis},
@@ -597,9 +597,9 @@ int gmx_hydorder(int argc, char *argv[])
     };
 
     t_filenm           fnm[] = {                      /* files for g_order    */
-        { efTRX, "-f", NULL,  ffREAD },               /* trajectory file              */
-        { efNDX, "-n", NULL,  ffREAD },               /* index file           */
-        { efTPR, "-s", NULL,  ffREAD },               /* topology file                */
+        { efTRX, "-f", nullptr,  ffREAD },               /* trajectory file              */
+        { efNDX, "-n", nullptr,  ffREAD },               /* index file           */
+        { efTPR, "-s", nullptr,  ffREAD },               /* topology file                */
         { efXPM, "-o", "intf",  ffWRMULT},            /* XPM- surface maps	*/
         { efOUT, "-or", "raw", ffOPTWRMULT },         /* xvgr output file           */
         { efOUT, "-Spect", "intfspect", ffOPTWRMULT}, /* Fourier spectrum interfaces */
@@ -613,7 +613,7 @@ int gmx_hydorder(int argc, char *argv[])
     gmx_output_env_t *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -630,7 +630,7 @@ int gmx_hydorder(int argc, char *argv[])
     trxfnm = ftp2fn(efTRX, NFILE, fnm);
 
     /* Calculate axis */
-    GMX_RELEASE_ASSERT(normal_axis[0] != NULL, "Option setting inconsistency; normal_axis[0] is NULL");
+    GMX_RELEASE_ASSERT(normal_axis[0] != nullptr, "Option setting inconsistency; normal_axis[0] is NULL");
     if (std::strcmp(normal_axis[0], "x") == 0)
     {
         axis = XX;

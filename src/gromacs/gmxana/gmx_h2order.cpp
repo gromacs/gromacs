@@ -83,7 +83,7 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
         i, j, teller = 0,
         slice = 0,       /* current slice number */
     *count;              /* nr. of atoms in one slice */
-    gmx_rmpbc_t  gpbc = NULL;
+    gmx_rmpbc_t  gpbc = nullptr;
 
     if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0)
     {
@@ -297,13 +297,13 @@ int gmx_h2order(int argc, char *argv[])
     t_topology        *top;                 /* topology           */
     int                ePBC;
     int               *index,               /* indices for solvent group  */
-    *micelle                  = NULL;
+    *micelle                  = nullptr;
     gmx_bool           bMicel =  FALSE;     /* think we're a micel        */
     t_filenm           fnm[]  = {           /* files for g_order      */
-        { efTRX, "-f", NULL,  ffREAD },     /* trajectory file            */
-        { efNDX, NULL, NULL,  ffREAD },     /* index file         */
-        { efNDX, "-nm", NULL, ffOPTRD },    /* index with micelle atoms   */
-        { efTPR, NULL, NULL,  ffREAD },     /* topology file              */
+        { efTRX, "-f", nullptr,  ffREAD },     /* trajectory file            */
+        { efNDX, nullptr, nullptr,  ffREAD },     /* index file         */
+        { efNDX, "-nm", nullptr, ffOPTRD },    /* index with micelle atoms   */
+        { efTPR, nullptr, nullptr,  ffREAD },     /* topology file              */
         { efXVG, "-o",  "order", ffWRITE }, /* xvgr output file       */
     };
 

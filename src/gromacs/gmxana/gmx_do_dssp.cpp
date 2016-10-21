@@ -85,7 +85,7 @@ static int strip_dssp(char *dsspfile, int nres,
     {
         fgets2(buf, STRLEN, tapeout);
     }
-    while (std::strstr(buf, "KAPPA") == NULL);
+    while (std::strstr(buf, "KAPPA") == nullptr);
     if (bFirst)
     {
         /* Since we also have empty lines in the dssp output (temp) file,
@@ -101,7 +101,7 @@ static int strip_dssp(char *dsspfile, int nres,
     nresidues = 0;
     naccf     = 0;
     naccb     = 0;
-    for (nr = 0; (fgets2(buf, STRLEN, tapeout) != NULL); nr++)
+    for (nr = 0; (fgets2(buf, STRLEN, tapeout) != nullptr); nr++)
     {
         if (buf[13] == '!') /* Chain separator line has '!' at pos. 13 */
         {
@@ -116,7 +116,7 @@ static int strip_dssp(char *dsspfile, int nres,
         buf[39] = '\0';
 
         /* Only calculate solvent accessible area if needed */
-        if ((NULL != acc) && (buf[13] != '!'))
+        if ((nullptr != acc) && (buf[13] != '!'))
         {
             sscanf(&(buf[34]), "%d", &iacc);
             acc[nr] = iacc;
@@ -140,7 +140,7 @@ static int strip_dssp(char *dsspfile, int nres,
 
     if (bFirst)
     {
-        if (0 != acc)
+        if (nullptr != acc)
         {
             fprintf(stderr, "%d residues were classified as hydrophobic and %d as hydrophilic.\n", naccb, naccf);
         }
@@ -156,8 +156,8 @@ static int strip_dssp(char *dsspfile, int nres,
         {
             mat->axis_y[i] = i+1;
         }
-        mat->axis_x = NULL;
-        mat->matrix = NULL;
+        mat->axis_x = nullptr;
+        mat->matrix = nullptr;
         xsize       = 0;
         frame       = 0;
         bFirst      = FALSE;
@@ -288,7 +288,7 @@ void prune_ss_legend(t_matrix *mat)
     }
 
     newnmap = 0;
-    newmap  = NULL;
+    newmap  = nullptr;
     for (i = 0; i < mat->nmap; i++)
     {
         newnum[i] = -1;
@@ -505,17 +505,17 @@ int gmx_do_dssp(int argc, char *argv[])
     int               *index;
     rvec              *xp, *x;
     int               *average_area;
-    real             **accr, *accr_ptr = NULL, *av_area, *norm_av_area;
+    real             **accr, *accr_ptr = nullptr, *av_area, *norm_av_area;
     char               pdbfile[32], tmpfile[32];
     char               dssp[256];
     const char        *dptr;
     gmx_output_env_t  *oenv;
-    gmx_rmpbc_t        gpbc = NULL;
+    gmx_rmpbc_t        gpbc = nullptr;
 
     t_filenm           fnm[] = {
-        { efTRX, "-f",   NULL,      ffREAD },
-        { efTPS, NULL,   NULL,      ffREAD },
-        { efNDX, NULL,   NULL,      ffOPTRD },
+        { efTRX, "-f",   nullptr,      ffREAD },
+        { efTPS, nullptr,   nullptr,      ffREAD },
+        { efNDX, nullptr,   nullptr,      ffOPTRD },
         { efDAT, "-ssdump", "ssdump", ffOPTWR },
         { efMAP, "-map", "ss",      ffLIBRD },
         { efXPM, "-o",   "ss",      ffWRITE },
@@ -528,7 +528,7 @@ int gmx_do_dssp(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_TIME | PCA_CAN_VIEW | PCA_TIME_UNIT,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -538,7 +538,7 @@ int gmx_do_dssp(int argc, char *argv[])
     fnAArea    = opt2fn_null("-aa", NFILE, fnm);
     bDoAccSurf = (fnArea || fnTArea || fnAArea);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, NULL, box, FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, nullptr, box, FALSE);
     atoms = &(top.atoms);
     check_oo(atoms);
     bPhbres = bPhobics(atoms);
@@ -558,11 +558,11 @@ int gmx_do_dssp(int argc, char *argv[])
 
     std::strcpy(pdbfile, "ddXXXXXX");
     gmx_tmpnam(pdbfile);
-    if ((tmpf = fopen(pdbfile, "w")) == NULL)
+    if ((tmpf = fopen(pdbfile, "w")) == nullptr)
     {
         sprintf(pdbfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
         gmx_tmpnam(pdbfile);
-        if ((tmpf = fopen(pdbfile, "w")) == NULL)
+        if ((tmpf = fopen(pdbfile, "w")) == nullptr)
         {
             gmx_fatal(FARGS, "Can not open tmp file %s", pdbfile);
         }
@@ -574,11 +574,11 @@ int gmx_do_dssp(int argc, char *argv[])
 
     std::strcpy(tmpfile, "ddXXXXXX");
     gmx_tmpnam(tmpfile);
-    if ((tmpf = fopen(tmpfile, "w")) == NULL)
+    if ((tmpf = fopen(tmpfile, "w")) == nullptr)
     {
         sprintf(tmpfile, "%ctmp%cfilterXXXXXX", DIR_SEPARATOR, DIR_SEPARATOR);
         gmx_tmpnam(tmpfile);
-        if ((tmpf = fopen(tmpfile, "w")) == NULL)
+        if ((tmpf = fopen(tmpfile, "w")) == nullptr)
         {
             gmx_fatal(FARGS, "Can not open tmp file %s", tmpfile);
         }
@@ -588,7 +588,7 @@ int gmx_do_dssp(int argc, char *argv[])
         fclose(tmpf);
     }
 
-    if ((dptr = getenv("DSSP")) == NULL)
+    if ((dptr = getenv("DSSP")) == nullptr)
     {
         dptr = "/usr/local/bin/dssp";
     }
@@ -623,10 +623,10 @@ int gmx_do_dssp(int argc, char *argv[])
     }
     else
     {
-        fTArea = NULL;
+        fTArea = nullptr;
     }
 
-    mat.map  = NULL;
+    mat.map  = nullptr;
     mat.nmap = readcmap(opt2fn("-map", NFILE, fnm), &(mat.map));
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
@@ -642,7 +642,7 @@ int gmx_do_dssp(int argc, char *argv[])
     snew(average_area, atoms->nres);
     snew(av_area, atoms->nres);
     snew(norm_av_area, atoms->nres);
-    accr  = NULL;
+    accr  = nullptr;
     naccr = 0;
 
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
@@ -660,7 +660,7 @@ int gmx_do_dssp(int argc, char *argv[])
         }
         gmx_rmpbc(gpbc, natoms, box, x);
         tapein = gmx_ffopen(pdbfile, "w");
-        write_pdbfile_indexed(tapein, NULL, atoms, x, ePBC, box, ' ', -1, gnx, index, NULL, TRUE);
+        write_pdbfile_indexed(tapein, nullptr, atoms, x, ePBC, box, ' ', -1, gnx, index, nullptr, TRUE);
         gmx_ffclose(tapein);
 
         if (0 != system(dssp))

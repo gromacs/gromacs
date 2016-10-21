@@ -103,10 +103,10 @@ class IndexBlockTest : public ::testing::Test
 IndexBlockTest::IndexBlockTest()
 {
     blocka_.nr           = 0;
-    blocka_.index        = NULL;
+    blocka_.index        = nullptr;
     blocka_.nalloc_index = 0;
     blocka_.nra          = 0;
-    blocka_.a            = NULL;
+    blocka_.a            = nullptr;
     blocka_.nalloc_a     = 0;
     gmx_ana_index_clear(&g_);
 }
@@ -131,7 +131,7 @@ void IndexBlockTest::checkBlocka()
     for (int i = 0; i < blocka_.nr; ++i)
     {
         gmx::test::TestReferenceChecker blockCompound(
-                compound.checkCompound("Block", NULL));
+                compound.checkCompound("Block", nullptr));
         blockCompound.checkSequence(&blocka_.a[blocka_.index[i]],
                                     &blocka_.a[blocka_.index[i+1]],
                                     "Atoms");
@@ -144,10 +144,10 @@ void IndexBlockTest::checkBlocka()
 
 TEST_F(IndexBlockTest, CreatesUnknownBlock)
 {
-    gmx_ana_index_make_block(&blocka_, NULL, NULL, INDEX_UNKNOWN, false);
+    gmx_ana_index_make_block(&blocka_, nullptr, nullptr, INDEX_UNKNOWN, false);
     checkBlocka();
     done_blocka(&blocka_);
-    gmx_ana_index_make_block(&blocka_, NULL, NULL, INDEX_UNKNOWN, false);
+    gmx_ana_index_make_block(&blocka_, nullptr, nullptr, INDEX_UNKNOWN, false);
     checkBlocka();
 }
 
@@ -155,10 +155,10 @@ TEST_F(IndexBlockTest, CreatesAtomBlock)
 {
     const int group[] = { 0, 1, 3, 4, 6 };
     setGroup(group);
-    gmx_ana_index_make_block(&blocka_, NULL, &g_, INDEX_ATOM, false);
+    gmx_ana_index_make_block(&blocka_, nullptr, &g_, INDEX_ATOM, false);
     checkBlocka();
     done_blocka(&blocka_);
-    gmx_ana_index_make_block(&blocka_, NULL, &g_, INDEX_ATOM, true);
+    gmx_ana_index_make_block(&blocka_, nullptr, &g_, INDEX_ATOM, true);
     checkBlocka();
 }
 
@@ -210,10 +210,10 @@ TEST_F(IndexBlockTest, CreatesSingleBlock)
 {
     const int group[] = { 0, 1, 3, 4, 6 };
     setGroup(group);
-    gmx_ana_index_make_block(&blocka_, NULL, &g_, INDEX_ALL, false);
+    gmx_ana_index_make_block(&blocka_, nullptr, &g_, INDEX_ALL, false);
     checkBlocka();
     done_blocka(&blocka_);
-    gmx_ana_index_make_block(&blocka_, NULL, &g_, INDEX_ALL, true);
+    gmx_ana_index_make_block(&blocka_, nullptr, &g_, INDEX_ALL, true);
     checkBlocka();
 }
 
@@ -284,9 +284,9 @@ TEST_F(IndexBlockTest, ChecksGroupForCompleteElementsTrivial)
 {
     const int group[] = { 0, 1, 2 };
     setGroup(group);
-    EXPECT_TRUE(gmx_ana_index_has_complete_elems(&g_, INDEX_ATOM, NULL));
-    EXPECT_FALSE(gmx_ana_index_has_complete_elems(&g_, INDEX_ALL, NULL));
-    EXPECT_FALSE(gmx_ana_index_has_complete_elems(&g_, INDEX_UNKNOWN, NULL));
+    EXPECT_TRUE(gmx_ana_index_has_complete_elems(&g_, INDEX_ATOM, nullptr));
+    EXPECT_FALSE(gmx_ana_index_has_complete_elems(&g_, INDEX_ALL, nullptr));
+    EXPECT_FALSE(gmx_ana_index_has_complete_elems(&g_, INDEX_UNKNOWN, nullptr));
 }
 
 TEST_F(IndexBlockTest, ChecksGroupForCompleteResiduesPositive)
@@ -426,7 +426,7 @@ void IndexMapTest::testUpdate(int atomCount, const int atoms[], bool bMaskOnly,
     g.isize = atomCount;
     g.index = const_cast<int *>(atoms);
     gmx_ana_indexmap_update(&map_, &g, bMaskOnly);
-    if (name == NULL)
+    if (name == nullptr)
     {
         name = "Updated";
     }
@@ -464,7 +464,7 @@ void IndexMapTest::checkMapping(int atomCount, const int atoms[],
     for (int i = 0; i < map_.mapb.nr; ++i)
     {
         gmx::test::TestReferenceChecker blockCompound(
-                compound.checkCompound("Block", NULL));
+                compound.checkCompound("Block", nullptr));
         blockCompound.checkSequence(&atoms[map_.mapb.index[i]],
                                     &atoms[map_.mapb.index[i+1]],
                                     "Atoms");
@@ -540,7 +540,7 @@ TEST_F(IndexMapTest, MapsSingleBlock)
     const int maxGroup[]  = { 0, 1, 2, 3 };
     const int evalGroup[] = { 0, 2 };
     testInit(maxGroup, INDEX_ALL);
-    testUpdate(evalGroup, false, NULL);
+    testUpdate(evalGroup, false, nullptr);
 }
 
 TEST_F(IndexMapTest, MapsResidueBlocks)
@@ -552,7 +552,7 @@ TEST_F(IndexMapTest, MapsResidueBlocks)
     topManager_.initAtoms(18);
     topManager_.initUniformResidues(3);
     testInit(maxGroup, INDEX_RES);
-    testUpdate(evalGroup, false, NULL);
+    testUpdate(evalGroup, false, nullptr);
 }
 
 TEST_F(IndexMapTest, MapsResidueBlocksWithMask)
@@ -564,7 +564,7 @@ TEST_F(IndexMapTest, MapsResidueBlocksWithMask)
     topManager_.initAtoms(18);
     topManager_.initUniformResidues(3);
     testInit(maxGroup, INDEX_RES);
-    testUpdate(evalGroup, true, NULL);
+    testUpdate(evalGroup, true, nullptr);
 }
 
 TEST_F(IndexMapTest, HandlesMultipleRequests)

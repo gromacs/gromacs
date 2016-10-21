@@ -57,7 +57,7 @@ class ReadTest : public ::testing::Test
 {
     public:
         ReadTest() : numInputs_(1),
-                     inputField_(0),
+                     inputField_(nullptr),
                      inpGuard_(),
                      wi_(),
                      wiGuard_()

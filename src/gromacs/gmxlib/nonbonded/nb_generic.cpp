@@ -117,7 +117,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     else
     {
         tabscale        = 0;
-        VFtab           = NULL;
+        VFtab           = nullptr;
     }
     ewtab               = fr->ic->tabq_coul_FDV0;
     ewtabscale          = fr->ic->tabq_scale;

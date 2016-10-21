@@ -68,10 +68,10 @@ CorrelationDataSet::~CorrelationDataSet()
     for (int i = 0; i < nrColumns_; i++)
     {
         sfree(tempValues_[i]);
-        tempValues_[i] = NULL;
+        tempValues_[i] = nullptr;
     }
     sfree(tempValues_);
-    tempValues_ = NULL;
+    tempValues_ = nullptr;
 }
 
 real CorrelationDataSet::getValue(int set, int time) const

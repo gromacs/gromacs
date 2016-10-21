@@ -120,7 +120,7 @@ class OptionsFilter : public OptionsVisitor
          * Does not throw.
          */
         OptionsFilter()
-            : formatter_(NULL), filterType_(eSelectOtherOptions),
+            : formatter_(nullptr), filterType_(eSelectOtherOptions),
               bShowHidden_(false)
         {
         }
@@ -170,7 +170,7 @@ void OptionsFilter::visitOption(const OptionInfo &option)
         return;
     }
     const FileNameOptionInfo *const fileOption = option.toType<FileNameOptionInfo>();
-    if (fileOption != NULL && fileOption->isInputFile())
+    if (fileOption != nullptr && fileOption->isInputFile())
     {
         if (filterType_ == eSelectInputFileOptions)
         {
@@ -178,7 +178,7 @@ void OptionsFilter::visitOption(const OptionInfo &option)
         }
         return;
     }
-    if (fileOption != NULL && fileOption->isInputOutputFile())
+    if (fileOption != nullptr && fileOption->isInputOutputFile())
     {
         if (filterType_ == eSelectInputOutputFileOptions)
         {
@@ -186,7 +186,7 @@ void OptionsFilter::visitOption(const OptionInfo &option)
         }
         return;
     }
-    if (fileOption != NULL && fileOption->isOutputFile())
+    if (fileOption != nullptr && fileOption->isOutputFile())
     {
         if (filterType_ == eSelectOutputFileOptions)
         {
@@ -300,8 +300,8 @@ descriptionWithOptionDetails(const CommonFormatterData &common,
 
     const FloatOptionInfo  *floatOption  = option.toType<FloatOptionInfo>();
     const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
-    if ((floatOption != NULL && floatOption->isTime())
-        || (doubleOption != NULL && doubleOption->isTime()))
+    if ((floatOption != nullptr && floatOption->isTime())
+        || (doubleOption != nullptr && doubleOption->isTime()))
     {
         // TODO: It could be nicer to have this in basicoptions.cpp.
         description = replaceAll(description, "%t", common.timeUnit);
@@ -434,14 +434,14 @@ class OptionsListFormatter : public IOptionsFormatter
     private:
         void writeSectionStartIfNecessary()
         {
-            if (title_ != NULL)
+            if (title_ != nullptr)
             {
                 context_.writeTitle(title_);
-                title_ = NULL;
+                title_ = nullptr;
             }
             if (!bDidOutput_)
             {
-                if (header_ != NULL)
+                if (header_ != nullptr)
                 {
                     context_.paragraphBreak();
                     context_.writeTextBlock(header_);
@@ -466,7 +466,7 @@ OptionsListFormatter::OptionsListFormatter(
         const CommonFormatterData &common,
         const char                *title)
     : context_(context), common_(common),
-      title_(title), header_(NULL), bDidOutput_(false)
+      title_(title), header_(nullptr), bDidOutput_(false)
 {
 }
 
@@ -478,7 +478,7 @@ void OptionsListFormatter::formatOption(const OptionInfo &option)
     std::string               defaultValue(defaultOptionValue(option));
     std::string               info;
     const FileNameOptionInfo *fileOption = option.toType<FileNameOptionInfo>();
-    if (fileOption != NULL)
+    if (fileOption != nullptr)
     {
         const bool bAbbrev = (context_.outputFormat() == eHelpOutputFormat_Console);
         info = fileOptionFlagsAsString(*fileOption, bAbbrev);

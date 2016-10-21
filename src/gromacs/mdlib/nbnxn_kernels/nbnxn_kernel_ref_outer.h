@@ -380,7 +380,7 @@ NBK_FUNC_NAME(_VgrpF)
             }
         }
 #ifdef CALC_SHIFTFORCES
-        if (fshift != NULL)
+        if (fshift != nullptr)
         {
             /* Add i forces to shifted force list */
             for (i = 0; i < UNROLLI; i++)

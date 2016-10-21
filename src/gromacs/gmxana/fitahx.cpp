@@ -76,8 +76,8 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
              rvec x[], int nca,
              int caindex[], gmx_bool bFit)
 {
-    static rvec *xref = NULL;
-    static real *mass = NULL;
+    static rvec *xref = nullptr;
+    static real *mass = nullptr;
     const  real  d    = 0.15;  /* Rise per residue (nm)    */
     const  real  tw   = 1.745; /* Twist per residue (rad)  */
     const  real  rad  = 0.23;  /* Radius of the helix (nm) */
@@ -90,7 +90,7 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
         gmx_fatal(FARGS, "Need at least 3 Calphas to fit to, (now %d)...\n", nca);
     }
 
-    if (xref == NULL)
+    if (xref == nullptr)
     {
         snew(xref, natoms);
         snew(mass, natoms);

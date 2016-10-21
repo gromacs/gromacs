@@ -138,7 +138,7 @@ gmx_qsort(void *           base,
 
     cbase = (char *)base;
 
-    swaptype = (size_t)(cbase - (char *)0) % sizeof(int) || size % sizeof(int) ? 2 : size == sizeof(int) ? 0 : 1;
+    swaptype = (size_t)(cbase - (char *)nullptr) % sizeof(int) || size % sizeof(int) ? 2 : size == sizeof(int) ? 0 : 1;
 
     if (nmemb < 7)
     {

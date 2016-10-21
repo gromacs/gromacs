@@ -126,7 +126,7 @@ static void dump_matrix(FILE *fp, const char *title, int n, double **a)
 int matrix_invert(FILE *fp, int n, double **a)
 {
     int      i, j, m, lda, *ipiv, lwork, info;
-    double **test = NULL, **id, *work;
+    double **test = nullptr, **id, *work;
 
 #ifdef DEBUG_MATRIX
     if (fp)

@@ -140,7 +140,7 @@ TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
     : settings_(*settings),
       startTime_(0.0), endTime_(0.0), deltaTime_(0.0),
       bStartTimeSet_(false), bEndTimeSet_(false), bDeltaTimeSet_(false),
-      bTrajOpen_(false), fr(NULL), gpbc_(NULL), status_(NULL), oenv_(NULL)
+      bTrajOpen_(false), fr(nullptr), gpbc_(nullptr), status_(nullptr), oenv_(nullptr)
 {
 }
 
@@ -182,7 +182,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
     {
         snew(topInfo_.mtop_, 1);
         readConfAndTopology(topfile_.c_str(), &topInfo_.bTop_, topInfo_.mtop_,
-                            &topInfo_.ePBC_, &topInfo_.xtop_, NULL,
+                            &topInfo_.ePBC_, &topInfo_.xtop_, nullptr,
                             topInfo_.boxtop_);
         // TODO: Only load this here if the tool actually needs it; selections
         // take care of themselves.
@@ -199,7 +199,7 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
             && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
         {
             sfree(topInfo_.xtop_);
-            topInfo_.xtop_ = NULL;
+            topInfo_.xtop_ = nullptr;
         }
     }
 }
@@ -208,7 +208,7 @@ void
 TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
 {
     // Return if we have already initialized the trajectory.
-    if (fr != NULL)
+    if (fr != nullptr)
     {
         return;
     }
@@ -302,10 +302,10 @@ TrajectoryAnalysisRunnerCommon::Impl::finishTrajectory()
         close_trx(status_);
         bTrajOpen_ = false;
     }
-    if (gpbc_ != NULL)
+    if (gpbc_ != nullptr)
     {
         gmx_rmpbc_done(gpbc_);
-        gpbc_ = NULL;
+        gpbc_ = nullptr;
     }
 }
 
@@ -464,7 +464,7 @@ TrajectoryAnalysisRunnerCommon::readNextFrame()
 void
 TrajectoryAnalysisRunnerCommon::initFrame()
 {
-    if (impl_->gpbc_ != NULL)
+    if (impl_->gpbc_ != nullptr)
     {
         gmx_rmpbc_trxfr(impl_->gpbc_, impl_->fr);
     }
@@ -488,7 +488,7 @@ TrajectoryAnalysisRunnerCommon::topologyInformation() const
 t_trxframe &
 TrajectoryAnalysisRunnerCommon::frame() const
 {
-    GMX_RELEASE_ASSERT(impl_->fr != NULL, "Frame not available when accessed");
+    GMX_RELEASE_ASSERT(impl_->fr != nullptr, "Frame not available when accessed");
     return *impl_->fr;
 }
 

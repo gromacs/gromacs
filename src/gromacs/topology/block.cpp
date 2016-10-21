@@ -61,7 +61,7 @@ void init_blocka(t_blocka *block)
     snew(block->index, block->nalloc_index);
     block->index[0]     = 0;
     block->nalloc_a     = 0;
-    block->a            = NULL;
+    block->a            = nullptr;
 }
 
 t_blocka *new_blocka(void)
@@ -87,8 +87,8 @@ void done_blocka(t_blocka *block)
     block->nra   = 0;
     sfree(block->index);
     sfree(block->a);
-    block->index        = NULL;
-    block->a            = NULL;
+    block->index        = nullptr;
+    block->a            = nullptr;
     block->nalloc_index = 0;
     block->nalloc_a     = 0;
 }

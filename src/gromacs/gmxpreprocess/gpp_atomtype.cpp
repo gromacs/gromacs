@@ -92,7 +92,7 @@ char *get_atomtype_name(int nt, gpp_atomtype_t ga)
 {
     if ((nt < 0) || (nt >= ga->nr))
     {
-        return NULL;
+        return nullptr;
     }
 
     return *(ga->atomname[nt]);
@@ -238,16 +238,16 @@ gpp_atomtype_t init_atomtype(void)
     snew(ga, 1);
 
     ga->nr           = 0;
-    ga->atom         = NULL;
-    ga->atomname     = NULL;
-    ga->nb           = NULL;
-    ga->bondatomtype = NULL;
-    ga->radius       = NULL;
-    ga->vol          = NULL;
-    ga->surftens     = NULL;
-    ga->atomnumber   = NULL;
-    ga->gb_radius    = NULL;
-    ga->S_hct        = NULL;
+    ga->atom         = nullptr;
+    ga->atomname     = nullptr;
+    ga->nb           = nullptr;
+    ga->bondatomtype = nullptr;
+    ga->radius       = nullptr;
+    ga->vol          = nullptr;
+    ga->surftens     = nullptr;
+    ga->atomnumber   = nullptr;
+    ga->gb_radius    = nullptr;
+    ga->S_hct        = nullptr;
 
     return ga;
 }
@@ -309,7 +309,7 @@ int add_atomtype(gpp_atomtype_t ga, t_symtab *tab,
     {
         if (strcmp(*ga->atomname[i], name) == 0)
         {
-            if (NULL != debug)
+            if (nullptr != debug)
             {
                 fprintf(debug, "Trying to add atomtype %s again. Skipping it.\n", name);
             }
@@ -528,7 +528,7 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
     }
 
     /* Renumber nlist */
-    nbsnew = NULL;
+    nbsnew = nullptr;
     snew(nbsnew, plist[ftype].nr);
 
     nrfp  = NRFP(ftype);

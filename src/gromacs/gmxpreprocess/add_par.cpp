@@ -81,7 +81,7 @@ void add_param(t_params *ps, int ai, int aj, real *c, char *s)
     ps->param[ps->nr].ai() = ai;
     ps->param[ps->nr].aj() = aj;
     clear_atom_list(2, ps->param[ps->nr].a);
-    if (c == NULL)
+    if (c == nullptr)
     {
         clear_force_param(0, ps->param[ps->nr].c);
     }
