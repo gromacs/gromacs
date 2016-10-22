@@ -144,4 +144,15 @@ void MDModules::assignOptionsToModulesFromTpr()
     assignOptionsFromKeyValueTree(&moduleOptions, *impl_->ir_->params, nullptr);
 }
 
+void MDModules::adjustInputrecBasedOnModules()
+{
+    gmx::Options                        options;
+    impl_->field_->initMdpOptions(&options);
+    std::unique_ptr<KeyValueTreeObject> params(impl_->ir_->params);
+    // Avoid double freeing if the next operation throws.
+    impl_->ir_->params = nullptr;
+    impl_->ir_->params = new KeyValueTreeObject(
+                gmx::adjustKeyValueTreeFromOptions(*params, options));
+}
+
 } // namespace gmx
