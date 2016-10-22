@@ -40,6 +40,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
+#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -92,6 +93,15 @@ void MDModules::assignOptionsToModulesFromInputrec()
     // TODO: Error handling.
     gmx::assignOptionsFromKeyValueTree(&options, *impl_->ir_->params,
                                        nullptr);
+}
+
+void MDModules::adjustInputrecBasedOnModules()
+{
+    gmx::Options                        options;
+    impl_->field_->initMdpOptions(&options);
+    std::unique_ptr<KeyValueTreeObject> params(impl_->ir_->params);
+    impl_->ir_->params = new KeyValueTreeObject(
+                gmx::adjustKeyValueTreeFromOptions(*params, options));
 }
 
 t_inputrec *MDModules::inputrec()

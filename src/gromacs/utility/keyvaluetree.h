@@ -57,6 +57,7 @@ namespace gmx
 
 class KeyValueTreeArray;
 class KeyValueTreeObject;
+class TextWriter;
 
 class KeyValueTreePath
 {
@@ -179,6 +180,8 @@ class KeyValueTreeObject
         {
             return valueMap_.at(key);
         }
+
+        void writeUsing(TextWriter *writer) const;
 
     private:
         KeyValueTreeValue &operator[](const std::string &key)
