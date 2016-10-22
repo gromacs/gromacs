@@ -137,6 +137,14 @@ class MDModules
          */
         void assignOptionsToModulesFromTpr();
 
+        /*! \brief
+         * Normalizes inputrec parameters to match current code version.
+         *
+         * This orders the parameters in inputrec to match the current code and
+         * adds any missing defaults.
+         */
+        void adjustInputrecBasedOnModules();
+
     private:
         class Impl;
 

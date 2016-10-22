@@ -124,13 +124,6 @@ class IInputRecExtension
                              real                           reltol,
                              real                           abstol)  = 0;
 
-        /*! \brief Print parameters belonging to this class to a file
-         *
-         * \param[in] fp     File pointer
-         * \param[in] indent Initial indentation level for printing
-         */
-        virtual void printParameters(FILE *fp, int indent)           = 0;
-
         /*! \brief Initiate output parameters
          *
          * \param[in] fplog File pointer for log messages
