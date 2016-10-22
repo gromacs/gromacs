@@ -120,7 +120,8 @@ add_library(alexandria_objlib OBJECT ${ALEXANDRIA_SOURCES})
 add_executable(alexandria alexandria.cpp
          $<TARGET_OBJECTS:alexandria_objlib>
          )
-target_link_libraries(alexandria libgromacs ${GMX_EXTRA_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(alexandria libgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
+         ${GMX_EXE_LINKER_FLAGS})
 set(BINARY_NAME "alexandria${GMX_BINARY_SUFFIX}")
 set_target_properties(alexandria PROPERTIES 
                       OUTPUT_NAME "${BINARY_NAME}")

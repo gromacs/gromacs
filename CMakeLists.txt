@@ -458,19 +458,19 @@ endif()
 find_package(LibXml2)
 include(gmxTestLibXml2)
 gmx_test_libxml2(HAVE_LIBXML2)
-option(GMX_XML "Use libxml2 to parse xml files (currently has no effect)" ${HAVE_LIBXML2})
-set(PKG_XML "")
-mark_as_advanced(GMX_XML)
+option(GMX_LIBXML2 "Use libxml2 to parse xml files (currently has no effect)" ${HAVE_LIBXML2})
+set(PKG_LIBXML2 "")
+mark_as_advanced(GMX_LIBXML2)
 # Don't actually do anything, since libxml2 is currently not used by libgromacs
-if(GMX_XML AND NOT HAVE_LIBXML2)
-    message(FATAL_ERROR "libxml2 not found. Set GMX_XML=OFF to compile without XML support")
+if(GMX_LIBXML2 AND NOT HAVE_LIBXML2)
+    message(FATAL_ERROR "libxml2 not found. Set GMX_LIBXML2=OFF to compile without XML support")
 endif()
 
-if(GMX_XML)
+if(GMX_LIBXML2)
     include_directories(${LIBXML2_INCLUDE_DIR})
-    set(PKG_XML libxml-2.0)
+    set(PKG_LIBXML2 libxml-2.0)
     set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
-endif(GMX_XML)
+endif(GMX_LIBXML2)
 
 # When compiling alexandria three extra libraries become obligatory
 # CLN, sqlite3 and openbabel
