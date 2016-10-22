@@ -66,7 +66,6 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/txtdump.h"
 
 namespace gmx
 {
@@ -169,7 +168,6 @@ class ElectricField : public IInputRecExtension, public IForceProvider
                              const IInputRecExtension *field2,
                              real                      reltol,
                              real                      abstol);
-        virtual void printParameters(FILE *fp, int indent);
         virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
                                 bool bAppendFiles, const gmx_output_env_t *oenv);
         virtual void finishOutput();
@@ -399,18 +397,6 @@ void ElectricField::initForcerec(t_forcerec *fr)
     {
         fr->bF_NoVirSum = TRUE;
         fr->efield      = this;
-    }
-}
-
-void ElectricField::printParameters(FILE *fp, int indent)
-{
-    const char *const dimension[DIM] = { "X", "Y", "Z" };
-    indent = pr_title(fp, indent, "ElectricField");
-    for (int m = 0; m < DIM; m++)
-    {
-        pr_indent(fp, indent);
-        fprintf(fp, "-%s E0 = %g omega = %g t0 = %g sigma = %g\n",
-                dimension[m], a(m), omega(m), t0(m), sigma(m));
     }
 }
 

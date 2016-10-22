@@ -55,6 +55,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
 
 //! Macro to select a bool name
@@ -951,9 +952,6 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
             pr_simtempvals(fp, indent, ir->simtempvals, ir->fepvals->n_lambda);
         }
 
-        /* ELECTRIC FIELDS */
-        ir->efield->printParameters(fp, indent);
-
         /* ION/WATER SWAPPING FOR COMPUTATIONAL ELECTROPHYSIOLOGY */
         PS("swapcoords", ESWAPTYPE(ir->eSwapCoords));
         if (ir->eSwapCoords != eswapNO)
@@ -970,6 +968,13 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
         PR("userreal2", ir->userreal2);
         PR("userreal3", ir->userreal3);
         PR("userreal4", ir->userreal4);
+
+        if (!bMDPformat)
+        {
+            gmx::TextWriter writer(fp);
+            writer.wrapperSettings().setIndent(indent);
+            ir->params->writeUsing(&writer);
+        }
 
         pr_grp_opts(fp, indent, "grpopts", &(ir->opts), bMDPformat);
     }

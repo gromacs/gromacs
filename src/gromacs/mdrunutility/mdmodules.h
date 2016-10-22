@@ -94,6 +94,13 @@ class MDModules
          * to be accessed.
          */
         void assignOptionsToModulesFromInputrec();
+        /*! \brief
+         * Normalizes inputrec parameters to match current code version.
+         *
+         * This orders the parameters in inputrec to match the current code and
+         * adds any missing defaults.
+         */
+        void adjustInputrecBasedOnModules();
 
         /*! \brief
          * Returns an initialized t_inputrec structure.

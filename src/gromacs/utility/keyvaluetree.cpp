@@ -41,13 +41,10 @@
 
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace gmx
 {
-
-/********************************************************************
- * KeyValueTreePath
- */
 
 namespace
 {
@@ -60,7 +57,26 @@ std::vector<std::string> splitPathElements(const std::string &path)
     return splitDelimitedString(path.substr(1), '/');
 }
 
+//! Helper function to format a simple KeyValueTreeValue.
+std::string formatSingleValue(const KeyValueTreeValue &value)
+{
+    if (value.isType<float>())
+    {
+        return formatString("%g", value.cast<float>());
+    }
+    else if (value.isType<double>())
+    {
+        return formatString("%g", value.cast<double>());
+    }
+    GMX_RELEASE_ASSERT(false, "Unknown value type");
+    return std::string();
+}
+
 }   // namespace
+
+/********************************************************************
+ * KeyValueTreePath
+ */
 
 KeyValueTreePath::KeyValueTreePath(const std::string &path)
     : path_(splitPathElements(path))
@@ -70,6 +86,50 @@ KeyValueTreePath::KeyValueTreePath(const std::string &path)
 std::string KeyValueTreePath::toString() const
 {
     return "/" + joinStrings(path_, "/");
+}
+
+/********************************************************************
+ * KeyValueTreeObject
+ */
+
+void KeyValueTreeObject::writeUsing(TextWriter *writer) const
+{
+    for (const auto &prop : properties())
+    {
+        const auto &value = prop.value();
+        if (value.isObject())
+        {
+            writer->writeString(prop.key());
+            writer->writeLine(":");
+            int oldIndent = writer->wrapperSettings().indent();
+            writer->wrapperSettings().setIndent(oldIndent + 2);
+            value.asObject().writeUsing(writer);
+            writer->wrapperSettings().setIndent(oldIndent);
+        }
+        else
+        {
+            int indent = writer->wrapperSettings().indent();
+            writer->writeString(formatString("%*s", -(33-indent), prop.key().c_str()));
+            writer->writeString(" = ");
+            if (value.isArray())
+            {
+                writer->writeString("[");
+                for (const auto &elem : value.asArray().values())
+                {
+                    GMX_RELEASE_ASSERT(!elem.isObject() && !elem.isArray(),
+                                       "Arrays of objects not currently implemented");
+                    writer->writeString(" ");
+                    writer->writeString(formatSingleValue(elem));
+                }
+                writer->writeString(" ]");
+            }
+            else
+            {
+                writer->writeString(formatSingleValue(value));
+            }
+            writer->writeLine();
+        }
+    }
 }
 
 } // namespace gmx

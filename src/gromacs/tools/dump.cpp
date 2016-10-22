@@ -72,7 +72,7 @@
 #include "gromacs/utility/txtdump.h"
 
 static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
-                     gmx_bool bSysTop)
+                     gmx_bool bSysTop, gmx_bool bRawInputrec)
 {
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
@@ -93,9 +93,9 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
                    ir,
                    &state,
                    tpx.bTop ? &mtop : NULL);
-    if (tpx.bIr)
+    if (tpx.bIr && !bRawInputrec)
     {
-        mdModules.assignOptionsToModulesFromInputrec();
+        mdModules.adjustInputrecBasedOnModules();
     }
 
     if (mdpfn && tpx.bIr)
@@ -626,11 +626,13 @@ int gmx_dump(int argc, char *argv[])
 
     gmx_output_env_t *oenv;
     /* Command line options */
-    static gmx_bool   bShowNumbers = TRUE;
-    static gmx_bool   bSysTop      = FALSE;
+    gmx_bool          bShowNumbers = TRUE;
+    gmx_bool          bSysTop      = FALSE;
+    gmx_bool          bRawInputrec = FALSE;
     t_pargs           pa[]         = {
         { "-nr", FALSE, etBOOL, {&bShowNumbers}, "Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },
-        { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" }
+        { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" },
+        { "-rawir", FALSE, etBOOL, {&bRawInputrec}, "Write input parameters as they are in a tpr file, instead of how the current version interprets them" }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
@@ -643,7 +645,7 @@ int gmx_dump(int argc, char *argv[])
     if (ftp2bSet(efTPR, NFILE, fnm))
     {
         list_tpx(ftp2fn(efTPR, NFILE, fnm), bShowNumbers,
-                 ftp2fn_null(efMDP, NFILE, fnm), bSysTop);
+                 ftp2fn_null(efMDP, NFILE, fnm), bSysTop, bRawInputrec);
     }
     else if (ftp2bSet(efTRX, NFILE, fnm))
     {
