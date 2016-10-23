@@ -157,12 +157,12 @@ gmx_bool equal_real(real i1, real i2, real ftol, real abstol)
     return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
 }
 
-static gmx_bool equal_float(float i1, float i2, float ftol, float abstol)
+gmx_bool equal_float(float i1, float i2, float ftol, float abstol)
 {
     return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
 }
 
-static gmx_bool equal_double(double i1, double i2, real ftol, real abstol)
+gmx_bool equal_double(double i1, double i2, real ftol, real abstol)
 {
     return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
 }

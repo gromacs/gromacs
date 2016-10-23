@@ -111,19 +111,6 @@ class IInputRecExtension
          */
         virtual void broadCast(const t_commrec *cr)     = 0;
 
-        /*! \brief compare a section of two input record structures
-         *
-         * Routine is used in gmx check.
-         * \param[in]    fp     File pointer
-         * \param[inout] field2 Electric field
-         * \param[in]    reltol Relative tolerance
-         * \param[in]    abstol Absolute tolerance
-         */
-        virtual void compare(FILE                          *fp,
-                             const gmx::IInputRecExtension *field2,
-                             real                           reltol,
-                             real                           abstol)  = 0;
-
         /*! \brief Initiate output parameters
          *
          * \param[in] fplog File pointer for log messages

@@ -1261,7 +1261,8 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_real(fp, "inputrec->userreal3", -1, ir1->userreal3, ir2->userreal3, ftol, abstol);
     cmp_real(fp, "inputrec->userreal4", -1, ir1->userreal4, ir2->userreal4, ftol, abstol);
     cmp_grpopts(fp, &(ir1->opts), &(ir2->opts), ftol, abstol);
-    ir1->efield->compare(fp, ir2->efield, ftol, abstol);
+    gmx::TextWriter writer(fp);
+    gmx::compareKeyValueTrees(&writer, *ir1->params, *ir2->params, ftol, abstol);
 }
 
 void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)

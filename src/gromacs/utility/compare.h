@@ -51,6 +51,10 @@
 
 //! Compares two real values for equality.
 gmx_bool equal_real(real i1, real i2, real ftol, real abstol);
+//! Compares two float values for equality.
+gmx_bool equal_float(float i1, float i2, float ftol, float abstol);
+//! Compares two double values for equality.
+gmx_bool equal_double(double i1, double i2, real ftol, real abstol);
 
 //! Compares two integers and prints differences.
 void cmp_int(FILE *fp, const char *s, int index, int i1, int i2);
