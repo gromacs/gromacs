@@ -48,7 +48,6 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -59,7 +58,6 @@
 #include "gromacs/options/ioptionscontainerwithsections.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/pleasecite.h"
@@ -162,7 +160,7 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         // From IInputRecExtension
         virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
         virtual void initMdpOptions(IOptionsContainerWithSections *options);
-        virtual void broadCast(const t_commrec *cr);
+
         virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
                                 bool bAppendFiles, const gmx_output_env_t *oenv);
         virtual void finishOutput();
@@ -177,18 +175,6 @@ class ElectricField : public IInputRecExtension, public IForceProvider
     private:
         //! Return whether or not to apply a field
         bool isActive() const;
-
-        /*! \brief Add a component to the electric field
-         *
-         * The electric field has three spatial dimensions that are
-         * added to the data structure one at a time.
-         * \param[in] dim   Dimension, XX, YY, ZZ (0, 1, 2)
-         * \param[in] a     Amplitude of the field in V/nm
-         * \param[in] omega Frequency (1/ps)
-         * \param[in] t0    Time of pulse peak (ps)
-         * \param[in] sigma Width of peak (ps)
-         */
-        void setFieldTerm(int dim, real a, real omega, real t0, real sigma);
 
         /*! \brief Return the field strength
          *
@@ -324,37 +310,6 @@ void ElectricField::initMdpOptions(IOptionsContainerWithSections *options)
     efield_[ZZ].initMdpOptions(&section, "z");
 }
 
-void ElectricField::broadCast(const t_commrec *cr)
-{
-    rvec a1, omega1, sigma1, t01;
-
-    if (MASTER(cr))
-    {
-        // Load the parameters read from tpr into temp vectors
-        for (int m = 0; m < DIM; m++)
-        {
-            a1[m]     = a(m);
-            omega1[m] = omega(m);
-            sigma1[m] = sigma(m);
-            t01[m]    = t0(m);
-        }
-    }
-    // Broadcasting the parameters
-    gmx_bcast(DIM*sizeof(a1[0]), a1, cr);
-    gmx_bcast(DIM*sizeof(omega1[0]), omega1, cr);
-    gmx_bcast(DIM*sizeof(t01[0]), t01, cr);
-    gmx_bcast(DIM*sizeof(sigma1[0]), sigma1, cr);
-
-    // And storing them locally
-    if (!MASTER(cr))
-    {
-        for (int m = 0; m < DIM; m++)
-        {
-            setFieldTerm(m, a1[m], omega1[m], t01[m], sigma1[m]);
-        }
-    }
-}
-
 void ElectricField::initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
                                bool bAppendFiles, const gmx_output_env_t *oenv)
 {
@@ -397,12 +352,6 @@ void ElectricField::initForcerec(t_forcerec *fr)
         fr->bF_NoVirSum = TRUE;
         fr->efield      = this;
     }
-}
-
-void ElectricField::setFieldTerm(int dim, real a, real omega, real t0, real sigma)
-{
-    range_check(dim, 0, DIM);
-    efield_[dim].setField(a, omega, t0, sigma);
 }
 
 real ElectricField::field(int dim, real t) const
