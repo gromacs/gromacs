@@ -55,12 +55,8 @@
 
 struct gmx_output_env_t;
 struct pull_params_t;
-struct t_commrec;
-struct t_fileio;
 struct t_filenm;
 struct t_forcerec;
-struct t_inpfile;
-struct warninp;
 
 namespace gmx
 {
@@ -104,12 +100,6 @@ class IInputRecExtension
          * Defines input (mdp) parameters for this extension.
          */
         virtual void initMdpOptions(IOptionsContainerWithSections *options) = 0;
-
-        /*! \brief Broadcast input parameters to all ranks
-         *
-         * \param[in] cr  Communication record, gromacs structure
-         */
-        virtual void broadCast(const t_commrec *cr)     = 0;
 
         /*! \brief Initiate output parameters
          *
