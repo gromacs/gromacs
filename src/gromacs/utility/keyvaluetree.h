@@ -50,6 +50,7 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/variant.h"
 
 namespace gmx
@@ -231,6 +232,19 @@ inline KeyValueTreeObject &KeyValueTreeValue::asObject()
 {
     return value_.castRef<KeyValueTreeObject>();
 }
+
+//! \cond libapi
+/*! \brief
+ * Compares two KeyValueTrees and prints any differences.
+ *
+ * \ingroup module_utility
+ */
+void compareKeyValueTrees(TextWriter               *writer,
+                          const KeyValueTreeObject &tree1,
+                          const KeyValueTreeObject &tree2,
+                          real                      ftol,
+                          real                      abstol);
+//! \endcond
 
 } // namespace gmx
 

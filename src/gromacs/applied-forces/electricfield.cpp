@@ -58,7 +58,6 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainerwithsections.h"
 #include "gromacs/options/optionsection.h"
-#include "gromacs/utility/compare.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
@@ -164,10 +163,6 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
         virtual void initMdpOptions(IOptionsContainerWithSections *options);
         virtual void broadCast(const t_commrec *cr);
-        virtual void compare(FILE                     *fp,
-                             const IInputRecExtension *field2,
-                             real                      reltol,
-                             real                      abstol);
         virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
                                 bool bAppendFiles, const gmx_output_env_t *oenv);
         virtual void finishOutput();
@@ -420,26 +415,6 @@ bool ElectricField::isActive() const
     return (efield_[XX].a() != 0 ||
             efield_[YY].a() != 0 ||
             efield_[ZZ].a() != 0);
-}
-
-void ElectricField::compare(FILE                     *fp,
-                            const IInputRecExtension *other,
-                            real                      reltol,
-                            real                      abstol)
-{
-    GMX_ASSERT(dynamic_cast<const ElectricField *>(other) != nullptr,
-               "Invalid other type");
-    const ElectricField *f2 = static_cast<const ElectricField *>(other);
-    for (int m = 0; (m < DIM); m++)
-    {
-        char buf[256];
-
-        sprintf(buf, "inputrec->field[%d]", m);
-        cmp_real(fp, buf, -1, a(m), f2->a(m), reltol, abstol);
-        cmp_real(fp, buf, -1, omega(m), f2->omega(m), reltol, abstol);
-        cmp_real(fp, buf, -1, t0(m), f2->t0(m), reltol, abstol);
-        cmp_real(fp, buf, -1, sigma(m), f2->sigma(m), reltol, abstol);
-    }
 }
 
 void ElectricField::printComponents(double t) const
