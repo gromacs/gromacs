@@ -810,10 +810,18 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                 auto f = fs->findForce(atoms);
                 if (fs->forceEnd() != f)
                 {
-                    int gt  = f - fs->forceBegin();
-                    int gti = ForceConstants_[eitBONDS].reverseIndex(gt);
+                    int  gt  = f - fs->forceBegin();
+                    int  gti = ForceConstants_[eitBONDS].reverseIndex(gt);
+                    // Compute deviation from minimum energy
+                    rvec dx;
+                    rvec_sub(mymol->x_[ai], mymol->x_[aj], dx);
+                    real dr   = norm(dx);
+                    // TODO fill in correct b0 and beta
+                    real b0   = 0.15;
+                    real beta = 25;
+                    real temp = gmx::square(1-std::exp(-beta*(dr-b0))) - 1;
 
-                    a[gti][j]++;
+                    a[gti][j] -= temp;
                     ntest[gti]++;
                     if (ctest[gti].empty())
                     {
