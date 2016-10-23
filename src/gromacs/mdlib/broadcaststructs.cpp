@@ -53,6 +53,9 @@
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/inmemoryserializer.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/smalloc.h"
 
 static void bc_cstring(const t_commrec *cr, char **s)
@@ -668,9 +671,29 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     gmx::IInputRecExtension *eptr = inputrec->efield;
     block_bc(cr, *inputrec);
     inputrec->efield = eptr;
-    if (!SIMMASTER(cr))
+    if (SIMMASTER(cr))
     {
+        gmx::InMemorySerializer serializer;
+        gmx::serializeKeyValueTree(*inputrec->params, &serializer);
+        std::vector<char>       buffer = serializer.finishAndGetBuffer();
+        size_t                  size   = buffer.size();
+        block_bc(cr, size);
+        nblock_bc(cr, size, buffer.data());
+    }
+    else
+    {
+        // block_bc() above overwrites the old pointer, so set it to a
+        // reasonable value in case code below throws.
+        // cppcheck-suppress redundantAssignment
         inputrec->params = nullptr;
+        std::vector<char> buffer;
+        size_t            size;
+        block_bc(cr, size);
+        nblock_abc(cr, size, &buffer);
+        gmx::InMemoryDeserializer serializer(buffer);
+        // cppcheck-suppress redundantAssignment
+        inputrec->params = new gmx::KeyValueTreeObject(
+                    gmx::deserializeKeyValueTree(&serializer));
     }
 
     bc_grpopts(cr, &(inputrec->opts));
@@ -709,7 +732,6 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
         snew_bc(cr, inputrec->imd, 1);
         bc_imd(cr, inputrec->imd);
     }
-    inputrec->efield->broadCast(cr);
     if (inputrec->eSwapCoords != eswapNO)
     {
         snew_bc(cr, inputrec->swap, 1);

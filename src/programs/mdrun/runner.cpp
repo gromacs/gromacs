@@ -779,7 +779,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         /* Read (nearly) all data required for the simulation */
         read_tpx_state(ftp2fn(efTPR, nfile, fnm), inputrec, state, mtop);
-        mdModules.assignOptionsToModulesFromTpr();
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
@@ -897,6 +896,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
          */
         gmx_bcast_sim(sizeof(bUseGPU), &bUseGPU, cr);
     }
+    mdModules.assignOptionsToModulesFromTpr();
 
     if (fplog != nullptr)
     {
