@@ -88,12 +88,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=invalidscanf
         --suppress=sizeofCalculation
         --suppress=invalidscanf_libc
-        --suppress=missingInclude:src/programs/mdrun/gmx_gpu_utils/gmx_gpu_utils.cu
         --suppress=*:src/external/Random123-1.08/include/Random123/features/compilerfeatures.h
-        --suppress=invalidPointerCast:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
-        --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
-        --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh
-        --suppress=shiftTooManyBits:src/gromacs/gpu_utils/gpu_utils.cu
         ) 
     set(_cxx_flags
         -D__cplusplus
@@ -110,6 +105,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=unusedStructMember:src/gromacs/selection/selhelp.cpp
         --suppress=redundantPointerOp:src/gromacs/fileio/gmxfio-xdr.cpp
         --suppress=passedByValue # See comment below
+        --suppress=shiftTooManyBits:src/gromacs/gpu_utils/gpu_utils.cu # CUDA kernel launch false positive
         )
         # Passing non-trivial objects by value is rarely a problem for
         # GROMACS in performance-sensitive code, and shouldn't be
@@ -126,7 +122,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         set(_target_name cppcheck-${_filename}.${_outputext})
         string(REPLACE "/" "_" _target_name ${_target_name})
         list(APPEND _filelist ${_target_name})
-        if (_filename MATCHES "\\.cpp$")
+        if (_filename MATCHES "\\.cpp$" OR _filename MATCHES "\\.cu$")
             set(_lang CXX)
             set(_lang_flags ${_cxx_flags})
         else()
