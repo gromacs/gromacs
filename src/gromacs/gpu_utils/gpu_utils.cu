@@ -191,6 +191,7 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     }
 
     /* try to execute a dummy kernel */
+    // cppcheck-suppress shiftTooManyBits cppcheck does not know CUDA kernel launch syntax
     k_dummy_test<<< 1, 512>>> ();
     if (cudaThreadSynchronize() != cudaSuccess)
     {
