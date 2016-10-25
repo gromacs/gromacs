@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,10 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/logger.h"
+#include "programs/alexandria/fill_inputrec.h"
 #include "programs/alexandria/gauss_io.h"
 #include "programs/alexandria/getmdlogger.h"
 #include "programs/alexandria/mymol.h"
@@ -81,7 +84,7 @@ class EemTest : public gmx::test::CommandLineTestBase
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-            
+
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
             checker_.setDefaultTolerance(tolerance);
         }
@@ -91,7 +94,7 @@ class EemTest : public gmx::test::CommandLineTestBase
         {
         }
 
-    void testEem(ChargeDistributionModel model)
+        void testEem(ChargeDistributionModel model)
         {
             // Needed for ReadGauss
             const char *molnm   = (char *)"XXX";
@@ -99,12 +102,12 @@ class EemTest : public gmx::test::CommandLineTestBase
             const char *conf    = (char *)"minimum";
             const char *basis   = (char *)"";
             const char *jobtype = (char *)"Pop";
-            
-            int    maxpot   = 0;
-            int    nsymm    = 0;
+
+            int         maxpot   = 0;
+            int         nsymm    = 0;
 
             //Read input file for molprop
-            std::string dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
+            std::string             dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol3-esp.log");
             alexandria::MolProp     molprop;
             ReadGauss(dataName.c_str(), molprop, molnm, iupac, conf, basis,
                       maxpot, nsymm, pd_.getForceField().c_str(), jobtype);
@@ -115,6 +118,10 @@ class EemTest : public gmx::test::CommandLineTestBase
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
             const char               *dihopt[]    = { NULL, "No", "Single", "All", NULL };
             eDih                      edih        = (eDih) get_option(dihopt);
+            gmx::MDModules            mdModules;
+            t_inputrec               *inputrec   = mdModules.inputrec();
+            fill_inputrec(inputrec);
+            mp_.setInputrec(inputrec);
 
             mp_.GenerateTopology(aps_, pd_, lot, model,
                                  false, false, edih, false);
@@ -124,13 +131,13 @@ class EemTest : public gmx::test::CommandLineTestBase
             real           epsr        = 1;
             char          *symm_string = (char *)"";
             t_commrec     *cr          = init_commrec();
-            gmx::MDLogger  fplog       = getMdLogger(cr, stdout);
-            
-            mp_.GenerateCharges(pd_, fplog, aps_, model, eqgEEM,
+            gmx::MDLogger  mdlog       = getMdLogger(cr, stdout);
+
+            mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgEEM,
                                 hfac, epsr, lot, true, symm_string, cr, NULL);
 
             std::vector<double> qtotValues;
-            for(int atom = 0; atom < mp_.topology_->atoms.nr; atom++)
+            for (int atom = 0; atom < mp_.topology_->atoms.nr; atom++)
             {
                 qtotValues.push_back(mp_.topology_->atoms.atom[atom].q);
             }
@@ -164,18 +171,18 @@ TEST_F (EemTest, Yang)
 
 // The tests below are outcommented since we do not have a parameters for the AX? methods.
 /*
-TEST_F (EemTest, AXp)
-{
+   TEST_F (EemTest, AXp)
+   {
     testEem(eqdAXp);
-}
+   }
 
-TEST_F (EemTest, AXg)
-{
+   TEST_F (EemTest, AXg)
+   {
     testEem(eqdAXg);
-}
+   }
 
-TEST_F (EemTest, AXs)
-{
+   TEST_F (EemTest, AXs)
+   {
     testEem(eqdAXs);
-}
-*/
+   }
+ */

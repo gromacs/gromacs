@@ -63,6 +63,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "fill_inputrec.h"
 #include "gauss_io.h"
 #include "gentop_core.h"
 #include "gentop_vsite.h"
@@ -95,26 +96,6 @@ static void clean_pdb_names(t_atoms *atoms, t_symtab *tab)
             atoms->atomname[i] = put_symtab(tab, buf);
         }
     }
-}
-
-static void fill_inputrec(t_inputrec *ir)
-{
-    ir->bAdress          = false;
-    ir->cutoff_scheme    = ecutsGROUP;
-    ir->tabext           = 0; /* nm */
-    ir->ePBC             = epbcNONE;
-    ir->ns_type          = ensSIMPLE;
-    ir->epsilon_r        = 1;
-    ir->vdwtype          = evdwCUT;
-    ir->coulombtype      = eelCUT;
-    ir->coulomb_modifier = eintmodNONE;
-    ir->eDispCorr        = edispcNO;
-    ir->vdw_modifier     = eintmodNONE;
-    ir->niter            = 25;
-    ir->em_stepsize      = 1e-2; // nm
-    ir->em_tol           = 1e-2;
-    ir->opts.ngener      = 1;
-    snew(ir->fepvals, 1);
 }
 
 int alex_gentop(int argc, char *argv[])
@@ -179,7 +160,7 @@ int alex_gentop(int argc, char *argv[])
         { efXVG, "-pc",       "pot-comp",  ffOPTWR },
         { efPDB, "-pdbdiff",  "pdbdiff",   ffOPTWR }
     };
-    
+
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
 
     static int                       maxpot         = 0;
@@ -204,7 +185,7 @@ int alex_gentop(int argc, char *argv[])
     static real                      watoms         = 0;
     static real                      spacing        = 0.1;
     static real                      dbox           = 0.370424;
-    static real                      penalty_fac    = 1;   
+    static real                      penalty_fac    = 1;
     static real                      rDecrZeta      = -1;
     static char                     *molnm          = (char *)"";
     static char                     *iupac          = (char *)"";
@@ -231,19 +212,19 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  b13            = false;
     static gmx_bool                  bZatype        = true;
     static gmx_bool                  bH14           = true;
-    static gmx_bool                  bRound         = true;    
-    static gmx_bool                  bPBC           = true;    
+    static gmx_bool                  bRound         = true;
+    static gmx_bool                  bPBC           = true;
     static gmx_bool                  bVerbose       = true;
-    static gmx_bool                  bRandQ         = true;   
+    static gmx_bool                  bRandQ         = true;
     static gmx_bool                  bSkipVSites    = true;
-  
+
     static const char               *cqdist[]       = {nullptr, "AXp", "AXs", "AXg", "Yang", "Bultinck", "Rappe", nullptr};
     static const char               *cqgen[]        = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
     static const char               *lot            = "B3LYP/aug-cc-pVTZ";
     static const char               *dzatoms        = "";
     static const char               *ff             = "alexandria";
-    
+
     t_pargs                          pa[]     = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
@@ -415,7 +396,7 @@ int alex_gentop(int argc, char *argv[])
     eChargeGroup              ecg                        = (eChargeGroup) get_option(cgopt);
     ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     ChargeDistributionModel   iChargeDistributionModel;
-    
+
     if ((iChargeDistributionModel = name2eemtype(cqdist[0])) == eqdNR)
     {
         gmx_fatal(FARGS, "Invalid model %s. How could you!\n", cqdist[0]);
@@ -478,12 +459,12 @@ int alex_gentop(int argc, char *argv[])
         {
             molnm = (char *)"XXX";
         }
-        
+
         ReadGauss(fn, mp, molnm, iupac, conf, basis,
                   maxpot, nsymm, pd.getForceField().c_str(), jobtype);
-                  
+
         mps.push_back(mp);
-        
+
         mpi = mps.begin();
     }
 
@@ -492,34 +473,34 @@ int alex_gentop(int argc, char *argv[])
 
     gmx::MDModules mdModules;
     t_inputrec    *inputrec = mdModules.inputrec();
-    
+
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
-    
+
     imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel,
                                  bGenVSites, bPairs, bDihedral, bPolar);
-                                 
+
     t_commrec     *cr    = init_commrec();
     gmx::MDLogger  mdlog = getMdLogger(cr, stdout);
 
     if (immOK == imm)
     {
         const char *tabfn = opt2fn_null("-table", NFILE, fnm);
-        
+
         if (nullptr == tabfn && bPolar && iChargeDistributionModel != eqdAXp)
         {
             gmx_fatal(FARGS, "Cannot generate charges in a polarizable system with the %s charge "
-                      "model without a potential table. Please supply a table file.", 
+                      "model without a potential table. Please supply a table file.",
                       getEemtypeName(iChargeDistributionModel));
         }
-        
+
         imm = mymol.GenerateCharges(pd, mdlog, aps,
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,
-                                    watoms, hfac, lot, bQsym, 
-                                    symm_string, cr,tabfn);
+                                    watoms, hfac, lot, bQsym,
+                                    symm_string, cr, tabfn);
     }
-    
+
     if (immOK == imm)
     {
         fprintf(stderr, "Fix me: GenerateCube is broken\n");
@@ -554,7 +535,7 @@ int alex_gentop(int argc, char *argv[])
                                 iChargeDistributionModel, bVerbose,
                                 pd, aps);
         }
-        
+
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
     }
     else

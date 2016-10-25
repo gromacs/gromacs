@@ -48,6 +48,8 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/readinp.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -1325,9 +1327,8 @@ void MyMol::changeCoordinate(ExperimentIterator ei)
 std::vector<double> MyMol::computePolarizability(double efield,
                                                  FILE *fplog, t_commrec *cr)
 {
-
     const double        unit_factor = 29.957004; /*pol unit from (C.m**2.V*-1) to (Å**3)*/
-
+    static const char  *dims[DIM]   = { "x", "y", "z" };
     rvec                mu_tot;
     int                 dim;
     rvec                mu_ref;
@@ -1337,16 +1338,35 @@ std::vector<double> MyMol::computePolarizability(double efield,
 
     for (dim = 0; (dim < DIM); dim++)
     {
-        //inputrec_->efield[dim].setField(efield, 0, 0, 0);
+        t_inpfile *inp_p;
+        int        ninp_p = 1;
+        warninp   *wi;
+        char       name[256], value[256];
+        snew(inp_p, ninp_p);
+        wi = init_warning(TRUE, 0);
+        sprintf(name, "E-%s", dims[dim]);
+        inp_p[0].name  = strdup(name);
+        sprintf(value, "%g", efield);
+        inp_p[0].value = strdup(value);
+        inputrec_->efield->readMdp(&ninp_p, &inp_p, wi);
+
         computeForces(fplog, cr, mu_tot);
         pols.push_back(((mu_tot[dim]-mu_ref[dim])/efield)*(unit_factor));
-        //inputrec_->efield[dim].setField(0, 0, 0, 0);
+        sprintf(value, "%g", 0.0);
+        sfree(inp_p[0].value);
+        inp_p[0].value = strdup(value);
+        inp_p[0].bSet  = FALSE;
+        inputrec_->efield->readMdp(&ninp_p, &inp_p, wi);
+        sfree(inp_p[0].name);
+        sfree(inp_p[0].value);
+        sfree(inp_p);
+        done_warning(wi, 0, __FILE__, __LINE__);
     }
     return pols;
 }
 
 immStatus MyMol::GenerateCharges(const Poldata             &pd,
-                                 const gmx::MDLogger       &fplog,
+                                 const gmx::MDLogger       &mdlog,
                                  gmx_atomprop_t             ap,
                                  ChargeDistributionModel    iChargeDistributionModel,
                                  ChargeGenerationAlgorithm  iChargeGenerationAlgorithm,
@@ -1364,8 +1384,8 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     int       maxiter   = 1000;
 
     // This might be moved to a better place
-    gmx_omp_nthreads_init(fplog, cr, 1, 1, 0, FALSE, FALSE);
-    GenerateGromacs(fplog, cr, tabfn);
+    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, FALSE, FALSE);
+    GenerateGromacs(mdlog, cr, tabfn);
     double EspRms_ = 0;
     if (eqgESP == iChargeGenerationAlgorithm)
     {
@@ -1519,10 +1539,10 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
 
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, nullptr, nullptr, true, -1);
-    //snew(state_, 1);
+    state_ = new(t_state);
     init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
     mdatoms_   = init_mdatoms(nullptr, mtop_, false);
-    atoms2md(mtop_, inputrec_, 0, nullptr, topology_->atoms.nr, mdatoms_);
+    atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);
     for (int i = 0; (i < topology_->atoms.nr); i++)
     {
         copy_rvec(x_[i], state_->x[i]);
@@ -2536,10 +2556,10 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                     atoms = {aai, aaj};
                     if (pd.searchForce(atoms, params, &value, &sigma, &ntrain, iType))
                     {
-                        mtop_->ffparams.iparams[tp].morse.b0A =
+                        mtop_->ffparams.iparams[tp].morse.b0A     =
                             mtop_->ffparams.iparams[tp].morse.b0B = convert2gmx(value, lu);
-                            
-                        ltop_->idef.iparams[tp].morse.b0A     = 
+
+                        ltop_->idef.iparams[tp].morse.b0A     =
                             ltop_->idef.iparams[tp].morse.b0B = convert2gmx(value, lu);
 
                         ptr = gmx::splitString(params);
@@ -2550,18 +2570,18 @@ void MyMol::UpdateIdef(const Poldata   &pd,
                             {
                                 if (n == 0)
                                 {
-                                    mtop_->ffparams.iparams[tp].morse.cbA = 
+                                    mtop_->ffparams.iparams[tp].morse.cbA     =
                                         mtop_->ffparams.iparams[tp].morse.cbB = atof(pi->c_str());
-                                        
-                                    ltop_->idef.iparams[tp].morse.cbA     = 
+
+                                    ltop_->idef.iparams[tp].morse.cbA     =
                                         ltop_->idef.iparams[tp].morse.cbB = atof(pi->c_str());
                                 }
                                 else
                                 {
-                                    mtop_->ffparams.iparams[tp].morse.betaA = 
+                                    mtop_->ffparams.iparams[tp].morse.betaA     =
                                         mtop_->ffparams.iparams[tp].morse.betaB = atof(pi->c_str());
-                                        
-                                    ltop_->idef.iparams[tp].morse.betaA     = 
+
+                                    ltop_->idef.iparams[tp].morse.betaA     =
                                         ltop_->idef.iparams[tp].morse.betaB = atof(pi->c_str());
                                 }
                                 n++;

@@ -47,7 +47,10 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/logger.h"
+#include "programs/alexandria/fill_inputrec.h"
 #include "programs/alexandria/gauss_io.h"
 #include "programs/alexandria/getmdlogger.h"
 #include "programs/alexandria/mymol.h"
@@ -113,17 +116,21 @@ class RespTest : public gmx::test::CommandLineTestBase
             //Generate charges and topology
             const char               *lot         = "B3LYP/aug-cc-pVTZ";
 
+            gmx::MDModules            mdModules;
+            t_inputrec               *inputrec   = mdModules.inputrec();
+            fill_inputrec(inputrec);
+            mp_.setInputrec(inputrec);
             mp_.GenerateTopology(aps_, pd_, lot, model,
                                  false, false, false, bPolar);
             //Needed for GenerateCharges
-            real        hfac        = 0;
-            real        epsr        = 1;
-            char       *symm_string = (char *)"";
-            t_commrec  *cr          = init_commrec();
-            gmx::MDLogger fplog = getMdLogger(cr, stdout);
-            
-            mp_.GenerateCharges(pd_, fplog, aps_, model, eqgESP,
-                                hfac, epsr, lot, false, symm_string,cr, NULL);
+            real           hfac        = 0;
+            real           epsr        = 1;
+            char          *symm_string = (char *)"";
+            t_commrec     *cr          = init_commrec();
+            gmx::MDLogger  mdlog       = getMdLogger(cr, stdout);
+
+            mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP,
+                                hfac, epsr, lot, false, symm_string, cr, NULL);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)

@@ -62,6 +62,7 @@
 #include "gromacs/utility/stringutil.h"
 
 // Alexandria stuff
+#include "fill_inputrec.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
 #include "molprop_xml.h"
@@ -78,9 +79,9 @@ void IndexCount::addName(const std::string &name,
 {
     auto ai = std::find_if(atomIndex_.begin(), atomIndex_.end(),
                            [name](const AtomIndex a)
-        {
-            return a.name().compare(name) == 0;
-        });
+                           {
+                               return a.name().compare(name) == 0;
+                           });
     if (atomIndex_.end() == ai)
     {
         AtomIndex aaa(name, bConst);
@@ -383,26 +384,6 @@ static int check_data_sufficiency(FILE                           *fp,
     return nsupported;
 }
 
-static void fill_inputrec(t_inputrec *ir)
-{
-    ir->bAdress          = false;
-    ir->cutoff_scheme    = ecutsGROUP;
-    ir->tabext           = 0; /* nm */
-    ir->ePBC             = epbcNONE;
-    ir->ns_type          = ensSIMPLE;
-    ir->epsilon_r        = 1;
-    ir->vdwtype          = evdwCUT;
-    ir->coulombtype      = eelCUT;
-    ir->coulomb_modifier = eintmodNONE;
-    ir->eDispCorr        = edispcNO;
-    ir->vdw_modifier     = eintmodNONE;
-    ir->niter            = 25;
-    ir->em_stepsize      = 1e-2; // nm
-    ir->em_tol           = 1e-2;
-    ir->opts.ngener      = 1;
-    snew(ir->fepvals, 1);
-}
-
 MolDip::MolDip()
 {
     _cr     = nullptr;
@@ -550,7 +531,7 @@ void MolDip::Read(FILE            *fp,
                     imm = mpnew.GenerateCharges(pd_, mdlog, _atomprop,
                                                 _iChargeDistributionModel,
                                                 _iChargeGenerationAlgorithm,
-                                                watoms, _hfac, lot, true, 
+                                                watoms, _hfac, lot, true,
                                                 nullptr, _cr, tabfn);
                     rms = mpnew.espRms();
                 }
@@ -758,8 +739,8 @@ void MolDip::Read(FILE            *fp,
     }
 }
 
-static void split_shell_charges(gmx_mtop_t *mtop, 
-                                t_idef     *idef, 
+static void split_shell_charges(gmx_mtop_t *mtop,
+                                t_idef     *idef,
                                 t_topology *topology)
 {
     int                     k, ai, aj;
@@ -774,7 +755,7 @@ static void split_shell_charges(gmx_mtop_t *mtop,
         k++; // Skip over the type.
         ai = idef->il[F_POLARIZATION].iatoms[k++];
         aj = idef->il[F_POLARIZATION].iatoms[k++];
-        
+
         atom_i = &topology->atoms.atom[ai];
         atom_j = &topology->atoms.atom[aj];
 
@@ -883,8 +864,8 @@ void MolDip::CalcDeviation()
                 //j     = 0;
                 //while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
                 //{
-                    //atom->q = mymol->topology_->atoms.atom[j].q;
-                    //j++;
+                //atom->q = mymol->topology_->atoms.atom[j].q;
+                //j++;
                 //}
                 GMX_RELEASE_ASSERT(mymol->mtop_->natoms == mymol->topology_->atoms.nr, "Inconsistency 3 in moldip.cpp");
             }
@@ -900,14 +881,14 @@ void MolDip::CalcDeviation()
                 relax_shell_flexcon(debug, _cr, FALSE, 0,
                                     mymol->inputrec_, true,
                                     GMX_FORCE_ALLFORCES,
-                                    mymol->ltop_, nullptr, 
+                                    mymol->ltop_, nullptr,
                                     nullptr, nullptr,
                                     mymol->state_,
-                                    (PaddedRVecVector *)mymol->f_, 
+                                    (PaddedRVecVector *)mymol->f_,
                                     force_vir, mymol->mdatoms_,
                                     &my_nrnb, wcycle, nullptr,
                                     &(mymol->mtop_->groups),
-                                    mymol->shellfc_, mymol->fr_, 
+                                    mymol->shellfc_, mymol->fr_,
                                     false, t, mu_tot,
                                     nullptr);
             }

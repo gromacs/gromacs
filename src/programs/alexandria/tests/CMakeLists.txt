@@ -47,3 +47,5 @@ gmx_add_unit_test(
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:alexandria_objlib>
     )
+target_link_libraries(alexandria-test libgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
+         ${GMX_EXE_LINKER_FLAGS})

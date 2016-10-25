@@ -83,6 +83,7 @@ set(ALEXANDRIA_SOURCES
         bastat.cpp
         categories.cpp
         composition.cpp
+        fill_inputrec.cpp
         gauss2molprop.cpp
         gauss_io.cpp
         gen_table.cpp
