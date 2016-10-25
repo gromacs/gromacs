@@ -43,6 +43,7 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/mdlib/vsite.h"
+//#include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
@@ -341,6 +342,8 @@ class MyMol
          * \param[in] ei   ExperimentIterator
          */
         void changeCoordinate(ExperimentIterator ei);
+        
+        bool getOptimizedGeometry(rvec *x);
 
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
 

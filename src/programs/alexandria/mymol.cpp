@@ -965,7 +965,7 @@ MyMol::MyMol() : gvt_(egvtALL)
     f_          = nullptr;
     optf_       = nullptr;
     mp_         = new MolProp;
-    state_      = nullptr;
+    state_      = new t_state;
     snew(enerd_, 1);
     init_enerdata(1, 0, enerd_);
 }
@@ -1262,7 +1262,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
 
     for (int i = 0; i < mtop_->natoms; i++)
     {
-        mdatoms_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
+        mdatoms_->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;     
         if (nullptr != debug)
         {
             fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms_->chargeA[i]);
@@ -1274,8 +1274,8 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
 
     if (nullptr != shellfc_)
     {
-        relax_shell_flexcon(fplog, cr, TRUE, 0,
-                            inputrec_, TRUE, ~0,
+        relax_shell_flexcon(fplog, cr, true, 0,
+                            inputrec_, true, ~0,
                             ltop_, nullptr, enerd_,
                             nullptr, state_,
                             (PaddedRVecVector *)f_, force_vir, mdatoms_,
@@ -1322,6 +1322,32 @@ void MyMol::changeCoordinate(ExperimentIterator ei)
 
         natom++;
     }
+}
+
+bool MyMol::getOptimizedGeometry(rvec *x)
+{
+    double  xx, yy, zz;
+    int     unit, natom = 0;
+    bool    opt = false;
+    
+    for (auto ei = molProp()->BeginExperiment(); 
+         (!opt) && (ei < molProp()->EndExperiment()); ++ei)
+    {
+        if (JOB_OPT == ei->getJobtype())
+        {
+            for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
+            {
+                unit = string2unit((char *)eia->getUnit().c_str());
+                eia->getCoords(&xx, &yy, &zz);           
+                x[natom][XX] = convert2gmx(xx, unit);
+                x[natom][YY] = convert2gmx(yy, unit);
+                x[natom][ZZ] = convert2gmx(zz, unit);           
+                natom++;
+            }
+            opt = true;
+        }
+    }
+    return opt;
 }
 
 std::vector<double> MyMol::computePolarizability(double efield,
@@ -1543,6 +1569,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
     init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
     mdatoms_   = init_mdatoms(nullptr, mtop_, false);
     atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);
+    
     for (int i = 0; (i < topology_->atoms.nr); i++)
     {
         copy_rvec(x_[i], state_->x[i]);

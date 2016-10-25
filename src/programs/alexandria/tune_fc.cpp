@@ -75,6 +75,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/init.h"
+#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "nmsimplex.h"
@@ -451,6 +452,7 @@ class Optimization : public MolDip
 
         std::vector<ForceConstants> ForceConstants_;
         param_type                  param_, lower_, upper_, best_, orig_, psigma_, pmean_;
+        param_type                  De_;
         const real                  forceWeight_;
 
         /*! \brief
@@ -692,11 +694,32 @@ void Optimization::polData2TuneFc()
     param_.clear();
     for (auto &fc : ForceConstants_)
     {
-        for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
+        if (eitBONDS == fc.interactionType())
         {
-            for (const auto &p : b->paramValues())
+            for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
             {
-                param_.push_back(std::move(p));
+                int n = 0;
+                for (const auto &p : b->paramValues())
+                {
+                    if (n == 0)
+                    {
+                        De_.push_back(std::move(p));
+                    }
+                    else
+                    {
+                        param_.push_back(std::move(p));
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
+            {
+                for (const auto &p : b->paramValues())
+                {
+                    param_.push_back(std::move(p));
+                }
             }
         }
     }
@@ -705,22 +728,43 @@ void Optimization::polData2TuneFc()
 void Optimization::tuneFc2PolData()
 {
     int n = 0;
+    int m = 0;
     std::vector<std::string> atoms;
     for (auto &fc : ForceConstants_)
     {
+        const auto iType = fc.interactionType();
         for (auto b = fc.beginBN(); b  < fc.endBN(); ++b)
         {
             char buf[STRLEN];
             buf[0] = '\0';
-
-            for (size_t p = 0; p < b->nParams(); p++)
+            
+            if (iType == eitBONDS)
             {
-                strncat(buf, " ", sizeof(buf)-1);
-                strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
+                int j = 0;
+                for (size_t p = 0; p < b->nParams(); p++)
+                {
+                    strncat(buf, " ", sizeof(buf)-1);
+                    if (j == 0)
+                    {
+                        strncat(buf, gmx_ftoa(De_[m++]).c_str(), sizeof(buf)-1);
+                    }
+                    else
+                    {
+                        strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
+                    }
+                }
             }
+            else
+            {
+                for (size_t p = 0; p < b->nParams(); p++)
+                {
+                    strncat(buf, " ", sizeof(buf)-1);
+                    strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
+                }
+            }
+            
             b->setParamString(buf);
             const auto bondtypes = gmx::splitString(b->name());
-            const auto iType     = fc.interactionType();
             switch (iType)
             {
                 case eitBONDS:
@@ -810,18 +854,29 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                 auto f = fs->findForce(atoms);
                 if (fs->forceEnd() != f)
                 {
+                    rvec *x;
+                    rvec dx;
                     int  gt  = f - fs->forceBegin();
                     int  gti = ForceConstants_[eitBONDS].reverseIndex(gt);
                     // Compute deviation from minimum energy
-                    rvec dx;
-                    rvec_sub(mymol->x_[ai], mymol->x_[aj], dx);
-                    real dr   = norm(dx);
-                    // TODO fill in correct b0 and beta
-                    real b0   = 0.15;
-                    real beta = 25;
-                    real temp = gmx::square(1-std::exp(-beta*(dr-b0))) - 1;
-
-                    a[gti][j] -= temp;
+                    snew(x, mymol->molProp()->NAtom());
+                    if (mymol->getOptimizedGeometry(x))
+                    {
+                        rvec_sub(x[ai], x[aj], dx);
+                        const auto dr     = norm(dx);
+                        const auto b0     = f->refValue();
+                        const auto params = f->params();
+                        const auto beta   = params[1];
+                        real temp         = gmx::square(1-std::exp(-beta*(dr-b0))) - 1;
+                        a[gti][j]        -= temp;
+                    }
+                    else
+                    {
+                        a[gti][j]++;
+                        printf("\n"
+                               "WARNING: %s Does not have optimized geometry.\n\n",
+                               mymol->molProp()->getMolname().c_str());
+                    }
                     ntest[gti]++;
                     if (ctest[gti].empty())
                     {
@@ -829,6 +884,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                         snprintf(buf, sizeof(buf), "%s-%s", aai.c_str(), aaj.c_str());
                         ctest[gti].assign(buf);
                     }
+                    sfree(x);
                 }
             }
             else
