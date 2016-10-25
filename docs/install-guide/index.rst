@@ -603,21 +603,34 @@ CPUs also works well.
 
 OpenCL GPU acceleration
 ^^^^^^^^^^^^^^^^^^^^^^^
-To build Gromacs with OpenCL support enabled, an OpenCL_ SDK
-(e.g. `from AMD <http://developer.amd.com/appsdk>`_) must be installed
-in a path found in ``CMAKE_PREFIX_PATH`` (or via the environment
-variables ``AMDAPPSDKROOT`` or ``CUDA_PATH``), and the following CMake
-flags must be set
+
+The primary target of the |Gromacs| OpenCL support is accelerating simulations
+on AMD hardware, both discrete GPUs and APUs (integrated CPU+GPU chips).
+The |Gromacs| OpenCL on NVIDIA GPUs works, but performance
+and other limitations make it less practical (for details see the user guide).
+
+To build |Gromacs| with OpenCL_ support enabled, two components are
+required: the OpenCL_ headers and the wrapper library that acts
+as a client driver loader (so-called ICD loader).
+The additional, runtime-only dependency is the vendor-specific GPU driver
+for the device targeted. This also contains the OpenCL_ compiler.
+As the GPU compute kernels are compiled  on-demand at run time,
+this vendor-specific compiler and driver is not needed for building |Gromacs|.
+The former, compile-time dependencies are standard components,
+hence stock versions can be obtained from most Linux distribution
+repositories (e.g. ``opencl-headers`` and ``ocl-icd-libopencl1`` on Debian/Ubuntu).
+Only the compatibility with the required OpenCL_ version |REQUIRED_OPENCL_MIN_VERSION|
+needs to be ensured.
+Alternatively, the headers and library can also be obtained from vendor SDKs
+(e.g. `from AMD <http://developer.amd.com/appsdk>`_),
+which must be installed in a path found in ``CMAKE_PREFIX_PATH`` (or via the environment
+variables ``AMDAPPSDKROOT`` or ``CUDA_PATH``).
+
+To trigger an OpenCL_ build the following CMake flags must be set
 
 ::
 
     cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
-
-Building |Gromacs| OpenCL support for a CUDA_ GPU works, but see the
-known limitations in the user guide. If you want to
-do so anyway, because NVIDIA OpenCL support is part of the CUDA
-package, a C++ compiler supported by your CUDA installation is
-required.
 
 On Mac OS, an AMD GPU can be used only with OS version 10.10.4 and
 higher; earlier OS versions are known to run incorrectly.
