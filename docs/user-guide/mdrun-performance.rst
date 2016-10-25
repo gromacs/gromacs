@@ -654,6 +654,55 @@ during its runtime.
 
 .. _NVIDIA blog article: https://devblogs.nvidia.com/parallelforall/increase-performance-gpu-boost-k80-autoboost/
 
+Reducing overheads in GPU accelerated runs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In order for CPU cores and GPU(s) to execute concurrently, tasks are
+launched and executed asynchronously on the GPU(s) while the CPU cores
+execute non-offloaded force computation (like long-range PME electrostatics).
+Asynchronous task launches are handled by GPU device driver and
+require CPU involvement. Therefore, the work of scheduling
+GPU tasks will incur an overhead that can in some cases significantly
+delay or interfere with the CPU execution.
+
+Delays in CPU execution are caused by the latency of launching GPU tasks,
+an overhead ahat can become significant as simulation ns/day increases
+(i.e. with shorter wall-time per step).
+The overhead is measured by :ref:`gmx mdrun` and reported in the performance
+summary section of the log file ("Launch GPU ops" row). 
+A few percent of runtime spent in this category is normal, 
+but in fast-iterating and multi-GPU parallel runs 10% or larger overheads can be observed.
+In general, there a user can do little to avoid such overheads, but there
+are a few cases where tweaks can give performance benefits.
+In single-rank runs timing of GPU tasks is by default enabled and,
+while in most cases its impact is small, in fast runs performance can be affected.
+The performance impact will be most significant on NVIDIA GPUs with CUDA,
+less on AMD with OpenCL.
+In these cases, when more than a few percent of "Launch GPU ops" time is observed,
+it is recommended turning off timing by setting the ``GMX_DISABLE_GPU_TIMING``
+environment variable.
+In parallel runs with with many ranks sharing a GPU
+launch overheads can also be reduced by staring fewer thread-MPI
+or MPI ranks per GPU; e.g. most often one rank per thread or core is not optimal.
+
+The second type of overhead, interference of the GPU driver with CPU computation,
+is caused by the scheduling and coordination of GPU tasks.
+A separate GPU driver thread can require CPU resources
+which may clash with the concurrently running non-offloaded tasks,
+potentially degrading the performance of PME or bonded force computation.
+This effect is most pronounced when using AMD GPUs with OpenCL with
+all stable driver releases to date (up to and including fglrx 12.15).
+To minimize the overhead it is recommended to
+leave a CPU hardware thread unused when launching :ref:`gmx mdrun`,
+especially on CPUs with high core count and/or HyperThreading enabled.
+E.g. on a machine with a 4-core CPU and eight threads (via HyperThreading) and an AMD GPU,
+try ``gmx mdrun -ntomp 7 -pin on``.
+This will leave free CPU resources for the GPU task scheduling
+reducing interference with CPU computation.
+Note that assigning fewer resources to :ref:`gmx mdrun` CPU computation
+involves a tradeoff which may outweigh the benefits of reduced GPU driver overhead,
+in particular without HyperThreading and with few CPU cores.
+
 TODO In future patch: any tips not covered above
 
 Running the OpenCL version of mdrun
@@ -664,21 +713,20 @@ GPUs. Make sure that you have the latest drivers installed. The
 minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|. See
 also the :ref:`known limitations <opencl-known-limitations>`.
 
+Devices from the AMD GCN architectures (all series) and NVIDIA Fermi
+and later (compute capability 2.0) are known to work, but before
+doing production runs always make sure that the |Gromacs| tests
+pass successfully on the hardware.
+
+The OpenCL GPU kernels are compiled at run time. Hence,
+building the OpenCL program can take a few seconds introducing a slight
+delay in the :ref:`gmx mdrun` startup. This is not normally a
+problem for long production MD, but you might prefer to do some kinds
+of work, e.g. that runs very few steps, on just the CPU (e.g. see ``-nb`` above).
+
 The same ``-gpu_id`` option (or ``GMX_GPU_ID`` environment variable)
 used to select CUDA devices, or to define a mapping of GPUs to PP
 ranks, is used for OpenCL devices.
-
-The following devices are known to work correctly:
-   - AMD: FirePro W5100, HD 7950, FirePro W9100, Radeon R7 240,
-     Radeon R7 M260, Radeon R9 290
-   - NVIDIA: GeForce GTX 660M, GeForce GTX 660Ti, GeForce GTX 750Ti,
-     GeForce GTX 780, GTX Titan
-
-Building the OpenCL program can take a few seconds when :ref:`gmx
-mdrun` starts up, because the kernels that run on the
-GPU can only be compiled at run time. This is not normally a
-problem for long production MD, but you might prefer to do some kinds
-of work on just the CPU (e.g. see ``-nb`` above).
 
 Some other :ref:`OpenCL management <opencl-management>` environment
 variables may be of interest to developers.
@@ -696,6 +744,9 @@ Limitations in the current OpenCL support of interest to |Gromacs| users:
   almost no performance gain when using NVIDIA GPUs.
   The issue affects NVIDIA driver versions up to 349 series, but it
   known to be fixed 352 and later driver releases.
+- On NVIDIA GPUs the OpenCL kernels achieve much lower performance
+  than the equivalent CUDA kernels due to limitations of the NVIDIA OpenCL
+  compiler.
 - The AMD APPSDK version 3.0 ships with OpenCL compiler/runtime components,
   libamdocl12cl64.so and libamdocl64.so (only in earlier releases),
   that conflict with newer fglrx GPU drivers which provide the same libraries.
