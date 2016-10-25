@@ -384,10 +384,8 @@ compilation of OpenCL kernels, but they are also used in device selection.
         only the flavor required for the simulation is generated and
         compiled.
 
-``GMX_OCL_FASTMATH``
-        Adds the option ``cl-fast-relaxed-math`` to the compiler
-        options (in the CUDA version this is enabled by default, it is likely that
-        the same will happen with the OpenCL version soon)
+``GMX_OCL_DISABLE_FASTMATH``
+        Prevents the use of ``-cl-fast-relaxed-math`` compiler option.
 
 ``GMX_OCL_DUMP_LOG``
         If defined, the OpenCL build log is always written to the

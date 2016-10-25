@@ -174,7 +174,8 @@ selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
         compilerOptions += " -cl-opt-disable";
     }
 
-    if (getenv("GMX_OCL_FASTMATH") )
+    /* Fastmath imprves performance on all supported arch */
+    if (getenv("GMX_OCL_DISABLE_FASTMATH") == NULL)
     {
         compilerOptions += " -cl-fast-relaxed-math";
     }
