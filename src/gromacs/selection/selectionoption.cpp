@@ -84,6 +84,13 @@ std::string SelectionOptionStorage::formatSingleValue(const Selection &value) co
 }
 
 
+std::vector<Variant>
+SelectionOptionStorage::normalizeValues(const std::vector<Variant> & /*values*/) const
+{
+    GMX_THROW(NotImplementedError("Selection options not supported in this context"));
+}
+
+
 void SelectionOptionStorage::addSelections(
         const SelectionList &selections,
         bool                 bFullValue)

@@ -327,6 +327,20 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
         {
         }
 
+        virtual std::vector<Variant>
+        normalizeValues(const std::vector<Variant> &values) const
+        {
+            const_cast<MyBase *>(this)->ensureConverterInitialized();
+            std::vector<Variant> result;
+            for (const auto &value : values)
+            {
+                result.push_back(
+                        Variant::create<T>(
+                                processValue(converter_.convert(value))));
+            }
+            return result;
+        }
+
         /*! \brief
          * Specifies how different types are converted.
          *
@@ -341,7 +355,7 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
          *
          * The default implementation only provides an identity mapping.
          */
-        virtual T processValue(const T &value)
+        virtual T processValue(const T &value) const
         {
             return value;
         }
@@ -349,12 +363,16 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
     private:
         virtual void convertValue(const Variant &variant)
         {
+            ensureConverterInitialized();
+            this->addValue(processValue(converter_.convert(variant)));
+        }
+        void ensureConverterInitialized()
+        {
             if (!initialized_)
             {
                 initConverter(&converter_);
                 initialized_ = true;
             }
-            this->addValue(processValue(converter_.convert(variant)));
         }
 
         ConverterType  converter_;
