@@ -101,7 +101,7 @@ class FileNameOptionStorage : public OptionStorageTemplateSimple<std::string>
 
     private:
         virtual void initConverter(ConverterType *converter);
-        virtual std::string processValue(const std::string &value);
+        virtual std::string processValue(const std::string &value) const;
         virtual void processAll();
 
         FileNameOptionInfo      info_;

@@ -195,7 +195,38 @@ class TreeIterationHelper : private OptionsVisitor
             }
             else
             {
-                currentObjectBuilder_.addRawValue(name, KeyValueTreeValue((*currentSourceObject_)[name]));
+                const KeyValueTreeValue &value = (*currentSourceObject_)[name];
+                GMX_RELEASE_ASSERT(!value.isObject(), "Value objects not supported in this context");
+                std::vector<Variant>     values;
+                if (value.isArray())
+                {
+                    for (const auto &arrayValue : value.asArray().values())
+                    {
+                        GMX_RELEASE_ASSERT(!value.isObject() && !value.isArray(),
+                                           "Complex values not supported in this context");
+                        values.push_back(arrayValue.asVariant());
+                    }
+                }
+                else
+                {
+                    values.push_back(value.asVariant());
+                }
+                values = option.normalizeValues(values);
+                if (values.empty())
+                {
+                }
+                else if (values.size() == 1)
+                {
+                    currentObjectBuilder_.addRawValue(name, std::move(values[0]));
+                }
+                else
+                {
+                    auto array = currentObjectBuilder_.addArray(name);
+                    for (auto &arrayValue : values)
+                    {
+                        array.addRawValue(std::move(arrayValue));
+                    }
+                }
             }
         }
 

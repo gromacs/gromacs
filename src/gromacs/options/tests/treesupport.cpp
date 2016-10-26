@@ -189,6 +189,13 @@ TEST_F(TreeValueSupportAdjustTest, FillsDefaultObjectValues)
     runTest();
 }
 
+TEST_F(TreeValueSupportAdjustTest, NormalizesValues)
+{
+    options_.addOption(gmx::IntegerOption("a"));
+    builder_.rootObject().addValue<std::string>("a", "2");
+    runTest();
+}
+
 TEST_F(TreeValueSupportAdjustTest, MergesDefaultValues)
 {
     builder_.rootObject().addValue<int>("b", 1);

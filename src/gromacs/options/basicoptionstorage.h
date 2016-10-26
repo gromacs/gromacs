@@ -151,7 +151,7 @@ class DoubleOptionStorage : public OptionStorageTemplateSimple<double>
 
     private:
         virtual void initConverter(ConverterType *converter);
-        virtual double processValue(const double &value);
+        virtual double processValue(const double &value) const;
         virtual void processSetValues(ValueList *values);
 
         DoubleOptionInfo        info_;
@@ -179,7 +179,7 @@ class FloatOptionStorage : public OptionStorageTemplateSimple<float>
 
     private:
         virtual void initConverter(ConverterType *converter);
-        virtual float processValue(const float &value);
+        virtual float processValue(const float &value) const;
         virtual void processSetValues(ValueList *values);
 
         FloatOptionInfo         info_;
@@ -207,7 +207,7 @@ class StringOptionStorage : public OptionStorageTemplateSimple<std::string>
 
     private:
         virtual void initConverter(ConverterType *converter);
-        virtual std::string processValue(const std::string &value);
+        virtual std::string processValue(const std::string &value) const;
 
         StringOptionInfo        info_;
         ValueList               allowed_;

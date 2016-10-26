@@ -110,6 +110,11 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         {
             return "";
         }
+        virtual std::vector<gmx::Variant>
+        normalizeValues(const std::vector<gmx::Variant> &values) const
+        {
+            return values;
+        }
 
         virtual void convertValue(const gmx::Variant &value)
         {
