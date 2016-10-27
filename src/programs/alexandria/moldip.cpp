@@ -532,7 +532,8 @@ void MolDip::Read(FILE            *fp,
                                                 _iChargeDistributionModel,
                                                 _iChargeGenerationAlgorithm,
                                                 watoms, _hfac, lot, true,
-                                                nullptr, _cr, tabfn);
+                                                nullptr, _cr, tabfn,
+                                                as_rvec_array(mpnew.x_->data()));
                     rms = mpnew.espRms();
                 }
                 if (immOK == imm)
@@ -655,7 +656,8 @@ void MolDip::Read(FILE            *fp,
                 gmx::MDLogger mdlog = getMdLogger(_cr, stdout);
                 imm = mpnew.GenerateCharges(pd_, mdlog, _atomprop, _iChargeDistributionModel,
                                             _iChargeGenerationAlgorithm, watoms, _hfac,
-                                            lot, true, nullptr, _cr, tabfn);
+                                            lot, true, nullptr, _cr, tabfn,
+                                            as_rvec_array(mpnew.x_->data()));
                 rms = mpnew.espRms();
             }
             if (immOK == imm)
@@ -844,7 +846,8 @@ void MolDip::CalcDeviation()
             }
 
             QgenEem qgen(pd_, &(mymol->topology_->atoms),
-                         mymol->x_, _iChargeDistributionModel,
+                         as_rvec_array(mymol->x_->data()), 
+                         _iChargeDistributionModel,
                          _hfac,
                          mymol->molProp()->getCharge());
 

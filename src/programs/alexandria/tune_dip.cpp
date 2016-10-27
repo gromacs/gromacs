@@ -235,21 +235,22 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
     lsq_mu[1]   = gmx_stats_init();
     lsq_esp     = gmx_stats_init();
     n           = 0;
-    for (std::vector<alexandria::MyMol>::iterator mi = mol.begin(); (mi < mol.end()); mi++)
+    for (auto mi = mol.begin(); (mi < mol.end()); mi++)
     {
         if (mi->eSupp != eSupportNo)
         {
+            rvec *x = as_rvec_array(mi->x_->data());
             fprintf(fp, "Molecule %d: %s. Qtot: %d, Multiplicity %d\n",
                     n+1,
                     mi->molProp()->getMolname().c_str(),
                     mi->molProp()->getCharge(),
                     mi->molProp()->getMultiplicity());
 
-            print_dip(fp, mi->mu_exp, NULL, NULL, dip_toler);
+            print_dip(fp, mi->mu_exp, nullptr, nullptr, dip_toler);
             print_dip(fp, mi->mu_exp, mi->mu_calc, (char *)"EEM", dip_toler);
             print_dip(fp, mi->mu_exp, mi->mu_esp, (char *)"ESP", dip_toler);
 
-            print_quad(fp, mi->Q_exp, NULL, NULL, quad_toler);
+            print_quad(fp, mi->Q_exp, nullptr, nullptr, quad_toler);
             print_quad(fp, mi->Q_exp, mi->Q_calc, (char *)"EEM", quad_toler);
             print_quad(fp, mi->Q_exp, mi->Q_esp, (char *)"ESP", quad_toler);
             chi2 = mi->espRms();
@@ -316,7 +317,7 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
                         j+1,
                         *(mi->topology_->atoms.atomtype[j]),
                         qq, mi->qESP[j],
-                        mi->x_[j][XX], mi->x_[j][YY], mi->x_[j][ZZ],
+                        x[j][XX], x[j][YY], x[j][ZZ],
                         fabs(qq-mi->qESP[j]) > q_toler ? "ZZZ" : "");
                 gmx_stats_add_point(k->lsq, mi->qESP[j], atom->q, 0, 0);
                 gmx_stats_add_point(lsq_q, mi->qESP[j], atom->q, 0, 0);

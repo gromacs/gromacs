@@ -635,7 +635,7 @@ int alex_bastat(int argc, char *argv[])
         return 0;
     }
 
-    for (alexandria::MolPropIterator mpi = mp.begin(); (mpi < mp.end()); mpi++)
+    for (auto mpi = mp.begin(); (mpi < mp.end()); mpi++)
     {
         if (gms.status(mpi->getIupac()) == imsTrain)
         {
@@ -661,6 +661,9 @@ int alex_bastat(int argc, char *argv[])
                 }
                 continue;
             }
+            
+            rvec *x = as_rvec_array(mmi.x_->data());
+            
 #define ATP(ii) (*mmi.topology_->atoms.atomtype[ii])
             for (i = 0; (i < mmi.topology_->atoms.nr); i++)
             {
@@ -693,7 +696,7 @@ int alex_bastat(int argc, char *argv[])
                     {
                         int         ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
                         int         aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
-                        rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
+                        rvec_sub(x[ai], x[aj], dx);
                         std::string cai, caj;
                         if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj))
@@ -740,8 +743,8 @@ int alex_bastat(int argc, char *argv[])
                         int          aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                         int          ak = mmi.ltop_->idef.il[funcType].iatoms[j+3];
 
-                        rvec_sub(mmi.x_[ai], mmi.x_[aj], dx);
-                        rvec_sub(mmi.x_[ak], mmi.x_[aj], dx2);
+                        rvec_sub(x[ai], x[aj], dx);
+                        rvec_sub(x[ak], x[aj], dx2);
 
                         refValue = RAD2DEG*gmx_angle(dx, dx2);
 
@@ -784,8 +787,8 @@ int alex_bastat(int argc, char *argv[])
                         int    aj  = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                         int    ak  = mmi.ltop_->idef.il[funcType].iatoms[j+3];
                         int    al  = mmi.ltop_->idef.il[funcType].iatoms[j+4];
-                        double ang = RAD2DEG*dih_angle(mmi.x_[ai], mmi.x_[aj],
-                                                       mmi.x_[ak], mmi.x_[al],
+                        double ang = RAD2DEG*dih_angle(x[ai], x[aj],
+                                                       x[ak], x[al],
                                                        &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
                                                        &sign, &t1, &t2, &t3);
                         std::string cai, caj, cak, cal;

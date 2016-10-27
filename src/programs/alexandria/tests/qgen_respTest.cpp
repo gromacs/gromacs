@@ -130,7 +130,8 @@ class RespTest : public gmx::test::CommandLineTestBase
             gmx::MDLogger  mdlog       = getMdLogger(cr, stdout);
 
             mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP,
-                                hfac, epsr, lot, false, symm_string, cr, NULL);
+                                hfac, epsr, lot, false, symm_string, cr, NULL,
+                                as_rvec_array(mp_.x_->data()));
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)

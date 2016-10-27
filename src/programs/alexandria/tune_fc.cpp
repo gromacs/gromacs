@@ -867,7 +867,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                         const auto b0     = f->refValue();
                         const auto params = f->params();
                         const auto beta   = params[1];
-                        real temp         = gmx::square(1-std::exp(-beta*(dr-b0))) - 1;
+                        const auto temp   = gmx::square(1-std::exp(-beta*(dr-b0))) - 1;
                         a[gti][j]        -= temp;
                     }
                     else
@@ -1094,13 +1094,13 @@ double Optimization::calcDeviation()
 
                         for (j = 0; (j < natoms); j++)
                         {
-                            clear_rvec(mymol.f_[j]);
+                            mymol.f_->clear();
                         }
 
                         dbcopy = debug;
                         debug  = nullptr;
 
-                        mymol.changeCoordinate(ei);
+                        mymol.changeCoordinate(ei, as_rvec_array(mymol.x_->data()));
                         mymol.computeForces(debug, _cr, mu_tot);
 
                         debug         = dbcopy;
@@ -1109,9 +1109,12 @@ double Optimization::calcDeviation()
                         mymol.Ecalc  = mymol.enerd_->term[F_EPOT];
                         ener         = gmx::square(mymol.Ecalc-Emol);
                         
+                        rvec *f    = as_rvec_array(mymol.f_->data());
+                        rvec *optf = as_rvec_array(mymol.optf_->data());
+                        
                         for (j = 0; (j < natoms); j++)
                         {
-                            mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
+                            mymol.Force2 += iprod(f[j], f[j]);
                         }
 
                         mymol.Force2 /= natoms;
@@ -1122,8 +1125,8 @@ double Optimization::calcDeviation()
                             
                             for (j = 0; (j < natoms); j++)
                             {
-                                mymol.OptForce2 += iprod(mymol.f_[j], mymol.f_[j]);
-                                copy_rvec(mymol.f_[j], mymol.optf_[j]);
+                                mymol.OptForce2 += iprod(f[j], f[j]);
+                                copy_rvec(f[j], optf[j]);
                             }
 
                             mymol.OptForce2 /= natoms;
@@ -1315,6 +1318,8 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
 
     for (auto mi = mol.begin(); (mi < mol.end()); mi++)
     {
+        rvec *optf = as_rvec_array(mi->optf_->data());
+        
         fprintf(fp, "%-30s  %d\n", mi->molProp()->getMolname().c_str(), mi->molProp()->NAtom());
         for (j = 0; (j < mi->molProp()->NAtom()); j++)
         {
@@ -1323,9 +1328,7 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
             if (bForce)
             {
                 fprintf(fp, "   f = %8.3f  %8.3f  %8.3f",
-                        mi->optf_[j][XX],
-                        mi->optf_[j][YY],
-                        mi->optf_[j][ZZ]);
+                        optf[j][XX], optf[j][YY], optf[j][ZZ]);
             }
             fprintf(fp, "\n");
         }

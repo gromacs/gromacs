@@ -43,7 +43,7 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/mdlib/vsite.h"
-//#include "gromacs/mdtypes/state.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
@@ -129,7 +129,8 @@ class MyMol
          */
         immStatus GenerateAtoms(gmx_atomprop_t            ap,
                                 const char               *lot,
-                                ChargeDistributionModel   iModel);
+                                ChargeDistributionModel   iModel,
+                                rvec                      x[]);
 
         /*! \brief
          * Generate angles, dihedrals, exclusions etc.
@@ -170,7 +171,7 @@ class MyMol
          */
         //void getForceConstants(const Poldata &pd);
     public:
-        rvec                     *x_, *f_, *optf_, *buf, mu_exp, mu_calc, mu_esp, coq;
+        rvec                     *buf, mu_exp, mu_calc, mu_esp, coq;
         matrix                    box_;
         real                      dip_exp, mu_exp2, dip_err, dip_weight, dip_calc, chieq;
         real                      Hform, Emol, Ecalc, OptEcalc, Force2, OptForce2;
@@ -179,6 +180,7 @@ class MyMol
         eSupport                  eSupp;
         t_state                  *state_;
         t_forcerec               *fr_;
+        PaddedRVecVector         *x_, *f_, *optf_;
 
         std::vector<PlistWrapper> plist_;
 
@@ -260,7 +262,8 @@ class MyMol
                                   bool                       bSymmetricCharges,
                                   const char                *symm_string,
                                   t_commrec                 *cr,
-                                  const char                *tabfn);
+                                  const char                *tabfn,
+                                  rvec                       x[]);
 
         /*! \brief
          * Return the root-mean square deviation of
@@ -317,7 +320,8 @@ class MyMol
          *
          * \param[in] pd   Data structure containing atomic properties
          */
-        void CalcQPol(const Poldata &pd);
+        void CalcQPol(const Poldata &pd,
+                      rvec          x[]);
 
         /*! \brief
          * Relax the shells (if any) or compute the forces in the molecule
@@ -341,7 +345,8 @@ class MyMol
          *
          * \param[in] ei   ExperimentIterator
          */
-        void changeCoordinate(ExperimentIterator ei);
+        void changeCoordinate(ExperimentIterator ei,
+                              rvec               x[]);
         
         bool getOptimizedGeometry(rvec *x);
 

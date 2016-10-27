@@ -498,7 +498,8 @@ int alex_gentop(int argc, char *argv[])
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,
                                     watoms, hfac, lot, bQsym,
-                                    symm_string, cr, tabfn);
+                                    symm_string, cr, tabfn,
+                                    as_rvec_array(mymol.x_->data()));
     }
 
     if (immOK == imm)
