@@ -37,6 +37,8 @@
 
 #include <cstdio>
 
+#include <string>
+
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_gpu_info_t;
@@ -63,6 +65,11 @@ gmx_bool gmx_multiple_gpu_per_node_supported();
  * example. */
 gmx_bool gmx_gpu_sharing_supported();
 
+/*! \internal \brief
+ * Returns the GPU information text, one GPU per line.
+ */
+std::string sprint_gpus(const gmx_gpu_info_t *gpu_info);
+
 /*! \brief Run detection, consistency checks, and make available on all ranks.
  *
  * This routine constructs the global hwinfo structure and returns a pointer to
@@ -84,11 +91,6 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
 void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt);
-
-void gmx_select_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
-                        const gmx_gpu_info_t *gpu_info,
-                        gmx_bool bForceUseGPU,
-                        gmx_gpu_opt_t *gpu_opt);
 
 /* Check the consistency of hw_opt with hwinfo.
    This function should be called once on each MPI rank. */
