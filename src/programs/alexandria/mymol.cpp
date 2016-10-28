@@ -57,6 +57,7 @@
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -71,6 +72,8 @@
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/options/options.h"
+#include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
@@ -80,7 +83,9 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "gauss_io.h"
@@ -93,8 +98,6 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "stringutil.h"
-
-#define STRLEN 256
 
 namespace alexandria
 {
@@ -1367,6 +1370,28 @@ bool MyMol::getOptimizedGeometry(rvec *x)
     return opt;
 }
 
+static void updateMdp(t_inputrec *ir, int ninp, t_inpfile inp[], warninp *wi)
+{
+    gmx::KeyValueTreeObject      convertedValues = flatKeyValueTreeFromInpFile(ninp, inp);
+    gmx::KeyValueTreeTransformer transform;
+    transform.rules()->addRule()
+        .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+    ir->efield->initMdpTransform(transform.rules());
+    for (const auto &path : transform.mappedPaths())
+    {
+        GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
+        mark_einp_set(ninp, inp, path[0].c_str());
+    }
+    gmx::Options                 options;
+    ir->efield->initMdpOptions(&options);
+    gmx::MdpErrorHandler         errorHandler(wi);
+    auto                         result
+        = transform.transform(convertedValues, &errorHandler);
+    errorHandler.setBackMapping(result.backMapping());
+    gmx::assignOptionsFromKeyValueTree(&options, result.object(),
+                                       &errorHandler);
+}
+
 std::vector<double> MyMol::computePolarizability(double efield,
                                                  FILE *fplog, t_commrec *cr)
 {
@@ -1387,19 +1412,21 @@ std::vector<double> MyMol::computePolarizability(double efield,
         char       name[256], value[256];
         snew(inp_p, ninp_p);
         wi = init_warning(TRUE, 0);
+        
         sprintf(name, "E-%s", dims[dim]);
         inp_p[0].name  = strdup(name);
         sprintf(value, "%g", efield);
         inp_p[0].value = strdup(value);
-        inputrec_->efield->readMdp(&ninp_p, &inp_p, wi);
-
+        updateMdp(inputrec_, ninp_p, inp_p, wi);
+        // Code take from readir.cpp        
+        
         computeForces(fplog, cr, mu_tot);
         pols.push_back(((mu_tot[dim]-mu_ref[dim])/efield)*(unit_factor));
         sprintf(value, "%g", 0.0);
         sfree(inp_p[0].value);
         inp_p[0].value = strdup(value);
         inp_p[0].bSet  = FALSE;
-        inputrec_->efield->readMdp(&ninp_p, &inp_p, wi);
+        updateMdp(inputrec_, ninp_p, inp_p, wi);
         sfree(inp_p[0].name);
         sfree(inp_p[0].value);
         sfree(inp_p);

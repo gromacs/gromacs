@@ -1766,50 +1766,6 @@ static gmx_bool couple_lambda_has_vdw_on(int couple_lambda_value)
             couple_lambda_value == ecouplamVDWQ);
 }
 
-namespace
-{
-
-class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
-{
-    public:
-        explicit MdpErrorHandler(warninp_t wi)
-            : wi_(wi), mapping_(nullptr)
-        {
-        }
-
-        void setBackMapping(const gmx::IKeyValueTreeBackMapping &mapping)
-        {
-            mapping_ = &mapping;
-        }
-
-        virtual bool onError(gmx::UserInputError *ex, const gmx::KeyValueTreePath &context)
-        {
-            ex->prependContext(gmx::formatString("Error in mdp option \"%s\":",
-                                                 getOptionName(context).c_str()));
-            std::string message = gmx::formatExceptionMessageToString(*ex);
-            warning_error(wi_, message.c_str());
-            return true;
-        }
-
-    private:
-        std::string getOptionName(const gmx::KeyValueTreePath &context)
-        {
-            if (mapping_ != nullptr)
-            {
-                gmx::KeyValueTreePath path = mapping_->originalPath(context);
-                GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
-                return path[0];
-            }
-            GMX_ASSERT(context.size() == 1, "Inconsistent context for mdp option parsing");
-            return context[0];
-        }
-
-        warninp_t                            wi_;
-        const gmx::IKeyValueTreeBackMapping *mapping_;
-};
-
-} // namespace
-
 void get_ir(const char *mdparin, const char *mdparout,
             t_inputrec *ir, t_gromppopts *opts,
             warninp_t wi)
@@ -2251,7 +2207,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         }
         gmx::Options                 options;
         ir->efield->initMdpOptions(&options);
-        MdpErrorHandler              errorHandler(wi);
+        gmx::MdpErrorHandler         errorHandler(wi);
         auto                         result
             = transform.transform(convertedValues, &errorHandler);
         errorHandler.setBackMapping(result.backMapping());

@@ -40,6 +40,11 @@
 
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/keyvaluetreetransform.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/ikeyvaluetreeerror.h"
+#include "gromacs/utility/stringutil.h"
 
 struct gmx_groups_t;
 struct gmx_mtop_t;
@@ -161,5 +166,49 @@ void make_rotation_groups(t_rot *rot, char **rotgnames,
 
 void set_reference_positions(t_rot *rot, rvec *x, matrix box,
                              const char *fn, gmx_bool bSet, warninp_t wi);
+
+namespace gmx
+{
+
+class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
+{
+    public:
+        explicit MdpErrorHandler(warninp_t wi)
+            : wi_(wi), mapping_(nullptr)
+        {
+        }
+
+        void setBackMapping(const gmx::IKeyValueTreeBackMapping &mapping)
+        {
+            mapping_ = &mapping;
+        }
+
+        virtual bool onError(gmx::UserInputError *ex, const gmx::KeyValueTreePath &context)
+        {
+            ex->prependContext(gmx::formatString("Error in mdp option \"%s\":",
+                                                 getOptionName(context).c_str()));
+            std::string message = gmx::formatExceptionMessageToString(*ex);
+            warning_error(wi_, message.c_str());
+            return true;
+        }
+
+    private:
+        std::string getOptionName(const gmx::KeyValueTreePath &context)
+        {
+            if (mapping_ != nullptr)
+            {
+                gmx::KeyValueTreePath path = mapping_->originalPath(context);
+                GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
+                return path[0];
+            }
+            GMX_ASSERT(context.size() == 1, "Inconsistent context for mdp option parsing");
+            return context[0];
+        }
+
+        warninp_t                            wi_;
+        const gmx::IKeyValueTreeBackMapping *mapping_;
+};
+
+}
 
 #endif
