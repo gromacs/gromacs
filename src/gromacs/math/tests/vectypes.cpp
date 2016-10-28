@@ -131,4 +131,114 @@ TEST(RVecTest, WorksAs_rvec_Reference)
     EXPECT_EQ(3, r[0][ZZ]);
 }
 
+using gmx::Matrix;
+
+TEST(MatrixTest, CanBeStoredInVector)
+{
+    std::vector<Matrix> v;
+    v.emplace_back(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    v.resize(2);
+    EXPECT_EQ(1, v[0][XX][XX]);
+    EXPECT_EQ(2, v[0][XX][YY]);
+    EXPECT_EQ(3, v[0][XX][ZZ]);
+    EXPECT_EQ(4, v[0][YY][XX]);
+    EXPECT_EQ(5, v[0][YY][YY]);
+    EXPECT_EQ(6, v[0][YY][ZZ]);
+    EXPECT_EQ(7, v[0][ZZ][XX]);
+    EXPECT_EQ(8, v[0][ZZ][YY]);
+    EXPECT_EQ(9, v[0][ZZ][ZZ]);
+}
+
+TEST(MatrixTest, ConvertsImplicitlyFrom_matrix)
+{
+    std::vector<Matrix> v;
+    matrix              x = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+    v.emplace_back(x);
+    EXPECT_EQ(1, v[0][XX][XX]);
+    EXPECT_EQ(2, v[0][XX][YY]);
+    EXPECT_EQ(3, v[0][XX][ZZ]);
+    EXPECT_EQ(4, v[0][YY][XX]);
+    EXPECT_EQ(5, v[0][YY][YY]);
+    EXPECT_EQ(6, v[0][YY][ZZ]);
+    EXPECT_EQ(7, v[0][ZZ][XX]);
+    EXPECT_EQ(8, v[0][ZZ][YY]);
+    EXPECT_EQ(9, v[0][ZZ][ZZ]);
+}
+
+TEST(MatrixTest, ConvertsImplicitlyTo_matrix)
+{
+    std::vector<Matrix> v;
+    v.emplace_back(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    matrix              x;
+    copy_mat(v[0], x);
+    EXPECT_EQ(1, x[XX][XX]);
+    EXPECT_EQ(2, x[XX][YY]);
+    EXPECT_EQ(3, x[XX][ZZ]);
+    EXPECT_EQ(4, x[YY][XX]);
+    EXPECT_EQ(5, x[YY][YY]);
+    EXPECT_EQ(6, x[YY][ZZ]);
+    EXPECT_EQ(7, x[ZZ][XX]);
+    EXPECT_EQ(8, x[ZZ][YY]);
+    EXPECT_EQ(9, x[ZZ][ZZ]);
+}
+
+TEST(MatrixTest, WorksAsMutable_matrix)
+{
+    std::vector<Matrix> v;
+    v.emplace_back(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    matrix              x = {{4, 5, 6}, {7, 8, 9}, {10, 11, 12}};
+    copy_mat(x, v[0]);
+    EXPECT_EQ(4, v[0][XX][XX]);
+    EXPECT_EQ(5, v[0][XX][YY]);
+    EXPECT_EQ(6, v[0][XX][ZZ]);
+    EXPECT_EQ(7, v[0][YY][XX]);
+    EXPECT_EQ(8, v[0][YY][YY]);
+    EXPECT_EQ(9, v[0][YY][ZZ]);
+    EXPECT_EQ(10, v[0][ZZ][XX]);
+    EXPECT_EQ(11, v[0][ZZ][YY]);
+    EXPECT_EQ(12, v[0][ZZ][ZZ]);
+}
+
+TEST(MatrixTest, WorksAs_matrix_Array)
+{
+    std::vector<Matrix> v;
+    v.emplace_back(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    v.emplace_back(10, 20, 30, 40, 50, 60, 70, 80, 90);
+    const matrix *r = as_matrix_array(v.data());
+    EXPECT_EQ(1, r[0][XX][XX]);
+    EXPECT_EQ(2, r[0][XX][YY]);
+    EXPECT_EQ(3, r[0][XX][ZZ]);
+    EXPECT_EQ(4, r[0][YY][XX]);
+    EXPECT_EQ(5, r[0][YY][YY]);
+    EXPECT_EQ(6, r[0][YY][ZZ]);
+    EXPECT_EQ(7, r[0][ZZ][XX]);
+    EXPECT_EQ(8, r[0][ZZ][YY]);
+    EXPECT_EQ(9, r[0][ZZ][ZZ]);
+    EXPECT_EQ(10, r[1][XX][XX]);
+    EXPECT_EQ(20, r[1][XX][YY]);
+    EXPECT_EQ(30, r[1][XX][ZZ]);
+    EXPECT_EQ(40, r[1][YY][XX]);
+    EXPECT_EQ(50, r[1][YY][YY]);
+    EXPECT_EQ(60, r[1][YY][ZZ]);
+    EXPECT_EQ(70, r[1][ZZ][XX]);
+    EXPECT_EQ(80, r[1][ZZ][YY]);
+    EXPECT_EQ(90, r[1][ZZ][ZZ]);
+}
+
+TEST(MatrixTest, WorksAs_matrix_Reference)
+{
+    Matrix v(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    matrix r;
+    transpose(v.as_matrix(), r);
+    EXPECT_EQ(1, r[XX][XX]);
+    EXPECT_EQ(2, r[YY][XX]);
+    EXPECT_EQ(3, r[ZZ][XX]);
+    EXPECT_EQ(4, r[XX][YY]);
+    EXPECT_EQ(5, r[YY][YY]);
+    EXPECT_EQ(6, r[ZZ][YY]);
+    EXPECT_EQ(7, r[XX][ZZ]);
+    EXPECT_EQ(8, r[YY][ZZ]);
+    EXPECT_EQ(9, r[ZZ][ZZ]);
+}
+
 } // namespace
