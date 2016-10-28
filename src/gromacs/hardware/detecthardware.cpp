@@ -140,7 +140,6 @@ static tMPI_Thread_mutex_t hw_info_lock = TMPI_THREAD_MUTEX_INITIALIZER;
 #define HOSTNAMELEN 80
 
 /* FW decl. */
-static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank);
 static int gmx_count_gpu_dev_unique(const gmx_gpu_info_t *gpu_info,
                                     const gmx_gpu_opt_t  *gpu_opt);
 
@@ -154,60 +153,16 @@ gmx_bool gmx_gpu_sharing_supported()
     return bGpuSharingSupported;
 }
 
-static void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info)
+std::string sprint_gpus(const gmx_gpu_info_t *gpu_info)
 {
-    int      i, ndev;
-    char     stmp[STRLEN];
-
-    ndev = gpu_info->n_dev;
-
-    sbuf[0] = '\0';
-    for (i = 0; i < ndev; i++)
+    char                     stmp[STRLEN];
+    std::vector<std::string> gpuStrings;
+    for (int i = 0; i < gpu_info->n_dev; i++)
     {
         get_gpu_device_info_string(stmp, gpu_info, i);
-        strcat(sbuf, "    ");
-        strcat(sbuf, stmp);
-        if (i < ndev - 1)
-        {
-            strcat(sbuf, "\n");
-        }
+        gpuStrings.push_back(gmx::formatString("    %s", stmp));
     }
-}
-
-static void print_gpu_detection_stats(const gmx::MDLogger  &mdlog,
-                                      const gmx_gpu_info_t *gpu_info)
-{
-    char onhost[HOSTNAMELEN+10], stmp[STRLEN];
-    int  ngpu;
-
-    if (!gpu_info->bDetectGPUs)
-    {
-        /* We skipped the detection, so don't print detection stats */
-        return;
-    }
-
-    ngpu = gpu_info->n_dev;
-
-#if GMX_LIB_MPI
-    /* We only print the detection on one, of possibly multiple, nodes */
-    std::strncpy(onhost, " on host ", 10);
-    gmx_gethostname(onhost + 9, HOSTNAMELEN);
-#else
-    /* We detect all relevant GPUs */
-    std::strncpy(onhost, "", 1);
-#endif
-
-    if (ngpu > 0)
-    {
-        sprint_gpus(stmp, gpu_info);
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "%d GPU%s detected%s:\n%s",
-                ngpu, (ngpu > 1) ? "s" : "", onhost, stmp);
-    }
-    else
-    {
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("No GPUs detected%s", onhost);
-    }
+    return gmx::joinStrings(gpuStrings, "\n");
 }
 
 /*! \brief Helper function for reporting GPU usage information
@@ -1253,10 +1208,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
                                hwinfo->gpu_info.n_dev);
         if (hwinfo->gpu_info.n_dev > 0)
         {
-            char buf[STRLEN];
-
-            sprint_gpus(buf, &hwinfo->gpu_info);
-            s += gmx::formatString("%s\n", buf);
+            s += sprint_gpus(&hwinfo->gpu_info) + "\n";
         }
     }
     return s;
@@ -1362,132 +1314,6 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
         }
 
         gpu_opt->bUserSet = TRUE;
-    }
-}
-
-void gmx_select_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
-                        const gmx_gpu_info_t *gpu_info,
-                        gmx_bool bForceUseGPU,
-                        gmx_gpu_opt_t *gpu_opt)
-{
-    int              i;
-    char             sbuf[STRLEN], stmp[STRLEN];
-
-    /* Bail if binary is not compiled with GPU acceleration, but this is either
-     * explicitly (-nb gpu) or implicitly (gpu ID passed) requested. */
-    if (bForceUseGPU && !bGPUBinary)
-    {
-        gmx_fatal(FARGS, "GPU acceleration requested, but %s was compiled without GPU support!",
-                  gmx::getProgramContext().displayName());
-    }
-
-    if (!(cr->duty & DUTY_PP))
-    {
-        /* Our rank is not doing PP, we don't use a GPU */
-        return;
-    }
-
-    if (gpu_opt->bUserSet)
-    {
-        /* Check the GPU IDs passed by the user.
-         * (GPU IDs have been parsed by gmx_parse_gpu_ids before)
-         */
-        int *checkres;
-        int  res;
-
-        snew(checkres, gpu_opt->n_dev_use);
-
-        res = check_selected_gpus(checkres, gpu_info, gpu_opt);
-
-        if (!res)
-        {
-            print_gpu_detection_stats(mdlog, gpu_info);
-
-            sprintf(sbuf, "Some of the requested GPUs do not exist, behave strangely, or are not compatible:\n");
-            for (i = 0; i < gpu_opt->n_dev_use; i++)
-            {
-                if (checkres[i] != egpuCompatible)
-                {
-                    sprintf(stmp, "    GPU #%d: %s\n",
-                            gpu_opt->dev_use[i],
-                            gpu_detect_res_str[checkres[i]]);
-                    strcat(sbuf, stmp);
-                }
-            }
-            gmx_fatal(FARGS, "%s", sbuf);
-        }
-
-        sfree(checkres);
-    }
-    else if (getenv("GMX_EMULATE_GPU") == NULL)
-    {
-        pick_compatible_gpus(&hwinfo_g->gpu_info, gpu_opt);
-        set_gpu_ids(gpu_opt, cr->nrank_pp_intranode, cr->rank_pp_intranode);
-    }
-
-    /* If the user asked for a GPU, check whether we have a GPU */
-    if (bForceUseGPU && gpu_info->n_dev_compatible == 0)
-    {
-        gmx_fatal(FARGS, "GPU acceleration requested, but no compatible GPUs were detected.");
-    }
-}
-
-/* Select the GPUs we will use. This is an operation local to each physical
- * node. If we have less MPI ranks than GPUs, we will waste some GPUs.
- * nrank and rank are the rank count and id for PP processes in our node.
- */
-static void set_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
-{
-    GMX_RELEASE_ASSERT(gpu_opt, "Invalid gpu_opt pointer passed");
-    GMX_RELEASE_ASSERT(nrank >= 1,
-                       gmx::formatString("Invalid limit (%d) for the number of GPUs (detected %d compatible GPUs)",
-                                         rank, gpu_opt->n_dev_compatible).c_str());
-
-    if (gpu_opt->n_dev_compatible == 0)
-    {
-        char host[HOSTNAMELEN];
-
-        gmx_gethostname(host, HOSTNAMELEN);
-        gmx_fatal(FARGS, "A GPU was requested on host %s, but no compatible GPUs were detected. All nodes with PP ranks need to have GPUs. If you intended to use GPU acceleration in a parallel run, you can either avoid using the nodes that don't have GPUs or place PME ranks on these nodes.", host);
-    }
-
-    int nshare;
-
-    nshare = 1;
-    if (nrank > gpu_opt->n_dev_compatible)
-    {
-        if (nrank % gpu_opt->n_dev_compatible == 0)
-        {
-            nshare = gmx_gpu_sharing_supported() ? nrank/gpu_opt->n_dev_compatible : 1;
-        }
-        else
-        {
-            if (rank == 0)
-            {
-                gmx_fatal(FARGS, "The number of MPI ranks (%d) in a physical node is not a multiple of the number of GPUs (%d). Select a different number of MPI ranks or use the -gpu_id option to manually specify the GPU to be used.",
-                          nrank, gpu_opt->n_dev_compatible);
-            }
-
-#if GMX_MPI
-            /* We use a global barrier to prevent ranks from continuing with
-             * an invalid setup.
-             */
-            MPI_Barrier(MPI_COMM_WORLD);
-#endif
-        }
-    }
-
-    /* Here we will waste GPUs when nrank < gpu_opt->n_dev_compatible */
-    gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_compatible*nshare, nrank);
-    if (!gmx_multiple_gpu_per_node_supported())
-    {
-        gpu_opt->n_dev_use = std::min(gpu_opt->n_dev_use, 1);
-    }
-    snew(gpu_opt->dev_use, gpu_opt->n_dev_use);
-    for (int i = 0; i != gpu_opt->n_dev_use; ++i)
-    {
-        /* TODO: improve this implementation: either sort GPUs or remove the weakest here */
-        gpu_opt->dev_use[i] = gpu_opt->dev_compatible[i/nshare];
     }
 }
 
