@@ -69,10 +69,12 @@ extern void mmslave_done(gmx_mmslave_t gms);
  * Function to read a tpr file and store the information in the
  * data structure
  * \param[in] tpr  the file name
+ * \param[in] fplog  a File pointer for (debug) output. May be NULL, or stdout.
  * \param[in] gms  the data structure to be read
  * \return 1 if successful, 0 otherwise
  */
 extern int mmslave_read_tpr(const char   *tpr,
+                            FILE       *fplog,
                             gmx_mmslave_t gms);
 
 /*! \brief

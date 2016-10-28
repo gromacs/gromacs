@@ -170,11 +170,12 @@ class MMSlave
 
         /*! \brief
          * Function to read a tpr file and store the information in the
-         * data structur
+         * data structure
          * \param[in] tpr  the file name
+         * \param[in] fplog  a File pointer for (debug) output. May be NULL, or stdout.
          * \return true if successful
          */
-        bool readTpr(const char *tpr);
+        bool readTpr(const char *tpr, FILE *fplog);
 
         /*! \brief
          * \return the total number of atoms in the system

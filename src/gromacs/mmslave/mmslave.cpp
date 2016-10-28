@@ -188,7 +188,7 @@ MMSlave::MMSlave(const t_commrec *cr)
     cr_   = cr;
 }
 
-bool MMSlave::readTpr(const char *tpr)
+bool MMSlave::readTpr(const char *tpr, FILE *fplog)
 {
     t_tpxheader tpx;
     int         version, generation, natoms;
@@ -215,7 +215,7 @@ bool MMSlave::readTpr(const char *tpr)
     GMX_RELEASE_ASSERT((natoms == nAtoms()),
                        "Total number of atoms not consistent with group indices");
 
-    giab_ = new GromacsInABox(stdout, cr_, &mtop_, &inputrec_, box_);
+    giab_ = new GromacsInABox(fplog, cr_, &mtop_, &inputrec_, box_);
 
     return true;
 }
@@ -421,9 +421,10 @@ void mmslave_done(gmx_mmslave_t gms)
 }
 
 int mmslave_read_tpr(const char   *tpr,
+                     FILE       *fplog,
                      gmx_mmslave_t gms)
 {
-    if (gms->mms->readTpr(tpr))
+  if (gms->mms->readTpr(tpr,fplog))
     {
         return 1;
     }

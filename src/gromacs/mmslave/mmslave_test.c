@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     {
         gmx_bool bOK;
         
-        bOK = mmslave_read_tpr(argv[1], gms);
+        bOK = mmslave_read_tpr(argv[1], stdout, gms);
         if (bOK)
         {
             ngroups = mmslave_ngroups(gms);
