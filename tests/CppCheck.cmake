@@ -88,12 +88,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=invalidscanf
         --suppress=sizeofCalculation
         --suppress=invalidscanf_libc
-        --suppress=missingInclude:src/programs/mdrun/gmx_gpu_utils/gmx_gpu_utils.cu
         --suppress=*:src/external/Random123-1.08/include/Random123/features/compilerfeatures.h
-        --suppress=invalidPointerCast:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
-        --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel.cuh
-        --suppress=passedByValue:src/gromacs/mdlib/nbnxn_cuda/nbnxn_cuda_kernel_utils.cuh
-        --suppress=shiftTooManyBits:src/gromacs/gpu_utils/gpu_utils.cu
         ) 
     set(_cxx_flags
         -D__cplusplus
@@ -105,7 +100,19 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=passedByValue:src/gromacs/simd/tests/*
         --suppress=redundantAssignment:src/gromacs/simd/simd_math.h #seems to be a bug in cppcheck
         --suppress=noExplicitConstructor # can't be selective about this, see http://sourceforge.net/p/cppcheck/discussion/general/thread/db1e4ba7/
+        --suppress=unusedStructMember:src/gromacs/onlinehelp/tests/helpmanager.cpp
+        --suppress=unusedStructMember:src/gromacs/commandline/cmdlinehelpmodule.cpp
+        --suppress=unusedStructMember:src/gromacs/selection/selhelp.cpp
+        --suppress=redundantPointerOp:src/gromacs/fileio/gmxfio-xdr.cpp
+        --suppress=passedByValue # See comment below
+        --suppress=shiftTooManyBits:src/gromacs/gpu_utils/gpu_utils.cu # CUDA kernel launch false positive
         )
+        # Passing non-trivial objects by value is rarely a problem for
+        # GROMACS in performance-sensitive code, and shouldn't be
+        # enforced for types that are intended to be used like value
+        # types (e.g. SIMD wrapper types, ArrayRef) , nor for
+        # move-enabled types. cppcheck isn't sensitive to these
+        # subtleties yet.
 
     # This list will hold the list of all files with cppcheck errors
     # (one per input file)
@@ -115,7 +122,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         set(_target_name cppcheck-${_filename}.${_outputext})
         string(REPLACE "/" "_" _target_name ${_target_name})
         list(APPEND _filelist ${_target_name})
-        if (_filename MATCHES "\\.cpp$")
+        if (_filename MATCHES "\\.cpp$" OR _filename MATCHES "\\.cu$")
             set(_lang CXX)
             set(_lang_flags ${_cxx_flags})
         else()

@@ -850,10 +850,10 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
 
 static int pcompar(const void *a, const void *b)
 {
-    t_param *pa, *pb;
-    int      d;
-    pa = (t_param *)a;
-    pb = (t_param *)b;
+    const t_param *pa, *pb;
+    int            d;
+    pa = static_cast<const t_param *>(a);
+    pb = static_cast<const t_param *>(b);
 
     d = pa->a[0] - pb->a[0];
     if (d == 0)

@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Object Name="Input">
+    <Object Name="obj">
+      <Int Name="a">1</Int>
+      <String Name="b">foo</String>
+    </Object>
+    <Object Name="obj2">
+      <Int Name="c">2</Int>
+      <String Name="d">bar</String>
+    </Object>
+    <Int Name="foo">3</Int>
+  </Object>
+  <SerializedData Name="Stream">
+    <Int>3</Int>
+    <String>obj</String>
+    <UChar>79</UChar>
+    <Int>2</Int>
+    <String>a</String>
+    <UChar>105</UChar>
+    <Int>1</Int>
+    <String>b</String>
+    <UChar>115</UChar>
+    <String>foo</String>
+    <String>obj2</String>
+    <UChar>79</UChar>
+    <Int>2</Int>
+    <String>c</String>
+    <UChar>105</UChar>
+    <Int>2</Int>
+    <String>d</String>
+    <UChar>115</UChar>
+    <String>bar</String>
+    <String>foo</String>
+    <UChar>105</UChar>
+    <Int>3</Int>
+  </SerializedData>
+</ReferenceData>

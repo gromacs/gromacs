@@ -148,7 +148,7 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
 
     fclose(fp);
 
-    return (gmx_neutron_atomic_structurefactors_t *) gnsf;
+    return gnsf;
 }
 
 gmx_sans_t *gmx_sans_init (const t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf)
@@ -186,7 +186,7 @@ gmx_sans_t *gmx_sans_init (const t_topology *top, gmx_neutron_atomic_structurefa
         }
     }
 
-    return (gmx_sans_t *) gsans;
+    return gsans;
 }
 
 gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
@@ -364,7 +364,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         pr->r[i] = (pr->binwidth*i+pr->binwidth*0.5);
     }
 
-    return (gmx_radial_distribution_histogram_t *) pr;
+    return pr;
 }
 
 gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step)
@@ -405,5 +405,5 @@ gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_d
         }
     }
 
-    return (gmx_static_structurefactor_t *) sq;
+    return sq;
 }

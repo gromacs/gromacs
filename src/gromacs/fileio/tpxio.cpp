@@ -1315,6 +1315,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_real(fio, ir->shake_tol);
     if (file_version < 54)
     {
+        // cppcheck-suppress redundantPointerOp
         gmx_fio_do_real(fio, *fudgeQQ);
     }
 

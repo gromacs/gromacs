@@ -1547,10 +1547,6 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *
 
         if (bPrintNote)
         {
-            if (MASTER(cr))
-            {
-                fprintf(stderr, "\n%s\n", note);
-            }
             if (fp != NULL)
             {
                 fprintf(fp, "\n%s\n", note);

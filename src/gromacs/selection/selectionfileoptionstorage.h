@@ -71,7 +71,8 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
         virtual OptionInfo &optionInfo() { return info_; }
         virtual std::string typeString() const { return "file"; }
         virtual int valueCount() const { return 0; }
-        virtual std::string formatValue(int /*i*/) const { return ""; }
+        virtual std::vector<Variant> defaultValues() const { return {}; }
+        virtual std::vector<std::string> defaultValuesAsStrings() const { return {}; }
 
     private:
         virtual void clearSet();

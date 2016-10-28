@@ -43,10 +43,14 @@
 
 #include "treesupport.h"
 
+#include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
+#include "gromacs/options/optionsection.h"
+#include "gromacs/options/optionsvisitor.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 
 namespace gmx
 {
@@ -138,6 +142,67 @@ class TreeAssignHelper
         KeyValueTreePath           context_;
 };
 
+class TreeIterationHelper : private OptionsVisitor
+{
+    public:
+        TreeIterationHelper(const KeyValueTreeObject &root,
+                            KeyValueTreeBuilder      *builder)
+            : currentSourceObject_(&root),
+              currentObjectBuilder_(builder->rootObject())
+        {
+        }
+
+        void processOptionSection(const OptionSectionInfo &section)
+        {
+            OptionsIterator iterator(section);
+            iterator.acceptOptions(this);
+            iterator.acceptSections(this);
+        }
+
+    private:
+        virtual void visitSection(const OptionSectionInfo &section)
+        {
+            const std::string &name          = section.name();
+            auto               parentBuilder = currentObjectBuilder_;
+            auto               parentObject  = currentSourceObject_;
+            currentObjectBuilder_ = currentObjectBuilder_.addObject(name);
+            currentSourceObject_  =
+                (currentSourceObject_ != nullptr && currentSourceObject_->keyExists(name)
+                 ? &(*currentSourceObject_)[name].asObject()
+                 : nullptr);
+            processOptionSection(section);
+            currentSourceObject_  = parentObject;
+            currentObjectBuilder_ = parentBuilder;
+        }
+        virtual void visitOption(const OptionInfo &option)
+        {
+            const std::string &name = option.name();
+            if (currentSourceObject_ == nullptr || !currentSourceObject_->keyExists(name))
+            {
+                std::vector<Variant> values = option.defaultValues();
+                if (values.size() == 1)
+                {
+                    currentObjectBuilder_.addRawValue(name, std::move(values[0]));
+                }
+                else if (values.size() > 1)
+                {
+                    auto arrayBuilder = currentObjectBuilder_.addArray(name);
+                    for (Variant &value : values)
+                    {
+                        arrayBuilder.addRawValue(std::move(value));
+                    }
+                }
+            }
+            else
+            {
+                currentObjectBuilder_.addRawValue(name, KeyValueTreeValue((*currentSourceObject_)[name]));
+            }
+        }
+
+        const KeyValueTreeObject  *currentSourceObject_;
+        KeyValueTreeObjectBuilder  currentObjectBuilder_;
+};
+
 }   // namespace
 
 //! \cond libapi
@@ -148,6 +213,16 @@ void assignOptionsFromKeyValueTree(Options                   *options,
 {
     TreeAssignHelper helper(options, errorHandler);
     helper.assignAll(tree);
+}
+
+KeyValueTreeObject
+adjustKeyValueTreeFromOptions(const KeyValueTreeObject &tree,
+                              const Options            &options)
+{
+    KeyValueTreeBuilder builder;
+    TreeIterationHelper helper(tree, &builder);
+    helper.processOptionSection(options.rootSection());
+    return builder.build();
 }
 
 //! \endcond

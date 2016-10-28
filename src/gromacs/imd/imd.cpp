@@ -70,6 +70,7 @@
 #include "gromacs/imd/imdsocket.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/sighandler.h"
@@ -93,12 +94,6 @@
 #define HEADERSIZE 8
 /*! \brief IMD Protocol Version. */
 #define IMDVERSION 2
-
-/*! \brief Broadcast d to all nodes */
-#define  block_bc(cr, d) gmx_bcast(sizeof(d), &(d), (cr))
-
-/*! \brief Broadcast nr elements of d to all nodes */
-#define  nblock_bc(cr, nr, d) gmx_bcast((nr)*sizeof((d)[0]), (d), (cr))
 
 
 /*! \internal
