@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -166,6 +166,83 @@ static inline const rvec *as_rvec_array(const RVec *x)
 {
     return as_vec_array(x);
 }
+
+/*! \brief
+ * C++ class for 3x3 matrices.
+ *
+ * \tparam ValueType  Type
+ *
+ * This class provides a C++ version of imatrix/matrix/tensor,
+ * that can be put into STL containers etc. It is more or less
+ * a drop-in replacement for `matrix` and friends:
+ * it can be used in most contexts that accept the equivalent C type.
+ *
+ * \inpublicapi
+ */
+template <typename ValueType>
+class BasicMatrix
+{
+    public:
+        //! 1D raw array as a return type for operator[]
+        typedef ValueType RawArray[DIM];
+        //! Underlying raw C 2D array (matrix/imatrix...).
+        typedef RawArray RawMatrix[DIM];
+
+        //! Constructs default (uninitialized) matrix.
+        BasicMatrix() {}
+        //! Constructs a matrix from given values.
+        BasicMatrix(ValueType xx, ValueType xy, ValueType xz,
+                    ValueType yx, ValueType yy, ValueType yz,
+                    ValueType zx, ValueType zy, ValueType zz)
+        {
+            matrix_[XX][XX] = xx;
+            matrix_[XX][YY] = xy;
+            matrix_[XX][ZZ] = xz;
+            matrix_[YY][XX] = yx;
+            matrix_[YY][YY] = yy;
+            matrix_[YY][ZZ] = yz;
+            matrix_[ZZ][XX] = zx;
+            matrix_[ZZ][YY] = zy;
+            matrix_[ZZ][ZZ] = zz;
+        }
+        //! Constructs a matrix from C-style 2D array.
+        BasicMatrix(const RawMatrix matrix)
+        {
+            for (int i = 0; i < DIM; i++)
+            {
+                for (int j = 0; j < DIM; j++)
+                {
+                    matrix_[i][j] = matrix[i][j];
+                }
+
+            }
+        }
+
+        //! Indexing operator to make the class work as the raw 2D array.
+        ValueType *operator[](int i) { return matrix_[i]; }
+        //! Indexing operator to make the class work as the raw 2D array.
+        const ValueType *operator[](int i) const { return matrix_[i]; }
+
+        //! Makes BasicMatrix usable in contexts where a raw C 2D array is expected.
+        operator RawArray *() { return matrix_; }
+        //! Makes BasicVector usable in contexts where a raw C 2D array is expected.
+        operator const RawArray *() const { return matrix_; }
+
+        //! Converts to a C matrix where implicit conversion does not work.
+        RawMatrix &as_matrix() { return matrix_; }
+        //! Converts to a C matrix where implicit conversion does not work.
+        const RawMatrix &as_matrix() const { return matrix_; }
+
+    private:
+        RawMatrix matrix_;
+};
+
+//! Shorthand for C++ `matrix`-equivalent type.
+typedef BasicMatrix<real> Matrix;
+//! Shorthand for C++ `tensor`-equivalent type.
+typedef BasicMatrix<real> Tensor;
+//! Shorthand for C++ `imatrix`-equivalent type.
+typedef BasicMatrix<int> IMatrix;
 
 } // namespace gmx
 
