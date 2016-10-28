@@ -114,21 +114,4 @@ TEST(RVecTest, WorksAs_rvec_Array)
     EXPECT_EQ(4, r[1][ZZ]);
 }
 
-/*! \brief
- * Helper function for testing RVec to rvec conversions.
- */
-const rvec *testFunction(const rvec &x)
-{
-    return &x;
-}
-
-TEST(RVecTest, WorksAs_rvec_Reference)
-{
-    RVec        v(1, 2, 3);
-    const rvec *r = testFunction(v.as_vec());
-    EXPECT_EQ(1, r[0][XX]);
-    EXPECT_EQ(2, r[0][YY]);
-    EXPECT_EQ(3, r[0][ZZ]);
-}
-
 } // namespace
