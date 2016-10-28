@@ -114,21 +114,72 @@ TEST(RVecTest, WorksAs_rvec_Array)
     EXPECT_EQ(4, r[1][ZZ]);
 }
 
-/*! \brief
- * Helper function for testing RVec to rvec conversions.
- */
-const rvec *testFunction(const rvec &x)
+using gmx::Matrix;
+
+TEST(MatrixTest, CanBeStoredInVector)
 {
-    return &x;
+    std::vector<Matrix> v;
+    v.emplace_back(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    v.resize(2);
+    EXPECT_EQ(1, v[0][XX][XX]);
+    EXPECT_EQ(2, v[0][XX][YY]);
+    EXPECT_EQ(3, v[0][XX][ZZ]);
+    EXPECT_EQ(4, v[0][YY][XX]);
+    EXPECT_EQ(5, v[0][YY][YY]);
+    EXPECT_EQ(6, v[0][YY][ZZ]);
+    EXPECT_EQ(7, v[0][ZZ][XX]);
+    EXPECT_EQ(8, v[0][ZZ][YY]);
+    EXPECT_EQ(9, v[0][ZZ][ZZ]);
 }
 
-TEST(RVecTest, WorksAs_rvec_Reference)
+TEST(MatrixTest, ConvertsImplicitlyFrom_matrix)
 {
-    RVec        v(1, 2, 3);
-    const rvec *r = testFunction(v.as_vec());
-    EXPECT_EQ(1, r[0][XX]);
-    EXPECT_EQ(2, r[0][YY]);
-    EXPECT_EQ(3, r[0][ZZ]);
+    std::vector<Matrix> v;
+    matrix              x = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+    v.emplace_back(x);
+    EXPECT_EQ(1, v[0][XX][XX]);
+    EXPECT_EQ(2, v[0][XX][YY]);
+    EXPECT_EQ(3, v[0][XX][ZZ]);
+    EXPECT_EQ(4, v[0][YY][XX]);
+    EXPECT_EQ(5, v[0][YY][YY]);
+    EXPECT_EQ(6, v[0][YY][ZZ]);
+    EXPECT_EQ(7, v[0][ZZ][XX]);
+    EXPECT_EQ(8, v[0][ZZ][YY]);
+    EXPECT_EQ(9, v[0][ZZ][ZZ]);
+}
+
+TEST(MatrixTest, ConvertsImplicitlyTo_matrix)
+{
+    std::vector<Matrix> v;
+    v.emplace_back(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    matrix              x;
+    copy_mat(v[0], x);
+    EXPECT_EQ(1, x[XX][XX]);
+    EXPECT_EQ(2, x[XX][YY]);
+    EXPECT_EQ(3, x[XX][ZZ]);
+    EXPECT_EQ(4, x[YY][XX]);
+    EXPECT_EQ(5, x[YY][YY]);
+    EXPECT_EQ(6, x[YY][ZZ]);
+    EXPECT_EQ(7, x[ZZ][XX]);
+    EXPECT_EQ(8, x[ZZ][YY]);
+    EXPECT_EQ(9, x[ZZ][ZZ]);
+}
+
+TEST(MatrixTest, WorksAsMutable_matrix)
+{
+    std::vector<Matrix> v;
+    v.emplace_back(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    matrix              x = {{4, 5, 6}, {7, 8, 9}, {10, 11, 12}};
+    copy_mat(x, v[0]);
+    EXPECT_EQ(4, v[0][XX][XX]);
+    EXPECT_EQ(5, v[0][XX][YY]);
+    EXPECT_EQ(6, v[0][XX][ZZ]);
+    EXPECT_EQ(7, v[0][YY][XX]);
+    EXPECT_EQ(8, v[0][YY][YY]);
+    EXPECT_EQ(9, v[0][YY][ZZ]);
+    EXPECT_EQ(10, v[0][ZZ][XX]);
+    EXPECT_EQ(11, v[0][ZZ][YY]);
+    EXPECT_EQ(12, v[0][ZZ][ZZ]);
 }
 
 } // namespace
