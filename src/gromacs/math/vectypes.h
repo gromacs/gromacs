@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,14 +69,9 @@ namespace gmx
  * This class provides a C++ version of rvec/dvec/ivec that can be put into STL
  * containers etc.  It is more or less a drop-in replacement for `rvec` and
  * friends: it can be used in most contexts that accept the equivalent C type.
- * However, there are two cases where explicit conversion is necessary:
- *  - An array of these objects needs to be converted with as_vec_array() (or
- *    convenience methods like as_rvec_array()).
- *  - Passing an RVec as a `const rvec &` parameter to a function needs an
- *    explicit call to as_vec().  The implicit conversion should work for this
- *    as well, but cppcheck parses the necessary implicit conversion operator
- *    incorrectly and MSVC fails to compile code that relies on the implicit
- *    conversion, so the explicit method is necessary.
+ * However, there is a case where explicit conversion is necessary:
+ * An array of these objects needs to be converted with as_vec_array()
+ * (or convenience methods like as_rvec_array()).
  *
  * For the array conversion to work, the compiler should not add any extra
  * alignment/padding in the layout of this class;  that this actually works as
@@ -117,18 +112,11 @@ class BasicVector
         ValueType &operator[](int i) { return x_[i]; }
         //! Indexing operator to make the class work as the raw array.
         ValueType operator[](int i) const { return x_[i]; }
-        // The conversion functions below could more accurately return
-        // RawArray &, but this fails with cppcheck and does not solve the
-        // issue with MSVC, so as_vec() should be used instead.
+        // The conversion functions below could more accurately return RawArray &
         //! Makes BasicVector usable in contexts where a raw C array is expected.
         operator ValueType *() { return x_; }
         //! Makes BasicVector usable in contexts where a raw C array is expected.
         operator const ValueType *() const { return x_; }
-
-        //! Converts to a raw C array where implicit conversion does not work.
-        RawArray &as_vec() { return x_; }
-        //! Converts to a raw C array where implicit conversion does not work.
-        const RawArray &as_vec() const { return x_; }
 
     private:
         RawArray x_;
