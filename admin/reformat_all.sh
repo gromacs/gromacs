@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,7 @@ function usage() {
     echo "usage: reformat_all.sh [-f|--force]"
     echo "           [--filter=(uncrustify|copyright|includesort)]"
     echo "           [--pattern=<pattern>] [<action>] [-B=<build dir>]"
-    echo "<action>: (list-files|uncrustify*|copyright|includesort) (*=default)"
+    echo "<action>: (list-files|uncrustify*|clang-format|copyright|includesort) (*=default)"
 }
 
 filter=default
@@ -52,7 +52,8 @@ patterns=()
 action=uncrustify
 for arg in "$@" ; do
     if [[ "$arg" == "list-files" || "$arg" == "uncrustify" ||
-          "$arg" == "copyright" || "$arg" == "includesort" ]] ; then
+          "$arg" == "clang-format" || "$arg" == "copyright" ||
+          "$arg" == "includesort" ]] ; then
         action=$arg
     elif [[ "$arg" == --filter=* ]] ; then
         filter=${arg#--filter=}
@@ -98,6 +99,16 @@ case "$action" in
         fi
         command="xargs $UNCRUSTIFY -c admin/uncrustify.cfg --no-backup"
         ;;
+    clang-format)
+        if [ -z "$CLANG_FORMAT" ] ; then
+            CLANG_FORMAT=clang-format
+        fi
+        if ! which "$CLANG_FORMAT" 1>/dev/null ; then
+            echo "clang-format not found. Specify one with CLANG_FORMAT"
+            exit 2
+        fi
+        command="xargs $CLANG_FORMAT -i"
+        ;;
     copyright)
         command="xargs admin/copyright.py --check"
         ;;
@@ -114,7 +125,11 @@ case "$action" in
 esac
 
 if [[ "$filter" == "default" ]] ; then
-    filter=$action
+    if [[ "$action" == "clang-format" ]] ; then
+        filter=uncrustify
+    else
+        filter=$action
+    fi
 fi
 
 case "$filter" in
