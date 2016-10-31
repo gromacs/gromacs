@@ -67,7 +67,7 @@ namespace alexandria
 
 QgenEem::QgenEem(const Poldata            &pd,
                  t_atoms                  *atoms,
-                 rvec                     *x,
+                 PaddedRVecVector          x,
                  ChargeDistributionModel   iChargeDistributionModel,
                  double                    hfac,
                  int                       qtotal)

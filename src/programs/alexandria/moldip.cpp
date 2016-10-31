@@ -532,8 +532,7 @@ void MolDip::Read(FILE            *fp,
                                                 _iChargeDistributionModel,
                                                 _iChargeGenerationAlgorithm,
                                                 watoms, _hfac, lot, true,
-                                                nullptr, _cr, tabfn,
-                                                as_rvec_array(mpnew.x_->data()));
+                                                nullptr, _cr, tabfn);
                     rms = mpnew.espRms();
                 }
                 if (immOK == imm)
@@ -656,8 +655,7 @@ void MolDip::Read(FILE            *fp,
                 gmx::MDLogger mdlog = getMdLogger(_cr, stdout);
                 imm = mpnew.GenerateCharges(pd_, mdlog, _atomprop, _iChargeDistributionModel,
                                             _iChargeGenerationAlgorithm, watoms, _hfac,
-                                            lot, true, nullptr, _cr, tabfn,
-                                            as_rvec_array(mpnew.x_->data()));
+                                            lot, true, nullptr, _cr, tabfn);
                 rms = mpnew.espRms();
             }
             if (immOK == imm)
@@ -846,7 +844,7 @@ void MolDip::CalcDeviation()
             }
 
             QgenEem qgen(pd_, &(mymol->topology_->atoms),
-                         as_rvec_array(mymol->x_->data()), 
+                         mymol->x_, 
                          _iChargeDistributionModel,
                          _hfac,
                          mymol->molProp()->getCharge());
@@ -885,9 +883,9 @@ void MolDip::CalcDeviation()
                                     mymol->inputrec_, true,
                                     GMX_FORCE_ALLFORCES,
                                     mymol->ltop_, nullptr,
-                                    nullptr, nullptr,
+                                    nullptr, mymol->fcd_,
                                     mymol->state_,
-                                    (PaddedRVecVector *)mymol->f_,
+                                    &mymol->f_,
                                     force_vir, mymol->mdatoms_,
                                     &my_nrnb, wcycle, nullptr,
                                     &(mymol->mtop_->groups),

@@ -161,7 +161,7 @@ void MyMol::MakeSpecialInteractions(const Poldata &pd,
     real             th_toler = 175;
     real             ph_toler = 5;
 
-    rvec *x = as_rvec_array(x_->data());
+    rvec *x = as_rvec_array(x_.data());
     
     clear_mat(box_);
     set_pbc(&pbc, epbcNONE, box_);
@@ -899,8 +899,6 @@ bool MyMol::IsSymmetric(real toler)
     real      mm, tm;
     rvec      com, test;
     gmx_bool *bSymm, bSymmAll;
-
-    rvec *x = as_rvec_array(x_->data());
     
     clear_rvec(com);
     tm = 0;
@@ -910,7 +908,7 @@ bool MyMol::IsSymmetric(real toler)
         tm += mm;
         for (m = 0; (m < DIM); m++)
         {
-            com[m] += mm*x[i][m];
+            com[m] += mm*x_[i][m];
         }
     }
     if (tm > 0)
@@ -922,16 +920,16 @@ bool MyMol::IsSymmetric(real toler)
     }
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        rvec_dec(x[i], com);
+        rvec_dec(x_[i], com);
     }
 
     snew(bSymm, topology_->atoms.nr);
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        bSymm[i] = (norm(x[i]) < toler);
+        bSymm[i] = (norm(x_[i]) < toler);
         for (j = i+1; (j < topology_->atoms.nr) && !bSymm[i]; j++)
         {
-            rvec_add(x[i], x[j], test);
+            rvec_add(x_[i], x_[j], test);
             if (norm(test) < toler)
             {
                 bSymm[i] = true;
@@ -947,7 +945,7 @@ bool MyMol::IsSymmetric(real toler)
     sfree(bSymm);
     for (i = 0; (i < topology_->atoms.nr); i++)
     {
-        rvec_inc(x[i], com);
+        rvec_inc(x_[i], com);
     }
 
     return bSymmAll;
@@ -972,22 +970,19 @@ MyMol::MyMol() : gvt_(egvtALL)
     fr_         = nullptr;
     ltop_       = nullptr;
     mdatoms_    = nullptr;
-    x_          = new PaddedRVecVector;
-    f_          = new PaddedRVecVector;
-    optf_       = new PaddedRVecVector;
     mp_         = new MolProp;
     state_      = new t_state;
     snew(enerd_, 1);
+    snew(fcd_, 1);
     init_enerdata(1, 0, enerd_);
 }
 
 immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
                                const char               *lot,
-                               ChargeDistributionModel   iChargeDistributionModel,
-                               rvec                      *x)
+                               ChargeDistributionModel   iChargeDistributionModel)
 {
     int                 myunit;
-    double              xx, yy, zz;
+    real                xx, yy, zz;
     int                 natom;
     immStatus           imm   = immOK;
             
@@ -997,6 +992,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
         t_param nb;
 
         memset(&nb, 0, sizeof(nb));
+        x_.resize(ci->NAtom()+1);
         natom = 0;
         init_t_atoms(&(topology_->atoms), ci->NAtom(), false);
         snew(topology_->atoms.atomtype, ci->NAtom());
@@ -1012,9 +1008,9 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
             }
             cai->getCoords(&xx, &yy, &zz); 
                        
-            x[natom][XX] = convert2gmx(xx, myunit);
-            x[natom][YY] = convert2gmx(yy, myunit);
-            x[natom][ZZ] = convert2gmx(zz, myunit);
+            x_[natom][XX] = convert2gmx(xx, myunit);
+            x_[natom][YY] = convert2gmx(yy, myunit);
+            x_[natom][ZZ] = convert2gmx(zz, myunit);
 
             double q = 0;
             for (auto qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
@@ -1114,7 +1110,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     int         ftb;
     t_param     b;
     std::string btype1, btype2;
-
+    
     if (nullptr != debug)
     {
         fprintf(debug, "Generating topology_ for %s\n", molProp()->getMolname().c_str());
@@ -1131,10 +1127,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         snew(topology_, 1);
         init_top(topology_);
         /* get atoms */
-        x_->resize(molProp()->NAtom());
-        imm = GenerateAtoms(ap, lot, 
-                            iChargeDistributionModel, 
-                            as_rvec_array(x_->data()));       
+        imm = GenerateAtoms(ap, lot, iChargeDistributionModel);       
     }
     if (immOK == imm)
     {
@@ -1192,7 +1185,6 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
             imm = immGenBonds;
         }
     }
-
     if (immOK == imm)
     {
         MakeAngles(bPairs, bDih);
@@ -1202,7 +1194,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
         updatePlist(pd, plist_, topology_);
 
         snew(mtop_, 1);
-    }
+    }    
     if (bAddShells && imm == immOK)
     {
         addShells(pd, iChargeDistributionModel);
@@ -1236,8 +1228,6 @@ void MyMol::CalcMultipoles()
     gmx_mtop_atomloop_all_t aloop;
     const t_atom           *atom;
     int                     at_global;
-
-    rvec *x = as_rvec_array(x_->data());
     
     clear_rvec(mu);
     aloop = gmx_mtop_atomloop_all_init(mtop_);
@@ -1247,18 +1237,18 @@ void MyMol::CalcMultipoles()
     while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
     {
         q = atom->q;
-        svmul(ENM2DEBYE*q, x[i], mm);
+        svmul(ENM2DEBYE*q, x_[i], mm);
         rvec_inc(mu, mm);
 
         dfac = q*0.5*10*ENM2DEBYE;
-        r2   = iprod(x[i], x[i]);
+        r2   = iprod(x_[i], x_[i]);
         for (m = 0; (m < DIM); m++)
         {
-            Q_calc[m][m] += dfac*(3*gmx::square(x[i][m]) - r2);
+            Q_calc[m][m] += dfac*(3*gmx::square(x_[i][m]) - r2);
         }
-        Q_calc[XX][YY] += dfac*3*(x[i][XX]+coq[XX])*(x[i][YY]+coq[YY]);
-        Q_calc[XX][ZZ] += dfac*3*(x[i][XX]+coq[XX])*(x[i][ZZ]+coq[ZZ]);
-        Q_calc[YY][ZZ] += dfac*3*(x[i][YY]+coq[YY])*(x[i][ZZ]+coq[ZZ]);
+        Q_calc[XX][YY] += dfac*3*(x_[i][XX]+coq[XX])*(x_[i][YY]+coq[YY]);
+        Q_calc[XX][ZZ] += dfac*3*(x_[i][XX]+coq[XX])*(x_[i][ZZ]+coq[ZZ]);
+        Q_calc[YY][ZZ] += dfac*3*(x_[i][YY]+coq[YY])*(x_[i][ZZ]+coq[ZZ]);
 
         i++;
     }
@@ -1294,29 +1284,27 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
         relax_shell_flexcon(fplog, cr, true, 0,
                             inputrec_, true, ~0,
                             ltop_, nullptr, enerd_,
-                            nullptr, state_,
-                            f_, force_vir, mdatoms_,
+                            fcd_, state_,
+                            &f_, force_vir, mdatoms_,
                             &my_nrnb, wcycle, nullptr,
                             &(mtop_->groups),
                             shellfc_, fr_, false, t, mu_tot,
                             nullptr);
-
-        rvec *x = as_rvec_array(x_->data());
         
         for (int i = 0; i < mtop_->natoms; i++)
         {
-            copy_rvec(state_->x[i], x[i]);
+            copy_rvec(state_->x[i], x_[i]);
         }
     }
     else
-    {     
+    {   
         unsigned long flags = ~0;
         do_force(fplog, cr, inputrec_, 0,
                  &my_nrnb, wcycle, ltop_,
                  &(mtop_->groups),
-                 box_, x_, nullptr,
-                 f_, force_vir, mdatoms_,
-                 enerd_, nullptr,
+                 box_, &x_, nullptr,
+                 &f_, force_vir, mdatoms_,
+                 enerd_, fcd_,
                  &(state_->lambda), nullptr,
                  fr_, nullptr, mu_tot, t,
                  nullptr, false,
@@ -1325,26 +1313,24 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot)
 }
 
 
-void MyMol::changeCoordinate(ExperimentIterator ei,
-                             rvec              x[])
+void MyMol::changeCoordinate(ExperimentIterator ei)
 {
     double  xx, yy, zz;
     int     unit, natom = 0;
-    
-    x_->clear();
+
     for (auto eia = ei->BeginAtom(); eia < ei->EndAtom(); eia++)
     {
         unit = string2unit((char *)eia->getUnit().c_str());
         eia->getCoords(&xx, &yy, &zz);         
-        x[natom][XX] = convert2gmx(xx, unit);
-        x[natom][YY] = convert2gmx(yy, unit);
-        x[natom][ZZ] = convert2gmx(zz, unit);
+        x_[natom][XX] = convert2gmx(xx, unit);
+        x_[natom][YY] = convert2gmx(yy, unit);
+        x_[natom][ZZ] = convert2gmx(zz, unit);
 
         natom++;
     }
 }
 
-bool MyMol::getOptimizedGeometry(rvec *x)
+bool MyMol::getOptimizedGeometry(PaddedRVecVector x)
 {
     double  xx, yy, zz;
     int     unit, natom = 0;
@@ -1370,67 +1356,73 @@ bool MyMol::getOptimizedGeometry(rvec *x)
     return opt;
 }
 
-static void updateMdp(t_inputrec *ir, int ninp, t_inpfile inp[], warninp *wi)
+class MyForceProvider : public IForceProvider
 {
-    gmx::KeyValueTreeObject      convertedValues = flatKeyValueTreeFromInpFile(ninp, inp);
-    gmx::KeyValueTreeTransformer transform;
-    transform.rules()->addRule()
-        .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
-    ir->efield->initMdpTransform(transform.rules());
-    for (const auto &path : transform.mappedPaths())
-    {
-        GMX_ASSERT(path.size() == 1, "Inconsistent mapping back to mdp options");
-        mark_einp_set(ninp, inp, path[0].c_str());
+    private:
+        std::vector<double> ElectricField_;
+        
+    public:
+    
+        MyForceProvider();
+        
+        void calculateForces(const t_commrec  *cr,
+                             const t_mdatoms  *mdatoms,
+                             PaddedRVecVector *force,
+                             double            t);
+                         
+        void setField(std::vector<double> field) { ElectricField_ = field; }
+};
+
+MyForceProvider::MyForceProvider() {};
+
+void MyForceProvider::calculateForces(const t_commrec  *cr,
+                                      const t_mdatoms  *mdatoms,
+                                      PaddedRVecVector *force,
+                                      double            t)
+{
+    rvec *f = as_rvec_array(force->data());
+    for(int dim = 0; dim < DIM; dim++)
+    {       
+        double efield = FIELDFAC*ElectricField_[dim]; 
+        if (efield != 0)
+        {      
+            for(int i = 0; i < mdatoms->nr; i++)
+            {
+                f[i][dim] += mdatoms->chargeA[i]*efield;
+            }
+        }
     }
-    gmx::Options                 options;
-    ir->efield->initMdpOptions(&options);
-    gmx::MdpErrorHandler         errorHandler(wi);
-    auto                         result
-        = transform.transform(convertedValues, &errorHandler);
-    errorHandler.setBackMapping(result.backMapping());
-    gmx::assignOptionsFromKeyValueTree(&options, result.object(),
-                                       &errorHandler);
+    if (MASTER(cr) && nullptr != debug)
+    {
+        fprintf(debug, "%10g  %10g  %10g  %10g\n", t,
+                ElectricField_[XX], ElectricField_[YY], 
+                ElectricField_[ZZ]);
+    }
 }
 
-std::vector<double> MyMol::computePolarizability(double efield,
-                                                 FILE *fplog, t_commrec *cr)
+
+std::vector<double> MyMol::computePolarizability(double    efield,
+                                                 FILE      *fplog, 
+                                                 t_commrec *cr)
 {
-    const double        unit_factor = 29.957004; /*pol unit from (C.m**2.V*-1) to (Å**3)*/
-    static const char  *dims[DIM]   = { "x", "y", "z" };
-    rvec                mu_tot;
-    int                 dim;
-    rvec                mu_ref;
+    const double        POLFAC = 29.957004; /*pol unit from (C.m**2.V*-1) to (Å**3)*/
+    std::vector<double> field = {0.0, 0.0, 0.0};
     std::vector<double> pols;
-
+    MyForceProvider    *myforce;
+    rvec                mu_ref, mu_tot;
+    
+    myforce = new MyForceProvider;   
+    fr_->efield = myforce;
+    myforce->setField(field);          
     computeForces(fplog, cr, mu_ref);
-
-    for (dim = 0; (dim < DIM); dim++)
+    for (int dim = 0; dim < DIM; dim++)
     {
-        t_inpfile *inp_p;
-        int        ninp_p = 1;
-        warninp   *wi;
-        char       name[256], value[256];
-        snew(inp_p, ninp_p);
-        wi = init_warning(TRUE, 0);
-        
-        sprintf(name, "E-%s", dims[dim]);
-        inp_p[0].name  = strdup(name);
-        sprintf(value, "%g", efield);
-        inp_p[0].value = strdup(value);
-        updateMdp(inputrec_, ninp_p, inp_p, wi);
-        // Code take from readir.cpp        
-        
+        field[dim] = efield;
+        myforce->setField(field);
         computeForces(fplog, cr, mu_tot);
-        pols.push_back(((mu_tot[dim]-mu_ref[dim])/efield)*(unit_factor));
-        sprintf(value, "%g", 0.0);
-        sfree(inp_p[0].value);
-        inp_p[0].value = strdup(value);
-        inp_p[0].bSet  = FALSE;
-        updateMdp(inputrec_, ninp_p, inp_p, wi);
-        sfree(inp_p[0].name);
-        sfree(inp_p[0].value);
-        sfree(inp_p);
-        done_warning(wi, 0, __FILE__, __LINE__);
+        pols.push_back(((mu_tot[dim]-mu_ref[dim])/efield)*(POLFAC));
+        field[dim] = 0.0;
+        myforce->setField(field);
     }
     return pols;
 }
@@ -1446,8 +1438,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  bool                       bSymmetricCharges,
                                  const char                *symm_string,
                                  t_commrec                 *cr,
-                                 const char                *tabfn,
-                                 rvec                       x[])
+                                 const char                *tabfn)
 {
     rvec      mu_tot;
     immStatus imm       = immOK;
@@ -1455,7 +1446,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     int       maxiter   = 1000;
 
     // This might be moved to a better place
-    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, FALSE, FALSE);
+    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, false, false);
     GenerateGromacs(mdlog, cr, tabfn);
     double EspRms_ = 0;
     if (eqgESP == iChargeGenerationAlgorithm)
@@ -1485,7 +1476,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             return immOK;
         case eqgESP:
         {
-            gr_.setAtomInfo(&topology_->atoms, pd, x);
+            gr_.setAtomInfo(&topology_->atoms, pd, x_);
             gr_.setAtomSymmetry(symmetric_charges_);
             gr_.setMolecularCharge(molProp()->getCharge());
             gr_.summary(debug);
@@ -1532,7 +1523,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
             int    cur       = 0;
             do
             {
-                gr_.updateAtomCoords(x);
+                gr_.updateAtomCoords(x_);
                 gr_.optimizeCharges();
                 for (int i = 0; i < mtop_->moltype[0].atoms.nr; i++)
                 {
@@ -1560,7 +1551,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
         break;
         case eqgEEM:
         {
-            QgenEem qgen(pd, &topology_->atoms, x,
+            QgenEem qgen(pd, &topology_->atoms, x_,
                          iChargeDistributionModel,
                          hfac, molProp()->getCharge());
 
@@ -1595,24 +1586,21 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
     }
     if (nullptr != tabfn)
     {
-        /*Wang-Buckingham is implemented in nb-generic; thus, no need to read table now */
-        //inputrec_->vdwtype   = evdwUSER;
         inputrec_->coulombtype = eelUSER;
     }
 
-    f_->resize(nalloc);
-    optf_->resize(nalloc);
-       
+    f_.resize(nalloc);
+    optf_.resize(nalloc);
+   
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, nullptr, nullptr, true, -1);
     init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);
     mdatoms_   = init_mdatoms(nullptr, mtop_, false);
     atoms2md(mtop_, inputrec_, -1, nullptr, topology_->atoms.nr, mdatoms_);
     
-    rvec *x = as_rvec_array(x_->data());
     for (int i = 0; (i < topology_->atoms.nr); i++)
     {
-        copy_rvec(x[i], state_->x[i]);
+        copy_rvec(x_[i], state_->x[i]);
     }
     if (nullptr != shellfc_)
     {
@@ -1655,9 +1643,9 @@ void MyMol::PrintConformation(const char *fn)
 {
     char title[STRLEN];
 
-    put_in_box(topology_->atoms.nr, box_, as_rvec_array(x_->data()), 0.3);
+    put_in_box(topology_->atoms.nr, box_, as_rvec_array(x_.data()), 0.3);
     sprintf(title, "%s processed by alexandria", molProp()->getMolname().c_str());
-    write_sto_conf(fn, title, &topology_->atoms, as_rvec_array(x_->data()), nullptr, epbcNONE, box_);
+    write_sto_conf(fn, title, &topology_->atoms, as_rvec_array(x_.data()), nullptr, epbcNONE, box_);
 }
 
 static void write_zeta_q(FILE *fp, QgenEem * qgen,
@@ -2007,7 +1995,7 @@ void MyMol::PrintTopology(FILE                   *fp,
         return;
     }
 
-    CalcQPol(pd, as_rvec_array(x_->data()));
+    CalcQPol(pd);
 
     if (molProp()->getMolname().size() > 0)
     {
@@ -2203,11 +2191,12 @@ void MyMol::addShells(const Poldata          &pd,
     t_param          p;
     t_atoms         *newa;
     t_excls         *newexcls;
-    rvec            *newx;
+    PaddedRVecVector newx;
     double           pol, sigpol;
 
     int              maxatom = topology_->atoms.nr*2+2;
-    x_->resize(maxatom);
+
+    x_.resize(maxatom);
     memset(&p, 0, sizeof(p));
     inv_renum.resize(topology_->atoms.nr*2, -1);
     int polarUnit = string2unit(pd.getPolarUnit().c_str());
@@ -2246,11 +2235,11 @@ void MyMol::addShells(const Poldata          &pd,
 
         /* Make new atoms and x arrays */
         snew(newa, 1);
-        init_t_atoms(newa, topology_->atoms.nr+nshell, TRUE);
+        init_t_atoms(newa, topology_->atoms.nr+nshell, true);
         snew(newa->atomtype, topology_->atoms.nr+nshell);
         snew(newa->atomtypeB, topology_->atoms.nr+nshell);
         newa->nres = topology_->atoms.nres;
-        snew(newx, newa->nr);
+        newx.resize(newa->nr);
         snew(newname, newa->nr);
 
         /* Make new exclusion array, and put the shells in it */
@@ -2289,14 +2278,13 @@ void MyMol::addShells(const Poldata          &pd,
             }
         }
         // Now copy the old atoms to the new structures
-        rvec *x = as_rvec_array(x_->data());
         for (i = 0; (i < topology_->atoms.nr); i++)
         {
             newa->atom[renum[i]]      = topology_->atoms.atom[i];
             newa->atomname[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomname[i]);
             newa->atomtype[renum[i]]  = put_symtab(symtab_, *topology_->atoms.atomtype[i]);
             newa->atomtypeB[renum[i]] = put_symtab(symtab_, *topology_->atoms.atomtypeB[i]);
-            copy_rvec(x[i], newx[renum[i]]);
+            copy_rvec(x_[i], newx[renum[i]]);
             newname[renum[i]] = *topology_->atoms.atomtype[i];
             t_atoms_set_resinfo(newa, renum[i], symtab_,
                                 *topology_->atoms.resinfo[topology_->atoms.atom[i].resind].name,
@@ -2329,7 +2317,7 @@ void MyMol::addShells(const Poldata          &pd,
                 newa->atom[j].resind        = topology_->atoms.atom[i].resind;
                 sprintf(buf, "%ss", *(topology_->atoms.atomname[i]));
                 newa->atomname[j] = put_symtab(symtab_, buf);
-                copy_rvec(x[i], newx[j]);
+                copy_rvec(x_[i], newx[j]);
             }
         }
         /* Copy newa to atoms */
@@ -2337,10 +2325,10 @@ void MyMol::addShells(const Poldata          &pd,
         /* Copy coordinates and smnames */
         for (i = 0; (i < newa->nr); i++)
         {
-            copy_rvec(newx[i], x[i]);
+            copy_rvec(newx[i], x_[i]);
             topology_->atoms.atomtype[i] = put_symtab(symtab_, newname[i]);
         }
-        sfree(newx);
+
         sfree(newname);
         /* Copy exclusions, may need to empty the original first */
         sfree(excls_);
@@ -2416,14 +2404,14 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
 
         if (nullptr != difffn)
         {
-            grref.setAtomInfo(&topology_->atoms, pd, as_rvec_array(x_->data()));
+            grref.setAtomInfo(&topology_->atoms, pd, x_);
             grref.setAtomSymmetry(symmetric_charges_);
             grref.readCube(reffn, FALSE);
             gr_ = grref;
         }
         else
         {
-            gr_.makeGrid(spacing, box_, as_rvec_array(x_->data()));
+            gr_.makeGrid(spacing, box_, as_rvec_array(x_.data()));
         }
         if (nullptr != rhofn)
         {
@@ -2554,8 +2542,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     return imm;
 }
 
-void MyMol::CalcQPol(const Poldata &pd,
-                     rvec          x[])
+void MyMol::CalcQPol(const Poldata &pd)
 
 {
     int     i, m, np;
@@ -2582,7 +2569,7 @@ void MyMol::CalcQPol(const Poldata &pd,
         }
         for (m = 0; (m < DIM); m++)
         {
-            mu[m] += x[i][m]*topology_->atoms.atom[i].q;
+            mu[m] += x_[i][m]*topology_->atoms.atom[i].q;
         }
     }
     mutot_          = ENM2DEBYE*norm(mu);

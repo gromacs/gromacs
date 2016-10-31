@@ -114,11 +114,12 @@ class RespTest : public gmx::test::CommandLineTestBase
         void testResp(ChargeDistributionModel model, bool bPolar)
         {
             //Generate charges and topology
-            const char               *lot         = "B3LYP/aug-cc-pVTZ";
+            const char               *lot        = "B3LYP/aug-cc-pVTZ";
 
             gmx::MDModules            mdModules;
             t_inputrec               *inputrec   = mdModules.inputrec();
             fill_inputrec(inputrec);
+            inputrec->coulombtype = eelUSER;
             mp_.setInputrec(inputrec);
             mp_.GenerateTopology(aps_, pd_, lot, model,
                                  false, false, false, bPolar);
@@ -130,8 +131,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             gmx::MDLogger  mdlog       = getMdLogger(cr, stdout);
 
             mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP,
-                                hfac, epsr, lot, false, symm_string, cr, NULL,
-                                as_rvec_array(mp_.x_->data()));
+                                hfac, epsr, lot, false, symm_string, cr, nullptr);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)

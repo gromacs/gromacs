@@ -103,7 +103,7 @@ QgenResp::QgenResp()
     _bRandQ             = false;
 }
 
-void QgenResp::updateAtomCoords(const rvec x[])
+void QgenResp::updateAtomCoords(const PaddedRVecVector x)
 {
     for (size_t i = 0; (i < ra_.size()); i++)
     {
@@ -113,7 +113,7 @@ void QgenResp::updateAtomCoords(const rvec x[])
 
 void QgenResp::setAtomInfo(t_atoms                   *atoms,
                            const alexandria::Poldata &pd,
-                           const rvec                 x[])
+                           const PaddedRVecVector     x)
 {
     nAtom_  = 0;
     nShell_ = 0;

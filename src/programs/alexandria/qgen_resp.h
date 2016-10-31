@@ -44,6 +44,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/state.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
 
@@ -144,11 +145,11 @@ class QgenResp
                                 { return rat.getAtype() == atype; });
         }
 
-        void setAtomInfo(t_atoms       *atoms,
-                         const Poldata &pd,
-                         const rvec     x[]);
+        void setAtomInfo(t_atoms                *atoms,
+                         const Poldata          &pd,
+                         const PaddedRVecVector  x);
 
-        void updateAtomCoords(const rvec x[]);
+        void updateAtomCoords(const PaddedRVecVector x);
 
         const std::string &getStoichiometry() const { return _stoichiometry; }
 

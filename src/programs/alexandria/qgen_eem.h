@@ -8,6 +8,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/state.h"
 
 #include "poldata.h"
 
@@ -29,7 +30,7 @@ class QgenEem
     public:
         QgenEem(const Poldata &pd,
                 t_atoms *atoms,
-                rvec *x,
+                PaddedRVecVector x,
                 ChargeDistributionModel   iChargeDistributionModel,
                 double hfac, int qtotal);
 

@@ -239,7 +239,6 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
     {
         if (mi->eSupp != eSupportNo)
         {
-            rvec *x = as_rvec_array(mi->x_->data());
             fprintf(fp, "Molecule %d: %s. Qtot: %d, Multiplicity %d\n",
                     n+1,
                     mi->molProp()->getMolname().c_str(),
@@ -317,7 +316,7 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
                         j+1,
                         *(mi->topology_->atoms.atomtype[j]),
                         qq, mi->qESP[j],
-                        x[j][XX], x[j][YY], x[j][ZZ],
+                        mi->x_[j][XX], mi->x_[j][YY], mi->x_[j][ZZ],
                         fabs(qq-mi->qESP[j]) > q_toler ? "ZZZ" : "");
                 gmx_stats_add_point(k->lsq, mi->qESP[j], atom->q, 0, 0);
                 gmx_stats_add_point(lsq_q, mi->qESP[j], atom->q, 0, 0);
