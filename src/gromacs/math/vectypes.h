@@ -54,8 +54,6 @@ typedef real    tensor[DIM][DIM];
 
 typedef int     ivec[DIM];
 
-typedef int     imatrix[DIM][DIM];
-
 #ifdef __cplusplus
 
 namespace gmx

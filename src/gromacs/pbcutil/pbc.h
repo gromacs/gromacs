@@ -271,34 +271,6 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
  */
 void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx);
 
-/*! \brief Calculate the distance between xi and xj for a rectangular box.
- *
- * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
- * \param[in]  xi     Box index
- * \param[in]  xj     Box index
- * \param[in]  box    The box of grid cells
- * \param[in]  rlong2 Cutoff squared
- * \param[out] shift  The shift code
- * \param[out] r2     The distance (squared???)
- * \return TRUE when the distance is SMALLER than rlong2
- */
-gmx_bool image_rect(ivec xi, ivec xj, imatrix box,
-                    real rlong2, int *shift, real *r2);
-
-/*! \brief Calculate the distance between xi and xj for a triclinic box.
- *
- * It is assumed that rlong2 is scaled the same way as the ivecs xi and xj.
- * \param[in]  xi     Box index
- * \param[in]  xj     Box index
- * \param[in]  box    Matrix of box grid cells
- * \param[in]  rlong2 Cutoff squared
- * \param[out] shift  The shift code
- * \param[out] r2     The distance (squared???)
- * \return TRUE when the distance is SMALLER than rlong2
- */
-gmx_bool image_tri(const ivec xi, const ivec xj, const imatrix box,
-                   real rlong2, int *shift, real *r2);
-
 /*! \brief Compute distance vector when using cylindrical cutoff
  *
  * Calculate the distance between xi and xj for a rectangular box
