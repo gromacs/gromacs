@@ -203,12 +203,12 @@ typedef struct t_state
     int                     flags;           /* Flags telling which entries are present      */
     int                     fep_state;       /* indicates which of the alchemical states we are in                 */
     std::vector<real>       lambda;          /* lambda vector                               */
-    matrix                  box;             /* box vector coordinates                         */
-    matrix                  box_rel;         /* Relitaive box vectors to preserve shape        */
-    matrix                  boxv;            /* box velocitites for Parrinello-Rahman pcoupl */
-    matrix                  pres_prev;       /* Pressure of the previous step for pcoupl  */
-    matrix                  svir_prev;       /* Shake virial for previous step for pcoupl */
-    matrix                  fvir_prev;       /* Force virial of the previous step for pcoupl  */
+    gmx::Matrix             box;             /* box vector coordinates                         */
+    gmx::Matrix             box_rel;         /* Relative box vectors to preserve shape        */
+    gmx::Matrix             boxv;            /* box velocitites for Parrinello-Rahman pcoupl */
+    gmx::Matrix             pres_prev;       /* Pressure of the previous step for pcoupl  */
+    gmx::Matrix             svir_prev;       /* Shake virial for previous step for pcoupl */
+    gmx::Matrix             fvir_prev;       /* Force virial of the previous step for pcoupl  */
     std::vector<double>     nosehoover_xi;   /* for Nose-Hoover tcoupl (ngtc)       */
     std::vector<double>     nosehoover_vxi;  /* for N-H tcoupl (ngtc)               */
     std::vector<double>     nhpres_xi;       /* for Nose-Hoover pcoupl for barostat     */

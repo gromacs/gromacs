@@ -417,7 +417,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     {
         top = dd_init_local_top(top_global);
 
-        stateInstance = std::unique_ptr<t_state>(new t_state {});
+        stateInstance.reset(new t_state {});
         state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);
     }
