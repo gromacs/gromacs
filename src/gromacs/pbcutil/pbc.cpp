@@ -1234,47 +1234,6 @@ void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
     }
 }
 
-//! Compute the box image corresponding to input vectors
-gmx_bool image_rect(ivec xi, ivec xj, ivec box_size, real rlong2, int *shift, real *r2)
-{
-    int     m, t;
-    int     dx, b, b_2;
-    real    dxr, rij2;
-
-    rij2 = 0.0;
-    t    = 0;
-    for (m = 0; (m < DIM); m++)
-    {
-        dx  = xi[m]-xj[m];
-        t  *= DIM;
-        b   = box_size[m];
-        b_2 = b/2;
-        if (dx < -b_2)
-        {
-            t  += 2;
-            dx += b;
-        }
-        else if (dx > b_2)
-        {
-            dx -= b;
-        }
-        else
-        {
-            t += 1;
-        }
-        dxr   = dx;
-        rij2 += dxr*dxr;
-        if (rij2 >= rlong2)
-        {
-            return FALSE;
-        }
-    }
-
-    *shift = t;
-    *r2    = rij2;
-    return TRUE;
-}
-
 gmx_bool image_cylindric(ivec xi, ivec xj, ivec box_size, real rlong2,
                          int *shift, real *r2)
 {
