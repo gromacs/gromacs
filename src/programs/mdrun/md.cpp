@@ -46,6 +46,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <vector>
 
 #include "thread_mpi/threads.h"
 
