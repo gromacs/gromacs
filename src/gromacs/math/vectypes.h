@@ -214,7 +214,6 @@ class BasicMatrix
                 {
                     matrix_[i][j] = matrix[i][j];
                 }
-
             }
         }
 
@@ -225,13 +224,8 @@ class BasicMatrix
 
         //! Makes BasicMatrix usable in contexts where a raw C 2D array is expected.
         operator RawArray *() { return matrix_; }
-        //! Makes BasicVector usable in contexts where a raw C 2D array is expected.
+        //! Makes BasicMatrix usable in contexts where a raw C 2D array is expected.
         operator const RawArray *() const { return matrix_; }
-
-        //! Converts to a C matrix where implicit conversion does not work.
-        RawMatrix &as_matrix() { return matrix_; }
-        //! Converts to a C matrix where implicit conversion does not work.
-        const RawMatrix &as_matrix() const { return matrix_; }
 
     private:
         RawMatrix matrix_;
@@ -241,8 +235,6 @@ class BasicMatrix
 typedef BasicMatrix<real> Matrix;
 //! Shorthand for C++ `tensor`-equivalent type.
 typedef BasicMatrix<real> Tensor;
-//! Shorthand for C++ `imatrix`-equivalent type.
-typedef BasicMatrix<int> IMatrix;
 
 } // namespace gmx
 

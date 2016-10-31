@@ -199,21 +199,4 @@ TEST(MatrixTest, WorksAsMutable_matrix)
     EXPECT_EQ(12, v[0][ZZ][ZZ]);
 }
 
-
-TEST(MatrixTest, WorksAs_matrix_Reference)
-{
-    Matrix v(1, 2, 3, 4, 5, 6, 7, 8, 9);
-    matrix r;
-    transpose(v.as_matrix(), r);
-    EXPECT_EQ(1, r[XX][XX]);
-    EXPECT_EQ(2, r[YY][XX]);
-    EXPECT_EQ(3, r[ZZ][XX]);
-    EXPECT_EQ(4, r[XX][YY]);
-    EXPECT_EQ(5, r[YY][YY]);
-    EXPECT_EQ(6, r[ZZ][YY]);
-    EXPECT_EQ(7, r[XX][ZZ]);
-    EXPECT_EQ(8, r[YY][ZZ]);
-    EXPECT_EQ(9, r[ZZ][ZZ]);
-}
-
 } // namespace
