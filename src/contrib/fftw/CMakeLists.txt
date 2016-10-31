@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -69,8 +69,13 @@ elseif(${GMX_SIMD} MATCHES "^(SSE)")
     set(_fftw_simd_support_level "--enable-sse2")
 elseif(${GMX_SIMD} MATCHES "^(AVX)")
     # Testing shows FFTW configured with --enable-sse2 --enable-avx is
-    # slightly faster on most architectures than --enable-sse2 alone
-    set(_fftw_simd_support_level --enable-sse2;--enable-avx)
+    # slightly faster on most architectures than --enable-sse2 alone.
+    # Support for --enable-avx2 was only added in 3.3.5, but
+    # configuring with it is at worst a warning, even on an earlier
+    # version.
+    set(_fftw_simd_support_level --enable-sse2;--enable-avx;--enable-avx2;--enable-avx512)
+elseif(${GMX_SIMD} MATCHES "^(VSX)")
+    set(_fftw_simd_support_level --enable-vsx)
 endif()
 set(GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION ${_fftw_simd_support_level} CACHE INTERNAL "Optimization flags for FFTW compilation")
 
@@ -80,12 +85,12 @@ if (TARGET_HOST)
 endif()
 
 # Machinery for running the external project
-set(EXTERNAL_FFTW_VERSION 3.3.4)
+set(EXTERNAL_FFTW_VERSION 3.3.5)
 # cmake make eats slashes //// -> //
 set(GMX_BUILD_OWN_FFTW_URL
     "http:////www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz" CACHE PATH
     "URL from where to download fftw (use an absolute path when offline, adjust GMX_BUILD_OWN_FFTW_MD5 if downloading other version than ${EXTERNAL_FFTW_VERSION})")
-set(GMX_BUILD_OWN_FFTW_MD5 2edab8c06b24feeb3b82bbb3ebf3e7b3 CACHE STRING
+set(GMX_BUILD_OWN_FFTW_MD5 6cc08a3b9c7ee06fdd5b9eb02e06f569 CACHE STRING
     "Expected MD5 hash for the file at GMX_BUILD_OWN_FFTW_URL")
 mark_as_advanced(GMX_BUILD_OWN_FFTW_URL GMX_BUILD_OWN_FFTW_MD5)
 

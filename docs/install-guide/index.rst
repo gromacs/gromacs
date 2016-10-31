@@ -46,6 +46,15 @@ fast. If you want to get the maximum value for your hardware with
 hardware, libraries, and compilers are only going to continue to get
 more complex.
 
+Quick and dirty cluster installation
+------------------------------------
+
+On a cluster where users are expected to be running across multiple
+nodes using MPI, make one installation similar to the above, and
+another using an MPI wrapper compiler and which is `building only
+mdrun`_, because that is the only component of |Gromacs| that uses
+MPI.
+
 Typical installation
 --------------------
 As above, and with further details below, but you should consider
@@ -54,7 +63,7 @@ appropriate value instead of ``xxx`` :
 
 * ``-DCMAKE_C_COMPILER=xxx`` equal to the name of the C99 `Compiler`_ you wish to use (or the environment variable ``CC``)
 * ``-DCMAKE_CXX_COMPILER=xxx`` equal to the name of the C++98 `compiler`_ you wish to use (or the environment variable ``CXX``)
-* ``-DGMX_MPI=on`` to build using `MPI support`_
+* ``-DGMX_MPI=on`` to build using `MPI support`_ (generally good to combine with `building only mdrun`_)
 * ``-DGMX_GPU=on`` to build using nvcc to run using NVIDIA `CUDA GPU acceleration`_ or an OpenCL_ GPU
 * ``-DGMX_USE_OPENCL=on`` to build with OpenCL_ support enabled. ``GMX_GPU`` must also be set.
 * ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which |Gromacs| will run
@@ -259,23 +268,20 @@ recommends either
 * that you build FFTW from the source code.
 
 If you build FFTW from source yourself, get the most recent version
-and follow the `FFTW installation guide`_. Note that we have recently
-contributed new SIMD optimization for several extra platforms to
-FFTW, which will appear in FFTW-3.3.5 (for now it is available in the
-FFTW repository on github, or you can find a very unofficial prerelease
-version at ftp://ftp.gromacs.org/pub/contrib ).
-Choose the precision for FFTW (i.e. single/float vs. double) to
-match whether you will later use mixed or double precision for
-|Gromacs|. There is no need to compile FFTW with
-threading or MPI support, but it does no harm. On x86 hardware,
-compile with *both* ``--enable-sse2`` and ``--enable-avx`` for
-FFTW-3.3.4 and earlier. As of FFTW-3.3.5 you should also add
-``--enable-avx2``. FFTW will create a fat library with codelets
-for all different instruction sets, and pick the fastest supported
-one at runtime. On IBM Power8, you definitely want the upcoming
-FFTW-3.3.5 and to compile it with ``--enable-vsx`` for SIMD support. If you are
-using a Cray, there is a special modified (commercial) version of
-FFTs using the FFTW interface which can be slightly faster.
+and follow the `FFTW installation guide`_. Choose the precision for
+FFTW (i.e. single/float vs. double) to match whether you will later
+use mixed or double precision for |Gromacs|. There is no need to
+compile FFTW with threading or MPI support, but it does no harm. On
+x86 hardware, compile with *both* ``--enable-sse2`` and
+``--enable-avx`` for FFTW-3.3.4 and earlier. From FFTW-3.3.5, you
+should also add ``--enable-avx2`` also. On Intel chipsets supporting
+512-wide AVX, including KNL, add ``--enable-avx512`` also. FFTW will
+create a fat library with codelets for all different instruction sets,
+and pick the fastest supported one at runtime. On IBM Power8, you
+definitely want FFTW-3.3.5 and to compile it with ``--enable-vsx`` for
+SIMD support. If you are using a Cray, there is a special modified
+(commercial) version of FFTs using the FFTW interface which can be
+slightly faster.
 
 Using MKL
 ^^^^^^^^^
@@ -605,21 +611,34 @@ CPUs also works well.
 
 OpenCL GPU acceleration
 ^^^^^^^^^^^^^^^^^^^^^^^
-To build Gromacs with OpenCL support enabled, an OpenCL_ SDK
-(e.g. `from AMD <http://developer.amd.com/appsdk>`_) must be installed
-in a path found in ``CMAKE_PREFIX_PATH`` (or via the environment
-variables ``AMDAPPSDKROOT`` or ``CUDA_PATH``), and the following CMake
-flags must be set
+
+The primary target of the |Gromacs| OpenCL support is accelerating simulations
+on AMD hardware, both discrete GPUs and APUs (integrated CPU+GPU chips).
+The |Gromacs| OpenCL on NVIDIA GPUs works, but performance
+and other limitations make it less practical (for details see the user guide).
+
+To build |Gromacs| with OpenCL_ support enabled, two components are
+required: the OpenCL_ headers and the wrapper library that acts
+as a client driver loader (so-called ICD loader).
+The additional, runtime-only dependency is the vendor-specific GPU driver
+for the device targeted. This also contains the OpenCL_ compiler.
+As the GPU compute kernels are compiled  on-demand at run time,
+this vendor-specific compiler and driver is not needed for building |Gromacs|.
+The former, compile-time dependencies are standard components,
+hence stock versions can be obtained from most Linux distribution
+repositories (e.g. ``opencl-headers`` and ``ocl-icd-libopencl1`` on Debian/Ubuntu).
+Only the compatibility with the required OpenCL_ version |REQUIRED_OPENCL_MIN_VERSION|
+needs to be ensured.
+Alternatively, the headers and library can also be obtained from vendor SDKs
+(e.g. `from AMD <http://developer.amd.com/appsdk>`_),
+which must be installed in a path found in ``CMAKE_PREFIX_PATH`` (or via the environment
+variables ``AMDAPPSDKROOT`` or ``CUDA_PATH``).
+
+To trigger an OpenCL_ build the following CMake flags must be set
 
 ::
 
     cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
-
-Building |Gromacs| OpenCL support for a CUDA_ GPU works, but see the
-known limitations in the user guide. If you want to
-do so anyway, because NVIDIA OpenCL support is part of the CUDA
-package, a C++ compiler supported by your CUDA installation is
-required.
 
 On Mac OS, an AMD GPU can be used only with OS version 10.10.4 and
 higher; earlier OS versions are known to run incorrectly.
@@ -797,24 +816,14 @@ supported by ``cmake`` (e.g. ``ninja``) also work well.
 
 Building only mdrun
 ^^^^^^^^^^^^^^^^^^^
-Past versions of the build system offered "mdrun" and "install-mdrun"
-targets (similarly for other programs too) to build and install only
-the mdrun program, respectively. Such a build is useful when the
-configuration is only relevant for mdrun (such as with
-parallelization options for MPI, SIMD, GPUs, or on BlueGene or Cray),
-or the length of time for the compile-link-install cycle is relevant
-when developing.
 
 This is now supported with the ``cmake`` option
-``-DGMX_BUILD_MDRUN_ONLY=ON``, which will build a cut-down version of
-``libgromacs`` and/or the mdrun program.
+``-DGMX_BUILD_MDRUN_ONLY=ON``, which will build a different version of
+``libgromacs`` and the ``mdrun`` program.
 Naturally, now ``make install`` installs only those
 products. By default, mdrun-only builds will default to static linking
 against |Gromacs| libraries, because this is generally a good idea for
-the targets for which an mdrun-only build is desirable. If you re-use
-a build tree and change to the mdrun-only build, then you will inherit
-the setting for ``BUILD_SHARED_LIBS`` from the old build, and will be
-warned that you may wish to manage ``BUILD_SHARED_LIBS`` yourself.
+the targets for which an mdrun-only build is desirable.
 
 Installing |Gromacs|
 --------------------
@@ -926,8 +935,9 @@ be run. You can use ``./gmxtest.pl -mpirun srun`` if your command to
 run an MPI program is called ``srun``.
 
 The ``make check`` target also runs integration-style tests that may run
-with MPI if ``GMX_MPI=ON`` was set. To make these work, you may need to
-set the CMake variables ``MPIEXEC``, ``MPIEXEC_NUMPROC_FLAG``, ``NUMPROC``,
+with MPI if ``GMX_MPI=ON`` was set. To make these work with various possible
+MPI libraries, you may need to
+set the CMake variables ``MPIEXEC``, ``MPIEXEC_NUMPROC_FLAG``,
 ``MPIEXEC_PREFLAGS`` and ``MPIEXEC_POSTFLAGS`` so that
 ``mdrun-mpi-test_mpi`` would run on multiple ranks via the shell command
 
@@ -936,8 +946,11 @@ set the CMake variables ``MPIEXEC``, ``MPIEXEC_NUMPROC_FLAG``, ``NUMPROC``,
     ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} ${NUMPROC} ${MPIEXEC_PREFLAGS} \
           mdrun-mpi-test_mpi ${MPIEXEC_POSTFLAGS} -otherflags
 
-Typically, one might use variable values ``mpirun``, ``-np``, ``2``, ``''``,
-``''`` respectively, in order to run on two ranks.
+A typical example for SLURM is
+
+::
+
+     cmake .. -DGMX_MPI=on -DMPIEXEC=srun -DMPIEXEC_NUMPROC_FLAG=-n -DMPIEXEC_PREFLAGS= -DMPIEXEC_POSTFLAGS=
 
 
 Testing |Gromacs| for performance

@@ -738,7 +738,9 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t          **p_nb,
     init_plist(nb->plist[eintLocal]);
 
     /* OpenCL timing disabled if GMX_DISABLE_OCL_TIMING is defined. */
-    nb->bDoTime = (getenv("GMX_DISABLE_OCL_TIMING") == NULL);
+    /* TODO deprecate the first env var in the 2017 release. */
+    nb->bDoTime = (getenv("GMX_DISABLE_OCL_TIMING") == NULL &&
+                   getenv("GMX_DISABLE_GPU_TIMING") == NULL);
 
     /* Create queues only after bDoTime has been initialized */
     if (nb->bDoTime)
