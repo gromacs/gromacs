@@ -120,6 +120,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             t_inputrec               *inputrec   = mdModules.inputrec();
             fill_inputrec(inputrec);
             inputrec->coulombtype = eelUSER;
+            inputrec->vdwtype     = evdwUSER;
             mp_.setInputrec(inputrec);
             mp_.GenerateTopology(aps_, pd_, lot, model,
                                  false, false, false, bPolar);
@@ -130,9 +131,17 @@ class RespTest : public gmx::test::CommandLineTestBase
             t_commrec     *cr          = init_commrec();
             gmx::MDLogger  mdlog       = getMdLogger(cr, stdout);
 
-            mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP,
-                                hfac, epsr, lot, false, symm_string, cr, nullptr);
-
+            if(!bPolar)
+            {
+                mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP,
+                                    hfac, epsr, lot, false, symm_string, cr, nullptr);
+            }
+            else
+            {
+                std::string tabFile = fileManager().getInputFilePath("table.xvg");
+                mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP,
+                                    hfac, epsr, lot, false, symm_string, cr, tabFile.c_str());
+            }
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)
             {
