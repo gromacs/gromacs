@@ -982,7 +982,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
                                ChargeDistributionModel   iChargeDistributionModel)
 {
     int                 myunit;
-    real                xx, yy, zz;
+    double              xx, yy, zz;
     int                 natom;
     immStatus           imm   = immOK;
             

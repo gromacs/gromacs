@@ -292,17 +292,17 @@ static int decompose_frag(FILE                             *fplog,
             ptypes.push_back(pType(ptype->getType().c_str(), false, 0));
         }
     }
-    int ptstart = ptypes.size();
-    int ptsize;
-    int iter      = 1;
-    int nmol_orig = mp.size();
+    size_t ptstart = ptypes.size();
+    size_t ptsize;
+    int    iter      = 1;
+    size_t nmol_orig = mp.size();
     // Check whether molecules have all supported atom types, remove the molecule otherwise
     do
     {
         ptsize = ptypes.size();
         if (NULL != fplog)
         {
-            fprintf(fplog, "iter %d %d ptypes left\n", iter++, ptsize);
+            fprintf(fplog, "iter %d %zu ptypes left\n", iter++, ptsize);
         }
         nusemol  = 0;
         poltot   = 0;
@@ -450,13 +450,13 @@ static int decompose_frag(FILE                             *fplog,
     }
     while (ptypes.size() < ptsize);
 
-    if ((int)mp.size() < nmol_orig)
+    if (mp.size() < nmol_orig)
     {
-        printf("Reduced number of molecules from %d to %d\n", nmol_orig, (int)mp.size());
+        printf("Reduced number of molecules from %zu to %zu\n", nmol_orig, mp.size());
     }
     if (ptypes.size() == 0)
     {
-        printf("No polarization types to optimize, but before compaction %d.\n",
+        printf("No polarization types to optimize, but before compaction %zu.\n",
                ptstart);
         return 0;
     }
