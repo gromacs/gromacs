@@ -229,7 +229,7 @@ int gmx_vanhove(int argc, char *argv[])
 
     dt = (time[nfr-1] - time[0])/(nfr - 1);
     /* Some ugly rounding to get nice nice times in the output */
-    dt = static_cast<int>((10000.0*dt + 0.5)/10000.0);
+    dt = std::round(10000.0*dt)/10000.0;
 
     invbin = 1.0/rbin;
 
