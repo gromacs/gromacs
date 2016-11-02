@@ -102,7 +102,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
 
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
+            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
             checker_.setDefaultTolerance(tolerance);
         }
 

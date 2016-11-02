@@ -119,11 +119,13 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     {
         tabscale        = 0;
         VFtab           = NULL;
+    }  
+    if (ielec == GMX_NBKERNEL_ELEC_EWALD)
+    {
+        ewtab               = fr->ic->tabq_coul_FDV0;
+        ewtabscale          = fr->ic->tabq_scale;
+        ewtabhalfspace      = 0.5/ewtabscale;
     }
-    ewtab               = fr->ic->tabq_coul_FDV0;
-    ewtabscale          = fr->ic->tabq_scale;
-    ewtabhalfspace      = 0.5/ewtabscale;
-
     rcoulomb2           = fr->rcoulomb*fr->rcoulomb;
     rvdw                = fr->rvdw;
     rvdw2               = rvdw*rvdw;

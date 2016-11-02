@@ -46,7 +46,7 @@
 
 void fill_inputrec(t_inputrec *ir)
 {
-    ir->bAdress          = FALSE;
+    ir->bAdress          = false;
     ir->cutoff_scheme    = ecutsGROUP;
     ir->tabext           = 0; /* nm */
     ir->ePBC             = epbcNONE;
@@ -57,7 +57,7 @@ void fill_inputrec(t_inputrec *ir)
     ir->coulomb_modifier = eintmodNONE;
     ir->eDispCorr        = edispcNO;
     ir->vdw_modifier     = eintmodNONE;
-    ir->niter            = 25;
+    ir->niter            = 50;
     ir->em_stepsize      = 1e-2; // nm
     ir->em_tol           = 1e-2;
     ir->opts.ngener      = 1;
