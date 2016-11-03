@@ -29,6 +29,7 @@ check_include_file(inttypes.h   HAVE_INTTYPES_H)
 include(BuildTNG.cmake)
 tng_get_source_list(TNG_SOURCES TNG_COMPILE_DEFS)
 
+message("bla")
 tng_set_source_properties(WITH_ZLIB ${ZLIB_FOUND})
 
 add_library(tng_io ${TNG_SOURCES})
