@@ -55,11 +55,12 @@ enum InteractionType
     eitLINEAR_ANGLES      = 2,
     eitPROPER_DIHEDRALS   = 3,
     eitIMPROPER_DIHEDRALS = 4,
-    eitLJ14               = 5,
-    eitPOLARIZATION       = 6,
-    eitCONSTR             = 7,
-    eitVSITE2             = 8,
-    eitNR                 = 9
+    eitVDW                = 5,
+    eitLJ14               = 6,
+    eitPOLARIZATION       = 7,
+    eitCONSTR             = 8,
+    eitVSITE2             = 9,
+    eitNR                 = 10
 };
 
 using ParamIterator = typename std::vector<t_param>::iterator;

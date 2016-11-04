@@ -271,7 +271,7 @@ void Bayes<T>::simulate()
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
 
-    for (j = iter = 0; (iter < maxiter_); iter++)
+    for (j = iter = 0; iter < maxiter_; iter++)
     {
         if ((nullptr != fpc) && ((j % nprint_) == 0))
         {

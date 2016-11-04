@@ -348,7 +348,7 @@ class MyMol
          */
         void changeCoordinate(ExperimentIterator ei);
         
-        bool getOptimizedGeometry(PaddedRVecVector x);
+        bool getOptimizedGeometry(rvec *x);
 
         void SetForceField(const char *ff) { forcefield_.assign(ff); }
 

@@ -180,7 +180,7 @@ class Ffatype
                 const std::string &ptype,
                 const std::string &btype,
                 const std::string &elem,
-                const std::string &vdwparams,
+                std::string       &vdwparams,
                 const std::string &refEnthalpy);
 
         /*! \brief
@@ -217,6 +217,8 @@ class Ffatype
          * Return the Van der Waals parameters of atoms
          */
         const std::string &getVdwparams() const { return vdwparams_; }
+        
+        void setVdwparams(std::string param) {vdwparams_ = param;}
 
         /*! \brief
          * Return the reference enthalpy of formation of atoms

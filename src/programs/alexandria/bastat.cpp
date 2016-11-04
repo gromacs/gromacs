@@ -529,22 +529,28 @@ int alex_bastat(int argc, char *argv[])
     };
 
     t_filenm                         fnm[] = {
-        { efDAT, "-f", "allmols",    ffRDMULT  },
-        { efDAT, "-d", "gentop",     ffOPTRD },
-        { efDAT, "-o", "bastat",    ffWRITE },
-        { efDAT, "-sel", "molselect", ffREAD },
-        { efLOG, "-g", "bastat",    ffWRITE }
+        { efDAT, "-f",   "allmols",    ffRDMULT },
+        { efDAT, "-d",   "gentop",     ffOPTRD },
+        { efDAT, "-o",   "bastat",     ffWRITE },
+        { efDAT, "-sel", "molselect",  ffREAD },
+        { efLOG, "-g",   "bastat",     ffWRITE }
     };
 #define NFILE sizeof(fnm)/sizeof(fnm[0])
-    static int                       compress       = 0;
-    static int                       maxwarn        = 0;
-    static gmx_bool                  bHisto         = FALSE, bBondOrder = TRUE, bDih = FALSE;
-    static real                      Dm             = 0, kt = 0, kp = 0, kimp = 0, beta = 0, klin = 0, kub = 0;
-    static char                     *lot            = (char *)"B3LYP/aug-cc-pVTZ";
-    static const char               *cqdist[]       = {
-        NULL, "AXp", "AXs", "AXg", "Yang", "Bultinck", "Rappe", NULL
-    };
-    t_pargs                          pa[]     = {
+    static int                       compress    = 0;
+    static int                       maxwarn     = 0;
+    static real                      Dm          = 0;
+    static real                      kt          = 0;
+    static real                      kp          = 0;
+    static real                      kimp        = 0;
+    static real                      beta        = 0;
+    static real                      klin        = 0;
+    static real                      kub         = 0;
+    static char                     *lot         = (char *)"B3LYP/aug-cc-pVTZ";
+    static gmx_bool                  bHisto      = false;
+    static gmx_bool                  bDih        = false;
+    static gmx_bool                  bBondOrder  = true;
+    static const char               *cqdist[]    = {nullptr, "AXp", "AXs", "AXg", "Yang", "Bultinck", "Rappe", nullptr};
+    t_pargs                          pa[]        = {
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges" },
         { "-maxwarn", FALSE, etINT, {&maxwarn},
@@ -587,7 +593,7 @@ int alex_bastat(int argc, char *argv[])
     double                           bspacing = 1;   /* pm */
     double                           aspacing = 0.5; /* degree */
     double                           dspacing = 1;   /* degree */
-    gmx_output_env_t                *oenv     = NULL;
+    gmx_output_env_t                *oenv     = nullptr;
     Poldata                          pd;
     gmx_atomprop_t                   aps;
     int                              nfiles;
@@ -596,7 +602,7 @@ int alex_bastat(int argc, char *argv[])
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm,
                            sizeof(pa)/sizeof(pa[0]), pa,
-                           sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
+                           sizeof(desc)/sizeof(desc[0]), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -628,7 +634,7 @@ int alex_bastat(int argc, char *argv[])
     /* read Molprops */
     nfiles = opt2fns(&fns, "-f", NFILE, fnm);
     std::vector<alexandria::MolProp> mp;
-    int nwarn = merge_xml(nfiles, fns, mp, NULL, NULL, NULL, aps, pd, TRUE);
+    int nwarn = merge_xml(nfiles, fns, mp, nullptr, nullptr, nullptr, aps, pd, true);
     if (nwarn > maxwarn)
     {
         printf("Too many warnings (%d). Terminating.\n", nwarn);
@@ -653,7 +659,7 @@ int alex_bastat(int argc, char *argv[])
 
             if (immOK != imm)
             {
-                if (NULL != debug)
+                if (nullptr != debug)
                 {
                     fprintf(debug, "Could not make topology for %s, reason %s\n",
                             mmi.molProp()->getMolname().c_str(),
@@ -668,7 +674,7 @@ int alex_bastat(int argc, char *argv[])
                 std::string btpi;
                 if (!pd.atypeToBtype(*mmi.topology_->atoms.atomtype[i], btpi))
                 {
-                    if (NULL != debug)
+                    if (nullptr != debug)
                     {
                         fprintf(debug, "No bond-type support for atom %s in %s\n",
                                 *mmi.topology_->atoms.atomtype[i], mmi.molProp()->getMolname().c_str());
@@ -699,7 +705,7 @@ int alex_bastat(int argc, char *argv[])
                         if (pd.atypeToBtype(*mmi.topology_->atoms.atomtype[ai], cai) &&
                             pd.atypeToBtype(*mmi.topology_->atoms.atomtype[aj], caj))
                         {
-                            for (alexandria::BondIterator bi = mmi.molProp()->BeginBond();
+                            for (auto bi = mmi.molProp()->BeginBond();
                                  (bi < mmi.molProp()->EndBond()); bi++)
                             {
                                 int xi, xj, xb;
@@ -760,7 +766,7 @@ int alex_bastat(int argc, char *argv[])
                                       cai.c_str(), caj.c_str(), cak.c_str(),
                                       refValue, aspacing, (linear) ? eitLINEAR_ANGLES : eitANGLES);
 
-                            if (NULL != debug)
+                            if (nullptr != debug)
                             {
                                 fprintf(debug, "Molname: %s  btype1: %s  btype2: %s  btype3: %s  angle: %0.2f\n",
                                         mmi.molProp()->getMolname().c_str(), cai.c_str(), caj.c_str(), cak.c_str(), refValue);
@@ -777,7 +783,7 @@ int alex_bastat(int argc, char *argv[])
                          eitIMPROPER_DIHEDRALS == fs->iType())
                 {
                     unsigned int funcType = fs->fType();
-
+                    double       angle    = 0.0;
                     for (int j = 0; (j < mmi.ltop_->idef.il[funcType].nr);
                          j += interaction_function[funcType].nratoms+1)
                     {
@@ -785,7 +791,7 @@ int alex_bastat(int argc, char *argv[])
                         int    aj  = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                         int    ak  = mmi.ltop_->idef.il[funcType].iatoms[j+3];
                         int    al  = mmi.ltop_->idef.il[funcType].iatoms[j+4];
-                        double ang = RAD2DEG*dih_angle(mmi.x_[ai], mmi.x_[aj],
+                        angle      = RAD2DEG*dih_angle(mmi.x_[ai], mmi.x_[aj],
                                                        mmi.x_[ak], mmi.x_[al],
                                                        &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
                                                        &sign, &t1, &t2, &t3);
@@ -797,7 +803,7 @@ int alex_bastat(int argc, char *argv[])
                         {
                             add_dih(fp, mmi.molProp()->getMolname().c_str(), bonds,
                                     cai.c_str(), caj.c_str(), cak.c_str(), cal.c_str(),
-                                    ang, dspacing, fs->iType());
+                                    angle, dspacing, fs->iType());
                         }
                         else
                         {

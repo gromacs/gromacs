@@ -143,6 +143,167 @@ static void dump_csv(const std::vector<std::string>        &ctest,
 namespace alexandria
 {
 
+class AtomTypes
+{
+    public:
+        AtomTypes(int                ncopies,
+                  const std::string &name,
+                  const std::string &vdwParams,
+                  int                index)
+            :
+                ncopies_(ncopies),
+                name_(name),
+                vdwParams_(vdwParams),
+                poldataIndex_(index)
+            {
+                extractParams();
+            }
+            
+        void inc() { ncopies_++;}
+        
+        int nCopies() const { return ncopies_; }   
+        
+        void setParamString(const std::string &params);
+        
+        int poldataIndex() const { return poldataIndex_; }
+        
+        const std::string &paramString() const { return vdwParams_; }
+
+        const std::vector<double> &paramValues() const { return p_; }
+        
+        const std::string &name() const { return name_; }
+
+        size_t nParams() const { return p_.size(); }
+        
+    private:
+        
+        int                 ncopies_;
+        std::string         name_;
+        std::string         vdwParams_;
+        std::vector<double> p_;
+        int                 poldataIndex_;
+        void extractParams();
+};
+
+using AtomTypesIterator = typename std::vector<AtomTypes>::iterator;
+
+void AtomTypes::setParamString(const std::string &params)
+{
+    vdwParams_ = params;
+    extractParams();
+}
+
+void AtomTypes::extractParams()
+{
+    const auto p = gmx::splitString(vdwParams_);
+    p_.clear();
+    for (const auto &d : p)
+    {
+        p_.push_back(std::move(atof(d.c_str())));
+    }
+}
+
+class NonBondParams
+{
+    public:
+    
+        NonBondParams(bool bOpt)
+        
+            :
+                bOpt_(bOpt)
+            {}
+    
+    
+        void addNonBonded(AtomTypes at) { at_.push_back(std::move(at)); }
+
+        void analyzeIdef(std::vector<MyMol> &mm,
+                         const Poldata      &pd);
+
+        void makeReverseIndex();
+
+        int reverseIndex(int poldataIndex)
+        {
+            GMX_RELEASE_ASSERT(poldataIndex >= 0 && poldataIndex < static_cast<int>(reverseIndex_.size()), "Incorrect poldataIndex");
+            GMX_RELEASE_ASSERT(reverseIndex_[poldataIndex] != -1, "The reverseIndex is incorrect");
+
+            return reverseIndex_[poldataIndex];
+        }
+
+        AtomTypesIterator beginAT() { return at_.begin(); }
+
+        AtomTypesIterator endAT() { return at_.end(); }
+
+        size_t nAT() const { return at_.size(); }
+    
+    private:
+    
+        bool                   bOpt_;
+        std::vector<AtomTypes> at_;
+        std::vector<int>       reverseIndex_;
+        std::vector<double>    params_;
+    
+};
+
+void NonBondParams::analyzeIdef(std::vector<MyMol> &mm,
+                                const Poldata      &pd)
+{
+    if (!bOpt_)
+    {
+        return;
+    }
+    for (auto &mymol : mm)
+    {
+        for (int i = 0; i < mymol.molProp()->NAtom(); i++)
+        {
+            std::string params;
+            int  index = 0;
+            char buf[STRLEN];
+            bool found = false;
+            auto at    = *mymol.topology_->atoms.atomtype[i];
+            auto fat   = pd.findAtype(at);           
+            if (fat != pd.getAtypeEnd())
+            {
+                sprintf(buf, "%s", at);
+                params    = fat->getVdwparams();
+                index     = fat - pd.getAtypeBegin();
+                found     = true;
+            }                       
+            if (found)
+            {
+                auto c = std::find_if(at_.begin(), at_.end(),
+                                      [buf](const AtomTypes &at)
+                                      {
+                                          return (at.name().compare(buf) == 0);
+                                      });
+                if (c != at_.end())
+                {
+                    c->inc();
+                }
+                else
+                {
+                    AtomTypes at(1, buf, params, index);
+                    addNonBonded(at);
+                }
+            }
+        }
+    }
+}
+
+void NonBondParams::makeReverseIndex()
+{
+    int N = 0;
+    for (const auto &i : at_)
+    {
+        N = std::max(N, i.poldataIndex());
+    }
+    reverseIndex_.resize(N+1, -1);
+    int j = 0;
+    for (const auto &i : at_)
+    {
+        reverseIndex_[i.poldataIndex()] = j++;
+    }
+}
+
 /*! \brief Helper class storing bond/angle/dihedral names
  *
  * For one bond/angle/dihedral here the name of the bondtypes
@@ -215,7 +376,7 @@ void BondNames::setParamString(const std::string &params)
 
 void BondNames::extractParams()
 {
-    std::vector<std::string> p = gmx::splitString(params_);
+    const auto p = gmx::splitString(params_);
     p_.clear();
     for (const auto &d : p)
     {
@@ -379,6 +540,7 @@ void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                     }
                     break;
                     case eitPOLARIZATION:
+                    case eitVDW:
                     case eitLJ14:
                     case eitVSITE2:
                     case eitCONSTR:
@@ -451,6 +613,7 @@ class Optimization : public MolDip
     public:
 
         std::vector<ForceConstants> ForceConstants_;
+        std::vector<NonBondParams>  NonBondParams_;
         param_type                  param_, lower_, upper_, best_, orig_, psigma_, pmean_;
         param_type                  De_;
         const real                  forceWeight_;
@@ -656,6 +819,7 @@ void Optimization::checkSupport(FILE *fp, bool  bOpt[])
                             }
                             break;
                             case eitPOLARIZATION:
+                            case eitVDW:
                             case eitLJ14:
                             case eitVSITE2:
                             case eitCONSTR:
@@ -709,6 +873,7 @@ void Optimization::polData2TuneFc()
                     {
                         param_.push_back(std::move(p));
                     }
+                    n++;
                 }
             }
         }
@@ -723,6 +888,16 @@ void Optimization::polData2TuneFc()
             }
         }
     }
+    for (auto nbp : NonBondParams_)
+    {
+        for (auto at = nbp.beginAT(); at < nbp.endAT(); ++at)
+        {
+            for (const auto &p : at->paramValues())
+            {
+                param_.push_back(std::move(p));
+            }
+        }
+    }
 }
 
 void Optimization::tuneFc2PolData()
@@ -730,6 +905,7 @@ void Optimization::tuneFc2PolData()
     int n = 0;
     int m = 0;
     std::vector<std::string> atoms;
+      
     for (auto &fc : ForceConstants_)
     {
         const auto iType = fc.interactionType();
@@ -752,6 +928,7 @@ void Optimization::tuneFc2PolData()
                     {
                         strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
                     }
+                    j++;
                 }
             }
             else
@@ -808,11 +985,32 @@ void Optimization::tuneFc2PolData()
             }
         }
     }
+    
+    for (auto &nbp : NonBondParams_)
+    {
+        for (auto at = nbp.beginAT(); at < nbp.endAT(); ++at)
+        {
+            char buf[STRLEN];
+            buf[0] = '\0';
+            for (size_t p = 0; p < at->nParams(); p++)
+            {
+                strncat(buf, " ", sizeof(buf)-1);
+                strncat(buf, gmx_ftoa(param_[n++]).c_str(), sizeof(buf)-1);
+            }
+            at->setParamString(buf);
+            const auto atype = at->name();
+            auto fat         = pd_.findAtype(atype);           
+            if (fat != pd_.getAtypeEnd())
+            {
+                fat->setVdwparams(buf);
+            }
+        }
+    }
 }
 
 void Optimization::getDissociationEnergy(FILE *fplog)
 {
-    double                    **a;
+    double                    **a, **ac;
     std::vector<double>         rhs;
     std::vector<int>            ntest;
     std::vector<std::string>    ctest;
@@ -826,7 +1024,8 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                   nD, nMol);
     }
 
-    a = alloc_matrix(nD, nMol);
+    a  = alloc_matrix(nD, nMol);
+    ac = alloc_matrix(nD, nMol);
     ntest.resize(nD, 0);
     ctest.resize(nD);
 
@@ -854,29 +1053,10 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                 auto f = fs->findForce(atoms);
                 if (fs->forceEnd() != f)
                 {
-                    PaddedRVecVector x;
-                    rvec dx;
                     int  gt  = f - fs->forceBegin();
                     int  gti = ForceConstants_[eitBONDS].reverseIndex(gt);
-                    // Compute deviation from minimum energy
-                    x.resize(mymol->molProp()->NAtom());
-                    if (mymol->getOptimizedGeometry(x))
-                    {
-                        rvec_sub(x[ai], x[aj], dx);
-                        const auto dr     = norm(dx);
-                        const auto b0     = f->refValue();
-                        const auto params = f->params();
-                        const auto beta   = params[1];
-                        const auto temp   = gmx::square(1-std::exp(-beta*(dr-b0))) - 1;
-                        a[gti][j]        -= temp;
-                    }
-                    else
-                    {
-                        a[gti][j]++;
-                        printf("\n"
-                               "WARNING: %s Does not have optimized geometry.\n\n",
-                               mymol->molProp()->getMolname().c_str());
-                    }
+                    a[gti][j]++; 
+                    ac[gti][j]++;                     
                     ntest[gti]++;
                     if (ctest[gti].empty())
                     {
@@ -910,9 +1090,9 @@ void Optimization::getDissociationEnergy(FILE *fplog)
     GMX_RELEASE_ASSERT(nzero == 0, "Inconsistency in the number of bonds in poldata and ForceConstants_");
 
     std::vector<double> Edissoc(nD);
-
+    
     multi_regression2(nMol, rhs.data(), nD, a, Edissoc.data());
-    dump_csv(ctest, _mymol, ntest, Edissoc, a, rhs.data());
+    dump_csv(ctest, _mymol, ntest, Edissoc, ac, rhs.data());
 
     for (size_t i = 0; (i < ctest.size()); i++)
     {
@@ -922,9 +1102,10 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                     ctest[i].c_str(), ntest[i], Edissoc[i]);
         }
     }
-
+    
     free_matrix(a);
-
+    free_matrix(ac);
+    
     int i = 0;
     for (auto b = ForceConstants_[eitBONDS].beginBN();
          b < ForceConstants_[eitBONDS].endBN(); ++b)
@@ -947,7 +1128,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
 void Optimization::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
 {
     std::vector<unsigned int> fts;
-
+      
     for (auto fs = pd_.forcesBegin();
          fs != pd_.forcesEnd(); fs++)
     {
@@ -976,7 +1157,12 @@ void Optimization::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
                "         Recomendation is to add more molecules having the same bond types.\n\n",
                _mymol.size(), ForceConstants_[eitBONDS].nbad());
     }
-
+    
+    NonBondParams nbp(bOpt[eitVDW]);
+    nbp.analyzeIdef(_mymol, pd_);
+    nbp.makeReverseIndex();
+    NonBondParams_.push_back(std::move(nbp));
+    
     polData2TuneFc();
 
     orig_.resize(param_.size(), 0);
@@ -1079,6 +1265,8 @@ double Optimization::calcDeviation()
                     }
                 }
 
+                mymol.UpdateIdef(pd_, eitVDW);
+                
                 for (auto ei = mymol.molProp()->BeginExperiment();
                      ei < mymol.molProp()->EndExperiment(); ++ei)
                 {
@@ -1517,7 +1705,7 @@ int alex_tune_fc(int argc, char *argv[])
     static gmx_bool       bZero         = true;  
     static const char    *cqdist[]      = {nullptr, "AXp", "AXg", "AXs","Yang", "Bultinck", "Rappe", nullptr};
     static const char    *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
-    static bool           bOpt[eitNR]   = { true, false, false, false, false, false, false, false, false};
+    static bool           bOpt[eitNR]   = {true, false, false, false, false, false, false, false, false, false};
       
     t_pargs               pa[]         = {
         { "-tol",     FALSE, etREAL, {&tol},
@@ -1547,6 +1735,8 @@ int alex_tune_fc(int argc, char *argv[])
         { "-dihedrals", FALSE, etBOOL, {&bOpt[eitPROPER_DIHEDRALS]},
           "Optimize proper dihedral parameters" },
         { "-impropers", FALSE, etBOOL, {&bOpt[eitIMPROPER_DIHEDRALS]},
+          "Optimize improper dihedral parameters" },
+        { "-vdw", FALSE, etBOOL, {&bOpt[eitVDW]},
           "Optimize improper dihedral parameters" },
         { "-pairs",  FALSE, etBOOL, {&bOpt[eitLJ14]},
           "Optimize 1-4 interaction parameters" },
@@ -1682,9 +1872,11 @@ int alex_tune_fc(int argc, char *argv[])
                opt2fn("-conv", NFILE, fnm),
                opt2fn("-epot", NFILE, fnm),
                temperature, bBound);
-
+               
     if (MASTER(cr))
     {
+        opt.tuneFc2PolData();
+        
         print_moldip_mols(fp, opt._mymol, true, false);
 
         opt.printSpecs(fp, (char *)"After optimization", opt2fn("-x", NFILE, fnm), oenv, true);

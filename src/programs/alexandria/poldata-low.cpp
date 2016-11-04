@@ -68,7 +68,7 @@ namespace alexandria
 
 static const char * eit_names[eitNR] = {
     "BONDS", "ANGLES", "LINEAR_ANGLES",
-    "PROPER_DIHEDRALS", "IMPROPER_DIHEDRALS",
+    "PROPER_DIHEDRALS", "IMPROPER_DIHEDRALS", "VDW",
     "LJ14", "POLARIZATION", "CONSTR", "VSITE2"
 };
 
@@ -115,7 +115,7 @@ Ffatype::Ffatype(const std::string &desc,
                  const std::string &ptype,
                  const std::string &btype,
                  const std::string &elem,
-                 const std::string &vdwparams,
+                 std::string       &vdwparams,
                  const std::string &refEnthalpy)
     :
       desc_(desc),

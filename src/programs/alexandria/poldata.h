@@ -77,7 +77,7 @@ class Poldata
                        const std::string &atype,
                        const std::string &ptype,
                        const std::string &btype,
-                       const std::string &vdwparams,
+                       std::string       &vdwparams,
                        const std::string &ref_enthalpy);
 
         bool setPtypePolarizability(const std::string &ptype,
