@@ -45,6 +45,7 @@ gmx_install_headers(
     utilities.h
     vec.h
     vectypes.h
+    vectors.h
     )
 
 if (BUILD_TESTING)

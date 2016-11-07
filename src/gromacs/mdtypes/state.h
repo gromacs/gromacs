@@ -39,6 +39,7 @@
 
 #include <vector>
 
+#include "gromacs/math/vectors.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -70,9 +71,6 @@ enum {
 
 /* The names of the state entries, defined in src/gmxlib/checkpoint.c */
 extern const char *est_names[estNR];
-
-/* This vector is not padded yet, padding will be added soon */
-typedef std::vector<gmx::RVec> PaddedRVecVector;
 
 typedef struct history_t
 {
