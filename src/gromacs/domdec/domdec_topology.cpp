@@ -2273,7 +2273,8 @@ void dd_init_local_state(gmx_domdec_t *dd,
     }
     dd_bcast(dd, NITEM_DD_INIT_LOCAL_STATE*sizeof(int), buf);
 
-    init_state(state_local, 0, buf[1], buf[2], buf[3], buf[4]);
+    init_gtc_state(state_local, buf[1], buf[2], buf[3]);
+    init_dfhist_state(state_local, buf[4]);
     state_local->flags = buf[0];
 }
 

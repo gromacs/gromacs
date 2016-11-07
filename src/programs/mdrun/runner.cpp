@@ -484,7 +484,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
             {
                 gmx_incons("Changing nstlist with domain decomposition and unbounded dimensions is not implemented yet");
             }
-            t_state state_tmp {};
+            t_state state_tmp;
             copy_mat(box, state_tmp.box);
             bDD = change_dd_cutoff(cr, &state_tmp, ir, rlist_new);
         }
@@ -772,7 +772,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         please_cite(fplog, "Berendsen95a");
     }
 
-    std::unique_ptr<t_state> stateInstance = std::unique_ptr<t_state>(new t_state {});
+    std::unique_ptr<t_state> stateInstance = std::unique_ptr<t_state>(new t_state);
     t_state *                state         = stateInstance.get();
 
     if (SIMMASTER(cr))

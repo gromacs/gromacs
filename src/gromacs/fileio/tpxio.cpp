@@ -3080,6 +3080,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 
     if (!bRead)
     {
+        GMX_RELEASE_ASSERT(state != nullptr, "Cannot write a null state");
         GMX_RELEASE_ASSERT(x == nullptr && v == nullptr, "Passing separate x and v pointers to do_tpx() is not supported when writing");
 
         tpx.natoms    = state->natoms;
@@ -3106,14 +3107,11 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
 
     if (bRead)
     {
-        state->flags  = 0;
-        if (x != nullptr)
+        state->flags = 0;
+        init_gtc_state(state, tpx.ngtc, 0, 0);
+        if (x == nullptr)
         {
-            init_state(state, 0, tpx.ngtc, 0, 0, 0);
-        }
-        else
-        {
-            init_state(state, tpx.natoms, tpx.ngtc, 0, 0, 0);
+            state_change_natoms(state, tpx.natoms);
         }
     }
 
@@ -3334,7 +3332,7 @@ int read_tpx(const char *fn,
              rvec *x, rvec *v, gmx_mtop_t *mtop)
 {
     t_fileio *fio;
-    t_state   state {};
+    t_state   state;
     int       ePBC;
 
     fio     = open_tpx(fn, "r");

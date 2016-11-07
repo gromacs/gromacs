@@ -78,7 +78,7 @@ static void list_tpx(const char *fn,
 {
     FILE         *gp;
     int           indent, i, j, **gcount, atot;
-    t_state       state {};
+    t_state       state;
     t_inputrec   *ir = nullptr;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;

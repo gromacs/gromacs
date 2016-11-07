@@ -277,7 +277,6 @@ void bcast_state(const t_commrec *cr, t_state *state)
     block_bc(cr, state->nnhpres);
     block_bc(cr, state->nhchainlength);
     block_bc(cr, state->flags);
-    state->lambda.resize(efptNR);
 
     if (cr->dd)
     {

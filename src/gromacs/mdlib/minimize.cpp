@@ -343,7 +343,7 @@ void init_em(FILE *fplog, const char *title,
     state_global->ngtc = 0;
 
     /* Initialize lambda variables */
-    initialize_lambdas(fplog, ir, &(state_global->fep_state), &state_global->lambda, nullptr);
+    initialize_lambdas(fplog, ir, &(state_global->fep_state), state_global->lambda, nullptr);
 
     init_nrnb(nrnb);
 
@@ -758,7 +758,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              count, nrnb, wcycle, top, &top_global->groups,
              ems->s.box, &ems->s.x, &ems->s.hist,
              &ems->f, force_vir, mdatoms, enerd, fcd,
-             &ems->s.lambda, graph, fr, vsite, mu_tot, t, nullptr, TRUE,
+             ems->s.lambda, graph, fr, vsite, mu_tot, t, nullptr, TRUE,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0));
@@ -817,7 +817,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     enerd->term[F_PRES] =
         calc_pres(fr->ePBC, inputrec->nwall, ems->s.box, ekin, vir, pres);
 
-    sum_dhdl(enerd, &ems->s.lambda, inputrec->fepvals);
+    sum_dhdl(enerd, ems->s.lambda, inputrec->fepvals);
 
     if (EI_ENERGY_MINIMIZATION(inputrec->eI))
     {
