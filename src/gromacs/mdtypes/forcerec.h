@@ -38,16 +38,17 @@
 #define GMX_MDTYPES_TYPES_FORCEREC_H
 
 #include "gromacs/math/vectypes.h"
+#ifdef __cplusplus
+#include "gromacs/math/paddedvector.h"
+#endif
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
-#ifdef __cplusplus
-#include "gromacs/mdtypes/state.h"
-#endif
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
+
 extern "C" {
 
 struct t_mdatoms;
