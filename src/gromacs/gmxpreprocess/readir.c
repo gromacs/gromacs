@@ -1951,7 +1951,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     EETYPE("periodic-molecules", ir->bPeriodicMols, yesno_names);
     CTYPE ("Allowed energy error due to the Verlet buffer in kJ/mol/ps per atom,");
     CTYPE ("a value of -1 means: use rlist");
-    RTYPE("verlet-buffer-tolerance", ir->verletbuf_tol,    0.005);
+    RTYPE("verlet-buffer-tolerance", ir->verletbuf_tol,    1e-4);
     CTYPE ("nblist cut-off");
     RTYPE ("rlist",   ir->rlist,  1.0);
     CTYPE ("long-range cut-off for switched potentials");
@@ -2099,13 +2099,17 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("Use successive overrelaxation to reduce the number of shake iterations");
     EETYPE("Shake-SOR", ir->bShakeSOR, yesno_names);
     CTYPE ("Relative tolerance of shake");
-    RTYPE ("shake-tol", ir->shake_tol, 0.0001);
+#ifdef GMX_DOUBLE
+    RTYPE ("shake-tol", ir->shake_tol, 1e-10);
+#else
+    RTYPE ("shake-tol", ir->shake_tol, 1e-5);
+#endif
     CTYPE ("Highest order in the expansion of the constraint coupling matrix");
     ITYPE ("lincs-order", ir->nProjOrder, 4);
     CTYPE ("Number of iterations in the final step of LINCS. 1 is fine for");
     CTYPE ("normal simulations, but use 2 to conserve energy in NVE runs.");
     CTYPE ("For energy minimization with constraints it should be 4 to 8.");
-    ITYPE ("lincs-iter", ir->nLincsIter, 1);
+    ITYPE ("lincs-iter", ir->nLincsIter, 2);
     CTYPE ("Lincs will write a warning to the stderr if in one step a bond");
     CTYPE ("rotates over more degrees than");
     RTYPE ("lincs-warnangle", ir->LincsWarnAngle, 30.0);
