@@ -80,7 +80,7 @@ struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
-struct t_state;
+class t_state;
 
 #ifdef __cplusplus
 extern "C" {

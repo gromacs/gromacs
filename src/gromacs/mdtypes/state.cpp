@@ -55,29 +55,6 @@
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
-static void zero_history(history_t *hist)
-{
-    hist->disre_initf  = 0;
-    hist->ndisrepairs  = 0;
-    hist->disre_rm3tav = NULL;
-    hist->orire_initf  = 0;
-    hist->norire_Dtav  = 0;
-    hist->orire_Dtav   = NULL;
-}
-
-static void zero_ekinstate(ekinstate_t *eks)
-{
-    eks->ekin_n         = 0;
-    eks->ekinh          = NULL;
-    eks->ekinf          = NULL;
-    eks->ekinh_old      = NULL;
-    eks->ekinscalef_nhc.resize(0);
-    eks->ekinscaleh_nhc.resize(0);
-    eks->vscale_nhc.resize(0);
-    eks->dekindl        = 0;
-    eks->mvcos          = 0;
-}
-
 static void init_swapstate(swapstate_t *swapstate)
 {
     /* Ion/water position swapping */
@@ -109,20 +86,9 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
 }
 
 
-void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int dfhistNumLambda)
+void state_change_natoms(t_state *state, int natoms)
 {
-    state->natoms    = natoms;
-    state->flags     = 0;
-    state->fep_state = 0;
-    state->lambda.resize(efptNR, 0);
-    state->veta   = 0;
-    clear_mat(state->box);
-    clear_mat(state->box_rel);
-    clear_mat(state->boxv);
-    clear_mat(state->pres_prev);
-    clear_mat(state->svir_prev);
-    clear_mat(state->fvir_prev);
-    init_gtc_state(state, ngtc, nnhpres, nhchainlength);
+    state->natoms = natoms;
     if (state->natoms > 0)
     {
         /* We need to allocate one element extra, since we might use
@@ -137,8 +103,10 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
         state->v.resize(0);
     }
     state->cg_p.resize(0);
-    zero_history(&state->hist);
-    zero_ekinstate(&state->ekinstate);
+}
+
+void init_dfhist_state(t_state *state, int dfhistNumLambda)
+{
     if (dfhistNumLambda > 0)
     {
         snew(state->dfhist, 1);
@@ -148,11 +116,6 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     {
         state->dfhist = NULL;
     }
-    state->swapstate       = NULL;
-    state->edsamstate      = NULL;
-    state->ddp_count       = 0;
-    state->ddp_count_cg_gl = 0;
-    state->cg_gl.resize(0);
 }
 
 void comp_state(const t_state *st1, const t_state *st2,
@@ -243,4 +206,29 @@ rvec *getRvecArrayFromPaddedRVecVector(const PaddedRVecVector *v,
     }
 
     return dest;
+}
+
+t_state::t_state()
+{
+    natoms        = 0;
+    ngtc          = 0;
+    nnhpres       = 0;
+    nhchainlength = 0;
+    flags         = 0;
+    fep_state     = 0;
+    clear_mat(box);
+    clear_mat(box_rel);
+    clear_mat(boxv);
+    clear_mat(pres_prev);
+    clear_mat(svir_prev);
+    clear_mat(fvir_prev);
+    veta = 0;
+    vol0 = 0;
+    memset(&ekinstate, 0, sizeof(ekinstate));
+    memset(&hist, 0, sizeof(hist));
+    swapstate       = nullptr;
+    dfhist          = nullptr;
+    edsamstate      = nullptr;
+    ddp_count       = 0;
+    ddp_count_cg_gl = 0;
 }

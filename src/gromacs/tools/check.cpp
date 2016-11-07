@@ -91,8 +91,8 @@ static void comp_tpx(const char *fn1, const char *fn2,
 {
     const char    *ff[2];
     gmx::MDModules mdModules[2];
-    t_inputrec    *ir[2] = { mdModules[0].inputrec(), mdModules[1].inputrec() };
-    t_state        state[2];
+    t_inputrec    *ir[2]    = { mdModules[0].inputrec(), mdModules[1].inputrec() };
+    t_state        state[2] = {{}, {}};
     gmx_mtop_t     mtop[2];
     t_topology     top[2];
     int            i;

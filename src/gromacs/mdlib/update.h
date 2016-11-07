@@ -55,7 +55,7 @@ struct t_idef;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
-struct t_state;
+class t_state;
 
 /* Abstract type for update */
 struct gmx_update_t;

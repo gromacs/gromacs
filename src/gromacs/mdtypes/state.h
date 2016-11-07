@@ -37,6 +37,7 @@
 #ifndef GMX_MDTYPES_STATE_H
 #define GMX_MDTYPES_STATE_H
 
+#include <array>
 #include <vector>
 
 #include "gromacs/math/vectors.h"
@@ -192,44 +193,49 @@ typedef struct swapstate_t
 swapstate_t;
 
 
-typedef struct t_state
+class t_state
 {
-    int                     natoms;
-    int                     ngtc;
-    int                     nnhpres;
-    int                     nhchainlength;   /* number of nose-hoover chains               */
-    int                     flags;           /* Flags telling which entries are present      */
-    int                     fep_state;       /* indicates which of the alchemical states we are in                 */
-    std::vector<real>       lambda;          /* lambda vector                               */
-    matrix                  box;             /* box vector coordinates                         */
-    matrix                  box_rel;         /* Relitaive box vectors to preserve shape        */
-    matrix                  boxv;            /* box velocitites for Parrinello-Rahman pcoupl */
-    matrix                  pres_prev;       /* Pressure of the previous step for pcoupl  */
-    matrix                  svir_prev;       /* Shake virial for previous step for pcoupl */
-    matrix                  fvir_prev;       /* Force virial of the previous step for pcoupl  */
-    std::vector<double>     nosehoover_xi;   /* for Nose-Hoover tcoupl (ngtc)       */
-    std::vector<double>     nosehoover_vxi;  /* for N-H tcoupl (ngtc)               */
-    std::vector<double>     nhpres_xi;       /* for Nose-Hoover pcoupl for barostat     */
-    std::vector<double>     nhpres_vxi;      /* for Nose-Hoover pcoupl for barostat     */
-    std::vector<double>     therm_integral;  /* for N-H/V-rescale tcoupl (ngtc)     */
-    real                    veta;            /* trotter based isotropic P-coupling             */
-    real                    vol0;            /* initial volume,required for computing NPT conserverd quantity */
-    PaddedRVecVector        x;               /* the coordinates (natoms)                     */
-    PaddedRVecVector        v;               /* the velocities (natoms)                      */
-    PaddedRVecVector        cg_p;            /* p vector for conjugate gradient minimization */
+    public:
+        // Constructor
+        t_state();
 
-    ekinstate_t             ekinstate;       /* The state of the kinetic energy data      */
+        // All things public
+        int                      natoms;
+        int                      ngtc;
+        int                      nnhpres;
+        int                      nhchainlength;  /* number of nose-hoover chains               */
+        int                      flags;          /* Flags telling which entries are present      */
+        int                      fep_state;      /* indicates which of the alchemical states we are in                 */
+        std::array<real, efptNR> lambda;         /* lambda vector                               */
+        matrix                   box;            /* box vector coordinates                         */
+        matrix                   box_rel;        /* Relitaive box vectors to preserve shape        */
+        matrix                   boxv;           /* box velocitites for Parrinello-Rahman pcoupl */
+        matrix                   pres_prev;      /* Pressure of the previous step for pcoupl  */
+        matrix                   svir_prev;      /* Shake virial for previous step for pcoupl */
+        matrix                   fvir_prev;      /* Force virial of the previous step for pcoupl  */
+        std::vector<double>      nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
+        std::vector<double>      nosehoover_vxi; /* for N-H tcoupl (ngtc)               */
+        std::vector<double>      nhpres_xi;      /* for Nose-Hoover pcoupl for barostat     */
+        std::vector<double>      nhpres_vxi;     /* for Nose-Hoover pcoupl for barostat     */
+        std::vector<double>      therm_integral; /* for N-H/V-rescale tcoupl (ngtc)     */
+        real                     veta;           /* trotter based isotropic P-coupling             */
+        real                     vol0;           /* initial volume,required for computing NPT conserverd quantity */
+        PaddedRVecVector         x;              /* the coordinates (natoms)                     */
+        PaddedRVecVector         v;              /* the velocities (natoms)                      */
+        PaddedRVecVector         cg_p;           /* p vector for conjugate gradient minimization */
 
-    /* History for special algorithms, should be moved to a history struct */
-    history_t               hist;            /* Time history for restraints                  */
-    swapstate_t            *swapstate;       /* Position swapping                       */
-    df_history_t           *dfhist;          /*Free energy history for free energy analysis  */
-    edsamstate_t           *edsamstate;      /* Essential dynamics / flooding history */
+        ekinstate_t              ekinstate;      /* The state of the kinetic energy data      */
 
-    int                     ddp_count;       /* The DD partitioning count for this state  */
-    int                     ddp_count_cg_gl; /* The DD part. count for index_gl     */
-    std::vector<int>        cg_gl;           /* The global cg number of the local cgs        */
-} t_state;
+        /* History for special algorithms, should be moved to a history struct */
+        history_t               hist;            /* Time history for restraints                  */
+        swapstate_t            *swapstate;       /* Position swapping                       */
+        df_history_t           *dfhist;          /*Free energy history for free energy analysis  */
+        edsamstate_t           *edsamstate;      /* Essential dynamics / flooding history */
+
+        int                     ddp_count;       /* The DD partitioning count for this state  */
+        int                     ddp_count_cg_gl; /* The DD part. count for index_gl     */
+        std::vector<int>        cg_gl;           /* The global cg number of the local cgs        */
+};
 
 typedef struct t_extmass
 {
@@ -250,9 +256,14 @@ typedef struct
     double *vscale_nhc;
 } t_vetavars;
 
+//! Allocates memory for temperature coupling
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
 
-void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int dfhistNumLambda);
+//! Change the number of atoms represented by this state, allocating memory as needed.
+void state_change_natoms(t_state *state, int natoms);
+
+//! Allocates memory for free-energy history
+void init_dfhist_state(t_state *state, int dfhistNumLambda);
 
 void comp_state(const t_state *st1, const t_state *st2, gmx_bool bRMSD, real ftol, real abstol);
 
