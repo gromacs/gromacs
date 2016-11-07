@@ -42,7 +42,6 @@
 #include "gromacs/utility/real.h"
 
 struct t_inputrec;
-class t_state;
 
 /*! \brief Make sure the relative box shape remains the same
  *
@@ -50,18 +49,19 @@ class t_state;
  * preserved, which otherwise might diffuse away due to rounding
  * errors in pressure coupling or the deform option.
  *
- * \param[in] ir      Input record
- * \param[in] box_rel Relative box
- * \param[out] b      The corrected box
+ * \param[in]    ir      Input record
+ * \param[in]    box_rel Relative box dimensions
+ * \param[inout] box     The corrected actual box dimensions
  */
-void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix b);
+void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box);
 
 /*! \brief Determine the relative box components
  *
- * Set state->box_rel used in mdrun to preserve the box shape
- * \param[in] ir       Input record
- * \param[inout] state Structure containing the box
+ * Set box_rel e.g. used in mdrun state, used to preserve the box shape
+ * \param[in]    ir      Input record
+ * \param[inout] box_rel Relative box dimensions
+ * \param[inout] box     Actual box dimensions
  */
-void set_box_rel(const t_inputrec *ir, t_state *state);
+void set_box_rel(const t_inputrec *ir, matrix box_rel, matrix box);
 
 #endif

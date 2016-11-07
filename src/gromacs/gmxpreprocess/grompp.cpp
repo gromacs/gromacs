@@ -636,7 +636,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         sfree(v);
     }
     /* This call fixes the box shape for runs with pressure scaling */
-    set_box_rel(ir, state);
+    set_box_rel(ir, state->box_rel, state->box);
 
     nmismatch = check_atom_names(topfile, confin, sys, &conftop->atoms);
     done_top(conftop);
@@ -812,7 +812,7 @@ static void cont_status(const char *slog, const char *ener,
      * Note that this call can lead to differences in the last bit
      * with respect to using gmx convert-tpr to create a [REF].tpx[ref] file.
      */
-    set_box_rel(ir, state);
+    set_box_rel(ir, state->box_rel, state->box);
 
     fprintf(stderr, "Using frame at t = %g ps\n", use_time);
     fprintf(stderr, "Starting time for run is %g ps\n", ir->init_t);

@@ -50,7 +50,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -89,23 +88,23 @@ static void do_box_rel(const t_inputrec *ir, matrix box_rel,
     }
 }
 
-void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix b)
+void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box)
 {
     if (inputrecPreserveShape(ir))
     {
-        do_box_rel(ir, box_rel, b, FALSE);
+        do_box_rel(ir, box_rel, box, FALSE);
     }
 }
 
-void set_box_rel(const t_inputrec *ir, t_state *state)
+void set_box_rel(const t_inputrec *ir, matrix box_rel, matrix box)
 {
     /* Make sure the box obeys the restrictions before we fix the ratios */
-    correct_box(nullptr, 0, state->box, nullptr);
+    correct_box(nullptr, 0, box, nullptr);
 
-    clear_mat(state->box_rel);
+    clear_mat(box_rel);
 
     if (inputrecPreserveShape(ir))
     {
-        do_box_rel(ir, state->box_rel, state->box, TRUE);
+        do_box_rel(ir, box_rel, box, TRUE);
     }
 }
