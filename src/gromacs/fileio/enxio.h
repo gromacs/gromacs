@@ -38,12 +38,13 @@
 #define GMX_FILEIO_ENXIO_H
 
 #include "gromacs/fileio/xdr_datatype.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/trajectory/energy.h"
+#include "gromacs/utility/basedefinitions.h"
 
 struct gmx_groups_t;
 struct t_fileio;
 struct t_inputrec;
+struct t_state;
 
 /**************************************************************
  * These are the base datatypes + functions for reading and

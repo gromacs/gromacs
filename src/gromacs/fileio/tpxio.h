@@ -39,12 +39,15 @@
 
 #include <cstdio>
 
-#include "gromacs/mdtypes/state.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
 struct t_atoms;
 struct t_block;
 struct t_inputrec;
+struct t_state;
 struct t_topology;
 
 struct t_tpxheader

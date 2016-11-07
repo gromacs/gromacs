@@ -67,7 +67,6 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
@@ -80,6 +79,7 @@ struct gmx_ddbox_t;
 struct gmx_domdec_zones_t;
 struct t_commrec;
 struct t_inputrec;
+struct t_state;
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
  *

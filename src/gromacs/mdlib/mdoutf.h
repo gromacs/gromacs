@@ -38,6 +38,7 @@
 #include <stdio.h>
 
 #include "gromacs/fileio/enxio.h"
+#include "gromacs/math/vectors.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"

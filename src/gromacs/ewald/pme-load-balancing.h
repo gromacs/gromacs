@@ -48,11 +48,11 @@
 
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct t_commrec;
 struct t_inputrec;
+struct t_state;
 
 namespace gmx
 {

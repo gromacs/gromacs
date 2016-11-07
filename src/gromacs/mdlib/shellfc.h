@@ -39,8 +39,8 @@
 
 #include <cstdio>
 
+#include "gromacs/math/vectors.h"
 #include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_constr;

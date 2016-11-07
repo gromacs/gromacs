@@ -42,7 +42,6 @@
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/state.h"
 
 struct energyhistory_t;
 struct gmx_constr;
@@ -53,6 +52,7 @@ struct t_expanded;
 struct t_fcdata;
 struct t_grpopts;
 struct t_lambda;
+struct t_state;
 
 /* The functions & data structures here determine the content for outputting
    the .edr file; the file format and actual writing is done with functions

@@ -48,7 +48,6 @@
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -61,6 +60,7 @@ struct gmx_output_env_t;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
+struct t_state;
 
 namespace gmx
 {
