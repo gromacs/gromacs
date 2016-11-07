@@ -78,7 +78,7 @@ struct t_filenm;
 struct t_gmx_IMD;
 struct t_IMD;
 struct t_inputrec;
-struct t_state;
+class t_state;
 
 static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with this string. */
 

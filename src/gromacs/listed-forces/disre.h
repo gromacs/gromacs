@@ -54,7 +54,7 @@ struct history_t;
 struct t_commrec;
 struct t_inputrec;
 struct t_pbc;
-struct t_state;
+class t_state;
 
 /*! \brief
  * Initiates *fcd data.

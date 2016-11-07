@@ -51,7 +51,7 @@ struct t_forcerec;
 struct t_grpopts;
 struct t_lambda;
 struct t_nrnb;
-struct t_state;
+class t_state;
 struct t_trxframe;
 
 namespace gmx
