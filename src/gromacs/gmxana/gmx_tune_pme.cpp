@@ -871,7 +871,7 @@ static void modify_PMEsettings(
         const char     *fn_sim_tpr)  /* name of tpr file to be launched */
 {
     t_inputrec    *ir;
-    t_state        state;
+    t_state        state {};
     gmx_mtop_t     mtop;
     char           buf[200];
 
