@@ -45,6 +45,7 @@
 
 #include <cstddef>
 
+#include <array>
 #include <iterator>
 #include <stdexcept>
 #include <utility>
@@ -67,8 +68,8 @@ namespace gmx
  */
 struct EmptyArrayRef {};
 
-/*! \brief
- * STL-like container for an interface to a C array (or part of a std::vector).
+/*! \brief STL-like container for an interface to a C array of T (or part
+ * of a std::vector<T> or std::array<T>).
  *
  * \tparam T  Value type of elements.
  *
@@ -76,14 +77,15 @@ struct EmptyArrayRef {};
  * following main differences:
  *  - This class does not have its own storage.  Instead, it references an
  *    existing array of values (either a C-style array or part of an existing
- *    std::vector<T>).
+ *    std::vector<T> or std::array<T>).
  *  - It is only possible to modify the values themselves through ArrayRef;
  *    it is not possible to add or remove values.
  *  - Copying objects of this type is cheap, and the copies behave identically
  *    to the original object: the copy references the same set of values.
  *
- * This class is useful for writing wrappers that expose a different view of
- * the internal data stored as a single vector/array.
+ * This class is useful for writing wrappers that expose a view of the
+ * internal data stored as a single vector/array, which can be a whole
+ * or part of the underlying storage.
  *
  * Methods in this class do not throw, except where indicated.
  *
@@ -199,7 +201,7 @@ class ArrayRef
             GMX_ASSERT(end >= begin, "Invalid range");
         }
         /*! \brief
-         * Constructs a reference to a whole vector.
+         * Constructs a reference to a whole std::vector<T>.
          *
          * \param[in] v  Vector to reference.
          *
@@ -207,11 +209,28 @@ class ArrayRef
          * lifetime of this object.
          *
          * This constructor is not explicit to allow directly passing
-         * std::vector to a method that takes ArrayRef.
+         * std::vector<T> to a method that takes ArrayRef.
          */
         ArrayRef(std::vector<T> &v)
             : begin_((!v.empty()) ? &v[0] : NULL),
               end_((!v.empty()) ? &v[0] + v.size() : NULL)
+        {
+        }
+        /*! \brief
+         * Constructs a reference to a whole std::array<T>.
+         *
+         * \param[in] a  Array to reference.
+         *
+         * Passed array must remain valid for the lifetime of this
+         * object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * std::array<T> to a method that takes ArrayRef.
+         */
+        template <size_t count>
+        ArrayRef(std::array<T, count> &a)
+            : begin_((!a.empty()) ? &a[0] : NULL),
+              end_((!a.empty()) ? &a[0] + a.size() : NULL)
         {
         }
         //! \cond
@@ -318,9 +337,8 @@ class ArrayRef
 
 
 
-/*! \brief
- * STL-like container for non-mutable interface to a C array (or part of a
- * std::vector).
+/*! \brief STL-like container for non-mutable interface to a C array of T
+ * (or part of a std::vector<T> or std::array<T>).
  *
  * \tparam T  Value type of elements.
  *
@@ -328,14 +346,15 @@ class ArrayRef
  * following main differences:
  *  - This class does not have its own storage.  Instead, it references an
  *    existing array of values (either a C-style array or part of an existing
- *    std::vector<T>).
+ *    std::vector<T> or std::array<T>).
  *  - Only const methods are provided to access the stored values.
  *    It is not possible to alter the referenced array.
  *  - Copying objects of this type is cheap, and the copies behave identically
  *    to the original object: the copy references the same set of values.
  *
- * This class is useful for writing wrappers that expose a different view of
- * the internal data stored as a single vector/array.
+ * This class is useful for writing wrappers that expose a view of the
+ * internal data stored as a single vector/array, which can be a whole
+ * or part of the underlying storage.
  *
  * Methods in this class do not throw, except where indicated.
  *
@@ -427,7 +446,7 @@ class ConstArrayRef
             GMX_ASSERT(end >= begin, "Invalid range");
         }
         /*! \brief
-         * Constructs a reference to a whole vector.
+         * Constructs a reference to a whole std::vector<T>.
          *
          * \param[in] v  Vector to reference.
          *
@@ -435,11 +454,28 @@ class ConstArrayRef
          * lifetime of this object.
          *
          * This constructor is not explicit to allow directly passing
-         * std::vector to a method that takes ConstArrayRef.
+         * std::vector<T> to a method that takes ConstArrayRef.
          */
         ConstArrayRef(const std::vector<T> &v)
             : begin_((!v.empty()) ? &v[0] : NULL),
               end_((!v.empty()) ? &v[0] + v.size() : NULL)
+        {
+        }
+        /*! \brief
+         * Constructs a reference to a whole std::array<T>.
+         *
+         * \param[in] a  Array to reference.
+         *
+         * Passed array must remain valid for the lifetime of this
+         * object.
+         *
+         * This constructor is not explicit to allow directly passing
+         * std::array<T> to a method that takes ConstArrayRef.
+         */
+        template <size_t count>
+        ConstArrayRef(const std::array<T, count> &a)
+            : begin_((!a.empty()) ? &a[0] : NULL),
+              end_((!a.empty()) ? &a[0] + a.size() : NULL)
         {
         }
         //! \cond
