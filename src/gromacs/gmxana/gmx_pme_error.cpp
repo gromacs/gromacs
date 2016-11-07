@@ -1091,7 +1091,7 @@ int gmx_pme_error(int argc, char *argv[])
     real            user_beta = -1.0;
     real            fracself  = 1.0;
     t_inputinfo     info;
-    t_state         state;     /* The state from the tpr input file */
+    t_state         state {};  /* The state from the tpr input file */
     gmx_mtop_t      mtop;      /* The topology from the tpr input file */
     t_inputrec     *ir = NULL; /* The inputrec from the tpr file */
     FILE           *fp = NULL;
