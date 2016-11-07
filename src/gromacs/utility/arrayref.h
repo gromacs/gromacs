@@ -67,8 +67,8 @@ namespace gmx
  */
 struct EmptyArrayRef {};
 
-/*! \brief
- * STL-like container for an interface to a C array (or part of a std::vector).
+/*! \brief STL-like container for an interface to a C array (or part
+ * of a std::vector or std::array).
  *
  * \tparam T  Value type of elements.
  *
@@ -76,14 +76,15 @@ struct EmptyArrayRef {};
  * following main differences:
  *  - This class does not have its own storage.  Instead, it references an
  *    existing array of values (either a C-style array or part of an existing
- *    std::vector<T>).
+ *    std::vector<T> or std::array<T>).
  *  - It is only possible to modify the values themselves through ArrayRef;
  *    it is not possible to add or remove values.
  *  - Copying objects of this type is cheap, and the copies behave identically
  *    to the original object: the copy references the same set of values.
  *
- * This class is useful for writing wrappers that expose a different view of
- * the internal data stored as a single vector/array.
+ * This class is useful for writing wrappers that expose a view of the
+ * internal data stored as a single vector/array, which can be a whole
+ * or part of the underlying storage.
  *
  * Methods in this class do not throw, except where indicated.
  *
@@ -199,19 +200,30 @@ class ArrayRef
             GMX_ASSERT(end >= begin, "Invalid range");
         }
         /*! \brief
-         * Constructs a reference to a whole vector.
+         * Constructs a reference to a whole container.
          *
-         * \param[in] v  Vector to reference.
+         * \param[in] c  Container to reference.
          *
-         * Passed vector must remain valid and not be reallocated for the
-         * lifetime of this object.
+         * Passed container must represent contiguous storage
+         * (e.g. std::vector or std::arary) and remain valid and not
+         * be reallocated for the lifetime of this object.
          *
          * This constructor is not explicit to allow directly passing
-         * std::vector to a method that takes ArrayRef.
+         * std-conforming container to a method that takes ArrayRef.
+         *
+         * \todo Prevent unsuitable containers from being eligible to
+         * trigger this constructor, e.g. std::list. This is not a big
+         * problem in GROMACS because we use few non-vector-like
+         * containers. This could be done with a type trait, or
+         * explicit declaration for supported containers, but we can
+         * probably defer that until after we know whether this type
+         * might appear in CUDA host code (or that C++11 code will
+         * work there).
          */
-        ArrayRef(std::vector<T> &v)
-            : begin_((!v.empty()) ? &v[0] : NULL),
-              end_((!v.empty()) ? &v[0] + v.size() : NULL)
+        template <typename Container>
+        ArrayRef(Container &c)
+            : begin_((!c.empty()) ? &c[0] : NULL),
+              end_((!c.empty()) ? &c[0] + c.size() : NULL)
         {
         }
         //! \cond
@@ -318,9 +330,8 @@ class ArrayRef
 
 
 
-/*! \brief
- * STL-like container for non-mutable interface to a C array (or part of a
- * std::vector).
+/*! \brief STL-like container for non-mutable interface to a C array
+ * (or part of a std::vector or std::array).
  *
  * \tparam T  Value type of elements.
  *
@@ -328,14 +339,15 @@ class ArrayRef
  * following main differences:
  *  - This class does not have its own storage.  Instead, it references an
  *    existing array of values (either a C-style array or part of an existing
- *    std::vector<T>).
+ *    std::vector<T> or std::array<T>).
  *  - Only const methods are provided to access the stored values.
  *    It is not possible to alter the referenced array.
  *  - Copying objects of this type is cheap, and the copies behave identically
  *    to the original object: the copy references the same set of values.
  *
- * This class is useful for writing wrappers that expose a different view of
- * the internal data stored as a single vector/array.
+ * This class is useful for writing wrappers that expose a view of the
+ * internal data stored as a single vector/array, which can be a whole
+ * or part of the underlying storage.
  *
  * Methods in this class do not throw, except where indicated.
  *
@@ -427,19 +439,30 @@ class ConstArrayRef
             GMX_ASSERT(end >= begin, "Invalid range");
         }
         /*! \brief
-         * Constructs a reference to a whole vector.
+         * Constructs a reference to a whole container.
          *
-         * \param[in] v  Vector to reference.
+         * \param[in] c  Container to reference.
          *
-         * Passed vector must remain valid and not be reallocated for the
-         * lifetime of this object.
+         * Passed container must represent contiguous storage
+         * (e.g. std::vector or std::array) and remain valid and not
+         * be reallocated for the lifetime of this object.
          *
          * This constructor is not explicit to allow directly passing
-         * std::vector to a method that takes ConstArrayRef.
+         * std-conforming container to a method that takes ConstArrayRef.
+         *
+         * \todo Prevent unsuitable containers from being eligible to
+         * trigger this constructor, e.g. std::list. This is not a big
+         * problem in GROMACS because we use few non-vector-like
+         * containers. This could be done with a type trait, or
+         * explicit declaration for supported containers, but we can
+         * probably defer that until after we know whether this type
+         * might appear in CUDA host code (or that C++11 code will
+         * work there).
          */
-        ConstArrayRef(const std::vector<T> &v)
-            : begin_((!v.empty()) ? &v[0] : NULL),
-              end_((!v.empty()) ? &v[0] + v.size() : NULL)
+        template <typename Container>
+        ConstArrayRef(const Container &c)
+            : begin_((!c.empty()) ? &c[0] : NULL),
+              end_((!c.empty()) ? &c[0] + c.size() : NULL)
         {
         }
         //! \cond
