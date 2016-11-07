@@ -68,6 +68,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -474,21 +475,19 @@ static int do_cpte_reals(XDR *xd, int cptp, int ecpt, int sflags,
  * a fatal error is generated when this is not the case.
  */
 static int do_cpte_reals(XDR *xd, int cptp, int ecpt, int sflags,
-                         int n, std::vector<real> *v, FILE *list)
+                         gmx::ArrayRef<real> v, FILE *list)
 {
     real *v_real;
     if (list == NULL && (sflags & (1 << ecpt)))
     {
-        /* Resizes on read, on write the size should already be n */
-        v->resize(n);
-        v_real = v->data();
+        v_real = v.data();
     }
     else
     {
         v_real = NULL;
     }
 
-    return do_cpte_reals_low(xd, cptp, ecpt, sflags, n, NULL, &v_real, list, ecprREAL);
+    return do_cpte_reals_low(xd, cptp, ecpt, sflags, v.size(), NULL, &v_real, list, ecprREAL);
 }
 
 /* This function does the same as do_cpte_reals,
@@ -1006,7 +1005,7 @@ static int do_cpt_state(XDR *xd,
         {
             switch (i)
             {
-                case estLAMBDA:  ret      = do_cpte_reals(xd, cptpEST, i, sflags, efptNR, &(state->lambda), list); break;
+                case estLAMBDA:  ret      = do_cpte_reals(xd, cptpEST, i, sflags, state->lambda, list); break;
                 case estFEPSTATE: ret     = do_cpte_int (xd, cptpEST, i, sflags, &state->fep_state, list); break;
                 case estBOX:     ret      = do_cpte_matrix(xd, cptpEST, i, sflags, state->box, list); break;
                 case estBOX_REL: ret      = do_cpte_matrix(xd, cptpEST, i, sflags, state->box_rel, list); break;
@@ -2519,12 +2518,10 @@ void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
      * cannot be assumed to be zeroed (or even initialized in ways the
      * rest of the code might assume). Using snew would be better, but
      * this will all go away for 5.0. */
-    t_state         state;
+    t_state         state {};
     int             simulation_part;
     gmx_int64_t     step;
     double          t;
-
-    init_state(&state, 0, 0, 0, 0, 0);
 
     read_checkpoint_data(fp, &simulation_part, &step, &t, &state, NULL, NULL);
 
@@ -2567,15 +2564,13 @@ void list_checkpoint(const char *fn, FILE *out)
     gmx_int64_t          step;
     double               t;
     ivec                 dd_nc;
-    t_state              state;
+    t_state              state {};
     int                  nlambda;
     int                  flags_eks, flags_enh, flags_dfh;
     int                  nED, eSwapCoords;
     int                  ret;
     gmx_file_position_t *outputfiles;
     int                  nfiles;
-
-    init_state(&state, -1, -1, -1, -1, 0);
 
     fp = gmx_fio_open(fn, "r");
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, &file_version,
@@ -2647,9 +2642,7 @@ read_checkpoint_simulation_part_and_filenames(t_fileio             *fp,
 {
     gmx_int64_t step = 0;
     double      t;
-    t_state     state;
-
-    init_state(&state, 0, 0, 0, 0, 0);
+    t_state     state {};
 
     read_checkpoint_data(fp, simulation_part, &step, &t, &state,
                          nfiles, outputfiles);

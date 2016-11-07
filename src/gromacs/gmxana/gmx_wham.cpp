@@ -2053,7 +2053,7 @@ void read_tpr_header(const char *fn, t_UmbrellaHeader* header, t_UmbrellaOptions
 {
     gmx::MDModules  mdModules;
     t_inputrec     *ir = mdModules.inputrec();
-    t_state         state;
+    t_state         state {};
     static int      first = 1;
 
     /* printf("Reading %s \n",fn); */

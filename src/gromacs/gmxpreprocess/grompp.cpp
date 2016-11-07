@@ -606,7 +606,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     rvec       *x = NULL;
     rvec       *v = NULL;
     snew(conftop, 1);
-    init_state(state, 0, 0, 0, 0, 0);
     read_tps_conf(confin, conftop, NULL, &x, &v, state->box, FALSE);
     state->natoms = conftop->atoms.nr;
     if (state->natoms != sys->natoms)

@@ -352,7 +352,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     }
 
     /* Initial values */
-    init_md(fplog, cr, ir, oenv, &t, &t0, &state_global->lambda,
+    init_md(fplog, cr, ir, oenv, &t, &t0, state_global->lambda,
             &(state_global->fep_state), lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
@@ -1088,7 +1088,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
                      state->box, &state->x, &state->hist,
                      &f, force_vir, mdatoms, enerd, fcd,
-                     &state->lambda, graph,
+                     state->lambda, graph,
                      fr, vsite, mu_tot, t, ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
@@ -1236,7 +1236,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             /* sum up the foreign energy and dhdl terms for vv.  currently done every step so that dhdl is correct in the .edr */
             if (ir->efep != efepNO && !bRerunMD)
             {
-                sum_dhdl(enerd, &state->lambda, ir->fepvals);
+                sum_dhdl(enerd, state->lambda, ir->fepvals);
             }
         }
 
@@ -1557,7 +1557,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         {
             /* Sum up the foreign energy and dhdl terms for md and sd.
                Currently done every step so that dhdl is correct in the .edr */
-            sum_dhdl(enerd, &state->lambda, ir->fepvals);
+            sum_dhdl(enerd, state->lambda, ir->fepvals);
         }
 
         update_pcouple_after_coordinates(fplog, step, ir, mdatoms,
