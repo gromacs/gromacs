@@ -64,7 +64,7 @@ extern "C" {
 #endif
 
 struct t_pbc;
-struct t_state;
+class t_state;
 
 enum
 {

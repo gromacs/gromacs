@@ -894,7 +894,7 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
                       rvec *x_old, rvec *x_init, rvec *x,
                       rvec *f, rvec *acc_dir,
                       gmx_bool bMolPBC, matrix box,
-                      const std::vector<real> *lambda, real *dvdlambda,
+                      gmx::ConstArrayRef<real> lambda, real *dvdlambda,
                       t_nrnb *nrnb)
 {
     rvec           *xnold, *xnew;
@@ -944,11 +944,11 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     }
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x, xnold, NULL, bMolPBC, box,
-              (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
+              lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               NULL, NULL, nrnb, econqCoord);
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x, xnew, NULL, bMolPBC, box,
-              (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
+              lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               NULL, NULL, nrnb, econqCoord);
 
     for (n = 0; n < end; n++)
@@ -965,7 +965,7 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     /* Project the acceleration on the old bond directions */
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x_old, xnew, acc_dir, bMolPBC, box,
-              (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
+              lambda[efptBONDED], &(dvdlambda[efptBONDED]),
               NULL, NULL, nrnb, econqDeriv_FlexCon);
 }
 
@@ -1111,7 +1111,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle, top, groups,
              state->box, &state->x, &state->hist,
              force[Min], force_vir, md, enerd, fcd,
-             &state->lambda, graph,
+             state->lambda, graph,
              fr, vsite, mu_tot, t, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
@@ -1122,7 +1122,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                   constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
                   shfc->x_old, as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), as_rvec_array(force[Min]->data()),
                   shfc->acc_dir,
-                  fr->bMolPBC, state->box, &state->lambda, &dum, nrnb);
+                  fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
         for (i = 0; i < end; i++)
         {
@@ -1190,7 +1190,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             init_adir(fplog, shfc,
                       constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
                       x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Min]->data()), as_rvec_array(force[Min]->data()), acc_dir,
-                      fr->bMolPBC, state->box, &state->lambda, &dum, nrnb);
+                      fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
             directional_sd(pos[Min], pos[Try], acc_dir, end, fr->fc_stepsize);
         }
@@ -1213,7 +1213,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         do_force(fplog, cr, inputrec, 1, nrnb, wcycle,
                  top, groups, state->box, pos[Try], &state->hist,
                  force[Try], force_vir,
-                 md, enerd, fcd, &state->lambda, graph,
+                 md, enerd, fcd, state->lambda, graph,
                  fr, vsite, mu_tot, t, NULL, bBornRadii,
                  force_flags);
 
@@ -1228,7 +1228,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             init_adir(fplog, shfc,
                       constr, idef, inputrec, cr, dd_ac1, mdstep, md, end,
                       x_old, as_rvec_array(state->x.data()), as_rvec_array(pos[Try]->data()), as_rvec_array(force[Try]->data()), acc_dir,
-                      fr->bMolPBC, state->box, &state->lambda, &dum, nrnb);
+                      fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
             for (i = 0; i < end; i++)
             {
