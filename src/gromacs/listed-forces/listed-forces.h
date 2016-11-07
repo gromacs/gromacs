@@ -71,7 +71,7 @@
 
 struct gmx_enerdata_t;
 struct gmx_grppairener_t;
-struct history_t;
+class history_t;
 struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
@@ -80,7 +80,7 @@ struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
-struct t_state;
+class t_state;
 
 #ifdef __cplusplus
 extern "C" {

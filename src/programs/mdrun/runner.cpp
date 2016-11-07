@@ -771,7 +771,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         please_cite(fplog, "Berendsen95a");
     }
 
-    std::unique_ptr<t_state> stateInstance = std::unique_ptr<t_state>(new t_state {});
+    std::unique_ptr<t_state> stateInstance = std::unique_ptr<t_state>(new t_state);
     t_state *                state         = stateInstance.get();
 
     if (SIMMASTER(cr))
