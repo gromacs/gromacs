@@ -179,7 +179,7 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         virtual void finishOutput();
         virtual void initForcerec(t_forcerec *fr);
 
-        // From IForceProvider
+        //! \copydoc gmx::IForceProvider::calculateForces
         virtual void calculateForces(const t_commrec  *cr,
                                      const t_mdatoms  *atoms,
                                      PaddedRVecVector *force,
