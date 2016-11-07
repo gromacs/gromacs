@@ -606,7 +606,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     rvec       *x = nullptr;
     rvec       *v = nullptr;
     snew(conftop, 1);
-    init_state(state, 0, 0, 0, 0, 0);
     read_tps_conf(confin, conftop, nullptr, &x, &v, state->box, FALSE);
     state->natoms = conftop->atoms.nr;
     if (state->natoms != sys->natoms)
@@ -1714,7 +1713,7 @@ int gmx_grompp(int argc, char *argv[])
         gmx_fatal(FARGS, "%s does not exist", fn);
     }
 
-    t_state state {};
+    t_state state;
     new_status(fn, opt2fn_null("-pp", NFILE, fnm), opt2fn("-c", NFILE, fnm),
                opts, ir, bZero, bGenVel, bVerbose, &state,
                atype, sys, &nmi, &mi, &intermolecular_interactions,

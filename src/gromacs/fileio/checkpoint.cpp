@@ -68,6 +68,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -549,7 +550,7 @@ static int doVectorLow(XDR *xd, StatePart part, int ecpt, int sflags,
                     xdr_datatype_names[xdrTypeInTheCode],
                     xdr_datatype_names[xdrTypeInTheFile]);
 
-            /* Matchting int and real should never occur, but check anyhow */
+            /* Matching int and real should never occur, but check anyhow */
             if (xdrTypeInTheFile == xdr_datatype_int ||
                 xdrTypeInTheCode == xdr_datatype_int)
             {
@@ -572,7 +573,7 @@ static int doVectorLow(XDR *xd, StatePart part, int ecpt, int sflags,
             /* This conditional ensures that we don't resize on write.
              * In particular in the state where this code was written
              * PaddedRVecVector has a size of numElemInThefile and we
-             * don't want to loose that padding here.
+             * don't want to lose that padding here.
              */
             if (vector->size() < static_cast<unsigned int>(numElemInTheFile))
             {
@@ -629,32 +630,29 @@ static int doVector(XDR *xd, StatePart part, int ecpt, int sflags,
 //! \brief Read/Write an std::vector, on read checks the number of elements matches \p numElements
 template <typename T>
 static int doVector(XDR *xd, StatePart part, int ecpt, int sflags,
-                    int numElements, std::vector<T> *vector, FILE *list)
+                    gmx::ArrayRef<T> vector, FILE *list)
 {
-    return doVectorLow<T>(xd, part, ecpt, sflags, numElements, nullptr, nullptr, vector, list, CptElementType::real);
+    real *v_real = vector.data();
+    return doVectorLow<T>(xd, part, ecpt, sflags, vector.size(), nullptr, &v_real, nullptr, list, CptElementType::real);
 }
 
 //! \brief Read/Write a PaddedRVecVector, on read checks the number of elements matches \p numElements
-static int doPaddedVector(XDR *xd, StatePart part, int ecpt, int sflags,
-                          int numElements, PaddedRVecVector *v, FILE *list)
+static int doPaddedRvecVector(XDR *xd, StatePart part, int ecpt, int sflags,
+                              gmx::PaddedRVecVector *vector, FILE *list)
 {
-    rvec *v_rvec;
+    real *v_real;
 
     if (list == nullptr && (sflags & (1 << ecpt)))
     {
-        /* We resize the vector here to avoid pointer reallocation in
-         * do_cpte_reals_low. Note the we allocate 1 element extra for SIMD.
-         */
-        v->resize(numElements + 1);
-        v_rvec = as_rvec_array(v->data());
+        v_real = vector->data()->as_vec();
     }
     else
     {
-        v_rvec = nullptr;
+        v_real = nullptr;
     }
 
     return doVectorLow<real>(xd, part, ecpt, sflags,
-                             numElements*DIM, nullptr, (real **)(&v_rvec), nullptr,
+                             vector->size() * DIM, nullptr, &v_real, nullptr,
                              list, CptElementType::real3);
 }
 
@@ -1017,19 +1015,19 @@ static int do_cpt_state(XDR *xd,
                         FILE *list)
 {
     int             ret    = 0;
-
-    const int       nnht   = state->nhchainlength*state->ngtc;
-    const int       nnhtp  = state->nhchainlength*state->nnhpres;
-
     const StatePart part   = StatePart::microState;
     const int       sflags = state->flags;
+    // If reading, state->natoms was probably just read, so
+    // allocations need to be managed. If writing, this won't change
+    // anything that matters.
+    state_change_natoms(state, state->natoms);
     for (int i = 0; (i < estNR && ret == 0); i++)
     {
         if (fflags & (1<<i))
         {
             switch (i)
             {
-                case estLAMBDA:  ret      = doVector<real>(xd, part, i, sflags, static_cast<int>(efptNR), &state->lambda, list); break;
+                case estLAMBDA:  ret      = doVector<real>(xd, part, i, sflags, gmx::arrayRefFromArray<real>(state->lambda.data(), state->lambda.size()), list); break;
                 case estFEPSTATE: ret     = do_cpte_int (xd, part, i, sflags, &state->fep_state, list); break;
                 case estBOX:     ret      = do_cpte_matrix(xd, part, i, sflags, state->box, list); break;
                 case estBOX_REL: ret      = do_cpte_matrix(xd, part, i, sflags, state->box_rel, list); break;
@@ -1037,15 +1035,15 @@ static int do_cpt_state(XDR *xd,
                 case estPRES_PREV: ret    = do_cpte_matrix(xd, part, i, sflags, state->pres_prev, list); break;
                 case estSVIR_PREV:  ret   = do_cpte_matrix(xd, part, i, sflags, state->svir_prev, list); break;
                 case estFVIR_PREV:  ret   = do_cpte_matrix(xd, part, i, sflags, state->fvir_prev, list); break;
-                case estNH_XI:   ret      = doVector<double>(xd, part, i, sflags, nnht, &state->nosehoover_xi, list); break;
-                case estNH_VXI:  ret      = doVector<double>(xd, part, i, sflags, nnht, &state->nosehoover_vxi, list); break;
-                case estNHPRES_XI:   ret  = doVector<double>(xd, part, i, sflags, nnhtp, &state->nhpres_xi, list); break;
-                case estNHPRES_VXI:  ret  = doVector<double>(xd, part, i, sflags, nnhtp, &state->nhpres_vxi, list); break;
-                case estTC_INT:  ret      = doVector<double>(xd, part, i, sflags, state->ngtc, &state->therm_integral, list); break;
+                case estNH_XI:   ret      = doVector<double>(xd, part, i, sflags, &state->nosehoover_xi, list); break;
+                case estNH_VXI:  ret      = doVector<double>(xd, part, i, sflags, &state->nosehoover_vxi, list); break;
+                case estNHPRES_XI:   ret  = doVector<double>(xd, part, i, sflags, &state->nhpres_xi, list); break;
+                case estNHPRES_VXI:  ret  = doVector<double>(xd, part, i, sflags, &state->nhpres_vxi, list); break;
+                case estTC_INT:  ret      = doVector<double>(xd, part, i, sflags, &state->therm_integral, list); break;
                 case estVETA:    ret      = do_cpte_real(xd, part, i, sflags, &state->veta, list); break;
                 case estVOL0:    ret      = do_cpte_real(xd, part, i, sflags, &state->vol0, list); break;
-                case estX:       ret      = doPaddedVector(xd, part, i, sflags, state->natoms, &state->x, list); break;
-                case estV:       ret      = doPaddedVector(xd, part, i, sflags, state->natoms, &state->v, list); break;
+                case estX:       ret      = doPaddedRvecVector(xd, part, i, sflags, &state->x, list); break;
+                case estV:       ret      = doPaddedRvecVector(xd, part, i, sflags, &state->v, list); break;
                 /* The RNG entries are no longer written,
                  * the next 4 lines are only for reading old files.
                  */
@@ -1085,9 +1083,9 @@ static int do_cpt_ekinstate(XDR *xd, int fflags, ekinstate_t *ekins,
                 case eeksEKINF:      ret = do_cpte_matrices(xd, part, i, fflags, ekins->ekin_n, &ekins->ekinf, list); break;
                 case eeksEKINO:      ret = do_cpte_matrices(xd, part, i, fflags, ekins->ekin_n, &ekins->ekinh_old, list); break;
                 case eeksEKINTOTAL:  ret = do_cpte_matrix(xd, part, i, fflags, ekins->ekin_total, list); break;
-                case eeksEKINSCALEF: ret = doVector<double>(xd, part, i, fflags, ekins->ekin_n, &ekins->ekinscalef_nhc, list); break;
-                case eeksVSCALE:     ret = doVector<double>(xd, part, i, fflags, ekins->ekin_n, &ekins->vscale_nhc, list); break;
-                case eeksEKINSCALEH: ret = doVector<double>(xd, part, i, fflags, ekins->ekin_n, &ekins->ekinscaleh_nhc, list); break;
+                case eeksEKINSCALEF: ret = doVector<double>(xd, part, i, fflags, &ekins->ekinscalef_nhc, list); break;
+                case eeksVSCALE:     ret = doVector<double>(xd, part, i, fflags, &ekins->vscale_nhc, list); break;
+                case eeksEKINSCALEH: ret = doVector<double>(xd, part, i, fflags, &ekins->ekinscaleh_nhc, list); break;
                 case eeksDEKINDL:   ret  = do_cpte_real(xd, part, i, fflags, &ekins->dekindl, list); break;
                 case eeksMVCOS:      ret = do_cpte_real(xd, part, i, fflags, &ekins->mvcos, list); break;
                 default:
@@ -1274,10 +1272,10 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
             switch (i)
             {
                 case eenhENERGY_N:     ret = do_cpte_int(xd, part, i, fflags, &energyHistoryNumEnergies, list); break;
-                case eenhENERGY_AVER:  ret = doVector<double>(xd, part, i, fflags, energyHistoryNumEnergies, &enerhist->ener_ave, list); break;
-                case eenhENERGY_SUM:   ret = doVector<double>(xd, part, i, fflags, energyHistoryNumEnergies, &enerhist->ener_sum, list); break;
+                case eenhENERGY_AVER:  ret = doVector<double>(xd, part, i, fflags, &enerhist->ener_ave, list); break;
+                case eenhENERGY_SUM:   ret = doVector<double>(xd, part, i, fflags, &enerhist->ener_sum, list); break;
                 case eenhENERGY_NSUM:  do_cpt_step_err(xd, eenh_names[i], &enerhist->nsum, list); break;
-                case eenhENERGY_SUM_SIM: ret = doVector<double>(xd, part, i, fflags, energyHistoryNumEnergies, &enerhist->ener_sum_sim, list); break;
+                case eenhENERGY_SUM_SIM: ret = doVector<double>(xd, part, i, fflags, &enerhist->ener_sum_sim, list); break;
                 case eenhENERGY_NSUM_SIM:   do_cpt_step_err(xd, eenh_names[i], &enerhist->nsum_sim, list); break;
                 case eenhENERGY_NSTEPS:     do_cpt_step_err(xd, eenh_names[i], &enerhist->nsteps, list); break;
                 case eenhENERGY_NSTEPS_SIM: do_cpt_step_err(xd, eenh_names[i], &enerhist->nsteps_sim, list); break;
@@ -2535,16 +2533,10 @@ read_checkpoint_state(const char *fn, int *simulation_part,
 
 void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
 {
-    /* This next line is nasty because the sub-structures of t_state
-     * cannot be assumed to be zeroed (or even initialized in ways the
-     * rest of the code might assume). Using snew would be better, but
-     * this will all go away for 5.0. */
     t_state         state;
     int             simulation_part;
     gmx_int64_t     step;
     double          t;
-
-    init_state(&state, 0, 0, 0, 0, 0);
 
     read_checkpoint_data(fp, &simulation_part, &step, &t, &state, nullptr, nullptr);
 
@@ -2594,8 +2586,7 @@ void list_checkpoint(const char *fn, FILE *out)
     gmx_file_position_t *outputfiles;
     int                  nfiles;
 
-    t_state              state = {};
-    init_state(&state, 0, 0, 0, 0, 0);
+    t_state              state;
 
     fp = gmx_fio_open(fn, "r");
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, &file_version,
@@ -2666,8 +2657,6 @@ read_checkpoint_simulation_part_and_filenames(t_fileio             *fp,
     gmx_int64_t step = 0;
     double      t;
     t_state     state;
-
-    init_state(&state, 0, 0, 0, 0, 0);
 
     read_checkpoint_data(fp, simulation_part, &step, &t, &state,
                          nfiles, outputfiles);
