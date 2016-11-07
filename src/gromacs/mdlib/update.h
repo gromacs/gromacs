@@ -43,7 +43,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct ekinstate_t;
+class ekinstate_t;
 struct gmx_constr;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
@@ -55,7 +55,7 @@ struct t_idef;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
-struct t_state;
+class t_state;
 
 /* Abstract type for update */
 struct gmx_update_t;

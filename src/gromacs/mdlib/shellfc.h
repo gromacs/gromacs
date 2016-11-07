@@ -52,7 +52,7 @@ struct t_forcerec;
 struct t_fcdata;
 struct t_graph;
 struct t_inputrec;
-struct t_state;
+class t_state;
 
 /* Initialization function, also predicts the initial shell postions.
  */
