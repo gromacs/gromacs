@@ -42,7 +42,7 @@
 #include "gromacs/utility/real.h"
 
 struct t_inputrec;
-struct t_state;
+class t_state;
 
 /*! \brief Make sure the relative box shape remains the same
  *

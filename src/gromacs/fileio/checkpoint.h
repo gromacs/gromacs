@@ -52,7 +52,7 @@ struct gmx_file_position_t;
 struct t_commrec;
 struct t_fileio;
 struct t_inputrec;
-struct t_state;
+class t_state;
 struct t_trxframe;
 
 /* the name of the environment variable to disable fsync failure checks with */
