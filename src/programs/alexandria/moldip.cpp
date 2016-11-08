@@ -532,7 +532,7 @@ void MolDip::Read(FILE            *fp,
                                                 _iChargeDistributionModel,
                                                 _iChargeGenerationAlgorithm,
                                                 watoms, _hfac, lot, true,
-                                                nullptr, _cr, tabfn);
+                                                nullptr, tabfn);
                     rms = mpnew.espRms();
                 }
                 if (immOK == imm)
@@ -655,7 +655,7 @@ void MolDip::Read(FILE            *fp,
                 gmx::MDLogger mdlog = getMdLogger(_cr, stdout);
                 imm = mpnew.GenerateCharges(pd_, mdlog, _atomprop, _iChargeDistributionModel,
                                             _iChargeGenerationAlgorithm, watoms, _hfac,
-                                            lot, true, nullptr, _cr, tabfn);
+                                            lot, true, nullptr, tabfn);
                 rms = mpnew.espRms();
             }
             if (immOK == imm)

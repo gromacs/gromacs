@@ -128,19 +128,18 @@ class RespTest : public gmx::test::CommandLineTestBase
             real           hfac        = 0;
             real           epsr        = 1;
             char          *symm_string = (char *)"";
-            t_commrec     *cr          = init_commrec();
-            gmx::MDLogger  mdlog       = getMdLogger(cr, stdout);
+            gmx::MDLogger  mdlog       = getMdLogger(mp_.cr_, stdout);
 
             if(!bPolar)
             {
                 mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP,
-                                    hfac, epsr, lot, false, symm_string, cr, nullptr);
+                                    hfac, epsr, lot, false, symm_string, nullptr);
             }
             else
             {
                 std::string tabFile = fileManager().getInputFilePath("table.xvg");
                 mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP,
-                                    hfac, epsr, lot, false, symm_string, cr, tabFile.c_str());
+                                    hfac, epsr, lot, false, symm_string, tabFile.c_str());
             }
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)

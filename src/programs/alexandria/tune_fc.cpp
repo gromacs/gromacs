@@ -616,16 +616,12 @@ class Optimization : public MolDip
         std::vector<NonBondParams>  NonBondParams_;
         param_type                  param_, lower_, upper_, best_, orig_, psigma_, pmean_;
         param_type                  De_;
-        const real                  forceWeight_;
 
         /*! \brief
          *
          * Constructor
          */
-        Optimization(const real forceWeight) 
-            :
-                forceWeight_(forceWeight)
-            {};
+        Optimization() {};
 
         /*! \brief
          *
@@ -1289,7 +1285,7 @@ double Optimization::calcDeviation()
                         debug  = nullptr;
 
                         mymol.changeCoordinate(ei);
-                        mymol.computeForces(debug, _cr, mu_tot);
+                        mymol.computeForces(debug, mu_tot);
 
                         debug         = dbcopy;
                         mymol.Force2  = 0.0;
@@ -1316,7 +1312,7 @@ double Optimization::calcDeviation()
 
                             mymol.OptForce2 /= natoms;
 
-                            _ener[ermsForce2] += _fc[ermsForce2]*mymol.OptForce2*forceWeight_;
+                            _ener[ermsForce2] += _fc[ermsForce2]*mymol.OptForce2;
                             mymol.OptEcalc     = mymol.enerd_->term[F_EPOT];
                             
                             ener *= gmx::square(nOptSP);
@@ -1683,7 +1679,6 @@ int alex_tune_fc(int argc, char *argv[])
     static real           fc_esp        = 0; 
     static real           fc_epot       = 1;
     static real           fc_force      = 0.001;
-    static real           fweight       = 1;
     static real           factor        = 0.8;
     static real           beta0         = 0;
     static real           D0            = 0; 
@@ -1759,9 +1754,7 @@ int alex_tune_fc(int argc, char *argv[])
         { "-fc_epot",    FALSE, etREAL, {&fc_epot},
           "Force constant in the penalty function for the energy term" },
         { "-fc_force",    FALSE, etREAL, {&fc_force},
-          "Force constant in the penalty function for the force term" },         
-        { "-fweight",    FALSE, etREAL, {&fweight},
-          "Force weight in chi squared calculation" },         
+          "Force constant in the penalty function for the force term" },                
         { "-step",  FALSE, etREAL, {&step},
           "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
         { "-min_data",  FALSE, etINT, {&minimum_data},
@@ -1821,7 +1814,7 @@ int alex_tune_fc(int argc, char *argv[])
         gms.read(opt2fn_null("-sel", NFILE, fnm));
     }
 
-    alexandria::Optimization       opt(fweight);
+    alexandria::Optimization       opt;
     ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
 

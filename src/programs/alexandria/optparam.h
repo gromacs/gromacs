@@ -238,7 +238,7 @@ void Bayes<T>::simulate()
 {
 
     parm_t                           sum, sum_of_sq;
-    int                              iter, j, nsum = 0;
+    int                              iter, j, nsum = 0, nParam = 0;
     T                                storeParam;
     double                           currEval = 0.0;
     double                           prevEval = 0.0;
@@ -252,8 +252,9 @@ void Bayes<T>::simulate()
     std::mt19937                     gen(rd());
     std::uniform_real_distribution<> dis(0, 1);
 
-    beta = 1/(BOLTZ*temperature_);
-
+    beta   = 1/(BOLTZ*temperature_);
+    nParam = param_.size();
+    
     if (nullptr != xvgconv_)
     {
         fpc = xvgropen(xvgconv_, "Parameter convergence", "iteration", "", oenv_);
@@ -263,81 +264,79 @@ void Bayes<T>::simulate()
         fpe = xvgropen(xvgepot_, "Parameter energy", "iteration", "kT", oenv_);
     }
 
-    sum.resize(param_.size(), 0);
-    sum_of_sq.resize(param_.size(), 0);
-    pmean_.resize(param_.size(), 0);
-    psigma_.resize(param_.size(), 0);
+    sum.resize(nParam, 0);
+    sum_of_sq.resize(nParam, 0);
+    pmean_.resize(nParam, 0);
+    psigma_.resize(nParam, 0);
 
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
-
-    for (j = iter = 0; iter < maxiter_; iter++)
+      
+    for (iter = 0; iter < maxiter_; iter++)
     {
-        if ((nullptr != fpc) && ((j % nprint_) == 0))
+        for (j = 0; j < nParam; j++)
         {
-            fprintf(fpc, "%5d", iter);
-            for (auto value : param_)
+            if ((nullptr != fpc) && ((j % nprint_) == 0))
             {
-                fprintf(fpc, "  %10g", value);
+                fprintf(fpc, "%5d", iter);
+                for (auto value : param_)
+                {
+                    fprintf(fpc, "  %10g", value);
+                }
+                fprintf(fpc, "\n");
             }
-            fprintf(fpc, "\n");
-        }
-        if ((nullptr != fpe) && ((j % nprint_) == 0))
-        {
-            fprintf(fpe, "%5d  %10g\n", iter, prevEval);
-        }
-        storeParam = param_[j];
-        changeParam(j, dis(gen));
-        currEval        = func_(param_.data());
-        deltaEval       = currEval-prevEval;
-        randProbability = dis(gen);
-        mcProbability   = exp(-beta*deltaEval);
-        if ((deltaEval < 0) || (mcProbability > randProbability))
-        {
-            if (nullptr != debug)
+            if ((nullptr != fpe) && ((j % nprint_) == 0))
             {
-                fprintf(debug, "Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
-                        j, storeParam, param_[j], beta*deltaEval);
+                fprintf(fpe, "%5d  %10g\n", iter, prevEval);
             }
-            if (currEval < *minEval_)
+            storeParam = param_[j];
+            changeParam(j, dis(gen));
+            currEval        = func_(param_.data());
+            deltaEval       = currEval-prevEval;
+            randProbability = dis(gen);
+            mcProbability   = exp(-beta*deltaEval);
+            if ((deltaEval < 0) || (mcProbability > randProbability))
             {
-                bestParam_ = param_;
-                *minEval_  = currEval;
+                if (nullptr != debug)
+                {
+                    fprintf(debug, "Changing parameter %3d from %.3f to %.3f. DE = %.3f 'kT'\n",
+                            j, storeParam, param_[j], beta*deltaEval);
+                }
+                if (currEval < *minEval_)
+                {
+                    bestParam_ = param_;
+                    *minEval_  = currEval;
+                }
+                prevEval = currEval;
             }
-            prevEval = currEval;
-        }
-        else
-        {
-            param_[j] = storeParam;
+            else
+            {
+                param_[j] = storeParam;
+            }
         }
         if (iter >= maxiter_/2)
         {
-            for (size_t k = 0; (k < param_.size()); k++)
+            for (int k = 0; k < nParam; k++)
             {
                 sum[k]       += param_[k];
                 sum_of_sq[k] += gmx::square(param_[k]);
             }
             nsum++;
         }
-        j = (j+1) % param_.size();
     }
-
     if (nsum > 0)
     {
-        for (size_t k = 0; (k < param_.size()); k++)
+        for (int k = 0; k < nParam; k++)
         {
             pmean_[k]     = (sum[k]/nsum);
             sum_of_sq[k] /= nsum;
             psigma_[k]    = sqrt(sum_of_sq[k]-gmx::square(pmean_[k]));
         }
     }
-
-
     if (nullptr != fpc)
     {
         xvgrclose(fpc);
     }
-
     if (nullptr != fpe)
     {
         xvgrclose(fpe);

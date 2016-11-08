@@ -480,8 +480,7 @@ int alex_gentop(int argc, char *argv[])
     imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel,
                                  bGenVSites, bPairs, bDihedral, bPolar);
 
-    t_commrec     *cr    = init_commrec();
-    gmx::MDLogger  mdlog = getMdLogger(cr, stdout);
+    gmx::MDLogger  mdlog = getMdLogger(mymol.cr_, stdout);
 
     if (immOK == imm)
     {
@@ -498,7 +497,7 @@ int alex_gentop(int argc, char *argv[])
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,
                                     watoms, hfac, lot, bQsym,
-                                    symm_string, cr, tabfn);
+                                    symm_string, tabfn);
     }
 
     if (immOK == imm)

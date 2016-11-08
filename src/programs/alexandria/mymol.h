@@ -196,6 +196,7 @@ class MyMol
         t_mdatoms                *mdatoms_;
         t_topology               *topology_;
         t_fcdata                 *fcd_;
+        t_commrec                *cr_;
 
         /*! \brief
          * Constructor
@@ -237,7 +238,7 @@ class MyMol
          * \param[in]  cr
          * \param[out] isoPol   Isotropic polarizability
          */
-        std::vector<double> computePolarizability(double efield, FILE *fplog, t_commrec *cr);
+        std::vector<double> computePolarizability(double efield, FILE *fplog);
 
         /*! \brief
          * Generate atomic partial charges
@@ -264,7 +265,6 @@ class MyMol
                                   const char                *lot,
                                   bool                       bSymmetricCharges,
                                   const char                *symm_string,
-                                  t_commrec                 *cr,
                                   const char                *tabfn);
 
         /*! \brief
@@ -331,7 +331,7 @@ class MyMol
          * \param[in] cr
          * \param[in] mu_tot
          */
-        void computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot);
+        void computeForces(FILE *fplog, rvec mu_tot);
 
         /*! \brief
          * Set the force field

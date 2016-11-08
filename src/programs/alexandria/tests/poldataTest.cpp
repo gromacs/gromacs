@@ -120,7 +120,7 @@ TEST_F(PoldataTest, addAtype){
     const std::string        atype        = "aType";
     const std::string        ptype        = "Type";
     const std::string        btype        = "bType";
-    const std::string        vdwparams    = "vdwparams";
+          std::string        vdwparams    = "vdwparams";
     const std::string        ref_enthalpy = "1000";
 
     std::string              newElem;
