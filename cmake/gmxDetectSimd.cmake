@@ -72,10 +72,12 @@ function(gmx_suggest_simd _suggested_simd)
     message(STATUS "Detecting best SIMD instructions for this CPU")
 
     # Get CPU SIMD properties information
-    set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE ${GMX_STDLIB_CXX_FLAGS}")
     if(GMX_TARGET_X86)
-        set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
+        set(GMX_TARGET_X86_VALUE 1)
+    else()
+        set(GMX_TARGET_X86_VALUE 0)
     endif()
+    set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${CMAKE_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE ${GMX_STDLIB_CXX_FLAGS} -DGMX_TARGET_X86=${GMX_TARGET_X86_VALUE}")
 
     # Prepare a default suggestion
     set(OUTPUT_SIMD "None")
