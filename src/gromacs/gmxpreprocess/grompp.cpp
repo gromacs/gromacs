@@ -73,6 +73,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/compute_io.h"
+#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -1421,6 +1422,139 @@ static void checkForUnboundAtoms(const gmx_mtop_t *mtop,
     }
 }
 
+/*! \brief Checks if there are decoupled modes in moleculetype \p molt.
+ *
+ * The specific decoupled modes this routine check for are angle modes
+ * where the two bonds are constrained and the atoms a both ends are only
+ * involved in a single constraint; the mass of the two atoms needs to
+ * differ by more than \p massFactorThreshold.
+ */
+static bool haveDecoupledModeInMol(const gmx_moltype_t *molt,
+                                   const t_iparams     *iparams,
+                                   real                 massFactorThreshold)
+{
+    if (molt->ilist[F_CONSTR].nr == 0 && molt->ilist[F_CONSTRNC].nr == 0)
+    {
+        return false;
+    }
+
+    const t_atom * atom = molt->atoms.atom;
+
+    int            numFlexibleConstraints;
+    const t_blocka atomToConstraints = make_at2con(0, molt->atoms.nr,
+                                                   molt->ilist, iparams,
+                                                   FALSE,
+                                                   &numFlexibleConstraints);
+
+    for (int ftype = 0; ftype < F_NRE; ftype++)
+    {
+        if (interaction_function[ftype].flags & IF_ATYPE)
+        {
+            const int      nral = NRAL(ftype);
+            const t_ilist *il   = &molt->ilist[ftype];
+            for (int i = 0; i < il->nr; i += 1 + nral)
+            {
+                int a0 = il->iatoms[1 + i];
+                int a2 = il->iatoms[1 + i + 2];
+                if ((atom[a0].m > atom[a2].m*massFactorThreshold ||
+                     atom[a2].m > atom[a0].m*massFactorThreshold) &&
+                    atomToConstraints.index[a0 + 1] - atomToConstraints.index[a0] == 1 &&
+                    atomToConstraints.index[a2 + 1] - atomToConstraints.index[a2] == 1)
+                {
+                    int  constraint0 = atomToConstraints.a[atomToConstraints.index[a0]];
+                    int  constraint2 = atomToConstraints.a[atomToConstraints.index[a2]];
+                    int  a1          = il->iatoms[1 + i + 1];
+
+                    bool foundAtom0  = false;
+                    bool foundAtom2  = false;
+                    for (int conIndex = atomToConstraints.index[a1]; conIndex < atomToConstraints.index[a1 + 1]; conIndex++)
+                    {
+                        if (atomToConstraints.a[conIndex] == constraint0)
+                        {
+                            foundAtom0 = true;
+                        }
+                        if (atomToConstraints.a[conIndex] == constraint2)
+                        {
+                            foundAtom2 = true;
+                        }
+                    }
+                    if (foundAtom0 && foundAtom2)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
+/*! \brief Checks if the Verlet buffer and constraint accuracy is sufficient for decoupled dynamic modes.
+ *
+ * When decoupled modes are present and the accuray in insufficient,
+ * this routine issues a warning if the accuracy is insufficient.
+ */
+static void checkDecoupledModeAccuracy(const gmx_mtop_t *mtop,
+                                       const t_inputrec *ir,
+                                       warninp_t         wi)
+{
+    /* We only have issues with decoupled modes with normal MD.
+     * With stochastic dynamics equipartitioning is enforced strongly.
+     */
+    if (!EI_MD(ir->eI))
+    {
+        return;
+    }
+
+    /* When atoms of very different mass are involved in an angle potential
+     * and both bonds in the angle are constrained, the dynamic modes in such
+     * angles have very different periods and significant energy exchange
+     * takes several nanoseconds. Thus even a small amount of error in different
+     * algorithms can lead to violation of equipartitioning.
+     * The parameters below are mainly based on an all-atom chloroform model
+     * with all bonds constrained. Equipartitioning is off by more than 1%
+     * (need to run 5-10 ns) when the difference in mass between H and Cl
+     * is more than a factor 13 and the accuracy is less than the thresholds
+     * given below. This has been verified on some other molecules.
+     */
+    const real massFactorThreshold      = 13.0;
+    const real bufferToleranceThreshold = 1e-4;
+    const int  lincsIterationThreshold  = 2;
+    const int  lincsOrderThreshold      = 4;
+    const real shakeToleranceThreshold  = 1e-5;
+
+    bool       lincsWithSufficientTolerance = (ir->eConstrAlg == econtLINCS && ir->nLincsIter >= lincsIterationThreshold && ir->nProjOrder >= lincsOrderThreshold);
+    bool       shakeWithSufficientTolerance = (ir->eConstrAlg == econtSHAKE && ir->shake_tol <= 1.5*shakeToleranceThreshold);
+    if (ir->cutoff_scheme == ecutsVERLET &&
+        ir->verletbuf_tol <= 1.5*bufferToleranceThreshold &&
+        (lincsWithSufficientTolerance || shakeWithSufficientTolerance))
+    {
+        return;
+    }
+
+    bool haveDecoupledMode = false;
+    for (int mt = 0; mt < mtop->nmoltype; mt++)
+    {
+        if (haveDecoupledModeInMol(&mtop->moltype[mt], mtop->ffparams.iparams,
+                                   massFactorThreshold))
+        {
+            haveDecoupledMode = true;
+        }
+    }
+
+    if (haveDecoupledMode)
+    {
+        char buf[STRLEN];
+        sprintf(buf, "There are atoms at both ends of an angle, connected by constraints and with masses that differ by more than a factor of %g. This means that there are likely dynamic modes that are only very weakly coupled. To ensure good equipartitioning, you need to either not use constraints on all bonds (but, if possible, only on bonds involving hydrogens) or decrease one or more tolerances: verlet-buffer-tolerance <= %g, LINCS iterations >= %d, LINCS order >= %d or SHAKE tolerance <= %g",
+                massFactorThreshold,
+                bufferToleranceThreshold,
+                lincsIterationThreshold, lincsOrderThreshold,
+                shakeToleranceThreshold);
+        warning(wi, buf);
+    }
+}
+
 static void set_verlet_buffer(const gmx_mtop_t *mtop,
                               t_inputrec       *ir,
                               real              buffer_temp,
@@ -1888,6 +2022,8 @@ int gmx_grompp(int argc, char *argv[])
     {
         check_bonds_timestep(sys, ir->delta_t, wi);
     }
+
+    checkDecoupledModeAccuracy(sys, ir, wi);
 
     if (EI_ENERGY_MINIMIZATION(ir->eI) && 0 == ir->nsteps)
     {
