@@ -781,25 +781,25 @@ void pmegrids_destroy(pmegrids_t *grids)
 }
 
 void
-make_gridindex5_to_localindex(int n, int local_start, int local_range,
-                              int **global_to_local,
-                              real **fraction_shift)
+make_gridindex_to_localindex(int n, int local_start, int local_range,
+                             int **global_to_local,
+                             real **fraction_shift)
 {
     /* Here we construct array for looking up the grid line index and
      * fraction for particles. This is done because it is slighlty
      * faster than the modulo operation and to because we need to take
      * care of rounding issues, see below.
-     * We use an array size of 5 times the grid size to allow for particles
-     * to be out of the triclinic unit-cell by up to 2 box lengths, which
-     * can be needed along dimension x for a very skewed unit-cell.
+     * We use an array size of PME_NEIGHBOR_CELL_COUNT times the grid size
+     * to allow for particles to be out of the triclinic unit-cell.
      */
-    int  * gtl;
-    real * fsh;
+    const int arraySize = c_PmeNeighborCellCount * n;
+    int     * gtl;
+    real    * fsh;
 
-    snew(gtl, 5*n);
-    snew(fsh, 5*n);
+    snew(gtl, arraySize);
+    snew(fsh, arraySize);
 
-    for (int i = 0; i < 5*n; i++)
+    for (int i = 0; i < arraySize; i++)
     {
         /* Transform global grid index to the local grid index.
          * Our local grid always runs from 0 to local_range-1.
