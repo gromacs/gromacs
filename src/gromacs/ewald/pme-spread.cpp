@@ -51,6 +51,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "pme-grid.h"
 #include "pme-internal.h"
 #include "pme-simd.h"
 #include "pme-spline-work.h"
@@ -100,6 +101,8 @@ static void calc_interpolation_idx(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
         }
     }
 
+    const real shift = c_pmeMaxUnitcellShift;
+
     for (i = start; i < end; i++)
     {
         xptr   = atc->x[i];
@@ -107,9 +110,9 @@ static void calc_interpolation_idx(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
         fptr   = atc->fractx[i];
 
         /* Fractional coordinates along box vectors, add 2.0 to make 100% sure we are positive for triclinic boxes */
-        tx = nx * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx + 2.0 );
-        ty = ny * (                  xptr[YY] * ryy + xptr[ZZ] * rzy + 2.0 );
-        tz = nz * (                                   xptr[ZZ] * rzz + 2.0 );
+        tx = nx * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx + shift );
+        ty = ny * (                  xptr[YY] * ryy + xptr[ZZ] * rzy + shift );
+        tz = nz * (                                   xptr[ZZ] * rzz + shift );
 
         tix = (int)(tx);
         tiy = (int)(ty);
