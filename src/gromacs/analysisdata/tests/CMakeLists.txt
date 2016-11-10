@@ -42,4 +42,5 @@ gmx_add_unit_test(AnalysisDataUnitTests analysisdata-test
                   average.cpp
                   histogram.cpp
                   lifetime.cpp
+		  OBJECT_LIBRARIES
                   $<TARGET_OBJECTS:analysisdata-test-shared>)

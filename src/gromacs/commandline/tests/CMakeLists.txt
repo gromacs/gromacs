@@ -59,4 +59,5 @@ gmx_add_unit_test(CommandLineUnitTests commandline-test
                   cmdlineparser.cpp
                   cmdlineprogramcontext.cpp
                   pargs.cpp
+		  OBJECT_LIBRARIES
                   $<TARGET_OBJECTS:onlinehelp-test-shared>)
