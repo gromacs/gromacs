@@ -735,15 +735,15 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
     pme->pmegrid_start_iy = pme->overlap[1].s2g0[pme->nodeid_minor];
     pme->pmegrid_start_iz = 0;
 
-    make_gridindex5_to_localindex(pme->nkx,
+    make_gridindex_to_localindex(pme->nkx,
                                   pme->pmegrid_start_ix,
                                   pme->pmegrid_nx - (pme->pme_order-1),
                                   &pme->nnx, &pme->fshx);
-    make_gridindex5_to_localindex(pme->nky,
+    make_gridindex_to_localindex(pme->nky,
                                   pme->pmegrid_start_iy,
                                   pme->pmegrid_ny - (pme->pme_order-1),
                                   &pme->nny, &pme->fshy);
-    make_gridindex5_to_localindex(pme->nkz,
+    make_gridindex_to_localindex(pme->nkz,
                                   pme->pmegrid_start_iz,
                                   pme->pmegrid_nz_base,
                                   &pme->nnz, &pme->fshz);
