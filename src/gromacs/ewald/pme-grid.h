@@ -43,6 +43,16 @@
 
 #include "pme-internal.h"
 
+/*! \brief
+ * This affects the size of the lookup table of the modulo operation result,
+ * when working with PME local grid indices of the particles.
+ * We use a multiplier of 5 to allow for particles to be
+ * out of the triclinic unit-cell by up to 2 box lengths in both directions,
+ * which might be needed along dimension x for a very skewed unit-cell.
+ */
+constexpr int c_PmeNeighborCellCount = 5;
+
+
 #if GMX_MPI
 void
 gmx_sum_qgrid_dd(struct gmx_pme_t *pme, real *grid, int direction);
@@ -83,9 +93,9 @@ void
 pmegrids_destroy(pmegrids_t *grids);
 
 void
-make_gridindex5_to_localindex(int n, int local_start, int local_range,
-                              int **global_to_local,
-                              real **fraction_shift);
+make_gridindex_to_localindex(int n, int local_start, int local_range,
+                             int **global_to_local,
+                             real **fraction_shift);
 
 void
 set_grid_alignment(int *pmegrid_nz, int pme_order);
