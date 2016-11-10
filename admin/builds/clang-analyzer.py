@@ -46,5 +46,12 @@ def do_build(context):
         }
 
     context.run_cmake(cmake_opts)
-    context.build_target(target=None)
+    # Building a target that corresponds to an executable program
+    # triggers a linking stage. Linking isn't relevant for static
+    # analysis of source-code files, and the scan-build utility seems
+    # to be unstable with respect to linking against the libcxx, even
+    # on a build slave with only one set of libcxx headers+libraries
+    # installed. Instead, we simply trigger compilation of all the
+    # source-code targets, and avoid linking any executables.
+    context.build_target(target='clang_analyzer')
     context.process_clang_analyzer_results()

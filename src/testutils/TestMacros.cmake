@@ -46,7 +46,7 @@ endfunction ()
 function (gmx_add_gtest_executable EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         set(_options MPI)
-        cmake_parse_arguments(ARG "${_options}" "" "" ${ARGN})
+        cmake_parse_arguments(ARG "${_options}" "" "OBJECT_LIBRARIES" ${ARGN})
         set(_source_files ${ARG_UNPARSED_ARGUMENTS})
 
         file(RELATIVE_PATH _input_files_path ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
@@ -68,8 +68,10 @@ function (gmx_add_gtest_executable EXENAME)
         endif()
 
         include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
+	add_library(${EXENAME}_objlib OBJECT ${_source_files})
+	add_dependencies(clang_analyzer ${EXENAME}_objlib)
         add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
-            ${_source_files} ${TESTUTILS_DIR}/unittest_main.cpp)
+            $<TARGET_OBJECTS:${EXENAME}_objlib> ${ARG_OBJECT_LIBRARIES} ${TESTUTILS_DIR}/unittest_main.cpp)
         target_link_libraries(${EXENAME}
             ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
         set_property(TARGET ${EXENAME}

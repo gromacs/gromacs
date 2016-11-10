@@ -840,6 +840,10 @@ if (GMX_BUILD_FOR_COVERAGE)
     add_definitions(-DNDEBUG -DGMX_DISABLE_ASSERTS)
 endif()
 
+# Make it possible for the analyzer to compile all source files, but not
+# to attempt link (since that is both useless and sometimes problematic).
+add_custom_target(clang_analyzer)
+
 if (BUILD_TESTING)
     include(tests/CheckTarget.cmake)
 endif()

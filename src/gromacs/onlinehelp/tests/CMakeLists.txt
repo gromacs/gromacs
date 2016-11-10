@@ -39,4 +39,5 @@ gmx_add_unit_test(OnlineHelpUnitTests onlinehelp-test
                   helpformat.cpp
                   helpmanager.cpp
                   helpwritercontext.cpp
+		  OBJECT_LIBRARIES
                   $<TARGET_OBJECTS:onlinehelp-test-shared>)

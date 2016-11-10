@@ -38,5 +38,9 @@ set(test_sources
     )
 if (GMX_USE_TNG)
     list(APPEND test_sources tngio.cpp)
+    # TODO This is a hack, but I haven't figured out a good way to
+    # let the clang-static-analyzer build let this source file find
+    # its include dependency
+    include_directories("${CMAKE_SOURCE_DIR}/src/external/tng_io/include")
 endif()
 gmx_add_unit_test(FileIOTests fileio-test ${test_sources})
