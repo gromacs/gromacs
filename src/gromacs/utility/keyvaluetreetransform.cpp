@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,6 +39,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <typeindex>
 #include <vector>
 
 #include "gromacs/utility/exceptions.h"
@@ -90,11 +91,15 @@ class KeyValueTreeBackMapping : public IKeyValueTreeBackMapping
                 void setMapping(const KeyValueTreePath  &path,
                                 const KeyValueTreeValue &value)
                 {
+                    GMX_RELEASE_ASSERT(sourcePath_.empty(),
+                                       "Multiple entries map to same path");
                     if (value.isObject())
                     {
                         const KeyValueTreeObject &object = value.asObject();
                         for (const auto &prop : object.properties())
                         {
+                            GMX_RELEASE_ASSERT(!prop.value().isObject(),
+                                               "Nested objects not implemented");
                             childEntries_[prop.key()] = Entry(path);
                         }
                     }
@@ -153,7 +158,7 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
                 typedef std::map<std::string, Rule, StringCompare> ChildRuleMap;
 
                 explicit Rule(StringCompareType keyMatchType)
-                    : childRules_(keyMatchType)
+                    : expectedType_(typeid(void)), childRules_(keyMatchType)
                 {
                 }
 
@@ -205,6 +210,7 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
 
                 KeyValueTreePath            targetPath_;
                 std::string                 targetKey_;
+                std::type_index             expectedType_;
                 TransformFunction           transform_;
                 ChildRuleMap                childRules_;
         };
@@ -277,11 +283,16 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
 void KeyValueTreeTransformerImpl::Transformer::doTransform(
         const Rule *rule, const KeyValueTreeValue &value)
 {
-    if (rule->transform_)
+    if (rule->transform_ != nullptr)
     {
         KeyValueTreeValueBuilder valueBuilder;
         try
         {
+            if (value.type() != rule->expectedType_)
+            {
+                // TODO: Better error message.
+                GMX_THROW(InvalidInputError("Unexpected type of value"));
+            }
             rule->transform_(&valueBuilder, value);
         }
         catch (UserInputError &ex)
@@ -325,6 +336,8 @@ void KeyValueTreeTransformerImpl::Transformer::applyTransformedValue(
     {
         if (objBuilder.keyExists(key))
         {
+            GMX_RELEASE_ASSERT(objBuilder.getValue(key).isObject(),
+                               "Inconsistent transform (different items map to same path)");
             objBuilder = objBuilder.getObject(key);
         }
         else
@@ -337,7 +350,14 @@ void KeyValueTreeTransformerImpl::Transformer::applyTransformedValue(
     mapEntry->setMapping(context_, value);
     if (objBuilder.keyExists(rule->targetKey_))
     {
-        objBuilder.getObject(rule->targetKey_).mergeObject(std::move(value));
+        GMX_RELEASE_ASSERT(value.isObject(),
+                           "Inconsistent transform (different items map to same path)");
+        GMX_RELEASE_ASSERT(objBuilder.getValue(rule->targetKey_).isObject(),
+                           "Inconsistent transform (different items map to same path)");
+        objBuilder = objBuilder.getObject(rule->targetKey_);
+        GMX_RELEASE_ASSERT(objBuilder.objectHasDistinctProperties(value.asObject()),
+                           "Inconsistent transform (different items map to same path)");
+        objBuilder.mergeObject(std::move(value));
     }
     else
     {
@@ -393,23 +413,34 @@ class KeyValueTreeTransformRuleBuilder::Data
     public:
         typedef internal::KeyValueTreeTransformerImpl::Rule Rule;
 
-        Data() : keyMatchType_(StringCompareType::Exact) {}
+        Data()
+            : expectedType_(typeid(void)),
+              keyMatchType_(StringCompareType::Exact), keyMatchRule_(false)
+        {
+        }
 
         void createRule(internal::KeyValueTreeTransformerImpl *impl)
         {
-            if (toPath_.empty())
+            if (keyMatchRule_)
             {
                 createRuleWithKeyMatchType(impl);
                 return;
             }
+            GMX_RELEASE_ASSERT(transform_ != nullptr,
+                               "Transform has not been specified");
             Rule *rule = impl->getOrCreateRootRule();
             for (const std::string &key : fromPath_.elements())
             {
+                GMX_RELEASE_ASSERT(rule->targetKey_.empty(),
+                                   "Cannot specify multiple rules from a single path");
                 rule = rule->getOrCreateChildRule(key);
             }
-            rule->targetKey_  = toPath_.pop_last();
-            rule->targetPath_ = std::move(toPath_);
-            rule->transform_  = transform_;
+            GMX_RELEASE_ASSERT(rule->targetKey_.empty(),
+                               "Cannot specify multiple rules from a single path");
+            rule->targetKey_    = toPath_.pop_last();
+            rule->targetPath_   = std::move(toPath_);
+            rule->expectedType_ = expectedType_;
+            rule->transform_    = transform_;
         }
 
         void createRuleWithKeyMatchType(internal::KeyValueTreeTransformerImpl *impl)
@@ -432,8 +463,10 @@ class KeyValueTreeTransformRuleBuilder::Data
 
         KeyValueTreePath         fromPath_;
         KeyValueTreePath         toPath_;
+        std::type_index          expectedType_;
         Rule::TransformFunction  transform_;
         StringCompareType        keyMatchType_;
+        bool                     keyMatchRule_;
 };
 
 /********************************************************************
@@ -454,12 +487,17 @@ KeyValueTreeTransformRuleBuilder::~KeyValueTreeTransformRuleBuilder()
     }
 }
 
-void KeyValueTreeTransformRuleBuilder::setFromPath(const std::string &path)
+void KeyValueTreeTransformRuleBuilder::setFromPath(const KeyValueTreePath &path)
 {
     data_->fromPath_ = path;
 }
 
-void KeyValueTreeTransformRuleBuilder::setToPath(const std::string &path)
+void KeyValueTreeTransformRuleBuilder::setExpectedType(const std::type_index &type)
+{
+    data_->expectedType_ = type;
+}
+
+void KeyValueTreeTransformRuleBuilder::setToPath(const KeyValueTreePath &path)
 {
     data_->toPath_ = path;
 }
@@ -467,6 +505,7 @@ void KeyValueTreeTransformRuleBuilder::setToPath(const std::string &path)
 void KeyValueTreeTransformRuleBuilder::setKeyMatchType(StringCompareType keyMatchType)
 {
     data_->keyMatchType_ = keyMatchType;
+    data_->keyMatchRule_ = true;
 }
 
 void KeyValueTreeTransformRuleBuilder::addTransformToVariant(
