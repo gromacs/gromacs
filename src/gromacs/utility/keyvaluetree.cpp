@@ -79,6 +79,11 @@ std::string formatSingleValue(const KeyValueTreeValue &value)
  * KeyValueTreePath
  */
 
+KeyValueTreePath::KeyValueTreePath(const char *path)
+    : path_(splitPathElements(path))
+{
+}
+
 KeyValueTreePath::KeyValueTreePath(const std::string &path)
     : path_(splitPathElements(path))
 {
@@ -92,6 +97,24 @@ std::string KeyValueTreePath::toString() const
 /********************************************************************
  * KeyValueTreeObject
  */
+
+bool KeyValueTreeObject::hasDistinctProperties(const KeyValueTreeObject &obj) const
+{
+    for (const auto &prop : obj.values_)
+    {
+        if (keyExists(prop.key()))
+        {
+            GMX_RELEASE_ASSERT(!prop.value().isArray(),
+                               "Comparison of arrays not implemented");
+            if (prop.value().isObject() && valueMap_.at(prop.key()).isObject())
+            {
+                return valueMap_.at(prop.key()).asObject().hasDistinctProperties(prop.value().asObject());
+            }
+            return false;
+        }
+    }
+    return true;
+}
 
 void KeyValueTreeObject::writeUsing(TextWriter *writer) const
 {
