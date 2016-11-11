@@ -244,7 +244,7 @@ transposeScatterIncrU(float *              base,
 {
     __m512 t[4], t5, t6, t7, t8;
     int    i;
-    GMX_ALIGNED(std::int32_t, 8)    o[16];
+    GMX_ALIGNED(std::int32_t, 16)    o[16];
     _mm512_store_epi32(o, _mm512_mullo_epi32(_mm512_load_epi32(offset), _mm512_set1_epi32(align)));
     if (align < 4)
     {
@@ -316,7 +316,7 @@ transposeScatterDecrU(float *              base,
 {
     __m512 t[4], t5, t6, t7, t8;
     int    i;
-    GMX_ALIGNED(std::int32_t, 8)    o[16];
+    GMX_ALIGNED(std::int32_t, 16)    o[16];
     _mm512_store_epi32(o, _mm512_mullo_epi32(_mm512_load_epi32(offset), _mm512_set1_epi32(align)));
     if (align < 4)
     {
@@ -453,8 +453,8 @@ static inline SimdFloat gmx_simdcall
 load1DualHsimd(const float * m)
 {
     return {
-               _mm512_shuffle_f32x4(_mm512_broadcastss_ps(_mm_loadu_ps(m)),
-                                    _mm512_broadcastss_ps(_mm_loadu_ps(m+1)), 0x44)
+               _mm512_shuffle_f32x4(_mm512_broadcastss_ps(_mm_load_ss(m)),
+                                    _mm512_broadcastss_ps(_mm_load_ss(m+1)), 0x44)
     };
 }
 
