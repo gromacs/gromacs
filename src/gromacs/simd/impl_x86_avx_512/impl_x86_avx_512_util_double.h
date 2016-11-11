@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -414,8 +414,8 @@ static inline SimdDouble gmx_simdcall
 load1DualHsimd(const double * m)
 {
     return {
-               _mm512_insertf64x4(_mm512_broadcastsd_pd(_mm_loadu_pd(m)),      //note: this does not load 128bit each
-                                  _mm256_broadcastsd_pd(_mm_loadu_pd(m+1)), 1) //because both intriniscs get combined
+               _mm512_insertf64x4(_mm512_broadcastsd_pd(_mm_load_sd(m)),
+                                  _mm256_broadcastsd_pd(_mm_load_sd(m+1)), 1)
     };
 }
 
