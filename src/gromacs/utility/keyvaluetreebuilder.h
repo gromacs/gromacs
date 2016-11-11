@@ -47,6 +47,7 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/variant.h"
 
@@ -213,6 +214,11 @@ class KeyValueTreeObjectBuilder
             auto iter = object_->addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
             return KeyValueTreeObjectArrayBuilder(&iter->second.asArray());
         }
+
+        bool objectHasDistinctProperties(const KeyValueTreeObject &obj) const
+        {
+            return object_->hasDistinctProperties(obj);
+        }
         void mergeObject(KeyValueTreeValue &&value)
         {
             mergeObject(std::move(value.asObject()));
@@ -226,7 +232,12 @@ class KeyValueTreeObjectBuilder
         }
 
         bool keyExists(const std::string &key) const { return object_->keyExists(key); }
-        KeyValueTreeObjectBuilder getObject(const std::string &key) const
+        const KeyValueTreeValue &getValue(const std::string &key) const
+        {
+            GMX_ASSERT(keyExists(key), "Requested non-existent value");
+            return (*object_)[key];
+        }
+        KeyValueTreeObjectBuilder getObject(const std::string &key)
         {
             return KeyValueTreeObjectBuilder(&(*object_)[key].asObject());
         }

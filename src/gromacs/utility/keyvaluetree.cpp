@@ -79,6 +79,11 @@ std::string formatSingleValue(const KeyValueTreeValue &value)
  * KeyValueTreePath
  */
 
+KeyValueTreePath::KeyValueTreePath(const char *path)
+    : path_(splitPathElements(path))
+{
+}
+
 KeyValueTreePath::KeyValueTreePath(const std::string &path)
     : path_(splitPathElements(path))
 {
