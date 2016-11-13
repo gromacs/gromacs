@@ -720,6 +720,10 @@ TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
     SimdReal               x, func, der;
 
     GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        alignedMem[i] = range.second*(1.0-GMX_REAL_EPS);
+    }
 
     // Make position 1 incorrect if width>=2, otherwise position 0
     alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = -GMX_REAL_EPS;
@@ -727,10 +731,6 @@ TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
 
     EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
 
-    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-    {
-        alignedMem[i] = range.second*(1.0-GMX_REAL_EPS);
-    }
     // Make position 1 incorrect if width>=2, otherwise position 0
     alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = range.second;
     x = load(alignedMem);
