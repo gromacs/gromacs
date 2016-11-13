@@ -149,7 +149,7 @@ class CubicSplineTable
         {
 #ifndef NDEBUG
             // Check that all values fall in range when debugging
-            if (anyTrue( r < T(0.0) || T(range_.second) <= r ) )
+            if (anyTrue( r < T(range_.first) || T(range_.second) <= r ) )
             {
                 GMX_THROW(RangeError("Interpolation input value falls outside table definition range"));
             }
