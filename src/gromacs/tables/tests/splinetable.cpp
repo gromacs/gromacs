@@ -714,6 +714,32 @@ TYPED_TEST(SplineTableTest, SimdTwoFunctions)
 
 #if GMX_SIMD_HAVE_REAL && !defined NDEBUG
 TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
+{   
+    std::pair<real, real>  range(0.2, 1.0);
+    TypeParam              table( {{"LJ12", lj12Function, lj12Derivative}}, range);
+    SimdReal               x, func, der;
+
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+
+    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
+    {
+        alignedMem[i] = range.first;
+    }
+    // Make position 1 incorrect if width>=2, otherwise position 0
+    // range.first-GMX_REAL_EPS is not invalid. See comment in table.
+    alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = -GMX_REAL_EPS;
+    x = load(alignedMem);
+
+    EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
+
+    // Make position 1 incorrect if width>=2, otherwise position 0
+    alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = range.second;
+    x = load(alignedMem);
+
+    EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
+}
+
+TYPED_TEST(SplineTableTest, AcceptsInRangeValuesSimd)
 {
     std::pair<real, real>  range(0.2, 1.0);
     TypeParam              table( {{"LJ12", lj12Function, lj12Derivative}}, range);
@@ -721,22 +747,16 @@ TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
 
     GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
 
-    // Make position 1 incorrect if width>=2, otherwise position 0
-    alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = -GMX_REAL_EPS;
-    x = load(alignedMem);
-
-    EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
-
+    // Test all values between 0 and range.second
     for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
-        alignedMem[i] = range.second*(1.0-GMX_REAL_EPS);
+        alignedMem[i] = (range.second-GMX_REAL_EPS)*i/(GMX_SIMD_REAL_WIDTH-1);
     }
-    // Make position 1 incorrect if width>=2, otherwise position 0
-    alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = range.second;
     x = load(alignedMem);
 
-    EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
+    EXPECT_NO_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der));
 }
+
 #endif
 
 } // namespace
