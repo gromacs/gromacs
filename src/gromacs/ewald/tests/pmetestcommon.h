@@ -42,9 +42,11 @@
 #ifndef GMX_EWALD_PME_TEST_COMMON_H
 #define GMX_EWALD_PME_TEST_COMMON_H
 
-#include <functional>
 #include <memory>
+#include <vector>
 
+#include "gromacs/math/matrixtypes.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 
 struct gmx_pme_t;
@@ -53,10 +55,36 @@ struct t_inputrec;
 //! Environment for getting the t_inputrec structure easily
 static gmx::MDModules s_mdModules;
 
+// Convenience typedefs
+
 //! A safe pointer type for PME.
 typedef std::unique_ptr<gmx_pme_t, void(*)(gmx_pme_t *)> pmeSafePointer;
+//! Charges
+typedef std::vector<real> ChargesVector;
+//! Coordinates
+typedef std::vector<gmx::RVec> CoordinatesVector;
+//! Gridline indices
+typedef std::vector<gmx::IVec> GridLineIndicesVector;
+//! Spline parameters (theta or dtheta)
+typedef std::vector<real> SplineParamsVector;
+//! PME code path being tested
+enum class PmeCodePath
+{
+    CPU, // serial CPU code
+};
+
+// PME stages
 
 //! Simple PME initialization based on input, no atom data; only good for testing the initialization stage
 pmeSafePointer PmeInitEmpty(const t_inputrec *inputRec);
+//! PME initialization with atom data and system box
+pmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
+                                const CoordinatesVector &coordinates,
+                                const ChargesVector     &charges,
+                                const gmx::Matrix3x3     box
+                                );
+//! PME spline calculation and spreading
+void PmePerformSpread(const pmeSafePointer &pmeSafe, PmeCodePath mode,
+                      bool computeSplines, bool spreadCharges);
 
 #endif

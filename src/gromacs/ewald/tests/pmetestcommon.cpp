@@ -44,6 +44,13 @@
 #include "pmetestcommon.h"
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme-grid.h"
+#include "gromacs/ewald/pme-internal.h"
+#include "gromacs/ewald/pme-spread.h"
+#include "gromacs/math/invertmatrix.h"
+#include "gromacs/math/matrixtypes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 //! PME destructor function wrapper for the safe pointer.
 void pme_free_wrapper(gmx_pme_t *pme)
@@ -69,4 +76,53 @@ pmeSafePointer PmeInitEmpty(const t_inputrec *inputRec)
 {
     return PmeInitInternal(inputRec, 0);
     // hiding the fact that PME actually needs to know the number of atoms in advance
+}
+
+//! PME initialization with atom data and system box
+pmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
+                                const CoordinatesVector &coordinates,
+                                const ChargesVector     &charges,
+                                const gmx::Matrix3x3     box
+                                )
+{
+    const size_t    atomCount = coordinates.size();
+    GMX_RELEASE_ASSERT(atomCount == charges.size(), "Mismatch in atom data");
+    pmeSafePointer  pmeSafe = PmeInitInternal(inputRec, atomCount);
+    pme_atomcomm_t *atc     = &(pmeSafe.get()->atc[0]);
+    atc->x           = const_cast<rvec *>(as_rvec_array(coordinates.data()));
+    atc->coefficient = const_cast<real *>(charges.data());
+    /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
+
+    gmx::invertBoxMatrix(box, pmeSafe.get()->recipbox);
+
+    return pmeSafe;
+}
+
+//! PME spline calculation and charge spreading
+void PmePerformSpread(const pmeSafePointer &pmeSafe, PmeCodePath mode,
+                      bool computeSplines, bool spreadCharges)
+{
+    gmx_pme_t      *pme                          = pmeSafe.get();
+    pme_atomcomm_t *atc                          = &(pmeSafe.get()->atc[0]);
+    const size_t    gridIndex                    = 0;
+    const bool      computeSplinesForZeroCharges = true;
+    real           *fftgrid                      = spreadCharges ? pme->fftgrid[gridIndex] : nullptr;
+    switch (mode)
+    {
+        case PmeCodePath::CPU:
+            spread_on_grid(pme, atc, &pme->pmegrid[gridIndex], computeSplines, spreadCharges,
+                           fftgrid, computeSplinesForZeroCharges, gridIndex);
+            if (spreadCharges && !pme->bUseThreads)
+            {
+                wrap_periodic_pmegrid(pme, pme->pmegrid[gridIndex].grid.grid);
+                copy_pmegrid_to_fftgrid(pme, pme->pmegrid[gridIndex].grid.grid, fftgrid, gridIndex);
+            }
+            break;
+
+        default:
+            GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
+            // TODO: there could be 2 GPU modes - separate spline and spread, and fused.
+            // In the fused case everything faster in a single kernel.
+            // Everything still ends up on the host in the end - have to make sure of that!
+    }
 }
