@@ -44,6 +44,7 @@
 #include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/logger.h"
@@ -196,7 +197,6 @@ class MyMol
         t_mdatoms                *mdatoms_;
         t_topology               *topology_;
         t_fcdata                 *fcd_;
-        t_commrec                *cr_;
 
         /*! \brief
          * Constructor
@@ -238,7 +238,7 @@ class MyMol
          * \param[in]  cr
          * \param[out] isoPol   Isotropic polarizability
          */
-        std::vector<double> computePolarizability(double efield, FILE *fplog);
+        std::vector<double> computePolarizability(double efield, t_commrec *cr, FILE *fplog);
 
         /*! \brief
          * Generate atomic partial charges
@@ -265,7 +265,9 @@ class MyMol
                                   const char                *lot,
                                   bool                       bSymmetricCharges,
                                   const char                *symm_string,
-                                  const char                *tabfn);
+                                  t_commrec                 *cr,
+                                  const char                *tabfn,
+                                  gmx_hw_info_t             *hwinfo);
 
         /*! \brief
          * Return the root-mean square deviation of
@@ -331,7 +333,7 @@ class MyMol
          * \param[in] cr
          * \param[in] mu_tot
          */
-        void computeForces(FILE *fplog, rvec mu_tot);
+        void computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot);
 
         /*! \brief
          * Set the force field
@@ -383,7 +385,8 @@ class MyMol
 
         immStatus GenerateGromacs(const gmx::MDLogger &mdlog,
                                   t_commrec           *cr,
-                                  const char          *tabfn);
+                                  const char          *tabfn,
+                                  gmx_hw_info_t       *hwinfo);
 
         /*! \brief
          * Generate cube

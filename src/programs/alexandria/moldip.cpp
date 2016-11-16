@@ -407,7 +407,8 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
                   real fc_bound, real fc_mu, real fc_quad, real fc_charge,
                   real fc_esp, real fc_epot, real fc_force, char *fixchi,
                   gmx_bool bOptHfac, real hfac,
-                  gmx_bool bPol, gmx_bool bFitZeta)
+                  gmx_bool bPol, gmx_bool bFitZeta, 
+                  gmx_hw_info_t *hwinfo)
 {
     _cr                         = cr;
     _bQM                        = bQM;
@@ -436,6 +437,7 @@ void MolDip::Init(t_commrec *cr, gmx_bool bQM, gmx_bool bGaussianBug,
     _hfac0                      = hfac;
     _bOptHfac                   = bOptHfac;
     _bPol                       = bPol;
+    hwinfo_                     = hwinfo;
 }
 
 void MolDip::Read(FILE            *fp,
@@ -532,7 +534,7 @@ void MolDip::Read(FILE            *fp,
                                                 _iChargeDistributionModel,
                                                 _iChargeGenerationAlgorithm,
                                                 watoms, _hfac, lot, true,
-                                                nullptr, tabfn);
+                                                nullptr, _cr, tabfn, hwinfo_);
                     rms = mpnew.espRms();
                 }
                 if (immOK == imm)
@@ -653,9 +655,11 @@ void MolDip::Read(FILE            *fp,
             if (immOK == imm)
             {
                 gmx::MDLogger mdlog = getMdLogger(_cr, stdout);
-                imm = mpnew.GenerateCharges(pd_, mdlog, _atomprop, _iChargeDistributionModel,
-                                            _iChargeGenerationAlgorithm, watoms, _hfac,
-                                            lot, true, nullptr, tabfn);
+                imm = mpnew.GenerateCharges(pd_, mdlog, _atomprop, 
+                                            _iChargeDistributionModel,
+                                            _iChargeGenerationAlgorithm, 
+                                            watoms, _hfac, lot, true, nullptr, 
+                                            _cr, tabfn, hwinfo_);
                 rms = mpnew.espRms();
             }
             if (immOK == imm)

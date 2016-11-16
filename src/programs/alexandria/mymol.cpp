@@ -965,10 +965,6 @@ MyMol::MyMol() : gvt_(egvtALL)
     snew(symtab_, 1);
     open_symtab(symtab_);
     atype_ = init_atomtype();
-    cr_    = init_commrec();
-    cr_->sim_nodeid = 0;
-    cr_->nnodes     = 1;
-    cr_->npmenodes  = 0;
     clear_mat(box_);
     mtop_       = nullptr;
     fr_         = nullptr;
@@ -1261,11 +1257,11 @@ void MyMol::CalcMultipoles()
     dip_calc = norm(mu);
 }
 
-void MyMol::computeForces(FILE *fplog, rvec mu_tot)
+void MyMol::computeForces(FILE *fplog, t_commrec *cr,rvec mu_tot)
 {
     tensor          force_vir;
     t_nrnb          my_nrnb;
-    gmx_wallcycle_t wcycle = wallcycle_init(debug, 0, cr_);
+    gmx_wallcycle_t wcycle = wallcycle_init(debug, 0, cr);
     double          t      = 0;
     
     init_nrnb(&my_nrnb);
@@ -1285,7 +1281,7 @@ void MyMol::computeForces(FILE *fplog, rvec mu_tot)
 
     if (nullptr != shellfc_)
     {
-        relax_shell_flexcon(fplog, cr_, true, 0,
+        relax_shell_flexcon(fplog, cr, true, 0,
                             inputrec_, true, ~0,
                             ltop_, nullptr, enerd_,
                             fcd_, state_,
@@ -1303,7 +1299,7 @@ void MyMol::computeForces(FILE *fplog, rvec mu_tot)
     else
     {   
         unsigned long flags = ~0;
-        do_force(fplog, cr_, inputrec_, 0,
+        do_force(fplog, cr, inputrec_, 0,
                  &my_nrnb, wcycle, ltop_,
                  &(mtop_->groups),
                  box_, &x_, nullptr,
@@ -1406,6 +1402,7 @@ void MyForceProvider::calculateForces(const t_commrec  *cr,
 
 
 std::vector<double> MyMol::computePolarizability(double    efield,
+                                                 t_commrec *cr,
                                                  FILE      *fplog)
 {
     const double        POLFAC = 29.957004; /*pol unit from (C.m**2.V*-1) to (Å**3)*/
@@ -1417,12 +1414,12 @@ std::vector<double> MyMol::computePolarizability(double    efield,
     myforce = new MyForceProvider;   
     fr_->efield = myforce;
     myforce->setField(field);          
-    computeForces(fplog, mu_ref);
+    computeForces(fplog, cr, mu_ref);
     for (int dim = 0; dim < DIM; dim++)
     {
         field[dim] = efield;
         myforce->setField(field);
-        computeForces(fplog, mu_tot);
+        computeForces(fplog, cr, mu_tot);
         pols.push_back(((mu_tot[dim]-mu_ref[dim])/efield)*(POLFAC));
         field[dim] = 0.0;
         myforce->setField(field);
@@ -1440,7 +1437,9 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  const char                *lot,
                                  bool                       bSymmetricCharges,
                                  const char                *symm_string,
-                                 const char                *tabfn)
+                                 t_commrec                 *cr,
+                                 const char                *tabfn,
+                                 gmx_hw_info_t             *hwinfo)
 {
     rvec      mu_tot;
     immStatus imm       = immOK;
@@ -1448,8 +1447,8 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
     int       maxiter   = 1000;
 
     // This might be moved to a better place
-    gmx_omp_nthreads_init(mdlog, cr_, 1, 1, 0, false, false);
-    GenerateGromacs(mdlog, cr_, tabfn);
+    gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, false, false);
+    GenerateGromacs(mdlog, cr, tabfn, hwinfo);
     double EspRms_ = 0;
     if (eqgESP == iChargeGenerationAlgorithm)
     {
@@ -1534,7 +1533,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 }
                 if (nullptr != shellfc_)
                 {
-                    computeForces(nullptr, mu_tot);
+                    computeForces(nullptr, cr, mu_tot);
                 }
                 gr_.calcPot();
                 EspRms_ = chi2[cur] = gr_.getRms(&wtot, &rrms);
@@ -1577,7 +1576,8 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
 
 immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
                                  t_commrec           *cr,
-                                 const char          *tabfn)
+                                 const char          *tabfn,
+                                 gmx_hw_info_t       *hwinfo)
 {
     GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
     int nalloc = 2 * topology_->atoms.nr;
@@ -1594,6 +1594,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger &mdlog,
     f_.resize(nalloc);
     optf_.resize(nalloc);
    
+    fr_->hwinfo = hwinfo;
     init_forcerec(nullptr, mdlog, fr_, nullptr, inputrec_, mtop_, cr,
                   box_, tabfn, tabfn, nullptr, nullptr, true, -1);
     init_state(state_, topology_->atoms.nr, 1, 1, 1, 0);

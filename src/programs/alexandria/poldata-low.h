@@ -139,6 +139,10 @@ class Ptype
          *
          */
         double getSigPol() const { return sigPol_; }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
         std::string type_;

@@ -1472,95 +1472,82 @@ CommunicationStatus MolecularDipole::Receive(t_commrec *cr, int src)
 
 CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
 {
-    CommunicationStatus cs;
-
+    CalcAtomIterator               cai;
+    CommunicationStatus            cs;
+    ElectrostaticPotentialIterator epi;
+    int                            Npolar, Ndipole, Nenergy, Npotential, Natom;
+    
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        //! Receive literature reference
         reference_    = gmx_recv_str(cr, src);
-
-        //! Receive conformation
         conformation_ = gmx_recv_str(cr, src);
+        _program.assign(gmx_recv_str(cr, src));
+        _method.assign(gmx_recv_str(cr, src));
+        _basisset.assign(gmx_recv_str(cr, src));
+        _datafile.assign(gmx_recv_str(cr, src));
+        Npolar     = gmx_recv_int(cr, src);
+        Ndipole    = gmx_recv_int(cr, src);
+        Nenergy    = gmx_recv_int(cr, src);
+        Npotential = gmx_recv_int(cr, src);
+        Natom      = gmx_recv_int(cr, src);
 
-        //! Receive polarizabilities
-        do
+        //! Receive Polarizabilities        
+        for (int n = 0; (CS_OK == cs) && (n < Npolar); n++)
         {
-            MolecularPolarizability mdp;
-
-            cs = mdp.Receive(cr, src);
+            MolecularPolarizability mp;
+            cs = mp.Receive(cr, src);
             if (CS_OK == cs)
             {
-                AddPolar(mdp);
+                AddPolar(mp);
             }
         }
-        while (CS_OK == cs);
 
-        //! Receive dipoles
-        do
+        //! Receive Dipoles
+        for (int n = 0; (CS_OK == cs) && (n < Ndipole); n++)
         {
-            MolecularDipole mdp;
-
-            cs = mdp.Receive(cr, src);
+            MolecularDipole md;
+            cs = md.Receive(cr, src);
             if (CS_OK == cs)
             {
-                AddDipole(mdp);
+                AddDipole(md);
             }
         }
-        while (CS_OK == cs);
 
-        //! Receive energies
-        do
+        //! Receive Energies
+        for (int n = 0; (CS_OK == cs) && (n < Nenergy); n++)
         {
             MolecularEnergy me;
-
             cs = me.Receive(cr, src);
             if  (CS_OK == cs)
             {
                 AddEnergy(me);
             }
         }
-        while (CS_OK == cs);
-    }
-
-    ElectrostaticPotentialIterator epi;
-    CalcAtomIterator               cai;
-
-    if (CS_OK == cs)
-    {
-        cs = gmx_recv_data(cr, src);
-    }
-    if (CS_OK == cs)
-    {
-        _program.assign(gmx_recv_str(cr, src));
-        _method.assign(gmx_recv_str(cr, src));
-        _basisset.assign(gmx_recv_str(cr, src));
-        _datafile.assign(gmx_recv_str(cr, src));
-
-        do
+                
+        //! Receive Potentials
+        for (int n = 0; (CS_OK == cs) && (n < Npotential); n++)
         {
             ElectrostaticPotential ep;
-
             cs = ep.Receive(cr, src);
             if (CS_OK == cs)
             {
                 AddPotential(ep);
             }
         }
-        while (CS_OK == cs);
-
-        do
+        
+        //! Receive Atoms
+        for (int n = 0; (CS_OK == cs) && (n < Natom); n++)
         {
             CalcAtom ca;
-
             cs = ca.Receive(cr, src);
             if (CS_OK == cs)
             {
                 AddAtom(ca);
             }
-        }
-        while (CS_OK == cs);
+        }      
     }
+
     if ((CS_OK != cs) && (nullptr != debug))
     {
         fprintf(debug, "Trying to receive Experiment, status %s\n", cs_name(cs));
@@ -1571,64 +1558,56 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
 
 CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
 {
-    CommunicationStatus cs;
-
+    CalcAtomIterator               cai;
+    CommunicationStatus            cs;
+    ElectrostaticPotentialIterator epi;
+   
     cs = gmx_send_data(cr, dest);
     if (CS_OK == cs)
     {
-        //! Send literature reference
         gmx_send_str(cr, dest, reference_.c_str());
+        gmx_send_str(cr, dest, conformation_.c_str());      
+        gmx_send_str(cr, dest, _program.c_str());
+        gmx_send_str(cr, dest, _method.c_str());
+        gmx_send_str(cr, dest, _basisset.c_str());
+        gmx_send_str(cr, dest, _datafile.c_str());        
+        gmx_send_int(cr, dest, polar_.size());
+        gmx_send_int(cr, dest, dipole_.size());
+        gmx_send_int(cr, dest, energy_.size());
+        gmx_send_int(cr, dest, _potential.size());
+        gmx_send_int(cr, dest, _catom.size());
 
-        //! Send conformation
-        gmx_send_str(cr, dest, conformation_.c_str());
-
-        //! Send polarizabilities
+        //! Send Polarizabilities
         for (auto dpi = BeginPolar(); (CS_OK == cs) && (dpi < EndPolar()); dpi++)
         {
             cs = dpi->Send(cr, dest);
         }
-        cs = gmx_send_done(cr, dest);
 
-        //! Send dipoles
+        //! Send Dipoles
         for (auto dpi = BeginDipole(); (CS_OK == cs) && (dpi < EndDipole()); dpi++)
         {
             cs = dpi->Send(cr, dest);
         }
-        cs = gmx_send_done(cr, dest);
 
-        //! Send energies
+        //! Send Energies
         for (auto mei = BeginEnergy(); (CS_OK == cs) && (mei < EndEnergy()); mei++)
         {
             cs = mei->Send(cr, dest);
         }
-        cs = gmx_send_done(cr, dest);
-    }
-    ElectrostaticPotentialIterator epi;
-    CalcAtomIterator               cai;
-
-    if (CS_OK == cs)
-    {
-        cs = gmx_send_data(cr, dest);
-    }
-    if (CS_OK == cs)
-    {
-        gmx_send_str(cr, dest, _program.c_str());
-        gmx_send_str(cr, dest, _method.c_str());
-        gmx_send_str(cr, dest, _basisset.c_str());
-        gmx_send_str(cr, dest, _datafile.c_str());
-
+        
+        //! Send Potentials
         for (epi = BeginPotential(); (CS_OK == cs) && (epi < EndPotential()); epi++)
         {
             cs = epi->Send(cr, dest);
         }
-        cs = gmx_send_done(cr, dest);
 
+        //! Send Atoms
         for (cai = BeginAtom(); (CS_OK == cs) && (cai < EndAtom()); cai++)
         {
             cs = cai->Send(cr, dest);
         }
-        cs = gmx_send_done(cr, dest);
-    }
+    }  
+     
     if ((CS_OK != cs) && (nullptr != debug))
     {
         fprintf(debug, "Trying to send Experiment, status %s\n", cs_name(cs));
@@ -1730,7 +1709,8 @@ CommunicationStatus AtomicCharge::Send(t_commrec *cr, int dest)
 CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
-
+    int Ncharge;
+    
     cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
@@ -1741,19 +1721,17 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
         x_ = gmx_recv_double(cr, src);
         y_ = gmx_recv_double(cr, src);
         z_ = gmx_recv_double(cr, src);
-
-        do
+        Ncharge = gmx_recv_int(cr, src);
+        
+        for (int n = 0; (CS_OK == cs) && (n < Ncharge); n++)
         {
             AtomicCharge aq;
-
             cs = aq.Receive(cr, src);
             if (CS_OK == cs)
             {
                 AddCharge(aq);
             }
         }
-        while (CS_OK == cs);
-
     }
     if (nullptr != debug)
     {
@@ -1778,12 +1756,12 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest)
         gmx_send_double(cr, dest, x_);
         gmx_send_double(cr, dest, y_);
         gmx_send_double(cr, dest, z_);
+        gmx_send_int(cr, dest, q_.size());
 
         for (qi = BeginQ(); (CS_OK == cs) && (qi < EndQ()); qi++)
         {
             cs = qi->Send(cr, dest);
         }
-        cs = gmx_send_done(cr, dest);
     }
     if (nullptr != debug)
     {
@@ -1834,15 +1812,14 @@ CommunicationStatus AtomNum::Receive(t_commrec *cr, int src)
 CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest)
 {
     CommunicationStatus cs = gmx_send_data(cr, dest);
-
     if (CS_OK == cs)
     {
+        gmx_send_int(cr, dest, _atomnum.size());
         gmx_send_str(cr, dest, _compname.c_str());
         for (auto ani = BeginAtomNum(); (CS_OK == cs) && (ani < EndAtomNum()); ani++)
         {
             cs = ani->Send(cr, dest);
         }
-        cs = gmx_send_done(cr, dest);
         if (nullptr != debug)
         {
             fprintf(debug, "Sent MolecularComposition %s, status %s\n",
@@ -1855,24 +1832,22 @@ CommunicationStatus MolecularComposition::Send(t_commrec *cr, int dest)
 
 CommunicationStatus MolecularComposition::Receive(t_commrec *cr, int src)
 {
-    CommunicationStatus cs;
-
-    cs = gmx_recv_data(cr, src);
+    int Natomnum;
+    CommunicationStatus cs = gmx_recv_data(cr, src);
     if (CS_OK == cs)
     {
-        _compname.assign(gmx_recv_str(cr, src));
+        Natomnum = gmx_recv_int(cr, src); 
+        _compname.assign(gmx_recv_str(cr, src));      
         CommunicationStatus cs2;
-        do
+        for(int n = 0; n < Natomnum; n++)
         {
             AtomNum an;
-
             cs2 = an.Receive(cr, src);
             if (CS_OK == cs2)
             {
                 AddAtom(an);
             }
         }
-        while (CS_OK == cs2);
         if (nullptr != debug)
         {
             fprintf(debug, "Received MolecularComposition %s, status %s\n",
@@ -1904,22 +1879,24 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, _cas.c_str());
         gmx_send_str(cr, dest, _cid.c_str());
         gmx_send_str(cr, dest, _inchi.c_str());
+        gmx_send_int(cr, dest, _bond.size());
+        gmx_send_int(cr, dest, _mol_comp.size());
+        gmx_send_int(cr, dest, category_.size());
+        gmx_send_int(cr, dest, _exper.size());
 
-        /* Bonds */
+        /* Send Bonds */
         for (bi = BeginBond(); (CS_OK == cs) && (bi < EndBond()); bi++)
         {
             cs = bi->Send(cr, dest);
         }
-        cs = gmx_send_done(cr, dest);
 
-        /* Composition */
+        /* Send Composition */
         for (mci = BeginMolecularComposition(); (CS_OK == cs) && (mci < EndMolecularComposition()); mci++)
         {
             cs = mci->Send(cr, dest);
         }
-        cs = gmx_send_done(cr, dest);
 
-        /* Categories */
+        /* send Categories */
         for (si = BeginCategory(); (CS_OK == cs) && (si < EndCategory()); si++)
         {
             cs = gmx_send_data(cr, dest);
@@ -1933,15 +1910,13 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
                 }
             }
         }
-        cs = gmx_send_done(cr, dest);
 
-        /* Experiments */
+        /* Send Experiments */
         for (ei = BeginExperiment(); (CS_OK == cs) && (ei < EndExperiment()); ei++)
         {
             cs = ei->Send(cr, dest);
         }
-        cs = gmx_send_done(cr, dest);
-
+        
         if (nullptr != debug)
         {
             fprintf(debug, "Sent MolProp %s, status %s\n",
@@ -1955,6 +1930,7 @@ CommunicationStatus MolProp::Send(t_commrec *cr, int dest)
 CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
 {
     CommunicationStatus cs;
+    int Nbond, Nmol_comp, Ncategory, Nexper; 
 
     /* Generic stuff */
     cs = gmx_recv_data(cr, src);
@@ -1970,38 +1946,39 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
         _cas.assign(gmx_recv_str(cr, src));
         _cid.assign(gmx_recv_str(cr, src));
         _inchi.assign(gmx_recv_str(cr, src));
+        Nbond     = gmx_recv_int(cr, src);
+        Nmol_comp = gmx_recv_int(cr, src);
+        Ncategory = gmx_recv_int(cr, src);
+        Nexper    = gmx_recv_int(cr, src);
+        
         if (nullptr != debug)
         {
             fprintf(debug, "Got molname %s\n", getMolname().c_str());
         }
-        //! Receive Bonds
-        do
+        //! Receive Bonds       
+        for(int n = 0; (CS_OK == cs) && (n < Nbond); n++)
         {
             Bond b;
-
             cs = b.Receive(cr, src);
             if (CS_OK == cs)
             {
                 AddBond(b);
             }
         }
-        while (CS_OK == cs);
 
-        //! Receive Compositions
-        do
+        //! Receive Compositions       
+        for(int n = 0; (CS_OK == cs) && (n < Nmol_comp); n++)
         {
             MolecularComposition mc;
-
             cs = mc.Receive(cr, src);
             if (CS_OK == cs)
             {
                 AddComposition(mc);
             }
         }
-        while (CS_OK == cs);
 
-        //! Receive Categories
-        do
+        //! Receive Categories      
+        for(int n = 0; (CS_OK == cs) && (n < Ncategory); n++)
         {
             cs = gmx_recv_data(cr, src);
             if (CS_OK == cs)
@@ -2023,20 +2000,17 @@ CommunicationStatus MolProp::Receive(t_commrec *cr, int src)
                 }
             }
         }
-        while (CS_OK == cs);
 
-        //! Receive Experiments
-        do
+        //! Receive Experiments    
+        for(int n = 0; (CS_OK == cs) && (n < Nexper); n++)
         {
             Experiment ex;
-
             cs = ex.Receive(cr, src);
             if (CS_OK == cs)
             {
                 AddExperiment(ex);
             }
         }
-        while (CS_OK == cs);
 
         if (nullptr != debug)
         {

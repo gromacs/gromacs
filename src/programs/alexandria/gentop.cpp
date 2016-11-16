@@ -473,6 +473,7 @@ int alex_gentop(int argc, char *argv[])
 
     gmx::MDModules mdModules;
     t_inputrec    *inputrec = mdModules.inputrec();
+    t_commrec     *cr       = init_commrec();
 
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
@@ -480,7 +481,7 @@ int alex_gentop(int argc, char *argv[])
     imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel,
                                  bGenVSites, bPairs, bDihedral, bPolar);
 
-    gmx::MDLogger  mdlog = getMdLogger(mymol.cr_, stdout);
+    gmx::MDLogger  mdlog = getMdLogger(cr, stdout);
 
     if (immOK == imm)
     {
@@ -497,7 +498,7 @@ int alex_gentop(int argc, char *argv[])
                                     iChargeDistributionModel,
                                     iChargeGenerationAlgorithm,
                                     watoms, hfac, lot, bQsym,
-                                    symm_string, tabfn);
+                                    symm_string, cr, tabfn, nullptr);
     }
 
     if (immOK == imm)

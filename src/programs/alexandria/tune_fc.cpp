@@ -55,14 +55,17 @@
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
+#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/main.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/statistics/statistics.h"
@@ -70,6 +73,7 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -82,6 +86,7 @@
 
 // alexandria stuff
 #include "gentop_core.h"
+#include "getmdlogger.h"
 #include "gmx_simple_comm.h"
 #include "moldip.h"
 #include "molprop.h"
@@ -695,6 +700,7 @@ void Optimization::checkSupport(FILE *fp, bool  bOpt[])
     {
         if (mymol->eSupp != eSupportLocal)
         {
+            mymol++;
             continue;
         }
 
@@ -1285,7 +1291,7 @@ double Optimization::calcDeviation()
                         debug  = nullptr;
 
                         mymol.changeCoordinate(ei);
-                        mymol.computeForces(debug, mu_tot);
+                        mymol.computeForces(debug, _cr, mu_tot);
 
                         debug         = dbcopy;
                         mymol.Force2  = 0.0;
@@ -1329,8 +1335,8 @@ double Optimization::calcDeviation()
                                     mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, Emol, mymol.Ecalc,
                                     mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY],
                                     mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS],
-                                    mymol.enerd_->term[F_IDIHS], mymol.enerd_->term[F_COUL_SR], mymol.enerd_->term[F_LJ],
-                                    mymol.enerd_->term[F_BHAM], mymol.Force2);
+                                    mymol.enerd_->term[F_IDIHS], mymol.enerd_->term[F_COUL_SR], 
+                                    mymol.enerd_->term[F_LJ], mymol.enerd_->term[F_BHAM], mymol.Force2);
                         }
                     }
                 }
@@ -1407,9 +1413,6 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
     std::vector<double>              optx, opts, optm;
     double                           chi2, chi2_min;
     gmx_bool                         bMinimum = false;
-    std::random_device               rd;
-    std::mt19937                     gen;
-    std::uniform_real_distribution<> dis;
 
     auto func = [&] (const double v[]) {
             return objFunction(v);
@@ -1566,8 +1569,8 @@ void Optimization::printSpecs(FILE *fp, char *title,
 
         fprintf(fp, "%-5d %-30s %10g %10g %10g %10g %-10s\n",
                 i, mi->molProp()->getMolname().c_str(),
-                mi->Hform, mi->Emol, DeltaE,
-                sqrt(mi->OptForce2), (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
+                mi->Hform, mi->Emol, DeltaE, sqrt(mi->OptForce2), 
+                (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
 
         msd += gmx::square(DeltaE);
         gmx_stats_add_point(gst, mi->Hform, mi->Hform + DeltaE, 0, 0);
@@ -1651,7 +1654,7 @@ int alex_tune_fc(int argc, char *argv[])
         { efXVG, "-epot",  "param-epot", ffWRITE }
     };
     
-#define NFILE sizeof(fnm)/sizeof(fnm[0])
+    const  int            NFILE = asize(fnm);
 
     static int            nrun          = 1;
     static int            maxiter       = 100; 
@@ -1660,6 +1663,7 @@ int alex_tune_fc(int argc, char *argv[])
     static int            minimum_data  = 3;
     static int            compress      = 0;
     static int            nprint        = 10;
+    static int            nmultisim     = 0;
     static real           tol           = 1e-3;
     static real           stol          = 1e-6;
     static real           watoms        = 0;   
@@ -1705,6 +1709,8 @@ int alex_tune_fc(int argc, char *argv[])
     t_pargs               pa[]         = {
         { "-tol",     FALSE, etREAL, {&tol},
           "Tolerance for convergence in optimization" },
+        { "-multi",   FALSE, etINT, {&nmultisim},
+          "Do optimization in multiple simulation" },
         { "-maxiter", FALSE, etINT, {&maxiter},
           "Max number of iterations for optimization" },
         { "-nprint",  FALSE, etINT, {&nprint},
@@ -1776,24 +1782,26 @@ int alex_tune_fc(int argc, char *argv[])
     };
     
     FILE                 *fp;
-    t_commrec            *cr;
     gmx_output_env_t     *oenv;
     time_t                my_t;
-
-    cr = init_commrec();
+    MolSelect             gms;
+    
+    t_commrec     *cr     = init_commrec(); 
+    gmx::MDLogger  mdlog  = getMdLogger(cr, stdout);
+    gmx_hw_info_t *hwinfo = gmx_detect_hardware(mdlog, cr, false);
+    
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, nullptr, &oenv))
+    {
+        sfree(cr);
+        return 0;
+    }
+    
     if (MASTER(cr))
     {
         printf("There are %d threads/processes.\n", cr->nnodes);
     }
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm,
-                           sizeof(pa)/sizeof(pa[0]), pa,
-                           sizeof(desc)/sizeof(desc[0]), desc,
-                           0, nullptr, &oenv))
-    {
-        return 0;
-    }
-
+     
     if (MASTER(cr))
     {
         fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
@@ -1807,8 +1815,7 @@ int alex_tune_fc(int argc, char *argv[])
     {
         fp = nullptr;
     }
-
-    MolSelect gms;
+    
     if (MASTER(cr))
     {
         gms.read(opt2fn_null("-sel", NFILE, fnm));
@@ -1817,8 +1824,7 @@ int alex_tune_fc(int argc, char *argv[])
     alexandria::Optimization       opt;
     ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
-
-    const char                    *tabfn = opt2fn_null("-table", NFILE, fnm);
+    const char                    *tabfn                      = opt2fn_null("-table", NFILE, fnm);
 
     if (iChargeDistributionModel != eqdAXp && nullptr == tabfn)
     {
@@ -1831,7 +1837,7 @@ int alex_tune_fc(int argc, char *argv[])
              J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
              fc_bound, fc_mu, fc_quad, fc_charge,
              fc_esp, fc_epot, fc_force, fixchi,
-             bOptHfac, hfac, bPolar, bFitZeta);
+             bOptHfac, hfac, bPolar, bFitZeta, hwinfo);
 
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
@@ -1844,14 +1850,18 @@ int alex_tune_fc(int argc, char *argv[])
 
     opt.checkSupport(fp, bOpt);
 
-    fprintf(fp, "In the total data set of %d molecules we have:\n",
-            static_cast<int>(opt._mymol.size()));
+    if (nullptr != fp)
+    {
+        fprintf(fp, "In the total data set of %d molecules we have:\n",
+                static_cast<int>(opt._mymol.size()));
+    }
 
-
-    opt.InitOpt(fp, bOpt, factor);
-
-    print_moldip_mols(fp, opt._mymol, false, false);
-
+    if (MASTER(cr))
+    {
+        opt.InitOpt(fp, bOpt, factor);
+        print_moldip_mols(fp, opt._mymol, false, false);
+    }
+    
     opt.calcDeviation();
 
     if (MASTER(cr))
@@ -1868,16 +1878,11 @@ int alex_tune_fc(int argc, char *argv[])
                
     if (MASTER(cr))
     {
-        opt.tuneFc2PolData();
-        
+        opt.tuneFc2PolData();       
         print_moldip_mols(fp, opt._mymol, true, false);
-
         opt.printSpecs(fp, (char *)"After optimization", opt2fn("-x", NFILE, fnm), oenv, true);
-
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, compress);
-
         done_filenms(NFILE, fnm);
-
         gmx_ffclose(fp);
     }
 

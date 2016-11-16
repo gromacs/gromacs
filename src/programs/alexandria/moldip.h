@@ -160,6 +160,7 @@ class MolDip
         t_commrec                      *_cr;
         gmx::MDModules                  mdModules_;
         t_inputrec                     *inputrec_;
+        gmx_hw_info_t                  *hwinfo_;
 
         //! Constructor
         MolDip();
@@ -178,7 +179,7 @@ class MolDip
                   real fc_bound, real fc_mu, real fc_quad, real fc_charge,
                   real fc_esp, real fc_epot, real fc_force, char *fixchi,
                   gmx_bool bOptHfac, real hfac,
-                  gmx_bool bPol, gmx_bool bFitZeta);
+                  gmx_bool bPol, gmx_bool bFitZeta, gmx_hw_info_t *hwinfo);
 
         void Read(FILE *fp, const char *fn, const char *pd_fn,
                   int minimum_data, gmx_bool bZero,

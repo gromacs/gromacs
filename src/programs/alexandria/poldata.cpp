@@ -704,7 +704,6 @@ void Poldata::broadcast(t_commrec *cr)
 {
     unsigned int          i, j, nep;
     std::vector<Eemprops> ep;
-
     if (nullptr != debug)
     {
         fprintf(debug, "Going to update poldata on node %d\n", cr->nodeid);
@@ -725,8 +724,8 @@ void Poldata::broadcast(t_commrec *cr)
         {
             gmx_fatal(FARGS, "Inconsistency in number of EEM parameters");
         }
-        eep_.clear();
         gmx_recv(cr, 0, ep.data(), eep_.size()*sizeof(ep[0]));
+        eep_.clear();
         for (i = 0; (i < nep); i++)
         {
             eep_.push_back(ep[i]);

@@ -198,7 +198,7 @@ class AtomNum
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over a vector of AtomNum
-typedef std::vector<AtomNum>::iterator AtomNumIterator;
+using  AtomNumIterator = typename std::vector<AtomNum>::iterator;
 
 /*! \brief
  * Contains the molecular composition in terms of atoms
@@ -295,9 +295,8 @@ class MolecularComposition
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over MolecularComposition items
-typedef std::vector<MolecularComposition>::iterator MolecularCompositionIterator;
-//! Iterates over MolecularComposition items but const
-typedef std::vector<MolecularComposition>::const_iterator MolecularCompositionConstIterator;
+using MolecularCompositionIterator = typename std::vector<MolecularComposition>::iterator;
+using MolecularCompositionConstIterator = typename std::vector<MolecularComposition>::const_iterator;
 
 /*! \brief
  * Generic molecular property base clase
@@ -389,13 +388,17 @@ class MolecularQuadrupole : public GenericProperty
         //! Constructor initiating all elements of the quadrupole tensor
         MolecularQuadrupole(std::string type, std::string unit, double T,
                             double xx, double yy, double zz,
-                            double xy, double xz, double yz) : GenericProperty(type, unit, T, epGAS) { Set(xx, yy, zz, xy, xz, yz); };
+                            double xy, double xz, double yz) : 
+                            GenericProperty(type, unit, T, epGAS) 
+                            { Set(xx, yy, zz, xy, xz, yz); };
 
         //! Set all the elements of the qudrupole tensor
-        void Set(double xx, double yy, double zz, double xy, double xz, double yz) { xx_ = xx; yy_ = yy; zz_ = zz; xy_ = xy; xz_ = xz; yz_ = yz; };
+        void Set(double xx, double yy, double zz, double xy, double xz, double yz) 
+        { xx_ = xx; yy_ = yy; zz_ = zz; xy_ = xy; xz_ = xz; yz_ = yz; };
 
         //! get all the elements of the qudrupole tensor
-        void get(double *xx, double *yy, double *zz, double *xy, double *xz, double *yz) { *xx = xx_; *yy = yy_; *zz = zz_; *xy = xy_; *xz = xz_; *yz = yz_; };
+        void get(double *xx, double *yy, double *zz, double *xy, double *xz, double *yz) 
+        { *xx = xx_; *yy = yy_; *zz = zz_; *xy = xy_; *xz = xz_; *yz = yz_; };
 
         //! Return the XX component of the quadrupole tensor
         double getXX() const { return xx_; }
@@ -434,7 +437,7 @@ class MolecularQuadrupole : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over MolecularQuadrupole items
-typedef std::vector<MolecularQuadrupole>::iterator MolecularQuadrupoleIterator;
+using MolecularQuadrupoleIterator = typename std::vector<MolecularQuadrupole>::iterator;
 
 /*! \brief
  * Contains the elements of the molecular polarizability tensor
@@ -458,7 +461,9 @@ class MolecularPolarizability : public GenericProperty
         MolecularPolarizability(std::string type, std::string unit, double T,
                                 double xx, double yy, double zz,
                                 double xy, double xz, double yz,
-                                double average, double error) : GenericProperty(type, unit, T, epGAS) { Set(xx, yy, zz, xy, xz, yz, average, error); };
+                                double average, double error) 
+                                : GenericProperty(type, unit, T, epGAS) 
+                                { Set(xx, yy, zz, xy, xz, yz, average, error); };
 
         //! Set all the elements of the polarizability tensor
         void Set(double xx, double yy, double zz,
@@ -518,7 +523,7 @@ class MolecularPolarizability : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over MolecularPolarizability items
-typedef std::vector<MolecularPolarizability>::iterator MolecularPolarizabilityIterator;
+using  MolecularPolarizabilityIterator = typename std::vector<MolecularPolarizability>::iterator;
 
 /*! \brief
  * Contains a molecular energy
@@ -539,7 +544,10 @@ class MolecularEnergy : public GenericProperty
         MolecularEnergy() {};
 
         //! Constructor storing all properties related to this energy term
-        MolecularEnergy(std::string type, std::string unit, double T, ePhase ep, double value, double error) : GenericProperty(type, unit, T, ep) { Set(value, error); };
+        MolecularEnergy(std::string type, std::string unit, 
+                        double T, ePhase ep, double value, double error) 
+                        : GenericProperty(type, unit, T, ep) 
+                        { Set(value, error); };
 
         //! Set the value and error for the energy
         void Set(double value, double error) { _value = value; _error = error; };
@@ -578,7 +586,7 @@ class MolecularEnergy : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over MolecularEnergy items
-typedef std::vector<MolecularEnergy>::iterator MolecularEnergyIterator;
+using  MolecularEnergyIterator = typename std::vector<MolecularEnergy>::iterator;
 
 /*! \brief
  * Contains the dipole vector
@@ -597,10 +605,13 @@ class MolecularDipole : public GenericProperty
 
         //! Constructor storing all properties related to this dipole
         MolecularDipole(std::string type, std::string unit, double T,
-                        double x, double y, double z, double aver, double error) : GenericProperty(type, unit, T, epGAS) { Set(x, y, z, aver, error); }
+                        double x, double y, double z, double aver, double error) 
+                        : GenericProperty(type, unit, T, epGAS) 
+                        { Set(x, y, z, aver, error); }
 
         //! Set all properties related to this dipole
-        void Set(double x, double y, double z, double aver, double error) { _x = x; _y = y; _z = z; _aver = aver; _error = error; };
+        void Set(double x, double y, double z, double aver, double error) 
+        { _x = x; _y = y; _z = z; _aver = aver; _error = error; };
 
         //! Return all properties of this dipole
         void get(double *x, double *y, double *z, double *aver, double *error) const
@@ -640,7 +651,7 @@ class MolecularDipole : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over a vector of MolecularDipole
-typedef std::vector<MolecularDipole>::iterator MolecularDipoleIterator;
+using MolecularDipoleIterator = typename std::vector<MolecularDipole>::iterator;
 
 /*! \brief
  * Contains the electrostatic potential in a coordinate close to a molecule.
@@ -662,13 +673,19 @@ class ElectrostaticPotential
         ElectrostaticPotential() {}
 
         //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-        ElectrostaticPotential(std::string xyz_unit, std::string V_unit, int espid, double x, double y, double z, double V) { Set(xyz_unit, V_unit, espid, x, y, z, V); };
+        ElectrostaticPotential(std::string xyz_unit, std::string V_unit, 
+                               int espid, double x, double y, double z, double V) 
+                               { Set(xyz_unit, V_unit, espid, x, y, z, V); };
 
         //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-        ElectrostaticPotential(const char *xyz_unit, const char *V_unit, int espid, double x, double y, double z, double V) { Set(xyz_unit, V_unit, espid, x, y, z, V); };
+        ElectrostaticPotential(const char *xyz_unit, const char *V_unit, 
+                               int espid, double x, double y, double z, double V) 
+                               { Set(xyz_unit, V_unit, espid, x, y, z, V); };
 
         //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-        void Set(std::string xyz_unit, std::string V_unit, int espid, double x, double y, double z, double V) { xyzUnit_ = xyz_unit; vUnit_ = V_unit; espID_ = espid; x_ = x; y_ = y; z_ = z; V_ = V; };
+        void Set(std::string xyz_unit, std::string V_unit, 
+                 int espid, double x, double y, double z, double V) 
+                 { xyzUnit_ = xyz_unit; vUnit_ = V_unit; espID_ = espid; x_ = x; y_ = y; z_ = z; V_ = V; };
 
         //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
         void Set(const char *xyz_unit, const char *V_unit, int espid, double x, double y, double z, double V)
@@ -725,7 +742,7 @@ class ElectrostaticPotential
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over ElectrostaticPotential items
-typedef std::vector<ElectrostaticPotential>::iterator ElectrostaticPotentialIterator;
+using ElectrostaticPotentialIterator = typename std::vector<ElectrostaticPotential>::iterator;
 
 /*! \brief
  * Chemical bond in a molecule with associated bond order.
@@ -783,7 +800,7 @@ class Bond
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over Bond items
-typedef std::vector<Bond>::iterator BondIterator;
+using BondIterator = typename std::vector<Bond>::iterator;
 
 /*! \brief
  * Contains the charge of an atom
@@ -803,7 +820,8 @@ class AtomicCharge : public GenericProperty
         AtomicCharge() {}
 
         //! Constructor setting type, unit and charge itself
-        AtomicCharge(std::string type, std::string unit, double T, double q) : GenericProperty(type, unit, T, epGAS) { SetQ(q); };
+        AtomicCharge(std::string type, std::string unit, double T, double q) 
+            : GenericProperty(type, unit, T, epGAS) { SetQ(q); };
 
         //! Set the charge to q
         void SetQ(double q) { _q = q; };
@@ -830,7 +848,7 @@ class AtomicCharge : public GenericProperty
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over AtomicCharge items
-typedef std::vector<AtomicCharge>::iterator AtomicChargeIterator;
+using  AtomicChargeIterator = typename std::vector<AtomicCharge>::iterator;
 
 /*! \brief
  * Contains data on an atom based on a calculation.
@@ -930,7 +948,7 @@ class CalcAtom
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over CalcAtom items
-typedef std::vector<CalcAtom>::iterator CalcAtomIterator;
+using  CalcAtomIterator = typename std::vector<CalcAtom>::iterator;
 
 enum DataSource {
     dsExperiment, dsTheory
@@ -1125,7 +1143,7 @@ class Experiment
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over Experiment items
-typedef std::vector<Experiment>::iterator ExperimentIterator;
+using  ExperimentIterator = typename std::vector<Experiment>::iterator;
 
 /*! \brief
  * Contains molecular properties from a range of sources.
@@ -1420,8 +1438,8 @@ class MolProp
         CommunicationStatus Receive(t_commrec *cr, int src);
 };
 //! Iterates over MolProp items
-typedef std::vector<MolProp>::iterator MolPropIterator;
-typedef std::vector<MolProp>::const_iterator MolPropConstIterator;
+using  MolPropIterator = typename std::vector<MolProp>::iterator;
+using  MolPropConstIterator = typename std::vector<MolProp>::const_iterator;
 
 /*! \brief Utility to compare temperatures
  *
