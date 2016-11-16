@@ -438,7 +438,6 @@ int gmx_trjcat(int argc, char *argv[])
         "the trajectory does not match that in the [REF].xvg[ref] file then the program",
         "tries to be smart. Beware."
     };
-    static gmx_bool bVels           = TRUE;
     static gmx_bool bCat            = FALSE;
     static gmx_bool bSort           = TRUE;
     static gmx_bool bKeepLast       = FALSE;
@@ -459,8 +458,6 @@ int gmx_trjcat(int argc, char *argv[])
           { &end }, "Last time to use (%t)" },
         { "-dt", FALSE, etTIME,
           { &dt }, "Only write frame when t MOD dt = first time (%t)" },
-        { "-vel", FALSE, etBOOL,
-          { &bVels }, "Read and write velocities if possible" },
         { "-settime", FALSE, etBOOL,
           { &bSetTime }, "Change starting time interactively" },
         { "-sort", FALSE, etBOOL,
