@@ -1552,7 +1552,7 @@ applicable pulling coordinate.
    .. mdp-value:: no
 
       only print the distance for each pull coordinate
-   
+
    .. mdp-value:: yes
 
       print the distance and Cartesian components selected in
@@ -1570,6 +1570,29 @@ applicable pulling coordinate.
    frequency for writing out the force of all the pulled group
    (0 is never)
 
+.. mdp:: pull-xout-avg
+
+   .. mdp-value:: no
+
+      write the instantaneous coordinates of all the pulled groups
+
+   .. mdp-value:: yes
+
+      write the average coordinates (since last output) of all the
+      pulled groups. N.b., some analysis tools might expect instantaneous
+      pull output.
+
+.. mdp:: pull-fout-avg
+
+   .. mdp-value:: no
+
+      write the instantaneous force of all the pulled groups
+
+   .. mdp-value:: yes
+
+      write the average force (since last output) of all the
+      pulled groups. N.b., some analysis tools might expect instantaneous
+      pull output.
 
 .. mdp:: pull-ngroups
 

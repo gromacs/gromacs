@@ -60,6 +60,7 @@ struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
+struct ObservablesHistory;
 
 namespace gmx
 {
