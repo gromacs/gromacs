@@ -290,6 +290,8 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     EETYPE("pull-print-components", pull->bPrintComp, yesno_names);
     ITYPE("pull-nstxout",     pull->nstxout, 50);
     ITYPE("pull-nstfout",     pull->nstfout, 50);
+    EETYPE("pull-xout-average", pull->bXOutAverage, yesno_names);
+    EETYPE("pull-fout-average", pull->bFOutAverage, yesno_names);
     CTYPE("Number of pull groups");
     ITYPE("pull-ngroups",     pull->ngroup, 1);
     CTYPE("Number of pull coordinates");
@@ -513,7 +515,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
     double         t_start;
 
     pull      = ir->pull;
-    pull_work = init_pull(nullptr, pull, ir, 0, nullptr, mtop, nullptr, oenv, lambda, FALSE, ContinuationOptions());
+    pull_work = init_pull(nullptr, pull, ir, 0, nullptr, mtop, nullptr, oenv, lambda, FALSE, ContinuationOptions(), nullptr);
     auto mdAtoms = gmx::makeMDAtoms(nullptr, *mtop, *ir, false);
     auto md      = mdAtoms->mdatoms();
     atoms2md(mtop, ir, -1, nullptr, mtop->natoms, mdAtoms.get());
