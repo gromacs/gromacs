@@ -40,44 +40,48 @@ function (gmx_add_unit_test_object_library NAME)
         add_library(${NAME} OBJECT ${UNITTEST_TARGET_OPTIONS} ${ARGN})
         set_property(TARGET ${NAME} APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
         set_property(TARGET ${NAME} APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
+
+        add_dependencies(clang_analyzer ${NAME})
     endif()
 endfunction ()
 
 function (gmx_add_gtest_executable EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         set(_options MPI)
-        cmake_parse_arguments(ARG "${_options}" "" "" ${ARGN})
+        cmake_parse_arguments(ARG "${_options}" "" "OBJECT_LIBRARIES" ${ARGN})
         set(_source_files ${ARG_UNPARSED_ARGUMENTS})
 
+        # Make an object library out of the source files, and then
+        # assemble all the target objects out of all the object
+        # libraries upon which this test executable depends.
+        gmx_add_unit_test_object_library(${EXENAME}_objlib ${_source_files})
+        unset(_target_objects)
+        foreach (_object_library ${EXENAME}_objlib ${ARG_OBJECT_LIBRARIES})
+            list(APPEND _target_objects $<TARGET_OBJECTS:${_object_library}>)
+        endforeach()
+
+        # Set up the executable target
+        include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
+        add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
+            ${_target_objects} ${TESTUTILS_DIR}/unittest_main.cpp)
+        target_link_libraries(${EXENAME}
+            ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
+        target_compile_options(${EXENAME} PRIVATE "${GMOCK_COMPILE_FLAGS}")
+        target_compile_definitions(${EXENAME} PRIVATE "${GMOCK_COMPILE_DEFINITIONS}")
+
+        # Set up working directories in unittest_main.cpp for the test
+        # binary to use at run time.
         file(RELATIVE_PATH _input_files_path ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
         set(_temporary_files_path "${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary")
         file(MAKE_DIRECTORY ${_temporary_files_path})
         # Note that the quotation marks in the next line form part of
         # the defined symbol, so that the macro replacement in the
         # source file is as a string.
-        # These are only needed for unittest_main.cpp, but for simplicity used
-        # for the whole target (since there may be multiple executables in the
-        # same directory, it is not straightforward to use a source file
-        # property).
         set(EXTRA_COMPILE_DEFINITIONS
             TEST_DATA_PATH="${_input_files_path}"
-            TEST_TEMP_PATH="${_temporary_files_path}")
-        if (ARG_MPI)
-            list(APPEND EXTRA_COMPILE_DEFINITIONS
-                 TEST_USES_MPI=true)
-        endif()
-
-        include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
-        add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
-            ${_source_files} ${TESTUTILS_DIR}/unittest_main.cpp)
-        target_link_libraries(${EXENAME}
-            ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
-        set_property(TARGET ${EXENAME}
-            APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-        set_property(TARGET ${EXENAME}
-            APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
-        set_property(TARGET ${EXENAME}
-            APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
+            TEST_TEMP_PATH="${_temporary_files_path}"
+            TEST_USES_MPI="$<BOOL:${ARG_MPI}>")
+        target_compile_definitions(${EXENAME} PRIVATE "${EXTRA_COMPILE_DEFINITIONS}")
     endif()
 endfunction()
 

@@ -44,7 +44,6 @@ set(exename "mdrun-test")
 
 gmx_add_gtest_executable(
     ${exename}
-    # files with code for tests
     tabulated_bonded_interactions.cpp
     energyreader.cpp
     grompp.cpp
@@ -55,10 +54,9 @@ gmx_add_gtest_executable(
     swapcoords.cpp
     interactiveMD.cpp
     termination.cpp
-    # pseudo-library for code for testing mdrun
-    $<TARGET_OBJECTS:mdrun_test_objlib>
-    # pseudo-library for code for mdrun
-    $<TARGET_OBJECTS:mdrun_objlib>
+    OBJECT_LIBRARIES
+    mdrun_test_objlib
+    mdrun_objlib
     )
 gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
 
@@ -67,14 +65,12 @@ set(exename "mdrun-mpi-test")
 
 gmx_add_gtest_executable(
     ${exename} MPI
-    # files with code for tests
     multisim.cpp
     multisimtest.cpp
     replicaexchange.cpp
     domain_decomposition.cpp
-    # pseudo-library for code for testing mdrun
-    $<TARGET_OBJECTS:mdrun_test_objlib>
-    # pseudo-library for code for mdrun
-    $<TARGET_OBJECTS:mdrun_objlib>
+    OBJECT_LIBRARIES
+    mdrun_test_objlib
+    mdrun_objlib
     )
 gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 INTEGRATION_TEST)

@@ -32,7 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_executable(template template.cpp)
+add_library(template_objlib OBJECT template.cpp)
+add_executable(template $<TARGET_OBJECTS:template_objlib>)
+add_dependencies(clang_analyzer template_objlib)
 target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
 
 set(DOCUMENTATION_HTTP_URL_BASE

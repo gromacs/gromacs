@@ -157,6 +157,7 @@ if (GMX_USE_CUDA)
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
+add_dependencies(clang_analyzer libgromacs)
 
 # Recent versions of gcc and clang give warnings on scanner.cpp, which
 # is a generated source file. These are awkward to suppress inline, so

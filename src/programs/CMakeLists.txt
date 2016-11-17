@@ -55,6 +55,7 @@ elseif(GMX_BUILD_MDRUN_ONLY)
             DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
 else()
     file(GLOB GMX_MAIN_SOURCES gmx.cpp legacymodules.cpp)
+    add_library(gmx_objlib OBJECT ${GMX_MAIN_SOURCES})
     if(GMX_X11)
         file(GLOB VIEW_SOURCES view/*.cpp)
     else()
@@ -62,9 +63,10 @@ else()
     endif()
     add_library(view_objlib OBJECT ${VIEW_SOURCES})
     add_executable(gmx
-        ${GMX_MAIN_SOURCES}
+        $<TARGET_OBJECTS:gmx_objlib>
         $<TARGET_OBJECTS:mdrun_objlib>
         $<TARGET_OBJECTS:view_objlib>)
+    add_dependencies(clang_analyzer gmx_objlib mdrun_objlib view_objlib)
     target_link_libraries(gmx libgromacs ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
     if(GMX_X11)
         target_link_libraries(gmx ${X11_LIBRARIES})
