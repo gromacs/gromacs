@@ -70,6 +70,7 @@ struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
+struct ObservablesHistory;
 
 /*! \brief Returns the units of the pull coordinate.
  *
@@ -180,7 +181,8 @@ void clear_pull_forces(struct pull_t *pull);
  */
 real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
                     t_commrec *cr, double t, real lambda,
-                    rvec *x, rvec *f, tensor vir, real *dvdlambda);
+                    rvec *x, rvec *f, tensor vir, real *dvdlambda,
+                    ObservablesHistory *observablesHistory);
 
 
 /*! \brief Constrain the coordinates xp in the directions in x
@@ -199,7 +201,8 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
  */
 void pull_constraint(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
                      t_commrec *cr, double dt, double t,
-                     rvec *x, rvec *xp, rvec *v, tensor vir);
+                     rvec *x, rvec *xp, rvec *v, tensor vir,
+                     ObservablesHistory *observablesHistory);
 
 
 /*! \brief Make a selection of the home atoms for all pull groups.
@@ -234,11 +237,12 @@ struct pull_t *init_pull(FILE                   *fplog,
                          int                     nfile,
                          const t_filenm          fnm[],
                          const gmx_mtop_t       *mtop,
-                         t_commrec             * cr,
+                         t_commrec              *cr,
                          const gmx_output_env_t *oenv,
                          real                    lambda,
                          gmx_bool                bOutFile,
-                         unsigned long           Flags);
+                         unsigned long           Flags,
+                         ObservablesHistory     *observablesHistory);
 
 
 /*! \brief Close the pull output files.
@@ -254,7 +258,8 @@ void finish_pull(struct pull_t *pull);
  * \param step     Time step number.
  * \param time     Time.
  */
-void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time);
+void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time,
+                       ObservablesHistory *observablesHistory);
 
 
 /*! \brief Calculates centers of mass all pull groups.
