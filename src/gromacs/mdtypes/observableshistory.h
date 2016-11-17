@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@
 #include <memory>
 
 class energyhistory_t;
+class PullHistory;
 struct edsamhistory_t;
 struct swaphistory_t;
 
@@ -65,6 +66,9 @@ struct ObservablesHistory
 {
     //! History for energy observables, used for output only
     std::unique_ptr<energyhistory_t> energyHistory;
+
+    //! History for pulling observables, used for output only
+    std::unique_ptr<PullHistory> pullHistory;
 
     //! Essential dynamics and flooding history
     std::unique_ptr<edsamhistory_t> edsamHistory;
