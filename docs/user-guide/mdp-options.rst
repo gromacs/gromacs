@@ -1637,6 +1637,30 @@ pull-coord2-vec, pull-coord2-k, and so on.
       be located centrally in the group. Using the COM from the
       previous step can be useful if one or more pull groups are large.
 
+.. mdp:: pull-xout-average
+
+   .. mdp-value:: no
+
+      Write the instantaneous coordinates for all the pulled groups.
+
+   .. mdp-value:: yes
+
+      Write the average coordinates (since last output) for all the
+      pulled groups. N.b., some analysis tools might expect instantaneous
+      pull output.
+
+.. mdp:: pull-fout-average
+
+   .. mdp-value:: no
+
+      Write the instantaneous force for all the pulled groups.
+
+   .. mdp-value:: yes
+
+      Write the average force (since last output) for all the
+      pulled groups. N.b., some analysis tools might expect instantaneous
+      pull output.
+
 .. mdp:: pull-ngroups
 
    (1)
