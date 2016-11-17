@@ -60,6 +60,7 @@ struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
+struct ObservablesHistory;
 
 namespace gmx
 {
@@ -163,6 +164,7 @@ void do_force(FILE *log, t_commrec *cr,
               gmx_localtop_t *top,
               gmx_groups_t *groups,
               matrix box, PaddedRVecVector *coordinates, history_t *hist,
+              ObservablesHistory *observablesHistory,
               PaddedRVecVector *force,
               tensor vir_force,
               t_mdatoms *mdatoms,

@@ -100,6 +100,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -468,18 +469,35 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             {
                 restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
             }
-            else if (observablesHistory->energyHistory.get() != nullptr)
+            else
             {
-                /* We might have read an energy history from checkpoint.
-                 * As we are not appending, we want to restart the statistics.
-                 * Free the allocated memory and reset the counts.
+                if (observablesHistory->energyHistory.get() != nullptr)
+                {
+                    /* We might have read an energy history from checkpoint.
+                     * As we are not appending, we want to restart the statistics.
+                     * Free the allocated memory and reset the counts.
+                     */
+                    observablesHistory->energyHistory = {};
+                }
+                /* We might have read a pull history from checkpoint.
+                 * Will still want to keep the statistics, so that the files
+                 * can be joined and still be meaningful.
+                 * This means that observablesHistory->pullXHistory and
+                 * observablesHistory->pullFHistory do not have to be reset.
                  */
-                observablesHistory->energyHistory = {};
             }
         }
         if (observablesHistory->energyHistory.get() == nullptr)
         {
             observablesHistory->energyHistory = std::unique_ptr<energyhistory_t>(new energyhistory_t {});
+        }
+        if (observablesHistory->pullXHistory.get() == nullptr)
+        {
+            observablesHistory->pullXHistory = std::unique_ptr<pullhistory_t>(new pullhistory_t {});
+        }
+        if (observablesHistory->pullFHistory.get() == nullptr)
+        {
+            observablesHistory->pullFHistory = std::unique_ptr<pullhistory_t>(new pullhistory_t {});
         }
         /* Set the initial energy history in state by updating once */
         update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
@@ -538,7 +556,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
         {
             /* Constrain the initial coordinates and velocities */
             do_constrain_first(fplog, constr, ir, mdatoms, state,
-                               cr, nrnb, fr, top);
+                               cr, nrnb, fr, top, observablesHistory);
         }
         if (vsite)
         {
@@ -1092,7 +1110,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
              */
             do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
                      state->box, &state->x, &state->hist,
-                     &f, force_vir, mdatoms, enerd, fcd,
+                     observablesHistory, &f, force_vir, mdatoms, enerd, fcd,
                      &state->lambda, graph,
                      fr, vsite, mu_tot, t, ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
@@ -1631,7 +1649,7 @@ double gmx::do_md(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
 
             if (ir->bPull)
             {
-                pull_print_output(ir->pull_work, step, t);
+                pull_print_output(ir->pull_work, step, t, observablesHistory);
             }
 
             if (do_per_step(step, ir->nstlog))
