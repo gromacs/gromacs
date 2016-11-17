@@ -44,7 +44,9 @@ gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
                   select.cpp
                   surfacearea.cpp
                   trajectory.cpp
-                  $<TARGET_OBJECTS:analysisdata-test-shared>)
+                  OBJECT_LIBRARIES
+                  analysisdata-test-shared
+                  )
 
 add_executable(test_selection ${UNITTEST_TARGET_OPTIONS} test_selection.cpp)
 target_link_libraries(test_selection libgromacs ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})

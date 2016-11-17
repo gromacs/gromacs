@@ -35,6 +35,15 @@
 build_options = ['clang-3.8', 'clang-static-analyzer-3.8']
 
 def do_build(context):
+    # From the point of view of a build system, static analysis of
+    # source-code files requires only compilation. Building a target
+    # that requires linking doesn't make sense. Further, the
+    # scan-build utility seems to be unstable with respect to linking
+    # against the libcxx, even on a build slave with only one set of
+    # libcxx headers+libraries installed. Instead, we simply trigger
+    # compilation of all the source-code targets, and avoid linking
+    # any executables.
+
     cmake_opts = {
             'CMAKE_BUILD_TYPE': 'Debug',
             # Build tests as part of the all target.
@@ -46,5 +55,5 @@ def do_build(context):
         }
 
     context.run_cmake(cmake_opts)
-    context.build_target(target=None)
+    context.build_target(target='clang_analyzer')
     context.process_clang_analyzer_results()
