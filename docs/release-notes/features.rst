@@ -36,3 +36,10 @@ reference atom, which can sometimes move a lot during the simulation.
 With this option the PBC reference atom is only used at initialization.
 This can be of use when using large pull groups or groups with potentially
 large relative movement of atoms.
+
+Enable output of average pull forces and positions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Added options (``pull-fout-average`` and ``pull-xout-average``) to write average
+(between each output) pull output (forces and/or velocities) instead of
+instantaneous values.
