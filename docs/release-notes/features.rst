@@ -9,3 +9,10 @@ it more difficult than needed to use them with our |Gromacs| tools. Also, the :r
 files needed for :ref:`gmx trjconv` to split up trajectories into frames corresponding
 to the clusters were not written. This adds support for writing this :ref:`index <ndx>` file
 as well as proper :ref:`PDB <pdb>` files.
+
+Enable output of average pull forces and positions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Added options (``pull-fout-average`` and ``pull-xout-average``) to write average
+(between each output) pull output (forces and/or velocities) instead of
+instantaneous values.
