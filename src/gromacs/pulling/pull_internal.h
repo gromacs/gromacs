@@ -69,6 +69,8 @@ static const int c_pullMaxNumLocalAtomsSingleThreaded = 100;
 static const int c_pullMaxNumLocalAtomsSingleThreaded = 1;
 #endif
 
+class pullhistory_t;
+
 enum {
     epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS
 };
@@ -191,6 +193,12 @@ struct pull_t
 
     FILE              *out_x;        /* Output file for pull data */
     FILE              *out_f;        /* Output file for pull data */
+
+    gmx_bool           bXOutAvg;     /* Output average pull coordinates */
+    gmx_bool           bFOutAvg;     /* Output average pull forces */
+
+    pullhistory_t     *xHistory;     /* Pull coordinate history */
+    pullhistory_t     *fHistory;     /* Pull force history */
 
     /* The number of coordinates using an external potential */
     int                numCoordinatesWithExternalPotential;
