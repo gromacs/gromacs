@@ -2111,6 +2111,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->bConstraint = FALSE;
     pull->bCylinder   = FALSE;
     pull->bAngle      = FALSE;
+    pull->bXOutAvg    = FALSE;
+    pull->bFOutAvg    = FALSE;
 
     for (g = 0; g < pull->ngroup; g++)
     {
@@ -2475,8 +2477,9 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->bSetPBCatoms = TRUE;
 
     /* Only do I/O when we are doing dynamics and if we are the MASTER */
-    pull->out_x = NULL;
-    pull->out_f = NULL;
+    pull->out_x    = NULL;
+    pull->out_f    = NULL;
+
     if (bOutFile)
     {
         /* Check for px and pf filename collision, if we are writing
@@ -2485,8 +2488,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         std::string px_appended, pf_appended;
         try
         {
-            px_filename  = std::string(opt2fn("-px", nfile, fnm));
-            pf_filename  = std::string(opt2fn("-pf", nfile, fnm));
+            px_filename     = std::string(opt2fn("-px",    nfile, fnm));
+            pf_filename     = std::string(opt2fn("-pf",    nfile, fnm));
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -2504,8 +2507,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                     pf_appended   = append_before_extension(pf_filename, "_pullf");
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                pull->out_x   = open_pull_out(px_appended.c_str(), pull, oenv,
-                                              TRUE, Flags);
+                pull->out_x = open_pull_out(px_appended.c_str(), pull, oenv,
+                                            TRUE, Flags);
                 pull->out_f = open_pull_out(pf_appended.c_str(), pull, oenv,
                                             FALSE, Flags);
                 return pull;
@@ -2519,16 +2522,17 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         }
         if (pull->params.nstxout != 0)
         {
-            pull->out_x = open_pull_out(opt2fn("-px", nfile, fnm), pull, oenv,
-                                        TRUE, Flags);
+            pull->out_x    = open_pull_out(opt2fn("-px", nfile, fnm), pull, oenv,
+                                           TRUE, Flags);
+            pull->bXOutAvg = pull_params->bXOutAvg;
         }
         if (pull->params.nstfout != 0)
         {
             pull->out_f = open_pull_out(opt2fn("-pf", nfile, fnm), pull, oenv,
                                         FALSE, Flags);
+            pull->bFOutAvg = pull_params->bFOutAvg;
         }
     }
-
     return pull;
 }
 

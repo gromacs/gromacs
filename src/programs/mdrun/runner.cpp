@@ -93,6 +93,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/edsamhistory.h"
 #include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/observableshistory.h"

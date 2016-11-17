@@ -192,6 +192,9 @@ struct pull_t
     FILE              *out_x;        /* Output file for pull data */
     FILE              *out_f;        /* Output file for pull data */
 
+    gmx_bool           bXOutAvg;        /* Output average pull coordinates */
+    gmx_bool           bFOutAvg;        /* Output average pull forces */
+
     /* The number of coordinates using an external potential */
     int                numCoordinatesWithExternalPotential;
     /* Counter for checking external potential registration */
