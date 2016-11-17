@@ -56,6 +56,7 @@
 #include <memory>
 
 class energyhistory_t;
+class PullHistory;
 struct edsamhistory_t;
 struct swaphistory_t;
 
@@ -65,6 +66,11 @@ struct ObservablesHistory
 {
     //! History for energy observables, used for output only
     std::unique_ptr<energyhistory_t> energyHistory;
+
+    //! History for pulling coordinate observables, used for output only
+    std::unique_ptr<PullHistory> pullXHistory;
+    //! History for pulling force observables, used for output only
+    std::unique_ptr<PullHistory> pullFHistory;
 
     //! Essential dynamics and flooding history
     std::unique_ptr<edsamhistory_t> edsamHistory;
