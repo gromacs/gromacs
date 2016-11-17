@@ -96,6 +96,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -1351,7 +1352,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             inputrec->pull_work =
                 init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
                           mtop, cr, oenv, inputrec->fepvals->init_lambda,
-                          EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags);
+                          EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags,
+                          &observablesHistory);
         }
 
         if (inputrec->bRot)

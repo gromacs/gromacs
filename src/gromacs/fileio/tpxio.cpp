@@ -112,6 +112,7 @@ enum tpxv {
     tpxv_RemoveTwinRange,                                    /**< removed support for twin-range interactions */
     tpxv_ReplacePullPrintCOM12,                              /**< Replaced print-com-1, 2 with pull-print-com */
     tpxv_PullExternalPotential,                              /**< Added pull type external potential */
+    tpxv_PullAverage,                                        /**< Added possibility to output average pull force and position */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -745,6 +746,11 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
             do_pull_coord(fio, &pull->coord[g],
                           bRead, file_version, ePullOld, eGeomOld, dimOld);
         }
+    }
+    if (file_version >= 111)
+    {
+        gmx_fio_do_int(fio, pull->bXOutAvg);
+        gmx_fio_do_int(fio, pull->bFOutAvg);
     }
 }
 
