@@ -112,6 +112,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -503,18 +504,31 @@ void gmx::Integrator::do_md()
             {
                 restore_energyhistory_from_state(mdebin, observablesHistory->energyHistory.get());
             }
-            else if (observablesHistory->energyHistory != nullptr)
+            else
             {
-                /* We might have read an energy history from checkpoint.
-                 * As we are not appending, we want to restart the statistics.
-                 * Free the allocated memory and reset the counts.
+                if (observablesHistory->energyHistory != nullptr)
+                {
+                    /* We might have read an energy history from checkpoint.
+                     * As we are not appending, we want to restart the statistics.
+                     * Free the allocated memory and reset the counts.
+                     */
+                    observablesHistory->energyHistory = {};
+                }
+                /* We might have read a pull history from checkpoint.
+                 * We will still want to keep the statistics, so that the files
+                 * can be joined and still be meaningful.
+                 * This means that observablesHistory->pullHistory
+                 * should not be reset.
                  */
-                observablesHistory->energyHistory = {};
             }
         }
         if (observablesHistory->energyHistory == nullptr)
         {
             observablesHistory->energyHistory = compat::make_unique<energyhistory_t>();
+        }
+        if (observablesHistory->pullHistory == nullptr)
+        {
+            observablesHistory->pullHistory = compat::make_unique<PullHistory>();
         }
         /* Set the initial energy history in state by updating once */
         update_energyhistory(observablesHistory->energyHistory.get(), mdebin);
