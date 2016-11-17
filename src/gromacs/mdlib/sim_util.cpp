@@ -265,7 +265,8 @@ static void pull_potential_wrapper(t_commrec *cr,
                                    gmx_enerdata_t *enerd,
                                    real *lambda,
                                    double t,
-                                   gmx_wallcycle_t wcycle)
+                                   gmx_wallcycle_t wcycle,
+                                   ObservablesHistory *observablesHistory)
 {
     t_pbc  pbc;
     real   dvdl;
@@ -280,7 +281,7 @@ static void pull_potential_wrapper(t_commrec *cr,
     dvdl                     = 0;
     enerd->term[F_COM_PULL] +=
         pull_potential(ir->pull_work, mdatoms, &pbc,
-                       cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
+                       cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl, observablesHistory);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
     wallcycle_stop(wcycle, ewcPULLPOT);
 }
@@ -711,6 +712,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          gmx_localtop_t *top,
                          gmx_groups_t gmx_unused *groups,
                          matrix box, rvec x[], history_t *hist,
+                         ObservablesHistory *observablesHistory,
                          PaddedRVecVector *force,
                          tensor vir_force,
                          t_mdatoms *mdatoms,
@@ -1413,7 +1415,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
          */
         pull_potential_wrapper(cr, inputrec, box, x,
                                f, vir_force, mdatoms, enerd, lambda, t,
-                               wcycle);
+                               wcycle, observablesHistory);
     }
 
     /* Add the forces from enforced rotation potentials (if any) */
@@ -1460,6 +1462,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                         gmx_localtop_t *top,
                         gmx_groups_t *groups,
                         matrix box, rvec x[], history_t *hist,
+                        ObservablesHistory *observablesHistory,
                         PaddedRVecVector *force,
                         tensor vir_force,
                         t_mdatoms *mdatoms,
@@ -1788,7 +1791,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     {
         pull_potential_wrapper(cr, inputrec, box, x,
                                f, vir_force, mdatoms, enerd, lambda, t,
-                               wcycle);
+                               wcycle, observablesHistory);
     }
 
     /* Add the forces from enforced rotation potentials (if any) */
@@ -1836,6 +1839,7 @@ void do_force(FILE *fplog, t_commrec *cr,
               gmx_localtop_t *top,
               gmx_groups_t *groups,
               matrix box, PaddedRVecVector *coordinates, history_t *hist,
+              ObservablesHistory *observablesHistory,
               PaddedRVecVector *force,
               tensor vir_force,
               t_mdatoms *mdatoms,
@@ -1866,6 +1870,7 @@ void do_force(FILE *fplog, t_commrec *cr,
                                 top,
                                 groups,
                                 box, x, hist,
+                                observablesHistory,
                                 force, vir_force,
                                 mdatoms,
                                 enerd, fcd,
@@ -1882,6 +1887,7 @@ void do_force(FILE *fplog, t_commrec *cr,
                                top,
                                groups,
                                box, x, hist,
+                               observablesHistory,
                                force, vir_force,
                                mdatoms,
                                enerd, fcd,
@@ -1900,7 +1906,8 @@ void do_force(FILE *fplog, t_commrec *cr,
 void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                         t_inputrec *ir, t_mdatoms *md,
                         t_state *state, t_commrec *cr, t_nrnb *nrnb,
-                        t_forcerec *fr, gmx_localtop_t *top)
+                        t_forcerec *fr, gmx_localtop_t *top,
+                        ObservablesHistory *observablesHistory)
 {
     int             i, m, start, end;
     gmx_int64_t     step;
@@ -1937,7 +1944,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
               as_rvec_array(state->x.data()), as_rvec_array(state->x.data()), NULL,
               fr->bMolPBC, state->box,
               state->lambda[efptBONDED], &dvdl_dum,
-              NULL, NULL, nrnb, econqCoord);
+              NULL, NULL, nrnb, econqCoord, observablesHistory);
     if (EI_VV(ir->eI))
     {
         /* constrain the inital velocity, and save it */
@@ -1947,7 +1954,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                   as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
-                  NULL, NULL, nrnb, econqVeloc);
+                  NULL, NULL, nrnb, econqVeloc, observablesHistory);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
@@ -1977,7 +1984,7 @@ void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                   as_rvec_array(state->x.data()), savex, NULL,
                   fr->bMolPBC, state->box,
                   state->lambda[efptBONDED], &dvdl_dum,
-                  as_rvec_array(state->v.data()), NULL, nrnb, econqCoord);
+                  as_rvec_array(state->v.data()), NULL, nrnb, econqCoord, observablesHistory);
 
         for (i = start; i < end; i++)
         {
