@@ -945,11 +945,11 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x, xnold, NULL, bMolPBC, box,
               (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord);
+              NULL, NULL, nrnb, econqCoord, NULL);
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x, xnew, NULL, bMolPBC, box,
               (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord);
+              NULL, NULL, nrnb, econqCoord, NULL);
 
     for (n = 0; n < end; n++)
     {
@@ -966,7 +966,7 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x_old, xnew, acc_dir, bMolPBC, box,
               (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqDeriv_FlexCon);
+              NULL, NULL, nrnb, econqDeriv_FlexCon, NULL);
 }
 
 void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
@@ -1110,7 +1110,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     }
     do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle, top, groups,
              state->box, &state->x, &state->hist,
-             force[Min], force_vir, md, enerd, fcd,
+             NULL, force[Min], force_vir, md, enerd, fcd,
              &state->lambda, graph,
              fr, vsite, mu_tot, t, NULL, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
@@ -1212,7 +1212,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         /* Try the new positions */
         do_force(fplog, cr, inputrec, 1, nrnb, wcycle,
                  top, groups, state->box, pos[Try], &state->hist,
-                 force[Try], force_vir,
+                 NULL, force[Try], force_vir,
                  md, enerd, fcd, &state->lambda, graph,
                  fr, vsite, mu_tot, t, NULL, bBornRadii,
                  force_flags);

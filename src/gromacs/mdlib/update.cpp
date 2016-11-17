@@ -1418,7 +1418,7 @@ void update_constraints(FILE             *fplog,
                       as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), as_rvec_array(state->v.data()),
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc);
+                      NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc, NULL);
         }
         else
         {
@@ -1427,7 +1427,7 @@ void update_constraints(FILE             *fplog,
                       as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), bCalcVir ? &vir_con : NULL, nrnb, econqCoord);
+                      as_rvec_array(state->v.data()), bCalcVir ? &vir_con : NULL, nrnb, econqCoord, NULL);
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
@@ -1490,7 +1490,7 @@ void update_constraints(FILE             *fplog,
                       as_rvec_array(state->x.data()), as_rvec_array(upd->xp.data()), NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), NULL, nrnb, econqCoord);
+                      as_rvec_array(state->v.data()), NULL, nrnb, econqCoord, NULL);
 
             wallcycle_stop(wcycle, ewcCONSTR);
         }
