@@ -191,6 +191,8 @@ struct pull_t
 
     FILE              *out_x;        /* Output file for pull data */
     FILE              *out_f;        /* Output file for pull data */
+    FILE              *out_xavg;     /* Output file for average pull data */
+    FILE              *out_favg;     /* Output file for average pull data */
 
     /* The number of coordinates using an external potential */
     int                numCoordinatesWithExternalPotential;

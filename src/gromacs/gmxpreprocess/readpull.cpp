@@ -288,6 +288,8 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     EETYPE("pull-print-components", pull->bPrintComp, yesno_names);
     ITYPE("pull-nstxout",     pull->nstxout, 50);
     ITYPE("pull-nstfout",     pull->nstfout, 50);
+    ITYPE("pull-nstxavgout", pull->nstxavgout, 0);
+    ITYPE("pull-nstfavgout", pull->nstfavgout, 0);
     CTYPE("Number of pull groups");
     ITYPE("pull-ngroups",     pull->ngroup, 1);
     CTYPE("Number of pull coordinates");

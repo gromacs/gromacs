@@ -2475,18 +2475,22 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     pull->bSetPBCatoms = TRUE;
 
     /* Only do I/O when we are doing dynamics and if we are the MASTER */
-    pull->out_x = NULL;
-    pull->out_f = NULL;
+    pull->out_x    = NULL;
+    pull->out_f    = NULL;
+    pull->out_xavg = NULL;
+    pull->out_favg = NULL;
     if (bOutFile)
     {
         /* Check for px and pf filename collision, if we are writing
            both files */
-        std::string px_filename, pf_filename;
-        std::string px_appended, pf_appended;
+        std::string px_filename, pf_filename, pxavg_filename, pfavg_filename;
+        std::string px_appended, pf_appended, pxavg_appended, pfavg_appended;
         try
         {
-            px_filename  = std::string(opt2fn("-px", nfile, fnm));
-            pf_filename  = std::string(opt2fn("-pf", nfile, fnm));
+            px_filename     = std::string(opt2fn("-px",    nfile, fnm));
+            pf_filename     = std::string(opt2fn("-pf",    nfile, fnm));
+            pxavg_filename  = std::string(opt2fn("-pxavg", nfile, fnm));
+            pfavg_filename  = std::string(opt2fn("-pfavg", nfile, fnm));
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
@@ -2526,6 +2530,42 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         {
             pull->out_f = open_pull_out(opt2fn("-pf", nfile, fnm), pull, oenv,
                                         FALSE, Flags);
+        }
+        if ((pull->params.nstxavgout != 0) &&
+            (pull->params.nstfavgout != 0) &&
+            (pxavg_filename == pfavg_filename))
+        {
+            if (!opt2bSet("-pxav", nfile, fnm) && !opt2bSet("-pfav", nfile, fnm))
+            {
+                /* We are writing both pull avg files but neither set directly. */
+                try
+                {
+                    pxavg_appended = append_before_extension(pxavg_filename, "_pullx");
+                    pfavg_appended = append_before_extension(pfavg_filename, "_pullf");
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+                pull->out_xavg     = open_pull_out(pxavg_appended.c_str(), pull, oenv,
+                                                   TRUE, Flags);
+                pull->out_favg     = open_pull_out(pfavg_appended.c_str(), pull, oenv,
+                                                   FALSE, Flags);
+                return pull;
+            }
+            else
+            {
+                /* If one of -px and -pf is set but the filenames are identical: */
+                gmx_fatal(FARGS, "Identical pull_x and pull_f average output filenames %s",
+                          pxavg_filename.c_str());
+            }
+        }
+        if (pull->params.nstxavgout != 0)
+        {
+            pull->out_xavg = open_pull_out(opt2fn("-pxav", nfile, fnm), pull, oenv,
+                                           TRUE, Flags);
+        }
+        if (pull->params.nstfavgout != 0)
+        {
+            pull->out_favg = open_pull_out(opt2fn("-pfav", nfile, fnm), pull, oenv,
+                                           FALSE, Flags);
         }
     }
 

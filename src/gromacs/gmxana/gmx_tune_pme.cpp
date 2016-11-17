@@ -2262,6 +2262,8 @@ int gmx_tune_pme(int argc, char *argv[])
         { efXVG, "-runav",  "runaver",  ffOPTWR },
         { efXVG, "-px",     "pullx",    ffOPTWR },
         { efXVG, "-pf",     "pullf",    ffOPTWR },
+        { efXVG, "-pxav",   "pullxav",  ffOPTWR },
+        { efXVG, "-pfav",   "pullfav",  ffOPTWR },
         { efXVG, "-ro",     "rotation", ffOPTWR },
         { efLOG, "-ra",     "rotangles", ffOPTWR },
         { efLOG, "-rs",     "rotslabs", ffOPTWR },
