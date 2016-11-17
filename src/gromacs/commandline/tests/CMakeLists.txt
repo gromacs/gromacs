@@ -51,12 +51,15 @@ if (UNIX)
             ${PATH_SEARCH_TEST_DIR}/bin/test-abs-link)
 endif()
 
+gmx_add_unit_test_object_library(commandline-test-objlib
+                                 cmdlinehelpmodule.cpp
+                                 cmdlinehelpwriter.cpp
+                                 cmdlinemodulemanager.cpp
+                                 cmdlinemodulemanagertest.cpp
+                                 cmdlineparser.cpp
+                                 cmdlineprogramcontext.cpp
+                                 pargs.cpp)
 gmx_add_unit_test(CommandLineUnitTests commandline-test
-                  cmdlinehelpmodule.cpp
-                  cmdlinehelpwriter.cpp
-                  cmdlinemodulemanager.cpp
-                  cmdlinemodulemanagertest.cpp
-                  cmdlineparser.cpp
-                  cmdlineprogramcontext.cpp
-                  pargs.cpp
-                  $<TARGET_OBJECTS:onlinehelp-test-shared>)
+                  $<TARGET_OBJECTS:commandline-test-objlib>
+                  $<TARGET_OBJECTS:onlinehelp-test-shared>
+                  )

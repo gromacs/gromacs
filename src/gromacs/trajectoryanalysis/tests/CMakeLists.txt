@@ -32,19 +32,24 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+gmx_add_unit_test_object_library(trajectoryanalysis-test-objlib
+                                 moduletest.cpp
+                                 cmdlinerunner.cpp
+                                 angle.cpp
+                                 distance.cpp
+                                 freevolume.cpp
+                                 pairdist.cpp
+                                 rdf.cpp
+                                 sasa.cpp
+                                 select.cpp
+                                 surfacearea.cpp
+                                 trajectory.cpp
+                                 )
+
 gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
-                  moduletest.cpp
-                  cmdlinerunner.cpp
-                  angle.cpp
-                  distance.cpp
-                  freevolume.cpp
-                  pairdist.cpp
-                  rdf.cpp
-                  sasa.cpp
-                  select.cpp
-                  surfacearea.cpp
-                  trajectory.cpp
-                  $<TARGET_OBJECTS:analysisdata-test-shared>)
+                  $<TARGET_OBJECTS:trajectoryanalysis-test-objlib>
+                  $<TARGET_OBJECTS:analysisdata-test-shared>
+                  )
 
 add_executable(test_selection ${UNITTEST_TARGET_OPTIONS} test_selection.cpp)
 target_link_libraries(test_selection libgromacs ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})

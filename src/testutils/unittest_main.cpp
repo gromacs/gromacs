@@ -46,18 +46,15 @@
 #include "testutils/testinit.h"
 
 #ifndef TEST_DATA_PATH
-//! Path to test input data directory (needs to be set by the build system).
-#define TEST_DATA_PATH 0
+#error Path to test input data directory TEST_DATA_PATH needs to be set by the build system.
 #endif
 
 #ifndef TEST_TEMP_PATH
-//! Path to test output temporary directory (needs to be set by the build system).
-#define TEST_TEMP_PATH 0
+#error Path to test output temporary directory TEST_TEMP_PATH needs to be set by the build system.
 #endif
 
 #ifndef TEST_USES_MPI
-//! Whether the test expects/supports running with multiple MPI ranks.
-#define TEST_USES_MPI false
+#error Build system must specify with bool TEST_USES_MPI whether the test binary expects/supports running with multiple MPI ranks.
 #endif
 
 /*! \brief

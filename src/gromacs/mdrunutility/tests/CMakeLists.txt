@@ -32,9 +32,13 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+gmx_add_unit_test_object_library(mdrunutility-test-objlib
+                                 threadaffinity.cpp
+                                 )
 gmx_add_unit_test_object_library(mdrunutility-test-shared
                                  threadaffinitytest.cpp)
 
 gmx_add_unit_test(MdrunUtilityUnitTests mdrunutility-test
-                  threadaffinity.cpp
-                  $<TARGET_OBJECTS:mdrunutility-test-shared>)
+                  $<TARGET_OBJECTS:mdrunutility-test-objlib>
+                  $<TARGET_OBJECTS:mdrunutility-test-shared>
+                  )

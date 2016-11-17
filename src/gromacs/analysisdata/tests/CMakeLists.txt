@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -35,11 +35,14 @@
 gmx_add_unit_test_object_library(analysisdata-test-shared
                                  datatest.cpp
                                  mock_datamodule.cpp)
+gmx_add_unit_test_object_library(analysisdata-test-objlib
+                                 analysisdata.cpp
+                                 arraydata.cpp
+                                 average.cpp
+                                 histogram.cpp
+                                 lifetime.cpp)
 
 gmx_add_unit_test(AnalysisDataUnitTests analysisdata-test
-                  analysisdata.cpp
-                  arraydata.cpp
-                  average.cpp
-                  histogram.cpp
-                  lifetime.cpp
-                  $<TARGET_OBJECTS:analysisdata-test-shared>)
+                  $<TARGET_OBJECTS:analysisdata-test-objlib>
+                  $<TARGET_OBJECTS:analysisdata-test-shared>
+                  )
