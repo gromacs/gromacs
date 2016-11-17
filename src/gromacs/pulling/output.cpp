@@ -41,12 +41,17 @@
 #include <cstdio>
 
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/compat/make_unique.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 
 #include "pull_internal.h"
 
@@ -66,115 +71,282 @@ static std::string append_before_extension(const std::string &pathname,
     }
 }
 
-static void pull_print_group_x(FILE *out, const ivec dim,
-                               const pull_group_work_t *pgrp)
+static void addToPullxHistory(pull_t *pull)
 {
-    int m;
-
-    for (m = 0; m < DIM; m++)
+    GMX_RELEASE_ASSERT(pull->coordForceHistory, "Pull history does not exist.");
+    pull->coordForceHistory->numValuesInXSum++;
+    for (size_t c = 0; c < pull->coord.size(); c++)
     {
-        if (dim[m])
+        const pull_coord_work_t &pcrd        = pull->coord[c];
+        PullCoordinateHistory   &pcrdHistory = pull->coordForceHistory->pullCoordinateSums[c];
+
+        pcrdHistory.value    += pcrd.spatialData.value;
+        pcrdHistory.valueRef += pcrd.value_ref;
+
+        for (int m = 0; m < DIM; m++)
         {
-            fprintf(out, "\t%g", pgrp->x[m]);
+            pcrdHistory.dr01[m] += pcrd.spatialData.dr01[m];
+            pcrdHistory.dr23[m] += pcrd.spatialData.dr23[m];
+            pcrdHistory.dr45[m] += pcrd.spatialData.dr45[m];
+        }
+        if (pcrd.params.eGeom == epullgCYL)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                pcrdHistory.dynaX[m] += pull->dyna[c].x[m];
+            }
+        }
+    }
+    for (size_t g = 0; g < pull->group.size(); g++)
+    {
+        PullGroupHistory &pgrpHistory = pull->coordForceHistory->pullGroupSums[g];
+        for (int m = 0; m < DIM; m++)
+        {
+            pgrpHistory.x[m] += pull->group[g].x[m];
         }
     }
 }
 
-static void pull_print_coord_dr_components(FILE *out, const ivec dim, const dvec dr)
+static void addToPullfHistory(pull_t *pull)
+{
+    GMX_RELEASE_ASSERT(pull->coordForceHistory, "Pull history does not exist.");
+    pull->coordForceHistory->numValuesInFSum++;
+    for (size_t c = 0; c < pull->coord.size(); c++)
+    {
+        const pull_coord_work_t &pcrd        = pull->coord[c];;
+        PullCoordinateHistory   &pcrdHistory = pull->coordForceHistory->pullCoordinateSums[c];
+
+        pcrdHistory.scalarForce += pcrd.scalarForce;
+    }
+}
+
+static void pullResetHistory(PullHistory *history,
+                             bool         resetXHistory,
+                             bool         resetFHistory)
+{
+    if (resetXHistory)
+    {
+        history->numValuesInXSum = 0;
+
+        for (PullCoordinateHistory &pcrdHistory : history->pullCoordinateSums)
+        {
+            pcrdHistory.value        = 0;
+            pcrdHistory.valueRef     = 0;
+
+            clear_dvec(pcrdHistory.dr01);
+            clear_dvec(pcrdHistory.dr23);
+            clear_dvec(pcrdHistory.dr45);
+            clear_dvec(pcrdHistory.dynaX);
+        }
+
+        for (PullGroupHistory &pgrpHistory : history->pullGroupSums)
+        {
+            clear_dvec(pgrpHistory.x);
+        }
+    }
+    if (resetFHistory)
+    {
+        history->numValuesInFSum = 0;
+        for (PullCoordinateHistory &pcrdHistory : history->pullCoordinateSums)
+        {
+            pcrdHistory.scalarForce = 0;
+        }
+    }
+}
+
+static void pull_print_coord_dr_components(FILE *out, const ivec dim, const dvec dr,
+                                           const int numValuesInSum)
 {
     for (int m = 0; m < DIM; m++)
     {
         if (dim[m])
         {
-            fprintf(out, "\t%g", dr[m]);
+            fprintf(out, "\t%g", dr[m] / numValuesInSum);
         }
     }
 }
 
-static void pull_print_coord_dr(FILE *out, const pull_coord_work_t *pcrd,
-                                gmx_bool bPrintRefValue,
-                                gmx_bool bPrintComponents)
+template <typename T>
+static void pull_print_coord_dr(FILE                *out,
+                                const pull_params_t &pullParams,
+                                const t_pull_coord  &coordParams,
+                                const T             &pcrdData,
+                                double               referenceValue,
+                                const int            numValuesInSum)
 {
-    double unit_factor = pull_conversion_factor_internal2userinput(&pcrd->params);
+    const double unit_factor = pull_conversion_factor_internal2userinput(&coordParams);
 
-    fprintf(out, "\t%g", pcrd->spatialData.value*unit_factor);
+    fprintf(out, "\t%g", pcrdData.value*unit_factor/numValuesInSum);
 
-    if (bPrintRefValue)
+    if (pullParams.bPrintRefValue && coordParams.eType != epullEXTERNAL)
     {
-        fprintf(out, "\t%g", pcrd->value_ref*unit_factor);
+        fprintf(out, "\t%g", referenceValue*unit_factor/numValuesInSum);
     }
 
-    if (bPrintComponents)
+    if (pullParams.bPrintComp)
     {
-        pull_print_coord_dr_components(out, pcrd->params.dim, pcrd->spatialData.dr01);
-        if (pcrd->params.ngroup >= 4)
+        pull_print_coord_dr_components(out, coordParams.dim, pcrdData.dr01, numValuesInSum);
+        if (coordParams.ngroup >= 4)
         {
-            pull_print_coord_dr_components(out, pcrd->params.dim, pcrd->spatialData.dr23);
+            pull_print_coord_dr_components(out, coordParams.dim, pcrdData.dr23, numValuesInSum);
         }
-        if (pcrd->params.ngroup >= 6)
+        if (coordParams.ngroup >= 6)
         {
-            pull_print_coord_dr_components(out, pcrd->params.dim, pcrd->spatialData.dr45);
+            pull_print_coord_dr_components(out, coordParams.dim, pcrdData.dr45, numValuesInSum);
         }
     }
 }
 
-static void pull_print_x(FILE *out, struct pull_t *pull, double t)
+static void pull_print_x(FILE *out, pull_t *pull, double t)
 {
     fprintf(out, "%.4f", t);
 
     for (size_t c = 0; c < pull->coord.size(); c++)
     {
-        pull_coord_work_t *pcrd;
+        const pull_coord_work_t     &pcrd           = pull->coord[c];
+        int                          numValuesInSum = 1;
+        const PullCoordinateHistory *pcrdHistory    = nullptr;
 
-        pcrd = &pull->coord[c];
+        if (pull->bXOutAverage)
+        {
+            pcrdHistory = &pull->coordForceHistory->pullCoordinateSums[c];
 
-        pull_print_coord_dr(out, pcrd,
-                            pull->params.bPrintRefValue && pcrd->params.eType != epullEXTERNAL,
-                            pull->params.bPrintComp);
+            numValuesInSum = pull->coordForceHistory->numValuesInXSum;
+            pull_print_coord_dr(out, pull->params, pcrd.params,
+                                *pcrdHistory, pcrdHistory->valueRef,
+                                numValuesInSum);
+        }
+        else
+        {
+            pull_print_coord_dr(out, pull->params, pcrd.params,
+                                pcrd.spatialData, pcrd.value_ref,
+                                numValuesInSum);
+        }
 
         if (pull->params.bPrintCOM)
         {
-            if (pcrd->params.eGeom == epullgCYL)
+            if (pcrd.params.eGeom == epullgCYL)
             {
-                pull_print_group_x(out, pcrd->params.dim, &pull->dyna[c]);
+                for (int m = 0; m < DIM; m++)
+                {
+                    if (pcrd.params.dim[m])
+                    {
+                        /* This equates to if (pull->bXOutAverage) */
+                        if (pcrdHistory)
+                        {
+                            fprintf(out, "\t%g", pcrdHistory->dynaX[m] / numValuesInSum);
+                        }
+                        else
+                        {
+                            fprintf(out, "\t%g", pull->dyna[c].x[m]);
+                        }
+                    }
+                }
             }
             else
             {
-                pull_print_group_x(out, pcrd->params.dim,
-                                   &pull->group[pcrd->params.group[0]]);
+                for (int m = 0; m < DIM; m++)
+                {
+                    if (pcrd.params.dim[m])
+                    {
+                        if (pull->bXOutAverage)
+                        {
+                            fprintf(out, "\t%g", pull->coordForceHistory->pullGroupSums[pcrd.params.group[0]].x[m] / numValuesInSum);
+                        }
+                        else
+                        {
+                            fprintf(out, "\t%g", pull->group[pcrd.params.group[0]].x[m]);
+                        }
+                    }
+                }
             }
-            for (int g = 1; g < pcrd->params.ngroup; g++)
+            for (int g = 1; g < pcrd.params.ngroup; g++)
             {
-                pull_print_group_x(out, pcrd->params.dim, &pull->group[pcrd->params.group[g]]);
+                for (int m = 0; m < DIM; m++)
+                {
+                    if (pcrd.params.dim[m])
+                    {
+                        if (pull->bXOutAverage)
+                        {
+                            fprintf(out, "\t%g", pull->coordForceHistory->pullGroupSums[pcrd.params.group[g]].x[m] / numValuesInSum);
+                        }
+                        else
+                        {
+                            fprintf(out, "\t%g", pull->group[pcrd.params.group[g]].x[m]);
+                        }
+                    }
+                }
             }
         }
     }
     fprintf(out, "\n");
+
+    if (pull->bXOutAverage)
+    {
+        pullResetHistory(pull->coordForceHistory, TRUE, FALSE);
+    }
 }
 
 static void pull_print_f(FILE *out, const pull_t *pull, double t)
 {
     fprintf(out, "%.4f", t);
 
-    for (const pull_coord_work_t &coord : pull->coord)
+    if (pull->bFOutAverage)
     {
-        fprintf(out, "\t%g", coord.scalarForce);
+        for (size_t c = 0; c < pull->coord.size(); c++)
+        {
+            fprintf(out, "\t%g", pull->coordForceHistory->pullCoordinateSums[c].scalarForce / pull->coordForceHistory->numValuesInFSum);
+        }
+    }
+    else
+    {
+        for (const pull_coord_work_t &coord : pull->coord)
+        {
+            fprintf(out, "\t%g", coord.scalarForce);
+        }
     }
     fprintf(out, "\n");
+
+    if (pull->bFOutAverage)
+    {
+        pullResetHistory(pull->coordForceHistory, FALSE, TRUE);
+    }
 }
 
 void pull_print_output(struct pull_t *pull, int64_t step, double time)
 {
     GMX_ASSERT(pull->numExternalPotentialsStillToBeAppliedThisStep == 0, "pull_print_output called before all external pull potentials have been applied");
 
-    if ((pull->params.nstxout != 0) && (step % pull->params.nstxout == 0))
+    if (pull->params.nstxout != 0)
     {
-        pull_print_x(pull->out_x, pull, time);
+        /* Do not update the average if the number of observations already equal (or are
+         * higher than) what should be in each average output. This can happen when
+         * appending to a file from a checkpoint, which would otherwise include the
+         * last value twice.*/
+        if (pull->bXOutAverage && !pull->coord.empty() && pull->coordForceHistory->numValuesInXSum < pull->params.nstxout)
+        {
+            addToPullxHistory(pull);
+        }
+        if (step % pull->params.nstxout == 0)
+        {
+            pull_print_x(pull->out_x, pull, time);
+        }
     }
 
-    if ((pull->params.nstfout != 0) && (step % pull->params.nstfout == 0))
+    if (pull->params.nstfout != 0)
     {
-        pull_print_f(pull->out_f, pull, time);
+        /* Do not update the average if the number of observations already equal (or are
+         * higher than) what should be in each average output. This can happen when
+         * appending to a file from a checkpoint, which would otherwise include the
+         * last value twice.*/
+        if (pull->bFOutAverage && !pull->coord.empty() && pull->coordForceHistory->numValuesInFSum < pull->params.nstfout)
+        {
+            addToPullfHistory(pull);
+        }
+        if (step % pull->params.nstfout == 0)
+        {
+            pull_print_f(pull->out_f, pull, time);
+        }
     }
 }
 
@@ -228,14 +400,30 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
         if (bCoord)
         {
             sprintf(buf, "Position (nm%s)", pull->bAngle ? ", deg" : "");
-            xvgr_header(fp, "Pull COM",  "Time (ps)", buf,
-                        exvggtXNY, oenv);
+            if (pull->bXOutAverage)
+            {
+                xvgr_header(fp, "Pull Average COM",  "Time (ps)", buf,
+                            exvggtXNY, oenv);
+            }
+            else
+            {
+                xvgr_header(fp, "Pull COM",  "Time (ps)", buf,
+                            exvggtXNY, oenv);
+            }
         }
         else
         {
             sprintf(buf, "Force (kJ/mol/nm%s)", pull->bAngle ? ", kJ/mol/rad" : "");
-            xvgr_header(fp, "Pull force", "Time (ps)", buf,
-                        exvggtXNY, oenv);
+            if (pull->bFOutAverage)
+            {
+                xvgr_header(fp, "Pull Average force", "Time (ps)", buf,
+                            exvggtXNY, oenv);
+            }
+            else
+            {
+                xvgr_header(fp, "Pull force", "Time (ps)", buf,
+                            exvggtXNY, oenv);
+            }
         }
 
         /* With default mdp options only the actual coordinate value is printed (1),
@@ -361,5 +549,31 @@ void init_pull_output_files(pull_t                    *pull,
     {
         pull->out_f = open_pull_out(opt2fn("-pf", nfile, fnm), pull, oenv,
                                     FALSE, continuationOptions);
+    }
+}
+
+void initPullHistory(pull_t             *pull,
+                     ObservablesHistory *observablesHistory)
+{
+    GMX_RELEASE_ASSERT(pull, "Need a valid pull object");
+
+    if (observablesHistory == nullptr)
+    {
+        pull->coordForceHistory = nullptr;
+        return;
+    }
+    /* If pull->coordForceHistory is already set we are starting from a checkpoint. Do not reset it. */
+    if (observablesHistory->pullHistory == nullptr)
+    {
+        observablesHistory->pullHistory           = gmx::compat::make_unique<PullHistory>();
+        pull->coordForceHistory                   = observablesHistory->pullHistory.get();
+        pull->coordForceHistory->numValuesInXSum  = 0;
+        pull->coordForceHistory->numValuesInFSum  = 0;
+        pull->coordForceHistory->pullCoordinateSums.resize(pull->coord.size());
+        pull->coordForceHistory->pullGroupSums.resize(pull->group.size());
+    }
+    else
+    {
+        pull->coordForceHistory                   = observablesHistory->pullHistory.get();
     }
 }

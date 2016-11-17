@@ -53,6 +53,7 @@
 struct pull_t;
 struct ContinuationOptions;
 struct gmx_output_env_t;
+struct ObservablesHistory;
 struct t_filenm;
 
 /*! \brief Set up and open the pull output files, when requested.
@@ -79,5 +80,12 @@ void init_pull_output_files(pull_t                    *pull,
  * \param time     Time.
  */
 void pull_print_output(pull_t *pull, int64_t step, double time);
+
+/*! \brief Allocate and initialize pull work history (for average pull output) and set it in a pull work struct
+ *
+ * \param pull                The pull work struct
+ * \param observablesHistory  Container of history data, e.g., pull history.
+ */
+void initPullHistory(pull_t *pull, ObservablesHistory *observablesHistory);
 
 #endif

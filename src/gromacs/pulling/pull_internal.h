@@ -69,6 +69,8 @@ static const int c_pullMaxNumLocalAtomsSingleThreaded = 100;
 static const int c_pullMaxNumLocalAtomsSingleThreaded = 1;
 #endif
 
+class PullHistory;
+
 enum {
     epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS, epgrppbcPREVSTEPCOM
 };
@@ -231,15 +233,20 @@ struct pull_t
     std::vector<pull_coord_work_t> coord;  /* The pull group param and work data */
 
     /* Global dynamic data */
-    gmx_bool             bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
+    gmx_bool             bSetPBCatoms;      /* Do we need to set x_pbc for the groups? */
 
-    int                  nthreads;     /* Number of threads used by the pull code */
-    std::vector<ComSums> comSums;      /* Work array for summing for COM, 1 entry per thread */
+    int                  nthreads;          /* Number of threads used by the pull code */
+    std::vector<ComSums> comSums;           /* Work array for summing for COM, 1 entry per thread */
 
-    pull_comm_t          comm;         /* Communication parameters, communicator and buffers */
+    pull_comm_t          comm;              /* Communication parameters, communicator and buffers */
 
-    FILE                *out_x;        /* Output file for pull data */
-    FILE                *out_f;        /* Output file for pull data */
+    FILE                *out_x;             /* Output file for pull data */
+    FILE                *out_f;             /* Output file for pull data */
+
+    bool                 bXOutAverage;      /* Output average pull coordinates */
+    bool                 bFOutAverage;      /* Output average pull forces */
+
+    PullHistory         *coordForceHistory; /* Pull coordinate and force history */
 
     /* The number of coordinates using an external potential */
     int                numCoordinatesWithExternalPotential;
