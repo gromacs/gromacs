@@ -96,7 +96,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 16;
+static const int cpt_version = 17;
 
 
 const char *est_names[estNR] =
@@ -131,6 +131,13 @@ enum {
     eenhNR
 };
 
+enum {
+    epullhPULL_N, epullhPULL_AVER, epullhPULL_SUM, epullhPULL_NSUM,
+    epullhPULL_SUM_SIM, epullhPULL_NSUM_SIM,
+    epullhPULL_NSTEPS, epullhPULL_NSTEPS_SIM,
+    epullhNR
+};
+
 const char *eenh_names[eenhNR] =
 {
     "energy_n", "energy_aver", "energy_sum", "energy_nsum",
@@ -140,6 +147,13 @@ const char *eenh_names[eenhNR] =
     "energy_delta_h_list",
     "energy_delta_h_start_time",
     "energy_delta_h_start_lambda"
+};
+
+const char *epullh_names[epullhNR] =
+{
+    "pull_n", "pull_aver", "pull_sum", "pull_nsum",
+    "pull_sum_sim", "pull_nsum_sim",
+    "pull_nsteps", "pull_nsteps_sim",
 };
 
 /* free energy history variables -- need to be preserved over checkpoint */
@@ -169,6 +183,7 @@ enum class StatePart
     microState,       //!< The microstate of the simulated system
     kineticEnergy,    //!< Kinetic energy, needed for T/P-coupling state
     energyHistory,    //!< Energy observable statistics
+    pullHistory,      //!< Pull force and position statistics
     freeEnergyHistory //!< Free-energy state and observable statistics
 };
 
@@ -180,6 +195,7 @@ static const char *entryName(StatePart part, int ecpt)
         case StatePart::microState:        return est_names [ecpt];
         case StatePart::kineticEnergy:     return eeks_names[ecpt];
         case StatePart::energyHistory:     return eenh_names[ecpt];
+        case StatePart::pullHistory:       return epullh_names[ecpt];
         case StatePart::freeEnergyHistory: return edfh_names[ecpt];
     }
 
@@ -826,7 +842,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
                           int *nnodes, int *dd_nc, int *npme,
                           int *natoms, int *ngtc, int *nnhpres, int *nhchainlength,
                           int *nlambda, int *flags_state,
-                          int *flags_eks, int *flags_enh, int *flags_dfh,
+                          int *flags_eks, int *flags_enh, int *flags_pullh, int *flags_dfh,
                           int *nED, int *eSwapCoords,
                           FILE *list)
 {
@@ -976,6 +992,10 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     else
     {
         *eSwapCoords = eswapNO;
+    }
+    if (*file_version >= 17)
+    {
+        do_cpt_int_err(xd, "pull history flags", flags_pullh, list);
     }
 }
 
@@ -1327,6 +1347,55 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
     return ret;
 }
 
+static int do_cpt_pullhist(XDR *xd, gmx_bool bRead,
+                           int fflags, energyhistory_t *pullhist,
+                           FILE *list)
+{
+    int ret = 0;
+
+    /* This is stored/read for backward compatibility */
+    int  pullHistoryNumEntries = 0;
+    if (bRead)
+    {
+        pullhist->nsteps     = 0;
+        pullhist->nsum       = 0;
+        pullhist->nsteps_sim = 0;
+        pullhist->nsum_sim   = 0;
+    }
+    else if (pullhist != nullptr)
+    {
+        pullHistoryNumEntries = pullhist->ener_sum_sim.size();
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(fflags == 0, "Without pull history, all flags should be off");
+    }
+
+    const StatePart part = StatePart::pullHistory;
+    for (int i = 0; (i < epullhNR && ret == 0); i++)
+    {
+        if (fflags & (1<<i))
+        {
+            switch (i)
+            {
+                case epullhPULL_N:     ret = do_cpte_int(xd, part, i, fflags, &pullHistoryNumEntries, list); break;
+                case epullhPULL_AVER:  ret = doVector<double>(xd, part, i, fflags, pullHistoryNumEntries, &pullhist->ener_ave, list); break;
+                case epullhPULL_SUM:   ret = doVector<double>(xd, part, i, fflags, pullHistoryNumEntries, &pullhist->ener_sum, list); break;
+                case epullhPULL_NSUM:  do_cpt_step_err(xd, eenh_names[i], &pullhist->nsum, list); break;
+                case epullhPULL_SUM_SIM: ret = doVector<double>(xd, part, i, fflags, pullHistoryNumEntries, &pullhist->ener_sum_sim, list); break;
+                case epullhPULL_NSUM_SIM:   do_cpt_step_err(xd, eenh_names[i], &pullhist->nsum_sim, list); break;
+                case epullhPULL_NSTEPS:     do_cpt_step_err(xd, eenh_names[i], &pullhist->nsteps, list); break;
+                case epullhPULL_NSTEPS_SIM: do_cpt_step_err(xd, eenh_names[i], &pullhist->nsteps_sim, list); break;
+                default:
+                    gmx_fatal(FARGS, "Unknown pull history entry %d\n"
+                              "You are probably reading a new checkpoint file with old code", i);
+            }
+        }
+    }
+
+    return ret;
+}
+
 static int do_cpt_df_hist(XDR *xd, int fflags, int nlambda, df_history_t **dfhistPtr, FILE *list)
 {
     int ret = 0;
@@ -1628,6 +1697,22 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         }
     }
 
+    energyhistory_t *pullhist  = observablesHistory->pullHistory.get();
+    int              flags_pullh = 0;
+    if (pullhist != nullptr && (pullhist->nsum > 0 || pullhist->nsum_sim > 0))
+    {
+        flags_pullh |= (1<<eenhENERGY_N) | (1<<eenhENERGY_NSTEPS) | (1<<eenhENERGY_NSTEPS_SIM);
+        if (pullhist->nsum > 0)
+        {
+            flags_pullh |= ((1<<eenhENERGY_AVER) | (1<<eenhENERGY_SUM) |
+                            (1<<eenhENERGY_NSUM));
+        }
+        if (pullhist->nsum_sim > 0)
+        {
+            flags_pullh |= ((1<<eenhENERGY_SUM_SIM) | (1<<eenhENERGY_NSUM_SIM));
+        }
+    }
+
     int flags_dfh;
     if (bExpanded)
     {
@@ -1676,8 +1761,8 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                   &eIntegrator, &simulation_part, &step, &t, &nppnodes,
                   DOMAINDECOMP(cr) ? domdecCells : NULL, &npmenodes,
                   &state->natoms, &state->ngtc, &state->nnhpres,
-                  &state->nhchainlength, &nlambda, &state->flags, &flags_eks, &flags_enh, &flags_dfh,
-                  &nED, &eSwapCoords,
+                  &state->nhchainlength, &nlambda, &state->flags, &flags_eks, &flags_enh,
+                  &flags_pullh, &flags_dfh, &nED, &eSwapCoords,
                   NULL);
 
     sfree(version);
@@ -1689,6 +1774,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     if ((do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, NULL) < 0)        ||
         (do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state->ekinstate, NULL) < 0) ||
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, enerhist, NULL) < 0)  ||
+        (do_cpt_pullhist(gmx_fio_getxdr(fp), FALSE, flags_pullh, pullhist, NULL) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, NULL) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, edsamhist, NULL) < 0)      ||
         (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, eSwapCoords, swaphist, NULL) < 0) ||
@@ -1948,7 +2034,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     char                 buf[STEPSTRSIZE];
     int                  eIntegrator_f, nppnodes_f, npmenodes_f;
     ivec                 dd_nc_f;
-    int                  natoms, ngtc, nnhpres, nhchainlength, nlambda, fflags, flags_eks, flags_enh, flags_dfh;
+    int                  natoms, ngtc, nnhpres, nhchainlength, nlambda, fflags, flags_eks, flags_enh, flags_pullh, flags_dfh;
     int                  nED, eSwapCoords;
     int                  d;
     int                  ret;
@@ -1980,7 +2066,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                   &eIntegrator_f, simulation_part, step, t,
                   &nppnodes_f, dd_nc_f, &npmenodes_f,
                   &natoms, &ngtc, &nnhpres, &nhchainlength, &nlambda,
-                  &fflags, &flags_eks, &flags_enh, &flags_dfh,
+                  &fflags, &flags_eks, &flags_enh, &flags_pullh, &flags_dfh,
                   &nED, &eSwapCoords, NULL);
 
     if (bAppendOutputFiles &&
@@ -2136,6 +2222,17 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
     }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           flags_enh, observablesHistory->energyHistory.get(), NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    if (flags_pullh && observablesHistory->pullHistory == nullptr)
+    {
+        observablesHistory->pullHistory = std::unique_ptr<energyhistory_t>(new energyhistory_t {});
+    }
+    ret = do_cpt_pullhist(gmx_fio_getxdr(fp), TRUE,
+                          flags_pullh, observablesHistory->pullHistory.get(), NULL);
     if (ret)
     {
         cp_error();
@@ -2394,7 +2491,7 @@ void read_checkpoint_part_and_step(const char  *filename,
     int       nppnodes, npme;
     ivec      dd_nc;
     int       nlambda;
-    int       flags_eks, flags_enh, flags_dfh;
+    int       flags_eks, flags_enh, flags_pullh, flags_dfh;
     double    t;
     t_state   state;
     int       nED, eSwapCoords;
@@ -2417,7 +2514,7 @@ void read_checkpoint_part_and_step(const char  *filename,
                   &version, &btime, &buser, &bhost, &double_prec, &fprog, &ftime,
                   &eIntegrator, simulation_part, step, &t, &nppnodes, dd_nc, &npme,
                   &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
-                  &nlambda, &state.flags, &flags_eks, &flags_enh, &flags_dfh,
+                  &nlambda, &state.flags, &flags_eks, &flags_enh, &flags_pullh, &flags_dfh,
                   &nED, &eSwapCoords, NULL);
 
     gmx_fio_close(fp);
@@ -2434,7 +2531,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     int                  nppnodes, npme;
     ivec                 dd_nc;
     int                  nlambda;
-    int                  flags_eks, flags_enh, flags_dfh;
+    int                  flags_eks, flags_enh, flags_pullh, flags_dfh;
     int                  nED, eSwapCoords;
     int                  nfiles_loc;
     gmx_file_position_t *files_loc = NULL;
@@ -2444,7 +2541,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
                   &version, &btime, &buser, &bhost, &double_prec, &fprog, &ftime,
                   &eIntegrator, simulation_part, step, t, &nppnodes, dd_nc, &npme,
                   &state->natoms, &state->ngtc, &state->nnhpres, &state->nhchainlength,
-                  &nlambda, &state->flags, &flags_eks, &flags_enh, &flags_dfh,
+                  &nlambda, &state->flags, &flags_eks, &flags_enh, &flags_pullh, &flags_dfh,
                   &nED, &eSwapCoords, NULL);
     ret =
         do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, NULL);
@@ -2461,6 +2558,13 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     energyhistory_t enerhist = {};
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           flags_enh, &enerhist, NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+    energyhistory_t pullhist = {};
+    ret = do_cpt_pullhist(gmx_fio_getxdr(fp), TRUE,
+                          flags_pullh, &pullhist, NULL);
     if (ret)
     {
         cp_error();
@@ -2589,7 +2693,7 @@ void list_checkpoint(const char *fn, FILE *out)
     double               t;
     ivec                 dd_nc;
     int                  nlambda;
-    int                  flags_eks, flags_enh, flags_dfh;
+    int                  flags_eks, flags_enh, flags_pullh, flags_dfh;
     int                  nED, eSwapCoords;
     int                  ret;
     gmx_file_position_t *outputfiles;
@@ -2604,7 +2708,7 @@ void list_checkpoint(const char *fn, FILE *out)
                   &eIntegrator, &simulation_part, &step, &t, &nppnodes, dd_nc, &npme,
                   &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
                   &nlambda, &state.flags,
-                  &flags_eks, &flags_enh, &flags_dfh, &nED, &eSwapCoords,
+                  &flags_eks, &flags_enh, &flags_pullh, &flags_dfh, &nED, &eSwapCoords,
                   out);
     ret = do_cpt_state(gmx_fio_getxdr(fp), state.flags, &state, out);
     if (ret)
@@ -2620,6 +2724,13 @@ void list_checkpoint(const char *fn, FILE *out)
     energyhistory_t enerhist = {};
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           flags_enh, &enerhist, out);
+
+    if (ret == 0)
+    {
+        energyhistory_t pullhist = {};
+        ret = do_cpt_pullhist(gmx_fio_getxdr(fp), TRUE,
+                              flags_pullh, &pullhist, out);
+    }
 
     if (ret == 0)
     {

@@ -1552,7 +1552,7 @@ applicable pulling coordinate.
    .. mdp-value:: no
 
       only print the distance for each pull coordinate
-   
+
    .. mdp-value:: yes
 
       print the distance and Cartesian components selected in
@@ -1568,6 +1568,20 @@ applicable pulling coordinate.
 
    (50)
    frequency for writing out the force of all the pulled group
+   (0 is never)
+
+.. mdp:: pull-nstxout-avg
+
+   (0)
+   frequency for writing out the average, over the same
+   number of steps, of the COMs of all the pull groups
+   (0 is never)
+
+.. mdp:: pull-nstfout-avg
+
+   (0)
+   frequency for writing out the average force, over the same
+   number of steps, of all the pull groups
    (0 is never)
 
 

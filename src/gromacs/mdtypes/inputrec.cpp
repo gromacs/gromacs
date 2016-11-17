@@ -615,6 +615,8 @@ static void pr_pull(FILE *fp, int indent, const pull_params_t *pull)
     PS("pull-print-components", EBOOL(pull->bPrintComp));
     PI("pull-nstxout", pull->nstxout);
     PI("pull-nstfout", pull->nstfout);
+    PI("pull-nstxout-avg", pull->nstxoutavg);
+    PI("pull-nstfout-avg", pull->nstfoutavg);
     PI("pull-ngroups", pull->ngroup);
     for (g = 0; g < pull->ngroup; g++)
     {

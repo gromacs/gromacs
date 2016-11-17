@@ -95,6 +95,8 @@ typedef struct pull_params_t {
     gmx_bool       bPrintComp;     /**< Print cartesian components for each coord with geometry=distance */
     int            nstxout;        /**< Output interval for pull x */
     int            nstfout;        /**< Output interval for pull f */
+    int            nstxoutavg;     /**< Output interval for average pull x */
+    int            nstfoutavg;     /**< Output interval for average pull f */
 
     t_pull_group  *group;          /**< groups to pull/restrain/etc/ */
     t_pull_coord  *coord;          /**< the pull coordinates */
