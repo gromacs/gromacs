@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,6 +67,8 @@ static const int c_pullMaxNumLocalAtomsSingleThreaded = 100;
 #else
 static const int c_pullMaxNumLocalAtomsSingleThreaded = 1;
 #endif
+
+class PullHistory;
 
 enum {
     epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS
@@ -219,15 +221,20 @@ struct pull_t
     std::vector<pull_coord_work_t> coord;  /* The pull group param and work data */
 
     /* Global dynamic data */
-    gmx_bool           bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
+    gmx_bool           bSetPBCatoms;       /* Do we need to set x_pbc for the groups? */
 
-    int                nthreads;     /* Number of threads used by the pull code */
-    pull_sum_com_t    *sum_com;      /* Work array for summing for COM, 1 entry per thread */
+    int                nthreads;           /* Number of threads used by the pull code */
+    pull_sum_com_t    *sum_com;            /* Work array for summing for COM, 1 entry per thread */
 
-    pull_comm_t        comm;         /* Communication parameters, communicator and buffers */
+    pull_comm_t        comm;               /* Communication parameters, communicator and buffers */
 
-    FILE              *out_x;        /* Output file for pull data */
-    FILE              *out_f;        /* Output file for pull data */
+    FILE              *out_x;              /* Output file for pull data */
+    FILE              *out_f;              /* Output file for pull data */
+
+    bool               bXOutAverage;       /* Output average pull coordinates */
+    bool               bFOutAverage;       /* Output average pull forces */
+
+    PullHistory       *coordForceHistory;  /* Pull coordinate and force history */
 
     /* The number of coordinates using an external potential */
     int                numCoordinatesWithExternalPotential;

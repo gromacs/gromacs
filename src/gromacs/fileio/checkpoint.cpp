@@ -72,6 +72,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -101,7 +102,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 17;
+static const int cpt_version = 18;
 
 
 const char *est_names[estNR] =
@@ -137,7 +138,22 @@ enum {
     eenhNR
 };
 
-static const char *eenh_names[eenhNR] =
+enum {
+    epullhPULL_NUMCOORDINATES, epullhPULL_NUMGROUPS, epullhPULL_NUMVALUESINXSUM,
+    epullhPULL_NUMVALUESINFSUM,  epullhNR
+};
+
+enum {
+    epullcoordh_VALUE_REF_SUM, epullcoordh_VALUE_SUM, epullcoordh_DR01_SUM,
+    epullcoordh_DR23_SUM, epullcoordh_DR45_SUM, epullcoordh_FSCAL_SUM,
+    epullcoordh_DYNAX_SUM, epullcoordh_NR
+};
+
+enum {
+    epullgrouph_X_SUM, epullgrouph_NR
+};
+
+const char *eenh_names[eenhNR] =
 {
     "energy_n", "energy_aver", "energy_sum", "energy_nsum",
     "energy_sum_sim", "energy_nsum_sim",
@@ -146,6 +162,25 @@ static const char *eenh_names[eenhNR] =
     "energy_delta_h_list",
     "energy_delta_h_start_time",
     "energy_delta_h_start_lambda"
+};
+
+const char *ePullhNames[epullhNR] =
+{
+    "pullhistory_numcoordinates", "pullhistory_numgroups", "pullhistory_numvaluesinxsum",
+    "pullhistory_numvaluesinfsum"
+};
+
+const char *ePullhCoordSumNames[epullcoordh_NR] =
+{
+    "pullhistory_coordinate_value_ref_sum", "pullhistory_coordinate_value_sum",
+    "pullhistory_coordinate_direction_vector_01_sum", "pullhistory_coordinate_direction_vector_23_sum",
+    "pullhistory_coordinate_direction_vector_45_sum", "pullhistory_coordinate_scalar_force_sum",
+    "pullhistory_coordinate_direction_dyna_x_sum"
+};
+
+const char *ePullhGroupSumNames[epullgrouph_NR] =
+{
+    "pullhistory_group_x"
 };
 
 /* free energy history variables -- need to be preserved over checkpoint */
@@ -203,7 +238,8 @@ enum class StatePart
     kineticEnergy,      //!< Kinetic energy, needed for T/P-coupling state
     energyHistory,      //!< Energy observable statistics
     freeEnergyHistory,  //!< Free-energy state and observable statistics
-    accWeightHistogram  //!< Accelerated weight histogram method state
+    accWeightHistogram, //!< Accelerated weight histogram method state
+    pullHistory,        //!< Pull history statistics (sums since last written output)
 };
 
 //! \brief Return the name of a checkpoint entry based on part and part entry
@@ -216,6 +252,7 @@ static const char *entryName(StatePart part, int ecpt)
         case StatePart::energyHistory:      return eenh_names[ecpt];
         case StatePart::freeEnergyHistory:  return edfh_names[ecpt];
         case StatePart::accWeightHistogram: return eawhh_names[ecpt];
+        case StatePart::pullHistory:        return ePullhNames[ecpt];
     }
 
     return nullptr;
@@ -652,12 +689,12 @@ static int doVectorLow(XDR *xd, StatePart part, int ecpt, int sflags,
     return 0;
 }
 
-//! \brief Read/Write a std::vector.
+//! \brief Read/Write a std::vector, on read checks the number of elements matches \p numElements, if specified.
 template <typename T>
 static int doVector(XDR *xd, StatePart part, int ecpt, int sflags,
-                    std::vector<T> *vector, FILE *list)
+                    std::vector<T> *vector, FILE *list, int numElements = -1)
 {
-    return doVectorLow<T>(xd, part, ecpt, sflags, -1, nullptr, nullptr, vector, list, CptElementType::real);
+    return doVectorLow<T>(xd, part, ecpt, sflags, numElements, nullptr, nullptr, vector, list, CptElementType::real);
 }
 
 //! \brief Read/Write an ArrayRef<real>.
@@ -899,6 +936,7 @@ struct CheckpointHeaderContents
     int         flags_state;
     int         flags_eks;
     int         flags_enh;
+    int         flagsPullHistory;
     int         flags_dfh;
     int         flags_awhh;
     int         nED;
@@ -1058,6 +1096,15 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, FILE *list,
     else
     {
         contents->flags_awhh = 0;
+    }
+
+    if (contents->file_version >= 18)
+    {
+        do_cpt_int_err(xd, "pull history flags", &contents->flagsPullHistory, list);
+    }
+    else
+    {
+        contents->flagsPullHistory = 0;
     }
 }
 
@@ -1409,6 +1456,140 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
     {
         /* Assume we have an old file format and copy nsum to nsteps */
         enerhist->nsteps_sim = enerhist->nsum_sim;
+    }
+
+    return ret;
+}
+
+static int doCptPullCoordHist(XDR *xd, PullCoordinateHistory *pullCoordHist,
+                              const StatePart part, FILE *list)
+{
+    int ret   = 0;
+    int flags = 0;
+
+    flags |= ((1<<epullcoordh_VALUE_REF_SUM) | (1<<epullcoordh_VALUE_SUM) | (1<<epullcoordh_DR01_SUM) |
+              (1<<epullcoordh_DR23_SUM) | (1<<epullcoordh_DR45_SUM) | (1<<epullcoordh_FSCAL_SUM));
+
+    for (int i = 0; i < epullcoordh_NR && ret == 0; i++)
+    {
+        switch (i)
+        {
+            case epullcoordh_VALUE_REF_SUM: ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->valueRef), list); break;
+            case epullcoordh_VALUE_SUM:     ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->value), list); break;
+            case epullcoordh_DR01_SUM:
+                for (int j = 0; j < DIM && ret == 0; j++)
+                {
+                    ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->dr01[j]), list);
+                }
+                break;
+            case epullcoordh_DR23_SUM:
+                for (int j = 0; j < DIM && ret == 0; j++)
+                {
+                    ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->dr23[j]), list);
+                }
+                break;
+            case epullcoordh_DR45_SUM:
+                for (int j = 0; j < DIM && ret == 0; j++)
+                {
+                    ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->dr45[j]), list);
+                }
+                break;
+            case epullcoordh_FSCAL_SUM:     ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->scalarForce), list); break;
+            case epullcoordh_DYNAX_SUM:
+                for (int j = 0; j < DIM && ret == 0; j++)
+                {
+                    ret = do_cpte_double(xd, part, i, flags, &(pullCoordHist->dynaX[j]), list);
+                }
+                break;
+        }
+    }
+
+    return ret;
+}
+
+static int doCptPullGroupHist(XDR *xd, PullGroupHistory *pullGroupHist,
+                              const StatePart part, FILE *list)
+{
+    int ret   = 0;
+    int flags = 0;
+
+    flags |= ((1<<epullgrouph_X_SUM));
+
+    for (int i = 0; i < epullgrouph_NR; i++)
+    {
+        switch (i)
+        {
+            case epullgrouph_X_SUM:
+                for (int j = 0; j < DIM && ret == 0; j++)
+                {
+                    ret = do_cpte_double(xd, part, i, flags, &(pullGroupHist->x[j]), list);
+                }
+                break;
+        }
+    }
+
+    return ret;
+}
+
+
+static int doCptPullHist(XDR *xd, gmx_bool bRead,
+                         int fflags, PullHistory *pullHist,
+                         const StatePart part,
+                         FILE *list)
+{
+    int ret                       = 0;
+    int pullHistoryNumCoordinates = 0;
+    int pullHistoryNumGroups      = 0;
+
+    /* Retain the number of terms in the sum and the number of coordinates (used for writing
+     * average pull forces and coordinates) in the pull history, in temporary variables,
+     * in case they cannot be read from the checkpoint, in order to have backward compatibility */
+    if (bRead)
+    {
+        pullHist->numValuesInXSum = 0;
+        pullHist->numValuesInFSum = 0;
+    }
+    else if (pullHist != nullptr)
+    {
+        pullHistoryNumCoordinates = pullHist->pullCoordinateSums.size();
+        pullHistoryNumGroups      = pullHist->pullGroupSums.size();
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(fflags == 0, "Without pull history, all flags should be off");
+    }
+
+    for (int i = 0; (i < epullhNR && ret == 0); i++)
+    {
+        if (fflags & (1<<i))
+        {
+            switch (i)
+            {
+                case epullhPULL_NUMCOORDINATES:         ret = do_cpte_int(xd, part, i, fflags, &pullHistoryNumCoordinates, list); break;
+                case epullhPULL_NUMGROUPS:              do_cpt_int_err(xd, eenh_names[i], &pullHistoryNumGroups, list); break;
+                case epullhPULL_NUMVALUESINXSUM:        do_cpt_int_err(xd, eenh_names[i], &pullHist->numValuesInXSum, list); break;
+                case epullhPULL_NUMVALUESINFSUM:        do_cpt_int_err(xd, eenh_names[i], &pullHist->numValuesInFSum, list); break;
+                default:
+                    gmx_fatal(FARGS, "Unknown pull history entry %d\n"
+                              "You are probably reading a new checkpoint file with old code", i);
+            }
+        }
+    }
+    if (bRead)
+    {
+        pullHist->pullCoordinateSums.resize(pullHistoryNumCoordinates);
+        pullHist->pullGroupSums.resize(pullHistoryNumGroups);
+    }
+    if (pullHist->numValuesInXSum > 0 || pullHist->numValuesInFSum > 0)
+    {
+        for (size_t i = 0; i < pullHist->pullCoordinateSums.size() && ret == 0; i++)
+        {
+            ret = doCptPullCoordHist(xd, &(pullHist->pullCoordinateSums[i]), part, list);
+        }
+        for (size_t i = 0; i < pullHist->pullGroupSums.size() && ret == 0; i++)
+        {
+            ret = doCptPullGroupHist(xd, &(pullHist->pullGroupSums[i]), part, list);
+        }
     }
 
     return ret;
@@ -1857,6 +2038,14 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         }
     }
 
+    PullHistory *pullHist         = observablesHistory->pullHistory.get();
+    int          flagsPullHistory = 0;
+    if (pullHist != nullptr && (pullHist->numValuesInXSum > 0 || pullHist->numValuesInFSum > 0))
+    {
+        flagsPullHistory |= (1<<epullhPULL_NUMCOORDINATES);
+        flagsPullHistory |= ((1<<epullhPULL_NUMGROUPS) | (1<<epullhPULL_NUMVALUESINXSUM) | (1<<epullhPULL_NUMVALUESINFSUM));
+    }
+
     int flags_dfh;
     if (bExpanded)
     {
@@ -1911,7 +2100,8 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         eIntegrator, simulation_part, step, t, nppnodes,
         {0}, npmenodes,
         state->natoms, state->ngtc, state->nnhpres,
-        state->nhchainlength, nlambda, state->flags, flags_eks, flags_enh, flags_dfh, flags_awhh,
+        state->nhchainlength, nlambda, state->flags, flags_eks, flags_enh,
+        flagsPullHistory, flags_dfh, flags_awhh,
         nED, eSwapCoords
     };
     std::strcpy(headerContents.version, gmx_version());
@@ -1930,6 +2120,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     if ((do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, nullptr) < 0)        ||
         (do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state->ekinstate, nullptr) < 0) ||
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, enerhist, nullptr) < 0)  ||
+        (doCptPullHist(gmx_fio_getxdr(fp), FALSE, flagsPullHistory, pullHist, StatePart::pullHistory, nullptr) < 0)  ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, nlambda, &state->dfhist, nullptr) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, nED, edsamhist, nullptr) < 0)      ||
         (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, flags_awhh, state->awhHistory.get(), nullptr) < 0) ||
@@ -2277,6 +2468,20 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
+    if (headerContents->flagsPullHistory)
+    {
+        if (observablesHistory->pullHistory == nullptr)
+        {
+            observablesHistory->pullHistory = std::unique_ptr<PullHistory>(new PullHistory {});
+        }
+        ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE,
+                            headerContents->flagsPullHistory, observablesHistory->pullHistory.get(), StatePart::pullHistory, nullptr);
+        if (ret)
+        {
+            cp_error();
+        }
+    }
+
     if (headerContents->file_version < 6)
     {
         gmx_fatal(FARGS, "Continuing from checkpoint files written before GROMACS 4.5 is not supported");
@@ -2577,6 +2782,14 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     {
         cp_error();
     }
+    PullHistory pullHist = {};
+    ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE,
+                        headerContents.flagsPullHistory, &pullHist, StatePart::pullHistory, nullptr);
+    if (ret)
+    {
+        cp_error();
+    }
+
     ret = do_cpt_df_hist(gmx_fio_getxdr(fp), headerContents.flags_dfh, headerContents.nlambda, &state->dfhist, nullptr);
     if (ret)
     {
@@ -2687,6 +2900,13 @@ void list_checkpoint(const char *fn, FILE *out)
     energyhistory_t enerhist;
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           headerContents.flags_enh, &enerhist, out);
+
+    if (ret == 0)
+    {
+        PullHistory pullHist = {};
+        ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE,
+                            headerContents.flagsPullHistory, &pullHist, StatePart::pullHistory, out);
+    }
 
     if (ret == 0)
     {
