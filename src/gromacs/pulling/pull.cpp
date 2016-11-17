@@ -1531,9 +1531,12 @@ real pull_potential(struct pull_t *pull, const t_mdatoms *md, t_pbc *pbc,
         const bool  computeVirial = (force->computeVirial_ && MASTER(cr));
         for (size_t c = 0; c < pull->coord.size(); c++)
         {
+            pull_coord_work_t *pcrd;
+            pcrd = &pull->coord[c];
+
             /* For external potential the force is assumed to be given by an external module by a call to
                apply_pull_coord_external_force */
-            if (pull->coord[c].params.eType == epullCONSTRAINT || pull->coord[c].params.eType == epullEXTERNAL)
+            if (pcrd->params.eType == epullCONSTRAINT || pcrd->params.eType == epullEXTERNAL)
             {
                 continue;
             }
@@ -1882,10 +1885,12 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         }
     }
 
-    pull->bPotential  = FALSE;
-    pull->bConstraint = FALSE;
-    pull->bCylinder   = FALSE;
-    pull->bAngle      = FALSE;
+    pull->bPotential   = FALSE;
+    pull->bConstraint  = FALSE;
+    pull->bCylinder    = FALSE;
+    pull->bAngle       = FALSE;
+    pull->bXOutAverage = pull_params->bXOutAverage;
+    pull->bFOutAverage = pull_params->bFOutAverage;
 
     GMX_RELEASE_ASSERT(pull->group[0].params.nat == 0, "pull group 0 is an absolute reference group and should not contain atoms");
     pull->group[0].x_prev_step[XX] = NAN;

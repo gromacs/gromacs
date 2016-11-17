@@ -97,6 +97,8 @@ typedef struct pull_params_t {
     gmx_bool       bSetPbcRefToPrevStepCOM; /**< Use the COM of each group from the previous step as reference */
     int            nstxout;                 /**< Output interval for pull x */
     int            nstfout;                 /**< Output interval for pull f */
+    bool           bXOutAverage;            /**< Write the average coordinate during the output interval */
+    bool           bFOutAverage;            /**< Write the average force during the output interval */
 
     t_pull_group  *group;                   /**< groups to pull/restrain/etc/ */
     t_pull_coord  *coord;                   /**< the pull coordinates */
