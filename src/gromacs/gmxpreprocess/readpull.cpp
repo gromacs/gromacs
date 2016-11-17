@@ -286,6 +286,8 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
     pull->bPrintComp     = get_eeenum(inp, "pull-print-components", yesno_names, wi);
     pull->nstxout        = get_eint(inp, "pull-nstxout", 50, wi);
     pull->nstfout        = get_eint(inp, "pull-nstfout", 50, wi);
+    pull->bXOutAverage   = get_eeenum(inp, "pull-xout-average", yesno_names, wi);
+    pull->bFOutAverage   = get_eeenum(inp, "pull-fout-average", yesno_names, wi);
     printStringNoNewline(inp, "Number of pull groups");
     pull->ngroup = get_eint(inp, "pull-ngroups", 1, wi);
     printStringNoNewline(inp, "Number of pull coordinates");
@@ -506,7 +508,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
 
     pull      = ir->pull;
     gmx::LocalAtomSetManager atomSets;
-    pull_work = init_pull(nullptr, pull, ir, mtop, nullptr, &atomSets, lambda);
+    pull_work = init_pull(nullptr, pull, ir, mtop, nullptr, &atomSets, lambda, nullptr);
     auto                     mdAtoms = gmx::makeMDAtoms(nullptr, *mtop, *ir, false);
     auto                     md      = mdAtoms->mdatoms();
     atoms2md(mtop, ir, -1, nullptr, mtop->natoms, mdAtoms.get());

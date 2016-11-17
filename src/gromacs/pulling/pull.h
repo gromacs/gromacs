@@ -67,6 +67,7 @@ struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
+struct ObservablesHistory;
 
 namespace gmx
 {
@@ -227,6 +228,7 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull);
  * \param cr          Struct for communication info.
  * \param atomSets    The manager that handles the pull atom sets
  * \param lambda      FEP lambda.
+ * \param observablesHistory Container of history data, e.g., pull history.
  */
 struct pull_t *init_pull(FILE                      *fplog,
                          const pull_params_t       *pull_params,
@@ -234,7 +236,8 @@ struct pull_t *init_pull(FILE                      *fplog,
                          const gmx_mtop_t          *mtop,
                          const t_commrec           *cr,
                          gmx::LocalAtomSetManager  *atomSets,
-                         real                       lambda);
+                         real                       lambda,
+                         ObservablesHistory        *observablesHistory);
 
 /*! \brief Set up and open the pull output files, when requested.
  *
