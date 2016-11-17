@@ -71,6 +71,7 @@ struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
+struct ObservablesHistory;
 
 /*! \brief Returns the units of the pull coordinate.
  *
@@ -229,6 +230,7 @@ void dd_make_local_pull_groups(t_commrec *cr,
  * \param lambda      FEP lambda.
  * \param bOutFile    Open output files?
  * \param continuationOptions  Options for continuing from checkpoint file
+ * \param observablesHistory Container of history data, e.g., pull history.
  */
 struct pull_t *init_pull(FILE                      *fplog,
                          const pull_params_t       *pull_params,
@@ -240,7 +242,8 @@ struct pull_t *init_pull(FILE                      *fplog,
                          const gmx_output_env_t    *oenv,
                          real                       lambda,
                          gmx_bool                   bOutFile,
-                         const ContinuationOptions &continuationOptions);
+                         const ContinuationOptions &continuationOptions,
+                         ObservablesHistory        *observablesHistory);
 
 
 /*! \brief Close the pull output files.
