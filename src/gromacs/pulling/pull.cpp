@@ -66,6 +66,8 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull_internal.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -140,119 +142,279 @@ static std::string append_before_extension(std::string pathname,
     }
 }
 
-static void pull_print_group_x(FILE *out, ivec dim,
-                               const pull_group_work_t *pgrp)
+static void addToPullxHistory(struct pull_t *pull)
 {
-    int m;
-
-    for (m = 0; m < DIM; m++)
+    pull->xHistory->numValuesInSum++;
+    for (int c = 0; c < pull->ncoord; c++)
     {
-        if (dim[m])
+        pull_coord_work_t *pcrd, *pcrdHistory;
+        pcrd        = &pull->coord[c];
+        pcrdHistory = &pull->xHistory->pullCoordinateSums[c];
+
+        pcrdHistory->value     += pcrd->value;
+        pcrdHistory->value_ref += pcrd->value_ref;
+
+        for (int m = 0; m < DIM; m++)
         {
-            fprintf(out, "\t%g", pgrp->x[m]);
+            pcrdHistory->dr01[m] += pcrd->dr01[m];
+            pcrdHistory->dr23[m] += pcrd->dr23[m];
+            pcrdHistory->dr45[m] += pcrd->dr45[m];
+        }
+        if (pcrd->params.eGeom == epullgCYL)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                pull->xHistory->pullDynaSums[c].x[m] += pull->dyna[c].x[m];
+            }
+        }
+    }
+    for (int g = 0; g < pull->ngroup; g++)
+    {
+        pull_group_work_t *pgrpHistory = &pull->xHistory->pullGroupSums[g];
+        for (int m = 0; m < DIM; m++)
+        {
+            pgrpHistory->x[m] += pull->group[g].x[m];
         }
     }
 }
 
-static void pull_print_coord_dr_components(FILE *out, const ivec dim, const dvec dr)
+static void addToPullfHistory(struct pull_t *pull)
+{
+    pull->fHistory->numValuesInSum++;
+    for (int c = 0; c < pull->ncoord; c++)
+    {
+        pull_coord_work_t *pcrd, *pcrdHistory;
+        pcrd        = &pull->coord[c];
+        pcrdHistory = &pull->fHistory->pullCoordinateSums[c];
+
+        pcrdHistory->f_scal += pcrd->f_scal;
+    }
+}
+
+static void pullResetHistory(PullHistory  *history)
+{
+    history->numValuesInSum = 0;
+
+    for (int c = 0; c < history->numCoordinates; c++)
+    {
+        pull_coord_work_t *pcrdHistory = &history->pullCoordinateSums[c];
+
+        pcrdHistory->value     = 0;
+        pcrdHistory->value_ref = 0;
+        pcrdHistory->f_scal    = 0;
+
+        for (int m = 0; m < DIM; m++)
+        {
+            pcrdHistory->dr01[m]          = 0;
+            pcrdHistory->dr23[m]          = 0;
+            pcrdHistory->dr45[m]          = 0;
+            history->pullDynaSums[c].x[m] = 0;
+        }
+    }
+
+    for (int g = 0; g < history->numGroups; g++)
+    {
+        pull_group_work_t *pgrpHistory = &history->pullGroupSums[g];
+        for (int m = 0; m < DIM; m++)
+        {
+            pgrpHistory->x[m] = 0;
+        }
+    }
+}
+
+static void pull_print_group_x(FILE *out, ivec dim,
+                               const pull_group_work_t *pgrp,
+                               const int numValuesInSum)
 {
     for (int m = 0; m < DIM; m++)
     {
         if (dim[m])
         {
-            fprintf(out, "\t%g", dr[m]);
+            fprintf(out, "\t%g", pgrp->x[m] / numValuesInSum);
         }
     }
 }
 
-static void pull_print_coord_dr(FILE *out, const pull_coord_work_t *pcrd,
-                                gmx_bool bPrintRefValue,
-                                gmx_bool bPrintComponents)
+static void pull_print_coord_dr_components(FILE *out, const ivec dim, const dvec dr,
+                                           const int numValuesInSum)
 {
-    double unit_factor = pull_conversion_factor_internal2userinput(&pcrd->params);
+    for (int m = 0; m < DIM; m++)
+    {
+        if (dim[m])
+        {
+            fprintf(out, "\t%g", dr[m] / numValuesInSum);
+        }
+    }
+}
 
-    fprintf(out, "\t%g", pcrd->value*unit_factor);
+static void pull_print_coord_dr(FILE *out, const ivec dim,
+                                const pull_coord_work_t *pcrd,
+                                gmx_bool     bPrintRefValue,
+                                gmx_bool     bPrintComponents,
+                                const double unit_factor,
+                                const int    numValuesInSum)
+{
+    fprintf(out, "\t%g", pcrd->value*unit_factor/numValuesInSum);
 
     if (bPrintRefValue)
     {
-        fprintf(out, "\t%g", pcrd->value_ref*unit_factor);
+        fprintf(out, "\t%g", pcrd->value_ref*unit_factor/numValuesInSum);
     }
 
     if (bPrintComponents)
     {
-        pull_print_coord_dr_components(out, pcrd->params.dim, pcrd->dr01);
+        pull_print_coord_dr_components(out, dim, pcrd->dr01, numValuesInSum);
+
         if (pcrd->params.ngroup >= 4)
         {
-            pull_print_coord_dr_components(out, pcrd->params.dim, pcrd->dr23);
-        }
-        if (pcrd->params.ngroup >= 6)
-        {
-            pull_print_coord_dr_components(out, pcrd->params.dim, pcrd->dr45);
+            pull_print_coord_dr_components(out, dim, pcrd->dr23, numValuesInSum);
+
+            if (pcrd->params.ngroup >= 6)
+            {
+                pull_print_coord_dr_components(out, dim, pcrd->dr45, numValuesInSum);
+            }
         }
     }
 }
 
 static void pull_print_x(FILE *out, struct pull_t *pull, double t)
 {
-    int c;
-
     fprintf(out, "%.4f", t);
 
-    for (c = 0; c < pull->ncoord; c++)
+    for (int c = 0; c < pull->ncoord; c++)
     {
         pull_coord_work_t *pcrd;
+        int                numValuesInSum = 1;
 
-        pcrd = &pull->coord[c];
+        pcrd               = &pull->coord[c];
 
-        pull_print_coord_dr(out, pcrd,
-                            pull->params.bPrintRefValue && pcrd->params.eType != epullEXTERNAL,
-                            pull->params.bPrintComp);
+        double unit_factor = pull_conversion_factor_internal2userinput(&pcrd->params);
+
+        if (pull->bXOutAverage)
+        {
+            numValuesInSum = pull->xHistory->numValuesInSum;
+        }
+
+        if (pull->bXOutAverage)
+        {
+            pull_print_coord_dr(out, pcrd->params.dim, &pull->xHistory->pullCoordinateSums[c],
+                                pull->params.bPrintRefValue && pcrd->params.eType != epullEXTERNAL,
+                                pull->params.bPrintComp, unit_factor, numValuesInSum);
+        }
+        else
+        {
+            pull_print_coord_dr(out, pcrd->params.dim, pcrd,
+                                pull->params.bPrintRefValue && pcrd->params.eType != epullEXTERNAL,
+                                pull->params.bPrintComp, unit_factor, numValuesInSum);
+        }
 
         if (pull->params.bPrintCOM)
         {
             if (pcrd->params.eGeom == epullgCYL)
             {
-                pull_print_group_x(out, pcrd->params.dim, &pull->dyna[c]);
+                if (pull->bXOutAverage)
+                {
+                    pull_print_group_x(out, pcrd->params.dim, &pull->xHistory->pullDynaSums[c], numValuesInSum);
+                }
+                else
+                {
+                    pull_print_group_x(out, pcrd->params.dim, &pull->dyna[c], numValuesInSum);
+                }
             }
             else
             {
-                pull_print_group_x(out, pcrd->params.dim,
-                                   &pull->group[pcrd->params.group[0]]);
+                if (pull->bXOutAverage)
+                {
+                    pull_print_group_x(out, pcrd->params.dim,
+                                       &pull->xHistory->pullGroupSums[pcrd->params.group[0]],
+                                       numValuesInSum);
+                }
+                else
+                {
+                    pull_print_group_x(out, pcrd->params.dim,
+                                       &pull->group[pcrd->params.group[0]],
+                                       numValuesInSum);
+                }
             }
             for (int g = 1; g < pcrd->params.ngroup; g++)
             {
-                pull_print_group_x(out, pcrd->params.dim, &pull->group[pcrd->params.group[g]]);
+                if (pull->bXOutAverage)
+                {
+                    pull_print_group_x(out, pcrd->params.dim, &pull->xHistory->pullGroupSums[pcrd->params.group[g]],
+                                       numValuesInSum);
+                }
+                else
+                {
+                    pull_print_group_x(out, pcrd->params.dim, &pull->group[pcrd->params.group[g]],
+                                       numValuesInSum);
+                }
             }
         }
     }
     fprintf(out, "\n");
+
+    pullResetHistory(pull->xHistory);
 }
 
 static void pull_print_f(FILE *out, struct pull_t *pull, double t)
 {
-    int c;
+    int      c;
 
     fprintf(out, "%.4f", t);
 
-    for (c = 0; c < pull->ncoord; c++)
+    if (pull->bFOutAverage)
     {
-        fprintf(out, "\t%g", pull->coord[c].f_scal);
+        for (c = 0; c < pull->ncoord; c++)
+        {
+            fprintf(out, "\t%g", pull->fHistory->pullCoordinateSums[c].f_scal / pull->fHistory->numValuesInSum);
+        }
+    }
+    else
+    {
+        for (c = 0; c < pull->ncoord; c++)
+        {
+            fprintf(out, "\t%g", pull->coord[c].f_scal);
+        }
     }
     fprintf(out, "\n");
+
+    pullResetHistory(pull->fHistory);
 }
 
 void pull_print_output(struct pull_t *pull, gmx_int64_t step, double time)
 {
     GMX_ASSERT(pull->numExternalPotentialsStillToBeAppliedThisStep == 0, "pull_print_output called before all external pull potentials have been applied");
 
-    if ((pull->params.nstxout != 0) && (step % pull->params.nstxout == 0))
+    if (pull->params.nstxout != 0)
     {
-        pull_print_x(pull->out_x, pull, time);
+        /* Do not update the average if the number of observations already equal (or are
+         * higher than) what should be in each average output. This can happen when
+         * appending to a file from a checkpoint, which would otherwise include the
+         * last value twice.*/
+        if (pull->bXOutAverage && pull->ncoord > 0 && pull->xHistory->numValuesInSum < pull->params.nstxout)
+        {
+            addToPullxHistory(pull);
+        }
+        if (step % pull->params.nstxout == 0)
+        {
+            pull_print_x(pull->out_x, pull, time);
+        }
     }
 
-    if ((pull->params.nstfout != 0) && (step % pull->params.nstfout == 0))
+    if (pull->params.nstfout != 0)
     {
-        pull_print_f(pull->out_f, pull, time);
+        /* Do not update the average if the number of observations already equal (or are
+         * higher than) what should be in each average output. This can happen when
+         * appending to a file from a checkpoint, which would otherwise include the
+         * last value twice.*/
+        if (pull->bFOutAverage && pull->ncoord > 0 && pull->fHistory->numValuesInSum < pull->params.nstfout)
+        {
+            addToPullfHistory(pull);
+        }
+        if (step % pull->params.nstfout == 0)
+        {
+            pull_print_f(pull->out_f, pull, time);
+        }
     }
 }
 
@@ -306,14 +468,30 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
         if (bCoord)
         {
             sprintf(buf, "Position (nm%s)", pull->bAngle ? ", deg" : "");
-            xvgr_header(fp, "Pull COM",  "Time (ps)", buf,
-                        exvggtXNY, oenv);
+            if (pull->bXOutAverage)
+            {
+                xvgr_header(fp, "Pull Average COM",  "Time (ps)", buf,
+                            exvggtXNY, oenv);
+            }
+            else
+            {
+                xvgr_header(fp, "Pull COM",  "Time (ps)", buf,
+                            exvggtXNY, oenv);
+            }
         }
         else
         {
             sprintf(buf, "Force (kJ/mol/nm%s)", pull->bAngle ? ", kJ/mol/rad" : "");
-            xvgr_header(fp, "Pull force", "Time (ps)", buf,
-                        exvggtXNY, oenv);
+            if (pull->bFOutAverage)
+            {
+                xvgr_header(fp, "Pull Average force", "Time (ps)", buf,
+                            exvggtXNY, oenv);
+            }
+            else
+            {
+                xvgr_header(fp, "Pull force", "Time (ps)", buf,
+                            exvggtXNY, oenv);
+            }
         }
 
         /* With default mdp options only the actual coordinate value is printed (1),
@@ -1734,9 +1912,12 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
         const bool  computeVirial = (force->computeVirial_ && MASTER(cr));
         for (int c = 0; c < pull->ncoord; c++)
         {
+            pull_coord_work_t *pcrd;
+            pcrd = &pull->coord[c];
+
             /* For external potential the force is assumed to be given by an external module by a call to
                apply_pull_coord_external_force */
-            if (pull->coord[c].params.eType == epullCONSTRAINT || pull->coord[c].params.eType == epullEXTERNAL)
+            if (pcrd->params.eType == epullCONSTRAINT || pcrd->params.eType == epullEXTERNAL)
             {
                 continue;
             }
@@ -2114,13 +2295,44 @@ static void init_pull_group_index(FILE *fplog, const t_commrec *cr,
     }
 }
 
+static void initPullHistory(struct pull_t *pull, ObservablesHistory *observablesHistory)
+{
+    if (observablesHistory == nullptr)
+    {
+        return;
+    }
+    if (pull->xHistory == nullptr)
+    {
+        observablesHistory->pullXHistory = std::unique_ptr<PullHistory>(new PullHistory {});
+        pull->xHistory                   = observablesHistory->pullXHistory.get();
+        pull->xHistory->numCoordinates   = pull->ncoord;
+        pull->xHistory->numGroups        = pull->ngroup;
+        pull->xHistory->numValuesInSum   = 0;
+        snew(pull->xHistory->pullCoordinateSums, pull->xHistory->numCoordinates);
+        snew(pull->xHistory->pullGroupSums, pull->xHistory->numGroups);
+        snew(pull->xHistory->pullDynaSums,  pull->xHistory->numCoordinates);
+    }
+    if (pull->fHistory == nullptr)
+    {
+        observablesHistory->pullFHistory   = std::unique_ptr<PullHistory>(new PullHistory {});
+        pull->fHistory                     = observablesHistory->pullFHistory.get();
+        pull->fHistory->numCoordinates     = pull->ncoord;
+        pull->fHistory->numGroups          = pull->ngroup;
+        pull->fHistory->numValuesInSum     = 0;
+        snew(pull->fHistory->pullCoordinateSums, pull->fHistory->numCoordinates);
+        snew(pull->fHistory->pullGroupSums, pull->fHistory->numGroups);
+        snew(pull->fHistory->pullDynaSums,  pull->fHistory->numCoordinates);
+    }
+}
+
 struct pull_t *
 init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
           int nfile, const t_filenm fnm[],
           const gmx_mtop_t *mtop, const t_commrec *cr,
           const gmx_output_env_t *oenv, real lambda,
           gmx_bool bOutFile,
-          const ContinuationOptions &continuationOptions)
+          const ContinuationOptions &continuationOptions,
+          ObservablesHistory *observablesHistory)
 {
     struct pull_t *pull;
     pull_comm_t   *comm;
@@ -2139,10 +2351,22 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     snew(pull->coord, pull->ncoord);
     snew(pull->group, pull->ngroup);
 
-    pull->bPotential  = FALSE;
-    pull->bConstraint = FALSE;
-    pull->bCylinder   = FALSE;
-    pull->bAngle      = FALSE;
+    pull->bPotential   = FALSE;
+    pull->bConstraint  = FALSE;
+    pull->bCylinder    = FALSE;
+    pull->bAngle       = FALSE;
+    pull->bXOutAverage = pull_params->bXOutAverage;
+    pull->bFOutAverage = pull_params->bFOutAverage;
+    if (observablesHistory != nullptr)
+    {
+        pull->xHistory    = observablesHistory->pullXHistory.get();
+        pull->fHistory    = observablesHistory->pullFHistory.get();
+    }
+    else
+    {
+        pull->xHistory    = nullptr;
+        pull->fHistory    = nullptr;
+    }
 
     for (g = 0; g < pull->ngroup; g++)
     {
@@ -2512,6 +2736,7 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
     /* Only do I/O when we are doing dynamics and if we are the MASTER */
     pull->out_x = nullptr;
     pull->out_f = nullptr;
+
     if (bOutFile)
     {
         /* Check for px and pf filename collision, if we are writing
@@ -2520,11 +2745,12 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
         std::string px_appended, pf_appended;
         try
         {
-            px_filename  = std::string(opt2fn("-px", nfile, fnm));
-            pf_filename  = std::string(opt2fn("-pf", nfile, fnm));
+            px_filename = std::string(opt2fn("-px", nfile, fnm));
+            pf_filename = std::string(opt2fn("-pf", nfile, fnm));
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
+        initPullHistory(pull, observablesHistory);
 
         if ((pull->params.nstxout != 0) &&
             (pull->params.nstfout != 0) &&
@@ -2539,8 +2765,8 @@ init_pull(FILE *fplog, const pull_params_t *pull_params, const t_inputrec *ir,
                     pf_appended   = append_before_extension(pf_filename, "_pullf");
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-                pull->out_x   = open_pull_out(px_appended.c_str(), pull, oenv,
-                                              TRUE, continuationOptions);
+                pull->out_x = open_pull_out(px_appended.c_str(), pull, oenv,
+                                            TRUE, continuationOptions);
                 pull->out_f = open_pull_out(pf_appended.c_str(), pull, oenv,
                                             FALSE, continuationOptions);
                 return pull;

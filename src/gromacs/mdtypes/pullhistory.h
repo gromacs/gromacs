@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,14 +33,50 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gmxpre.h"
+/*! \libinternal \file
+ *
+ *
+ * \brief
+ * This file contains datatypes for pull statistics history.
+ *
+ * \author Magnus Lundborg, Berk Hess
+ *
+ * \inlibraryapi
+ * \ingroup module_mdtypes
+ */
 
-#include "observableshistory.h"
+#ifndef GMX_MDLIB_PULLHISTORY_H
+#define GMX_MDLIB_PULLHISTORY_H
 
-#include "gromacs/mdtypes/edsamhistory.h"
-#include "gromacs/mdtypes/energyhistory.h"
-#include "gromacs/mdtypes/pullhistory.h"
-#include "gromacs/mdtypes/swaphistory.h"
+#include <vector>
 
-ObservablesHistory::ObservablesHistory()  = default;
-ObservablesHistory::~ObservablesHistory() = default;
+#include "gromacs/pulling/pull_internal.h"
+
+//! \cond INTERNAL
+
+
+//! \brief Pull statistics history, to allow output of average pull data.
+class PullHistory
+{
+    public:
+        int                 numCoordinates;         //!< The number of pull coordinates.
+        int                 numGroups;              //!< The number of pull groups.
+        int                 numValuesInSum;         //!< Number of steps in the ener_ave and ener_sum.
+        pull_coord_work_t  *pullCoordinateSums;     //!< The container of the sums of the values of the pull coordinate.
+        pull_group_work_t  *pullGroupSums;          //!< The container of the sums of the values of the pull group.
+        pull_group_work_t  *pullDynaSums;           //!< The container of the sums of the values for dynamic groups for geom=cylinder.
+
+        //! Constructor
+        PullHistory() : numCoordinates(0),
+                        numGroups(0),
+                        numValuesInSum(0),
+                        pullCoordinateSums(),
+                        pullGroupSums(),
+                        pullDynaSums()
+        {
+        }
+};
+
+//! \endcond
+
+#endif
