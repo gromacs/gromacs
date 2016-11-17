@@ -286,6 +286,8 @@ char **read_pullparams(std::vector<t_inpfile> *inp,
     pull->bPrintComp     = (get_eeenum(inp, "pull-print-components", yesno_names, wi) != 0);
     pull->nstxout        = get_eint(inp, "pull-nstxout", 50, wi);
     pull->nstfout        = get_eint(inp, "pull-nstfout", 50, wi);
+    pull->bXOutAverage   = (get_eeenum(inp, "pull-xout-average", yesno_names, wi) != 0);
+    pull->bFOutAverage   = (get_eeenum(inp, "pull-fout-average", yesno_names, wi) != 0);
     printStringNoNewline(inp, "Number of pull groups");
     pull->ngroup = get_eint(inp, "pull-ngroups", 1, wi);
     printStringNoNewline(inp, "Number of pull coordinates");

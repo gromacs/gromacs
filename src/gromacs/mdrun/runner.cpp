@@ -1262,6 +1262,10 @@ int Mdrunner::mdrunner()
             inputrec->pull_work =
                 init_pull(fplog, inputrec->pull, inputrec,
                           &mtop, cr, &atomSets, inputrec->fepvals->init_lambda);
+            if (inputrec->pull->bXOutAverage || inputrec->pull->bFOutAverage)
+            {
+                initPullHistory(inputrec->pull_work, &observablesHistory);
+            }
             if (EI_DYNAMICS(inputrec->eI) && MASTER(cr))
             {
                 init_pull_output_files(inputrec->pull_work,

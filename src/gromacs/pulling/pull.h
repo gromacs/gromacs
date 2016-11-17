@@ -67,6 +67,7 @@ struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
+struct ObservablesHistory;
 
 namespace gmx
 {
@@ -217,6 +218,12 @@ void pull_constraint(struct pull_t *pull, const t_mdatoms *md, struct t_pbc *pbc
  */
 void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull);
 
+/*! \brief Allocate and initialize pull work history (for average pull output) and set it in a pull work struct
+ *
+ * \param pull                The pull work struct
+ * \param ObservablesHistory  Container of history data, e.g., pull history.
+ */
+void initPullHistory(struct pull_t *pull, ObservablesHistory *observablesHistory);
 
 /*! \brief Allocate, initialize and return a pull work struct.
  *
