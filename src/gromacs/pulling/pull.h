@@ -220,7 +220,6 @@ void pull_constraint(struct pull_t *pull, const t_mdatoms *md, struct t_pbc *pbc
  */
 void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull);
 
-
 /*! \brief Allocate, initialize and return a pull work struct.
  *
  * \param fplog       General output file, normally md.log.
