@@ -37,8 +37,6 @@
 
 #include <stdio.h>
 
-#include "tng/tng_io_fwd.h"
-
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -51,6 +49,8 @@ extern "C" {
 
 struct gmx_mtop_t;
 struct t_trxframe;
+struct tng_trajectory;
+typedef struct tng_trajectory *tng_trajectory_t;
 
 /*! \brief Prepare to write TNG output from trajectory conversion tools */
 void gmx_prepare_tng_writing(const char              *filename,
