@@ -46,7 +46,7 @@ endfunction ()
 function (gmx_add_gtest_executable EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         set(_options MPI)
-        cmake_parse_arguments(ARG "${_options}" "" "" ${ARGN})
+        cmake_parse_arguments(ARG "${_options}" "" "OBJECT_LIBRARY_NAMES;OBJECT_LIBRARY_OBJECTS" ${ARGN})
         set(_source_files ${ARG_UNPARSED_ARGUMENTS})
 
         file(RELATIVE_PATH _input_files_path ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
@@ -68,16 +68,24 @@ function (gmx_add_gtest_executable EXENAME)
         endif()
 
         include_directories(BEFORE SYSTEM ${GMOCK_INCLUDE_DIRS})
+        # Set up the object library target
+        add_library(${EXENAME}_objlib OBJECT ${_source_files})
+        set_property(TARGET ${EXENAME}_objlib
+            APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
+        set_property(TARGET ${EXENAME}_objlib
+            APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
+        set_property(TARGET ${EXENAME}_objlib
+            APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
+        # Set up the executable target
         add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
-            ${_source_files} ${TESTUTILS_DIR}/unittest_main.cpp)
+            $<TARGET_OBJECTS:${EXENAME}_objlib> ${ARG_OBJECT_LIBRARY_OBJECTS} ${TESTUTILS_DIR}/unittest_main.cpp)
         target_link_libraries(${EXENAME}
             ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
-        set_property(TARGET ${EXENAME}
-            APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-        set_property(TARGET ${EXENAME}
-            APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
-        set_property(TARGET ${EXENAME}
-            APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
+        # Set up the clang_analyzer target
+        add_dependencies(clang_analyzer ${EXENAME}_objlib)
+        foreach(_objlib ${ARG_OBJECT_LIBRARY_NAMES})
+            add_dependencies(clang_analyzer ${_objlib})
+        endforeach()
     endif()
 endfunction()
 

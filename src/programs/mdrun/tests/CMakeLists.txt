@@ -55,9 +55,11 @@ gmx_add_gtest_executable(
     swapcoords.cpp
     interactiveMD.cpp
     termination.cpp
-    # pseudo-library for code for testing mdrun
+    OBJECT_LIBRARY_NAMES
+    mdrun_test_objlib
+    mdrun_objlib
+    OBJECT_LIBRARY_OBJECTS
     $<TARGET_OBJECTS:mdrun_test_objlib>
-    # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
 gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
@@ -72,9 +74,11 @@ gmx_add_gtest_executable(
     multisimtest.cpp
     replicaexchange.cpp
     domain_decomposition.cpp
-    # pseudo-library for code for testing mdrun
+    OBJECT_LIBRARY_NAMES
+    mdrun_test_objlib
+    mdrun_objlib
+    OBJECT_LIBRARY_OBJECTS
     $<TARGET_OBJECTS:mdrun_test_objlib>
-    # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
 gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 INTEGRATION_TEST)

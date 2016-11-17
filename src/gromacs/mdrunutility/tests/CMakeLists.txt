@@ -37,4 +37,8 @@ gmx_add_unit_test_object_library(mdrunutility-test-shared
 
 gmx_add_unit_test(MdrunUtilityUnitTests mdrunutility-test
                   threadaffinity.cpp
-                  $<TARGET_OBJECTS:mdrunutility-test-shared>)
+                  OBJECT_LIBRARY_NAMES
+                  mdrunutility-test-shared
+                  OBJECT_LIBRARY_OBJECTS
+                  $<TARGET_OBJECTS:mdrunutility-test-shared>
+                  )
