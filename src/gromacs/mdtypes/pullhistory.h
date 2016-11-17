@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,14 +33,43 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gmxpre.h"
+/*! \libinternal \file
+ *
+ *
+ * \brief
+ * This file contains datatypes for pull statistics history.
+ *
+ * \author Magnus Lundborg, Berk Hess
+ *
+ * \inlibraryapi
+ * \ingroup module_mdtypes
+ */
 
-#include "observableshistory.h"
+#ifndef GMX_MDLIB_PULLHISTORY_H
+#define GMX_MDLIB_PULLHISTORY_H
 
-#include "gromacs/mdtypes/edsamhistory.h"
-#include "gromacs/mdtypes/energyhistory.h"
-#include "gromacs/mdtypes/pullhistory.h"
-#include "gromacs/mdtypes/swaphistory.h"
+#include <vector>
 
-ObservablesHistory::ObservablesHistory()  = default;
-ObservablesHistory::~ObservablesHistory() = default;
+//! \cond INTERNAL
+
+//! \brief Pull statistics history, to allow output of average pull data.
+class PullHistory
+{
+    public:
+        int                 numCoordinates;         //!< The number of pull coordinates.
+        int                 numValuesPerCoordinate; //!< The number of values per pull coordinate (depends on what is to be output).
+        int                 numValuesInSum;         //!< Number of steps in the ener_ave and ener_sum.
+        std::vector<double> sum;                    //!< Sum of pull force or coordinates (n=numCoordinates*numValuesPerCoordinate).
+
+        //! Constructor
+        PullHistory() : numCoordinates(0),
+                        numValuesPerCoordinate(0),
+                        numValuesInSum(0),
+                        sum()
+        {
+        }
+};
+
+//! \endcond
+
+#endif
