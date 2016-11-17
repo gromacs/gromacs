@@ -119,6 +119,7 @@ enum tpxv {
     tpxv_GenericParamsForElectricField,                      /**< Introduced KeyValueTree and moved electric field parameters */
     tpxv_AcceleratedWeightHistogram,                         /**< sampling with accelerated weight histogram method (AWH) */
     tpxv_RemoveImplicitSolvation,                            /**< removed support for implicit solvation */
+    tpxv_PullAverage,                                        /**< Added possibility to output average pull force and position */
     tpxv_Count                                               /**< the total number of tpxv versions */
 };
 
@@ -787,6 +788,11 @@ static void do_pull(t_fileio *fio, pull_params_t *pull, gmx_bool bRead,
             do_pull_coord(fio, &pull->coord[g],
                           bRead, file_version, ePullOld, eGeomOld, dimOld);
         }
+    }
+    if (file_version >= tpxv_PullAverage)
+    {
+        gmx_fio_do_int(fio, pull->bXOutAverage);
+        gmx_fio_do_int(fio, pull->bFOutAverage);
     }
 }
 
