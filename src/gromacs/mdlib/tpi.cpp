@@ -661,7 +661,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             do_force(fplog, cr, inputrec,
                      step, nrnb, wcycle, top, &top_global->groups,
                      state_global->box, &state_global->x, &state_global->hist,
-                     &f, force_vir, mdatoms, enerd, fcd,
+                     NULL, &f, force_vir, mdatoms, enerd, fcd,
                      &state_global->lambda,
                      NULL, fr, NULL, mu_tot, t, NULL, FALSE,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
