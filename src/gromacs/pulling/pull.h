@@ -67,6 +67,7 @@ struct t_filenm;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
+struct ObservablesHistory;
 
 namespace gmx
 {
@@ -227,13 +228,16 @@ void dd_make_local_pull_groups(const t_commrec *cr,
  * \param mtop        The topology of the whole system.
  * \param cr          Struct for communication info.
  * \param lambda      FEP lambda.
+ * \param observablesHistory Container of history data, e.g., pull history.
+>>>>>>> Enable output of average pull force and positions.
  */
 struct pull_t *init_pull(FILE                      *fplog,
                          const pull_params_t       *pull_params,
                          const t_inputrec          *ir,
                          const gmx_mtop_t          *mtop,
                          const t_commrec           *cr,
-                         real                       lambda);
+                         real                       lambda,
+                         ObservablesHistory        *observablesHistory);
 
 /*! \brief Set up and open the pull output files, when requested.
  *
