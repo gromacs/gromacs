@@ -1254,7 +1254,7 @@ int Mdrunner::mdrunner()
             /* Initialize pull code */
             inputrec->pull_work =
                 init_pull(fplog, inputrec->pull, inputrec,
-                          &mtop, cr, &atomSets, inputrec->fepvals->init_lambda);
+                          &mtop, cr, &atomSets, inputrec->fepvals->init_lambda, &observablesHistory);
             if (EI_DYNAMICS(inputrec->eI) && MASTER(cr))
             {
                 init_pull_output_files(inputrec->pull_work,
