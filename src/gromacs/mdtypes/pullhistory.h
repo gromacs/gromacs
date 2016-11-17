@@ -35,46 +35,35 @@
 
 /*! \libinternal \file
  *
+ *
  * \brief
- * This file contains the definition of a container for history data
- * for simulation observables.
+ * This file contains datatypes for pull statistics history.
  *
- * The container is used for storing the simulation state data that needs
- * to be written to / read from checkpoint file. This struct should only
- * contain pure observable data. Microstate data should be in t_state.
- * The state of the mdrun machinery is also stored elsewhere.
- *
- * \author Berk Hess
+ * \author Magnus Lundborg, Berk Hess
  *
  * \inlibraryapi
  * \ingroup module_mdtypes
  */
 
-#ifndef GMX_MDLIB_OBSERVABLESHISTORY_H
-#define GMX_MDLIB_OBSERVABLESHISTORY_H
+#ifndef GMX_MDLIB_PULLHISTORY_H
+#define GMX_MDLIB_PULLHISTORY_H
 
 #include <memory>
+#include <vector>
 
-struct energyhistory_t;
-struct pullhistory_t;
-struct edsamhistory_t;
-struct swaphistory_t;
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/real.h"
 
-//! \brief Observables history, for writing/reading to/from checkpoint file
-struct ObservablesHistory
+//! \brief Pull statistics history, only used for output and reporting
+typedef struct pullhistory_t
 {
-    //! History for energy observables, used for output only
-    std::unique_ptr<energyhistory_t> energyHistory;
+    gmx_int64_t         ncoords;       //!< The number of pull coords.
+    gmx_int64_t         nvalspercoord; //!< The number of values per pull coordinate (depends on what is to be output).
+    gmx_int64_t         nsum;          //!< Nr. of steps in the ener_ave and ener_sum
+    std::vector<double> ave;           //!< Average pull force or coordinates (n=ncoords*nvalspercoord)
+    std::vector<double> sum;           //!< Sum of pull force or coordinates (n=ncoords*nvalspercoord)
 
-    //! History for pulling observables, used for output only
-    std::unique_ptr<pullhistory_t> pullXHistory;
-    std::unique_ptr<pullhistory_t> pullFHistory;
-
-    //! Essential dynamics and flooding history
-    std::unique_ptr<edsamhistory_t> edsamHistory;
-
-    //! Ion/water position swapping history
-    std::unique_ptr<swaphistory_t> swapHistory;
-};
+}
+pullhistory_t;
 
 #endif

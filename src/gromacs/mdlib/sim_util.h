@@ -140,7 +140,8 @@ void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, std::vector
 void do_constrain_first(FILE *log, gmx_constr *constr,
                         t_inputrec *inputrec, t_mdatoms *md,
                         t_state *state, t_commrec *cr, t_nrnb *nrnb,
-                        t_forcerec *fr, gmx_localtop_t *top);
+                        t_forcerec *fr, gmx_localtop_t *top,
+                        ObservablesHistory *observablesHistory);
 
 void init_md(FILE *fplog,
              t_commrec *cr, t_inputrec *ir, const gmx_output_env_t *oenv,

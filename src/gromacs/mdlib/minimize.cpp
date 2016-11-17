@@ -438,7 +438,7 @@ void init_em(FILE *fplog, const char *title,
                       NULL,
                       fr->bMolPBC, ems->s.box,
                       ems->s.lambda[efptFEP], &dvdl_constr,
-                      NULL, NULL, nrnb, econqCoord);
+                      NULL, NULL, nrnb, econqCoord, NULL);
         }
     }
 
@@ -666,7 +666,7 @@ static bool do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                       as_rvec_array(s1->x.data()), as_rvec_array(s2->x.data()),
                       NULL, bMolPBC, s2->box,
                       s2->lambda[efptBONDED], &dvdl_constr,
-                      NULL, NULL, nrnb, econqCoord);
+                      NULL, NULL, nrnb, econqCoord, NULL);
         wallcycle_stop(wcycle, ewcCONSTR);
 
         // We should move this check to the different minimizers
@@ -757,7 +757,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
     do_force(fplog, cr, inputrec,
              count, nrnb, wcycle, top, &top_global->groups,
              ems->s.box, &ems->s.x, &ems->s.hist,
-             &ems->f, force_vir, mdatoms, enerd, fcd,
+             NULL, &ems->f, force_vir, mdatoms, enerd, fcd,
              &ems->s.lambda, graph, fr, vsite, mu_tot, t, NULL, TRUE,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
@@ -803,7 +803,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                   as_rvec_array(ems->s.x.data()), f_rvec, f_rvec,
                   fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdl_constr,
-                  NULL, &shake_vir, nrnb, econqForceDispl);
+                  NULL, &shake_vir, nrnb, econqForceDispl, NULL);
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
         wallcycle_stop(wcycle, ewcCONSTR);
