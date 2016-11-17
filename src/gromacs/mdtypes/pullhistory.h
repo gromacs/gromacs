@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,47 +35,43 @@
 
 /*! \libinternal \file
  *
+ *
  * \brief
- * This file contains the definition of a container for history data
- * for simulation observables.
+ * This file contains datatypes for pull statistics history.
  *
- * The container is used for storing the simulation state data that needs
- * to be written to / read from checkpoint file. This struct should only
- * contain pure observable data. Microstate data should be in t_state.
- * The state of the mdrun machinery is also stored elsewhere.
- *
- * \author Berk Hess
+ * \author Magnus Lundborg, Berk Hess
  *
  * \inlibraryapi
  * \ingroup module_mdtypes
  */
 
-#ifndef GMX_MDLIB_OBSERVABLESHISTORY_H
-#define GMX_MDLIB_OBSERVABLESHISTORY_H
+#ifndef GMX_MDLIB_PULLHISTORY_H
+#define GMX_MDLIB_PULLHISTORY_H
 
-#include <memory>
+#include <vector>
 
-class energyhistory_t;
-class pullhistory_t;
-struct edsamhistory_t;
-struct swaphistory_t;
+//! \cond INTERNAL
 
-/*! \libinternal \brief Observables history, for writing/reading to/from checkpoint file
- */
-struct ObservablesHistory
+//! \brief Pull statistics history, to allow output of average pull data.
+class pullhistory_t
 {
-    //! History for energy observables, used for output only
-    std::unique_ptr<energyhistory_t> energyHistory;
+    public:
+        gmx_int64_t         ncoords;       //!< The number of pull coords.
+        gmx_int64_t         nvalspercoord; //!< The number of values per pull coordinate (depends on what is to be output).
+        gmx_int64_t         nsum;          //!< Nr. of steps in the ener_ave and ener_sum
+        std::vector<double> ave;           //!< Average pull force or coordinates (n=ncoords*nvalspercoord)
+        std::vector<double> sum;           //!< Sum of pull force or coordinates (n=ncoords*nvalspercoord)
 
-    //! History for pulling observables, used for output only
-    std::unique_ptr<pullhistory_t> pullXHistory;
-    std::unique_ptr<pullhistory_t> pullFHistory;
-
-    //! Essential dynamics and flooding history
-    std::unique_ptr<edsamhistory_t> edsamHistory;
-
-    //! Ion/water position swapping history
-    std::unique_ptr<swaphistory_t> swapHistory;
+        //! Constructor
+        pullhistory_t() : ncoords(0),
+                          nvalspercoord(0),
+                          nsum(0),
+                          ave(),
+                          sum()
+        {
+        }
 };
+
+//! \endcond
 
 #endif

@@ -289,6 +289,8 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     EETYPE("pull-print-components", pull->bPrintComp, yesno_names);
     ITYPE("pull-nstxout",     pull->nstxout, 50);
     ITYPE("pull-nstfout",     pull->nstfout, 50);
+    EETYPE("pull-xout-avg", pull->bXOutAvg, yesno_names);
+    EETYPE("pull-fout-avg", pull->bFOutAvg, yesno_names);
     CTYPE("Number of pull groups");
     ITYPE("pull-ngroups",     pull->ngroup, 1);
     CTYPE("Number of pull coordinates");
@@ -513,7 +515,7 @@ pull_t *set_pull_init(t_inputrec *ir, const gmx_mtop_t *mtop,
     double         t_start;
 
     pull      = ir->pull;
-    pull_work = init_pull(nullptr, pull, ir, 0, nullptr, mtop, nullptr, oenv, lambda, FALSE, 0);
+    pull_work = init_pull(nullptr, pull, ir, 0, nullptr, mtop, nullptr, oenv, lambda, FALSE, 0, nullptr);
     md        = init_mdatoms(nullptr, mtop, ir->efep);
     atoms2md(mtop, ir, -1, nullptr, mtop->natoms, md);
     if (ir->efep)
