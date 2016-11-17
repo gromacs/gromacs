@@ -65,6 +65,9 @@ struct ObservablesHistory
     //! History for energy observables, used for output only
     std::unique_ptr<energyhistory_t> energyHistory;
 
+    //! History for pulling observables, used for output only
+    std::unique_ptr<energyhistory_t> pullHistory;
+
     //! Essential dynamics and flooding history
     std::unique_ptr<edsamhistory_t> edsamHistory;
 
