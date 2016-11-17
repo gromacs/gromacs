@@ -36,14 +36,14 @@
 #ifndef GMX_FILEIO_TNGIO_H
 #define GMX_FILEIO_TNGIO_H
 
-#include "tng/tng_io_fwd.h"
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
 struct t_inputrec;
+struct tng_trajectory;
+typedef struct tng_trajectory *tng_trajectory_t;
 
 /*! \brief Open a TNG trajectory file
  *

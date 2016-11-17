@@ -71,8 +71,6 @@ endif()
 
 function(gmx_setup_tng_for_libgromacs)
     set(BUNDLED_TNG_LOCATION "${CMAKE_SOURCE_DIR}/src/external/tng_io")
-    # Because of imperfect encapsulation of tng data types, we need to get
-    # tng/tng_io_fwd.h from somewhere for the whole build tree.
     if (GMX_USE_TNG)
         if (GMX_EXTERNAL_TNG)
             target_link_libraries(libgromacs PRIVATE tng_io::tng_io)
@@ -88,8 +86,5 @@ function(gmx_setup_tng_for_libgromacs)
         endif()
         get_target_property(_include_dirs tng_io::tng_io INTERFACE_INCLUDE_DIRECTORIES)
         target_include_directories(libgromacs INTERFACE $<BUILD_INTERFACE:${_include_dirs}>)
-    else()
-        target_include_directories(libgromacs PUBLIC
-                                   $<BUILD_INTERFACE:${BUNDLED_TNG_LOCATION}/include>)
     endif()
 endfunction()
