@@ -481,6 +481,10 @@ class Poldata
         EprefConstIterator epRefBegin() const { return epr_.begin(); }
 
         EprefConstIterator epRefEnd() const { return epr_.end(); }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
         std::string                           filename_;

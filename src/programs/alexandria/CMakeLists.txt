@@ -106,6 +106,7 @@ set(ALEXANDRIA_SOURCES
         tune_fc.cpp
         tune_pol.cpp
 	optparam.cpp
+        communication.cpp
 #        gen_ff.cpp
 	)
 	

@@ -44,11 +44,16 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "plistwrapper.h"
+#include "communication.h"
 #include "coulombintegrals/coulombintegrals.h"
+#include "plistwrapper.h"
+
+namespace alexandria
+{
 
 /*! \brief
  * Enumerated type holding the charge distribution models used in PolData
@@ -60,8 +65,9 @@ enum ChargeDistributionModel {
     eqdAXp, eqdAXg, eqdAXs, eqdYang, eqdBultinck, eqdRappe, eqdNR
 };
 
-namespace alexandria
-{
+const char *eqd2string(ChargeDistributionModel eqd);
+
+ChargeDistributionModel string2eqd(const char *string);
 
 /*! \brief
  * Convert interaction type to string
@@ -83,7 +89,9 @@ InteractionType string2iType(const char *string);
 class Ptype
 {
     public:
-
+    
+        Ptype () {}
+            
         /*! \brief
          * Ptype constructor
          *
@@ -93,6 +101,7 @@ class Ptype
          * \param[in] polarizability  Polarizability value
          * \param[in] sigPol          Uncertainty in the calulated polarizability
          */
+        
         Ptype(const std::string &ptype,
               const std::string &miller,
               const std::string &bosque,
@@ -167,7 +176,7 @@ using PtypeConstIterator = typename std::vector<Ptype>::const_iterator;
 class Ffatype
 {
     public:
-
+    
         /*! \brief
          * Fftype constructor
          *
@@ -228,6 +237,10 @@ class Ffatype
          * Return the reference enthalpy of formation of atoms
          */
         const std::string &getRefEnthalpy() const { return refEnthalpy_; }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
         std::string desc_;
@@ -255,6 +268,8 @@ class ListedForce
 
     public:
 
+        ListedForce () {}
+        
         /*! \brief
          * ListedForce constructor
          *
@@ -263,7 +278,7 @@ class ListedForce
          * \param[in] refvalue    The reference value such as the reference bond length
          * \param[in] sigma       Uncertainty in the calculated reference value
          * \param[in] ntrain      Number of molecules in the training set
-         */
+         */        
         ListedForce(const std::vector<std::string> atoms,
                     std::string                    params,
                     double                         refValue,
@@ -314,6 +329,10 @@ class ListedForce
          * Return the number of molecules in the training set
          */
         int ntrain() const { return ntrain_; }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
 
@@ -340,6 +359,8 @@ class ListedForces
 
     public:
 
+        ListedForces () {}
+        
         /*! \brief
          * ListedForces constructor
          *
@@ -447,6 +468,10 @@ class ListedForces
         ListedForceIterator forceEnd() {return force_.end(); }
 
         ListedForceConstIterator forceEnd() const {return force_.end(); }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
 
@@ -471,6 +496,8 @@ class Bosque
 {
     public:
 
+        Bosque () {}
+        
         /*! \brief
          * Bosque constructor
          *
@@ -488,6 +515,10 @@ class Bosque
          * Return polarizability value
          */
         double getPolarizability() const { return polarizability_; }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
         std::string bosque_;
@@ -509,6 +540,8 @@ class Miller
 {
     public:
 
+        Miller () {}
+        
         /*! \brief
          * Miller constructor
          *
@@ -548,6 +581,10 @@ class Miller
          * Return Alexandria type
          */
         const std::string &getAlexandriaEquiv() const { return alexandria_equiv_; }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
         std::string miller_;
@@ -563,6 +600,9 @@ using MillerConstIterator = typename std::vector<Miller>::const_iterator;
 class Symcharges
 {
     public:
+    
+        Symcharges () {}
+    
         Symcharges(const std::string &central,
                    const std::string &attached,
                    int                numattach);
@@ -572,6 +612,10 @@ class Symcharges
         const std::string &getAttached() const { return attached_; }
 
         int getNumattach() const { return numattach_; }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
         const std::string central_;
@@ -585,7 +629,10 @@ using SymchargesConstIterator = typename std::vector<Symcharges>::const_iterator
 class Epref
 {
     public:
-        Epref(ChargeDistributionModel   eqdModel,
+    
+        Epref () {}
+    
+        Epref(ChargeDistributionModel  eqdModel,
               const std::string        &epref);
 
         ChargeDistributionModel getEqdModel() const { return eqdModel_; }
@@ -593,6 +640,10 @@ class Epref
         const char *getEpref() const { return epref_.c_str(); }
 
         void setEpref(std::string epref) { epref_ = epref; }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
         ChargeDistributionModel eqdModel_;
@@ -612,6 +663,8 @@ using EprefConstIterator = typename std::vector<Epref>::const_iterator;
 class RowZetaQ
 {
     public:
+    
+        RowZetaQ () {}
 
         /*! \brief
          * RowZetaQ constructor
@@ -620,6 +673,7 @@ class RowZetaQ
          * \param[in] zeta     Inverse screening length of each of the components
          * \param[in] q        Charge of each of the components
          */
+         
         RowZetaQ(int row, double zeta, double q);
 
         /*! \brief
@@ -692,6 +746,10 @@ class RowZetaQ
          * Return true if the charge is fixed
          */
         bool fixedQ() const { return fixedQ_; }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
         int    row_;
@@ -708,6 +766,9 @@ using RowZetaQConstIterator = typename std::vector<RowZetaQ>::const_iterator;
 class Eemprops
 {
     public:
+    
+        Eemprops () {}
+    
         Eemprops(ChargeDistributionModel eqdModel,
                  const std::string      &name,
                  const std::string      &zetastr,
@@ -755,6 +816,10 @@ class Eemprops
         void setQ(int index, double q) { rzq_[index].setQ(q); }
 
         void setRow(int index, int row) { rzq_[index].setRow(row); }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
 
     private:
         ChargeDistributionModel eqdModel_;

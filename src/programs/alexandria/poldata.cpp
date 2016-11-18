@@ -700,52 +700,322 @@ const char *Poldata::getEpref(ChargeDistributionModel eqdModel) const
     return nullptr;
 }
 
+CommunicationStatus Poldata::Send(t_commrec *cr, int dest)
+{
+    CommunicationStatus cs;
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        gmx_send_str(cr, dest, filename_.c_str());
+        gmx_send_str(cr, dest, alexandriaPolarUnit_.c_str());
+        gmx_send_str(cr, dest, alexandriaPolarRef_.c_str());
+        gmx_send_str(cr, dest, alexandriaForcefield_.c_str());
+        gmx_send_int(cr, dest, nexcl_);
+        gmx_send_double(cr, dest, fudgeQQ_);
+        gmx_send_double(cr, dest, fudgeLJ_);
+        gmx_send_str(cr, dest, gtVdwFunction_.c_str());
+        gmx_send_str(cr, dest, gtCombinationRule_.c_str());
+        gmx_send_int(cr, dest, gtVdwFtype_);
+        gmx_send_int(cr, dest, gtCombRule_);
+        gmx_send_str(cr, dest, millerTauUnit_.c_str());
+        gmx_send_str(cr, dest, millerAhpUnit_.c_str());
+        gmx_send_str(cr, dest, millerRef_.c_str());
+        gmx_send_str(cr, dest, bosquePolarUnit_.c_str());
+        gmx_send_str(cr, dest, bosqueRef_.c_str());       
+        gmx_send_int(cr, dest, ptype_.size());
+        gmx_send_int(cr, dest, alexandria_.size());
+        gmx_send_int(cr, dest, btype_.size());
+        gmx_send_int(cr, dest, forces_.size());
+        gmx_send_int(cr, dest, miller_.size());
+        gmx_send_int(cr, dest, bosque_.size());
+        gmx_send_int(cr, dest, symcharges_.size());
+        gmx_send_int(cr, dest, eep_.size());
+        gmx_send_int(cr, dest, epr_.size());
+        
+        /*Send ptype*/
+        for (auto &ptype : ptype_)
+        {
+            cs = ptype.Send(cr, dest);
+        }
+        
+        /*Send Ffatype*/
+        for (auto &alexandria : alexandria_)
+        {
+            cs = alexandria.Send(cr, dest);           
+        }
+        
+        /*Send btype*/
+        for (auto &btype : btype_)
+        {
+            gmx_send_str(cr, dest, btype.c_str());
+        }
+        
+        /*Send Listed Forces*/
+        for (auto &force : forces_)
+        {
+            cs = force.Send(cr, dest);
+        }
+        
+        /*Send Miller*/
+        for (auto &miller : miller_)
+        {
+            cs = miller.Send(cr, dest);
+        }
+        
+        /*Send Bosque*/
+        for (auto &bosque : bosque_)
+        {
+            cs = bosque.Send(cr, dest);
+        }
+        
+        /*Send Symcharge*/
+        for (auto &symcharges : symcharges_)
+        {
+            cs = symcharges.Send(cr, dest);
+        }
+        
+        /*Send Eemprops*/
+        for (auto &eep : eep_)
+        {
+            cs = eep.Send(cr, dest);
+        }
+        
+        /*Send Epref*/
+        for (auto &epr : epr_)
+        {
+            cs = epr.Send(cr, dest);
+        }
+    }
+    return cs;
+}
+        
+CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
+{
+    size_t nptype, nalexandria, nbtype, nforces;
+    size_t nmiller, nbosque, nsymcharges, neep, nepr;
+    CommunicationStatus cs;
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        filename_             = gmx_recv_str(cr, src);
+        alexandriaPolarUnit_  = gmx_recv_str(cr, src);
+        alexandriaPolarRef_   = gmx_recv_str(cr, src);
+        alexandriaForcefield_ = gmx_recv_str(cr, src);
+        nexcl_                = gmx_recv_int(cr, src);
+        fudgeQQ_              = gmx_recv_double(cr, src);
+        fudgeLJ_              = gmx_recv_double(cr, src);
+        gtVdwFunction_        = gmx_recv_str(cr, src);
+        gtCombinationRule_    = gmx_recv_str(cr, src);
+        gtVdwFtype_           = gmx_recv_int(cr, src);
+        gtCombRule_           = gmx_recv_int(cr, src);
+        millerTauUnit_        = gmx_recv_str(cr, src);
+        millerAhpUnit_        = gmx_recv_str(cr, src);
+        millerRef_            = gmx_recv_str(cr, src);
+        bosquePolarUnit_      = gmx_recv_str(cr, src);
+        bosqueRef_            = gmx_recv_str(cr, src);     
+        nptype                = gmx_recv_int(cr, src);
+        nalexandria           = gmx_recv_int(cr, src);
+        nbtype                = gmx_recv_int(cr, src);
+        nforces               = gmx_recv_int(cr, src);
+        nmiller               = gmx_recv_int(cr, src);
+        nbosque               = gmx_recv_int(cr, src);
+        nsymcharges           = gmx_recv_int(cr, src);
+        neep                  = gmx_recv_int(cr, src);
+        nepr                  = gmx_recv_int(cr, src);
+        
+        
+        /*Receive ptype*/
+        if (nptype == ptype_.size())
+        {
+            ptype_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < nptype); n++)
+            {
+                Ptype ptype;
+                cs = ptype.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    ptype_.push_back(ptype);
+                }
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Inconsistency in number of sent ptype");
+        }
+        
+        /*Receive Ffatype*/
+        if (nalexandria == alexandria_.size())
+        {
+            alexandria_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < nalexandria); n++)
+            {
+                Ffatype alexandria;
+                cs = alexandria.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    alexandria_.push_back(alexandria);
+                }
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Inconsistency in number of sent Ffatype");
+        }
+        
+        /*Receive btype*/
+        if (nbtype == btype_.size())
+        {
+            btype_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < nbtype); n++)
+            {
+                char *btype = gmx_recv_str(cr, src);
+                if (nullptr == btype)
+                {
+                    btype_.push_back(btype);
+                }
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Inconsistency in number of sent btype");
+        }
+        
+        /*Receive Listed Forces*/
+        if (nforces == forces_.size())
+        {
+            forces_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < nforces); n++)
+            {
+                ListedForces fs;
+                cs = fs.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    forces_.push_back(fs);
+                }
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Inconsistency in number of sent forces");
+        }
+        
+        
+        /*Receive Miller*/
+        if (nmiller == miller_.size())
+        {
+            miller_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < nmiller); n++)
+            {
+                Miller miller;
+                cs = miller.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    miller_.push_back(miller);
+                }
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Inconsistency in number of sent Miller");
+        }
+        
+        /*Receive Bosque*/
+        if (nbosque == bosque_.size())
+        {
+            bosque_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < nbosque); n++)
+            {
+                Bosque bosque;
+                cs = bosque.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    bosque_.push_back(bosque);
+                }
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Inconsistency in number of sent Bosque");
+        }
+        
+        /*Receive Symcharges*/
+        if (nsymcharges == symcharges_.size())
+        {
+            symcharges_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < nsymcharges); n++)
+            {
+                Symcharges symcharges;
+                cs = symcharges.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    symcharges_.push_back(symcharges);
+                }
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Inconsistency in number of sent Bosque");
+        }
+        
+        /*Receive Eemprops*/
+        if (neep == eep_.size())
+        {
+            eep_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < neep); n++)
+            {
+                Eemprops eep;
+                cs = eep.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    eep_.push_back(eep);
+                }
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Inconsistency in number of sent Eemprops");
+        }
+        
+        /*Receive Epref*/
+        if (nepr == epr_.size())
+        {
+            epr_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < nepr); n++)
+            {
+                Epref epr;
+                cs = epr.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    epr_.push_back(epr);
+                }
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "Inconsistency in number of sent Epref");
+        }
+        
+    }
+    return cs;
+}
+
 void Poldata::broadcast(t_commrec *cr)
 {
-    unsigned int          i, j, nep;
-    std::vector<Eemprops> ep;
-    if (nullptr != debug)
-    {
-        fprintf(debug, "Going to update poldata on node %d\n", cr->nodeid);
-    }
-    fprintf(stderr, "Fixme: Poldata::broadcast is broken\n");
+    int src = 0;
     if (MASTER(cr))
     {
-        for (i = 1; ((int)i < cr->nnodes); i++)
+        for (int dest = 1; dest < cr->nnodes; dest++)
         {
-            gmx_send_int(cr, i, eep_.size());
-            gmx_send(cr, i, eep_.data(), eep_.size()*sizeof(eep_[0]));
+            Send(cr, dest);
         }
     }
     else
     {
-        nep = gmx_recv_int(cr, 0);
-        if (nep != eep_.size())
+        if (nullptr != debug)
         {
-            gmx_fatal(FARGS, "Inconsistency in number of EEM parameters");
+            fprintf(debug, "Going to update poldata on node %d\n", cr->nodeid);
         }
-        gmx_recv(cr, 0, ep.data(), eep_.size()*sizeof(ep[0]));
-        eep_.clear();
-        for (i = 0; (i < nep); i++)
-        {
-            eep_.push_back(ep[i]);
-        }
-    }
-    if (nullptr != debug)
-    {
-        fprintf(debug, "  EEP  Atom      Chi      J00     Zeta\n");
-        for (i = 0; (i < nep); i++)
-        {
-            fprintf(debug, "%5s %5s %8.3f %8.3f",
-                    getEemtypeName(eep_[i].getEqdModel()),
-                    eep_[i].getName(), eep_[i].getChi0(),
-                    eep_[i].getJ0());
-            for (j = 0; ((int)j < eep_[i].getNzeta()); j++)
-            {
-                fprintf(debug, " %8.3f", eep_[i].getZeta(j));
-            }
-            fprintf(debug, "\n");
-        }
+        Receive(cr, src);
     }
 }
 

@@ -58,6 +58,7 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/real.h"
 
+#include "communication.h"
 #include "phase.h"
 #include "poldata.h"
 
@@ -89,22 +90,6 @@ extern const char *mpo_name[MPO_NR];
 extern const char *mpo_unit[MPO_NR];
 
 /*! \brief
- * Enumerated type holding the result status of communication operations
- *
- * \inpublicapi
- * \ingroup module_alexandria
- */
-enum CommunicationStatus {
-    CS_OK        = 6666,
-    CS_ERROR     = 7777,
-    CS_SEND_DATA = 8888,
-    CS_RECV_DATA = 9999
-};
-
-//! String describing the CommunicationStatus enum elements
-extern const char *cs_name(CommunicationStatus cs);
-
-/*! \brief
  * Contains all classes related to alexandria force field tools
  *
  * \inpublicapi
@@ -127,6 +112,8 @@ enum jobType {
     JOB_UNKNOWN   = 10,
     JOB_NR        = 11,
 };
+
+const char *jobType2string(alexandria::jobType jType);
 
 /*! \brief
  * Convert string to job type

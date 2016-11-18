@@ -51,6 +51,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "composition.h"
+#include "communication.h"
 #include "gmx_simple_comm.h"
 #include "poldata.h"
 #include "stringutil.h"
@@ -64,59 +65,6 @@ const char *mpo_unit[MPO_NR] =
 {
     "e/nm", "D", "B", "\\AA$^3$", "kJ/mol", "J/mol K"
 };
-
-const char *cs_name(CommunicationStatus cs)
-{
-    switch (cs)
-    {
-        case CS_OK:
-            static const char *ok = "Communication OK";
-            return ok;
-        case CS_ERROR:
-            static const char *err = "Communication Error";
-            return err;
-        case CS_SEND_DATA:
-            static const char *sd = "Communication sent data";
-            return sd;
-        case CS_RECV_DATA:
-            static const char *rd = "Communication OK";
-            return rd;
-        default:
-            gmx_fatal(FARGS, "Unknown communication status %d", (int) cs);
-    }
-    return NULL;
-};
-
-#define GMX_SEND_DATA 19823
-#define GMX_SEND_DONE -666
-static CommunicationStatus gmx_send_data(t_commrec *cr, int dest)
-{
-    gmx_send_int(cr, dest, GMX_SEND_DATA);
-
-    return CS_OK;
-}
-
-static CommunicationStatus gmx_send_done(t_commrec *cr, int dest)
-{
-    gmx_send_int(cr, dest, GMX_SEND_DONE);
-
-    return CS_OK;
-}
-
-static CommunicationStatus gmx_recv_data_(t_commrec *cr, int src, int line)
-{
-    int kk = gmx_recv_int(cr, src);
-
-    if ((kk != GMX_SEND_DATA) && (kk != GMX_SEND_DONE))
-    {
-        gmx_fatal(FARGS, "Received %d in gmx_recv_data (line %d). Was expecting either %d or %d\n.", kk, line,
-                  (int)GMX_SEND_DATA, (int)GMX_SEND_DONE);
-    }
-    return CS_OK;
-}
-#define gmx_recv_data(cr, src) gmx_recv_data_(cr, src, __LINE__)
-#undef GMX_SEND_DATA
-#undef GMX_SEND_DONE
 
 namespace alexandria
 {
@@ -1486,6 +1434,7 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
         _method.assign(gmx_recv_str(cr, src));
         _basisset.assign(gmx_recv_str(cr, src));
         _datafile.assign(gmx_recv_str(cr, src));
+        jobtype_   = string2jobType(gmx_recv_str(cr, src));
         Npolar     = gmx_recv_int(cr, src);
         Ndipole    = gmx_recv_int(cr, src);
         Nenergy    = gmx_recv_int(cr, src);
@@ -1570,12 +1519,14 @@ CommunicationStatus Experiment::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, _program.c_str());
         gmx_send_str(cr, dest, _method.c_str());
         gmx_send_str(cr, dest, _basisset.c_str());
-        gmx_send_str(cr, dest, _datafile.c_str());        
+        gmx_send_str(cr, dest, _datafile.c_str());
+        gmx_send_str(cr, dest, jobType2string(jobtype_));        
         gmx_send_int(cr, dest, polar_.size());
         gmx_send_int(cr, dest, dipole_.size());
         gmx_send_int(cr, dest, energy_.size());
         gmx_send_int(cr, dest, _potential.size());
         gmx_send_int(cr, dest, _catom.size());
+        
 
         //! Send Polarizabilities
         for (auto dpi = BeginPolar(); (CS_OK == cs) && (dpi < EndPolar()); dpi++)

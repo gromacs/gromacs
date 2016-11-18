@@ -62,7 +62,7 @@ static const char *job_name[alexandria::JOB_NR] =
     "G4", "CBSQB3", "W1U", "W1BD", "SP", "unknown"
 };
 
-const char *jobType2string(alexandria::jobType jType)
+const char *alexandria::jobType2string(alexandria::jobType jType)
 
 {
     if (jType < alexandria::JOB_NR)
