@@ -1413,19 +1413,28 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
     std::vector<double>              optx, opts, optm;
     double                           chi2, chi2_min;
     gmx_bool                         bMinimum = false;
-
+    
     auto func = [&] (const double v[]) {
             return objFunction(v);
         };
 
     if (MASTER(_cr))
     {
+    
+        if (PAR(_cr))
+        {
+            for (int dest = 1; dest < _cr->nnodes; dest++)
+            {
+                gmx_send_int(_cr, dest, (nrun*maxiter*param_.size()));
+            }
+        }
+        
         chi2 = chi2_min  = GMX_REAL_MAX;
         Bayes <double> TuneFc(func, param_, lower_, upper_, &chi2);
         TuneFc.Init(xvgconv, xvgepot, oenv, seed,
                     stepsize, maxiter, nprint,
                     temperature, bBound);
-        for (int n = 0; (n < nrun); n++)
+        for (int n = 0; n < nrun; n++)
         {
             if ((nullptr != fp) && (0 == n))
             {
@@ -1440,7 +1449,7 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
             if (chi2 < chi2_min)
             {
                 bMinimum = true;
-                for (size_t k = 0; (k < param_.size()); k++)
+                for (size_t k = 0; k < param_.size(); k++)
                 {
                     best_[k]   = optx[k];
                     psigma_[k] = opts[k];
@@ -1448,7 +1457,6 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
                 }
                 chi2_min = chi2;
             }
-
             if (nullptr != fp)
             {
                 fprintf(fp, "Run: %3d  rmsd: %4.3f   ermsBOUNDS: %4.3f\n",
@@ -1463,34 +1471,31 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
 
             TuneFc.setParam(best_);
         }
-
         if (bMinimum)
         {
             param_ = best_;
             double emin = objFunction(best_.data());
             if (fplog)
             {
-                fprintf(fplog, "\nMinimum rmsd value during optimization: %.3f.\n",
-                        sqrt(emin));
+                fprintf(fplog, "\nMinimum rmsd value during optimization: %.3f.\n", sqrt(emin));
                 fprintf(fplog, "Average and standard deviation of parameters\n");
-                for (size_t k = 0; (k < param_.size()); k++)
+                for (size_t k = 0; k < param_.size(); k++)
                 {
-                    fprintf(fplog, "%5d  %10g  %10g\n",
-                            static_cast<int>(k), pmean_[k], psigma_[k]);
+                    fprintf(fplog, "%5zu  %10g  %10g\n", k, pmean_[k], psigma_[k]);
                 }
             }
         }
-        calcDeviation();
-        _bDone = true;
+        _bDone  = true;
+        _bFinal = true;
     }
     else
     {
         /* Slave calculators */
-        do
+        int niter = gmx_recv_int(_cr, 0);
+        for (int n = 0; n < (niter + 1); n++)
         {
             calcDeviation();
         }
-        while (!_bDone);
     }
     calcDeviation();
 }
@@ -1855,7 +1860,7 @@ int alex_tune_fc(int argc, char *argv[])
         fprintf(fp, "In the total data set of %d molecules we have:\n",
                 static_cast<int>(opt._mymol.size()));
     }
-
+    
     if (MASTER(cr))
     {
         opt.InitOpt(fp, bOpt, factor);
