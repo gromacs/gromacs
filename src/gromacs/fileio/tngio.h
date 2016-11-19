@@ -36,6 +36,8 @@
 #ifndef GMX_FILEIO_TNGIO_H
 #define GMX_FILEIO_TNGIO_H
 
+#include <cstdio>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -44,6 +46,7 @@ struct gmx_mtop_t;
 struct t_inputrec;
 struct tng_trajectory;
 typedef struct tng_trajectory *tng_trajectory_t;
+struct t_trxframe;
 
 /*! \brief Open a TNG trajectory file
  *
@@ -137,5 +140,70 @@ void fflush_tng(tng_trajectory_t tng);
  * \param tng Valid handle to a TNG trajectory
  */
 float gmx_tng_get_time_of_final_frame(tng_trajectory_t tng);
+
+/*! \brief Prepare to write TNG output from trajectory conversion tools */
+void gmx_prepare_tng_writing(const char              *filename,
+                             char                     mode,
+                             tng_trajectory_t        *in,
+                             tng_trajectory_t        *out,
+                             int                      nAtoms,
+                             const struct gmx_mtop_t *mtop,
+                             const int               *index,
+                             const char              *indexGroupName);
+
+/*! \brief Write a trxframe to a TNG file
+ *
+ * \param output Trajectory to write to
+ * \param frame  Frame data to write
+ * \param natoms Number of atoms to actually write
+ *
+ * The natoms field in frame is the number of atoms in the system. The
+ * parameter natoms supports writing an index-group subset of the
+ * atoms.
+ */
+void gmx_write_tng_from_trxframe(tng_trajectory_t        output,
+                                 const t_trxframe       *frame,
+                                 int                     natoms);
+
+/*! \brief Creates a molecule containing only the indexed atoms and sets
+ * the number of all other molecules to 0. Works similar to a
+ * selection group. */
+void gmx_tng_setup_atom_subgroup(tng_trajectory_t tng,
+                                 const int        nind,
+                                 const int       *ind,
+                                 const char      *name);
+
+/*! \brief Read the first/next TNG frame. */
+gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
+                                 struct t_trxframe          *fr,
+                                 gmx_int64_t                *requestedIds,
+                                 int                         numRequestedIds);
+
+/*! \brief Print the molecule system to stream */
+void gmx_print_tng_molecule_system(tng_trajectory_t input,
+                                   FILE            *stream);
+
+/*! \brief Get a list of block IDs present in the next frame with data. */
+gmx_bool gmx_get_tng_data_block_types_of_next_frame(tng_trajectory_t     input,
+                                                    int                  frame,
+                                                    int                  nRequestedIds,
+                                                    gmx_int64_t         *requestedIds,
+                                                    gmx_int64_t         *nextFrame,
+                                                    gmx_int64_t         *nBlocks,
+                                                    gmx_int64_t        **blockIds);
+
+/*! \brief Get data of the next frame with data from the data block
+ * with the specified block ID. */
+gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
+                                                   gmx_int64_t          blockId,
+                                                   real               **values,
+                                                   gmx_int64_t         *frameNumber,
+                                                   double              *frameTime,
+                                                   gmx_int64_t         *nValuesPerFrame,
+                                                   gmx_int64_t         *nAtoms,
+                                                   real                *prec,
+                                                   char                *name,
+                                                   int                  maxLen,
+                                                   gmx_bool            *bOK);
 
 #endif /* GMX_FILEIO_TNGIO_H */
