@@ -49,7 +49,6 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/mtxio.h"
 #include "gromacs/fileio/tngio.h"
-#include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xtcio.h"
