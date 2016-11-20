@@ -146,7 +146,7 @@ gmx_install_headers(
 set(GENERATED_VERSION_FILE utility/baseversion-gen.c)
 gmx_configure_version_file(
     utility/baseversion-gen.c.cmakein ${GENERATED_VERSION_FILE}
-    REMOTE_HASH SOURCE_FILE)
+    REMOTE_HASH)
 list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
 if (GMX_USE_CUDA)

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -144,7 +144,7 @@ if (DOXYGEN_FOUND)
             COMMAND ${CMAKE_COMMAND} -DDOCTYPE=${TYPE} -P RunDoxygen.cmake
             DEPENDS ${_deps}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            COMMENT "${COMMENT}")
+            COMMENT "${COMMENT}" USES_TERMINAL)
         if (_fast_arg)
             add_dependencies(${TARGET}-fast doxygen-version)
         endif()
@@ -171,7 +171,8 @@ if (DOXYGEN_FOUND)
                 ${CMAKE_CURRENT_SOURCE_DIR}/gmxtree.py
                 ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
                 ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
-            COMMENT "Generating include dependency graphs for dot")
+            COMMENT "Generating include dependency graphs for dot"
+            USES_TERMINAL)
 
         # Add separate targets for converting the .dot files to .png.
         # These are not needed by the Doxygen targets, but are useful for
@@ -212,9 +213,9 @@ if (DOXYGEN_FOUND)
             --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt
             --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt)
         add_custom_target(check-source      COMMAND ${check_source_command}
-            COMMENT "Checking source code for various issues" VERBATIM)
+            COMMENT "Checking source code for various issues" VERBATIM USES_TERMINAL)
         add_custom_target(check-source-fast COMMAND ${check_source_command}
-            COMMENT "Checking source code for various issues" VERBATIM)
+            COMMENT "Checking source code for various issues" VERBATIM USES_TERMINAL)
         add_dependencies(check-source       doxygen-xml)
     endif()
 else()

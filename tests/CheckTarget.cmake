@@ -40,7 +40,7 @@ add_custom_target(tests)
 add_custom_target(run-ctest
                   COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
                   COMMENT "Running all tests"
-                  VERBATIM)
+                  USES_TERMINAL VERBATIM)
 add_dependencies(run-ctest tests)
 # "check" target builds and runs all tests.
 add_custom_target(check DEPENDS run-ctest)
