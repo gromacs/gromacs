@@ -102,7 +102,7 @@
 # The main interface to this machinery is the gmx_configure_version_file()
 # CMake function.  The signature is
 #   gmx_configure_version_file(<input> <output>
-#                              [REMOTE_HASH] [SOURCE_FILE]
+#                              [REMOTE_HASH]
 #                              [TARGET <target>]
 #                              [COMMENT <comment>])
 #   <input>      Specify the input and output files as for configure_file().
@@ -119,9 +119,6 @@
 #                This variable is much more expensive to initialize than the
 #                others, so this allows local changes in this file to only
 #                compute that value when required if that becomes necessary.
-#   SOURCE_FILE  Signals that <output> will be used as a source file.
-#                The function will set properties for the source file
-#                appropriately to signify that it is generated.
 #   TARGET       By default, this function uses add_custom_command() to
 #                generate the output file.  If TARGET is specified, then
 #                add_custom_target() is used to create a target with the given
@@ -224,12 +221,12 @@ if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND NOT GMX_BUILD_TARBALL)
 endif()
 
 set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
-set(REGRESSIONTEST_BRANCH "refs/heads/release-2016")
+set(REGRESSIONTEST_BRANCH "refs/heads/master")
 # TODO Find some way of ensuring that this is bumped appropriately for
 # each release. It's hard to test because it is only used for
 # REGRESSIONTEST_DOWNLOAD, which doesn't work until that tarball has
 # been placed on the server.
-set(REGRESSIONTEST_MD5SUM "366438549270d005fa6def6e56ca0256" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
+set(REGRESSIONTEST_MD5SUM "366438549270d005fa6def6e56ca0256")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
@@ -350,7 +347,7 @@ unset(GMX_VERSION_CENTRAL_BASE_HASH)
 # See documentation at the top of the script.
 function (gmx_configure_version_file INFILE OUTFILE)
     include(CMakeParseArguments)
-    set(_options REMOTE_HASH SOURCE_FILE)
+    set(_options REMOTE_HASH)
     set(_one_value_args COMMENT TARGET)
     set(_multi_value_args EXTRA_VARS)
     cmake_parse_arguments(
@@ -391,8 +388,5 @@ function (gmx_configure_version_file INFILE OUTFILE)
     if (ARG_TARGET)
         add_custom_target(${ARG_TARGET} DEPENDS ${OUTFILE} VERBATIM)
         gmx_set_custom_target_output(${ARG_TARGET} ${OUTFILE})
-    endif()
-    if (ARG_SOURCE_FILE)
-        set_source_files_properties(${OUTFILE} PROPERTIES GENERATED true)
     endif()
 endfunction()
