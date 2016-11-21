@@ -65,6 +65,7 @@
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -85,6 +86,7 @@
 #include "nmsimplex.h"
 
 // alexandria stuff
+#include "communication.h"
 #include "gentop_core.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
@@ -151,6 +153,9 @@ namespace alexandria
 class AtomTypes
 {
     public:
+    
+        AtomTypes () {}
+        
         AtomTypes(int                ncopies,
                   const std::string &name,
                   const std::string &vdwParams,
@@ -180,6 +185,10 @@ class AtomTypes
 
         size_t nParams() const { return p_.size(); }
         
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
+        
     private:
         
         int                 ncopies_;
@@ -191,6 +200,45 @@ class AtomTypes
 };
 
 using AtomTypesIterator = typename std::vector<AtomTypes>::iterator;
+
+CommunicationStatus AtomTypes::Send(t_commrec *cr, int dest)
+{
+    CommunicationStatus cs;
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        gmx_send_int(cr, dest, ncopies_);
+        gmx_send_str(cr, dest, name_.c_str());
+        gmx_send_str(cr, dest, vdwParams_.c_str());
+        gmx_send_int(cr, dest, poldataIndex_);
+        gmx_send_int(cr, dest, p_.size());
+        for (auto &p : p_)
+        {
+            gmx_send_double(cr, dest, p);
+        }
+    }
+    return cs;
+}
+
+CommunicationStatus AtomTypes::Receive(t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        ncopies_      = gmx_recv_int(cr, src);
+        name_         = gmx_recv_str(cr, src);
+        vdwParams_    = gmx_recv_str(cr, src);
+        poldataIndex_ = gmx_recv_int(cr, src);
+        int np        = gmx_recv_int(cr, src);
+        for (int n = 0; n < np; n++)
+        {
+            auto p = gmx_recv_double(cr, src);
+            p_.push_back(p);
+        }
+    }
+    return cs;
+}
 
 void AtomTypes::setParamString(const std::string &params)
 {
@@ -211,6 +259,8 @@ void AtomTypes::extractParams()
 class NonBondParams
 {
     public:
+    
+        NonBondParams () {}
     
         NonBondParams(bool bOpt)
         
@@ -239,6 +289,10 @@ class NonBondParams
         AtomTypesIterator endAT() { return at_.end(); }
 
         size_t nAT() const { return at_.size(); }
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);      
     
     private:
     
@@ -248,6 +302,66 @@ class NonBondParams
         std::vector<double>    params_;
     
 };
+
+CommunicationStatus NonBondParams::Send(t_commrec *cr, int dest)
+{
+    CommunicationStatus cs;
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        gmx_send_int(cr, dest, bOpt_);
+        gmx_send_int(cr, dest, at_.size());
+        gmx_send_int(cr, dest, reverseIndex_.size());
+        gmx_send_int(cr, dest, params_.size());
+        for (auto &at : at_)
+        {
+            at.Send(cr, dest);
+        }
+        for (auto &ri : reverseIndex_)
+        {
+            gmx_send_int(cr, dest, ri);
+        }
+        for (auto &param : params_)
+        {
+            gmx_send_double(cr, dest, param);
+        }
+    }
+    return cs;
+}
+        
+CommunicationStatus NonBondParams::Receive(t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        bOpt_      = gmx_recv_int(cr, src);
+        int nat    = gmx_recv_int(cr, src);
+        int nri    = gmx_recv_int(cr, src);
+        int nparam = gmx_recv_int(cr, src);
+        
+        for (int n = 0 ; n < nat; n++)
+        {
+            AtomTypes at;
+            cs = at.Receive(cr, src);
+            if (CS_OK == cs)
+            {
+                at_.push_back(at);
+            }
+        }     
+        for (int n = 0 ; n < nri; n++)
+        {
+            auto ri = gmx_recv_int(cr, src);
+            reverseIndex_.push_back(ri);
+        }
+        for (int n = 0 ; n < nparam; n++)
+        {
+            auto param = gmx_recv_double(cr, src);
+            params_.push_back(param);
+        }
+    }
+    return cs;
+}
 
 void NonBondParams::analyzeIdef(std::vector<MyMol> &mm,
                                 const Poldata      &pd)
@@ -319,6 +433,8 @@ class BondNames
 {
     public:
     
+        BondNames () {}
+    
         BondNames(int                ncopies,
                   const std::string &name,
                   const std::string &params,
@@ -353,6 +469,10 @@ class BondNames
 
         size_t nParams() const { return p_.size(); }
         
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
+        
     private:
     
         //! Number of copies in the molecule data set
@@ -372,6 +492,47 @@ class BondNames
 };
 
 using BondNamesIterator = typename std::vector<BondNames>::iterator ;
+
+CommunicationStatus BondNames::Send(t_commrec *cr, int dest)
+{
+    CommunicationStatus cs;
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        gmx_send_int(cr, dest, ncopies_);
+        gmx_send_str(cr, dest, name_.c_str());
+        gmx_send_str(cr, dest, params_.c_str());
+        gmx_send_double(cr, dest, bondorder_);
+        gmx_send_int(cr, dest, poldataIndex_);
+        gmx_send_int(cr, dest, p_.size());
+        for (auto &p : p_)
+        {
+            gmx_send_double(cr, dest, p);
+        }
+    }
+    return cs;
+}
+        
+CommunicationStatus BondNames::Receive(t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        ncopies_      = gmx_recv_int(cr, src);
+        name_         = gmx_recv_str(cr, src);
+        params_       = gmx_recv_str(cr, src);
+        bondorder_    = gmx_recv_double(cr, src);
+        poldataIndex_ = gmx_recv_int(cr, src);
+        int np        = gmx_recv_int(cr, src);
+        for (int n = 0; n < np; n++)
+        {
+            auto p = gmx_recv_double(cr, src);
+            p_.push_back(p);
+        }
+    }
+    return cs;
+}
 
 void BondNames::setParamString(const std::string &params)
 {
@@ -397,6 +558,8 @@ class ForceConstants
 {
 
     public:
+    
+        ForceConstants () {}
     
         ForceConstants(int bt, int ftype, InteractionType itype, bool bOpt) 
             : 
@@ -441,6 +604,10 @@ class ForceConstants
 
         size_t nbad() const { return bn_.size(); }
         
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
+        
     private:
     
         int                    bt_;
@@ -451,6 +618,73 @@ class ForceConstants
         std::vector<int>       reverseIndex_;
         std::vector<double>    params_;
 };
+
+CommunicationStatus ForceConstants::Send(t_commrec *cr, int dest)
+{
+    CommunicationStatus cs;
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        gmx_send_int(cr, dest, bt_);
+        gmx_send_int(cr, dest, ftype_);
+        gmx_send_str(cr, dest, iType2string(itype_));
+        gmx_send_int(cr, dest, bOpt_);
+        gmx_send_int(cr, dest, bn_.size());
+        gmx_send_int(cr, dest, reverseIndex_.size());
+        gmx_send_int(cr, dest, params_.size());
+        
+        for (auto &bn : bn_)
+        {
+            bn.Send(cr, dest);
+        }
+        for (auto &ri : reverseIndex_)
+        {
+            gmx_send_int(cr, dest, ri);
+        }
+        for (auto &param : params_)
+        {
+            gmx_send_double(cr, dest, param);
+        }
+    }
+    return cs;
+}
+        
+CommunicationStatus ForceConstants::Receive(t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        bt_           = gmx_recv_int(cr, src);
+        ftype_        = gmx_recv_int(cr, src);
+        itype_        = string2iType(gmx_recv_str(cr, src));
+        bOpt_         = gmx_recv_int(cr, src);
+        int nbn       = gmx_recv_int(cr, src);
+        int nri       = gmx_recv_int(cr, src);
+        int nparam    = gmx_recv_int(cr, src);
+        
+        for (int n = 0; (CS_OK == cs) && (n < nbn); n++)
+        {
+            BondNames bn;
+            cs = bn.Receive(cr, src);
+            if (CS_OK == cs)
+            {
+                bn_.push_back(bn);
+            }
+        }
+        for (int n = 0; (CS_OK == cs) && (n < nri); n++)
+        {
+            auto ri = gmx_recv_int(cr, src);
+            reverseIndex_.push_back(ri);
+        }
+        for (int n = 0; (CS_OK == cs) && (n < nparam); n++)
+        {
+            auto param = gmx_recv_double(cr, src);
+            params_.push_back(param);
+        }
+    }
+    return cs;
+}
 
 void ForceConstants::analyzeIdef(std::vector<MyMol> &mm,
                                  const Poldata      &pd)
@@ -619,8 +853,8 @@ class Optimization : public MolDip
 
         std::vector<ForceConstants> ForceConstants_;
         std::vector<NonBondParams>  NonBondParams_;
-        param_type                  param_, lower_, upper_, best_, orig_, psigma_, pmean_;
-        param_type                  De_;
+        param_type                  param_, lower_, upper_, best_;
+        param_type                  De_, orig_, psigma_, pmean_;
 
         /*! \brief
          *
@@ -689,7 +923,85 @@ class Optimization : public MolDip
         double calcDeviation();
         
         double objFunction(const double v[]);
+        
+        CommunicationStatus Send(t_commrec *cr, int dest);
+        
+        CommunicationStatus Receive(t_commrec *cr, int src);
+        
+    void broadcast(t_commrec *cr);
 };
+
+CommunicationStatus Optimization::Send(t_commrec *cr, int dest)
+{
+    CommunicationStatus cs;
+    cs = gmx_send_data(cr, dest);
+    if (CS_OK == cs)
+    {
+        gmx_send_int(cr, dest, ForceConstants_.size());
+        gmx_send_int(cr, dest, NonBondParams_.size());
+        for (auto &fc : ForceConstants_)
+        {
+            fc.Send(cr, dest);
+        }
+        for (auto &nb : NonBondParams_)
+        {
+            nb.Send(cr, dest);
+        }
+    }
+    return cs;
+}
+        
+CommunicationStatus Optimization::Receive(t_commrec *cr, int src)
+{
+    CommunicationStatus cs;
+    cs = gmx_recv_data(cr, src);
+    if (CS_OK == cs)
+    {
+        int nfc = gmx_recv_int(cr, src);
+        int nnb = gmx_recv_int(cr, src);
+        
+        for (int n = 0; (CS_OK == cs) && (n < nfc); n++)
+        {
+            alexandria::ForceConstants fc;
+            cs = fc.Receive(cr, src);
+            if (CS_OK == cs)
+            {
+                ForceConstants_.push_back(fc);
+            }
+        }
+        for (int n = 0; (CS_OK == cs) && (n < nnb); n++)
+        {
+            alexandria::NonBondParams nb;
+            cs = nb.Receive(cr, src);
+            if (CS_OK == cs)
+            {
+                NonBondParams_.push_back(nb);
+            }
+        }
+    }
+    return cs;
+}
+
+void Optimization::broadcast(t_commrec *cr)
+{
+    const int src = 0;
+    if (MASTER(cr))
+    {
+        for (int dest = 1; dest < cr->nnodes; dest++)
+        {
+            Send(cr, dest);
+        }
+    }
+    else
+    {
+        if (nullptr != debug)
+        {
+            fprintf(debug, "Updating ForceConstants and NonBondParams on node %d\n",
+                    cr->nodeid);
+        }
+        Receive(cr, src);
+    }
+}
 
 void Optimization::checkSupport(FILE *fp, bool  bOpt[])
 {
@@ -1237,6 +1549,7 @@ double Optimization::calcDeviation()
     if (PAR(_cr))
     {
         pd_.broadcast(_cr);
+        broadcast(_cr);
     }
     if (nullptr != debug)
     {
@@ -1492,10 +1805,11 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
     {
         /* Slave calculators */
         int niter = gmx_recv_int(_cr, 0);
-        for (int n = 0; n < (niter + 1); n++)
+        for (int n = 0; n < niter; n++)
         {
             calcDeviation();
         }
+        calcDeviation();
     }
     calcDeviation();
 }

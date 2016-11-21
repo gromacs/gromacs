@@ -1001,7 +1001,7 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
 
 void Poldata::broadcast(t_commrec *cr)
 {
-    int src = 0;
+    const int src = 0;
     if (MASTER(cr))
     {
         for (int dest = 1; dest < cr->nnodes; dest++)
