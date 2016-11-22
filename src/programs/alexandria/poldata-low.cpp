@@ -400,7 +400,7 @@ CommunicationStatus ListedForces::Receive(t_commrec *cr, int src)
             cs = f.Receive(cr, src);
             if (CS_OK == cs)
             {
-                addForce(f.atoms(), f.params(), f.refValue(), f.sigma(), f.ntrain());
+                force_.push_back(f);
             }
         }
         
