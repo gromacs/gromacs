@@ -1534,22 +1534,16 @@ double Optimization::calcDeviation()
 
     if (PAR(_cr))
     {
-        gmx_bcast(sizeof(_bDone), &_bDone, _cr);
         gmx_bcast(sizeof(_bFinal), &_bFinal, _cr);
-    }
-    if (_bDone)
-    {
-        return _ener[ermsTOT];
     }
     if (nullptr != debug)
     {
         fprintf(debug, "Begin communicating force parameters\n");
         fflush(debug);
     }
-    if (PAR(_cr))
+    if (PAR(_cr) && !_bFinal)
     {
         pd_.broadcast(_cr);
-        broadcast(_cr);
     }
     if (nullptr != debug)
     {
@@ -1594,12 +1588,9 @@ double Optimization::calcDeviation()
                         deltaEn = spHF - optHF;
                         Emol    = mymol.Emol + deltaEn;
 
-                        for (j = 0; (j < natoms); j++)
-                        {
-                            mymol.f_.clear();
-                        }
+                        mymol.f_.clear();
                         mymol.f_.resize(2*natoms);
-             
+                        
                         dbcopy = debug;
                         debug  = nullptr;
 
@@ -1607,8 +1598,8 @@ double Optimization::calcDeviation()
                         mymol.computeForces(debug, _cr, mu_tot);
 
                         debug         = dbcopy;
-                        mymol.Force2  = 0.0;
-
+                        mymol.Force2  = 0.0; 
+                        
                         mymol.Ecalc  = mymol.enerd_->term[F_EPOT];
                         ener         = gmx::square(mymol.Ecalc-Emol);
                         
@@ -1621,22 +1612,17 @@ double Optimization::calcDeviation()
 
                         if (jtype == JOB_OPT)
                         {
-                            mymol.OptForce2 = 0.0;
-                            
+                            mymol.OptForce2 = 0.0;                        
                             for (j = 0; (j < natoms); j++)
                             {
-                                mymol.OptForce2 += iprod(mymol.optf_[j], mymol.optf_[j]);
+                                mymol.OptForce2 += iprod(mymol.f_[j], mymol.f_[j]);
                                 copy_rvec(mymol.f_[j], mymol.optf_[j]);
                             }
-
-                            mymol.OptForce2 /= natoms;
-
+                            mymol.OptForce2   /= natoms;
                             _ener[ermsForce2] += _fc[ermsForce2]*mymol.OptForce2;
                             mymol.OptEcalc     = mymol.enerd_->term[F_EPOT];
-                            
-                            ener *= gmx::square(nOptSP);
                         }
-
+                        
                         _ener[ermsEPOT]   += _fc[ermsEPOT]*ener;
 
                         if (nullptr != debug)
@@ -1676,6 +1662,16 @@ double Optimization::calcDeviation()
         }
     }
 
+    /* Global sum energies */
+    if (PAR(_cr) && !_bFinal)
+    {
+#if GMX_DOUBLE
+        gmx_sumd(ermsNR, _ener, _cr);
+#else
+        gmx_sumf(ermsNR, _ener, _cr);
+#endif
+    }
+    
     for (j = 0; (j < ermsTOT); j++)
     {
         _ener[ermsTOT] += (_ener[j]/_nmol_support);
@@ -1690,15 +1686,7 @@ double Optimization::calcDeviation()
         }
         fprintf(debug, "\n");
     }
-    /* Global sum energies */
-    if (PAR(_cr))
-    {
-#if GMX_DOUBLE
-        gmx_sumd(ermsNR, _ener, _cr);
-#else
-        gmx_sumf(ermsNR, _ener, _cr);
-#endif
-    }
+
     return _ener[ermsTOT];
 }
 
@@ -1732,8 +1720,7 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
         };
 
     if (MASTER(_cr))
-    {
-    
+    {    
         if (PAR(_cr))
         {
             for (int dest = 1; dest < _cr->nnodes; dest++)
@@ -1786,7 +1773,7 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
         }
         if (bMinimum)
         {
-            param_ = best_;
+            param_  = best_;
             double emin = objFunction(best_.data());
             if (fplog)
             {
@@ -1798,20 +1785,21 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
                 }
             }
         }
-        _bDone  = true;
-        _bFinal = true;
     }
     else
     {
         /* Slave calculators */
         int niter = gmx_recv_int(_cr, 0);
-        for (int n = 0; n < niter; n++)
+        for (int n = 0; n < niter + 2; n++)
         {
             calcDeviation();
         }
+    }
+    _bFinal = true;
+    if(MASTER(_cr))
+    {
         calcDeviation();
     }
-    calcDeviation();
 }
 
 static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
@@ -2181,11 +2169,19 @@ int alex_tune_fc(int argc, char *argv[])
         print_moldip_mols(fp, opt._mymol, false, false);
     }
     
+    if (PAR(cr))
+    {
+        opt.broadcast(cr);
+    }
+    
     opt.calcDeviation();
 
-    if (MASTER(cr))
+    if (!PAR(cr))
     {
-        opt.printSpecs(fp, (char *)"Before optimization", nullptr, oenv, false);
+        if (MASTER(cr))
+        {
+            opt.printSpecs(fp, (char *)"Before optimization", nullptr, oenv, false);
+        }
     }
 
     opt.optRun(MASTER(cr) ? stderr : nullptr, fp,
