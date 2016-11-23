@@ -293,7 +293,6 @@ class Select : public TrajectoryAnalysisModule
 
     private:
         SelectionList                       sel_;
-        SelectionOptionInfo                *selOpt_;
 
         std::string                         fnSize_;
         std::string                         fnFrac_;
@@ -321,7 +320,7 @@ class Select : public TrajectoryAnalysisModule
 };
 
 Select::Select()
-    : selOpt_(NULL), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
+    : bTotNorm_(false), bFracNorm_(false), bResInd_(false),
       bCumulativeLifetimes_(true), resNumberType_(ResidueNumbering_ByNumber),
       pdbAtoms_(PdbAtomsSelection_All), top_(NULL),
       occupancyModule_(new AnalysisDataAverageModule()),
@@ -351,11 +350,13 @@ Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *sett
         "be combined with output from other programs and/or external",
         "analysis programs to calculate more complex things.",
         "For detailed help on the selection syntax, please use",
-        "[TT]gmx help selections[tt].[PAR]",
+        "[TT]gmx help selections[tt].",
+        "",
         "Any combination of the output options is possible, but note",
         "that [TT]-om[tt] only operates on the first selection.",
         "Also note that if you provide no output options, no output is",
-        "produced.[PAR]",
+        "produced.",
+        "",
         "With [TT]-os[tt], calculates the number of positions in each",
         "selection for each frame. With [TT]-norm[tt], the output is",
         "between 0 and 1 and describes the fraction from the maximum",
@@ -364,35 +365,42 @@ Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *sett
         "RA residues). With [TT]-cfnorm[tt], the output is divided",
         "by the fraction covered by the selection.",
         "[TT]-norm[tt] and [TT]-cfnorm[tt] can be specified independently",
-        "of one another.[PAR]",
+        "of one another.",
+        "",
         "With [TT]-oc[tt], the fraction covered by each selection is",
-        "written out as a function of time.[PAR]",
+        "written out as a function of time.",
+        "",
         "With [TT]-oi[tt], the selected atoms/residues/molecules are",
         "written out as a function of time. In the output, the first",
         "column contains the frame time, the second contains the number",
         "of positions, followed by the atom/residue/molecule numbers.",
         "If more than one selection is specified, the size of the second",
         "group immediately follows the last number of the first group",
-        "and so on.[PAR]",
+        "and so on.",
+        "",
         "With [TT]-on[tt], the selected atoms are written as a index file",
         "compatible with [TT]make_ndx[tt] and the analyzing tools. Each selection",
         "is written as a selection group and for dynamic selections a",
-        "group is written for each frame.[PAR]",
+        "group is written for each frame.",
+        "",
         "For residue numbers, the output of [TT]-oi[tt] can be controlled",
         "with [TT]-resnr[tt]: [TT]number[tt] (default) prints the residue",
         "numbers as they appear in the input file, while [TT]index[tt] prints",
         "unique numbers assigned to the residues in the order they appear",
         "in the input file, starting with 1. The former is more intuitive,",
         "but if the input contains multiple residues with the same number,",
-        "the output can be less useful.[PAR]",
+        "the output can be less useful.",
+        "",
         "With [TT]-om[tt], a mask is printed for the first selection",
         "as a function of time. Each line in the output corresponds to",
         "one frame, and contains either 0/1 for each atom/residue/molecule",
         "possibly selected. 1 stands for the atom/residue/molecule being",
-        "selected for the current frame, 0 for not selected.[PAR]",
+        "selected for the current frame, 0 for not selected.",
+        "",
         "With [TT]-of[tt], the occupancy fraction of each position (i.e.,",
         "the fraction of frames where the position is selected) is",
-        "printed.[PAR]",
+        "printed.",
+        "",
         "With [TT]-ofpdb[tt], a PDB file is written out where the occupancy",
         "column is filled with the occupancy fraction of each atom in the",
         "selection. The coordinates in the PDB file will be those from the",
@@ -400,13 +408,16 @@ Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *sett
         "appear in the output PDB file: with [TT]all[tt] all atoms are",
         "present, with [TT]maxsel[tt] all atoms possibly selected by the",
         "selection are present, and with [TT]selected[tt] only atoms that are",
-        "selected at least in one frame are present.[PAR]",
+        "selected at least in one frame are present.",
+        "",
         "With [TT]-olt[tt], a histogram is produced that shows the number of",
         "selected positions as a function of the time the position was",
         "continuously selected. [TT]-cumlt[tt] can be used to control whether",
         "subintervals of longer intervals are included in the histogram.[PAR]",
         "[TT]-om[tt], [TT]-of[tt], and [TT]-olt[tt] only make sense with",
-        "dynamic selections."
+        "dynamic selections.",
+        "",
+        "To plot coordinates for selections, use [gmx-trajectory]."
     };
 
     settings->setHelpText(desc);
@@ -436,9 +447,9 @@ Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *sett
                            .store(&fnLifetime_).defaultBasename("lifetime")
                            .description("Lifetime histogram"));
 
-    selOpt_ = options->addOption(SelectionOption("select").storeVector(&sel_)
-                                     .required().multiValue()
-                                     .description("Selections to analyze"));
+    options->addOption(SelectionOption("select").storeVector(&sel_)
+                           .required().multiValue()
+                           .description("Selections to analyze"));
 
     options->addOption(BooleanOption("norm").store(&bTotNorm_)
                            .description("Normalize by total number of positions with -os"));

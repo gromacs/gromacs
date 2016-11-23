@@ -507,6 +507,17 @@ class OptionInfo
          * assigned.
          */
         std::vector<std::string> defaultValuesAsStrings() const;
+        /*! \brief
+         * Converts given values to native representation for this option.
+         *
+         * For example, strings are parsed to the type that is actually used to
+         * store the options.
+         *
+         * The return value only depends on the option type, not on the current
+         * value of the option, and the current value in the option is not
+         * changed.
+         */
+        std::vector<Variant> normalizeValues(const std::vector<Variant> &values) const;
 
     protected:
         /*! \cond libapi */

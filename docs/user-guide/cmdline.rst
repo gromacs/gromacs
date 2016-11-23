@@ -141,6 +141,18 @@ linked help for the new commands for a full description.
 This section lists only major changes; minor changes like additional/removed
 options or bug fixes are not typically included.
 
+Version 2017
+^^^^^^^^^^^^
+
+gmx trajectory
+..............
+
+**new**
+
+:ref:`gmx trajectory` has been introduced as a selection-enabled version of
+:ref:`gmx traj`.  It supports output of coordinates, velocities, and/or forces
+for positions calculated for selections.
+
 Version 2016
 ^^^^^^^^^^^^
 

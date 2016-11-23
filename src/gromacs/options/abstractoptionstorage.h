@@ -143,6 +143,8 @@ class AbstractOptionStorage
         virtual std::vector<Variant> defaultValues() const = 0;
         //! \copydoc OptionInfo::defaultValuesAsStrings()
         virtual std::vector<std::string> defaultValuesAsStrings() const = 0;
+        //! \copydoc OptionInfo::normalizeValues()
+        virtual std::vector<Variant> normalizeValues(const std::vector<Variant> &values) const = 0;
 
         /*! \brief
          * Starts adding values from a new source for the option.

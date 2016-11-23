@@ -535,7 +535,7 @@ AnalysisDataVectorPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
     {
         for (int d = 0; d < DIM; ++d)
         {
-            if (bWrite_[i])
+            if (bWrite_[d])
             {
                 writeValue(points.values()[i + d]);
             }

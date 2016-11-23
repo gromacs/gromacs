@@ -73,6 +73,8 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
         virtual int valueCount() const { return 0; }
         virtual std::vector<Variant> defaultValues() const { return {}; }
         virtual std::vector<std::string> defaultValuesAsStrings() const { return {}; }
+        virtual std::vector<Variant>
+        normalizeValues(const std::vector<Variant> &values) const { return values; }
 
     private:
         virtual void clearSet();

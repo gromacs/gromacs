@@ -277,7 +277,7 @@ void DoubleOptionStorage::initConverter(ConverterType *converter)
     converter->addCastConversion<float>();
 }
 
-double DoubleOptionStorage::processValue(const double &value)
+double DoubleOptionStorage::processValue(const double &value) const
 {
     // TODO: Consider testing for overflow when scaling with factor_.
     return value * factor_;
@@ -370,7 +370,7 @@ void FloatOptionStorage::initConverter(ConverterType *converter)
     converter->addCastConversion<double>();
 }
 
-float FloatOptionStorage::processValue(const float &value)
+float FloatOptionStorage::processValue(const float &value) const
 {
     // TODO: Consider testing for overflow when scaling with factor_.
     return value * factor_;
@@ -504,7 +504,7 @@ void StringOptionStorage::initConverter(ConverterType * /*converter*/)
 {
 }
 
-std::string StringOptionStorage::processValue(const std::string &value)
+std::string StringOptionStorage::processValue(const std::string &value) const
 {
     if (allowed_.size() > 0)
     {

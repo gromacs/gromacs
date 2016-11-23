@@ -271,4 +271,9 @@ std::vector<std::string> OptionInfo::defaultValuesAsStrings() const
     return option().defaultValuesAsStrings();
 }
 
+std::vector<Variant> OptionInfo::normalizeValues(const std::vector<Variant> &values) const
+{
+    return option().normalizeValues(values);
+}
+
 } // namespace gmx

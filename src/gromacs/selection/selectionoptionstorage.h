@@ -77,6 +77,8 @@ class SelectionOptionStorage : public OptionStorageTemplate<Selection>
         virtual OptionInfo &optionInfo() { return info_; }
         virtual std::string typeString() const { return "selection"; }
         virtual std::string formatSingleValue(const Selection &value) const;
+        virtual std::vector<Variant>
+        normalizeValues(const std::vector<Variant> &values) const;
 
         /*! \brief
          * Adds selections to the storage.

@@ -317,7 +317,7 @@ void FileNameOptionStorage::initConverter(ConverterType * /*converter*/)
 {
 }
 
-std::string FileNameOptionStorage::processValue(const std::string &value)
+std::string FileNameOptionStorage::processValue(const std::string &value) const
 {
     if (manager_ != NULL)
     {

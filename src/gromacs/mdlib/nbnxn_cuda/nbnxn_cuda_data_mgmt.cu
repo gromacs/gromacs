@@ -655,10 +655,11 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t         **p_nb,
 
     /* CUDA timing disabled as event timers don't work:
        - with multiple streams = domain-decomposition;
-       - when turned off by GMX_DISABLE_CUDA_TIMING.
+       - when turned off by GMX_DISABLE_CUDA_TIMING/GMX_DISABLE_GPU_TIMING.
      */
     nb->bDoTime = (!nb->bUseTwoStreams &&
-                   (getenv("GMX_DISABLE_CUDA_TIMING") == NULL));
+                   (getenv("GMX_DISABLE_CUDA_TIMING") == NULL) &&
+                   (getenv("GMX_DISABLE_GPU_TIMING") == NULL));
 
     if (nb->bDoTime)
     {

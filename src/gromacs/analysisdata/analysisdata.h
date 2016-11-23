@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -326,13 +326,14 @@ class AnalysisDataHandle
          * \param[in] firstColumn  Zero-based column index.
          * \param[in] count        Number of columns to set.
          * \param[in] values       Value array of \p column items.
+         * \param[in] bPresent     Present flag to set for the column.
          *
-         * Equivalent to calling setPoint(firstColumn + i, values[i]) for
+         * Equivalent to calling setPoint(firstColumn + i, values[i], bPresent) for
          * i from 0 to count.
          *
          * Does not throw.
          */
-        void setPoints(int firstColumn, int count, const real *values);
+        void setPoints(int firstColumn, int count, const real *values, bool bPresent = true);
         /*! \brief
          * Finish data for the current point set.
          *

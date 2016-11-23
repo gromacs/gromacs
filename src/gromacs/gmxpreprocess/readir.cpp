@@ -3413,7 +3413,7 @@ void do_index(const char* mdparin, const char *ndx,
                 nSA_time = str_nelem(is->anneal_time, MAXPTR, ptr1);
                 if (nSA_time != k)
                 {
-                    gmx_fatal(FARGS, "Found %d annealing-time values, wanter %d\n", nSA_time, k);
+                    gmx_fatal(FARGS, "Found %d annealing-time values, wanted %d\n", nSA_time, k);
                 }
                 nSA_temp = str_nelem(is->anneal_temp, MAXPTR, ptr2);
                 if (nSA_temp != k)

@@ -108,9 +108,6 @@
 
 #include "nbnxn_gpu.h"
 
-static const bool useCuda   = GMX_GPU == GMX_GPU_CUDA;
-static const bool useOpenCL = GMX_GPU == GMX_GPU_OPENCL;
-
 void print_time(FILE                     *out,
                 gmx_walltime_accounting_t walltime_accounting,
                 gmx_int64_t               step,
@@ -1274,7 +1271,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (bDoForces && DOMAINDECOMP(cr))
     {
-        if (bUseGPU && useCuda)
+        if (bUseGPU)
         {
             /* We are done with the CPU compute, but the GPU local non-bonded
              * kernel can still be running while we communicate the forces.
@@ -1293,10 +1290,15 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     if (bUseOrEmulGPU)
     {
         /* wait for local forces (or calculate in emulation mode) */
-        if (bUseGPU && useCuda)
+        if (bUseGPU)
         {
             float       cycles_tmp, cycles_wait_est;
-            const float cuda_api_overhead_margin = 50000.0f; /* cycles */
+            /* Measured overhead on CUDA and OpenCL with(out) GPU sharing
+             * is between 0.5 and 1.5 Mcycles. So 2 MCycles is an overestimate,
+             * but even with a step of 0.1 ms the difference is less than 1%
+             * of the step time.
+             */
+            const float gpuWaitApiOverheadMargin = 2e6f; /* cycles */
 
             wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
             nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
@@ -1309,7 +1311,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             {
                 cycles_wait_est = gmx_cycles_read() - cycleCountBeforeLocalWorkCompletes;
 
-                if (cycles_tmp < cuda_api_overhead_margin)
+                if (cycles_tmp < gpuWaitApiOverheadMargin)
                 {
                     /* We measured few cycles, it could be that the kernel
                      * and transfer finished earlier and there was no actual
@@ -1332,19 +1334,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
              */
             cycles_force    += cycles_wait_est;
             cycles_wait_gpu += cycles_wait_est;
-        }
-        else if (bUseGPU && useOpenCL)
-        {
 
-            wallcycle_start(wcycle, ewcWAIT_GPU_NB_L);
-            nbnxn_gpu_wait_for_gpu(nbv->gpu_nbv,
-                                   flags, eatLocal,
-                                   enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
-                                   fr->fshift);
-            cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
-        }
-        if (bUseGPU)
-        {
             /* now clear the GPU outputs while we finish the step on the CPU */
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU_NB);
             nbnxn_gpu_clear_outputs(nbv->gpu_nbv, flags);
