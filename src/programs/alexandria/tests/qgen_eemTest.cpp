@@ -47,6 +47,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
@@ -62,6 +63,12 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+
+namespace alexandria
+{
+
+namespace
+{
 
 class EemTest : public gmx::test::CommandLineTestBase
 {
@@ -128,13 +135,15 @@ class EemTest : public gmx::test::CommandLineTestBase
 
             // Needed for GenerateCharges
             real           hfac        = 0;
-            real           epsr        = 1;
+            real           watoms      = 0;
             char          *symm_string = (char *)"";
             t_commrec     *cr          = init_commrec();
             gmx::MDLogger  mdlog       = getMdLogger(cr, stdout);
+            gmx_hw_info_t *hwinfo      = gmx_detect_hardware(mdlog, cr, false);
 
-            mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgEEM,
-                                hfac, epsr, lot, true, symm_string, NULL);
+            mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgEEM, watoms,
+                                hfac, lot, true, symm_string, cr,
+                                nullptr, hwinfo);
 
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.topology_->atoms.nr; atom++)
@@ -186,3 +195,7 @@ TEST_F (EemTest, Yang)
     testEem(eqdAXs);
    }
  */
+
+}
+
+}

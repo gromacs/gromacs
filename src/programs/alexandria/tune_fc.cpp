@@ -1836,7 +1836,7 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
         }
         if (bMtop)
         {
-            pr_mtop(fp, 0, mi->molProp()->getMolname().c_str(), mi->mtop_, true);
+            pr_mtop(fp, 0, mi->molProp()->getMolname().c_str(), mi->mtop_, true, false);
         }
     }
 }

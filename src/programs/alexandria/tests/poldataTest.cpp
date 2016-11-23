@@ -53,6 +53,12 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+namespace alexandria
+{
+
+namespace
+{
+
 class PoldataTest : public ::testing::Test
 {
     protected:
@@ -250,4 +256,8 @@ TEST_F (PoldataTest, polarRef)
 {
     std::string polarRef =  pd_.getPolarRef( );
     checker_.checkString(polarRef, "polarRef");
+}
+
+}
+
 }

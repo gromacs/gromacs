@@ -47,6 +47,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
@@ -126,20 +127,24 @@ class RespTest : public gmx::test::CommandLineTestBase
                                  false, false, false, bPolar);
             //Needed for GenerateCharges
             real           hfac        = 0;
-            real           epsr        = 1;
+            real           watoms      = 0;
             char          *symm_string = (char *)"";
-            gmx::MDLogger  mdlog       = getMdLogger(mp_.cr_, stdout);
+            t_commrec     *cr          = init_commrec();
+            gmx::MDLogger  mdlog       = getMdLogger(cr, stdout);
+            gmx_hw_info_t *hwinfo      = gmx_detect_hardware(mdlog, cr, false);
 
             if(!bPolar)
             {
-                mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP,
-                                    hfac, epsr, lot, false, symm_string, nullptr);
+                mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP, watoms,
+                                    hfac, lot, false, symm_string, cr, nullptr,
+                                    hwinfo);
             }
             else
             {
                 std::string tabFile = fileManager().getInputFilePath("table.xvg");
-                mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP,
-                                    hfac, epsr, lot, false, symm_string, tabFile.c_str());
+                mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP, watoms,
+                                    hfac, lot, false, symm_string, cr,
+                                    tabFile.c_str(), hwinfo);
             }
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)

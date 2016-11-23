@@ -53,6 +53,12 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+namespace alexandria
+{
+
+namespace
+{
+
 class CoulombTest : public gmx::test::CommandLineTestBase
 {
     protected:
@@ -122,4 +128,8 @@ TEST_F (CoulombTest, AXg)
 TEST_F (CoulombTest, AXs)
 {
     testCoulomb(eqdAXs, 1, 2, 12.0, 16.0);
+}
+
+}
+
 }
