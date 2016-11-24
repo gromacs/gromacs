@@ -696,26 +696,31 @@ include(gmxManageLinearAlgebraLibraries)
 set(GMX_USE_PLUGINS OFF)
 
 if(GMX_LOAD_PLUGINS)
-  if(NOT WIN32)
     # Native Windows does not have, nor need dlopen
-    include(gmxTestdlopen)
-    gmx_test_dlopen(HAVE_DLOPEN)
-  endif()
+    if(NOT WIN32)
+        if(NOT BUILD_SHARED_LIBS)
+            message(FATAL_ERROR "GROMACS only supports plugins in a build that uses shared libraries, which can be disabled for various reasons. Try cmake with -DBUILD_SHARED_LIBS=on also.")
+        endif()
+        # TODO Make a proper find_package for dlopen to find
+        # dlfcn.h. The CMake variable CMAKE_DL_LIBS works magically
+        # for the library, however.
+        include(gmxTestdlopen)
+        gmx_test_dlopen(HAVE_DLOPEN)
+        if (NOT HAVE_DLOPEN)
+            MESSAGE(FATAL_ERROR "Using dynamic plugins (e.g VMD-supported file formats) requires dynamic loading, e.g. GROMACS building shared libraries and being able to link with libdlopen")
+        endif()
+    endif()
 
-  # so, should we use plug-ins?
-  if(WIN32 OR (HAVE_DLOPEN AND BUILD_SHARED_LIBS))
+    # If we get here, we can use plugins
     if(NOT VMD_QUIETLY)
-      MESSAGE(STATUS "Using dynamic plugins (e.g VMD-supported file formats)")
+        MESSAGE(STATUS "Using dynamic plugins (e.g VMD-supported file formats)")
     endif()
     if(NOT GMX_VMD_PLUGIN_PATH)
-      find_package(VMD)
+        find_package(VMD)
     endif()
     set(GMX_USE_PLUGINS ON)
     list(APPEND GMX_EXTRA_LIBRARIES ${CMAKE_DL_LIBS}) # magic cross-platform pre-set variable for dlopen library
     set(PKG_DL_LIBS "-l${CMAKE_DL_LIBS}")
-  else()
-    set(PKG_DL_LIBS)
-  endif()
 endif()
 set(VMD_QUIETLY TRUE CACHE INTERNAL "")
 
