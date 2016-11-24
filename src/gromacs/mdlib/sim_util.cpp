@@ -45,6 +45,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <cstdint>
+
 #include <array>
 
 #include "gromacs/domdec/domdec.h"
@@ -315,23 +317,33 @@ static void pme_receive_force_ener(t_commrec      *cr,
 }
 
 static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
-                               gmx_int64_t step, real pforce, rvec *x, rvec *f)
+                               gmx_int64_t step, real forceTolerance,
+                               const rvec *x, const rvec *f)
 {
-    int  i;
-    real pf2, fn2;
-    char buf[STEPSTRSIZE];
-
-    pf2 = gmx::square(pforce);
-    for (i = 0; i < md->homenr; i++)
+    real           force2Tolerance = gmx::square(forceTolerance);
+    std::uintmax_t numNonFinite    = 0;
+    for (int i = 0; i < md->homenr; i++)
     {
-        fn2 = norm2(f[i]);
-        /* We also catch NAN, if the compiler does not optimize this away. */
-        if (fn2 >= pf2 || fn2 != fn2)
+        real force2    = norm2(f[i]);
+        bool nonFinite = !std::isfinite(force2);
+        if (force2 >= force2Tolerance || nonFinite)
         {
-            fprintf(fp, "step %s  atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
-                    gmx_step_str(step, buf),
-                    ddglatnr(cr->dd, i), x[i][XX], x[i][YY], x[i][ZZ], std::sqrt(fn2));
+            fprintf(fp, "step %" GMX_PRId64 " atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
+                    step,
+                    ddglatnr(cr->dd, i), x[i][XX], x[i][YY], x[i][ZZ], std::sqrt(force2));
         }
+        if (nonFinite)
+        {
+            numNonFinite++;
+        }
+    }
+    if (numNonFinite > 0)
+    {
+        /* Note that with MPI this fatal call on one rank might interrupt
+         * the printing on other ranks. But we can only avoid that with
+         * an expensive MPI barrier that we would need at each step.
+         */
+        gmx_fatal(FARGS, "At step %" GMX_PRId64 " detected non-finite forces on %ju atoms", step, numNonFinite);
     }
 }
 
