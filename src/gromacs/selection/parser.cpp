@@ -89,11 +89,11 @@
 /* Copy the first part of user declarations.  */
 #line 56 "parser.y" /* yacc.c:339  */
 
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #include "parser_internal.h"
 
-using gmx::scoped_guard_sfree;
+using gmx::unique_guard_sfree;
 using gmx::SelectionParserValue;
 using gmx::SelectionParserValueList;
 using gmx::SelectionParserValueListPointer;
@@ -1886,7 +1886,7 @@ yyreduce:
 #line 255 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree nameGuard((yyvsp[0].str));
+                 unique_guard_sfree nameGuard((yyvsp[0].str));
                  SelectionTreeElementPointer s
                         = _gmx_sel_init_group_by_name((yyvsp[0].str), scanner);
                  SelectionTreeElementPointer p
@@ -1912,7 +1912,7 @@ yyreduce:
 #line 273 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree nameGuard((yyvsp[-1].str));
+                 unique_guard_sfree nameGuard((yyvsp[-1].str));
                  set((yyval.sel), _gmx_sel_init_selection((yyvsp[-1].str), get((yyvsp[0].sel)), scanner));
                  END_ACTION;
              }
@@ -1923,7 +1923,7 @@ yyreduce:
 #line 280 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree nameGuard((yyvsp[-2].str));
+                 unique_guard_sfree nameGuard((yyvsp[-2].str));
                  set((yyval.sel), _gmx_sel_assign_variable((yyvsp[-2].str), get((yyvsp[0].sel)), scanner));
                  END_ACTION;
              }
@@ -1934,7 +1934,7 @@ yyreduce:
 #line 287 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree nameGuard((yyvsp[-2].str));
+                 unique_guard_sfree nameGuard((yyvsp[-2].str));
                  set((yyval.sel), _gmx_sel_assign_variable((yyvsp[-2].str), get((yyvsp[0].sel)), scanner));
                  END_ACTION;
              }
@@ -1945,7 +1945,7 @@ yyreduce:
 #line 294 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree nameGuard((yyvsp[-2].str));
+                 unique_guard_sfree nameGuard((yyvsp[-2].str));
                  set((yyval.sel), _gmx_sel_assign_variable((yyvsp[-2].str), get((yyvsp[0].sel)), scanner));
                  END_ACTION;
              }
@@ -2089,7 +2089,7 @@ yyreduce:
 #line 386 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree opGuard((yyvsp[-1].str));
+                 unique_guard_sfree opGuard((yyvsp[-1].str));
                  set((yyval.sel), _gmx_sel_init_comparison(get((yyvsp[-2].sel)), get((yyvsp[0].sel)), (yyvsp[-1].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2101,7 +2101,7 @@ yyreduce:
 #line 397 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree nameGuard((yyvsp[0].str));
+                 unique_guard_sfree nameGuard((yyvsp[0].str));
                  set((yyval.sel), _gmx_sel_init_group_by_name((yyvsp[0].str), scanner));
                  END_ACTION;
              }
@@ -2152,7 +2152,7 @@ yyreduce:
 #line 425 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree posmodGuard((yyvsp[-1].str));
+                 unique_guard_sfree posmodGuard((yyvsp[-1].str));
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[0].meth), SelectionParserValueListPointer(), (yyvsp[-1].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2164,7 +2164,7 @@ yyreduce:
 #line 433 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree posmodGuard((yyvsp[-2].str));
+                 unique_guard_sfree posmodGuard((yyvsp[-2].str));
                  set((yyval.sel), _gmx_sel_init_keyword_strmatch((yyvsp[-1].meth), gmx::eStringMatchType_Auto, get((yyvsp[0].vlist)), (yyvsp[-2].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2176,7 +2176,7 @@ yyreduce:
 #line 441 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree posmodGuard((yyvsp[-3].str));
+                 unique_guard_sfree posmodGuard((yyvsp[-3].str));
                  set((yyval.sel), _gmx_sel_init_keyword_strmatch((yyvsp[-2].meth), (yyvsp[-1].smt), get((yyvsp[0].vlist)), (yyvsp[-3].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2188,7 +2188,7 @@ yyreduce:
 #line 449 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree posmodGuard((yyvsp[-2].str));
+                 unique_guard_sfree posmodGuard((yyvsp[-2].str));
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[-1].meth), get((yyvsp[0].vlist)), (yyvsp[-2].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2200,7 +2200,7 @@ yyreduce:
 #line 460 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree posmodGuard((yyvsp[-2].str));
+                 unique_guard_sfree posmodGuard((yyvsp[-2].str));
                  set((yyval.sel), _gmx_sel_init_method((yyvsp[-1].meth), get((yyvsp[0].plist)), (yyvsp[-2].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2242,7 +2242,7 @@ yyreduce:
 #line 500 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree posmodGuard((yyvsp[-1].str));
+                 unique_guard_sfree posmodGuard((yyvsp[-1].str));
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[0].meth), SelectionParserValueListPointer(), (yyvsp[-1].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2254,7 +2254,7 @@ yyreduce:
 #line 508 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree posmodGuard((yyvsp[-3].str));
+                 unique_guard_sfree posmodGuard((yyvsp[-3].str));
                  set((yyval.sel), _gmx_sel_init_keyword_of((yyvsp[-2].meth), get((yyvsp[0].sel)), (yyvsp[-3].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2266,7 +2266,7 @@ yyreduce:
 #line 516 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree posmodGuard((yyvsp[-2].str));
+                 unique_guard_sfree posmodGuard((yyvsp[-2].str));
                  set((yyval.sel), _gmx_sel_init_method((yyvsp[-1].meth), get((yyvsp[0].plist)), (yyvsp[-2].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2359,7 +2359,7 @@ yyreduce:
 #line 581 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree posmodGuard((yyvsp[-1].str));
+                 unique_guard_sfree posmodGuard((yyvsp[-1].str));
                  set((yyval.sel), _gmx_sel_init_keyword((yyvsp[0].meth), SelectionParserValueListPointer(), (yyvsp[-1].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2398,7 +2398,7 @@ yyreduce:
 #line 619 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree keywordGuard((yyvsp[-2].str));
+                 unique_guard_sfree keywordGuard((yyvsp[-2].str));
                  set((yyval.sel), _gmx_sel_init_position(get((yyvsp[0].sel)), (yyvsp[-2].str), scanner));
                  CHECK_SEL((yyval.sel));
                  END_ACTION;
@@ -2474,7 +2474,7 @@ yyreduce:
 #line 686 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree nameGuard((yyvsp[-1].str));
+                 unique_guard_sfree nameGuard((yyvsp[-1].str));
                  set((yyval.param), SelectionParserParameter::create((yyvsp[-1].str), get((yyvsp[0].vlist)), (yyloc)));
                  END_ACTION;
              }
@@ -2643,7 +2643,7 @@ yyreduce:
 #line 794 "parser.y" /* yacc.c:1646  */
     {
                  BEGIN_ACTION;
-                 scoped_guard_sfree stringGuard((yyvsp[0].str));
+                 unique_guard_sfree stringGuard((yyvsp[0].str));
                  set((yyval.val), SelectionParserValue::createString((yyvsp[0].str), (yyloc)));
                  END_ACTION;
              }

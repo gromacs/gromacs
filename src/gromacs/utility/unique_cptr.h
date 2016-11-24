@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,22 +34,23 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::scoped_cptr and gmx::scoped_guard_sfree.
+ * Declares gmx::unique_cptr and gmx::unique_guard_sfree.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_utility
  */
-#ifndef GMX_UTILITY_SCOPED_PTR_SFREE_H
-#define GMX_UTILITY_SCOPED_PTR_SFREE_H
+#ifndef GMX_UTILITY_UNIQUE_PTR_SFREE_H
+#define GMX_UTILITY_UNIQUE_PTR_SFREE_H
 
-#include "gromacs/utility/classhelpers.h"
+#include <memory>
+
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {
 
-//! sfree wrapper to be used as scoped_cptr deleter
+//! sfree wrapper to be used as unique_cptr deleter
 template <class T>
 inline void sfree_wrapper(T *p)
 {
@@ -57,15 +58,9 @@ inline void sfree_wrapper(T *p)
 }
 
 /*! \libinternal \brief
- * Stripped-down version of scoped_ptr that uses sfree() or custom deleter.
+ * unique-ptr which takes function pointer as template argument
  *
- * Currently only implements some operations; other operations can be added
- * if they become necessary.
- * The presence of a release() method is not strictly according to `scoped_ptr`
- * design, but makes it easier to make existing C code exception-safe, and does
- * not really warrant a separate class for such a purpose.
- *
- * This class provides a basic guard/smart pointer for C pointers.
+ * By default calls sfree as deleter.
  *
  * Methods in this class do not throw.
  *
@@ -73,34 +68,21 @@ inline void sfree_wrapper(T *p)
  * \ingroup module_utility
  */
 template <class T, void D(T *) = sfree_wrapper>
-class scoped_cptr
+class unique_cptr : public std::unique_ptr<T, void(*)(T*)>
 {
     public:
+        //! Initializes a unique_cptr to nulltpr.
+        constexpr unique_cptr() : std::unique_ptr<T, void(*) (T*)>(nullptr, D) {};
         /*! \brief
-         * Initializes a scoped_cptr that frees \p ptr on scope exit.
+         * Initializes a unique_cptr that frees \p ptr on destruction.
          *
          * \param[in] ptr  Pointer to use for initialization.
          */
-        explicit scoped_cptr(T *ptr = NULL) : ptr_(ptr) {}
-        //! Frees the pointer passed to the constructor.
-        ~scoped_cptr() { D(ptr_); }
-        //! Returns the stored pointer.
-        T *get() const { return ptr_; }
-        //! Check for non-null pointer in boolean context.
-        explicit operator bool () const { return ptr_ != 0; }
-        //! Sets the pointer and frees previous pointer if necessary.
-        void reset(T *ptr) { D(ptr_); ptr_ = ptr; }
-        //! Clears the pointer without freeing the memory, and returns the old value.
-        T *release() { T *ptr = ptr_; ptr_ = NULL; return ptr; }
-
-    private:
-        T                    *ptr_;
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(scoped_cptr);
+        explicit unique_cptr(T* p) : std::unique_ptr<T, void(*) (T*)>(p, D) {};
 };
 
-//! Simple guard which calls sfree. See scoped_cptr for details.
-typedef scoped_cptr<void> scoped_guard_sfree;
+//! Simple guard which calls sfree. See unique_cptr for details.
+typedef unique_cptr<void> unique_guard_sfree;
 
 }      // namespace gmx
 

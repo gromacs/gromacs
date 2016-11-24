@@ -52,7 +52,7 @@
 
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"

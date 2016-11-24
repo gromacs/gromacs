@@ -45,7 +45,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/warninp.h"
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -77,9 +77,9 @@ class ReadTest : public ::testing::Test
 
         int                                            numInputs_;
         t_inpfile                                     *inputField_;
-        gmx::scoped_cptr<t_inpfile>                    inpGuard_;
+        gmx::unique_cptr<t_inpfile>                    inpGuard_;
         warninp_t                                      wi_;
-        gmx::scoped_cptr<struct warninp, free_warning> wiGuard_;
+        gmx::unique_cptr<struct warninp, free_warning> wiGuard_;
 };
 
 TEST_F(ReadTest, get_eint_ReadsInteger)

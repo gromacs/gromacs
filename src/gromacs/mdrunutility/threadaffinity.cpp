@@ -60,7 +60,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/programcontext.h"
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace
@@ -425,7 +425,7 @@ gmx_set_thread_affinity(FILE                        *fplog,
     bool validLayout
         = get_thread_affinity_layout(fplog, mdlog, cr, hwTop, nthread_node, automatic,
                                      offset, &core_pinning_stride, &localityOrder);
-    gmx::scoped_guard_sfree localityOrderGuard(localityOrder);
+    gmx::unique_guard_sfree localityOrderGuard(localityOrder);
 
     bool                    allAffinitiesSet;
     if (validLayout)

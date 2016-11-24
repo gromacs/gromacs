@@ -44,7 +44,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/smalloc.h"
 
 using gmx::RVec;
@@ -83,8 +83,8 @@ void readConformation(const char *confin, gmx_mtop_t *top,
     rvec                   *x_tmp = NULL, *v_tmp = NULL;
     bool                    dummy;
     readConfAndTopology(confin, &dummy, top, ePBC, x ? &x_tmp : NULL, v ? &v_tmp : NULL, box);
-    gmx::scoped_guard_sfree xguard(x_tmp);
-    gmx::scoped_guard_sfree vguard(v_tmp);
+    gmx::unique_guard_sfree xguard(x_tmp);
+    gmx::unique_guard_sfree vguard(v_tmp);
     if (x && x_tmp)
     {
         *x = std::vector<RVec>(x_tmp, x_tmp + top->natoms);
@@ -105,8 +105,8 @@ void readConformation(const char *confin, t_topology *top,
             v ? " and velocities" : "");
     rvec                   *x_tmp = NULL, *v_tmp = NULL;
     read_tps_conf(confin, top, ePBC, x ? &x_tmp : NULL, v ? &v_tmp : NULL, box, FALSE);
-    gmx::scoped_guard_sfree xguard(x_tmp);
-    gmx::scoped_guard_sfree vguard(v_tmp);
+    gmx::unique_guard_sfree xguard(x_tmp);
+    gmx::unique_guard_sfree vguard(v_tmp);
     if (x && x_tmp)
     {
         *x = std::vector<RVec>(x_tmp, x_tmp + top->atoms.nr);

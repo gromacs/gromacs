@@ -70,7 +70,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -682,7 +682,7 @@ Select::writeOutput()
         atoms = top_->topology()->atoms;
         t_pdbinfo         *pdbinfo;
         snew(pdbinfo, atoms.nr);
-        scoped_guard_sfree pdbinfoGuard(pdbinfo);
+        unique_guard_sfree pdbinfoGuard(pdbinfo);
         if (atoms.havePdbInfo)
         {
             std::memcpy(pdbinfo, atoms.pdbinfo, atoms.nr*sizeof(*pdbinfo));

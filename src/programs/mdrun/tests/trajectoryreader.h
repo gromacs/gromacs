@@ -54,7 +54,7 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/trajectory/trajectoryframe.h"
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #include "testutils/testasserts.h"
 
@@ -70,13 +70,13 @@ namespace test
 class TrajectoryFrame;
 
 //! Convenience smart pointer typedef
-typedef scoped_cptr<gmx_output_env_t, output_env_done> oenv_ptr;
+typedef unique_cptr<gmx_output_env_t, output_env_done> oenv_ptr;
 //! Convenience smart pointer typedef
-typedef scoped_cptr<t_trxstatus, close_trx> trxstatus_file_ptr;
+typedef unique_cptr<t_trxstatus, close_trx> trxstatus_file_ptr;
 //! Helper function to free all resources
 void done_trxframe(t_trxframe *fr);
 //! Convenience smart pointer typedef
-typedef scoped_cptr<t_trxframe, done_trxframe> trxframe_ptr;
+typedef unique_cptr<t_trxframe, done_trxframe> trxframe_ptr;
 
 /*! \internal
  * \brief Manages returning a t_trxframe whose contents were read from

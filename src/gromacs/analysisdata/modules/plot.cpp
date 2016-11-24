@@ -61,7 +61,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace
@@ -344,7 +344,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
                    : exvgNONE);
             gmx_output_env_t                              *oenv;
             output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0);
-            scoped_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
+            unique_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
                                   impl_->xlabel_.c_str(), impl_->ylabel_.c_str(),
                                   oenv);
