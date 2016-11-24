@@ -36,54 +36,29 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
 
 #include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
-#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/listed-forces/bonded.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/shellfc.h"
-#include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/timing/wallcycle.h"
-#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/mtop_util.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 
 #include "gmx_simple_comm.h"
-#include "molselect.h"
 #include "nmsimplex.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-
-// Alexandria stuff
-#include "gentop_core.h"
 #include "moldip.h"
-#include "molprop.h"
-#include "molprop_util.h"
-#include "molprop_xml.h"
-#include "mymol.h"
-#include "qgen_eem.h"
-#include "stringutil.h"
+
 
 static void print_stats(FILE *fp, const char *prop, gmx_stats_t lsq, gmx_bool bHeader,
                         char *xaxis, char *yaxis)

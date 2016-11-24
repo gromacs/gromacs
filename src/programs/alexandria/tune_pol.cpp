@@ -36,36 +36,26 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/stringutil.h"
 
 #include "composition.h"
 #include "molprop.h"
 #include "molprop_tables.h"
-#include "molprop_util.h"
 #include "molprop_xml.h"
 #include "molselect.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "stringutil.h"
 
 class pType
 {
