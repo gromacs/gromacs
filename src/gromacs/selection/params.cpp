@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -311,7 +311,7 @@ parse_values_range(const SelectionParserValueList &values,
                        "Invalid range parameter type");
     int                *idata = NULL;
     real               *rdata = NULL;
-    scoped_guard_sfree  dataGuard;
+    sfree_guard         dataGuard;
     if (param->val.type == INT_VALUE)
     {
         snew(idata, values.size()*2);
