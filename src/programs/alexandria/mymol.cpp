@@ -36,9 +36,6 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
-
-#include "mymol.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -47,19 +44,10 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/fileio/readinp.h"
-#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/gpp_nextnb.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/gmxpreprocess/notset.h"
-#include "gromacs/gmxpreprocess/pdb2top.h"
-#include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
-#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/units.h"
@@ -72,32 +60,18 @@
 #include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
-#include "gromacs/utility/stringutil.h"
 
-#include "gauss_io.h"
-#include "gentop_core.h"
-#include "gentop_vsite.h"
-#include "gmx_simple_comm.h"
-#include "molprop.h"
-#include "molprop_util.h"
-#include "molprop_xml.h"
-#include "poldata.h"
-#include "poldata_xml.h"
-#include "stringutil.h"
+#include "mymol.h"
 
 namespace alexandria
 {

@@ -36,7 +36,6 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -52,11 +51,6 @@
 #endif
 #include "molprop_sqlite3.h"
 
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-
-#include "stringutil.h"
 
 class Synonym
 {

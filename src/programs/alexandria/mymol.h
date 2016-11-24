@@ -50,7 +50,6 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 
-#include "gauss_io.h"
 #include "gentop_core.h"
 #include "gentop_vsite.h"
 #include "molprop.h"

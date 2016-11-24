@@ -36,43 +36,17 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
-
-#include "molprop_util.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <algorithm>
 #include <vector>
 
-#include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxpreprocess/gen_ad.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/gpp_nextnb.h"
-#include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/math/units.h"
-#include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/real.h"
-#include "gromacs/utility/stringutil.h"
 
 #include "composition.h"
-#include "gentop_core.h"
-#include "gentop_vsite.h"
-#include "gmx_simple_comm.h"
-#include "molprop.h"
+#include "molprop_util.h"
 #include "molprop_xml.h"
-#include "molselect.h"
-#include "poldata.h"
-#include "poldata_xml.h"
-#include "stringutil.h"
 
 namespace alexandria
 {

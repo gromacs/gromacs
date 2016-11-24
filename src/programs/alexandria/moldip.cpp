@@ -36,38 +36,25 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
-
-#include "moldip.h"
 
 #include <cmath>
-
 #include <vector>
 
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/state.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/stringutil.h"
 
-// Alexandria stuff
 #include "fill_inputrec.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
+#include "moldip.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"
-#include "stringutil.h"
+
 
 #define STRLEN 256
 

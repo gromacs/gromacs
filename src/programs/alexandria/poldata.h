@@ -39,8 +39,6 @@
 #ifndef POLDATA_H
 #define POLDATA_H
 
-#include "gmxpre.h"
-
 #include <algorithm>
 #include <vector>
 

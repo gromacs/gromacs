@@ -36,19 +36,14 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/topology.h"
-#include "gromacs/utility/futil.h"
 
 #include "molprop.h"
-#include "molprop_util.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"
 

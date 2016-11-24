@@ -2,16 +2,12 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
 
-#include "molselect.h"
-
-#include <algorithm>
 #include <vector>
 
-#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
+#include "molselect.h"
 #include "stringutil.h"
 
 static const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };

@@ -36,25 +36,19 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
-
-#include "molprop.h"
 
 #include <cmath>
-
-#include <algorithm>
 #include <string>
 #include <vector>
 
 #include "gromacs/math/utilities.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "composition.h"
 #include "communication.h"
 #include "gmx_simple_comm.h"
-#include "poldata.h"
-#include "stringutil.h"
+#include "molprop.h"
+
 
 const char *mpo_name[MPO_NR] =
 {

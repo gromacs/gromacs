@@ -36,46 +36,29 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
-
-#include "qgen_resp.h"
 
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
 
 #include "gromacs/commandline/filenm.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
-#include "gromacs/topology/symtab.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxomp.h"
-#include "gromacs/utility/pleasecite.h"
-#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
-#include "gromacs/utility/txtdump.h"
 
 #include "nmsimplex.h"
 #include "poldata.h"
-#include "qgen_eem.h"
+#include "qgen_resp.h"
 #include "regression.h"
-#include "stringutil.h"
 #include "coulombintegrals/coulombintegrals.h"
 
 namespace alexandria

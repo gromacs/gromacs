@@ -41,23 +41,16 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <algorithm>
 #include <vector>
 
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "gmxpre.h"
 #include "gmx_simple_comm.h"
 #include "plistwrapper.h"
 #include "poldata-low.h"
-#include "stringutil.h"
+
 
 namespace alexandria
 {

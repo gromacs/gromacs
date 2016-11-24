@@ -36,46 +36,25 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
 
 #include <ctype.h>
 #include <stdlib.h>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/listed-forces/bonded.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/state.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/init.h"
-#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "fill_inputrec.h"
 #include "gauss_io.h"
-#include "gentop_core.h"
-#include "gentop_vsite.h"
 #include "getmdlogger.h"
-#include "molprop_util.h"
 #include "molprop_xml.h"
 #include "mymol.h"
-#include "poldata.h"
 #include "poldata_xml.h"
-#include "qgen_eem.h"
-#include "qgen_resp.h"
-#include "stringutil.h"
 
 static void clean_pdb_names(t_atoms *atoms, t_symtab *tab)
 {

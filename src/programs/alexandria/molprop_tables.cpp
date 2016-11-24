@@ -36,9 +36,6 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
-
-#include "molprop_tables.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -50,21 +47,11 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/stringutil.h"
 
 #include "categories.h"
 #include "composition.h"
-#include "molprop.h"
-#include "molprop_util.h"
-#include "molselect.h"
-#include "poldata.h"
-#include "poldata_xml.h"
-#include "stringutil.h"
+#include "molprop_tables.h"
 
 namespace alexandria
 {

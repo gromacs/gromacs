@@ -36,56 +36,29 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
-
 #include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
-#include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/gmxpreprocess/convparm.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp.h"
-#include "gromacs/gmxpreprocess/pdb2top.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/listed-forces/bonded.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/force.h"
-#include "gromacs/mdlib/main.h"
-#include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/shellfc.h"
-#include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/timing/wallcycle.h"
-#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/mtop_util.h"
-#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/init.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/stringutil.h"
 
-#include "nmsimplex.h"
-
-// alexandria stuff
 #include "communication.h"
 #include "gentop_core.h"
 #include "getmdlogger.h"
@@ -99,9 +72,7 @@
 #include "optparam.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "qgen_eem.h"
 #include "regression.h"
-#include "stringutil.h"
 
 /*! \brief Write a csv file containing molecule names and bond energy
  *

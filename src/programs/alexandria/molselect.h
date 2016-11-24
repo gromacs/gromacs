@@ -5,7 +5,6 @@
 #ifndef MOLSELECT_H
 #define MOLSELECT_H
 
-#include <algorithm>
 #include <string>
 #include <vector>
 

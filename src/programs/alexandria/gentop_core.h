@@ -6,12 +6,9 @@
 #define GENTOP_CORE_H
 
 #include <stdio.h>
-
 #include <vector>
 
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/gpp_nextnb.h"
 
 #include "plistwrapper.h"
 #include "poldata.h"

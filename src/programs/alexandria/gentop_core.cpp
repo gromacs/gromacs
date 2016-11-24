@@ -36,43 +36,21 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
-
-#include "gentop_core.h"
 
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "gromacs/random.h"
-#include "gromacs/fileio/confio.h"
-#include "gromacs/fileio/pdbio.h"
-#include "gromacs/gmxpreprocess/gen_ad.h"
-#include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
-#include "gromacs/topology/symtab.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/strdb.h"
-#include "gromacs/utility/stringutil.h"
 
-#include "gentop_vsite.h"
-#include "plistwrapper.h"
-#include "poldata.h"
-#include "poldata-low.h"
-#include "stringutil.h"
-
+#include "gentop_core.h"
 
 using namespace alexandria;
 

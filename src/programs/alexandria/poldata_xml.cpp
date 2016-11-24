@@ -36,25 +36,18 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
-
-#include "poldata_xml.h"
-
-#include <cstdlib>
-#include <cstring>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <cstdlib>
+#include <cstring>
 
-#include "gromacs/gmxpreprocess/grompp.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 
 #include "poldata.h"
 #include "poldata-low.h"
+#include "poldata_xml.h"
 #include "xml_util.h"
 
 extern int xmlDoValidityCheckingDefaultValue;

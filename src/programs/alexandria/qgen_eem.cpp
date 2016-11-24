@@ -36,30 +36,20 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
-
-#include "qgen_eem.h"
 
 #include <cctype>
 
 #include "gromacs/fileio/confio.h"
-#include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/pleasecite.h"
-#include "gromacs/utility/strdb.h"
-#include "gromacs/utility/txtdump.h"
 
 #include "molprop.h"
 #include "poldata.h"
+#include "qgen_eem.h"
 #include "coulombintegrals/coulombintegrals.h"
 
 namespace alexandria

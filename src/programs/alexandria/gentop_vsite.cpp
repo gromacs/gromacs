@@ -36,23 +36,15 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
-
-#include "gentop_vsite.h"
 
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/topology/ifunc.h"
-#include "gromacs/topology/symtab.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "gentop_vsite.h"
 #include "plistwrapper.h"
 #include "poldata.h"
 

@@ -39,14 +39,9 @@
 #ifndef MOLPROP_TABLES_H
 #define MOLPROP_TABLES_H
 
-#include "gromacs/gmxpreprocess/grompp.h"
-#include "gromacs/topology/atomprop.h"
-
 #include "categories.h"
 #include "molprop.h"
 #include "molprop_util.h"
-#include "molselect.h"
-#include "poldata.h"
 
 //! Utility function converting float to char *
 extern char *ftoa(double f);
