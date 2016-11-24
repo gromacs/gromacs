@@ -60,7 +60,7 @@
 #include <vector>
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 
 #include "testutils/testasserts.h"
 
@@ -91,11 +91,11 @@ EnergyFrameReaderPtr openEnergyFileToReadFields(const std::string              &
 class EnergyFrame;
 
 //! Convenience smart pointer typedef
-typedef scoped_cptr<ener_file, done_ener_file> ener_file_ptr;
+typedef unique_cptr<ener_file, done_ener_file> ener_file_ptr;
 //! Helper function to free resources (NB free_enxframe only frees the contents, not the pointer itself)
 void done_enxframe(t_enxframe *fr);
 //! Convenience smart pointer typedef
-typedef scoped_cptr<t_enxframe, done_enxframe> enxframe_ptr;
+typedef unique_cptr<t_enxframe, done_enxframe> enxframe_ptr;
 
 /*! \internal
  * \brief Manages returning an EnergyFrame containing required energy
@@ -138,9 +138,9 @@ class EnergyFrameReader
         //! Convert energy field name to its index within a t_enxframe from this file.
         std::map<std::string, int> indicesOfEnergyFields_;
         //! Owning handle of an open energy file ready to read frames.
-        ener_file_ptr              energyFileGuard_;
+        const ener_file_ptr        energyFileGuard_;
         //! Owning handle of contents of .edr file frame after reading.
-        enxframe_ptr               enxframeGuard_;
+        const enxframe_ptr         enxframeGuard_;
         //! Whether the API has been used properly (ie. probe before reading).
         bool                       haveProbedForNextFrame_;
         //! Whether there has been a probe that found a next frame.

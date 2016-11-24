@@ -58,7 +58,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
@@ -120,7 +120,7 @@ writeOclBuildLog(FILE              *fplog,
     }
 
     char             *buildLog = nullptr;
-    scoped_cptr<char> buildLogGuard;
+    unique_cptr<char> buildLogGuard;
     if (buildLogSize != 0)
     {
         /* Allocate memory to fit the build log,

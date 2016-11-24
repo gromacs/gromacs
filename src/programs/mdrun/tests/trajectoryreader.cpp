@@ -51,7 +51,6 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/scoped_cptr.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/testasserts.h"

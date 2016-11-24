@@ -71,7 +71,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/pleasecite.h"
-#include "gromacs/utility/scoped_cptr.h"
+#include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -950,7 +950,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         }
         sfree(area);
     }
-    scoped_guard_sfree dotsGuard(surfacedots);
+    const sfree_guard dotsGuard(surfacedots);
 
     if (bConnolly)
     {
