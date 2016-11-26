@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -163,6 +163,23 @@ const char *const CmdLineHelpText::text[] = {
     "  positions used in selecting atoms by coordinates.",
     "",
     "See the \"positions\" subtopic for more information on these options.",
+    "",
+    "Tools that take selections apply them to a structure/topology and/or",
+    "a trajectory file. If the tool takes both (typically as [TT]-s[tt]",
+    "for structure/topology and [TT]-f[tt] for trajectory), then the",
+    "trajectory file is only used for coordinate information, and all other",
+    "information, such as atom names and residue information, is read from",
+    "the structure/topology file. If the tool only takes a structure file,",
+    "or if only that input parameter is provided, then also the coordinates",
+    "are taken from that file.",
+    "For example, to select atoms from a [TT].pdb[tt]/[TT].gro[tt] file in",
+    "a tool that provides both options, pass it as [TT]-s[tt] (only).",
+    "There is no warning if the trajectory file specifies, e.g., different",
+    "atom names than the structure file. Only the number of atoms is checked.",
+    "Many selection-enabled tools also provide an [TT]-fgroup[tt] option",
+    "to specify the atom indices that are present in the trajectory for cases",
+    "where the trajectory only has a subset of atoms from the",
+    "topology/structure file."
 };
 
 struct EvaluationHelpText
