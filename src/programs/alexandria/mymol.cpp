@@ -58,6 +58,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
+#include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -717,7 +718,7 @@ static void do_init_mtop(const Poldata            &pd,
     mtop_->molblock[0].type        = 0;
     mtop_->molblock[0].natoms_mol  = atoms->nr;
     mtop_->natoms                  = atoms->nr;
-    init_t_atoms(&(mtop_->moltype[0].atoms), atoms->nr, FALSE);
+    init_t_atoms(&(mtop_->moltype[0].atoms), atoms->nr, false);
 
     /*Count the number of atom types in the molecule*/
     int ntype      = 0;
@@ -762,12 +763,18 @@ static void do_init_mtop(const Poldata            &pd,
     mtop_->ffparams.atnr             = ntype;
     mtop_->ffparams.reppow           = 12;
 
-    int vdw_type = pd.getVdwFtype();
-
     snew(ir->opts.egp_flags, ir->opts.ngener*ir->opts.ngener);
+    for (int k = 0; k < ntype; k++)
+    {
+        for (int m = k; m < ntype; m++)
+        {
+            ir->opts.egp_flags[GID(k, m, ntype)] |= EGP_TABLE;
+        }
+    }
+    
+    int vdw_type = pd.getVdwFtype();
     snew(mtop_->ffparams.functype, mtop_->ffparams.ntypes);
-    snew(mtop_->ffparams.iparams, mtop_->ffparams.ntypes);
-
+    snew(mtop_->ffparams.iparams, mtop_->ffparams.ntypes);   
     for (int i = 0; (i < ntype); i++)
     {
         for (int j = 0; (j < ntype); j++)
@@ -804,15 +811,11 @@ static void do_init_mtop(const Poldata            &pd,
                             pd.getVdwFunction().c_str());
             }
         }
-    }
-    
+    }   
     gmx_mtop_finalize(mtop_);
-
     /* Create a charge group block */
-    stupid_fill_block(&(mtop_->moltype[0].cgs), atoms->nr, FALSE);
-
+    stupid_fill_block(&(mtop_->moltype[0].cgs), atoms->nr, false);
     plist_to_mtop(pd, plist, mtop_);
-
 }
 
 static void excls_to_blocka(int natom, t_excls excls_[], t_blocka *blocka)

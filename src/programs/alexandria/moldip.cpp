@@ -459,12 +459,15 @@ void MolDip::Read(FILE            *fp,
     _atomprop   = gmx_atomprop_init();
 
     /* Force field data */
-    try
+    if (MASTER(_cr))
     {
-        alexandria::readPoldata(pd_fn, pd_, _atomprop);
+        try
+        {
+            alexandria::readPoldata(pd_fn, pd_, _atomprop);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-
+    
     if (nullptr != fp)
     {
         fprintf(fp, "There are %d atom types in the input file %s:\n---\n",

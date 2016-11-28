@@ -2,7 +2,6 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "gmxpre.h"
 
 #include <cmath>
 #include <cstdio>
@@ -13,12 +12,8 @@
 #include "gromacs/math/calculate-ewald-splitting-coefficient.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "poldata.h"
@@ -995,6 +990,10 @@ static void gen_alexandria_rho(Poldata &pd, const char *fn,
     }
 }
 
+/*
+  gen_table overstimates the eel enery and force by a factor of 4. 
+  The code is hacked for now but then it needs to be fixed properly. 
+ */
 static void gen_alexandria_tables(Poldata &pd, const char *fn, ChargeDistributionModel iDistributionModel,
                                   real rcut, real spacing, const gmx_output_env_t *oenv)
 {
@@ -1020,7 +1019,7 @@ static void gen_alexandria_tables(Poldata &pd, const char *fn, ChargeDistributio
     {
         eqg_model    = eep->getEqdModel();
         name[natype] = eep->getName();
-
+        
         if (eqg_model == iDistributionModel)
         {
             natype++;
@@ -1090,13 +1089,13 @@ static void gen_alexandria_tables(Poldata &pd, const char *fn, ChargeDistributio
                     strncpy(fnbuf, fn, strlen(fn)-4);
                     fnbuf[strlen(fn)-4] = '\0';
                     sprintf(buf, "%s_%s%s_%s%s.xvg", fnbuf, name[k].c_str(), ns[bk], 
-			    name[i].c_str(), ns[bi]);
-		    sprintf(buf2, "%s_%s%s_%s%s.xvg", fnbuf, name[i].c_str(), ns[bi],
-			    name[k].c_str(), ns[bk]);
-
+                            name[i].c_str(), ns[bi]);
+                    sprintf(buf2, "%s_%s%s_%s%s.xvg", fnbuf, name[i].c_str(), ns[bi],
+                            name[k].c_str(), ns[bk]);
+                    
                     fp = xvgropen(buf, buf, "r (nm)", "V (kJ/mol e)", oenv);
-		    fp2 = xvgropen(buf2, buf2, "r (nm)", "V (kJ/mol e)", oenv);
-
+                    fp2 = xvgropen(buf2, buf2, "r (nm)", "V (kJ/mol e)", oenv);
+                    
                     for (n = 0; (n <= nmax); n++)
                     {
                         rr = n*spacing;
@@ -1155,11 +1154,11 @@ static void gen_alexandria_tables(Poldata &pd, const char *fn, ChargeDistributio
                         {
                             vc = fc = vd = fd = vr = fr = 0;
                         }
-                        fprintf(fp, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, V, Vp, vd, fd, vr, fr);
-			fprintf(fp2, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, V, Vp, vd, fd, vr, fr);
+                        fprintf(fp, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, (V/4.0), (Vp/4.0), vd, fd, vr, fr);
+                        fprintf(fp2, "%10.5e  %10.5e  %10.5e %10.5e %10.5e %10.5e %10.5e\n", rr, (V/4.0), (Vp/4.0), vd, fd, vr, fr);
                     }
                     fclose(fp);
-		    fclose(fp2);
+                    fclose(fp2);
                 }
             }
         }

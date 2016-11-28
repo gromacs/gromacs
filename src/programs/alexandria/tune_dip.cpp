@@ -86,7 +86,7 @@ static void print_lsq_set(FILE *fp, gmx_stats_t lsq)
     real   x, y;
 
     fprintf(fp, "@type xy\n");
-    while (gmx_stats_get_point(lsq, &x, &y, NULL, NULL, 0) == estatsOK)
+    while (gmx_stats_get_point(lsq, &x, &y, nullptr, nullptr, 0) == estatsOK)
     {
         fprintf(fp, "%10g  %10g\n", x, y);
     }
@@ -98,7 +98,7 @@ static void print_quad(FILE *fp, tensor Q_exp, tensor Q_calc, char *calc_name,
 {
     tensor dQ;
     real   delta;
-    if (NULL != calc_name)
+    if (nullptr != calc_name)
     {
         m_sub(Q_exp, Q_calc, dQ);
         delta = sqrt(gmx::square(dQ[XX][XX])+gmx::square(dQ[XX][YY])+gmx::square(dQ[XX][ZZ])+
@@ -130,7 +130,7 @@ static void print_dip(FILE *fp, rvec mu_exp, rvec mu_calc, char *calc_name,
     real ndmu, cosa;
     char ebuf[32];
 
-    if (NULL != calc_name)
+    if (nullptr != calc_name)
     {
         rvec_sub(mu_exp, mu_calc, dmu);
         ndmu = norm(dmu);
@@ -650,12 +650,12 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
                             int nrun, real stepsize,
                             gmx_bool bRandom, const gmx_output_env_t * oenv)
 {
-    FILE                            *cfp = NULL;
+    FILE                            *cfp = nullptr;
     double                           chi2, chi2_min;
     int                              nzeta, zz;
     int                              i, k, n, nparam;
     std::vector<double>              test_param, orig_param, best_param, start;
-    gmx_bool                         bMinimum = FALSE;
+    gmx_bool                         bMinimum = false;
     double                           J00, chi0, zeta;
     std::string                      name;
     std::string                      qstr, rowstr;
@@ -703,21 +703,21 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
         start.resize(nparam, 0);
 
         /* Monitor convergence graphically */
-        if (NULL != convfn)
+        if (nullptr != convfn)
         {
             cfp = xvgropen(convfn, "Convergence", "Value", "Iter", oenv);
         }
         chi2_min = GMX_REAL_MAX;
         for (n = 0; (n < nrun); n++)
         {
-            if ((NULL != fp) && (0 == n))
+            if ((nullptr != fp) && (0 == n))
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n+1, nrun);
                 fprintf(fp, "%5s %8s %8s %8s %8s %8s %8s %8s\n",
                         "Run", "d2", "Total", "Bounds",
                         "Dipole", "Quad.", "Charge", "ESP");
             }
-            if (NULL != cfp)
+            if (nullptr != cfp)
             {
                 fflush(cfp);
             }
@@ -740,19 +740,19 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
             {
                 bMinimum = TRUE;
                 /* Print convergence if needed */
-                if (NULL != cfp)
+                if (nullptr != cfp)
                 {
                     fprintf(cfp, "%5d  ", n*maxiter);
                 }
                 for (k = 0; (k < nparam); k++)
                 {
                     best_param[k] = start[k];
-                    if (NULL != cfp)
+                    if (nullptr != cfp)
                     {
                         fprintf(cfp, " %10g", best_param[k]);
                     }
                 }
-                if (NULL != cfp)
+                if (nullptr != cfp)
                 {
                     fprintf(cfp, "\n");
                 }
@@ -816,17 +816,17 @@ static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
 
             md->CalcDeviation();
             chi2        = sqrt(md->_ener[ermsTOT]);
-            md->_bFinal = TRUE;
+            md->_bFinal = true;
             md->CalcDeviation();
             if (fplog)
             {
                 fprintf(fplog, "\nMinimum value for RMSD during optimization: %.3f.\n", chi2);
             }
         }
-        md->_bDone = TRUE;
+        md->_bDone = true;
         md->CalcDeviation();
 
-        if (NULL != cfp)
+        if (nullptr != cfp)
         {
             fclose(cfp);
         }
