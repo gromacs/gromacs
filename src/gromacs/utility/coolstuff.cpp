@@ -736,6 +736,12 @@ std::string getCoolQuote()
         { "They don't have half hours in the north", "Carl Caleman" },
         { "Safety lights are for dudes", "Ghostbusters 2016" },
         { "It's 2040 now. Our President is a plant.",  "Ghostbusters 2016" },
+        { "It's just B I O L O G Y, can't you see?" "Joe Jackson" },
+        { "Input, output, electricity", "Joni Mitchell" },
+        { "Your daddy ain't your daddy but your daddy don't know", "Dalahan" },
+        { "Why is the Earth moving 'round the sun? Floating in the vacuum with no purpose, not a one", "Fleet Foxes" },
+        { "If you leave markets to act as governments, then sure as night follows day, the market will make people suffer and it will turn the world into a wilderness", "Ann Pettifor" },
+        { "If you look back to the fifties, what all economist call the golden age of economics, 1945-1970 was a period of economic stability, economic activity, pretty much full employment because we managed capital flows, we managed interest rates, we managed exchange rates. We coordinated at an international level to maintain balance in the global economy, we had a golden age. And now we're being told, you can't have another golden age, now we have to go through a period of fascism, this is necessary. Excuse me?", "Ann Pettifor" },
     };
 
     if (beCool())
