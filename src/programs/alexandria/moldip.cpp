@@ -468,6 +468,11 @@ void MolDip::Read(FILE            *fp,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
     
+    if (PAR(_cr))
+    {
+        pd_.broadcast(_cr);
+    }
+    
     if (nullptr != fp)
     {
         fprintf(fp, "There are %d atom types in the input file %s:\n---\n",
@@ -968,11 +973,7 @@ void MolDip::CalcDeviation()
     /* Global sum energies */
     if (PAR(_cr))
     {
-#if GMX_DOUBLE
-        gmx_sumd(ermsNR, _ener, _cr);
-#else
-        gmx_sumf(ermsNR, _ener, _cr);
-#endif
+        gmx_sum(ermsNR, _ener, _cr);
     }
 }
 

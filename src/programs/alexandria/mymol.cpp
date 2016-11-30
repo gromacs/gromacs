@@ -264,7 +264,7 @@ void MyMol::MakeAngles(bool bPairs,
     rtp.bGenerateHH14Interactions     = bPairs;
     rtp.nrexcl                        = nexcl_;
 
-    gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, nullptr, FALSE);
+    gen_pad(&nnb, &(topology_->atoms), &rtp, plist, excls_, nullptr, false);
 
     t_blocka *EXCL;
     snew(EXCL, 1);
@@ -291,10 +291,10 @@ void MyMol::MakeAngles(bool bPairs,
     sfree(EXCL);
     if (nullptr != debug)
     {
-        for (int i = 0; (i < topology_->atoms.nr); i++)
+        for (int i = 0; i < topology_->atoms.nr; i++)
         {
             fprintf(debug, "excl %d", i);
-            for (int j = 0; (j < excls_[i].nr); j++)
+            for (int j = 0; j < excls_[i].nr; j++)
             {
                 fprintf(debug, "  %2d", excls_[i].e[j]);
             }
@@ -315,7 +315,7 @@ void MyMol::MakeAngles(bool bPairs,
         cp_plist(&plist[F_LJ14], F_LJ14, eitLJ14, plist_);
     }
 
-    for (int i = 0; (i < F_NRE); i++)
+    for (int i = 0; i < F_NRE; i++)
     {
         if (plist[i].nr > 0)
         {
@@ -1182,8 +1182,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
 
         do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms, plist_, inputrec_, symtab_);
 
-        excls_to_blocka(topology_->atoms.nr, excls_,
-                        &(mtop_->moltype[0].excls));
+        excls_to_blocka(topology_->atoms.nr, excls_, &(mtop_->moltype[0].excls));
     }
     if (bAddShells && imm == immOK)
     {
@@ -2185,14 +2184,12 @@ void MyMol::addShells(const Poldata          &pd,
         gmx_fatal(FARGS, "No such polarizability unit '%s'",
                   pd.getPolarUnit().c_str());
     }
-    for (i = 0; (i < topology_->atoms.nr); i++)
+    for (i = 0; i < topology_->atoms.nr; i++)
     {
         renum.push_back(i+nshell);
         inv_renum[i+nshell] = i;
-        if (pd.getAtypePol(*topology_->atoms.atomtype[i],
-                           &pol, &sigpol) &&
-            (pol > 0) &&
-            (pd.getNzeta(iModel, *topology_->atoms.atomtype[i]) == 2))
+        if (pd.getAtypePol(*topology_->atoms.atomtype[i], &pol, &sigpol) &&
+            (pol > 0) && (pd.getNzeta(iModel, *topology_->atoms.atomtype[i]) == 2))
         {
             nshell++;
             p.a[0] = renum[i];
@@ -2314,7 +2311,7 @@ void MyMol::addShells(const Poldata          &pd,
         sfree(excls_);
         excls_ = newexcls;
 
-        for (auto i = plist_.begin(); (i < plist_.end()); ++i)
+        for (auto i = plist_.begin(); i < plist_.end(); ++i)
         {
             if (i->getFtype() != F_POLARIZATION)
             {
@@ -2565,9 +2562,10 @@ void MyMol::UpdateIdef(const Poldata   &pd,
     std::vector<std::string> atoms, ptr;
     int                      lu, n;
     size_t                   ntrain            = 0;
-    double                   value             = 0.0;
-    double                   sigma             = 0.0,  r13 = 0.0;
-    double                   relative_position = 0.0;
+    double                   value             = 0;
+    double                   sigma             = 0;
+    double                   r13               = 0;
+    double                   relative_position = 0;
 
     switch (iType)
     {

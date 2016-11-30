@@ -816,176 +816,111 @@ CommunicationStatus Poldata::Receive(t_commrec *cr, int src)
         
         
         /*Receive ptype*/
-        if (nptype == ptype_.size())
+        ptype_.clear();
+        for (size_t n = 0; (CS_OK == cs) && (n < nptype); n++)
         {
-            ptype_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < nptype); n++)
+            Ptype ptype;
+            cs = ptype.Receive(cr, src);
+            if (CS_OK == cs)
             {
-                Ptype ptype;
-                cs = ptype.Receive(cr, src);
-                if (CS_OK == cs)
-                {
-                    ptype_.push_back(ptype);
-                }
+                ptype_.push_back(ptype);
             }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Inconsistency in number of sent ptype");
         }
         
         /*Receive Ffatype*/
-        if (nalexandria == alexandria_.size())
+        alexandria_.clear();
+        for (size_t n = 0; (CS_OK == cs) && (n < nalexandria); n++)
         {
-            alexandria_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < nalexandria); n++)
+            Ffatype alexandria;
+            cs = alexandria.Receive(cr, src);
+            if (CS_OK == cs)
             {
-                Ffatype alexandria;
-                cs = alexandria.Receive(cr, src);
-                if (CS_OK == cs)
-                {
-                    alexandria_.push_back(alexandria);
-                }
+                alexandria_.push_back(alexandria);
             }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Inconsistency in number of sent Ffatype");
         }
         
         /*Receive btype*/
-        if (nbtype == btype_.size())
+        btype_.clear();
+        for (size_t n = 0; (CS_OK == cs) && (n < nbtype); n++)
         {
-            btype_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < nbtype); n++)
+            char *btype = gmx_recv_str(cr, src);
+            if (nullptr == btype)
             {
-                char *btype = gmx_recv_str(cr, src);
-                if (nullptr == btype)
-                {
-                    btype_.push_back(btype);
-                }
+                btype_.push_back(btype);
             }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Inconsistency in number of sent btype");
         }
         
         /*Receive Listed Forces*/
-        if (nforces == forces_.size())
+        forces_.clear();
+        for (size_t n = 0; (CS_OK == cs) && (n < nforces); n++)
         {
-            forces_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < nforces); n++)
+            ListedForces fs;
+            cs = fs.Receive(cr, src);
+            if (CS_OK == cs)
             {
-                ListedForces fs;
-                cs = fs.Receive(cr, src);
-                if (CS_OK == cs)
-                {
-                    forces_.push_back(fs);
-                }
+                forces_.push_back(fs);
             }
         }
-        else
-        {
-            gmx_fatal(FARGS, "Inconsistency in number of sent forces");
-        }
-        
         
         /*Receive Miller*/
-        if (nmiller == miller_.size())
+        miller_.clear();
+        for (size_t n = 0; (CS_OK == cs) && (n < nmiller); n++)
         {
-            miller_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < nmiller); n++)
+            Miller miller;
+            cs = miller.Receive(cr, src);
+            if (CS_OK == cs)
             {
-                Miller miller;
-                cs = miller.Receive(cr, src);
-                if (CS_OK == cs)
-                {
-                    miller_.push_back(miller);
-                }
+                miller_.push_back(miller);
             }
         }
-        else
-        {
-            gmx_fatal(FARGS, "Inconsistency in number of sent Miller");
-        }
-        
+
         /*Receive Bosque*/
-        if (nbosque == bosque_.size())
+        bosque_.clear();
+        for (size_t n = 0; (CS_OK == cs) && (n < nbosque); n++)
         {
-            bosque_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < nbosque); n++)
+            Bosque bosque;
+            cs = bosque.Receive(cr, src);
+            if (CS_OK == cs)
             {
-                Bosque bosque;
-                cs = bosque.Receive(cr, src);
-                if (CS_OK == cs)
-                {
-                    bosque_.push_back(bosque);
-                }
+                bosque_.push_back(bosque);
             }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Inconsistency in number of sent Bosque");
         }
         
         /*Receive Symcharges*/
-        if (nsymcharges == symcharges_.size())
+        symcharges_.clear();
+        for (size_t n = 0; (CS_OK == cs) && (n < nsymcharges); n++)
         {
-            symcharges_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < nsymcharges); n++)
+            Symcharges symcharges;
+            cs = symcharges.Receive(cr, src);
+            if (CS_OK == cs)
             {
-                Symcharges symcharges;
-                cs = symcharges.Receive(cr, src);
-                if (CS_OK == cs)
-                {
-                    symcharges_.push_back(symcharges);
-                }
+                symcharges_.push_back(symcharges);
             }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Inconsistency in number of sent Bosque");
         }
         
         /*Receive Eemprops*/
-        if (neep == eep_.size())
+        eep_.clear();
+        for (size_t n = 0; (CS_OK == cs) && (n < neep); n++)
         {
-            eep_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < neep); n++)
+            Eemprops eep;
+            cs = eep.Receive(cr, src);
+            if (CS_OK == cs)
             {
-                Eemprops eep;
-                cs = eep.Receive(cr, src);
-                if (CS_OK == cs)
-                {
-                    eep_.push_back(eep);
-                }
+                eep_.push_back(eep);
             }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Inconsistency in number of sent Eemprops");
         }
         
         /*Receive Epref*/
-        if (nepr == epr_.size())
+        epr_.clear();
+        for (size_t n = 0; (CS_OK == cs) && (n < nepr); n++)
         {
-            epr_.clear();
-            for (size_t n = 0; (CS_OK == cs) && (n < nepr); n++)
+            Epref epr;
+            cs = epr.Receive(cr, src);
+            if (CS_OK == cs)
             {
-                Epref epr;
-                cs = epr.Receive(cr, src);
-                if (CS_OK == cs)
-                {
-                    epr_.push_back(epr);
-                }
+                epr_.push_back(epr);
             }
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Inconsistency in number of sent Epref");
-        }
-        
+        }     
     }
     return cs;
 }

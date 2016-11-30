@@ -1472,10 +1472,9 @@ void Optimization::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
 void Optimization::Print(FILE *fp)
 {
     fprintf(fp, "Param        Orig        Best\n");
-    for (size_t k = 0; (k < param_.size()); k++)
+    for (size_t k = 0; k < param_.size(); k++)
     {
-        fprintf(fp, "%-5d  %10g  %10g\n", static_cast<int>(k),
-                orig_[k], best_[k]);
+        fprintf(fp, "%-5zu  %10g  %10g\n", k, orig_[k], best_[k]);
     }
 }
 
@@ -1485,7 +1484,7 @@ static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
     int i;
 
     xvgr_legend(xvgf, nsym, leg, oenv);
-    for (i = 0; (i < nsym); i++)
+    for (i = 0; i < nsym; i++)
     {
         xvgr_line_props(xvgf, i, elNone, ecBlack+i, oenv);
         fprintf(xvgf, "@ s%d symbol %d\n", i, i+1);
@@ -1522,7 +1521,7 @@ double Optimization::calcDeviation()
         fflush(debug);
     }
 
-    for (j = 0; (j < ermsNR); j++)
+    for (j = 0; j < ermsNR; j++)
     {
         _ener[j] = 0;
     }
@@ -1572,9 +1571,9 @@ double Optimization::calcDeviation()
                         mymol.Force2  = 0.0; 
                         
                         mymol.Ecalc  = mymol.enerd_->term[F_EPOT];
-                        ener         = gmx::square(mymol.Ecalc-Emol);
+                        ener         = gmx::square(mymol.Ecalc - Emol);
                         
-                        for (j = 0; (j < natoms); j++)
+                        for (j = 0; j < natoms; j++)
                         {
                             mymol.Force2 += iprod(mymol.f_[j], mymol.f_[j]);
                         }
@@ -1584,7 +1583,7 @@ double Optimization::calcDeviation()
                         if (jtype == JOB_OPT)
                         {
                             mymol.OptForce2 = 0.0;                        
-                            for (j = 0; (j < natoms); j++)
+                            for (j = 0; j < natoms; j++)
                             {
                                 mymol.OptForce2 += iprod(mymol.f_[j], mymol.f_[j]);
                                 copy_rvec(mymol.f_[j], mymol.optf_[j]);
@@ -1621,37 +1620,39 @@ double Optimization::calcDeviation()
     }
 
     /* Compute E-bounds */
-    for (size_t j = 0; (j < param_.size()); j++)
+    if (MASTER(_cr))
     {
-        if (param_[j] < lower_[j])
+        for (size_t j = 0; j < param_.size(); j++)
         {
-            _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*gmx::square(param_[j]-lower_[j]);
-        }
-        else if (param_[j] > upper_[j])
-        {
-            _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*gmx::square(param_[j]-upper_[j]);
+            if (param_[j] < lower_[j])
+            {
+                _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*gmx::square(param_[j]-lower_[j]);
+            }
+            else if (param_[j] > upper_[j])
+            {
+                _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*gmx::square(param_[j]-upper_[j]);
+            }
         }
     }
-
+    
     /* Global sum energies */
     if (PAR(_cr) && !_bFinal)
     {
-#if GMX_DOUBLE
-        gmx_sumd(ermsNR, _ener, _cr);
-#else
-        gmx_sumf(ermsNR, _ener, _cr);
-#endif
+        gmx_sum(ermsNR, _ener, _cr);
     }
     
-    for (j = 0; (j < ermsTOT); j++)
+    if (MASTER(_cr))
     {
-        _ener[ermsTOT] += (_ener[j]/_nmol_support);
+        for (j = 0; j < ermsTOT; j++)
+        {
+            _ener[ermsTOT] += (_ener[j]/_nmol_support);
+        }
     }
-
-    if (debug)
+    
+    if (nullptr != debug && MASTER(_cr))
     {
         fprintf(debug, "ENER:");
-        for (j = 0; (j < ermsNR); j++)
+        for (j = 0; j < ermsNR; j++)
         {
             fprintf(debug, "  %8.3f", _ener[j]);
         }
@@ -1664,10 +1665,13 @@ double Optimization::calcDeviation()
 double Optimization::objFunction(const double v[])
 {
     double rms = 0;
-    for (size_t i = 0; (i < param_.size()); i++)
+    size_t np  = param_.size();
+    
+    for (size_t i = 0; i < np; i++)
     {
         param_[i] = v[i];
     }
+    
     tuneFc2PolData(); /* Copy parameters to topologies */
     rms = calcDeviation();
 
@@ -1682,9 +1686,9 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
                           bool bBound)
 {
 
-    std::vector<double>              optx, opts, optm;
-    double                           chi2, chi2_min;
-    gmx_bool                         bMinimum = false;
+    std::vector<double> optx, opts, optm;
+    double              chi2, chi2_min;
+    gmx_bool            bMinimum = false;
     
     auto func = [&] (const double v[]) {
             return objFunction(v);
@@ -1702,9 +1706,9 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
         
         chi2 = chi2_min  = GMX_REAL_MAX;
         Bayes <double> TuneFc(func, param_, lower_, upper_, &chi2);
-        TuneFc.Init(xvgconv, xvgepot, oenv, seed,
-                    stepsize, maxiter, nprint,
-                    temperature, bBound);
+        TuneFc.Init(xvgconv, xvgepot, oenv, seed, stepsize, 
+                    maxiter, nprint,temperature, bBound);
+                    
         for (int n = 0; n < nrun; n++)
         {
             if ((nullptr != fp) && (0 == n))
@@ -1728,18 +1732,6 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
                 }
                 chi2_min = chi2;
             }
-            if (nullptr != fp)
-            {
-                fprintf(fp, "Run: %3d  rmsd: %4.3f   ermsBOUNDS: %4.3f\n",
-                        n, sqrt(chi2), _ener[ermsBOUNDS]);
-            }
-            if (nullptr != fplog)
-            {
-                fprintf(fplog, "Run: %3d  rmsd: %4.3f   ermsBOUNDS: %4.3f\n",
-                        n, sqrt(chi2), _ener[ermsBOUNDS]);
-                fflush(fplog);
-            }
-
             TuneFc.setParam(best_);
         }
         if (bMinimum)
@@ -1759,7 +1751,7 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
     }
     else
     {
-        /* Slave calculators */
+        /* S L A V E   N O D E S */
         int niter = gmx_recv_int(_cr, 0);
         for (int n = 0; n < niter + 2; n++)
         {
@@ -1769,7 +1761,18 @@ void Optimization::optRun(FILE *fp, FILE *fplog, int maxiter,
     _bFinal = true;
     if(MASTER(_cr))
     {
-        calcDeviation();
+        chi2 = calcDeviation();
+        if (nullptr != fp)
+        {
+            fprintf(fp, "rmsd: %4.3f  ermsBOUNDS: %4.3f  after %d run(s)\n",
+                    sqrt(chi2), _ener[ermsBOUNDS], nrun);
+        }
+        if (nullptr != fplog)
+        {
+            fprintf(fplog, "rmsd: %4.3f   ermsBOUNDS: %4.3f  after %d run(s)\n",
+                    sqrt(chi2), _ener[ermsBOUNDS], nrun);
+            fflush(fplog);
+        }
     }
 }
 
@@ -1794,7 +1797,7 @@ static void print_moldip_mols(FILE *fp, std::vector<alexandria::MyMol> mol,
         }
         if (bForce)
         {
-            for (k = 0; (k < F_NRE); k++)
+            for (k = 0; k < F_NRE; k++)
             {
                 if ((mi->enerd_->term[k] != 0) ||
                     (mi->mtop_->moltype[0].ilist[k].nr > 0))
@@ -2019,6 +2022,8 @@ int alex_tune_fc(int argc, char *argv[])
           "Optimize improper dihedral parameters" },
         { "-pairs",  FALSE, etBOOL, {&bOpt[eitLJ14]},
           "Optimize 1-4 interaction parameters" },
+        { "-polar",  FALSE, etBOOL, {&bPolar},
+          "Use polarizability for optimization" },
         { "-beta0", FALSE, etREAL, {&beta0},
           "Reset the initial beta for Morse potentials to this value, independent of gentop.dat. If value is <= 0 gentop.dat value is used." },
         { "-D0", FALSE, etREAL, {&D0},
@@ -2125,7 +2130,7 @@ int alex_tune_fc(int argc, char *argv[])
              lot, gms, watoms, false,
              bOpt[eitLJ14], bOpt[eitPROPER_DIHEDRALS],
              bPolar, bZPE, tabfn);
-
+    
     opt.checkSupport(fp, bOpt);
 
     if (nullptr != fp)

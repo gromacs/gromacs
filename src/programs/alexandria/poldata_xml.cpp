@@ -494,7 +494,7 @@ void readPoldata(const std::string &fileName,
 
     if (fileName.size() > 0)
     {
-        const char *f = low_gmxlibfn(fileName.c_str(), TRUE, FALSE);
+        const char *f = low_gmxlibfn(fileName.c_str(), true, false);
         if (nullptr != f)
         {
             fn2.assign(f);
