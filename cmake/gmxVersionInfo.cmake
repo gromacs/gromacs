@@ -219,21 +219,27 @@ endif()
 set(GMX_VERSION_STRING "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
 option(GMX_BUILD_TARBALL "Build tarball without -dev version suffix" OFF)
 mark_as_advanced(GMX_BUILD_TARBALL)
-if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND NOT GMX_BUILD_TARBALL)
+# If run with cmake -P, the -dev suffix is managed elsewhere.
+if (NOT SOURCE_IS_SOURCE_DISTRIBUTION AND
+    NOT GMX_BUILD_TARBALL AND
+    NOT CMAKE_SCRIPT_MODE_FILE)
     set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-dev")
 endif()
 
 set(REGRESSIONTEST_VERSION "${GMX_VERSION_STRING}")
 set(REGRESSIONTEST_BRANCH "refs/heads/release-2016")
-# TODO Find some way of ensuring that this is bumped appropriately for
-# each release. It's hard to test because it is only used for
-# REGRESSIONTEST_DOWNLOAD, which doesn't work until that tarball has
-# been placed on the server.
 set(REGRESSIONTEST_MD5SUM "366438549270d005fa6def6e56ca0256" CACHE INTERNAL "MD5 sum of the regressiontests tarball")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
 set(GMX_API_VERSION ${GMX_VERSION_NUMERIC})
+
+# If run with cmake -P from releng scripts, print out necessary version info
+# as JSON.
+if (CMAKE_SCRIPT_MODE_FILE)
+    message("{ \"version\": \"${GMX_VERSION_STRING}\", \"regressiontest-md5sum\": \"${REGRESSIONTEST_MD5SUM}\" }")
+    return()
+endif()
 
 #####################################################################
 # git version info management
