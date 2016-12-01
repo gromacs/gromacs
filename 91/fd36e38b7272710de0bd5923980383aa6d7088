@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Code-Review+1: Aleksei Iupinov <a.yupinov@gmail.com>
+Code-Review+2: Berk Hess <hess@kth.se>
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Thu, 01 Dec 2016 13:44:27 +0100
+Reviewed-on: https://gerrit.gromacs.org/6351
+Project: gromacs
+Branch: refs/heads/release-2016
