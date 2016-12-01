@@ -113,11 +113,6 @@ def do_build(context):
     regressiontests_path = context.workspace.get_project_dir(Project.REGRESSIONTESTS)
 
     if context.job_type == JobType.RELEASE:
-        # TODO: Consider using REGRESSIONTEST_DOWNLOAD here, after refactoring
-        # it to make that possible.  Or use some other mechanism to check the
-        # MD5 of the regressiontests tarball (also taking into account the -dev
-        # builds where the hardcoded value in gmxVersionInfo.cmake is not
-        # accurate).
         cmake_opts['REGRESSIONTEST_PATH'] = regressiontests_path
     else:
         if context.opts.mdrun_only:
