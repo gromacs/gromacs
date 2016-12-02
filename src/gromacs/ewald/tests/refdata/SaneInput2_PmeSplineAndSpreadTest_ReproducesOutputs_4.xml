@@ -1,0 +1,214 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Spline values">
+    <Int Name="Length">24</Int>
+    <Real>0.0085403290963274106</Real>
+    <Real>0.39573954023333219</Real>
+    <Real>0.55432848451430017</Real>
+    <Real>0.041391646156040129</Real>
+    <Real>0.11138042475045994</Real>
+    <Real>0.65185598043709936</Real>
+    <Real>0.23643246153418976</Real>
+    <Real>0.00033113327825083606</Real>
+    <Real>0.0004166049481229649</Real>
+    <Real>0.24248311070558595</Real>
+    <Real>0.64949814304721498</Real>
+    <Real>0.10760214129907605</Real>
+    <Real>0.092375620188751575</Real>
+    <Real>0.63762587723384256</Real>
+    <Real>0.26904945424068433</Real>
+    <Real>0.00094904833672144031</Real>
+    <Real>8.7890762515655645e-06</Real>
+    <Real>0.18609343495021458</Real>
+    <Real>0.66528678242858796</Real>
+    <Real>0.14861099354494575</Real>
+    <Real>8.7890762515655645e-06</Real>
+    <Real>0.18609343495021458</Real>
+    <Real>0.66528678242858796</Real>
+    <Real>0.14861099354494575</Real>
+  </Sequence>
+  <Sequence Name="Spline derivatives">
+    <Int Name="Length">24</Int>
+    <Real>-0.068979584720674364</Real>
+    <Real>-0.66448979810792386</Real>
+    <Real>0.53591835037787083</Real>
+    <Real>0.19755103245072739</Real>
+    <Real>-0.38218773969192837</Real>
+    <Real>-0.2277224775839834</Real>
+    <Real>0.60200817424375186</Real>
+    <Real>0.0079020430321598677</Real>
+    <Real>-0.0092091692319102841</Real>
+    <Real>-0.60808667160702501</Real>
+    <Real>0.24380085090978088</Real>
+    <Real>0.37349498992915442</Real>
+    <Real>-0.33737203649611852</Real>
+    <Real>-0.30931195978626874</Real>
+    <Real>0.6307400290608931</Real>
+    <Real>0.015943967221494187</Real>
+    <Real>-0.00070312573341663881</Real>
+    <Real>-0.53539064235752198</Real>
+    <Real>0.072890661915293975</Real>
+    <Real>0.4632031061756447</Real>
+    <Real>-0.00070312573341663881</Real>
+    <Real>-0.53539064235752198</Real>
+    <Real>0.072890661915293975</Real>
+    <Real>0.4632031061756447</Real>
+  </Sequence>
+  <Sequence Name="Fractional coordinates">
+    <Int Name="Length">2</Int>
+    <Vector>
+      <Real Name="X">0.62857144773005302</Real>
+      <Real Name="Y">0.86428582069724413</Real>
+      <Real Name="Z">0.96249998044222806</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.12571430334023148</Real>
+      <Real Name="Y">0.17857193072537569</Real>
+      <Real Name="Z">0.96249998044222806</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="Gridline indices">
+    <Int Name="Length">2</Int>
+    <Vector>
+      <Int Name="X">3</Int>
+      <Int Name="Y">3</Int>
+      <Int Name="Z">0</Int>
+    </Vector>
+    <Vector>
+      <Int Name="X">15</Int>
+      <Int Name="Y">7</Int>
+      <Int Name="Z">0</Int>
+    </Vector>
+  </Sequence>
+  <NonZeroGridValues Name="RealSpaceGrid">
+    <Real Name="Cell 0 7 0">2.1010808461604681e-06</Real>
+    <Real Name="Cell 0 7 3">0.035526340098658682</Real>
+    <Real Name="Cell 0 8 0">1.4502782389280522e-05</Real>
+    <Real Name="Cell 0 8 1">0.3070712454765599</Real>
+    <Real Name="Cell 0 8 2">1.097784244425889</Real>
+    <Real Name="Cell 0 8 3">0.24522177739136239</Real>
+    <Real Name="Cell 0 9 0">6.1195221620159057e-06</Real>
+    <Real Name="Cell 0 9 1">0.12957026049019119</Real>
+    <Real Name="Cell 0 9 2">0.46321559770775733</Real>
+    <Real Name="Cell 0 7 1">0.044486740196440777</Real>
+    <Real Name="Cell 0 7 2">0.15904075419933286</Real>
+    <Real Name="Cell 0 9 3">0.10347256554470162</Real>
+    <Real Name="Cell 0 10 0">2.1586077346939186e-08</Real>
+    <Real Name="Cell 0 10 1">0.00045704772215139107</Real>
+    <Real Name="Cell 0 10 2">0.00163395236681918</Real>
+    <Real Name="Cell 0 10 3">0.00036499039369413403</Real>
+    <Real Name="Cell 1 7 0">7.6207587450061407e-07</Real>
+    <Real Name="Cell 1 7 1">0.016135633952799822</Real>
+    <Real Name="Cell 1 7 2">0.057685130041129878</Real>
+    <Real Name="Cell 1 7 3">0.012885637764946726</Real>
+    <Real Name="Cell 1 8 0">5.2602547837223762e-06</Real>
+    <Real Name="Cell 1 8 1">0.11137676513408648</Real>
+    <Real Name="Cell 1 8 2">0.39817358271227665</Real>
+    <Real Name="Cell 1 8 3">0.088943555310410372</Real>
+    <Real Name="Cell 1 9 0">2.2195910317617478e-06</Real>
+    <Real Name="Cell 1 9 1">0.046995987685470267</Real>
+    <Real Name="Cell 1 9 2">0.16801135108653659</Real>
+    <Real Name="Cell 1 9 3">0.037530181676920675</Real>
+    <Real Name="Cell 1 10 0">7.8294125622380761e-09</Real>
+    <Real Name="Cell 1 10 1">0.00016577422195986912</Real>
+    <Real Name="Cell 1 10 2">0.00059264529544950898</Real>
+    <Real Name="Cell 1 10 3">0.00013238442203072518</Real>
+    <Real Name="Cell 2 7 0">1.067318256392512e-09</Real>
+    <Real Name="Cell 2 7 1">2.2598611598320903e-05</Real>
+    <Real Name="Cell 2 7 2">8.0790370716852362e-05</Real>
+    <Real Name="Cell 2 7 3">1.8046859757633444e-05</Real>
+    <Real Name="Cell 2 8 0">7.3672007628138253e-09</Real>
+    <Real Name="Cell 2 8 1">0.00015598768934057855</Real>
+    <Real Name="Cell 2 8 2">0.00055765829658433093</Real>
+    <Real Name="Cell 2 8 3">0.00012456906660831665</Real>
+    <Real Name="Cell 2 9 0">3.1086275122891278e-09</Real>
+    <Real Name="Cell 2 9 1">6.5819792112917333e-05</Real>
+    <Real Name="Cell 2 9 2">0.00023530673033487812</Real>
+    <Real Name="Cell 2 9 3">5.2562545817047642e-05</Real>
+    <Real Name="Cell 2 10 0">1.0965410721053919e-11</Real>
+    <Real Name="Cell 2 10 1">2.3217354000738705e-07</Real>
+    <Real Name="Cell 2 10 2">8.3002383957227004e-07</Real>
+    <Real Name="Cell 2 10 3">1.8540976722029825e-07</Real>
+    <Real Name="Cell 3 3 0">9.7252917096302251e-11</Real>
+    <Real Name="Cell 3 3 1">2.0591617234126946e-06</Real>
+    <Real Name="Cell 3 3 2">7.3615336179690303e-06</Real>
+    <Real Name="Cell 3 3 3">1.644410882457788e-06</Real>
+    <Real Name="Cell 3 4 0">5.6605640352940129e-08</Real>
+    <Real Name="Cell 3 4 1">0.0011985261874316695</Real>
+    <Real Name="Cell 3 4 2">0.0042847488472988644</Real>
+    <Real Name="Cell 3 4 3">0.00095712225179521795</Real>
+    <Real Name="Cell 3 5 0">1.5161987236245965e-07</Real>
+    <Real Name="Cell 3 5 1">0.0032102876396842396</Real>
+    <Real Name="Cell 3 5 2">0.011476825794779771</Real>
+    <Real Name="Cell 3 5 3">0.0025636800987964329</Real>
+    <Real Name="Cell 3 6 0">2.5118813817004671e-08</Real>
+    <Real Name="Cell 3 6 1">0.00053184728534453989</Real>
+    <Real Name="Cell 3 6 2">0.0019013619115844046</Real>
+    <Real Name="Cell 3 6 3">0.00042472402914363642</Real>
+    <Real Name="Cell 4 3 0">4.5064802847692922e-09</Real>
+    <Real Name="Cell 4 3 1">9.541689840030201e-05</Real>
+    <Real Name="Cell 4 3 2">0.00034111682307887462</Real>
+    <Real Name="Cell 4 3 3">7.619828220183905e-05</Real>
+    <Real Name="Cell 4 4 0">2.6229773859088169e-06</Real>
+    <Real Name="Cell 4 4 1">0.055536993600841675</Real>
+    <Real Name="Cell 4 4 2">0.19854557356279504</Real>
+    <Real Name="Cell 4 4 3">0.044350881049234236</Real>
+    <Real Name="Cell 4 5 0">7.0257220655301073e-06</Real>
+    <Real Name="Cell 4 5 1">0.14875747060985217</Real>
+    <Real Name="Cell 4 5 2">0.53181015768084561</Real>
+    <Real Name="Cell 4 5 3">0.1187951391755301</Real>
+    <Real Name="Cell 4 6 0">1.1639490374466723e-06</Real>
+    <Real Name="Cell 4 6 1">0.024644600670845753</Real>
+    <Real Name="Cell 4 6 2">0.08810481191306252</Real>
+    <Real Name="Cell 4 6 3">0.019680751189275637</Real>
+    <Real Name="Cell 5 3 0">6.3124103931511255e-09</Real>
+    <Real Name="Cell 5 3 1">0.00013365433399985385</Real>
+    <Real Name="Cell 5 3 2">0.00047781622091175259</Real>
+    <Real Name="Cell 5 3 3">0.00010673403590309407</Real>
+    <Real Name="Cell 5 4 0">3.6741112055389433e-06</Real>
+    <Real Name="Cell 5 4 1">0.077792927841082951</Real>
+    <Real Name="Cell 5 4 2">0.27811086765602056</Real>
+    <Real Name="Cell 5 4 3">0.062124084604738922</Real>
+    <Real Name="Cell 5 5 0">9.8412149134951518e-06</Real>
+    <Real Name="Cell 5 5 1">0.20837064498210195</Real>
+    <Real Name="Cell 5 5 2">0.74492813779163558</Real>
+    <Real Name="Cell 5 5 3">0.16640118757910879</Real>
+    <Real Name="Cell 5 6 0">1.6303908009780113e-06</Real>
+    <Real Name="Cell 5 6 1">0.034520695438406898</Real>
+    <Real Name="Cell 5 6 2">0.12341199678300892</Real>
+    <Real Name="Cell 5 6 3">0.027567629391851423</Real>
+    <Real Name="Cell 6 3 0">4.7134698050733346e-10</Real>
+    <Real Name="Cell 6 3 1">9.9799542233345905e-06</Real>
+    <Real Name="Cell 6 3 2">3.5678483960506916e-05</Real>
+    <Real Name="Cell 6 3 3">7.9698185648494897e-06</Real>
+    <Real Name="Cell 6 4 0">2.743454742197842e-07</Real>
+    <Real Name="Cell 6 4 1">0.0058087892514883058</Real>
+    <Real Name="Cell 6 4 2">0.020766507491047657</Real>
+    <Real Name="Cell 6 4 3">0.0046387984734003298</Real>
+    <Real Name="Cell 6 5 0">7.3484242073875966e-07</Real>
+    <Real Name="Cell 6 5 1">0.015559012836877816</Real>
+    <Real Name="Cell 6 5 2">0.055623701022987665</Real>
+    <Real Name="Cell 6 5 3">0.012425158130299272</Real>
+    <Real Name="Cell 6 6 0">1.2174109939393485e-07</Real>
+    <Real Name="Cell 6 6 1">0.0025776564808841352</Real>
+    <Real Name="Cell 6 6 2">0.0092151600449117618</Real>
+    <Real Name="Cell 6 6 3">0.00205847181414133</Real>
+    <Real Name="Cell 15 7 0">3.590045717207166e-07</Real>
+    <Real Name="Cell 15 7 1">0.0076012987033123635</Real>
+    <Real Name="Cell 15 7 2">0.027174755294071429</Real>
+    <Real Name="Cell 15 7 3">0.0060702654708553738</Real>
+    <Real Name="Cell 15 8 0">2.478041332839202e-06</Real>
+    <Real Name="Cell 15 8 1">0.052468224233975978</Real>
+    <Real Name="Cell 15 8 2">0.1875746776865182</Real>
+    <Real Name="Cell 15 8 3">0.041900214991658302</Real>
+    <Real Name="Cell 15 9 0">1.0456220363555515e-06</Real>
+    <Real Name="Cell 15 9 1">0.022139231795876426</Real>
+    <Real Name="Cell 15 9 2">0.079148081128491921</Real>
+    <Real Name="Cell 15 9 3">0.017680007005014743</Real>
+    <Real Name="Cell 15 10 0">3.6883399642758462e-09</Real>
+    <Real Name="Cell 15 10 1">7.8094197111326964e-05</Real>
+    <Real Name="Cell 15 10 2">0.00027918790975317391</Real>
+    <Real Name="Cell 15 10 3">6.2364673025214377e-05</Real>
+  </NonZeroGridValues>
+</ReferenceData>

@@ -1315,12 +1315,16 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (cr->duty & DUTY_PME)
         {
-            status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
-                                  mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
-                                  (Flags & MD_REPRODUCIBLE),
-                                  ewaldcoeff_q, ewaldcoeff_lj,
-                                  nthreads_pme,
-                                  FALSE, NULL, hwinfo, &hw_opt->gpu_opt);
+            try
+            {
+                status = gmx_pme_init(pmedata, cr, npme_major, npme_minor, inputrec,
+                                      mtop ? mtop->natoms : 0, nChargePerturbed, nTypePerturbed,
+                                      (Flags & MD_REPRODUCIBLE),
+                                      ewaldcoeff_q, ewaldcoeff_lj,
+                                      nthreads_pme,
+                                      FALSE, NULL, hwinfo, &hw_opt->gpu_opt);
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             if (status != 0)
             {
                 gmx_fatal(FARGS, "Error %d initializing PME", status);
@@ -1420,7 +1424,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     // Free PME data
     if (pmedata)
     {
-        gmx_pme_destroy(pmedata);
+        gmx_pme_destroy(*pmedata); // TODO: pmedata is always a single element list, refactor
         pmedata = NULL;
     }
 
