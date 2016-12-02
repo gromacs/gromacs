@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -119,6 +119,11 @@ static void calc_interpolation_idx(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
         tiy = static_cast<int>(ty);
         tiz = static_cast<int>(tz);
 
+#ifdef DEBUG
+        range_check(tix, 0, c_pmeNeighborUnitcellCount * nx);
+        range_check(tiy, 0, c_pmeNeighborUnitcellCount * ny);
+        range_check(tiz, 0, c_pmeNeighborUnitcellCount * nz);
+#endif
         /* Because decomposition only occurs in x and y,
          * we never have a fraction correction in z.
          */
