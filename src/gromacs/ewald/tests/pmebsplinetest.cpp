@@ -108,7 +108,7 @@ class PmeBSplineModuliTest : public ::testing::TestWithParam<BSplineModuliInputP
             inputRec->pme_order   = pmeOrder;
 
             /* PME initialization call which checks the inputs and computes the B-spline moduli according to the grid sizes. */
-            pmeSafePointer pme = PmeInitEmpty(inputRec);
+            PmeSafePointer pme = PmeInitEmpty(inputRec);
 
             /* Setting up the checker */
             TestReferenceData    refData;
