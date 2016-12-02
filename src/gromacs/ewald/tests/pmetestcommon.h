@@ -42,7 +42,12 @@
 #ifndef GMX_EWALD_PME_TEST_COMMON_H
 #define GMX_EWALD_PME_TEST_COMMON_H
 
+#include <array>
+#include <map>
+#include <vector>
+
 #include "gromacs/ewald/pme.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/unique_cptr.h"
 
 struct t_inputrec;
@@ -52,12 +57,62 @@ namespace gmx
 namespace test
 {
 
+// Convenience typedefs
 //! A safe pointer type for PME.
 typedef gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> PmeSafePointer;
+//! Charges
+typedef std::vector<real> ChargesVector;
+//! Coordinates
+typedef std::vector<RVec> CoordinatesVector;
+//! Gridline indices
+typedef ConstArrayRef<IVec> GridLineIndicesVector;
+//! Type of spline data
+enum class PmeSplineDataType
+{
+    Values,      // theta
+    Derivatives, //dtheta
+};
+/*! \brief Spline parameters (theta or dtheta).
+ * A reference to a single dimension's spline data; this means (atomCount * pmeOrder) values or derivatives.
+ */
+typedef ConstArrayRef<real> SplineParamsVector;
+//! Non-zero grid values; keys are string representations of the cells' 3d indices (IVec)
+typedef std::map<std::string, real> SparseGridValues;
+//! TODO: make proper C++ matrix for the whole Gromacs, get rid of this
+typedef std::array<real, DIM * DIM> Matrix3x3;
+//! PME code path being tested
+enum class CodePath
+{
+    CPU,    // serial CPU code
+};
+
+// PME stages
 
 //! Simple PME initialization based on input, no atom data; only good for testing the initialization stage
 PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec);
+//! PME initialization with atom data and system box
+PmeSafePointer pmeInitWithAtoms(const t_inputrec        *inputRec,
+                                const CoordinatesVector &coordinates,
+                                const ChargesVector     &charges,
+                                const Matrix3x3          box
+                                );
+//! PME spline computation and charge spreading
+void pmePerformSplineAndSpread(gmx_pme_t *pme, CodePath mode,
+                               bool computeSplines, bool spreadCharges);
+
+// PME state getters
+
+//! Getting the single dimension's spline values or derivatives
+SplineParamsVector pmeGetSplineData(const gmx_pme_t *pme, CodePath mode,
+                                    PmeSplineDataType type, int dimIndex);
+
+//! Getting the gridline indices
+GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t *pme, CodePath mode);
+
+//! Getting the real grid (spreading output of PmePerformSplineAndSpread())
+SparseGridValues pmeGetRealGrid(const gmx_pme_t *pme, CodePath mode);
 
 }
 }
+
 #endif
