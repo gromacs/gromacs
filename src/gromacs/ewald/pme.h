@@ -69,7 +69,8 @@ enum {
 
 /*! \brief Initialize \p pmedata
  *
- * Return value 0 indicates all well, non zero is an error code.
+ * \returns  0 indicates all well, non zero is an error code.
+ * \throws   gmx::InconsistentInputError if input grid sizes/PME order are inconsistent.
  */
 int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  int nnodes_major, int nnodes_minor,
@@ -83,11 +84,8 @@ int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  const gmx_hw_info_t *hwinfo = NULL,
                  const gmx_gpu_opt_t *gpu_opt = NULL);
 
-/*! \brief Destroy the PME data structures respectively.
- *
- * \return 0 indicates all well, non zero is an error code.
- */
-int gmx_pme_destroy(struct gmx_pme_t **pmedata);
+/*! \brief Destroys the PME data structure.*/
+void gmx_pme_destroy(gmx_pme_t *pme);
 
 //@{
 /*! \brief Flag values that control what gmx_pme_do() will calculate

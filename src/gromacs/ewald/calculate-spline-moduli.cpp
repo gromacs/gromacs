@@ -44,7 +44,7 @@
 
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -165,7 +165,7 @@ static void make_p3m_bspline_moduli_dim(real *bsp_mod, int n, int order)
 
     if (order > 8)
     {
-        gmx_fatal(FARGS, "The current P3M code only supports orders up to 8");
+        GMX_THROW(gmx::InconsistentInputError("The current P3M code only supports orders up to 8"));
     }
 
     zarg = M_PI/n;
