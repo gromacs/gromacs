@@ -42,6 +42,10 @@
 #ifndef GMX_EWALD_PME_TEST_COMMON_H
 #define GMX_EWALD_PME_TEST_COMMON_H
 
+#include <array>
+#include <map>
+#include <vector>
+
 #include "gromacs/ewald/pme.h"
 #include "gromacs/utility/unique_cptr.h"
 
@@ -52,12 +56,54 @@ namespace gmx
 namespace test
 {
 
+// Convenience typedefs
 //! A safe pointer type for PME.
 typedef gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> PmeSafePointer;
+//! Charges
+typedef std::vector<real> ChargesVector;
+//! Coordinates
+typedef std::vector<RVec> CoordinatesVector;
+//! Gridline indices
+typedef std::vector<IVec> GridLineIndicesVector;
+//! Spline parameters (theta or dtheta)
+typedef std::vector<real> SplineParamsVector;
+//! Non-zero grid values
+typedef std::map<IVec, real> SparseGridValues;
+//! TODO: make proper C++ matrix for the whole Gromacs, get rid of this
+typedef std::array<real, DIM * DIM> Matrix3x3;
+//! PME code path being tested
+enum class CodePath
+{
+    CPU,    // serial CPU code
+};
+
+// PME stages
 
 //! Simple PME initialization based on input, no atom data; only good for testing the initialization stage
 PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec);
+//! PME initialization with atom data and system box
+PmeSafePointer pmeInitWithAtoms(const t_inputrec        *inputRec,
+                                const CoordinatesVector &coordinates,
+                                const ChargesVector     &charges,
+                                const Matrix3x3          box
+                                );
+//! PME spline computation and charge spreading
+void pmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, CodePath mode,
+                               bool computeSplines, bool spreadCharges);
+
+// PME stage outputs
+
+//! Fetching the spline computation outputs of PmePerformSplineAndSpread()
+void pmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, CodePath mode,
+                           SplineParamsVector &splineValues,
+                           SplineParamsVector &splineDerivatives,
+                           GridLineIndicesVector &gridLineIndices);
+
+//! Fetching the spreading output of PmePerformSplineAndSpread()
+void pmeFetchOutputsSpread(const PmeSafePointer &pmeSafe, CodePath mode,
+                           SparseGridValues &gridValues);
 
 }
 }
+
 #endif
