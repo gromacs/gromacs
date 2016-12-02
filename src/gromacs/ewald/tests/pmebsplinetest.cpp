@@ -123,7 +123,7 @@ class PmeBSplineModuliTest : public ::testing::TestWithParam<BSplineModuliInputP
             const char *dimString[] = { "X", "Y", "Z" };
             for (int i = 0; i < DIM; i++)
             {
-                checker.checkSequenceArray(gridSize[i], pme.get()->bsp_mod[i], dimString[i]);
+                checker.checkSequenceArray(gridSize[i], pme->bsp_mod[i], dimString[i]);
             }
         }
 };
