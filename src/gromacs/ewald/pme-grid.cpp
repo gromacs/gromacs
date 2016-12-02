@@ -44,6 +44,7 @@
 #include <cstdlib>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/fatalerror.h"
@@ -721,7 +722,6 @@ void pmegrids_init(pmegrids_t *grids,
         grids->grid_th = NULL;
     }
 
-    snew(grids->g2t, DIM);
     tfac = 1;
     for (d = DIM-1; d >= 0; d--)
     {
@@ -778,6 +778,10 @@ void pmegrids_destroy(pmegrids_t *grids)
         {
             sfree_aligned(grids->grid_all);
             sfree(grids->grid_th);
+        }
+        for (int d = 0; d < DIM; d++)
+        {
+            sfree(grids->g2t[d]);
         }
     }
 }

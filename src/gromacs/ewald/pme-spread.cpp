@@ -45,6 +45,7 @@
 #include <algorithm>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
