@@ -74,11 +74,6 @@
 #include "selmethod.h"
 #include "symrec.h"
 
-/*! \brief
- * Step in which the allocated memory for pretty-printed input is incremented.
- */
-#define STRSTORE_ALLOCSTEP 1000
-
 /* These are defined as macros in the generated scanner_flex.h.
  * We undefine them here to have them as variable names in the subroutines.
  * There are other ways of doing this, but this is probably the easiest. */
@@ -355,12 +350,12 @@ void
 _gmx_sel_lexer_add_token(YYLTYPE *yylloc, const char *str, int len,
                          gmx_sel_lexer_t *state)
 {
-    yylloc->startIndex = yylloc->endIndex = state->pslen;
+    yylloc->startIndex = yylloc->endIndex = state->pselstr.size();
     /* Do nothing if the string is empty, or if it is a space and there is
      * no other text yet, or if there already is a space. */
     if (!str || len == 0 || strlen(str) == 0
         || (str[0] == ' ' && str[1] == 0
-            && (state->pslen == 0 || state->pselstr[state->pslen - 1] == ' ')))
+            && (state->pselstr.empty() || state->pselstr.back() == ' ')))
     {
         return;
     }
@@ -368,18 +363,9 @@ _gmx_sel_lexer_add_token(YYLTYPE *yylloc, const char *str, int len,
     {
         len = strlen(str);
     }
-    /* Allocate more memory if necessary */
-    if (state->nalloc_psel - state->pslen < len)
-    {
-        int incr = STRSTORE_ALLOCSTEP < len ? len : STRSTORE_ALLOCSTEP;
-        state->nalloc_psel += incr;
-        srenew(state->pselstr, state->nalloc_psel);
-    }
     /* Append the token to the stored string */
-    strncpy(state->pselstr + state->pslen, str, len);
-    state->pslen                += len;
-    state->pselstr[state->pslen] = 0;
-    yylloc->endIndex             = state->pslen;
+    state->pselstr.append(str, len);
+    yylloc->endIndex = state->pselstr.size();
 }
 
 void
@@ -407,10 +393,6 @@ _gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
 
     state->statusWriter = statusWriter;
 
-    snew(state->pselstr, STRSTORE_ALLOCSTEP);
-    state->pselstr[0]                 = 0;
-    state->pslen                      = 0;
-    state->nalloc_psel                = STRSTORE_ALLOCSTEP;
     state->currentLocation.startIndex = 0;
     state->currentLocation.endIndex   = 0;
 
@@ -435,7 +417,6 @@ _gmx_sel_free_lexer(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
 
-    sfree(state->pselstr);
     sfree(state->mstack);
     if (state->bBuffer)
     {
@@ -504,7 +485,7 @@ const char *
 _gmx_sel_lexer_pselstr(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
-    return state->pselstr;
+    return state->pselstr.c_str();
 }
 
 void
@@ -540,15 +521,14 @@ _gmx_sel_lexer_get_text(yyscan_t                      scanner,
     {
         return std::string();
     }
-    return std::string(&state->pselstr[startIndex], endIndex - startIndex);
+    return state->pselstr.substr(startIndex, endIndex - startIndex);
 }
 
 void
 _gmx_sel_lexer_clear_pselstr(yyscan_t scanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
-    state->pselstr[0] = 0;
-    state->pslen      = 0;
+    state->pselstr.clear();
 }
 
 void
