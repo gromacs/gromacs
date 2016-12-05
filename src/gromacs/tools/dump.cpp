@@ -346,6 +346,7 @@ static void list_tng(const char gmx_unused *fn)
     gmx_int64_t          nframe = 0;
     gmx_int64_t          i, *block_ids = NULL, step, ndatablocks;
     gmx_bool             bOK;
+    real                *values = NULL;
 
     gmx_tng_open(fn, 'r', &tng);
     gmx_print_tng_molecule_system(tng, stdout);
@@ -360,7 +361,7 @@ static void list_tng(const char gmx_unused *fn)
         for (i = 0; i < ndatablocks; i++)
         {
             double               frame_time;
-            real                 prec, *values = NULL;
+            real                 prec;
             gmx_int64_t          n_values_per_frame, n_atoms;
             char                 block_name[STRLEN];
 
@@ -394,7 +395,7 @@ static void list_tng(const char gmx_unused *fn)
     {
         sfree(block_ids);
     }
-
+    sfree(values);
     gmx_tng_close(&tng);
 #endif
 }
