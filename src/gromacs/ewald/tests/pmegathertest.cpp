@@ -104,8 +104,8 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
             inputRec->pme_order   = pmeOrder;
             inputRec->coulombtype = eelPME;
 
-            TestReferenceData refData;
-            const std::map<PmeCodePath, std::string> modesToTest = {{PmeCodePath::CPU, "CPU"}};
+            TestReferenceData                     refData;
+            const std::map<CodePath, std::string> modesToTest = {{CodePath::CPU, "CPU"}};
             for (const auto &mode : modesToTest)
             {
                 /* Describing the test uniquely */
@@ -119,7 +119,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                                           ));
 
                 /* Running the test */
-                PmeSafePointer  pmeSafe = PmeInitWithAtoms(inputRec, coordinatesDummy, charges, box);
+                PmeSafePointer  pmeSafe = PmeInitWithAtoms(inputRec, mode.first, coordinatesDummy, charges, box);
 
                 PmeSetRealGrid(pmeSafe, mode.first, nonZeroGridValues);
                 PmeSetGridLineIndices(pmeSafe, mode.first, gridLineIndices);

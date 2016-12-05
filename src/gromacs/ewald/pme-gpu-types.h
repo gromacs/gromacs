@@ -76,7 +76,7 @@ typedef int pme_gpu_kernel_params_t;
 
 /* What follows is all the PME GPU function arguments,
  * sorted into several device-side structures depending on the update rate.
- * This is almost entirely GPU agnostic (float3 replaced by float[3], etc.).
+ * This is GPU agnostic (float3 replaced by float[3], etc.).
  * The GPU-framework specifics (e.g. cudaTextureObject_t handles) are described
  * in the larger structure pme_gpu_cuda_kernel_params_t in the pme.cuh.
  */
@@ -231,6 +231,10 @@ struct pme_gpu_settings_t
      * The pme_reinit_atoms() after the DD gets called directly in gmx_pmeonly.
      */
     bool needToUpdateAtoms;
+    /*! \brief A boolean which tells if any PME GPU stage should copy all of its outputs to the host.
+     * Only intended to be used by the test framework.
+     */
+    bool copyAllOutputs;
 };
 
 /*! \internal \brief

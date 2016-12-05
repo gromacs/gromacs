@@ -46,16 +46,17 @@
 #include <map>
 #include <vector>
 
+#include <gtest/gtest.h>
+
 #include "gromacs/ewald/pme.h"
 #include "gromacs/math/gmxcomplex.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/unique_cptr.h"
 
-struct t_inputrec;
+#include "testhardwarecontexts.h"
 
 namespace gmx
 {
-
+namespace test
+{
 // Convenience typedefs
 //! A safe pointer type for PME.
 typedef gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> PmeSafePointer;
@@ -77,25 +78,18 @@ typedef SparseGridValues<real> SparseRealGridValues;
 typedef SparseGridValues<t_complex> SparseComplexGridValues;
 //! TODO: make proper C++ matrix for the whole Gromacs, get rid of this
 typedef std::array<real, DIM * DIM> Matrix3x3;
-//! PME code path being tested
-enum class PmeCodePath
-{
-    CPU, // serial CPU code
-};
 //! Type of spline data
 enum class PmeSplineDataType
 {
     Values,      // theta
     Derivatives, // dtheta
 };
-
 //! PME solver type
 enum class PmeSolveAlgorithm
 {
     Normal,
     LennardJones,
 };
-
 //! PME gathering input forces treatment
 enum class PmeGatherInputHandling
 {
@@ -103,64 +97,70 @@ enum class PmeGatherInputHandling
     ReduceWith,
 };
 
+// Misc.
+
+//! Tells if this generally valid PME input is supported for this mode
+bool PmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode);
+
 // PME stages
 
 //! Simple PME initialization based on input, no atom data
 PmeSafePointer PmeInitEmpty(const t_inputrec *inputRec,
                             const Matrix3x3 &box = {{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}},
-                            real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f);
+                            real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f,
+                            CodePath mode = CodePath::CPU);
 //! PME initialization with atom data
 PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
+                                CodePath                 mode,
                                 const CoordinatesVector &coordinates,
                                 const ChargesVector     &charges,
-                                const Matrix3x3         &box
-                                );
+                                const Matrix3x3         &box);
 //! PME spline computation and charge spreading
-void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, CodePath mode,
                                bool computeSplines, bool spreadCharges);
 //! PME solving
-void PmePerformSolve(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmePerformSolve(const PmeSafePointer &pmeSafe, CodePath mode,
                      PmeSolveAlgorithm method, real cellVolume);
 //! PME force gathering
-void PmePerformGather(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmePerformGather(const PmeSafePointer &pmeSafe, CodePath mode,
                       PmeGatherInputHandling inputTreatment, ForcesVector &forces);
 
 // PME stage inputs - setters for skipping stages
 
 //! Setting atom spline values or derivatives to be used in spread/gather
-void PmeSetSplineData(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmeSetSplineData(const PmeSafePointer &pmeSafe, CodePath mode,
                       const SplineParamsVector &splineValues, PmeSplineDataType type);
 //! Setting gridline indices be used in spread/gather
-void PmeSetGridLineIndices(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmeSetGridLineIndices(const PmeSafePointer &pmeSafe, CodePath mode,
                            const GridLineIndicesVector &gridLineIndices);
 //! Setting real grid to be used in gather
-void PmeSetRealGrid(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmeSetRealGrid(const PmeSafePointer &pmeSafe, CodePath mode,
                     const SparseRealGridValues &gridValues);
 //! Setting complex grid to be used in solve
 void PmeSetComplexGrid(const PmeSafePointer          &pmeSafe,
-                       PmeCodePath                    mode,
+                       CodePath                       mode,
                        const SparseComplexGridValues &gridValues);
 
 // PME stage outputs
-
 //! Fetching the spline computation outputs of PmePerformSplineAndSpread()
-void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, CodePath mode,
                            SplineParamsVector &splineValues,
                            SplineParamsVector &splineDerivatives,
                            GridLineIndicesVector &gridLineIndices);
 
 //! Fetching the outputs of PmePerformSolve()
-void PmeFetchOutputsSolve(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmeFetchOutputsSolve(const PmeSafePointer &pmeSafe, CodePath mode,
                           PmeSolveAlgorithm method,
                           SparseComplexGridValues &gridValues,
                           real &energy,
                           Matrix3x3 &virial);
 
 //! Fetching the spreading output of PmePerformSplineAndSpread()
-void PmeFetchOutputsSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmeFetchOutputsSpread(const PmeSafePointer &pmeSafe, CodePath mode,
                            SparseRealGridValues &gridValues);
 
 // Fetching the output of PmePerformGather() is not needed since it gets
 // passed the forces buffer (the only output)
+}
 }
 #endif

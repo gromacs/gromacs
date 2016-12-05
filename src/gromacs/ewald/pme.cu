@@ -417,21 +417,24 @@ void pme_gpu_sync_solve_grid(const pme_gpu_t *pmeGPU)
 
 void pme_gpu_init_specific(pme_gpu_t *pmeGPU, const gmx_hw_info_t *hwinfo, const gmx_gpu_opt_t *gpu_opt)
 {
-    /* FIXME: fix the GPU ID selection as well as initialization */
-    int       gpuIndex = 0;
-    char      gpu_err_str[STRLEN];
     GMX_RELEASE_ASSERT(hwinfo, "No hardware information");
     GMX_RELEASE_ASSERT(hwinfo->gpu_info.gpu_dev, "No GPU information");
     GMX_RELEASE_ASSERT(gpu_opt->dev_use, "No GPU information");
-    /* Use GPU #0 for now since the code for GPU init has to be reworked anyway.
-     * And don't forget to resurrect the external GMX_PME_GPU_ID env. variable.
-     */
-    pmeGPU->deviceInfo = &hwinfo->gpu_info.gpu_dev[gpu_opt->dev_use[gpuIndex]];
-    const gmx::MDLogger temp;
-    if (!init_gpu(temp, gpuIndex, gpu_err_str, &hwinfo->gpu_info, gpu_opt))
-    {
+    /*
+     * FIXME: fix the GPU ID selection as well as initialization;
+     * Don't forget the external GMX_PME_GPU_ID env. variable.
+       int       gpuIndex = 0;
+       char      gpu_err_str[STRLEN];
+       const gmx::MDLogger temp;
+       if (!init_gpu(temp, gpuIndex, gpu_err_str, &hwinfo->gpu_info, gpu_opt))
+       {
         gmx_fatal(FARGS, "Could not select GPU %d for PME rank %d\n", pmeGPU->deviceInfo->id, gpuIndex);
-    }
+       }
+       pmeGPU->deviceInfo = &hwinfo->gpu_info.gpu_dev[gpu_opt->dev_use[gpuIndex]];
+     */
+    /* Relying on GPU context being initialized and activated externally instead - for now. */
+    int gpuid = get_current_cuda_gpu_device_id();
+    pmeGPU->deviceInfo = &hwinfo->gpu_info.gpu_dev[gpuid];
 
     /* Allocate the GPU-specific structures */
     pmeGPU->archSpecific.reset(new pme_gpu_specific_host_t());

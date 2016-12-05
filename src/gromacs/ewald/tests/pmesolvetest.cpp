@@ -115,8 +115,8 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
                     GMX_THROW(InternalError("Unknown PME solver"));
             }
 
-            TestReferenceData refData;
-            const std::map<PmeCodePath, std::string> modesToTest = {{PmeCodePath::CPU, "CPU"}};
+            TestReferenceData                     refData;
+            const std::map<CodePath, std::string> modesToTest = {{CodePath::CPU, "CPU"}};
             for (const auto &mode : modesToTest)
             {
                 /* Describing the test*/
@@ -129,7 +129,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
 
                 /* Running the test */
 
-                PmeSafePointer pmeSafe = PmeInitEmpty(inputRec, box, ewaldCoeff_q, ewaldCoeff_lj);
+                PmeSafePointer pmeSafe = PmeInitEmpty(inputRec, box, ewaldCoeff_q, ewaldCoeff_lj, mode.first);
 
                 PmeSetComplexGrid(pmeSafe, mode.first, nonZeroGridValues);
 
