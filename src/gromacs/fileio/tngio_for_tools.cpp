@@ -616,7 +616,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
          * be reallocated if it is not NULL. */
     }
 
-    fr->step  = static_cast<int>(frameNumber);
+    fr->step  = frameNumber;
     fr->bStep = TRUE;
     // Convert the time to ps
     fr->time  = frameTime / PICO;
