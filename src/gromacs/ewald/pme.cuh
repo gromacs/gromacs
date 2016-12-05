@@ -95,12 +95,23 @@ class GpuParallel3dFft;
  */
 #define PME_SPREADGATHER_THREADS_PER_ATOM (order * order)
 
-//! The spread/gather integer constant which depends on the templated order parameter (2 atoms per warp for order == 4)
+/*! \brief
+ * The number of atoms processed by a single warp in spread/gather.
+ * This macro depends on the templated order parameter (2 atoms per warp for order 4).
+ * It is mostly used for spline data layout tweaked for coalesced access.
+ */
 #define PME_SPREADGATHER_ATOMS_PER_WARP (warp_size / PME_SPREADGATHER_THREADS_PER_ATOM)
 
-//! Atom data alignment - has to be divisible both by spread and gather maximal atoms-per-block counts,
-//! which is asserted in case we use atom data padding at all.
-#define PME_ATOM_DATA_ALIGNMENT (16 * PME_SPREADGATHER_ATOMS_PER_WARP);
+/*! \brief
+ * Atom data alignment (in terms of number of atoms).
+ * If the GPU atom data buffers are padded (c_usePadding == true),
+ * Then the numbers of atoms which would fit in the padded GPU buffers has to be divisible by this.
+ * The literal number (16) expresses maximum spread/gather block width in warps.
+ * Accordingly, spread and gather block widths in warps should be divisors of this
+ * (e.g. in the pme-spread.cu: constexpr int c_spreadMaxThreadsPerBlock = 8 * warp_size;).
+ * There are debug asserts for this divisibility.
+ */
+#define PME_ATOM_DATA_ALIGNMENT (16 * PME_SPREADGATHER_ATOMS_PER_WARP)
 
 /*! \brief \internal
  * An inline CUDA function for checking the global atom data indices against the atom data array sizes.
@@ -240,7 +251,7 @@ struct pme_gpu_cuda_kernel_params_t : pme_gpu_kernel_params_base_t
     cudaTextureObject_t gridlineIndicesTableTexture;
 };
 
-/* CUDA texture functions which will reside in respective kernel files
+/* CUDA texture functions which reside in respective kernel files
  * (due to texture references having scope of a translation unit).
  */
 
@@ -249,13 +260,13 @@ struct pme_gpu_cuda_kernel_params_t : pme_gpu_kernel_params_base_t
  *
  * \param[in, out] pmeGPU         The PME GPU structure.
  */
-inline void pme_gpu_make_fract_shifts_textures(pme_gpu_t gmx_unused *pmeGpu){};
+void pme_gpu_make_fract_shifts_textures(pme_gpu_t *pmeGpu);
 
 /*! \brief \internal
  * Frees/unbinds 2 textures used in the spline parameter computation.
  *
  * \param[in] pmeGPU             The PME GPU structure.
  */
-inline void pme_gpu_free_fract_shifts_textures(const pme_gpu_t gmx_unused *pmeGpu){};
+void pme_gpu_free_fract_shifts_textures(const pme_gpu_t *pmeGpu);
 
 #endif
