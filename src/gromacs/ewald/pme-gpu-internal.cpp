@@ -307,6 +307,8 @@ void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogge
     /* TODO: CPU gather with GPU spread is broken due to different theta/dtheta layout. */
     pmeGPU->settings.performGPUGather = true;
 
+    pme_gpu_set_testing(pmeGPU, false);
+
     // GPU initialization
     init_gpu(mdlog, cr->nodeid, gpuInfo);
     pmeGPU->deviceInfo = gpuInfo;
@@ -322,6 +324,64 @@ void pme_gpu_init(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogge
 
     auto *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
     kernelParamsPtr->constants.elFactor = ONE_4PI_EPS0 / pmeGPU->common->epsilon_r;
+}
+
+void pme_gpu_transform_spline_atom_data_for_host(const pme_gpu_t *pmeGPU, const pme_atomcomm_t *atc, PmeSplineDataType type, int dimIndex)
+{
+    // The GPU atom spline data is laid out in a different way currently than the CPU one.
+    // This function converts the data from GPU to CPU layout. Obviously, it is slow.
+    // It is only intended for testing purposes so far.
+    // Ideally we should use similar layouts on CPU and GPU if we care about mixed modes and their performance
+    // (e.g. spreading on GPU, gathering on CPU).
+    GMX_RELEASE_ASSERT(atc->nthread == 1, "Only the serial PME data layout is supported");
+    const uintmax_t threadIndex  = 0;
+    const auto      atomCount    = pme_gpu_get_kernel_params_base_ptr(pmeGPU)->atoms.nAtoms;
+    const auto      atomsPerWarp = pme_gpu_get_atom_spline_data_alignment(pmeGPU);
+    const auto      pmeOrder     = pmeGPU->common->pme_order;
+
+    real           *h_splineBuffer;
+    float          *d_splineBuffer;
+    switch (type)
+    {
+        case PmeSplineDataType::Values:
+            h_splineBuffer = atc->spline[threadIndex].theta[dimIndex];
+            d_splineBuffer = pmeGPU->staging.h_theta;
+            break;
+
+        case PmeSplineDataType::Derivatives:
+            h_splineBuffer = atc->spline[threadIndex].dtheta[dimIndex];
+            d_splineBuffer = pmeGPU->staging.h_dtheta;
+            break;
+
+        default:
+            GMX_THROW(gmx::InternalError("Unknown spline data type"));
+    }
+
+    for (auto atomIndex = 0; atomIndex < atomCount; atomIndex++)
+    {
+        auto atomWarpIndex = atomIndex % atomsPerWarp;
+        auto warpIndex     = atomIndex / atomsPerWarp;
+        for (auto orderIndex = 0; orderIndex < pmeOrder; orderIndex++)
+        {
+            const auto gpuValueIndex = ((pmeOrder * warpIndex + orderIndex) * DIM + dimIndex) * atomsPerWarp + atomWarpIndex;
+            const auto cpuValueIndex = atomIndex * pmeOrder + orderIndex;
+            GMX_ASSERT(cpuValueIndex < atomCount * pmeOrder, "Atom spline data index out of bounds (while transforming GPU data layout for host)");
+            h_splineBuffer[cpuValueIndex] = d_splineBuffer[gpuValueIndex];
+        }
+    }
+}
+
+void pme_gpu_get_real_grid_sizes(const pme_gpu_t *pmeGPU, gmx::IVec *gridSize, gmx::IVec *paddedGridSize)
+{
+    GMX_ASSERT(gridSize != nullptr, "");
+    GMX_ASSERT(paddedGridSize != nullptr, "");
+    GMX_ASSERT(pmeGPU != nullptr, "");
+    auto *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
+    for (int i = 0; i < DIM; i++)
+    {
+        (*gridSize)[i]       = kernelParamsPtr->grid.realGridSize[i];
+        (*paddedGridSize)[i] = kernelParamsPtr->grid.realGridSizePadded[i];
+    }
 }
 
 void pme_gpu_reinit(gmx_pme_t *pme, gmx_device_info_t *gpuInfo, const gmx::MDLogger &mdlog, const t_commrec *cr)
