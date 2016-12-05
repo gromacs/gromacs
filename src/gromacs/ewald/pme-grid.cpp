@@ -43,6 +43,7 @@
 
 #include <cstdlib>
 
+#include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/cyclecounter.h"
