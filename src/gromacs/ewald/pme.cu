@@ -57,14 +57,14 @@
 int pme_gpu_get_atom_data_alignment(const pme_gpu_t *pmeGPU)
 {
     const int order = pmeGPU->common->pme_order;
-    GMX_RELEASE_ASSERT(order > 0, "Invalid PME order");
+    GMX_ASSERT(order > 0, "Invalid PME order");
     return PME_ATOM_DATA_ALIGNMENT;
 }
 
 int pme_gpu_get_atom_spline_data_alignment(const pme_gpu_t *pmeGPU)
 {
     const int order = pmeGPU->common->pme_order;
-    GMX_RELEASE_ASSERT(order > 0, "Invalid PME order");
+    GMX_ASSERT(order > 0, "Invalid PME order");
     return PME_SPREADGATHER_ATOMS_PER_WARP;
 }
 
