@@ -57,7 +57,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "pme-grid.h"
@@ -305,6 +305,38 @@ bool pme_gpu_check_restrictions(const gmx_pme_t *pme,
     return error.empty();
 }
 
+//! A helper function for pme_gpu_transform_spline_atom_data_for_host()
+void pme_gpu_transform_spline_data_layout(size_t atomsPerWarp, size_t atomCount, size_t pmeOrder, splinevec h_splineValues, float *d_splineValues)
+{
+    for (size_t atomIndex = 0; atomIndex < atomCount; atomIndex++)
+    {
+        size_t atomWarpIndex = atomIndex % atomsPerWarp;
+        size_t warpIndex     = atomIndex / atomsPerWarp;
+        for (size_t orderIndex = 0; orderIndex < pmeOrder; orderIndex++)
+        {
+            for (size_t dimIndex = 0; dimIndex < DIM; dimIndex++)
+            {
+                const size_t gpuValueIndex = ((pmeOrder * warpIndex + orderIndex) * DIM + dimIndex) * atomsPerWarp + atomWarpIndex;
+                const size_t cpuValueIndex = (/*dimIndex * atomCount + */ atomIndex) * pmeOrder + orderIndex; //dimIndex is accounted for below
+                GMX_RELEASE_ASSERT(cpuValueIndex < atomCount * pmeOrder, "Wrong size");
+                h_splineValues[dimIndex][cpuValueIndex] = d_splineValues[gpuValueIndex];
+            }
+        }
+    }
+}
+
+void pme_gpu_transform_spline_atom_data_for_host(const pme_gpu_t *pmeGPU, const pme_atomcomm_t *atc)
+{
+    GMX_RELEASE_ASSERT(atc->nthread == 1, "Only the serial PME data layout supported");
+    const size_t threadIndex  = 0;
+    const size_t atomCount    = pme_gpu_get_kernel_params_base_ptr(pmeGPU)->atoms.nAtoms;
+    const size_t atomsPerWarp = pme_gpu_get_atom_spline_data_alignment(pmeGPU);
+    const size_t pmeOrder     = pmeGPU->common->pme_order;
+    pme_gpu_transform_spline_data_layout(atomsPerWarp, atomCount, pmeOrder, atc->spline[threadIndex].theta, pmeGPU->staging.h_theta);
+    pme_gpu_transform_spline_data_layout(atomsPerWarp, atomCount, pmeOrder, atc->spline[threadIndex].dtheta, pmeGPU->staging.h_dtheta);
+    memcpy(atc->idx, pmeGPU->staging.h_gridlineIndices, atomCount * DIM * sizeof(int));
+}
+
 void pme_gpu_reinit(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_opt_t *gpu_opt)
 {
     if (!pme_gpu_active(pme))
@@ -320,7 +352,7 @@ void pme_gpu_reinit(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_o
         pme->useGPU = pme_gpu_check_restrictions(pme, error);
         if (!pme->useGPU)
         {
-            gmx_fatal(FARGS, error.c_str());
+            GMX_THROW(gmx::NotImplementedError(error));
         }
 
         pme->gpu       = new pme_gpu_t();
@@ -339,6 +371,7 @@ void pme_gpu_reinit(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_o
         pmeGPU->settings.needToUpdateAtoms = true;
         /* For the delayed atom data init hack */
 
+        pme_gpu_set_testing(pmeGPU, false);
         pme_gpu_init_specific(pmeGPU, hwinfo, gpu_opt);
         pme_gpu_init_sync_events(pmeGPU);
         pme_gpu_init_timings(pmeGPU);
@@ -354,7 +387,6 @@ void pme_gpu_reinit(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_o
         pme_gpu_kernel_params_base_t *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
         kernelParamsPtr->constants.elFactor = ONE_4PI_EPS0 / pmeGPU->common->epsilon_r;
     }
-
     pme_gpu_reinit_grids(pmeGPU);
     pme_gpu_reinit_step(pmeGPU);
 }
@@ -374,8 +406,7 @@ void pme_gpu_destroy(pme_gpu_t *pmeGPU)
     pme_gpu_free_fract_shifts(pmeGPU);
     pme_gpu_free_grids(pmeGPU);
 
-    pme_gpu_destroy_3dfft(pmeGPU); /* FIXME: Why are some things freed and some destroyed?
-                                      No logic in naming */
+    pme_gpu_destroy_3dfft(pmeGPU); /* FIXME: Why are some things freed and some destroyed? No logic in naming */
     pme_gpu_destroy_sync_events(pmeGPU);
     pme_gpu_destroy_timings(pmeGPU);
 

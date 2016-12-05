@@ -234,6 +234,10 @@ struct pme_gpu_settings_t
      * The pme_reinit_atoms() after the DD gets called directly in gmx_pmeonly.
      */
     bool needToUpdateAtoms;
+    /*! \brief A boolean which tells if any PME GPU stage should copy all of its outputs to the host.
+     * Only intended to be used by the test framework.
+     */
+    bool copyAllOutputs;
 };
 
 /*! \internal \brief
@@ -248,6 +252,13 @@ struct pme_gpu_staging_t
     float  *h_splineModuli[DIM];
     /*! \brief Sizes of the corresponding h_splineValues arrays in bytes */
     size_t  splineModuliSizes[DIM];
+
+    /*! \brief Pointer to the host memory with B-spline values. Only used for host-side gather, or unit tests */
+    float  *h_theta;
+    /*! \brief Pointer to the host memory with B-spline derivative values. Only used for host-side gather, or unit tests */
+    float  *h_dtheta;
+    /*! \brief Pointer to the host memory with ivec atom gridline indices. Only used for host-side gather, or unit tests */
+    int    *h_gridlineIndices;
 };
 
 /*! \internal \brief
