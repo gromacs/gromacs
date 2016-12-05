@@ -204,14 +204,7 @@ static void exitUnlessUserGpuTaskAssignmentIsValid(const gmx_gpu_info_t   &gpu_i
     }
 }
 
-/*! \brief Filter the compatible GPUs
- *
- * This function filters gpu_info.gpu_dev for compatible GPUs based
- * on the previously run compatibility tests.
- *
- * \param[in]     gpu_info    Information detected about GPUs, including compatibility
- * \return                    vector of IDs of GPUs already recorded as compatible */
-static std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info)
 {
     // Possible minor over-allocation here, but not important for anything
     std::vector<int> compatibleGpus;
