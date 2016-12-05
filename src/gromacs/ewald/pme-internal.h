@@ -57,11 +57,13 @@
 
 #include <stdio.h>
 
-#include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/gmxmpi.h"
+
+//! A repeat of typedef from parallel_3dfft.h
+typedef struct gmx_parallel_3dfft *gmx_parallel_3dfft_t;
 
 struct t_commrec;
 struct t_inputrec;
