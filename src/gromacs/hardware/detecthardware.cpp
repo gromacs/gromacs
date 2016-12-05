@@ -1319,6 +1319,10 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
 
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo)
 {
+    if (!hwinfo)
+    {
+        return;
+    }
     int ret;
 
     ret = tMPI_Thread_mutex_lock(&hw_info_lock);

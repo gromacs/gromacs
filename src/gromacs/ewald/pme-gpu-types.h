@@ -234,6 +234,10 @@ struct pme_gpu_settings_t
      * The pme_reinit_atoms() after the DD gets called directly in gmx_pmeonly.
      */
     bool needToUpdateAtoms;
+    /*! \brief A boolean which tells if any PME GPU stage should copy all of its outputs to the host.
+     * Only intended to be used by the test framework.
+     */
+    bool copyAllOutputs;
 };
 
 /*! \internal \brief

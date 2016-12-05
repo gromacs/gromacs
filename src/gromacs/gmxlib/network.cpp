@@ -125,6 +125,10 @@ static void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
 
 void done_commrec(t_commrec *cr)
 {
+    if (!cr)
+    {
+        return;
+    }
     if (NULL != cr->dd)
     {
         // TODO: implement
