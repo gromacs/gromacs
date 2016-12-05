@@ -56,7 +56,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "pme-grid.h"
@@ -107,7 +107,7 @@ void pme_gpu_start_step(pme_gpu_t *pmeGPU, const matrix box, const rvec *h_coord
         GMX_ASSERT(kernelParamsPtr->step.boxVolume != 0.0f, "Zero volume of the unit cell");
 
 #if GMX_DOUBLE
-        gmx_incons("PME is single-precision only on GPU. You shouldn't be seeing this message!");
+        GMX_THROW(gmx::NotImplementedError("PME is implemented for single-precision only on GPU"));
 #else
         matrix recipBox;
         gmx::invertBoxMatrix(box, recipBox);
@@ -278,7 +278,7 @@ void pme_gpu_init(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_opt
     pme->useGPU = pme_gpu_check_restrictions(pme, error);
     if (!pme->useGPU)
     {
-        gmx_fatal(FARGS, error.c_str());
+        GMX_THROW(gmx::NotImplementedError(error));
     }
 
     pme->gpu          = new pme_gpu_t();
@@ -297,6 +297,8 @@ void pme_gpu_init(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_opt
     /* This is for the delayed atom data init hack and will get flipped back to false at first step */
     pmeGPU->settings.needToUpdateAtoms = true;
 
+    pme_gpu_set_testing(pmeGPU, false);
+
     pme_gpu_init_specific(pmeGPU, hwinfo, gpu_opt);
     pme_gpu_init_sync_events(pmeGPU);
     pme_gpu_init_timings(pmeGPU);
@@ -308,6 +310,51 @@ void pme_gpu_init(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_opt
 
     pme_gpu_kernel_params_base_t *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
     kernelParamsPtr->constants.elFactor = ONE_4PI_EPS0 / pmeGPU->common->epsilon_r;
+}
+
+void pme_gpu_transform_spline_atom_data_for_host(const pme_gpu_t *pmeGPU, const pme_atomcomm_t *atc, PmeSplineDataType type, int dimIndex)
+{
+    // The GPU atom spline data is laid out in a different way currently than the CPU one.
+    // This function converts the data from GPU to CPU layout. Obviously, it is slow.
+    // It is only intended for testing purposes so far.
+    // Ideally we should use similar layouts on CPU and GPU if we care about mixed modes and their performance
+    // (e.g. spreading on GPU, gathering on CPU).
+    GMX_RELEASE_ASSERT(atc->nthread == 1, "Only the serial PME data layout is supported");
+    const uintmax_t threadIndex  = 0;
+    const auto      atomCount    = pme_gpu_get_kernel_params_base_ptr(pmeGPU)->atoms.nAtoms;
+    const auto      atomsPerWarp = pme_gpu_get_atom_spline_data_alignment(pmeGPU);
+    const auto      pmeOrder     = pmeGPU->common->pme_order;
+
+    real           *h_splineBuffer;
+    float          *d_splineBuffer;
+    switch (type)
+    {
+        case PmeSplineDataType::Values:
+            h_splineBuffer = atc->spline[threadIndex].theta[dimIndex];
+            d_splineBuffer = pmeGPU->staging.h_theta;
+            break;
+
+        case PmeSplineDataType::Derivatives:
+            h_splineBuffer = atc->spline[threadIndex].dtheta[dimIndex];
+            d_splineBuffer = pmeGPU->staging.h_dtheta;
+            break;
+
+        default:
+            GMX_THROW(gmx::InternalError("Unknown spline data type"));
+    }
+
+    for (auto atomIndex = 0; atomIndex < atomCount; atomIndex++)
+    {
+        auto atomWarpIndex = atomIndex % atomsPerWarp;
+        auto warpIndex     = atomIndex / atomsPerWarp;
+        for (auto orderIndex = 0; orderIndex < pmeOrder; orderIndex++)
+        {
+            const auto gpuValueIndex = ((pmeOrder * warpIndex + orderIndex) * DIM + dimIndex) * atomsPerWarp + atomWarpIndex;
+            const auto cpuValueIndex = atomIndex * pmeOrder + orderIndex;
+            GMX_ASSERT(cpuValueIndex < atomCount * pmeOrder, "Atom spline data index out of bounds (while transforming GPU data layout for host)");
+            h_splineBuffer[cpuValueIndex] = d_splineBuffer[gpuValueIndex];
+        }
+    }
 }
 
 void pme_gpu_reinit(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_opt_t *gpu_opt)
@@ -347,8 +394,7 @@ void pme_gpu_destroy(pme_gpu_t *pmeGPU)
     pme_gpu_free_fract_shifts(pmeGPU);
     pme_gpu_free_grids(pmeGPU);
 
-    pme_gpu_destroy_3dfft(pmeGPU); /* FIXME: Why are some things freed and some destroyed?
-                                      No logic in naming */
+    pme_gpu_destroy_3dfft(pmeGPU);
     pme_gpu_destroy_sync_events(pmeGPU);
     pme_gpu_destroy_timings(pmeGPU);
 
