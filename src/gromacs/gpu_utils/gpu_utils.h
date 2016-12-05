@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -152,6 +152,11 @@ gmx_bool free_cuda_gpu(int CUDA_FUNC_ARGUMENT(mygpu),
                        char *CUDA_FUNC_ARGUMENT(result_str),
                        const gmx_gpu_info_t *CUDA_FUNC_ARGUMENT(gpu_info),
                        const gmx_gpu_opt_t *CUDA_FUNC_ARGUMENT(gpu_opt)) CUDA_FUNC_TERM_WITH_RETURN(TRUE)
+
+/*! \brief Sets the CUDA GPU with the device ID \p dev_id to be used.
+ */
+CUDA_FUNC_QUALIFIER
+void set_current_cuda_gpu_device_id(int CUDA_FUNC_ARGUMENT(dev_id)) CUDA_FUNC_TERM
 
 /*! \brief Returns the device ID of the CUDA GPU currently in use.
  *

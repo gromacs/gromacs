@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -752,6 +752,11 @@ int get_gpu_device_id(const gmx_gpu_info_t *gpu_info,
     assert(idx >= 0 && idx < gpu_opt->n_dev_use);
 
     return gpu_info->gpu_dev[gpu_opt->dev_use[idx]].id;
+}
+
+void set_current_cuda_gpu_device_id(int dev_id)
+{
+    CU_RET_ERR(cudaSetDevice(dev_id), "cudaSetDevice failed");
 }
 
 int get_current_cuda_gpu_device_id(void)

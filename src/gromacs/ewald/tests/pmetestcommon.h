@@ -46,12 +46,15 @@
 #include <map>
 #include <vector>
 
+#include <gtest/gtest.h>
+
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme-gpu-internal.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/unique_cptr.h"
 
-struct t_inputrec;
+#include "testhardwarecontexts.h"
 
 namespace gmx
 {
@@ -69,12 +72,6 @@ typedef std::vector<RVec> CoordinatesVector;
 typedef ArrayRef<RVec> ForcesVector;
 //! Gridline indices
 typedef ConstArrayRef<IVec> GridLineIndicesVector;
-//! Type of spline data
-enum class PmeSplineDataType
-{
-    Values,      // theta
-    Derivatives, // dtheta
-};
 /*! \brief Spline parameters (theta or dtheta).
  * A reference to a single dimension's spline data; this means (atomCount * pmeOrder) values or derivatives.
  */
@@ -97,11 +94,6 @@ typedef SparseGridValuesOutput<real> SparseRealGridValuesOutput;
 typedef SparseGridValuesOutput<t_complex> SparseComplexGridValuesOutput;
 //! TODO: make proper C++ matrix for the whole Gromacs, get rid of this
 typedef std::array<real, DIM * DIM> Matrix3x3;
-//! PME code path being tested
-enum class CodePath
-{
-    CPU,    // serial CPU code
-};
 //! PME gathering input forces treatment
 enum class PmeGatherInputHandling
 {
@@ -123,14 +115,21 @@ enum class GridOrdering
 //! PME solver results - reciprocal energy and virial
 typedef std::tuple<real, Matrix3x3> PmeSolveOutput;
 
+// Misc.
+
+//! Tells if this generally valid PME input is supported for this mode
+bool pmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode);
+
 // PME stages
 
 //! Simple PME initialization based on input, no atom data
 PmeSafePointer pmeInitEmpty(const t_inputrec *inputRec,
+                            CodePath mode = CodePath::CPU,
                             const Matrix3x3 &box = {{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}},
                             real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f);
 //! PME initialization with atom data and system box
 PmeSafePointer pmeInitWithAtoms(const t_inputrec         *inputRec,
+                                CodePath                  mode,
                                 const CoordinatesVector  &coordinates,
                                 const ChargesVector      &charges,
                                 const Matrix3x3          &box
@@ -145,6 +144,8 @@ void pmePerformSolve(const gmx_pme_t *pme, CodePath mode,
 //! PME force gathering
 void pmePerformGather(gmx_pme_t *pme, CodePath mode,
                       PmeGatherInputHandling inputTreatment, ForcesVector &forces);
+//! PME test finalization before fetching the outputs
+void pmeFinalizeTest(const gmx_pme_t *pme, CodePath mode);
 
 // PME state setters
 
