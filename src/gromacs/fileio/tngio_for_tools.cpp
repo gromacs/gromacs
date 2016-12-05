@@ -840,7 +840,7 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
     {
         gmx_file("Cannot read next frame of TNG file");
     }
-    snew(*values, sizeof(real) * *nValuesPerFrame * *nAtoms);
+    srenew(*values, sizeof(real) * *nValuesPerFrame * *nAtoms);
     convert_array_to_real_array(data,
                                 *values,
                                 getDistanceScaleFactor(input),
