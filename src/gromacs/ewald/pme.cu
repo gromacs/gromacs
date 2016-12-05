@@ -516,3 +516,10 @@ void pme_gpu_destroy_3dfft(const pme_gpu_t *pmeGPU)
 {
     pmeGPU->archSpecific->pfft_setup_gpu.resize(0);
 }
+
+//FIXME
+void myInitGpu(int gpuid)
+{
+    cudaError_t stat = cudaSetDevice(gpuid);
+    CU_RET_ERR(stat, "Failed CUDA GPU init");
+}

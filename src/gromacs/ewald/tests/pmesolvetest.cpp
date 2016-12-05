@@ -129,7 +129,7 @@ class PmeSolveTest : public ::testing::TestWithParam<SolveInputParameters>
 
                 /* Running the test */
 
-                PmeSafePointer pmeSafe = PmeInitEmpty(inputRec, box, ewaldCoeff_q, ewaldCoeff_lj);
+                PmeSafePointer pmeSafe = PmeInitEmpty(inputRec, box, ewaldCoeff_q, ewaldCoeff_lj, mode.first);
 
                 PmeSetComplexGrid(pmeSafe, mode.first, nonZeroGridValues);
 

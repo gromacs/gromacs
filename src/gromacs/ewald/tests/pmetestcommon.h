@@ -43,18 +43,54 @@
 #define GMX_EWALD_PME_TEST_COMMON_H
 
 #include <array>
+#include <list>
 #include <map>
 #include <vector>
 
+#include <gtest/gtest.h>
+
 #include "gromacs/ewald/pme.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/math/gmxcomplex.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/unique_cptr.h"
 
-struct t_inputrec;
+//FIXME included for contexts
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/ewald/pme-gpu-internal.h"
 
 namespace gmx
 {
+
+//! An interface to describe a hardware context
+class ITestHardwareContext
+{
+    public:
+        //! Activates the context
+        virtual void activate() = 0;
+        //! Gets a human-readable context description line
+        virtual std::string getDescription() = 0;
+};
+
+//! A default empty context - should be used when we don't actually have any differing contexts
+class EmptyTestHardwareContext : public ITestHardwareContext
+{
+    public:
+        void activate(){}
+        std::string getDescription() {return std::string(""); }
+};
+
+//! A GPU context
+class GpuTestHardwareContext : public ITestHardwareContext
+{
+    // a GPU id - such as CUDA device id
+    int id_;
+    public:
+        GpuTestHardwareContext(int id) {id_ = id; }
+        void activate(){myInitGpu(id_); }
+        std::string getDescription() {return formatString("GPU %d", id_); } //TODO maybe somethign from gpuutils
+};
 
 // Convenience typedefs
 //! A safe pointer type for PME.
@@ -81,21 +117,22 @@ typedef std::array<real, DIM * DIM> Matrix3x3;
 enum class PmeCodePath
 {
     CPU, // serial CPU code
+    CUDA
 };
+//! A list of hardware contexts
+typedef std::list<std::shared_ptr<ITestHardwareContext> > TestHardwareContexts;
 //! Type of spline data
 enum class PmeSplineDataType
 {
     Values,      // theta
     Derivatives, // dtheta
 };
-
 //! PME solver type
 enum class PmeSolveAlgorithm
 {
     Normal,
     LennardJones,
 };
-
 //! PME gathering input forces treatment
 enum class PmeGatherInputHandling
 {
@@ -103,18 +140,59 @@ enum class PmeGatherInputHandling
     ReduceWith,
 };
 
+// Misc.
+
+//! \internal \brief This class performs one-time test initialization (enumerating the hardware)
+class PmeTestEnvironment : public ::testing::Environment
+{
+    private:
+        //! General hardware info
+        unique_cptr<gmx_hw_info_t, gmx_hardware_info_free> hardwareInfo_;
+        //TODO: Should gpu_options live here as well? Storing gmx_gpu_opt_t is wrong (runtime per-test-case info)!
+        //! GPU assignment information
+        std::unique_ptr<gmx_gpu_opt_t>              gpuOptions_;
+        //! Dummy communication structure which the tests do not really care about currently
+        unique_cptr<t_commrec, done_commrec>        commrec_;
+        //! Storage of hardware contexts
+        std::map<PmeCodePath, TestHardwareContexts> hardwareContextsByMode_;
+
+        //! Simple GPU initialization, allowing for PME to work on GPU
+        void hardwareInit();
+
+    public:
+        //! Default
+        ~PmeTestEnvironment() = default; //destryoing contexts?
+        //! Is called once to query the hardware
+        void SetUp();
+        //! Get hardware information
+        const gmx_hw_info_t *getHardwareInfo(){return hardwareInfo_.get(); }
+        //! Get GPU information
+        const gmx_gpu_opt_t *getGpuOptions(){return gpuOptions_.get(); }
+        //! Get hardware contexts for given code path
+        const TestHardwareContexts &getHardwareContexts(PmeCodePath mode){return hardwareContextsByMode_.at(mode); }
+};
+
+/*! \brief
+ * Returns all available contexts for given code path.
+ * Currently returns single empty context for CPU, and CUDA contexts for all visible CUDA-capable GPU's.
+ */
+const TestHardwareContexts &GetContextsForMode(PmeCodePath mode);
+//! Tells if this generally valid PME input is supported for this mode
+bool PmeSupportsInputForMode(const t_inputrec *inputRec, PmeCodePath mode);
+
 // PME stages
 
 //! Simple PME initialization based on input, no atom data
 PmeSafePointer PmeInitEmpty(const t_inputrec *inputRec,
                             const Matrix3x3 &box = {{1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}},
-                            real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f);
+                            real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f,
+                            PmeCodePath mode = PmeCodePath::CPU);
 //! PME initialization with atom data
 PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
+                                PmeCodePath              mode,
                                 const CoordinatesVector &coordinates,
                                 const ChargesVector     &charges,
-                                const Matrix3x3         &box
-                                );
+                                const Matrix3x3         &box);
 //! PME spline computation and charge spreading
 void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
                                bool computeSplines, bool spreadCharges);
@@ -142,7 +220,6 @@ void PmeSetComplexGrid(const PmeSafePointer          &pmeSafe,
                        const SparseComplexGridValues &gridValues);
 
 // PME stage outputs
-
 //! Fetching the spline computation outputs of PmePerformSplineAndSpread()
 void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
                            SplineParamsVector &splineValues,

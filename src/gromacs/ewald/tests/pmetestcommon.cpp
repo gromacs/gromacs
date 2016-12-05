@@ -45,19 +45,72 @@
 
 #include <cstring>
 
-#include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-gather.h"
+#include "gromacs/ewald/pme-gpu-internal.h"
 #include "gromacs/ewald/pme-grid.h"
 #include "gromacs/ewald/pme-internal.h"
 #include "gromacs/ewald/pme-solve.h"
 #include "gromacs/ewald/pme-spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/hardwareassign.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/invertmatrix.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/loggerbuilder.h"
 
 namespace gmx
 {
+//! This constructs the test environment
+PmeTestEnvironment * const pmeEnv = (PmeTestEnvironment *)::testing::AddGlobalTestEnvironment(new PmeTestEnvironment);
+
+//! Simple hardware initialization
+void PmeTestEnvironment::hardwareInit()
+{
+    commrec_.reset(init_commrec());
+    gmx_init_intranode_counters(commrec_.get());
+    gpuOptions_.reset(new gmx_gpu_opt_t {});
+    LoggerBuilder builder;
+    LoggerOwner   logOwner(builder.build());
+    MDLogger      log(logOwner.logger());
+    hardwareInfo_.reset(gmx_detect_hardware(log, commrec_.get(), true));
+    pick_compatible_gpus(&hardwareInfo_.get()->gpu_info, gpuOptions_.get());
+    gmx_select_rank_gpu_ids(log, commrec_.get(), &hardwareInfo_.get()->gpu_info, false, gpuOptions_.get());
+}
+
+void PmeTestEnvironment::SetUp()
+{
+    auto emptyContext = std::make_shared<EmptyTestHardwareContext>();
+    hardwareContextsByMode_[PmeCodePath::CPU]  = {emptyContext};
+
+#if GMX_GPU == GMX_GPU_CUDA
+    hardwareInit();  // TODO - move this line out of conditional, when gmx_select_gpu_ids() stops failing in CPU-only reference build
+    TestHardwareContexts gpuContexts;
+    for (ssize_t i = 0; i < gpuOptions_->n_dev_compatible; i++)
+    {
+        auto gpuContext = std::make_shared<GpuTestHardwareContext>(GpuTestHardwareContext(gpuOptions_->dev_compatible[i]));
+        gpuContexts.push_back(gpuContext);
+    }
+
+    hardwareContextsByMode_[PmeCodePath::CUDA] = gpuContexts;
+    //TODO elimintae conditionals in test because empty for loop?
+#endif
+}
+
+const TestHardwareContexts &GetContextsForMode(PmeCodePath mode)
+{
+    return pmeEnv->getHardwareContexts(mode);
+}
+
+bool PmeSupportsInputForMode(const t_inputrec *inputRec, PmeCodePath mode)
+{
+    const bool notImplemented = (mode == PmeCodePath::CUDA) && (inputRec->pme_order != 4);
+    // This conditional copies some of the logic from pme_gpu_check_restrictions().
+    // Duplicating the constraints here emphasizes them (changing them requires changing the test as well).
+    return !notImplemented;
+}
 
 //! Getting local PME real grid pointer for test I/O
 real *PmeGetRealGrid(const PmeSafePointer &pmeSafe)
@@ -115,14 +168,22 @@ template<> void PmeGetGridAndSizes<t_complex>(const PmeSafePointer &pmeSafe, t_c
 }
 
 //! PME initialization - internal
-PmeSafePointer PmeInitInternal(const t_inputrec *inputRec, size_t atomCount,
+PmeSafePointer PmeInitInternal(const t_inputrec         *inputRec,
+                               PmeCodePath               mode,
+                               size_t                    atomCount,
                                const Matrix3x3          &box,
-                               real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f
+                               real                      ewaldCoeff_q = 1.0f,
+                               real                      ewaldCoeff_lj = 1.0f
                                )
 {
-    gmx_pme_t *pmeDataRaw = NULL;
-    gmx_pme_init(&pmeDataRaw, NULL, 1, 1, inputRec,
-                 atomCount, FALSE, FALSE, TRUE, ewaldCoeff_q, ewaldCoeff_lj, 1, false, nullptr);
+    gmx_pme_t           *pmeDataRaw   = nullptr;
+    const bool           useGpu       = (mode == PmeCodePath::CPU) ? false : true;
+
+    const gmx_hw_info_t *hardwareInfo = pmeEnv->getHardwareInfo();
+    const gmx_gpu_opt_t *gpuOptions   = pmeEnv->getGpuOptions();
+
+    gmx_pme_init(&pmeDataRaw, nullptr, 1, 1, inputRec, atomCount, false, false, true,
+                 ewaldCoeff_q, ewaldCoeff_lj, 1, useGpu, nullptr, hardwareInfo, gpuOptions);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
@@ -143,26 +204,55 @@ PmeSafePointer PmeInitInternal(const t_inputrec *inputRec, size_t atomCount,
 PmeSafePointer PmeInitEmpty(const t_inputrec         *inputRec,
                             const Matrix3x3          &box,
                             real                      ewaldCoeff_q,
-                            real                      ewaldCoeff_lj)
+                            real                      ewaldCoeff_lj,
+                            PmeCodePath               mode )
 {
-    return PmeInitInternal(inputRec, 0, box, ewaldCoeff_q, ewaldCoeff_lj);
-    // hiding the fact that PME actually needs to know the number of atoms in advance
+    return PmeInitInternal(inputRec, mode, 0, box, ewaldCoeff_q, ewaldCoeff_lj);
+    // atomCount == 0 is hiding the fact that PME actually needs to know the number of atoms in advance
 }
 
-//! PME initialization with atom data
-PmeSafePointer PmeInitWithAtoms(const t_inputrec         *inputRec,
-                                const CoordinatesVector  &coordinates,
-                                const ChargesVector      &charges,
-                                const Matrix3x3          &box
+//! PME initialization with atom data and system box
+PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
+                                PmeCodePath              mode,
+                                const CoordinatesVector &coordinates,
+                                const ChargesVector     &charges,
+                                const Matrix3x3         &box
                                 )
 {
     const size_t    atomCount = coordinates.size();
     GMX_RELEASE_ASSERT(atomCount == charges.size(), "Mismatch in atom data");
-    PmeSafePointer  pmeSafe = PmeInitInternal(inputRec, atomCount, box);
-    pme_atomcomm_t *atc     = &(pmeSafe->atc[0]);
-    atc->x           = const_cast<rvec *>(as_rvec_array(coordinates.data()));
-    atc->coefficient = const_cast<real *>(charges.data());
-    /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
+
+    PmeSafePointer  pmeSafe = PmeInitInternal(inputRec, mode, atomCount, box);
+    pme_atomcomm_t *atc     = nullptr;
+
+    // TODO get rid of this with proper matrix type
+    matrix boxTemp;
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            boxTemp[i][j] = box[i * DIM + j];
+        }
+    }
+
+    switch (mode)
+    {
+        case PmeCodePath::CPU:
+            atc              = &(pmeSafe->atc[0]);
+            atc->x           = const_cast<rvec *>(as_rvec_array(coordinates.data()));
+            atc->coefficient = const_cast<real *>(charges.data());
+            /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
+            break;
+
+        case PmeCodePath::CUDA:
+            pme_gpu_set_testing(pmeSafe->gpu, true);
+            gmx_pme_reinit_atoms(pmeSafe.get(), atomCount, charges.data());
+            pme_gpu_start_step(pmeSafe->gpu, boxTemp, as_rvec_array(coordinates.data()));
+            break;
+
+        default:
+            GMX_THROW(InternalError("Test not implemented for this mode"));
+    }
 
     return pmeSafe;
 }
@@ -176,7 +266,7 @@ void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
     const size_t    gridIndex                    = 0;
     const bool      computeSplinesForZeroCharges = true;
     real           *fftgrid                      = spreadCharges ? pmeSafe->fftgrid[gridIndex] : nullptr;
-
+    real           *h_grid                       = pmeSafe->pmegrid[gridIndex].grid.grid;
     switch (mode)
     {
         case PmeCodePath::CPU:
@@ -184,13 +274,17 @@ void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
                            fftgrid, computeSplinesForZeroCharges, gridIndex);
             if (spreadCharges && !pmeSafe->bUseThreads)
             {
-                wrap_periodic_pmegrid(pmeUnsafe, pmeSafe->pmegrid[gridIndex].grid.grid);
-                copy_pmegrid_to_fftgrid(pmeUnsafe, pmeSafe->pmegrid[gridIndex].grid.grid, fftgrid, gridIndex);
+                wrap_periodic_pmegrid(pmeUnsafe, h_grid);
+                copy_pmegrid_to_fftgrid(pmeUnsafe, h_grid, fftgrid, gridIndex);
             }
             break;
 
+        case PmeCodePath::CUDA:
+            pme_gpu_spread(pmeSafe->gpu, gridIndex, h_grid, computeSplines, spreadCharges);
+            break;
+
         default:
-            GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
+            GMX_THROW(InternalError("Test not implemented for this mode"));
     }
 }
 
@@ -390,6 +484,7 @@ void PmeGetGrid(const PmeSafePointer        &pmeSafe,
     PmeGetGridAndSizes<ValueType>(pmeSafe, grid, gridSize, paddedGridSize);
     switch (mode)
     {
+        case PmeCodePath::CUDA:
         case PmeCodePath::CPU:
             gridValues.clear();
 
@@ -429,6 +524,12 @@ void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
     const size_t          threadIndex = 0; // relying on running single threaded on CPU
     switch (mode)
     {
+        case PmeCodePath::CUDA:
+            pme_gpu_synchronize(pmeSafe->gpu);
+            pme_gpu_sync_spline_atom_data(pmeSafe->gpu);
+            pme_gpu_transform_spline_atom_data_for_host(pmeSafe->gpu, atc);
+        // intentional absence of break - the atom data has been copied into PME CPU buffers with proper layout
+
         case PmeCodePath::CPU:
             gridLineIndices.assign(atc->idx, atc->idx + atomCount);
             // spline values - XX...XXYY...YYZZ...ZZ
@@ -452,6 +553,12 @@ void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 void PmeFetchOutputsSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
                            SparseRealGridValues &gridValues)
 {
+    if (mode == PmeCodePath::CUDA)
+    {
+        pme_gpu_synchronize(pmeSafe->gpu);
+        pme_gpu_sync_spread_grid(pmeSafe->gpu);
+    }
+
     PmeGetGrid<real>(pmeSafe, mode, gridValues);
 }
 
@@ -469,7 +576,6 @@ void PmeFetchOutputsSolve(const PmeSafePointer &pmeSafe, PmeCodePath mode,
     switch (mode)
     {
         case PmeCodePath::CPU:
-
             switch (method)
             {
                 case PmeSolveAlgorithm::Normal:

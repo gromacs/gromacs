@@ -742,7 +742,6 @@ int gmx_pme_init(struct gmx_pme_t   **pmedata,
 
     pme->gpu    = pmeGPU; /* Carrying over the single GPU structure */
     pme->useGPU = bPMEGPU;
-    GMX_ASSERT(!bPMEGPU, "PME GPU is disabled for now");
 
     /* The required size of the interpolation grid, including overlap.
      * The allocated size (pmegrid_n?) might be slightly larger.

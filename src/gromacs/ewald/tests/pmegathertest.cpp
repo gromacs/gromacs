@@ -119,7 +119,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                                           ));
 
                 /* Running the test */
-                PmeSafePointer  pmeSafe = PmeInitWithAtoms(inputRec, coordinatesDummy, charges, box);
+                PmeSafePointer  pmeSafe = PmeInitWithAtoms(inputRec, mode.first, coordinatesDummy, charges, box);
 
                 PmeSetRealGrid(pmeSafe, mode.first, nonZeroGridValues);
                 PmeSetGridLineIndices(pmeSafe, mode.first, gridLineIndices);
