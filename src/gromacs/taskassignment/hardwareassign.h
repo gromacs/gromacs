@@ -74,6 +74,15 @@ class MDLogger;
  */
 std::vector<int> parseGpuTaskAssignment(const std::string &gpuTaskAssignment);
 
+/*! \brief Filter the compatible GPUs
+ *
+ * This function filters gpu_info.gpu_dev for compatible GPUs based
+ * on the previously run compatibility tests.
+ *
+ * \param[in]     gpu_info    Information detected about GPUs, including compatibility
+ * \return                    vector of IDs of GPUs already recorded as compatible */
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t &gpu_info);
+
 /*! \brief Assign PP ranks to valid GPU IDs.
  *
  * Will return a validated mapping from PP ranks (ie tasks that can
