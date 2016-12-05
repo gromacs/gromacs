@@ -53,13 +53,13 @@
 
 #include <string>
 
-#include "gromacs/ewald/pme-gpu.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "pme-gpu.h"
 #include "pme-grid.h"
 #include "pme-internal.h"
 
@@ -320,7 +320,7 @@ void pme_gpu_reinit(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_o
         pme->useGPU = pme_gpu_check_restrictions(pme, error);
         if (!pme->useGPU)
         {
-            gmx_fatal(FARGS, error.c_str());
+            GMX_THROW(gmx::NotImplementedError(error));
         }
 
         pme->gpu       = new pme_gpu_t();
@@ -339,6 +339,7 @@ void pme_gpu_reinit(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_o
         pmeGPU->settings.needToUpdateAtoms = true;
         /* For the delayed atom data init hack */
 
+        pme_gpu_set_testing(pmeGPU, false);
         pme_gpu_init_specific(pmeGPU, hwinfo, gpu_opt);
         pme_gpu_init_sync_events(pmeGPU);
         pme_gpu_init_timings(pmeGPU);
@@ -354,7 +355,6 @@ void pme_gpu_reinit(gmx_pme_t *pme, const gmx_hw_info_t *hwinfo, const gmx_gpu_o
         pme_gpu_kernel_params_base_t *kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGPU);
         kernelParamsPtr->constants.elFactor = ONE_4PI_EPS0 / pmeGPU->common->epsilon_r;
     }
-
     pme_gpu_reinit_grids(pmeGPU);
     pme_gpu_reinit_step(pmeGPU);
 }

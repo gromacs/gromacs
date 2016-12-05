@@ -41,25 +41,75 @@
  */
 #include "gmxpre.h"
 
+#include <gtest/gtest.h>
+
 #include "pmetestcommon.h"
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme-gpu-internal.h"
 #include "gromacs/ewald/pme-grid.h"
 #include "gromacs/ewald/pme-internal.h"
 #include "gromacs/ewald/pme-spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/invertmatrix.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/loggerbuilder.h"
 
 namespace gmx
 {
-//! PME initialization - internal
-PmeSafePointer PmeInitInternal(const t_inputrec *inputRec, size_t atomCount)
+//! This constructs the test environment
+PmeTestEnvironment * const pmeEnv = (PmeTestEnvironment * const)::testing::AddGlobalTestEnvironment(new PmeTestEnvironment);
+
+//! Simple hardware initialization
+void PmeTestEnvironment::hardwareInit()  //(gmx_hw_info_t *&hardwareInfo, gmx_gpu_opt_t *&gpuOptions)
 {
-    gmx_pme_t *pmeDataRaw = NULL;
-    gmx_pme_init(&pmeDataRaw, NULL, 1, 1, inputRec,
-                 atomCount, FALSE, FALSE, TRUE, 0.0, 0.0, 1, false, nullptr);
+    t_commrec *commrec = init_commrec(); // TODO: delete! not just this
+    gmx_init_intranode_counters(commrec);
+    //gmx_hw_opt_t *hardwareOptions = new gmx_hw_opt_t();
+    gpuOptions_.reset(new gmx_gpu_opt_t {}); //&hardwareOptions->gpu_opt;
+    LoggerBuilder builder;
+    LoggerOwner   logOwner(builder.build());
+    MDLogger      log(logOwner.logger());
+    hardwareInfo_.reset(gmx_detect_hardware(log, commrec, true));
+    pick_compatible_gpus(&hardwareInfo_.get()->gpu_info, gpuOptions_.get());
+    gmx_select_gpu_ids(log, commrec, &hardwareInfo_.get()->gpu_info, false, gpuOptions_.get());
+    // TODO: how do we make sure which GPUs are being tested?
+}
+
+void PmeTestEnvironment::SetUp()
+{
+#if GMX_GPU == GMX_GPU_CUDA //TODO remove conditional?
+    hardwareInit();
+#endif
+}
+
+bool PmeSupportsInputForMode(const t_inputrec *inputRec, PmeCodePath mode)
+{
+    const bool notImplemented = (mode == PmeCodePath::CUDA) && (inputRec->pme_order != 4);
+    // This conditional copies some of the logic from pme_gpu_check_restrictions().
+    // Duplicating the constraints here emphasizes them (changing them requires changing the test as well).
+    return !notImplemented;
+}
+
+//! PME initialization - internal
+PmeSafePointer PmeInitInternal(const t_inputrec *inputRec, PmeCodePath mode, size_t atomCount)
+{
+    gmx_pme_t           *pmeDataRaw   = NULL;
+    const bool           useGpu       = (mode == PmeCodePath::CPU) ? false : true;
+
+    const gmx_hw_info_t *hardwareInfo = pmeEnv->getHardwareInfo();
+    const gmx_gpu_opt_t *gpuOptions   = pmeEnv->getGpuOptions();
+
+    const real           ewaldCoeffQ = 1.0;          // TODO: ask Berk about sane default? add this to inputs?
+    gmx_pme_init(&pmeDataRaw, NULL, 1, 1, inputRec, atomCount, FALSE, FALSE, TRUE,
+                 ewaldCoeffQ, 0.0, 1, useGpu, nullptr, hardwareInfo, gpuOptions);
     PmeSafePointer pme(pmeDataRaw, gmx_pme_destroy); // taking ownership
     return pme;
 }
@@ -67,24 +117,22 @@ PmeSafePointer PmeInitInternal(const t_inputrec *inputRec, size_t atomCount)
 //! Simple PME initialization based on input, no atom data
 PmeSafePointer PmeInitEmpty(const t_inputrec *inputRec)
 {
-    return PmeInitInternal(inputRec, 0);
+    return PmeInitInternal(inputRec, PmeCodePath::CPU, 0);
     // hiding the fact that PME actually needs to know the number of atoms in advance
 }
 
 //! PME initialization with atom data and system box
 PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
+                                PmeCodePath              mode,
                                 const CoordinatesVector &coordinates,
                                 const ChargesVector     &charges,
-                                const Matrix3x3          box
+                                const Matrix3x3         &box
                                 )
 {
     const size_t    atomCount = coordinates.size();
     GMX_RELEASE_ASSERT(atomCount == charges.size(), "Mismatch in atom data");
-    PmeSafePointer  pmeSafe = PmeInitInternal(inputRec, atomCount);
-    pme_atomcomm_t *atc     = &(pmeSafe->atc[0]);
-    atc->x           = const_cast<rvec *>(as_rvec_array(coordinates.data()));
-    atc->coefficient = const_cast<real *>(charges.data());
-    /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
+    PmeSafePointer  pmeSafe = PmeInitInternal(inputRec, mode, atomCount);
+    pme_atomcomm_t *atc     = nullptr;
 
     // TODO get rid of this with proper matrix type
     matrix boxTemp;
@@ -95,7 +143,26 @@ PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
             boxTemp[i][j] = box[i * DIM + j];
         }
     }
-    gmx::invertBoxMatrix(boxTemp, pmeSafe->recipbox);
+
+    switch (mode)
+    {
+        case PmeCodePath::CPU:
+            gmx::invertBoxMatrix(boxTemp, pmeSafe->recipbox);
+            atc              = &(pmeSafe->atc[0]);
+            atc->x           = const_cast<rvec *>(as_rvec_array(coordinates.data()));
+            atc->coefficient = const_cast<real *>(charges.data());
+            /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
+            break;
+
+        case PmeCodePath::CUDA:
+            pme_gpu_set_testing(pmeSafe->gpu, true);
+            gmx_pme_reinit_atoms(pmeSafe.get(), atomCount, charges.data());
+            pme_gpu_start_step(pmeSafe->gpu, boxTemp, as_rvec_array(coordinates.data()));
+            break;
+
+        default:
+            GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
+    }
 
     return pmeSafe;
 }
@@ -121,11 +188,34 @@ void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
             }
             break;
 
+        case PmeCodePath::CUDA:
+            pme_gpu_spread(pmeUnsafe, atc, gridIndex, &pmeSafe->pmegrid[gridIndex].grid, computeSplines, spreadCharges);
+            // TODO clean up unused stuff such as atc?
+            break;
+
         default:
             GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
-            // TODO: there could be 2 GPU modes - separate spline and spread, and fused.
-            // In the fused case everything faster in a single kernel.
-            // Everything still ends up on the host in the end - have to make sure of that!
+    }
+}
+
+void pme_gpu_transform_spline_data_to_host(size_t atomCount, size_t pmeOrder, splinevec h_splineValues, float *d_splineValues) // what to do with this?
+{
+    // FIXME - this is PME_SPREADGATHER_ATOMS_PER_WARP from pme.cuh
+    const size_t atomsPerWarp = 2;
+    for (size_t atomIndex = 0; atomIndex < atomCount; atomIndex++)
+    {
+        size_t atomWarpIndex = atomIndex % 2;
+        size_t warpIndex     = atomIndex / 2;
+        for (size_t orderIndex = 0; orderIndex < pmeOrder; orderIndex++)
+        {
+            for (size_t dimIndex = 0; dimIndex < DIM; dimIndex++)
+            {
+                const size_t gpuValueIndex = ((pmeOrder * warpIndex + orderIndex) * DIM + dimIndex) * atomsPerWarp + atomWarpIndex;
+                const size_t cpuValueIndex = (/*dimIndex * atomCount + */ atomIndex) * pmeOrder + orderIndex; //dimIndex is accounted for below
+                GMX_RELEASE_ASSERT(cpuValueIndex < atomCount * pmeOrder, "wtf");
+                h_splineValues[dimIndex][cpuValueIndex] = d_splineValues[gpuValueIndex];
+            }
+        }
     }
 }
 
@@ -142,6 +232,12 @@ void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
     const size_t          threadIndex = 0; // relying on running single threaded on CPU
     switch (mode)
     {
+        case PmeCodePath::CUDA:
+            pme_gpu_sync_spline_atom_data(pmeSafe->gpu);
+            pme_gpu_transform_spline_data_to_host(atomCount, pmeOrder, atc->spline[threadIndex].theta, pmeSafe->gpu->staging.h_theta);
+            pme_gpu_transform_spline_data_to_host(atomCount, pmeOrder, atc->spline[threadIndex].dtheta, pmeSafe->gpu->staging.h_dtheta);
+        // intentional absence of break - the atom data has been copied into atc buffers and rearranged, corresponding to the CPU code
+
         case PmeCodePath::CPU:
             gridLineIndices.assign(atc->idx, atc->idx + atomCount);
             // spline values - XX...XXYY...YYZZ...ZZ
@@ -170,9 +266,12 @@ void PmeFetchOutputsSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 
     switch (mode)
     {
+        case PmeCodePath::CUDA:
+            pme_gpu_sync_spread_grid(pmeSafe->gpu);
+        // intentional absence of break - the grid has been copied into pmeSafe->fftgrid, corresponding to the CPU code
+
         case PmeCodePath::CPU:
             gridValues.clear();
-
             gmx_parallel_3dfft_real_limits(pmeSafe->pfft_setup[gridIndex], gridSize, gridOffsetUnused, paddedGridSize);
             for (int ix = 0; ix < gridSize[XX]; ix++)
             {
