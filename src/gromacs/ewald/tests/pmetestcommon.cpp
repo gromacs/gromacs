@@ -45,19 +45,29 @@
 
 #include <cstring>
 
-#include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme-gather.h"
+#include "gromacs/ewald/pme-gpu-internal.h"
 #include "gromacs/ewald/pme-grid.h"
 #include "gromacs/ewald/pme-internal.h"
 #include "gromacs/ewald/pme-solve.h"
 #include "gromacs/ewald/pme-spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/invertmatrix.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
+namespace test
+{
+bool PmeSupportsInputForMode(const t_inputrec *inputRec, CodePath mode)
+{
+    const bool notImplemented = (mode == CodePath::CUDA) && (inputRec->pme_order != 4);
+    // This conditional copies some of the logic from pme_gpu_check_restrictions().
+    // Duplicating the constraints here emphasizes them (changing them requires changing the test as well).
+    return !notImplemented;
+}
 
 //! Getting local PME real grid pointer for test I/O
 real *PmeGetRealGrid(const PmeSafePointer &pmeSafe)
@@ -115,14 +125,22 @@ template<> void PmeGetGridAndSizes<t_complex>(const PmeSafePointer &pmeSafe, t_c
 }
 
 //! PME initialization - internal
-PmeSafePointer PmeInitInternal(const t_inputrec *inputRec, size_t atomCount,
+PmeSafePointer PmeInitInternal(const t_inputrec         *inputRec,
+                               CodePath                  mode,
+                               size_t                    atomCount,
                                const Matrix3x3          &box,
-                               real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f
+                               real                      ewaldCoeff_q = 1.0f,
+                               real                      ewaldCoeff_lj = 1.0f
                                )
 {
-    gmx_pme_t *pmeDataRaw = NULL;
-    gmx_pme_init(&pmeDataRaw, NULL, 1, 1, inputRec,
-                 atomCount, FALSE, FALSE, TRUE, ewaldCoeff_q, ewaldCoeff_lj, 1, false, nullptr);
+    gmx_pme_t           *pmeDataRaw   = nullptr;
+    const bool           useGpu       = (mode == CodePath::CPU) ? false : true;
+
+    const gmx_hw_info_t *hardwareInfo = pmeEnv->getHardwareInfo();
+    const gmx_gpu_opt_t *gpuOptions   = pmeEnv->getGpuOptions();
+
+    gmx_pme_init(&pmeDataRaw, nullptr, 1, 1, inputRec, atomCount, false, false, true,
+                 ewaldCoeff_q, ewaldCoeff_lj, 1, useGpu, nullptr, hardwareInfo, gpuOptions);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
@@ -143,32 +161,61 @@ PmeSafePointer PmeInitInternal(const t_inputrec *inputRec, size_t atomCount,
 PmeSafePointer PmeInitEmpty(const t_inputrec         *inputRec,
                             const Matrix3x3          &box,
                             real                      ewaldCoeff_q,
-                            real                      ewaldCoeff_lj)
+                            real                      ewaldCoeff_lj,
+                            CodePath                  mode )
 {
-    return PmeInitInternal(inputRec, 0, box, ewaldCoeff_q, ewaldCoeff_lj);
-    // hiding the fact that PME actually needs to know the number of atoms in advance
+    return PmeInitInternal(inputRec, mode, 0, box, ewaldCoeff_q, ewaldCoeff_lj);
+    // atomCount == 0 is hiding the fact that PME actually needs to know the number of atoms in advance
 }
 
-//! PME initialization with atom data
-PmeSafePointer PmeInitWithAtoms(const t_inputrec         *inputRec,
-                                const CoordinatesVector  &coordinates,
-                                const ChargesVector      &charges,
-                                const Matrix3x3          &box
+//! PME initialization with atom data and system box
+PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
+                                CodePath                 mode,
+                                const CoordinatesVector &coordinates,
+                                const ChargesVector     &charges,
+                                const Matrix3x3         &box
                                 )
 {
     const size_t    atomCount = coordinates.size();
     GMX_RELEASE_ASSERT(atomCount == charges.size(), "Mismatch in atom data");
-    PmeSafePointer  pmeSafe = PmeInitInternal(inputRec, atomCount, box);
-    pme_atomcomm_t *atc     = &(pmeSafe->atc[0]);
-    atc->x           = const_cast<rvec *>(as_rvec_array(coordinates.data()));
-    atc->coefficient = const_cast<real *>(charges.data());
-    /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
+
+    PmeSafePointer  pmeSafe = PmeInitInternal(inputRec, mode, atomCount, box);
+    pme_atomcomm_t *atc     = nullptr;
+
+    // TODO get rid of this with proper matrix type
+    matrix boxTemp;
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            boxTemp[i][j] = box[i * DIM + j];
+        }
+    }
+
+    switch (mode)
+    {
+        case CodePath::CPU:
+            atc              = &(pmeSafe->atc[0]);
+            atc->x           = const_cast<rvec *>(as_rvec_array(coordinates.data()));
+            atc->coefficient = const_cast<real *>(charges.data());
+            /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
+            break;
+
+        case CodePath::CUDA:
+            pme_gpu_set_testing(pmeSafe->gpu, true);
+            gmx_pme_reinit_atoms(pmeSafe.get(), atomCount, charges.data());
+            pme_gpu_start_step(pmeSafe->gpu, boxTemp, as_rvec_array(coordinates.data()));
+            break;
+
+        default:
+            GMX_THROW(InternalError("Test not implemented for this mode"));
+    }
 
     return pmeSafe;
 }
 
 //! PME spline calculation and charge spreading
-void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, CodePath mode,
                                bool computeSplines, bool spreadCharges)
 {
     gmx_pme_t      *pmeUnsafe                    = pmeSafe.get();
@@ -176,26 +223,30 @@ void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
     const size_t    gridIndex                    = 0;
     const bool      computeSplinesForZeroCharges = true;
     real           *fftgrid                      = spreadCharges ? pmeSafe->fftgrid[gridIndex] : nullptr;
-
+    real           *h_grid                       = pmeSafe->pmegrid[gridIndex].grid.grid;
     switch (mode)
     {
-        case PmeCodePath::CPU:
+        case CodePath::CPU:
             spread_on_grid(pmeUnsafe, atc, &pmeSafe->pmegrid[gridIndex], computeSplines, spreadCharges,
                            fftgrid, computeSplinesForZeroCharges, gridIndex);
             if (spreadCharges && !pmeSafe->bUseThreads)
             {
-                wrap_periodic_pmegrid(pmeUnsafe, pmeSafe->pmegrid[gridIndex].grid.grid);
-                copy_pmegrid_to_fftgrid(pmeUnsafe, pmeSafe->pmegrid[gridIndex].grid.grid, fftgrid, gridIndex);
+                wrap_periodic_pmegrid(pmeUnsafe, h_grid);
+                copy_pmegrid_to_fftgrid(pmeUnsafe, h_grid, fftgrid, gridIndex);
             }
             break;
 
+        case CodePath::CUDA:
+            pme_gpu_spread(pmeSafe->gpu, gridIndex, h_grid, computeSplines, spreadCharges);
+            break;
+
         default:
-            GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
+            GMX_THROW(InternalError("Test not implemented for this mode"));
     }
 }
 
 //! PME solving
-void PmePerformSolve(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmePerformSolve(const PmeSafePointer &pmeSafe, CodePath mode,
                      PmeSolveAlgorithm method, real cellVolume)
 {
     t_complex      *grid                   = PmeGetComplexGrid(pmeSafe);
@@ -204,7 +255,7 @@ void PmePerformSolve(const PmeSafePointer &pmeSafe, PmeCodePath mode,
     const size_t    threadIndex            = 0;
     switch (mode)
     {
-        case PmeCodePath::CPU:
+        case CodePath::CPU:
             switch (method)
             {
                 case PmeSolveAlgorithm::Normal:
@@ -228,7 +279,7 @@ void PmePerformSolve(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 }
 
 //! PME force gathering
-void PmePerformGather(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmePerformGather(const PmeSafePointer &pmeSafe, CodePath mode,
                       PmeGatherInputHandling inputTreatment, ForcesVector &forces)
 {
     gmx_pme_t      *pmeUnsafe               = pmeSafe.get();
@@ -242,7 +293,7 @@ void PmePerformGather(const PmeSafePointer &pmeSafe, PmeCodePath mode,
     real           *grid                    = pmeSafe->pmegrid[gridIndex].grid.grid;
     switch (mode)
     {
-        case PmeCodePath::CPU:
+        case CodePath::CPU:
             atc->f = as_rvec_array(forces.data());
             if (atc->nthread == 1)
             {
@@ -261,7 +312,7 @@ void PmePerformGather(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 }
 
 //! Setting atom spline values/derivatives to be used in spread/gather
-void PmeSetSplineData(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmeSetSplineData(const PmeSafePointer &pmeSafe, CodePath mode,
                       const SplineParamsVector &splineValues, PmeSplineDataType type)
 {
     const pme_atomcomm_t *atc         = &(pmeSafe->atc[0]);
@@ -287,7 +338,7 @@ void PmeSetSplineData(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 
     switch (mode)
     {
-        case PmeCodePath::CPU:
+        case CodePath::CPU:
             // spline values - XX...XXYY...YYZZ...ZZ
             for (int i = 0; i < DIM; i++)
             {
@@ -303,7 +354,7 @@ void PmeSetSplineData(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 }
 
 //! Setting gridline indices to be used in spread/gather
-void PmeSetGridLineIndices(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmeSetGridLineIndices(const PmeSafePointer &pmeSafe, CodePath mode,
                            const GridLineIndicesVector &gridLineIndices)
 {
     pme_atomcomm_t       *atc         = &(pmeSafe->atc[0]);
@@ -322,7 +373,7 @@ void PmeSetGridLineIndices(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 
     switch (mode)
     {
-        case PmeCodePath::CPU:
+        case CodePath::CPU:
             // incompatible IVec and ivec assignment?
             //std::copy(gridLineIndices.begin(), gridLineIndices.end(), atc->idx);
             memcpy(atc->idx, gridLineIndices.data(), atomCount * sizeof(gridLineIndices[0]));
@@ -336,7 +387,7 @@ void PmeSetGridLineIndices(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 //! Setting real or complex grid
 template<typename ValueType>
 void PmeSetGrid(const PmeSafePointer              &pmeSafe,
-                PmeCodePath                        mode,
+                CodePath                           mode,
                 const SparseGridValues<ValueType> &gridValues)
 {
     IVec       gridSize, paddedGridSize;
@@ -345,7 +396,7 @@ void PmeSetGrid(const PmeSafePointer              &pmeSafe,
 
     switch (mode)
     {
-        case PmeCodePath::CPU:
+        case CodePath::CPU:
             std::memset(grid, 0, paddedGridSize[XX] * paddedGridSize[YY] * paddedGridSize[ZZ] * sizeof(ValueType));
             for (const auto &gridValue : gridValues)
             {
@@ -365,7 +416,7 @@ void PmeSetGrid(const PmeSafePointer              &pmeSafe,
 
 //! Setting real grid to be used in gather
 void PmeSetRealGrid(const PmeSafePointer       &pmeSafe,
-                    PmeCodePath                 mode,
+                    CodePath                    mode,
                     const SparseRealGridValues &gridValues)
 {
     PmeSetGrid<real>(pmeSafe, mode, gridValues);
@@ -373,7 +424,7 @@ void PmeSetRealGrid(const PmeSafePointer       &pmeSafe,
 
 //! Setting complex grid to be used in solve
 void PmeSetComplexGrid(const PmeSafePointer          &pmeSafe,
-                       PmeCodePath                    mode,
+                       CodePath                       mode,
                        const SparseComplexGridValues &gridValues)
 {
     PmeSetGrid<t_complex>(pmeSafe, mode, gridValues);
@@ -382,7 +433,7 @@ void PmeSetComplexGrid(const PmeSafePointer          &pmeSafe,
 //! Getting real or complex grid - only non zero values
 template<typename ValueType>
 void PmeGetGrid(const PmeSafePointer        &pmeSafe,
-                PmeCodePath                  mode,
+                CodePath                     mode,
                 SparseGridValues<ValueType> &gridValues)
 {
     IVec       gridSize, paddedGridSize;
@@ -390,7 +441,8 @@ void PmeGetGrid(const PmeSafePointer        &pmeSafe,
     PmeGetGridAndSizes<ValueType>(pmeSafe, grid, gridSize, paddedGridSize);
     switch (mode)
     {
-        case PmeCodePath::CPU:
+        case CodePath::CUDA:
+        case CodePath::CPU:
             gridValues.clear();
 
             for (int ix = 0; ix < gridSize[XX]; ix++)
@@ -417,7 +469,7 @@ void PmeGetGrid(const PmeSafePointer        &pmeSafe,
 }
 
 //! Fetching the spline computation outputs of PmePerformSplineAndSpread()
-void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, CodePath mode,
                            SplineParamsVector &splineValues,
                            SplineParamsVector &splineDerivatives,
                            GridLineIndicesVector &gridLineIndices)
@@ -429,7 +481,13 @@ void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
     const size_t          threadIndex = 0; // relying on running single threaded on CPU
     switch (mode)
     {
-        case PmeCodePath::CPU:
+        case CodePath::CUDA:
+            pme_gpu_synchronize(pmeSafe->gpu);
+            pme_gpu_sync_spline_atom_data(pmeSafe->gpu);
+            pme_gpu_transform_spline_atom_data_for_host(pmeSafe->gpu, atc);
+        // intentional absence of break - the atom data has been copied into PME CPU buffers with proper layout
+
+        case CodePath::CPU:
             gridLineIndices.assign(atc->idx, atc->idx + atomCount);
             // spline values - XX...XXYY...YYZZ...ZZ
             splineValues.clear();
@@ -449,14 +507,20 @@ void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 }
 
 //! Fetching the spreading output of PmePerformSplineAndSpread()
-void PmeFetchOutputsSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmeFetchOutputsSpread(const PmeSafePointer &pmeSafe, CodePath mode,
                            SparseRealGridValues &gridValues)
 {
+    if (mode == CodePath::CUDA)
+    {
+        pme_gpu_synchronize(pmeSafe->gpu);
+        pme_gpu_sync_spread_grid(pmeSafe->gpu);
+    }
+
     PmeGetGrid<real>(pmeSafe, mode, gridValues);
 }
 
 //! Fetching the outputs of PmePerformSolve()
-void PmeFetchOutputsSolve(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+void PmeFetchOutputsSolve(const PmeSafePointer &pmeSafe, CodePath mode,
                           PmeSolveAlgorithm method,
                           SparseComplexGridValues &gridValues,
                           real &energy,
@@ -468,8 +532,7 @@ void PmeFetchOutputsSolve(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 
     switch (mode)
     {
-        case PmeCodePath::CPU:
-
+        case CodePath::CPU:
             switch (method)
             {
                 case PmeSolveAlgorithm::Normal:
@@ -498,4 +561,5 @@ void PmeFetchOutputsSolve(const PmeSafePointer &pmeSafe, PmeCodePath mode,
     }
 }
 
+}
 }
