@@ -74,18 +74,18 @@ parallel_3dfft_gpu_t::parallel_3dfft_gpu_t(const pme_gpu_t *pmeGPU)
     GMX_ASSERT(realGrid_, "Bad (null) input grid");
     complexGrid_ = (cufftComplex *)kernelParamsPtr->grid.d_fourierGrid;
 
+    cufftResult_t result;
     /* Commented code for a simple 3D grid with no padding */
     /*
-       result = cufftPlan3d(&planR2C_, ndataReal_[XX], ndataReal_[YY], ndataReal_[ZZ], CUFFT_R2C);
+       result = cufftPlan3d(&planR2C_, nDataReal_[XX], nDataReal_[YY], nDataReal_[ZZ], CUFFT_R2C);
        if (result != CUFFT_SUCCESS)
        gmx_fatal(FARGS, "cufftPlan3d R2C error %d\n", result);
 
-       result = cufftPlan3d(&planC2R_, ndataReal_[XX], ndataReal_[YY], ndataReal_[ZZ], CUFFT_C2R);
+       result = cufftPlan3d(&planC2R_, nDataReal_[XX], nDataReal_[YY], nDataReal_[ZZ], CUFFT_C2R);
        if (result != CUFFT_SUCCESS)
        gmx_fatal(FARGS, "cufftPlan3d C2R error %d\n", result);
      */
 
-    cufftResult_t             result;
     const int                 rank = 3, batch = 1;
     result = cufftPlanMany(&planR2C_, rank, nDataReal_,
                            sizeReal_, 1, gridSizeReal,

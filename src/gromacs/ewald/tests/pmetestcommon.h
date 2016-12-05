@@ -47,13 +47,50 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
+#include <gtest/gtest.h>
 
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/hardware/detecthardware.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/scoped_cptr.h"
+
+struct gmx_gpu_opt_t;
+struct gmx_hw_info_t;
 struct gmx_pme_t;
 struct t_inputrec;
 
 namespace gmx
 {
+
+//! \internal \brief This class performs one-time test initialization (enumerating the hardware)
+class PmeTestEnvironment : public ::testing::Environment
+{
+    private:
+        //! General hardware info
+        scoped_cptr<gmx_hw_info_t, gmx_hardware_info_free> hardwareInfo_;
+        //TODO: Should gpu_options live here as well? Storing gmx_gpu_opt_t is wrong (runtime per-test-case info)!
+        //! GPU assignment information
+        std::unique_ptr<gmx_gpu_opt_t>       gpuOptions_;
+        //! Dummy communication structure which the test does not really care about
+        scoped_cptr<t_commrec, done_commrec> commrec_;
+
+        //! Simple GPU initialization, allowing for PME to work on GPU
+        //! \todo: Do we want to run tests on several GPUs, maybe?
+        void hardwareInit();
+
+    public:
+        //! Default
+        virtual ~PmeTestEnvironment() = default;
+        //! Is called once to query the hardware
+        virtual void SetUp();
+        //! Get hardware information
+        const gmx_hw_info_t *getHardwareInfo(){return hardwareInfo_.get(); }
+        //! Get GPU information
+        const gmx_gpu_opt_t *getGpuOptions(){return gpuOptions_.get(); }
+};
+
+//! The test environment
+//extern PmeTestEnvironment *const pmeEnv;
 
 // Convenience typedefs
 //! A safe pointer type for PME.
@@ -74,24 +111,29 @@ typedef std::array<real, DIM * DIM> Matrix3x3;
 enum class PmeCodePath
 {
     CPU, // serial CPU code
+    CUDA
 };
+
+// Misc.
+
+//! Tells if this generally valid PME input is supported for this mode
+bool PmeSupportsInputForMode(const t_inputrec *inputRec, PmeCodePath mode);
 
 // PME stages
 
 //! Simple PME initialization based on input, no atom data; only good for testing the initialization stage
 PmeSafePointer PmeInitEmpty(const t_inputrec *inputRec);
 //! PME initialization with atom data and system box
-PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
+PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec, PmeCodePath mode,
                                 const CoordinatesVector &coordinates,
                                 const ChargesVector     &charges,
-                                const gmx::Matrix3x3     box
+                                const gmx::Matrix3x3    &box
                                 );
 //! PME spline computation and charge spreading
 void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
                                bool computeSplines, bool spreadCharges);
 
 // PME stage outputs
-
 //! Fetching the spline computation outputs of PmePerformSplineAndSpread()
 void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
                            SplineParamsVector &splineValues,

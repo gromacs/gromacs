@@ -180,6 +180,6 @@ void gmx_pme_receive_f(struct t_commrec *cr,
  * \param[in] nAtoms         The number of particles.
  * \param[in] coefficients   The pointer to the array of particle charges.
  */
-void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, real *coefficients);
+void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *coefficients);
 
 #endif
