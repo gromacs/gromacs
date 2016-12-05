@@ -227,7 +227,8 @@ class MyMol
                                    bool                      bUseVsites,
                                    bool                      bPairs,
                                    bool                      bDih,
-                                   bool                      bAddShells);
+                                   bool                      bAddShells,
+                                   const char               *tabfn);
         /*! \brief
          *  Computes isotropic polarizability at the presence of external
          *  electric field (under construction!!!)

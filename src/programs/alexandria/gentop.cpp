@@ -452,20 +452,19 @@ int alex_gentop(int argc, char *argv[])
 
     gmx::MDModules mdModules;
     t_inputrec    *inputrec = mdModules.inputrec();
-    t_commrec     *cr       = init_commrec();
+    t_commrec     *cr       = init_commrec();   
+    const char    *tabfn    = opt2fn_null("-table", NFILE, fnm);
 
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
 
     imm = mymol.GenerateTopology(aps, pd, lot, iChargeDistributionModel,
-                                 bGenVSites, bPairs, bDihedral, bPolar);
+                                 bGenVSites, bPairs, bDihedral, bPolar, tabfn);
 
     gmx::MDLogger  mdlog = getMdLogger(cr, stdout);
 
     if (immOK == imm)
     {
-        const char *tabfn = opt2fn_null("-table", NFILE, fnm);
-
         if (nullptr == tabfn && bPolar && iChargeDistributionModel != eqdAXp)
         {
             gmx_fatal(FARGS, "Cannot generate charges in a polarizable system with the %s charge "

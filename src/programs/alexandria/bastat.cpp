@@ -655,7 +655,7 @@ int alex_bastat(int argc, char *argv[])
                 continue;
             }
             immStatus imm = mmi.GenerateTopology(aps, pd, lot, iDistributionModel,
-                                                 false, false, bDih, false);
+                                                 false, false, bDih, false, nullptr);
 
             if (immOK != imm)
             {

@@ -704,7 +704,8 @@ static void do_init_mtop(const Poldata            &pd,
                          t_atoms                  *atoms,
                          std::vector<PlistWrapper> plist,
                          t_inputrec               *ir,
-                         t_symtab                 *symtab)
+                         t_symtab                 *symtab,
+                         const char               *tabfn)
 {
 
     init_mtop(mtop_);
@@ -757,18 +758,21 @@ static void do_init_mtop(const Poldata            &pd,
         }
     }
 
-    mtop_->groups.grps[egcENER].nr   =
-        ir->opts.ngener              = ntype;
-    mtop_->ffparams.ntypes           = ntype*ntype;
+    mtop_->groups.grps[egcENER].nr   = ntype;
     mtop_->ffparams.atnr             = ntype;
+    mtop_->ffparams.ntypes           = ntype*ntype;   
     mtop_->ffparams.reppow           = 12;
 
-    snew(ir->opts.egp_flags, ir->opts.ngener*ir->opts.ngener);
-    for (int k = 0; k < ntype; k++)
+    if (nullptr != tabfn)
     {
-        for (int m = k; m < ntype; m++)
+        ir->opts.ngener = ntype;
+        snew(ir->opts.egp_flags, ntype*ntype);
+        for (int k = 0; k < ntype; k++)
         {
-            ir->opts.egp_flags[GID(k, m, ntype)] |= EGP_TABLE;
+            for (int m = k; m < ntype; m++)
+            {
+                ir->opts.egp_flags[GID(k, m, ntype)] |= EGP_TABLE;
+            }
         }
     }
     
@@ -1081,7 +1085,8 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                                   bool                    bUseVsites,
                                   bool                    bPairs,
                                   bool                    bDih,
-                                  bool                    bAddShells)
+                                  bool                    bAddShells,
+                                  const char             *tabfn)
 {
     immStatus   imm = immOK;
     int         ftb;
@@ -1180,7 +1185,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     {
         char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());
 
-        do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms, plist_, inputrec_, symtab_);
+        do_init_mtop(pd, mtop_, molnameptr, &topology_->atoms, plist_, inputrec_, symtab_, tabfn);
 
         excls_to_blocka(topology_->atoms.nr, excls_, &(mtop_->moltype[0].excls));
     }

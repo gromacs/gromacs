@@ -520,7 +520,8 @@ void MolDip::Read(FILE            *fp,
 
                 imm = mpnew.GenerateTopology(_atomprop, pd_, lot,
                                              _iChargeDistributionModel,
-                                             false, bPairs, bDihedral, bPolar);
+                                             false, bPairs, bDihedral, 
+                                             bPolar, tabfn);
 
                 if (immOK == imm)
                 {
@@ -644,8 +645,10 @@ void MolDip::Read(FILE            *fp,
 
             mpnew.setInputrec(inputrec_);
 
-            imm = mpnew.GenerateTopology(_atomprop, pd_, lot, _iChargeDistributionModel,
-                                         false, false, bDihedral, bPolar);
+            imm = mpnew.GenerateTopology(_atomprop, pd_, lot, 
+                                         _iChargeDistributionModel,
+                                         false, false, bDihedral, 
+                                         bPolar, tabfn);
 
             if (immOK == imm)
             {
