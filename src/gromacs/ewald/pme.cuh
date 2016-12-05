@@ -59,10 +59,10 @@ class parallel_3dfft_gpu_t;
 /* Using textures instead of global memory. Only in spread now, but B-spline moduli in solving could also be texturized. */
 #define PME_USE_TEXTURES 1
 #if PME_USE_TEXTURES
+#define PME_USE_TEXOBJ (GMX_PTX_ARCH >= 300)
 /* Using texture objects as opposed to texture references
- * FIXME: rely entirely on dynamic device info instead, remove more ugly #ifs
+ * TODO: turn into template parameter?
  */
-#define PME_USE_TEXOBJ 1
 #endif
 
 /* TODO: move all the kernel blocksizes here, as they are all over the place */
@@ -156,6 +156,10 @@ int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient
     return PME_GPU_SKIP_ZEROES ? (coefficient != 0.0f) : 1;
 }
 
+void pme_gpu_make_fract_shifts_textures(pme_gpu_t *pmeGPU);
+
+void pme_gpu_free_fract_shifts_textures(const pme_gpu_t *pmeGPU);
+
 /*! \brief \internal
  * The main PME CUDA-specific host data structure, included in the PME GPU structure by the archSpecific pointer.
  */
@@ -169,8 +173,10 @@ struct pme_gpu_cuda_host_t
     cudaEvent_t syncEnerVirD2H;
     /*! \brief A synchronization event for the output forces being copied to the host after the gathering stage. */
     cudaEvent_t syncForcesD2H;
-    /*! \brief A synchronization event for the grid being copied to the host after the spreading stage (for the host-side FFT). */
+    /*! \brief A synchronization event for the grid being copied to the host after the spreading stage (for the host-side FFT / testing). */
     cudaEvent_t syncSpreadGridD2H;
+    /*! \brief A synchronization event for the atom data being copied to the host after the spline computation (for the host-side gathering / testing). */
+    cudaEvent_t syncSplineAtomDataD2H;
     /*! \brief A synchronization event for the grid being copied to the host after the solving stage (for the host-side FFT). */
     cudaEvent_t syncSolveGridD2H;
 
@@ -184,7 +190,8 @@ struct pme_gpu_cuda_host_t
      */
     bool useTiming;
 
-    //bool bUseTextureObjects;  /* If FALSE, then use references [unused] */
+    bool useTextureObjects;  /* If false, then use references [unused]
+                                TODO: replace with enum? */
 
     std::vector<std::unique_ptr<parallel_3dfft_gpu_t > >     pfft_setup_gpu;
 
