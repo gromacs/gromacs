@@ -154,6 +154,14 @@ int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient
     return PME_GPU_SKIP_ZEROES ? (coefficient != 0.0f) : 1;
 }
 
+//! How should the tabulated data be treated on GPU
+enum class GpuTableHandling
+{
+    NoTextures,
+    TextureReferences,
+    TextureObjects
+};
+
 /*! \brief \internal
  * The main PME CUDA-specific host data structure, included in the PME GPU structure by the archSpecific pointer.
  */
@@ -186,7 +194,7 @@ struct pme_gpu_cuda_t
      */
     bool                                             useTiming;
 
-    bool                                             useTextureObjects; /* If false, then use references. TODO: replace with enum? */
+    GpuTableHandling                                 tableHandling;
 
     std::vector<std::unique_ptr<GpuParallel3dFft > > fftSetup;
 
@@ -248,7 +256,7 @@ struct pme_gpu_cuda_kernel_params_t : pme_gpu_kernel_params_base_t
     cudaTextureObject_t gridlineIndicesTableTexture;
 };
 
-/* CUDA texture functions which will reside in respective kernel files
+/* CUDA texture functions which reside in respective kernel files
  * (Due to texture references having scope of a translation unit).
  */
 
@@ -257,13 +265,13 @@ struct pme_gpu_cuda_kernel_params_t : pme_gpu_kernel_params_base_t
  *
  * \param[in, out] pmeGPU         The PME GPU structure.
  */
-inline void pme_gpu_make_fract_shifts_textures(pme_gpu_t gmx_unused *pmeGPU){};
+void pme_gpu_make_fract_shifts_textures(pme_gpu_t *pmeGpu);
 
 /*! \brief \internal
  * Frees/unbinds 2 textures used in the spline parameter computation.
  *
  * \param[in] pmeGPU             The PME GPU structure.
  */
-inline void pme_gpu_free_fract_shifts_textures(const pme_gpu_t gmx_unused *pmeGPU){};
+void pme_gpu_free_fract_shifts_textures(const pme_gpu_t *pmeGpu);
 
 #endif
