@@ -165,14 +165,10 @@ float cu_event_elapsed(cudaEvent_t /*start*/, cudaEvent_t /*end*/);
 /*! Waits for event end to complete and calculates the time between start and end. */
 int cu_wait_event_time(cudaEvent_t /*end*/, cudaEvent_t /*begin*/, float * /*time*/);
 
-/*! \brief Return whether texture objects are used on this device.
- *
- * \todo This should be static in cudautils.cu, as soon as texture destruction code is moved there as well
- *
- * \param[in]   pointer to the GPU device info structure to inspect for texture objects support
- * \return      true if texture objects are used on this device
- */
-bool use_texobj(const gmx_device_info_t *dev_info);
+// TODO: the 2 functions below are pretty much a constructor/destructor of a simple
+// GPU table object. There is also almost self-contained fetchFromParamLookupTable()
+// in cuda_kernel_utils.cuh. They could all live in a separate class/struct file,
+// granted storing static texture references in there does not pose problems.
 
 /*! \brief Initialize parameter lookup table.
  *
@@ -194,5 +190,21 @@ void initParamLookupTable(T                        * &d_ptr,
                           const T                   *h_ptr,
                           int                        numElem,
                           const gmx_device_info_t   *devInfo);
+
+/*! \brief Destroy parameter lookup table.
+ *
+ * Unbinds texture reference/object, deallocates device memory.
+ *
+ * \tparam[in] T         Raw data type
+ * \param[in] d_ptr      Device pointer to the memory to be deallocated
+ * \param[in] texObj     Texture object to be deinitialized
+ * \param[in] texRef     Texture reference to be deinitialized
+ * \param[in] devInfo    Pointer to the info struct of the device in use
+ */
+template <typename T>
+void destroyParamLookupTable(T                        *d_ptr,
+                             cudaTextureObject_t       &texObj,
+                             const struct texture<T, 1, cudaReadModeElementType> *texRef,
+                             const gmx_device_info_t   *devInfo);
 
 #endif
