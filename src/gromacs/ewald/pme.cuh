@@ -100,7 +100,7 @@ class GpuParallel3dFft;
 
 //! Atom data alignment - has to be divisible both by spread and gather maximal atoms-per-block counts,
 //! which is asserted in case we use atom data padding at all.
-#define PME_ATOM_DATA_ALIGNMENT (16 * PME_SPREADGATHER_ATOMS_PER_WARP);
+#define PME_ATOM_DATA_ALIGNMENT (16 * PME_SPREADGATHER_ATOMS_PER_WARP)
 
 //TODO: CUDA architecture constant(s) can be deleted from here when https://gerrit.gromacs.org/6562 gets merged in
 //! Maximum number of threads per SM
@@ -244,7 +244,7 @@ struct pme_gpu_cuda_kernel_params_t : pme_gpu_kernel_params_base_t
     cudaTextureObject_t gridlineIndicesTableTexture;
 };
 
-/* CUDA texture functions which will reside in respective kernel files
+/* CUDA texture functions which reside in respective kernel files
  * (due to texture references having scope of a translation unit).
  */
 
@@ -253,13 +253,13 @@ struct pme_gpu_cuda_kernel_params_t : pme_gpu_kernel_params_base_t
  *
  * \param[in, out] pmeGPU         The PME GPU structure.
  */
-inline void pme_gpu_make_fract_shifts_textures(pme_gpu_t gmx_unused *pmeGpu){};
+void pme_gpu_make_fract_shifts_textures(pme_gpu_t *pmeGpu);
 
 /*! \brief \internal
  * Frees/unbinds 2 textures used in the spline parameter computation.
  *
  * \param[in] pmeGPU             The PME GPU structure.
  */
-inline void pme_gpu_free_fract_shifts_textures(const pme_gpu_t gmx_unused *pmeGpu){};
+void pme_gpu_free_fract_shifts_textures(const pme_gpu_t *pmeGpu);
 
 #endif
