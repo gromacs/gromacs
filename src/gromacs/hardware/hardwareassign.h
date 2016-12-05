@@ -57,6 +57,18 @@ enum class GpuTask
     PME
 };
 
+/*! \libinternal \brief Select the compatible GPUs
+ *
+ * This function filters gpu_info->gpu_dev for compatible gpus based
+ * on the previously run compatibility tests. Sets
+ * gpu_info->dev_compatible and gpu_info->n_dev_compatible.
+ *
+ * \param[in]     gpu_info    pointer to structure holding GPU information
+ * \param[out]    gpu_opt     pointer to structure holding GPU options
+ */
+void pickCompatibleGpus(const gmx_gpu_info_t *gpu_info,
+                        gmx_gpu_opt_t        *gpu_opt);
+
 /*! \libinternal \brief
  * Handles setup-time assignment of GPUs to tasks
  */

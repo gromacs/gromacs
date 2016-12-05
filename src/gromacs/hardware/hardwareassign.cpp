@@ -181,17 +181,8 @@ static bool checkGpuSelection(const gmx_gpu_info_t *gpu_info,
     return allOK;
 }
 
-/*! \brief Select the compatible GPUs
- *
- * This function filters gpu_info->gpu_dev for compatible gpus based
- * on the previously run compatibility tests. Sets
- * gpu_info->dev_compatible and gpu_info->n_dev_compatible.
- *
- * \param[in]     gpu_info    pointer to structure holding GPU information
- * \param[out]    gpu_opt     pointer to structure holding GPU options
- */
-static void pickCompatibleGpus(const gmx_gpu_info_t *gpu_info,
-                               gmx_gpu_opt_t        *gpu_opt)
+void pickCompatibleGpus(const gmx_gpu_info_t *gpu_info,
+                        gmx_gpu_opt_t        *gpu_opt)
 {
     GMX_ASSERT(gpu_info, "Invalid gpu_info");
     GMX_ASSERT(gpu_opt, "Invalid gpu_opt");
