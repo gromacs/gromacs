@@ -2281,6 +2281,7 @@ analyze_static(gmx_sel_evaluate_t                *data,
                 if (sel->v.type == POS_VALUE)
                 {
                     alloc_selection_pos_data(sel);
+                    gmx_ana_pos_copy(sel->v.u.p, sel->child->v.u.p, true);
                 }
                 else
                 {

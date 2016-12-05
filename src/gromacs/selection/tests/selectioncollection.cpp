@@ -1486,6 +1486,18 @@ TEST_F(SelectionCollectionDataTest, HandlesPositionVariables)
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesPositionVariableInModifier)
+{
+    static const char * const selections[] = {
+        "foo = cog of resnr 1",
+        "cog of resnr 2 plus foo",
+        "cog of resnr 3 plus foo"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
+    runTest("simple.gro", selections);
+}
+
+
 TEST_F(SelectionCollectionDataTest, HandlesConstantPositionInVariable)
 {
     static const char * const selections[] = {
