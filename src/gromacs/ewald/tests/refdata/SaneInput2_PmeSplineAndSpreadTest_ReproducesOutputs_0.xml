@@ -82,6 +82,15 @@
     </Vector>
   </Sequence>
   <NonZeroGridValues Name="RealSpaceGrid">
+    <Real Name="Cell 0 3 1">8.9693436549661624e-05</Real>
+    <Real Name="Cell 0 3 4">0.00014510033152666677</Real>
+    <Real Name="Cell 0 4 1">0.0034868288787382124</Real>
+    <Real Name="Cell 0 4 2">0.097537492519800234</Real>
+    <Real Name="Cell 0 4 3">0.10827051470164921</Real>
+    <Real Name="Cell 0 4 4">0.0056407697791971724</Real>
+    <Real Name="Cell 0 5 1">0.0045948402975726464</Real>
+    <Real Name="Cell 0 5 2">0.12853203203833419</Real>
+    <Real Name="Cell 0 5 3">0.14267569223818519</Real>
     <Real Name="Cell 0 3 2">0.0025090055178456677</Real>
     <Real Name="Cell 0 3 3">0.0027850963951250112</Real>
     <Real Name="Cell 0 5 4">0.0074332401136256217</Real>
@@ -161,14 +170,5 @@
     <Real Name="Cell 3 8 2">2.9284384041612219e-06</Real>
     <Real Name="Cell 3 8 3">3.2506836612213238e-06</Real>
     <Real Name="Cell 3 8 4">1.693568947046666e-07</Real>
-    <Real Name="Cell 0 3 1">8.9693436549661624e-05</Real>
-    <Real Name="Cell 0 3 4">0.00014510033152666677</Real>
-    <Real Name="Cell 0 4 1">0.0034868288787382124</Real>
-    <Real Name="Cell 0 4 2">0.097537492519800234</Real>
-    <Real Name="Cell 0 4 3">0.10827051470164921</Real>
-    <Real Name="Cell 0 4 4">0.0056407697791971724</Real>
-    <Real Name="Cell 0 5 1">0.0045948402975726464</Real>
-    <Real Name="Cell 0 5 2">0.12853203203833419</Real>
-    <Real Name="Cell 0 5 3">0.14267569223818519</Real>
   </NonZeroGridValues>
 </ReferenceData>

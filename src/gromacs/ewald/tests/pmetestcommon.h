@@ -74,6 +74,7 @@ typedef std::array<real, DIM * DIM> Matrix3x3;
 enum class PmeCodePath
 {
     CPU, // serial CPU code
+    CUDA
 };
 
 // PME stages
@@ -81,17 +82,16 @@ enum class PmeCodePath
 //! Simple PME initialization based on input, no atom data; only good for testing the initialization stage
 PmeSafePointer PmeInitEmpty(const t_inputrec *inputRec);
 //! PME initialization with atom data and system box
-PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
+PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec, PmeCodePath mode,
                                 const CoordinatesVector &coordinates,
                                 const ChargesVector     &charges,
-                                const gmx::Matrix3x3     box
+                                const gmx::Matrix3x3    &box
                                 );
 //! PME spline computation and charge spreading
 void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
                                bool computeSplines, bool spreadCharges);
 
 // PME stage outputs
-
 //! Fetching the spline computation outputs of PmePerformSplineAndSpread()
 void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
                            CoordinatesVector &fractCoordinates,

@@ -50,7 +50,6 @@
 
 #include <stdio.h>
 
-#include "gromacs/ewald/pme-gpu.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -59,6 +58,8 @@
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+
+#include "pme-gpu.h"
 
 struct t_commrec;
 struct t_inputrec;
@@ -180,6 +181,6 @@ void gmx_pme_receive_f(struct t_commrec *cr,
  * \param[in] nAtoms         The number of particles.
  * \param[in] coefficients   The pointer to the array of particle charges.
  */
-void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, real *coefficients);
+void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *coefficients);
 
 #endif
