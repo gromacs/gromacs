@@ -59,14 +59,14 @@
 int pme_gpu_get_atom_data_alignment(const pme_gpu_t *pmeGPU)
 {
     const int order = pmeGPU->common->pme_order;
-    GMX_RELEASE_ASSERT(order > 0, "Invalid PME order");
+    GMX_ASSERT(order > 0, "Invalid PME order");
     return PME_ATOM_DATA_ALIGNMENT;
 }
 
 int pme_gpu_get_atom_spline_data_alignment(const pme_gpu_t *pmeGPU)
 {
     const int order = pmeGPU->common->pme_order;
-    GMX_RELEASE_ASSERT(order > 0, "Invalid PME order");
+    GMX_ASSERT(order > 0, "Invalid PME order");
     return PME_SPREADGATHER_ATOMS_PER_WARP;
 }
 
@@ -340,7 +340,8 @@ void pme_gpu_clear_grids(const pme_gpu_t *pmeGPU)
 
 void pme_gpu_realloc_and_copy_fract_shifts(pme_gpu_t *pmeGPU)
 {
-    cudaStream_t stream          = pmeGPU->archSpecific->pmeStream;
+    pme_gpu_free_fract_shifts(pmeGPU);
+
     auto        *kernelParamsPtr = pmeGPU->kernelParams.get();
 
     const int    nx                  = kernelParamsPtr->grid.realGridSize[XX];
@@ -353,38 +354,32 @@ void pme_gpu_realloc_and_copy_fract_shifts(pme_gpu_t *pmeGPU)
 
     const int    newFractShiftsSize  = cellCount * (nx + ny + nz);
 
-    /* Two arrays, same size */
-    int currentSizeTemp      = pmeGPU->archSpecific->fractShiftsSize;
-    int currentSizeTempAlloc = pmeGPU->archSpecific->fractShiftsSizeAlloc;
-    cu_realloc_buffered((void **)&kernelParamsPtr->grid.d_fractShiftsTable, nullptr, sizeof(float),
-                        &currentSizeTemp, &currentSizeTempAlloc,
-                        newFractShiftsSize, pmeGPU->archSpecific->pmeStream, true);
-    float *fractShiftsArray = kernelParamsPtr->grid.d_fractShiftsTable;
-    cu_realloc_buffered((void **)&kernelParamsPtr->grid.d_gridlineIndicesTable, nullptr, sizeof(int),
-                        &pmeGPU->archSpecific->fractShiftsSize, &pmeGPU->archSpecific->fractShiftsSizeAlloc,
-                        newFractShiftsSize, pmeGPU->archSpecific->pmeStream, true);
-    int *gridlineIndicesArray = kernelParamsPtr->grid.d_gridlineIndicesTable;
+    initParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
+                         kernelParamsPtr->fractShiftsTableTexture,
+                         &pme_gpu_get_fract_shifts_texref(),
+                         pmeGPU->common->fsh.data(),
+                         newFractShiftsSize,
+                         pmeGPU->deviceInfo);
 
-    /* TODO: pinning of the pmeGPU->common->fsh/nn host-side arrays */
-
-    for (int i = 0; i < DIM; i++)
-    {
-        kernelParamsPtr->grid.tablesOffsets[i] = gridDataOffset[i];
-        cu_copy_H2D_async(fractShiftsArray + gridDataOffset[i], pmeGPU->common->fsh[i].data(),
-                          cellCount * kernelParamsPtr->grid.realGridSize[i] * sizeof(float), stream);
-        cu_copy_H2D_async(gridlineIndicesArray + gridDataOffset[i], pmeGPU->common->nn[i].data(),
-                          cellCount * kernelParamsPtr->grid.realGridSize[i] * sizeof(int), stream);
-    }
-
-    pme_gpu_make_fract_shifts_textures(pmeGPU);
+    initParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
+                         kernelParamsPtr->gridlineIndicesTableTexture,
+                         &pme_gpu_get_gridline_texref(),
+                         pmeGPU->common->nn.data(),
+                         newFractShiftsSize,
+                         pmeGPU->deviceInfo);
 }
 
 void pme_gpu_free_fract_shifts(const pme_gpu_t *pmeGPU)
 {
-    pme_gpu_free_fract_shifts_textures(pmeGPU);
-    /* Two arrays, same size */
-    cu_free_buffered(pmeGPU->kernelParams->grid.d_fractShiftsTable);
-    cu_free_buffered(pmeGPU->kernelParams->grid.d_gridlineIndicesTable, &pmeGPU->archSpecific->fractShiftsSize, &pmeGPU->archSpecific->fractShiftsSizeAlloc);
+    auto *kernelParamsPtr = pmeGPU->kernelParams.get();
+    destroyParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
+                            kernelParamsPtr->fractShiftsTableTexture,
+                            &pme_gpu_get_fract_shifts_texref(),
+                            pmeGPU->deviceInfo);
+    destroyParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
+                            kernelParamsPtr->gridlineIndicesTableTexture,
+                            &pme_gpu_get_gridline_texref(),
+                            pmeGPU->deviceInfo);
 }
 
 void pme_gpu_sync_output_energy_virial(const pme_gpu_t *pmeGPU)
@@ -410,6 +405,20 @@ void pme_gpu_copy_output_spread_grid(const pme_gpu_t *pmeGpu, float *h_grid)
     cu_copy_D2H_async(h_grid, pmeGpu->kernelParams->grid.d_realGrid, gridSize, pmeGpu->archSpecific->pmeStream);
     cudaError_t  stat = cudaEventRecord(pmeGpu->archSpecific->syncSpreadGridD2H, pmeGpu->archSpecific->pmeStream);
     CU_RET_ERR(stat, "PME spread grid sync event record failure");
+}
+
+void pme_gpu_copy_output_spread_atom_data(const pme_gpu_t *pmeGpu)
+{
+    const int    alignment       = pme_gpu_get_atom_spline_data_alignment(pmeGpu);
+    const size_t nAtomsPadded    = ((pmeGpu->nAtomsAlloc + alignment - 1) / alignment) * alignment;
+    const size_t splinesSize     = DIM * nAtomsPadded * pmeGpu->common->pme_order * sizeof(float);
+    auto        *kernelParamsPtr = pmeGpu->kernelParams.get();
+    cu_copy_D2H_async(pmeGpu->staging.h_dtheta, kernelParamsPtr->atoms.d_dtheta, splinesSize, pmeGpu->archSpecific->pmeStream);
+    cu_copy_D2H_async(pmeGpu->staging.h_theta, kernelParamsPtr->atoms.d_theta, splinesSize, pmeGpu->archSpecific->pmeStream);
+    cu_copy_D2H_async(pmeGpu->staging.h_gridlineIndices, kernelParamsPtr->atoms.d_gridlineIndices,
+                      kernelParamsPtr->atoms.nAtoms * DIM * sizeof(int), pmeGpu->archSpecific->pmeStream);
+    cudaError_t stat = cudaEventRecord(pmeGpu->archSpecific->syncSplineAtomDataD2H, pmeGpu->archSpecific->pmeStream);
+    CU_RET_ERR(stat, "PME spread atom data sync event record failure");
 }
 
 void pme_gpu_sync_spread_grid(const pme_gpu_t *pmeGPU)

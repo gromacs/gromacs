@@ -157,7 +157,9 @@ void cu_realloc_buffered(void **d_dest, void *h_src,
                          bool bAsync);
 
 // TODO: the 2 functions below are pretty much a constructor/destructor of a simple
-// GPU table object. We just need to add a templated __device__ table data fetching to complete it.
+// GPU table object. There is also almost self-contained fetchFromParamLookupTable()
+// in cuda_kernel_utils.cuh. They could all live in a separate class/struct file,
+// granted storing static texture references in there does not pose problems.
 
 /*! \brief Initialize parameter lookup table.
  *

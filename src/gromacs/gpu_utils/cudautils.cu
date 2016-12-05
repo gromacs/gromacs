@@ -331,3 +331,5 @@ void destroyParamLookupTable(T                       *d_ptr,
  */
 template void initParamLookupTable<float>(float * &, cudaTextureObject_t &, const texture<float, 1, cudaReadModeElementType> *, const float *, int, const gmx_device_info_t *);
 template void destroyParamLookupTable<float>(float *, cudaTextureObject_t, const texture<float, 1, cudaReadModeElementType> *, const gmx_device_info_t *);
+template void initParamLookupTable<int>(int * &, cudaTextureObject_t &, const texture<int, 1, cudaReadModeElementType> *, const int *, int, const gmx_device_info_t *);
+template void destroyParamLookupTable<int>(int *, cudaTextureObject_t, const texture<int, 1, cudaReadModeElementType> *, const gmx_device_info_t *);

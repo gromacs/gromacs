@@ -298,9 +298,9 @@ struct pme_shared_t
     /*! \brief Electrostatics parameter */
     real              epsilon_r;
     /*! \brief Gridline indices - nnx, nny, nnz */
-    std::vector<int>  nn[DIM];
+    std::vector<int>  nn;
     /*! \brief Fractional shifts - fshx, fshy, fshz */
-    std::vector<real> fsh[DIM];
+    std::vector<real> fsh;
     /*! \brief Precomputed B-spline values */
     std::vector<real> bsp_mod[DIM];
     /*! \brief The PME codepath being taken */
