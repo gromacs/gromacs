@@ -71,7 +71,8 @@ function (gmx_add_gtest_executable EXENAME)
         add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
             ${_source_files} ${TESTUTILS_DIR}/unittest_main.cpp)
         target_link_libraries(${EXENAME}
-            ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
+            ${TESTUTILS_LIBS} libgromacs ${GMOCK_LIBRARIES}
+            ${GMX_COMMON_LIBRARIES} ${GMX_EXE_LINKER_FLAGS} ${GMX_STDLIB_LIBRARIES})
         set_property(TARGET ${EXENAME}
             APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
         set_property(TARGET ${EXENAME}
@@ -100,10 +101,6 @@ function (gmx_register_gtest_test NAME EXENAME)
             list(APPEND _labels IntegrationTest)
             set(_timeout 120)
             gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
-
-            # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
-            # some point.
-            # target_link_libraries(${EXENAME} ${GMX_EXTRA_LIBRARIES} ${GMX_STDLIB_LIBRARIES})
         else()
             list(APPEND _labels UnitTest)
             gmx_get_test_prefix_cmd(_prefix_cmd)

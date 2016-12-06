@@ -64,7 +64,7 @@ add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
 set(TESTUTILS_LIBS testutils)
 set_property(TARGET testutils APPEND PROPERTY COMPILE_DEFINITIONS "${GMOCK_COMPILE_DEFINITIONS}")
 set_property(TARGET testutils APPEND PROPERTY COMPILE_FLAGS "${GMOCK_COMPILE_FLAGS}")
-target_link_libraries(testutils libgromacs ${GMOCK_LIBRARIES})
+target_link_libraries(testutils libgromacs ${GMX_COMMON_LIBRARIES} ${GMOCK_LIBRARIES})
 
 if(HAVE_TINYXML2)
     include_directories(SYSTEM ${TinyXML2_INCLUDE_DIR})
