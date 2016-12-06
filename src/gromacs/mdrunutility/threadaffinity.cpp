@@ -408,22 +408,17 @@ gmx_set_thread_affinity(FILE                *fplog,
                                      offset, &core_pinning_stride, &localityOrder);
     gmx::scoped_guard_sfree localityOrderGuard(localityOrder);
 
-    bool                    allAffinitiesSet;
     if (validLayout)
     {
+        bool allAffinitiesSet;
         allAffinitiesSet = set_affinity(cr, nthread_local, thread0_id_node,
                                         offset, core_pinning_stride, localityOrder);
-    }
-    else
-    {
-        // Produce the warning if any rank fails.
-        allAffinitiesSet = false;
-    }
-    if (invalidWithinSimulation(cr, !allAffinitiesSet))
-    {
-        md_print_warn(cr, fplog,
-                      "NOTE: Thread affinity setting failed. This can cause performance degradation.\n"
-                      "      If you think your settings are correct, ask on the gmx-users list.\n");
+        if (invalidWithinSimulation(cr, !allAffinitiesSet))
+        {
+            md_print_warn(cr, fplog,
+                          "NOTE: Thread affinity setting failed. This can cause performance degradation.\n"
+                          "      If you think your settings are correct, ask on the gmx-users list.\n");
+        }
     }
 }
 
