@@ -180,13 +180,18 @@ set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_s
 
 gmx_setup_tng_for_libgromacs()
 
-target_link_libraries(libgromacs PRIVATE
+target_link_libraries(libgromacs
+                      PRIVATE
                       ${EXTRAE_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
+                      ${GMX_COMMON_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${LMFIT_LIBRARIES_TO_LINK}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS} ${OPENCL_LIBRARIES}
-                      ${GMX_STDLIB_LIBRARIES})
+                      ${GMX_STDLIB_LIBRARIES}
+                      PUBLIC
+                      ${GMX_PUBLIC_LIBRARIES}
+                      )
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
