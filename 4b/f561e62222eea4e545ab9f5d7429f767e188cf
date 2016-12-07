@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Aleksei Iupinov <a.yupinov@gmail.com>
+Code-Review+2: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-by: David van der Spoel <davidvanderspoel@gmail.com>
+Submitted-at: Wed, 07 Dec 2016 19:31:25 +0100
+Reviewed-on: https://gerrit.gromacs.org/6364
+Project: gromacs
+Branch: refs/heads/master
