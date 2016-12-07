@@ -1116,7 +1116,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         if (xy_fac < min_xy_init)
         {
             warn++;
-            fprintf(stderr, "\nWarning %d:\nThe initial size of %s is probably too smal.\n\n", warn, ins);
+            fprintf(stderr, "\nWarning %d:\nThe initial size of %s is probably too small.\n\n", warn, ins);
         }
 
         if (it_xy < min_it_xy)

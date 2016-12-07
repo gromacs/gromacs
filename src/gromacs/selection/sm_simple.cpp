@@ -205,6 +205,28 @@ static const char *const help_atomname[] = {
     "keywords."
 };
 
+//! Help title for residue index selection keywords.
+static const char        helptitle_resindex[] = "Selecting atoms by residue number";
+//! Help text for residue index selection keywords.
+static const char *const help_resindex[] = {
+    "::",
+    "",
+    "  resnr",
+    "  resid",
+    "  resindex",
+    "  residue",
+    "",
+    "[TT]resnr[tt] selects atoms using the residue numbering in the input",
+    "file. [TT]resid[tt] is synonym for this keyword for VMD compatibility.",
+    "",
+    "[TT]resindex N[tt] selects the [TT]N[tt]th residue starting from the",
+    "beginning of the input file. This is useful for uniquely identifying",
+    "residues if there are duplicate numbers in the input file (e.g., in",
+    "multiple chains).",
+    "[TT]residue[tt] is a synonym for [TT]resindex[tt]. This allows",
+    "[TT]same residue as[tt] to work as expected."
+};
+
 /** Selection method data for \p all selection keyword. */
 gmx_ana_selmethod_t sm_all = {
     "all", GROUP_VALUE, 0,
@@ -259,6 +281,7 @@ gmx_ana_selmethod_t sm_resnr = {
     NULL,
     &evaluate_resnr,
     NULL,
+    {NULL, helptitle_resindex, asize(help_resindex), help_resindex}
 };
 
 /** Selection method data for \p resindex selection keyword. */
@@ -273,6 +296,7 @@ gmx_ana_selmethod_t sm_resindex = {
     NULL,
     &evaluate_resindex,
     NULL,
+    {NULL, helptitle_resindex, asize(help_resindex), help_resindex}
 };
 
 /** Selection method data for \p molindex selection keyword. */
