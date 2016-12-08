@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -235,14 +235,15 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     int      i, n;
     gmx_bool found;
 
+    if (n_bfac > atoms->nres)
+    {
+        peratom = TRUE;
+    }
+
     bfac_max = -1e10;
     bfac_min = 1e10;
     for (i = 0; (i < n_bfac); i++)
     {
-        if (bfac_nr[i] - 1 >= atoms->nres)
-        {
-            peratom = TRUE;
-        }
         /*    if ((bfac_nr[i]-1<0) || (bfac_nr[i]-1>=atoms->nr))
            gmx_fatal(FARGS,"Index of B-Factor %d is out of range: %d (%g)",
            i+1,bfac_nr[i],bfac[i]); */
@@ -577,7 +578,7 @@ int gmx_editconf(int argc, char *argv[])
         "from a file with with following format: first line states number of",
         "entries in the file, next lines state an index",
         "followed by a B-factor. The B-factors will be attached per residue",
-        "unless an index is larger than the number of residues or unless the",
+        "unless the number of B-factors is larger than the number of the residues or unless the",
         "[TT]-atom[tt] option is set. Obviously, any type of numeric data can",
         "be added instead of B-factors. [TT]-legend[tt] will produce",
         "a row of CA atoms with B-factors ranging from the minimum to the",
