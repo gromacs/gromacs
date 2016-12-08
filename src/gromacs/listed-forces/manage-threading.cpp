@@ -45,6 +45,8 @@
 
 #include "manage-threading.h"
 
+#include "config.h"
+
 #include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -188,7 +190,8 @@ static void divide_bondeds_by_locality(int                 ntype,
 //! Divides bonded interactions over threads
 static void divide_bondeds_over_threads(t_idef *idef,
                                         int     nthread,
-                                        int     max_nthread_uniform)
+                                        int     max_nthread_uniform,
+                                        bool   *haveBondeds)
 {
     ilist_data_t ild[F_NRE];
     int          ntype;
@@ -204,12 +207,18 @@ static void divide_bondeds_over_threads(t_idef *idef,
         snew(idef->il_thread_division, idef->il_thread_division_nalloc);
     }
 
-    ntype = 0;
+    *haveBondeds = false;
+    ntype        = 0;
     for (f = 0; f < F_NRE; f++)
     {
         if (!ftype_is_bonded_potential(f))
         {
             continue;
+        }
+
+        if (idef->il[f].nr > 0)
+        {
+            *haveBondeds = true;
         }
 
         if (idef->il[f].nr == 0)
@@ -308,7 +317,16 @@ calc_bonded_reduction_mask(int natoms,
                            const t_idef *idef,
                            int thread, int nthread)
 {
-    assert(nthread <= BITMASK_SIZE);
+    static_assert(BITMASK_SIZE == GMX_OPENMP_MAX_THREADS, "For the error message below we assume these two are equal.");
+
+    if (nthread > BITMASK_SIZE)
+    {
+#pragma omp master
+        gmx_fatal(FARGS, "You are using %d OpenMP threads, which is larger than GMX_OPENMP_MAX_THREADS (%d). Decrease the number of OpenMP threads or rebuild GROMACS with a larger value for GMX_OPENMP_MAX_THREADS.",
+                  nthread, GMX_OPENMP_MAX_THREADS);
+#pragma omp barrier
+    }
+    GMX_ASSERT(nthread <= BITMASK_SIZE, "We need at least nthread bits in the mask");
 
     int nblock = (natoms + reduction_block_size - 1) >> reduction_block_bits;
 
@@ -374,7 +392,14 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
     /* Divide the bonded interaction over the threads */
     divide_bondeds_over_threads(idef,
                                 bt->nthreads,
-                                bt->bonded_max_nthread_uniform);
+                                bt->bonded_max_nthread_uniform,
+                                &bt->haveBondeds);
+
+    if (!bt->haveBondeds)
+    {
+        /* We don't have bondeds, so there is nothing to reduce */
+        return;
+    }
 
     /* Determine to which blocks each thread's bonded force calculation
      * contributes. Store this as a mask for each thread.
