@@ -91,6 +91,11 @@ isPairInteraction(int ftype)
 static void
 zero_thread_output(struct bonded_threading_t *bt, int thread)
 {
+    if (!bt->haveBondeds)
+    {
+        return;
+    }
+
     f_thread_t *f_t      = &bt->f_t[thread];
     const int   nelem_fa = sizeof(*f_t->f)/sizeof(real);
 
@@ -198,6 +203,11 @@ reduce_thread_output(int n, rvec *f, rvec *fshift,
                      gmx_bool bCalcEnerVir,
                      gmx_bool bDHDL)
 {
+    if (!bt->haveBondeds)
+    {
+        return;
+    }
+
     if (bt->nblock_used > 0)
     {
         /* Reduce the bonded force buffer */
@@ -482,6 +492,7 @@ void calc_listed(const t_commrec             *cr,
         wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
     }
 
+    /* TODO: Skip this whole loop with a system/domain without listeds */
     wallcycle_sub_start(wcycle, ewcsLISTED);
 #pragma omp parallel for num_threads(bt->nthreads) schedule(static)
     for (thread = 0; thread < bt->nthreads; thread++)
