@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -253,13 +253,13 @@ class ArrayRef
         //! Returns an iterator to the end of the container.
         const_iterator end() const { return end_; }
         //! Returns an iterator to the reverse beginning of the container.
-        iterator rbegin() { return reverse_iterator(end()); }
+        reverse_iterator rbegin() { return reverse_iterator(end()); }
         //! Returns an iterator to the reverse beginning of the container.
-        const_iterator rbegin() const { return reverse_iterator(end()); }
+        const_reverse_iterator rbegin() const { return reverse_iterator(end()); }
         //! Returns an iterator to the reverse end of the container.
-        iterator rend() { return reverse_iterator(begin()); }
+        reverse_iterator rend() { return reverse_iterator(begin()); }
         //! Returns an iterator to the reverse end of the container.
-        const_iterator rend() const { return reverse_iterator(begin()); }
+        const_reverse_iterator rend() const { return reverse_iterator(begin()); }
 
         //! Returns the size of the container.
         size_type size() const { return end_ - begin_; }
@@ -478,9 +478,9 @@ class ConstArrayRef
         //! Returns an iterator to the end of the container.
         const_iterator end() const { return end_; }
         //! Returns an iterator to the reverse beginning of the container.
-        const_iterator rbegin() const { return reverse_iterator(end()); }
+        const_reverse_iterator rbegin() const { return reverse_iterator(end()); }
         //! Returns an iterator to the reverse end of the container.
-        const_iterator rend() const { return reverse_iterator(begin()); }
+        const_reverse_iterator rend() const { return reverse_iterator(begin()); }
 
         //! Returns the size of the container.
         size_type size() const { return end_ - begin_; }

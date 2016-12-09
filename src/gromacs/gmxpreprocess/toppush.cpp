@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -537,16 +538,22 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     sfree(param);
 }
 
+//! Return whether the contents of \c a and \c b are the same, considering also reversed order.
+template <typename T>
+static bool equalEitherForwardOrBackward(gmx::ConstArrayRef<T> a, gmx::ConstArrayRef<T> b)
+{
+    return (std::equal(a.begin(), a.end(), b.begin()) ||
+            std::equal(a.begin(), a.end(), b.rbegin()));
+}
+
 static void push_bondtype(t_params     *       bt,
-                          t_param     *        b,
+                          const t_param *      b,
                           int                  nral,
                           int                  ftype,
                           gmx_bool             bAllowRepeat,
-                          char     *           line,
+                          const char *         line,
                           warninp_t            wi)
 {
-    int      i, j;
-    gmx_bool bTest, bFound, bCont, bId;
     int      nr   = bt->nr;
     int      nrfp = NRFP(ftype);
     char     errbuf[STRLEN];
@@ -561,73 +568,93 @@ static void push_bondtype(t_params     *       bt,
        in this group.
      */
 
-    bFound = FALSE;
-    bCont  = FALSE;
-
+    bool isContinuationOfBlock = false;
     if (bAllowRepeat && nr > 1)
     {
-        for (j = 0, bCont = TRUE; (j < nral); j++)
+        isContinuationOfBlock = true;
+        for (int j = 0; j < nral; j++)
         {
-            bCont = bCont && (b->a[j] == bt->param[nr-2].a[j]);
+            if (b->a[j] != bt->param[nr - 2].a[j])
+            {
+                isContinuationOfBlock = false;
+            }
         }
     }
 
     /* Search for earlier duplicates if this entry was not a continuation
        from the previous line.
      */
-    if (!bCont)
+    bool addBondType = true;
+    bool haveWarned  = false;
+    bool haveErrored = false;
+    for (int i = 0; (i < nr); i++)
     {
-        bFound = FALSE;
-        for (i = 0; (i < nr); i++)
+        gmx::ConstArrayRef<int> bParams(b->a, b->a + nral);
+        gmx::ConstArrayRef<int> testParams(bt->param[i].a, bt->param[i].a + nral);
+        if (equalEitherForwardOrBackward(bParams, testParams))
         {
-            bTest = TRUE;
-            for (j = 0; (j < nral); j++)
+            GMX_ASSERT(nrfp <= MAXFORCEPARAM, "This is ensured in other places, but we need this assert to keep the clang analyzer happy");
+            // TODO consider improving the following code by using:
+            // bool identicalParameters = std::equal(bt->param[i].c, bt->param[i].c + nrfp, b->c);
+            bool identicalParameters = true;
+            for (int j = 0; (j < nrfp); j++)
             {
-                bTest = (bTest && (b->a[j] == bt->param[i].a[j]));
+                identicalParameters = identicalParameters && (bt->param[i].c[j] == b->c[j]);
             }
-            if (!bTest)
+
+            if (!bAllowRepeat || identicalParameters)
             {
-                bTest = TRUE;
-                for (j = 0; (j < nral); j++)
-                {
-                    bTest = (bTest && (b->a[nral-1-j] == bt->param[i].a[j]));
-                }
+                addBondType = false;
             }
-            if (bTest)
+
+            if (!identicalParameters)
             {
-                if (!bFound)
+                if (bAllowRepeat)
                 {
-                    bId = TRUE;
-                    for (j = 0; (j < nrfp); j++)
+                    /* With dihedral type 9 we only allow for repeating
+                     * of the same parameters with blocks with 1 entry.
+                     * Allowing overriding is too complex to check.
+                     */
+                    if (!isContinuationOfBlock && !haveErrored)
                     {
-                        bId = bId && (bt->param[i].c[j] == b->c[j]);
-                    }
-                    if (!bId)
-                    {
-                        sprintf(errbuf, "Overriding %s parameters.%s",
-                                interaction_function[ftype].longname,
-                                (ftype == F_PDIHS) ?
-                                "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
-                                : "");
-                        warning(wi, errbuf);
-                        fprintf(stderr, "  old:                                         ");
-                        for (j = 0; (j < nrfp); j++)
-                        {
-                            fprintf(stderr, " %g", bt->param[i].c[j]);
-                        }
-                        fprintf(stderr, " \n  new: %s\n\n", line);
+                        warning_error(wi, "Encountered a second block of parameters for dihedral type 9 for the same atoms, with either different parameters and/or the first block has multiple lines. This is not supported.");
+                        haveErrored = true;
                     }
                 }
-                /* Overwrite it! */
-                for (j = 0; (j < nrfp); j++)
+                else if (!haveWarned)
+                {
+                    sprintf(errbuf, "Overriding %s parameters.%s",
+                            interaction_function[ftype].longname,
+                            (ftype == F_PDIHS) ?
+                            "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
+                            : "");
+                    warning(wi, errbuf);
+
+                    fprintf(stderr, "  old:                                         ");
+                    for (int j = 0; (j < nrfp); j++)
+                    {
+                        fprintf(stderr, " %g", bt->param[i].c[j]);
+                    }
+                    fprintf(stderr, " \n  new: %s\n\n", line);
+
+                    haveWarned = true;
+                }
+            }
+
+            if (!identicalParameters && !bAllowRepeat)
+            {
+                /* Overwrite the parameters with the latest ones */
+                // TODO considering improving the following code by replacing with:
+                // std::copy(b->c, b->c + nrfp, bt->param[i].c);
+                for (int j = 0; (j < nrfp); j++)
                 {
                     bt->param[i].c[j] = b->c[j];
                 }
-                bFound = TRUE;
             }
         }
     }
-    if (!bFound)
+
+    if (addBondType)
     {
         /* alloc */
         pr_alloc (2, bt);
@@ -647,7 +674,7 @@ static void push_bondtype(t_params     *       bt,
             bt->param[bt->nr+1].c[2] = 1-bt->param[bt->nr+1].c[2];
         }
 
-        for (j = 0; (j < nral); j++)
+        for (int j = 0; (j < nral); j++)
         {
             bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
         }
