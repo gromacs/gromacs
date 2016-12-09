@@ -3,11 +3,12 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "molselect.h"
+
 #include <vector>
 
 #include "gromacs/utility/textreader.h"
 
-#include "molselect.h"
 #include "stringutil.h"
 
 static const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };

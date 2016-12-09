@@ -37,6 +37,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "mymol.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -71,8 +73,6 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
-
-#include "mymol.h"
 
 namespace alexandria
 {

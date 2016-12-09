@@ -37,6 +37,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "qgen_resp.h"
+
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -57,7 +59,6 @@
 
 #include "nmsimplex.h"
 #include "poldata.h"
-#include "qgen_resp.h"
 #include "regression.h"
 #include "coulombintegrals/coulombintegrals.h"
 

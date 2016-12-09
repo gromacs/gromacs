@@ -37,6 +37,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "gentop_core.h"
+
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,8 +51,6 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-
-#include "gentop_core.h"
 
 using namespace alexandria;
 

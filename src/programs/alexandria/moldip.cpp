@@ -37,7 +37,10 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "moldip.h"
+
 #include <cmath>
+
 #include <vector>
 
 #include "gromacs/gmxlib/nrnb.h"
@@ -51,7 +54,6 @@
 #include "fill_inputrec.h"
 #include "getmdlogger.h"
 #include "gmx_simple_comm.h"
-#include "moldip.h"
 #include "molprop_xml.h"
 #include "poldata_xml.h"
 

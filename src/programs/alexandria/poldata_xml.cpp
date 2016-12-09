@@ -37,17 +37,19 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include <libxml/parser.h>
-#include <libxml/tree.h>
+#include "poldata_xml.h"
+
 #include <cstdlib>
 #include <cstring>
+
+#include <libxml/parser.h>
+#include <libxml/tree.h>
 
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 
 #include "poldata.h"
 #include "poldata-low.h"
-#include "poldata_xml.h"
 #include "xml_util.h"
 
 extern int xmlDoValidityCheckingDefaultValue;

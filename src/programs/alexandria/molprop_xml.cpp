@@ -37,17 +37,19 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#include <libxml/parser.h>
-#include <libxml/tree.h>
+#include "molprop_xml.h"
+
 #include <stdlib.h>
 #include <string.h>
+
+#include <libxml/parser.h>
+#include <libxml/tree.h>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 
 #include "molprop.h"
-#include "molprop_xml.h"
 #include "stringutil.h"
 #include "xml_util.h"
 

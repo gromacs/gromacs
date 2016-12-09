@@ -37,6 +37,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "categories.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,7 +51,6 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/futil.h"
 
-#include "categories.h"
 #include "composition.h"
 #include "molprop.h"
 #include "molprop_tables.h"

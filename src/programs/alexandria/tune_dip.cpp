@@ -41,6 +41,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
@@ -54,10 +55,10 @@
 #include "gromacs/utility/futil.h"
 
 #include "gmx_simple_comm.h"
+#include "moldip.h"
 #include "nmsimplex.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "moldip.h"
 
 
 static void print_stats(FILE *fp, const char *prop, gmx_stats_t lsq, gmx_bool bHeader,

@@ -6,6 +6,7 @@
 #define GENTOP_CORE_H
 
 #include <stdio.h>
+
 #include <vector>
 
 #include "gromacs/fileio/pdbio.h"

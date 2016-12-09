@@ -49,8 +49,8 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "communication.h"
-#include "coulombintegrals/coulombintegrals.h"
 #include "plistwrapper.h"
+#include "coulombintegrals/coulombintegrals.h"
 
 namespace alexandria
 {

@@ -37,10 +37,13 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
  
+#include "poldata.h"
+
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
 #include <algorithm>
 #include <vector>
 
@@ -48,7 +51,6 @@
 #include "gromacs/topology/ifunc.h"
 
 #include "gmx_simple_comm.h"
-#include "poldata.h"
 #include "stringutil.h"
 
 namespace alexandria

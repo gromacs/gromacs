@@ -38,10 +38,11 @@
  */
  
  
+#include "communication.h"
+
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "communication.h"
 #include "gmx_simple_comm.h"
     
     

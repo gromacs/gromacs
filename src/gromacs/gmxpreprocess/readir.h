@@ -41,9 +41,9 @@
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
-#include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/stringutil.h"
 
 struct gmx_groups_t;

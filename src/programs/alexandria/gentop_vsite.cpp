@@ -37,6 +37,8 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "gentop_vsite.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -44,7 +46,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "gentop_vsite.h"
 #include "plistwrapper.h"
 #include "poldata.h"
 

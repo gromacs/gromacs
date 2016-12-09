@@ -37,15 +37,17 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include "molprop_util.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <vector>
 
 #include "gromacs/utility/futil.h"
 
 #include "composition.h"
-#include "molprop_util.h"
 #include "molprop_xml.h"
 
 namespace alexandria
