@@ -62,4 +62,5 @@ void fill_inputrec(t_inputrec *ir)
     ir->em_tol           = 1e-2;
     ir->opts.ngener      = 1;
     snew(ir->fepvals, 1);
+    snew(ir->opts.egp_flags, 1);
 }

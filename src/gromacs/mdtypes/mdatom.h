@@ -128,6 +128,10 @@ typedef struct t_mdatoms {
     int                    homenr;
     //! The lambda value used to create the contents of the struct
     real                   lambda;
+    //! 1/Width of the Gaussian diffuse charge in the A state (unit 1/nm)
+    real                   *zetaA;
+    //! 1/Width of the Gaussian diffuse charge in the B state (unit 1/nm)
+    real                   *zetaB;
 } t_mdatoms;
 
 #endif

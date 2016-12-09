@@ -73,7 +73,7 @@ enum immStatus {
     immAtomTypes, immAtomNumber, immMolpropConv, immBondOrder, immRespInit,
     immChargeGeneration, immLOT,
     immQMInconsistency, immTest, immNoData,
-    immGenShells, immGenBonds, immCommProblem, immNR
+    immGenShells, immGenBonds, immCommProblem, immZeroZeta, immNR
 };
 
 enum eDih {
@@ -163,6 +163,10 @@ class MyMol
          * \param[in] pd
          */
         immStatus checkAtoms(const Poldata &pd);
+        
+        
+        immStatus zeta2atoms(ChargeDistributionModel iChargeDistributionModel,
+                             const Poldata &pd);
 
         /*! \brief
          * Fetch the force constants

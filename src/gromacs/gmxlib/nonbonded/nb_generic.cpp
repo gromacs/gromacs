@@ -74,8 +74,10 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     real          ix, iy, iz, fix, fiy, fiz;
     real          jx, jy, jz;
     real          dx, dy, dz, rsq, rinv;
+    real          izeta, jzeta, zeff;
     real          c, c2, c6, c5, c12, c6grid, cexp1, cexp2; //br is removed
     real *        charge;
+    real *        zeta;
     real *        shiftvec;
     real *        vdwparam, *vdwgridparam;
     int *         type;
@@ -193,6 +195,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
     table_nelements     = 12;
 
     charge              = mdatoms->chargeA;
+    zeta                = mdatoms->zetaA;
     type                = mdatoms->typeA;
     facel               = fr->epsfac;
     shiftvec            = fr->shift_vec[0];
@@ -214,6 +217,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
         iy               = shY + x[ii3+1];
         iz               = shZ + x[ii3+2];
         iq               = facel*charge[ii];
+        izeta            = zeta[ii];
         nti              = nvdwparam*ntype*type[ii];
         vctot            = 0;
         vvdwtot          = 0;
@@ -258,7 +262,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
             if (ielec != GMX_NBKERNEL_ELEC_NONE)
             {
 	           qq            = iq*charge[jnr];
-
+               jzeta         = zeta[jnr];
                 switch (ielec)
                 {
                     case GMX_NBKERNEL_ELEC_NONE:
@@ -266,8 +270,29 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
                     case GMX_NBKERNEL_ELEC_COULOMB:
                         /* Vanilla cutoff coulomb */
-                        velec            = qq*rinv;
-                        felec            = velec*rinvsq;
+                        if (izeta == 0 && jzeta == 0)
+                        {
+                            velec        = qq*rinv;
+                            felec        = velec*rinvsq;                           
+                        }
+                        else
+                        {
+                            if (izeta == 0)
+                            {
+                                zeff = jzeta;
+                            }
+                            else if (jzeta == 0)
+                            {
+                                zeff = izeta;
+                            } 
+                            else
+                            {
+                                zeff = izeta*jzeta/sqrt(gmx::square(izeta)+gmx::square(jzeta));
+                            }
+                            r           = rsq*rinv;
+                            velec       = qq*erf(r*zeff)*rinv;
+                            felec       = erf(r*zeff)*rinvsq - (2.0/sqrt(M_PI))*exp(-gmx::square(r*zeff))*(zeff*rinv);
+                        }
                         /* The shift for the Coulomb potential is stored in
                          * the RF parameter c_rf, which is 0 without shift
                          */

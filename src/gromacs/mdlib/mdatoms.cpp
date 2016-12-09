@@ -151,10 +151,12 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
         srenew(md->invmass, md->nalloc);
         srenew(md->invMassPerDim, md->nalloc);
         srenew(md->chargeA, md->nalloc);
+        srenew(md->zetaA, md->nalloc);
         srenew(md->typeA, md->nalloc);
         if (md->nPerturbed)
         {
             srenew(md->chargeB, md->nalloc);
+            srenew(md->zetaB, md->nalloc);
             srenew(md->typeB, md->nalloc);
         }
         if (bLJPME)
@@ -329,6 +331,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             }
 
             md->chargeA[i]      = atom.q;
+            md->zetaA[i]        = atom.zetaA;
             md->typeA[i]        = atom.type;
             if (bLJPME)
             {
@@ -349,6 +352,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
             {
                 md->bPerturbed[i] = PERTURBED(atom);
                 md->chargeB[i]    = atom.qB;
+                md->zetaB[i]      = atom.zetaB;
                 md->typeB[i]      = atom.typeB;
                 if (bLJPME)
                 {

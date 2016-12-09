@@ -761,8 +761,8 @@ static void do_init_mtop(const Poldata            &pd,
     mtop_->groups.grps[egcENER].nr   = ntype;
     mtop_->ffparams.atnr             = ntype;
     mtop_->ffparams.ntypes           = ntype*ntype;   
-    mtop_->ffparams.reppow           = 12;
-
+    mtop_->ffparams.reppow           = 12;  
+    
     if (nullptr != tabfn)
     {
         ir->opts.ngener = ntype;
@@ -789,22 +789,33 @@ static void do_init_mtop(const Poldata            &pd,
             {
                 case F_LJ:
                 {
-                    double c6, c12;
-                    getLjParams(pd,
-                                *(atoms->atomtype[i]),
-                                *(atoms->atomtype[j]),
-                                &c6, &c12);
+                    double c6  = 0;
+                    double c12 = 0;
+                    if (atoms->atom[i].ptype != eptShell && 
+                        atoms->atom[j].ptype != eptShell)
+                    {
+                        getLjParams(pd,
+                                    *(atoms->atomtype[i]),
+                                    *(atoms->atomtype[j]),
+                                    &c6, &c12);
+                    }
                     mtop_->ffparams.iparams[idx].lj.c6  = c6;
                     mtop_->ffparams.iparams[idx].lj.c12 = c12;
                 }
                 break;
                 case F_BHAM:
                 {
-                    double a, b, c;
-                    getBhamParams(pd,
-                                  *(atoms->atomtype[i]),
-                                  *(atoms->atomtype[j]),
-                                  &a, &b, &c);
+                    double a = 0;
+                    double b = 0;
+                    double c = 0;
+                    if (atoms->atom[i].ptype != eptShell && 
+                        atoms->atom[j].ptype != eptShell)
+                    {
+                        getBhamParams(pd,
+                                      *(atoms->atomtype[i]),
+                                      *(atoms->atomtype[j]),
+                                      &a, &b, &c);
+                    }
                     mtop_->ffparams.iparams[idx].bham.a = a;
                     mtop_->ffparams.iparams[idx].bham.b = b;
                     mtop_->ffparams.iparams[idx].bham.c = c;
@@ -1078,6 +1089,25 @@ immStatus MyMol::checkAtoms(const Poldata &pd)
     return immOK;
 }
 
+immStatus MyMol::zeta2atoms(ChargeDistributionModel eqdModel,
+                            const Poldata          &pd)
+{ 
+    /*Here, we add zeta for the core. addShell will 
+      take care of the zeta for the shells later*/
+    for (int i = 0; i < topology_->atoms.nr; i++)
+    {
+        auto zeta = pd.getZeta(eqdModel, *topology_->atoms.atomtype[i], 0);
+        if (zeta == 0 && eqdModel != eqdAXp)
+        {
+            printf("Zeta is zero for %s atom\n", *topology_->atoms.atomtype[i]);
+            return immZeroZeta;
+        }
+        topology_->atoms.atom[i].zetaA = 
+            topology_->atoms.atom[i].zetaB = zeta;
+    }    
+    return immOK;
+}
+
 immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
                                   const Poldata          &pd,
                                   const char             *lot,
@@ -1108,12 +1138,15 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     {
         snew(topology_, 1);
         init_top(topology_);
-        /* get atoms */
-        imm = GenerateAtoms(ap, lot, iChargeDistributionModel);       
+        imm = GenerateAtoms(ap, lot, iChargeDistributionModel); /* get atoms */      
     }
     if (immOK == imm)
     {
         imm = checkAtoms(pd);
+    }
+    if (immOK == imm)
+    {
+        imm = zeta2atoms(iChargeDistributionModel, pd);
     }
     /* Store bonds in harmonic potential list first, update type later */
     ftb = F_BONDS;
@@ -2281,6 +2314,8 @@ void MyMol::addShells(const Poldata          &pd,
                 newa->atom[j]            = topology_->atoms.atom[i];
                 newa->atom[iat].q        = pd.getQ(iModel, *topology_->atoms.atomtype[i], 0);
                 newa->atom[iat].qB       = newa->atom[iat].q;
+                newa->atom[iat].zetaA    = pd.getZeta(iModel, *topology_->atoms.atomtype[i], 0);
+                newa->atom[iat].zetaB    = newa->atom[iat].zetaA;
                 newa->atom[j].m          = 0;
                 newa->atom[j].mB         = 0;
                 newa->atom[j].atomnumber = 0;
@@ -2296,8 +2331,10 @@ void MyMol::addShells(const Poldata          &pd,
                 newa->atom[j].ptype         = eptShell;
                 newa->atom[j].q             = pd.getQ(iModel, *topology_->atoms.atomtype[i], 1);
                 newa->atom[j].qB            = newa->atom[j].q;
+                newa->atom[j].zetaA         = pd.getZeta(iModel, *topology_->atoms.atomtype[i], 1);
+                newa->atom[j].zetaB         = newa->atom[j].zetaA;
                 newa->atom[j].resind        = topology_->atoms.atom[i].resind;
-                sprintf(buf, "%ss", *(topology_->atoms.atomname[i]));
+                sprintf(buf, "%s_s", *(topology_->atoms.atomname[i]));
                 newa->atomname[j] = put_symtab(symtab_, buf);
                 copy_rvec(x_[i], newx[j]);
             }
@@ -2484,16 +2521,22 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         Emol  = value;
         for (ia = 0; (ia < topology_->atoms.nr); ia++)
         {
-            if (pd.getAtypeRefEnthalpy(*topology_->atoms.atomtype[ia], &Hatom))
+            if (topology_->atoms.atom[ia].ptype != eptShell)
             {
-                Emol -= Hatom;
-            }
-            else
-            {
-                fprintf(debug, "WARNING: NO ref enthalpy for molecule %s.\n",
-                        molProp()->getMolname().c_str());
-                Emol = 0;
-                break;
+                if (pd.getAtypeRefEnthalpy(*topology_->atoms.atomtype[ia], &Hatom))
+                {
+                    Emol -= Hatom;
+                }
+                else
+                {
+                    if (debug)
+                    {
+                        fprintf(debug, "WARNING: NO ref enthalpy for molecule %s.\n",
+                                molProp()->getMolname().c_str());
+                    }
+                    Emol = 0;
+                    break;
+                }
             }
         }
 
@@ -2507,8 +2550,11 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
             }
             else
             {
-                fprintf(debug, "WARNING: NO Zero-point energy for molecule %s.\n",
-                        molProp()->getMolname().c_str());
+                if (debug)
+                {
+                    fprintf(debug, "WARNING: NO Zero-point energy for molecule %s.\n",
+                            molProp()->getMolname().c_str());
+                }
             }
         }
 

@@ -2109,7 +2109,7 @@ int alex_tune_fc(int argc, char *argv[])
     ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
     const char                    *tabfn                      = opt2fn_null("-table", NFILE, fnm);
 
-    if (iChargeDistributionModel != eqdAXp && nullptr == tabfn)
+    if (iChargeDistributionModel == eqdAXs && nullptr == tabfn)
     {
         gmx_fatal(FARGS, "Cannot generate charges with the %s charge model without a potential table. "
                   "Please supply a table file.", getEemtypeName(iChargeDistributionModel));

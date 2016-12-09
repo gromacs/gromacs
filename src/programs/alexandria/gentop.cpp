@@ -465,7 +465,7 @@ int alex_gentop(int argc, char *argv[])
 
     if (immOK == imm)
     {
-        if (nullptr == tabfn && bPolar && iChargeDistributionModel != eqdAXp)
+        if (nullptr == tabfn && bPolar && iChargeDistributionModel == eqdAXs)
         {
             gmx_fatal(FARGS, "Cannot generate charges in a polarizable system with the %s charge "
                       "model without a potential table. Please supply a table file.",

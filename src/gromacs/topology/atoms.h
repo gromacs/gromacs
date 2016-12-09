@@ -71,6 +71,8 @@ typedef struct t_atom
     int            resind;      /* Index into resinfo (in t_atoms)      */
     int            atomnumber;  /* Atomic Number or 0                   */
     char           elem[4];     /* Element name                         */
+    real           zetaA;       /* 1/Width of the Gaussian charge (unit 1/nm) */
+    real           zetaB;       /* 1/Width of the Gaussian charge (unit 1/nm) */
 } t_atom;
 
 typedef struct t_resinfo
