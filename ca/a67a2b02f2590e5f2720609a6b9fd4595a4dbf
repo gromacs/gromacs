@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Code-Review+2: Berk Hess <hess@kth.se>
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Fri, 09 Dec 2016 22:24:48 +0100
+Reviewed-on: https://gerrit.gromacs.org/6372
+Project: gromacs
+Branch: refs/heads/master
