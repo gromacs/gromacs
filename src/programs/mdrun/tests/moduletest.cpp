@@ -165,6 +165,7 @@ SimulationRunner::callGromppOnThisRank(const CommandLine &callerRef)
     caller.addOption("-n", ndxFileName_);
     caller.addOption("-p", topFileName_);
     caller.addOption("-c", groFileName_);
+    caller.addOption("-r", groFileName_);
 
     caller.addOption("-po", mdpOutputFileName_);
     caller.addOption("-o", tprFileName_);
