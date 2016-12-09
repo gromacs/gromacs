@@ -545,8 +545,6 @@ static void push_bondtype(t_params     *       bt,
                           char     *           line,
                           warninp_t            wi)
 {
-    int      i, j;
-    gmx_bool bTest, bFound, bCont, bId;
     int      nr   = bt->nr;
     int      nrfp = NRFP(ftype);
     char     errbuf[STRLEN];
@@ -561,73 +559,99 @@ static void push_bondtype(t_params     *       bt,
        in this group.
      */
 
-    bFound = FALSE;
-    bCont  = FALSE;
+    bool isContinuationOfBlock = false;
 
     if (bAllowRepeat && nr > 1)
     {
-        for (j = 0, bCont = TRUE; (j < nral); j++)
+        isContinuationOfBlock = true;
+        for (int j = 0; (j < nral); j++)
         {
-            bCont = bCont && (b->a[j] == bt->param[nr-2].a[j]);
+            isContinuationOfBlock =
+                isContinuationOfBlock && (b->a[j] == bt->param[nr-2].a[j]);
         }
     }
 
     /* Search for earlier duplicates if this entry was not a continuation
        from the previous line.
      */
-    if (!bCont)
+    int foundIndex = -1;
+    if (!isContinuationOfBlock)
     {
-        bFound = FALSE;
-        for (i = 0; (i < nr); i++)
+        for (int i = 0; (i < nr); i++)
         {
-            bTest = TRUE;
-            for (j = 0; (j < nral); j++)
+            bool sameAtoms = true;
+            for (int j = 0; (j < nral); j++)
             {
-                bTest = (bTest && (b->a[j] == bt->param[i].a[j]));
+                sameAtoms = (sameAtoms && (b->a[j] == bt->param[i].a[j]));
             }
-            if (!bTest)
+            if (!sameAtoms)
             {
-                bTest = TRUE;
-                for (j = 0; (j < nral); j++)
+                /* Check reversed order */
+                sameAtoms = true;
+                for (int j = 0; (j < nral); j++)
                 {
-                    bTest = (bTest && (b->a[nral-1-j] == bt->param[i].a[j]));
+                    sameAtoms = (sameAtoms && (b->a[nral - 1 - j] == bt->param[i].a[j]));
                 }
             }
-            if (bTest)
+            if (sameAtoms)
             {
-                if (!bFound)
+                foundIndex = i;
+                break;
+            }
+        }
+
+        if (foundIndex >= 0)
+        {
+            bool haveDihedralType9   = (ftype == F_PDIHS && bAllowRepeat);
+            bool identicalParameters = true;
+
+            if (haveDihedralType9)
+            {
+                /* Dihedral type 9 supports multiple parameters on
+                 * consecutive lines (a block). We do not allow repeating
+                 * a block with identical parameters for this, as that
+                 * would require a lot of code for checking.
+                 */
+                warning_error(wi, "Found multiple blocks of lines with parameters for dihedral type 9 for the same atom types. This is not supported.");
+            }
+            else
+            {
+                for (int j = 0; (j < nrfp); j++)
                 {
-                    bId = TRUE;
-                    for (j = 0; (j < nrfp); j++)
-                    {
-                        bId = bId && (bt->param[i].c[j] == b->c[j]);
-                    }
-                    if (!bId)
-                    {
-                        sprintf(errbuf, "Overriding %s parameters.%s",
-                                interaction_function[ftype].longname,
-                                (ftype == F_PDIHS) ?
-                                "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
-                                : "");
-                        warning(wi, errbuf);
-                        fprintf(stderr, "  old:                                         ");
-                        for (j = 0; (j < nrfp); j++)
-                        {
-                            fprintf(stderr, " %g", bt->param[i].c[j]);
-                        }
-                        fprintf(stderr, " \n  new: %s\n\n", line);
-                    }
+                    identicalParameters = identicalParameters && (bt->param[foundIndex].c[j] == b->c[j]);
                 }
-                /* Overwrite it! */
-                for (j = 0; (j < nrfp); j++)
+                if (!identicalParameters)
                 {
-                    bt->param[i].c[j] = b->c[j];
+                    sprintf(errbuf, "Overriding %s parameters.%s",
+                            interaction_function[ftype].longname,
+                            (ftype == F_PDIHS) ?
+                            "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
+                            : "");
+                    warning(wi, errbuf);
                 }
-                bFound = TRUE;
+            }
+
+            if (haveDihedralType9 || !identicalParameters)
+            {
+                fprintf(stderr, "  old:                                         ");
+                for (int j = 0; (j < nrfp); j++)
+                {
+                    fprintf(stderr, " %g", bt->param[foundIndex].c[j]);
+                }
+                fprintf(stderr, " \n  new: %s\n\n", line);
+            }
+
+            if (!haveDihedralType9 && !identicalParameters)
+            {
+                /* Overwrite the parameters with the latest ones */
+                for (int j = 0; (j < nrfp); j++)
+                {
+                    bt->param[foundIndex].c[j] = b->c[j];
+                }
             }
         }
     }
-    if (!bFound)
+    if (foundIndex < 0)
     {
         /* alloc */
         pr_alloc (2, bt);
@@ -647,7 +671,7 @@ static void push_bondtype(t_params     *       bt,
             bt->param[bt->nr+1].c[2] = 1-bt->param[bt->nr+1].c[2];
         }
 
-        for (j = 0; (j < nral); j++)
+        for (int j = 0; (j < nral); j++)
         {
             bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
         }
