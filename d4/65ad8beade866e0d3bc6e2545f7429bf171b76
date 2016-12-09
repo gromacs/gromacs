@@ -1,0 +1,8 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Code-Review+2: Berk Hess <hess@kth.se>
+Submitted-by: Berk Hess <hess@kth.se>
+Submitted-at: Fri, 09 Dec 2016 22:26:18 +0100
+Reviewed-on: https://gerrit.gromacs.org/6367
+Project: gromacs
+Branch: refs/heads/release-2016
