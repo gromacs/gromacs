@@ -87,7 +87,6 @@ struct t_trxstatus
                                                * for skipping frames with -dt     */
     real                    tf;               /* internal frame time              */
     t_trxframe             *xframe;
-    int                     nxframe;
     t_fileio               *fio;
     tng_trajectory_t        tng;
     int                     natoms;
@@ -169,7 +168,6 @@ static void initcount(t_trxstatus *status)
 static void status_init(t_trxstatus *status)
 {
     status->flags           = 0;
-    status->nxframe         = 0;
     status->xframe          = NULL;
     status->fio             = NULL;
     status->__frame         = -1;
@@ -944,7 +942,6 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
     snew((*status), 1);
 
     status_init( *status );
-    (*status)->nxframe = 1;
     initcount(*status);
     (*status)->flags = flags;
 
@@ -1099,7 +1096,6 @@ int read_first_x(const gmx_output_env_t *oenv, t_trxstatus **status, const char 
     read_first_frame(oenv, status, fn, &fr, TRX_NEED_X);
 
     snew((*status)->xframe, 1);
-    (*status)->nxframe   = 1;
     (*(*status)->xframe) = fr;
     *t                   = (*status)->xframe->time;
     *x                   = (*status)->xframe->x;
