@@ -825,7 +825,7 @@ static void cont_status(const char *slog, const char *ener,
 }
 
 static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
-                        char *fn,
+                        const char *fn,
                         int rc_scaling, int ePBC,
                         rvec com,
                         warninp_t wi)
@@ -1007,7 +1007,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
 }
 
 static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
-                       char *fnA, char *fnB,
+                       const char *fnA, const char *fnB,
                        int rc_scaling, int ePBC,
                        rvec com, rvec comB,
                        warninp_t wi)
@@ -1539,9 +1539,8 @@ int gmx_grompp(int argc, char *argv[])
         "Specifying the [TT]-pp[tt] flag will get the pre-processed",
         "topology file written out so that you can verify its contents.[PAR]",
 
-        "When using position restraints a file with restraint coordinates",
-        "can be supplied with [TT]-r[tt], otherwise restraining will be done",
-        "with respect to the conformation from the [TT]-c[tt] option.",
+        "When using position restraints, a file with restraint coordinates",
+        "are supplied with [TT]-r[tt].",
         "For free energy calculation the the coordinates for the B topology",
         "can be supplied with [TT]-rb[tt], otherwise they will be equal to",
         "those of the A topology.[PAR]",
@@ -1602,7 +1601,6 @@ int gmx_grompp(int argc, char *argv[])
     matrix             box;
     real               fudgeQQ;
     double             reppow;
-    char               fn[STRLEN], fnB[STRLEN];
     const char        *mdparin;
     int                ntype;
     gmx_bool           bNeedVel, bGenVel;
@@ -1616,8 +1614,8 @@ int gmx_grompp(int argc, char *argv[])
         { efMDP, NULL,  NULL,        ffREAD  },
         { efMDP, "-po", "mdout",     ffWRITE },
         { efSTX, "-c",  NULL,        ffREAD  },
-        { efSTX, "-r",  NULL,        ffOPTRD },
-        { efSTX, "-rb", NULL,        ffOPTRD },
+        { efSTX, "-r",  "restraint", ffOPTRD },
+        { efSTX, "-rb", "restraint", ffOPTRD },
         { efNDX, NULL,  NULL,        ffOPTRD },
         { efTOP, NULL,  NULL,        ffREAD  },
         { efTOP, "-pp", "processed", ffOPTWR },
@@ -1708,7 +1706,7 @@ int gmx_grompp(int argc, char *argv[])
         pr_symtab(debug, 0, "Just opened", &sys->symtab);
     }
 
-    strcpy(fn, ftp2fn(efTOP, NFILE, fnm));
+    const char *fn = ftp2fn(efTOP, NFILE, fnm);
     if (!gmx_fexist(fn))
     {
         gmx_fatal(FARGS, "%s does not exist", fn);
@@ -1797,25 +1795,21 @@ int gmx_grompp(int argc, char *argv[])
      */
     check_warning_error(wi, FARGS);
 
-    if (opt2bSet("-r", NFILE, fnm))
+    if (nint_ftype(sys, mi, F_POSRES) > 0 ||
+        nint_ftype(sys, mi, F_FBPOSRES) > 0)
     {
-        sprintf(fn, "%s", opt2fn("-r", NFILE, fnm));
-    }
-    else
-    {
-        sprintf(fn, "%s", opt2fn("-c", NFILE, fnm));
-    }
-    if (opt2bSet("-rb", NFILE, fnm))
-    {
-        sprintf(fnB, "%s", opt2fn("-rb", NFILE, fnm));
-    }
-    else
-    {
-        strcpy(fnB, fn);
-    }
+        const char *fn = opt2fn("-r", NFILE, fnm);
+        const char *fnB;
 
-    if (nint_ftype(sys, mi, F_POSRES) > 0 || nint_ftype(sys, mi, F_FBPOSRES) > 0)
-    {
+        if (opt2bSet("-rb", NFILE, fnm))
+        {
+            fnB = opt2fn("-rb", NFILE, fnm);
+        }
+        else
+        {
+            fnB = fn;
+        }
+
         if (bVerbose)
         {
             fprintf(stderr, "Reading position restraint coords from %s", fn);
