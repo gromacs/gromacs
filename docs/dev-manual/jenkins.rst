@@ -71,9 +71,18 @@ configuration should be more static.
 clang static analysis
 ^^^^^^^^^^^^^^^^^^^^^
 
-The exact build sequence and the CMake configuration used is in
-:file:`admin/builds/clang-analysis.py`.  This file also specifies the clang
-version used for the analysis.
+The file :file:`admin/builds/clang-analyzer.py` specifies the exact build
+sequence and the CMake cache variables used for clang static analysis.  This
+file also specifies the clang version used for the analysis, as well as the C++
+compiler used (``c++-analyzer-<clang_version>``).
+
+It is possible to run clang static analysis outside of Jenkins.  To do so, you
+should run both ``cmake`` and ``make`` under ``scan-build`` command using the
+same CMake cache variables as above.  While configuring or compiling, make sure
+that C++ compiler is set to ``c++-analyzer`` or
+``c++-analyzer-<clang_version>``.  Note that ``scan-build`` will also set C
+compiler to ``ccc-analyzer`` or ``ccc-analyzer-<clang_version>``, which will
+result in extra warnings due to external and contributed code being analyzed.
 
 cppcheck
 ^^^^^^^^
