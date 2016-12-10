@@ -606,13 +606,6 @@ extern const char *eQMMMscheme_names[eQMMMschemeNR+1];
 //! Macro to pick QMMMM scheme name
 #define EQMMMSCHEME(e) enum_name(e, eQMMMschemeNR, eQMMMscheme_names)
 
-//! Internal stuff for multiple value options in mdp files
-enum {
-    eMultentOptName, eMultentOptNo, eMultentOptLast, eMultentOptNR
-};
-//! Multiple value option names
-extern const char *eMultentOpt_names[eMultentOptNR+1];
-
 /*! \brief Neighborlist geometry type.
  *
  * Kernels will compute interactions between two particles,
