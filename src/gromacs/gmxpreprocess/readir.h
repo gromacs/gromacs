@@ -38,7 +38,6 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
-#include "gromacs/fileio/readinp.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 
 struct gmx_groups_t;
@@ -47,8 +46,11 @@ struct gmx_output_env_t;
 struct pull_params_t;
 struct pull_t;
 struct t_grpopts;
+struct t_inpfile;
 struct t_inputrec;
 struct t_rot;
+struct warninp;
+typedef warninp *warninp_t;
 
 enum {
     eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR
@@ -58,7 +60,8 @@ enum {
     ecouplamVDWQ, ecouplamVDW, ecouplamQ, ecouplamNONE, ecouplamNR
 };
 
-typedef struct {
+struct t_gromppopts
+{
     int      warnings;
     int      nshake;
     char    *include;
@@ -74,7 +77,7 @@ typedef struct {
     int      couple_lam0;
     int      couple_lam1;
     gmx_bool bCoupleIntra;
-} t_gromppopts;
+};
 
 /*! \brief Initialise object to hold strings parsed from an .mdp file */
 void init_inputrec_strings();

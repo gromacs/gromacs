@@ -42,6 +42,7 @@
 #include <stdlib.h>
 
 #include <cmath>
+#include <cstring>
 
 #include <algorithm>
 
