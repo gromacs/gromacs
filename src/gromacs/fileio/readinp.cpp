@@ -46,7 +46,6 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/warninp.h"
-#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -65,8 +64,6 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
     char      *ptr, *cptr;
     t_inpfile *inp = NULL;
     int        nin, lc, i, j, k;
-    /* setting cppopts from command-line options would be cooler */
-    gmx_bool   allow_override = FALSE;
 
 
     if (debug)
@@ -141,71 +138,26 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
                     }
                     else
                     {
-                        /* Now finally something sensible */
-                        int found_index;
+                        /* Now finally something sensible; check for duplicates */
+                        int found_index = search_einp(nin, inp, lbuf);
 
-                        /* first check whether we hit the 'multiple_entries' option */
-                        if (gmx_strcasecmp_min(eMultentOpt_names[eMultentOptName], lbuf) == 0)
+                        if (found_index == -1)
                         {
-                            /* we now check whether to allow overrides from here or not */
-                            if (gmx_strcasecmp_min(eMultentOpt_names[eMultentOptNo], rbuf) == 0)
-                            {
-                                allow_override = FALSE;
-                            }
-                            else if (gmx_strcasecmp_min(eMultentOpt_names[eMultentOptLast], rbuf) == 0)
-                            {
-                                allow_override = TRUE;
-                            }
-                            else
-                            {
-                                sprintf(warn_buf,
-                                        "Parameter \"%s\" should either be %s or %s\n",
-                                        lbuf,
-                                        eMultentOpt_names[eMultentOptNo],
-                                        eMultentOpt_names[eMultentOptLast]);
-                                warning_error(wi, warn_buf);
-                            }
+                            /* add a new item */
+                            srenew(inp, ++nin);
+                            inp[nin-1].inp_count  = 1;
+                            inp[nin-1].count      = 0;
+                            inp[nin-1].bObsolete  = FALSE;
+                            inp[nin-1].bSet       = FALSE;
+                            inp[nin-1].name       = gmx_strdup(lbuf);
+                            inp[nin-1].value      = gmx_strdup(rbuf);
                         }
                         else
                         {
-                            /* it is a regular option; check for duplicates */
-                            found_index = search_einp(nin, inp, lbuf);
-
-                            if (found_index == -1)
-                            {
-                                /* add a new item */
-                                srenew(inp, ++nin);
-                                inp[nin-1].inp_count  = 1;
-                                inp[nin-1].count      = 0;
-                                inp[nin-1].bObsolete  = FALSE;
-                                inp[nin-1].bSet       = FALSE;
-                                inp[nin-1].name       = gmx_strdup(lbuf);
-                                inp[nin-1].value      = gmx_strdup(rbuf);
-                            }
-                            else
-                            {
-                                if (!allow_override)
-                                {
-                                    sprintf(warn_buf,
-                                            "Parameter \"%s\" doubly defined (and multiple assignments not allowed)\n",
-                                            lbuf);
-                                    warning_error(wi, warn_buf);
-                                }
-                                else
-                                {
-                                    /* override */
-                                    if (!inp)
-                                    {
-                                        gmx_fatal(FARGS, "Internal inconsistency; inp[] base pointer is NULL");
-                                    }
-                                    sfree(inp[found_index].value);
-                                    inp[found_index].value = gmx_strdup(rbuf);
-                                    sprintf(warn_buf,
-                                            "Overriding existing parameter \"%s\" with value \"%s\"\n",
-                                            lbuf, rbuf);
-                                    warning_note(wi, warn_buf);
-                                }
-                            }
+                            sprintf(warn_buf,
+                                    "Parameter \"%s\" doubly defined (and multiple assignments not allowed)\n",
+                                    lbuf);
+                            warning_error(wi, warn_buf);
                         }
                     }
                 }
