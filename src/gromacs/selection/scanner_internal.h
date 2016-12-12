@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015,2016, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 #define SELECTION_SCANNER_INTERNAL_H
 
 #include <exception>
+#include <string>
 
 #include "parser.h"
 
@@ -86,11 +87,7 @@ typedef struct gmx_sel_lexer_t
     gmx::TextWriter                 *statusWriter;
 
     //! Pretty-printed version of the string parsed since last clear.
-    char                            *pselstr;
-    //! Length of the string in \a pselstr.
-    int                              pslen;
-    //! Number of bytes allocated for \a pselstr.
-    int                              nalloc_psel;
+    std::string                      pselstr;
     /*! \brief
      * Position of the result of the current Bison action.
      *

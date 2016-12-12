@@ -82,6 +82,14 @@ static int nFloatSize(gmx_trr_header_t *sh)
     return nflsize;
 }
 
+/* Returns whether a valid frame header was read. Upon exit, *bOK is
+   TRUE if a normal outcome resulted. Usually that is the same thing,
+   but encountering the end of the file before reading the magic
+   integer is a normal outcome for TRR reading, and it does not
+   produce a valid frame header, so the values differ in that case.
+   That does not exclude the possibility of a reading error between
+   frames, but the trajectory-handling infrastructure needs an
+   overhaul before we can handle that. */
 static gmx_bool
 do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *bOK)
 {
@@ -94,9 +102,11 @@ do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t *sh, gmx_bool *b
 
     if (!gmx_fio_do_int(fio, magic))
     {
-        // Failed to read an integer, which should be the magic number
-        *bOK = FALSE;
-        return *bOK;
+        /* Failed to read an integer, which should be the magic
+           number, which usually means we've reached the end
+           of the file (but could be an I/O error that we now
+           might mishandle). */
+        return FALSE;
     }
     if (magic != magicValue)
     {
