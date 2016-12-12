@@ -373,6 +373,12 @@ def main():
 
     if not options.quiet:
         sys.stderr.write('Scanning source tree...\n')
+    if not options.source_root:
+        sys.stderr.write('Source root required not specified.\n')
+        sys.exit(2)
+    if not options.build_root:
+        sys.stderr.write('Build root required not specified.\n')
+        sys.exit(2)
     tree = GromacsTree(options.source_root, options.build_root, reporter)
     tree.load_installed_file_list()
     files = []
