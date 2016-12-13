@@ -75,6 +75,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <array>
+
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
@@ -206,6 +208,19 @@ namespace gmx
 {
 
 #if GMX_SIMD_HAVE_REAL
+
+template<class T, size_t N>
+struct AlignedArray;
+
+template<size_t N>
+struct alignas(GMX_SIMD_FLOAT_WIDTH*sizeof(float))AlignedArray<float, N> : public std::array<float, N>
+{
+};
+
+template<size_t N>
+struct alignas(GMX_SIMD_DOUBLE_WIDTH*sizeof(double))AlignedArray<double, N> : public std::array<double, N>
+{
+};
 
 /*! \name SIMD data types
  *
@@ -397,6 +412,9 @@ class SimdLoadFProxyInternal
 
         friend const SimdLoadFProxyInternal gmx_simdcall
         load(const float *m);
+        template <size_t N>
+        friend const SimdLoadFProxyInternal gmx_simdcall
+        load(const AlignedArray<float, N> &m);
 
         const float * const m_; //!< The pointer used to load memory
 
@@ -414,6 +432,15 @@ load(const float *m)
 {
     return {
                m
+    };
+}
+
+template <size_t N>
+static inline const SimdLoadFProxyInternal gmx_simdcall
+load(const AlignedArray<float, N> &m)
+{
+    return {
+               m.data()
     };
 }
 
