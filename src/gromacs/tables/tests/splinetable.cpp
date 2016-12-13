@@ -719,22 +719,16 @@ TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
     TypeParam              table( {{"LJ12", lj12Function, lj12Derivative}}, range);
     SimdReal               x, func, der;
 
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    AlignedArray<real, GMX_SIMD_REAL_WIDTH> alignedMem;
 
-    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-    {
-        alignedMem[i] = range.first;
-    }
+    alignedMem.fill(range.first);
     // Make position 1 incorrect if width>=2, otherwise position 0
     alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = range.first*(1.0-GMX_REAL_EPS);
     x = load(alignedMem);
 
     EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
 
-    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-    {
-        alignedMem[i] = range.second*(1.0-GMX_REAL_EPS);
-    }
+    alignedMem.fill(range.second*(1.0-GMX_REAL_EPS));
     // Make position 1 incorrect if width>=2, otherwise position 0
     alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = range.second;
     x = load(alignedMem);
