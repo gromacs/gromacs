@@ -715,16 +715,13 @@ TYPED_TEST(SplineTableTest, SimdTwoFunctions)
 #if GMX_SIMD_HAVE_REAL && !defined NDEBUG
 TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
 {
-    std::pair<real, real>  range(0.2, 1.0);
-    TypeParam              table( {{"LJ12", lj12Function, lj12Derivative}}, range);
-    SimdReal               x, func, der;
+    std::pair<real, real>                   range(0.2, 1.0);
+    TypeParam                               table( {{"LJ12", lj12Function, lj12Derivative}}, range);
+    SimdReal                                x, func, der;
 
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    AlignedArray<real, GMX_SIMD_REAL_WIDTH> alignedMem;
 
-    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-    {
-        alignedMem[i] = range.first;
-    }
+    alignedMem.fill(range.first);
     // Make position 1 incorrect if width>=2, otherwise position 0
     // range.first-GMX_REAL_EPS is not invalid. See comment in table.
     alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = -GMX_REAL_EPS;

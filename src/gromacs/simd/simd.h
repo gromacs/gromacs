@@ -75,6 +75,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <array>
+
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
@@ -205,6 +207,25 @@
 namespace gmx
 {
 
+template<class T, size_t N>
+struct AlignedArray;
+
+#if GMX_SIMD_HAVE_FLOAT
+//! \libinternal Identical to std::array with GMX_SIMD_FLOAT_WIDTH alignment
+template<size_t N>
+struct alignas(GMX_SIMD_FLOAT_WIDTH*sizeof(float))AlignedArray<float, N> : public std::array<float, N>
+{
+};
+#endif
+
+#if GMX_SIMD_HAVE_DOUBLE
+//! \libinternal Identical to std::array with GMX_SIMD_DOUBLE_WIDTH alignment
+template<size_t N>
+struct alignas(GMX_SIMD_DOUBLE_WIDTH*sizeof(double))AlignedArray<double, N> : public std::array<double, N>
+{
+};
+#endif
+ 
 #if GMX_SIMD_HAVE_REAL
 
 /*! \name SIMD data types
@@ -397,6 +418,9 @@ class SimdLoadFProxyInternal
 
         friend const SimdLoadFProxyInternal gmx_simdcall
         load(const float *m);
+        template <size_t N>
+        friend const SimdLoadFProxyInternal gmx_simdcall
+        load(const AlignedArray<float, N> &m);
 
         const float * const m_; //!< The pointer used to load memory
 
@@ -417,6 +441,14 @@ load(const float *m)
     };
 }
 
+template <size_t N>
+static inline const SimdLoadFProxyInternal gmx_simdcall
+load(const AlignedArray<float, N> &m)
+{
+    return {
+               m.data()
+    };
+}
 
 class SimdLoadUFProxyInternal;
 
@@ -505,7 +537,9 @@ class SimdLoadDProxyInternal
 
         friend const SimdLoadDProxyInternal gmx_simdcall
         load(const double *m);
-
+        template <size_t N>
+        friend const SimdLoadDProxyInternal gmx_simdcall
+        load(const AlignedArray<double, N> &m);
         const double * const m_; //!< The pointer used to load memory
 
         GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadDProxyInternal);
@@ -522,6 +556,15 @@ load(const double *m)
 {
     return {
                m
+    };
+}
+
+template <size_t N>
+static inline const SimdLoadDProxyInternal gmx_simdcall
+load(const AlignedArray<double, N> &m)
+{
+    return {
+        m.data()
     };
 }
 
