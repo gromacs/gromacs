@@ -164,6 +164,8 @@ headers.  Currently, this includes the path to \Gromacs headers.</dd>
 <dt>`GROMACS_LIBRARIES`</dt>
 <dd>List of libraries to link with to link against \Gromacs.
 Under the hood, this uses imported CMake targets to represent `libgromacs`.</dd>
+<dt>`GROMACS_LIBDIR`</dt>
+<dd>Directory in which the `libgromacs` target is installed.</dd>
 <dt>`GROMACS_DEFINITIONS`</dt>
 <dd>List of compile definitions (with `-D` in front) that are required to
 compile the \Gromacs headers.</dd>
