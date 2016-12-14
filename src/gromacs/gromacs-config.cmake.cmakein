@@ -85,6 +85,11 @@ set(GROMACS_CXX_COMPILER_ID "@CMAKE_CXX_COMPILER_ID@")
 set(GROMACS_CXX_COMPILER_VERSION "@CMAKE_CXX_COMPILER_VERSION@")
 set(GROMACS_CXX_FLAGS "@GMX_CXX11_FLAGS@ @GMX_STDLIB_CXX_FLAGS@")
 
+set(GROMACS_LIBDIR)
+get_target_property(_lib libgromacs LOCATION)
+get_filename_component(GROMACS_LIBDIR ${_lib} DIRECTORY)
+unset(_lib)
+
 # Produce a message, since find_package() prints nothing on success.
 include(FindPackageMessage)
 # The version info is set by CMake when it determines whether this file

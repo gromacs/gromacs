@@ -115,7 +115,8 @@ The CMake machinery to support `find_package(GROMACS)` has two parts: a
 `FindGROMACS.cmake` find module (found in `share/gromacs/template/cmake/` in
 the installation and `share/template/cmake/` in the source tree), and actual
 package configuration files (`gromacs-config.cmake` and supporting files
-installed to `share/cmake/` from input files in `src/gromacs/`).
+installed to `share/cmake/` from input files in `src/gromacs/`) that set up
+the `libgromacs` import target and define useful variables (below).
 
 `FindGROMACS.cmake` is a simple wrapper over the package configuration files,
 providing a somewhat more convenient interface to the machinery that supports
@@ -164,6 +165,8 @@ headers.  Currently, this includes the path to \Gromacs headers.</dd>
 <dt>`GROMACS_LIBRARIES`</dt>
 <dd>List of libraries to link with to link against \Gromacs.
 Under the hood, this uses imported CMake targets to represent `libgromacs`.</dd>
+<dt>`GROMACS_LIBDIR`</dt>
+<dd>Directory in which the `libgromacs` target is installed.</dd>
 <dt>`GROMACS_DEFINITIONS`</dt>
 <dd>List of compile definitions (with `-D` in front) that are required to
 compile the \Gromacs headers.</dd>
