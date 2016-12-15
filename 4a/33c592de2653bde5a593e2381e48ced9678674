@@ -1,0 +1,9 @@
+Code-Review+1: Magnus Lundborg <magnus.lundborg@scilifelab.se>
+Code-Review+1: Aleksei Iupinov <a.yupinov@gmail.com>
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Submitted-by: Roland Schulz <roland.schulz@intel.com>
+Submitted-at: Thu, 15 Dec 2016 23:59:38 +0100
+Reviewed-on: https://gerrit.gromacs.org/6348
+Project: gromacs
+Branch: refs/heads/master
