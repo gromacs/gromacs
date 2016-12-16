@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+2: Roland Schulz <roland.schulz@intel.com>
+Code-Review+1: Aleksei Iupinov <a.yupinov@gmail.com>
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Fri, 16 Dec 2016 18:06:26 +0100
+Reviewed-on: https://gerrit.gromacs.org/6385
+Project: gromacs
+Branch: refs/heads/release-2016
