@@ -73,7 +73,7 @@ enum {
  */
 int gmx_pme_init(struct gmx_pme_t **pmedata, struct t_commrec *cr,
                  int nnodes_major, int nnodes_minor,
-                 t_inputrec *ir, int homenr,
+                 const t_inputrec *ir, int homenr,
                  gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                  gmx_bool bReproducible,
                  real ewaldcoeff_q, real ewaldcoeff_lj,
@@ -182,6 +182,6 @@ void gmx_pme_receive_f(struct t_commrec *cr,
  * \param[in] nAtoms         The number of particles.
  * \param[in] coefficients   The pointer to the array of particle charges.
  */
-void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, real *coefficients);
+void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *coefficients);
 
 #endif

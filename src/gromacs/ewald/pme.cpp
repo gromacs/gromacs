@@ -488,7 +488,7 @@ int gmx_pme_init(struct gmx_pme_t   **pmedata,
                  t_commrec   *        cr,
                  int                  nnodes_major,
                  int                  nnodes_minor,
-                 t_inputrec   *       ir,
+                 const t_inputrec   * ir,
                  int                  homenr,
                  gmx_bool             bFreeEnergy_q,
                  gmx_bool             bFreeEnergy_lj,
@@ -1701,7 +1701,7 @@ int gmx_pme_destroy(struct gmx_pme_t **pmedata)
     return 0;
 }
 
-void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, real *coefficients)
+void gmx_pme_reinit_atoms(const gmx_pme_t *pme, const int nAtoms, const real *coefficients)
 {
     if (pme_gpu_active(pme))
     {

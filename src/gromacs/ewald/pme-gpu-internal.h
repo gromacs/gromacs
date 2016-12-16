@@ -46,7 +46,6 @@
 #ifndef PMEGPUINTERNAL_H
 #define PMEGPUINTERNAL_H
 
-#include "gromacs/fft/fft.h"                   // for the enum gmx_fft_direction
 #include "gromacs/gpu_utils/gpu_macros.h"      // for the CUDA_FUNC_ macros
 
 #include "pme-gpu-types.h"                     // for the inline functions accessing pme_gpu_t members
@@ -55,6 +54,7 @@ struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
 struct gmx_pme_t;                              // only used in pme_gpu_reinit
 struct gmx_wallclock_gpu_pme_t;
+struct pme_atomcomm_t;
 
 /* Some general defines for PME GPU behaviour follow.
  * Some of the might be possible to turn into booleans.
@@ -90,13 +90,22 @@ struct gmx_wallclock_gpu_pme_t;
 /* A block of CUDA-only functions that live in pme.cu */
 
 /*! \libinternal \brief
- * Returns the number of atoms per execution block in the atom data layout.
+ * Returns the number of atoms per chunk in the atom charges/coordinates data layout.
  * Depends on CUDA-specific block sizes, needed for the atom data padding.
  *
  * \param[in] pmeGPU            The PME GPU structure.
  * \returns   Number of atoms in a single GPU atom data chunk.
  */
 CUDA_FUNC_QUALIFIER int pme_gpu_get_atom_data_alignment(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM_WITH_RETURN(1)
+
+/*! \libinternal \brief
+ * Returns the number of atoms per chunk in the atom spline theta/dtheta data layout.
+ *
+ * \param[in] pmeGPU            The PME GPU structure.
+ * \returns   Number of atoms in a single GPU atom spline data chunk.
+ */
+CUDA_FUNC_QUALIFIER int pme_gpu_get_atom_spline_data_alignment(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM_WITH_RETURN(1)
+//do I need this here?
 
 /*! \libinternal \brief
  * Synchronizes the current step, waiting for the GPU kernels/transfers to finish.
@@ -230,7 +239,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_realloc_and_copy_input_coefficients(const pme_g
 CUDA_FUNC_QUALIFIER void pme_gpu_free_coefficients(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
- * Reallocates the buffers on the GPU for the atoms spline data.
+ * Reallocates the buffers on the GPU and the host for the atoms spline data.
  *
  * \param[in] pmeGPU            The PME GPU structure.
  */
@@ -244,7 +253,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_realloc_spline_data(const pme_gpu_t *CUDA_FUNC_
 CUDA_FUNC_QUALIFIER void pme_gpu_free_spline_data(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
- * Reallocates the buffer on the GPU for the particle gridline indices.
+ * Reallocates the buffers on the GPU and the host for the particle gridline indices.
  *
  * \param[in] pmeGPU            The PME GPU structure.
  */
@@ -294,20 +303,32 @@ CUDA_FUNC_QUALIFIER void pme_gpu_realloc_and_copy_fract_shifts(pme_gpu_t *CUDA_F
 CUDA_FUNC_QUALIFIER void pme_gpu_free_fract_shifts(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
- * Waits for the PME GPU output virial/energy copying to the intermediate CPU buffer to finish.
+ * Waits for the output virial/energy copying to the intermediate CPU buffer to finish.
  *
  * \param[in] pmeGPU  The PME GPU structure.
  */
 CUDA_FUNC_QUALIFIER void pme_gpu_sync_output_energy_virial(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
- * Waits for the PME GPU grid copying to the host-side buffer to finish.
+ * Waits for the grid copying to the host-side buffer after spreading to finish.
  *
  * \param[in] pmeGPU  The PME GPU structure.
- * \param[in] dir     The FFT direction.
  */
-CUDA_FUNC_QUALIFIER void pme_gpu_sync_grid(const pme_gpu_t        *CUDA_FUNC_ARGUMENT(pmeGPU),
-                                           const gmx_fft_direction CUDA_FUNC_ARGUMENT(dir)) CUDA_FUNC_TERM
+CUDA_FUNC_QUALIFIER void pme_gpu_sync_spread_grid(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
+
+/*! \libinternal \brief
+ * Waits for the atom data copying to the intermediate host-side buffer after spline computation to finish.
+ *
+ * \param[in] pmeGPU  The PME GPU structure.
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_sync_spline_atom_data(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
+
+/*! \libinternal \brief
+ * Waits for the grid copying to the host-side buffer after solving to finish.
+ *
+ * \param[in] pmeGPU  The PME GPU structure.
+ */
+CUDA_FUNC_QUALIFIER void pme_gpu_sync_solve_grid(const pme_gpu_t *CUDA_FUNC_ARGUMENT(pmeGPU)) CUDA_FUNC_TERM
 
 /*! \libinternal \brief
  * Does the one-time GPU-framework specific PME initialization.
@@ -402,7 +423,7 @@ CUDA_FUNC_QUALIFIER void pme_gpu_get_timings(const pme_gpu_t         *CUDA_FUNC_
  * Tells if PME runs on multiple GPUs with the decomposition.
  *
  * \param[in] pmeGPU         The PME GPU structure.
- * \returns                  TRUE if PME runs on multiple GPUs, FALSE otherwise.
+ * \returns                  True if PME runs on multiple GPUs, false otherwise.
  */
 gmx_inline bool pme_gpu_uses_dd(const pme_gpu_t *pmeGPU)
 {
@@ -413,7 +434,7 @@ gmx_inline bool pme_gpu_uses_dd(const pme_gpu_t *pmeGPU)
  * Tells if PME performs the gathering stage on GPU.
  *
  * \param[in] pmeGPU         The PME GPU structure.
- * \returns                  TRUE if the gathering is performed on GPU, FALSE otherwise.
+ * \returns                  True if the gathering is performed on GPU, false otherwise.
  */
 gmx_inline bool pme_gpu_performs_gather(const pme_gpu_t *pmeGPU)
 {
@@ -424,7 +445,7 @@ gmx_inline bool pme_gpu_performs_gather(const pme_gpu_t *pmeGPU)
  * Tells if PME performs the FFT stages on GPU.
  *
  * \param[in] pmeGPU         The PME GPU structure.
- * \returns                  TRUE if FFT is performed on GPU, FALSE otherwise.
+ * \returns                  True if FFT is performed on GPU, false otherwise.
  */
 gmx_inline bool pme_gpu_performs_FFT(const pme_gpu_t *pmeGPU)
 {
@@ -435,7 +456,7 @@ gmx_inline bool pme_gpu_performs_FFT(const pme_gpu_t *pmeGPU)
  * Tells if PME performs the grid (un-)wrapping on GPU.
  *
  * \param[in] pmeGPU         The PME GPU structure.
- * \returns                  TRUE if (un-)wrapping is performed on GPU, FALSE otherwise.
+ * \returns                  True if (un-)wrapping is performed on GPU, false otherwise.
  */
 gmx_inline bool pme_gpu_performs_wrapping(const pme_gpu_t *pmeGPU)
 {
@@ -446,7 +467,7 @@ gmx_inline bool pme_gpu_performs_wrapping(const pme_gpu_t *pmeGPU)
  * Tells if PME performs the grid solving on GPU.
  *
  * \param[in] pmeGPU         The PME GPU structure.
- * \returns                  TRUE if solving is performed on GPU, FALSE otherwise.
+ * \returns                  True if solving is performed on GPU, false otherwise.
  */
 gmx_inline bool pme_gpu_performs_solve(const pme_gpu_t *pmeGPU)
 {

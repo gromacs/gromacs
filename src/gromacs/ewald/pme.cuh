@@ -46,7 +46,7 @@
 
 #include <cassert>                               // for asserts within inline functions
 
-#include "gromacs/gpu_utils/cuda_arch_utils.cuh" //for warp_size
+#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
 
 #include "pme-gpu-internal.h"                    // for the general PME GPU behaviour defines
 #include "pme-timings.cuh"                       // FIXME: for the pme_gpu_timing unique_ptr vector
@@ -59,10 +59,10 @@ class parallel_3dfft_gpu_t;
 /* Using textures instead of global memory. Only in spread now, but B-spline moduli in solving could also be texturized. */
 #define PME_USE_TEXTURES 1
 #if PME_USE_TEXTURES
+#define PME_USE_TEXOBJ (GMX_PTX_ARCH >= 300)
 /* Using texture objects as opposed to texture references
- * FIXME: rely entirely on dynamic device info instead, remove more ugly #ifs
+ * TODO: turn into template parameter?
  */
-#define PME_USE_TEXOBJ 1
 #endif
 
 /* TODO: move all the kernel blocksizes here, as they are all over the place */
@@ -169,8 +169,10 @@ struct pme_gpu_cuda_host_t
     cudaEvent_t syncEnerVirD2H;
     /*! \brief A synchronization event for the output forces being copied to the host after the gathering stage. */
     cudaEvent_t syncForcesD2H;
-    /*! \brief A synchronization event for the grid being copied to the host after the spreading stage (for the host-side FFT). */
+    /*! \brief A synchronization event for the grid being copied to the host after the spreading stage (for the host-side FFT / testing). */
     cudaEvent_t syncSpreadGridD2H;
+    /*! \brief A synchronization event for the atom data being copied to the host after the spline computation (for the host-side gathering / testing). */
+    cudaEvent_t syncSplineAtomDataD2H;
     /*! \brief A synchronization event for the grid being copied to the host after the solving stage (for the host-side FFT). */
     cudaEvent_t syncSolveGridD2H;
 
@@ -182,9 +184,9 @@ struct pme_gpu_cuda_host_t
      * FIXME: this should also be disabled if any other GPU task is running,
      * as CUDA events on multiple streams are untrustworthy.
      */
-    bool useTiming;
+    bool                                                     useTiming;
 
-    //bool bUseTextureObjects;  /* If FALSE, then use references [unused] */
+    bool                                                     useTextureObjects; /* If false, then use references. TODO: replace with enum? */
 
     std::vector<std::unique_ptr<parallel_3dfft_gpu_t > >     pfft_setup_gpu;
 
@@ -245,5 +247,23 @@ struct pme_gpu_cuda_kernel_params_t : pme_gpu_kernel_params_base_t
     /*! \brief CUDA texture object for accessing grid.d_gridlineIndicesTable */
     cudaTextureObject_t gridlineIndicesTableTexture;
 };
+
+/* CUDA texture functions which will reside in respective kernel files
+ * (Due to texture references having scope of a translation unit).
+ */
+
+/*! \brief \internal
+ * Creates/binds 2 textures used in the spline parameter computation.
+ *
+ * \param[in, out] pmeGPU         The PME GPU structure.
+ */
+inline void pme_gpu_make_fract_shifts_textures(pme_gpu_t gmx_unused *pmeGPU){};
+
+/*! \brief \internal
+ * Frees/unbinds 2 textures used in the spline parameter computation.
+ *
+ * \param[in] pmeGPU             The PME GPU structure.
+ */
+inline void pme_gpu_free_fract_shifts_textures(const pme_gpu_t gmx_unused *pmeGPU){};
 
 #endif

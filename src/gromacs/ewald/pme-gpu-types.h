@@ -248,6 +248,13 @@ struct pme_gpu_staging_t
     float  *h_splineModuli[DIM];
     /*! \brief Sizes of the corresponding h_splineValues arrays in bytes */
     size_t  splineModuliSizes[DIM];
+
+    /*! \brief Pointer to the host memory with B-spline values. Only used for host-side gather, or unit tests */
+    float  *h_theta;
+    /*! \brief Pointer to the host memory with B-spline derivative values. Only used for host-side gather, or unit tests */
+    float  *h_dtheta;
+    /*! \brief Pointer to the host memory with ivec atom gridline indices. Only used for host-side gather, or unit tests */
+    int    *h_gridlineIndices;
 };
 
 /*! \internal \brief
