@@ -234,10 +234,11 @@ class NonBondParams
     
         NonBondParams () {}
     
-        NonBondParams(bool bOpt)
+        NonBondParams(bool bOpt, InteractionType  itype)
         
             :
-                bOpt_(bOpt)
+                bOpt_(bOpt),
+                itype_(itype)
             {}
     
     
@@ -259,6 +260,8 @@ class NonBondParams
         AtomTypesIterator beginAT() { return at_.begin(); }
 
         AtomTypesIterator endAT() { return at_.end(); }
+        
+        InteractionType interactionType() const { return itype_; }
 
         size_t nAT() const { return at_.size(); }
         
@@ -269,6 +272,7 @@ class NonBondParams
     private:
     
         bool                   bOpt_;
+        InteractionType        itype_;
         std::vector<AtomTypes> at_;
         std::vector<int>       reverseIndex_;
         std::vector<double>    params_;
@@ -282,6 +286,7 @@ CommunicationStatus NonBondParams::Send(t_commrec *cr, int dest)
     if (CS_OK == cs)
     {
         gmx_send_int(cr, dest, bOpt_);
+        gmx_send_str(cr, dest, iType2string(itype_));
         gmx_send_int(cr, dest, at_.size());
         gmx_send_int(cr, dest, reverseIndex_.size());
         gmx_send_int(cr, dest, params_.size());
@@ -308,6 +313,7 @@ CommunicationStatus NonBondParams::Receive(t_commrec *cr, int src)
     if (CS_OK == cs)
     {
         bOpt_      = gmx_recv_int(cr, src);
+        itype_     = string2iType(gmx_recv_str(cr, src));
         int nat    = gmx_recv_int(cr, src);
         int nri    = gmx_recv_int(cr, src);
         int nparam = gmx_recv_int(cr, src);
@@ -1444,7 +1450,7 @@ void Optimization::InitOpt(FILE *fplog, bool bOpt[eitNR], real  factor)
                _mymol.size(), ForceConstants_[eitBONDS].nbad());
     }
     
-    NonBondParams nbp(bOpt[eitVDW]);
+    NonBondParams nbp(bOpt[eitVDW], eitVDW);
     nbp.analyzeIdef(_mymol, pd_);
     nbp.makeReverseIndex();
     NonBondParams_.push_back(std::move(nbp));
@@ -1545,7 +1551,13 @@ double Optimization::calcDeviation()
                     }
                 }
 
-                mymol.UpdateIdef(pd_, eitVDW);
+                for (const auto nbp : NonBondParams_)
+                {
+                    if (nbp.nAT() > 0)
+                    {
+                        mymol.UpdateIdef(pd_, nbp.interactionType());
+                    }
+                }
                 
                 for (auto ei = mymol.molProp()->BeginExperiment();
                      ei < mymol.molProp()->EndExperiment(); ++ei)
@@ -1601,12 +1613,13 @@ double Optimization::calcDeviation()
                             fprintf(debug, "spHF: %g  optHF: %g  DeltaEn: %g\n", spHF, optHF, deltaEn);
 
                             fprintf(debug, "%s Chi2 %g Hform %g Emol %g  Ecalc %g Morse %g  "
-                                    "Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g Force2 %g\n",
+                                    "Hangle %g Langle %g PDIHS %g IDIHS %g Coul %g LJ %g BHAM %g POL %g  Force2 %g\n",
                                     mymol.molProp()->getMolname().c_str(), ener, mymol.Hform, Emol, mymol.Ecalc,
                                     mymol.enerd_->term[F_MORSE], mymol.enerd_->term[F_UREY_BRADLEY],
                                     mymol.enerd_->term[F_LINEAR_ANGLES], mymol.enerd_->term[F_PDIHS],
                                     mymol.enerd_->term[F_IDIHS], mymol.enerd_->term[F_COUL_SR], 
-                                    mymol.enerd_->term[F_LJ], mymol.enerd_->term[F_BHAM], mymol.Force2);
+                                    mymol.enerd_->term[F_LJ], mymol.enerd_->term[F_BHAM], 
+                                    mymol.enerd_->term[F_POLARIZATION], mymol.Force2);
                         }
                     }
                 }

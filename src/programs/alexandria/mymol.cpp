@@ -1295,6 +1295,9 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr,rvec mu_tot)
 
     if (nullptr != shellfc_)
     {
+        auto nnodes = cr->nnodes;
+        cr->nnodes  = 1;
+        
         relax_shell_flexcon(fplog, cr, true, 0,
                             inputrec_, true, ~0,
                             ltop_, nullptr, enerd_,
@@ -1304,11 +1307,13 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr,rvec mu_tot)
                             &(mtop_->groups),
                             shellfc_, fr_, false, t, mu_tot,
                             nullptr);
+        cr->nnodes = nnodes;
         
         for (int i = 0; i < mtop_->natoms; i++)
         {
             copy_rvec(state_->x[i], x_[i]);
         }
+       
     }
     else
     {   

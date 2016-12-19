@@ -40,6 +40,8 @@
 
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/gmxlib/network.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/selection/selhelp.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -51,18 +53,25 @@ main(int argc, char *argv[])
     gmx::CommandLineProgramContext &context = gmx::initForCommandLine(&argc, &argv);
     try
     {
+        t_commrec *cr = init_commrec();
         gmx::CommandLineModuleManager manager("alexandria", &context);
         registerAlexandriaModules(&manager);
         manager.addHelpTopic(gmx::createSelectionHelpTopic());
         manager.setQuiet(true);
-        printf("\n                   Welcome to Alexandria\n\n");
-        printf("Copyright (c) 2014-2016 David van der Spoel and Paul J. van Maaren\n");
-        printf("See http://folding.bmc.uu.se/ for details.\n\n");
-        printf("Alexandria is free software under the Gnu Public License v 2.\n");
-        printf("Read more at http://www.gnu.org/licenses/gpl-2.0.html\n\n");
+        if (MASTER(cr))
+        {
+            printf("\n                   Welcome to Alexandria\n\n");
+            printf("Copyright (c) 2014-2016 David van der Spoel and Paul J. van Maaren\n");
+            printf("See http://folding.bmc.uu.se/ for details.\n\n");
+            printf("Alexandria is free software under the Gnu Public License v 2.\n");
+            printf("Read more at http://www.gnu.org/licenses/gpl-2.0.html\n\n");
+        }
         int rc = manager.run(argc, argv);
         gmx::finalizeForCommandLine();
-        printf("\nThanks for using Alexandria\n");
+        if (MASTER(cr))
+        {
+            printf("\nThanks for using Alexandria\n");
+        }
         return rc;
     }
     catch (const std::exception &ex)

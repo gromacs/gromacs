@@ -124,7 +124,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             inputrec->vdwtype     = evdwUSER;
             mp_.setInputrec(inputrec);
             mp_.GenerateTopology(aps_, pd_, lot, model,
-                                 false, false, false, bPolar);
+                                 false, false, false, bPolar, nullptr);
             //Needed for GenerateCharges
             real           hfac        = 0;
             real           watoms      = 0;
@@ -141,10 +141,19 @@ class RespTest : public gmx::test::CommandLineTestBase
             }
             else
             {
-                std::string tabFile = fileManager().getInputFilePath("table.xvg");
-                mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP, watoms,
+                if (model == eqdAXg)
+                {
+                    mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP, watoms,
                                     hfac, lot, false, symm_string, cr,
-                                    tabFile.c_str(), hwinfo);
+                                    nullptr, hwinfo);
+                }
+                else if (model == eqdAXs)
+                {
+                    std::string tabFile = fileManager().getInputFilePath("table.xvg");
+                    mp_.GenerateCharges(pd_, mdlog, aps_, model, eqgESP, watoms,
+                                        hfac, lot, false, symm_string, cr,
+                                        tabFile.c_str(), hwinfo);
+                }
             }
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.mtop_->moltype[0].atoms.nr; atom++)
