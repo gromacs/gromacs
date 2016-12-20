@@ -392,12 +392,13 @@ void init_em(FILE *fplog, const char *title,
     }
     else
     {
+        state_change_natoms(state_global, state_global->natoms);
         /* Just copy the state */
         ems->s = *state_global;
+        state_change_natoms(&ems->s, ems->s.natoms);
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
-        ems->s.x.resize(ems->s.natoms + 1);
         ems->f.resize(ems->s.natoms + 1);
 
         snew(*top, 1);
@@ -571,23 +572,17 @@ static bool do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
 
     if (s2->natoms != s1->natoms)
     {
-        s2->natoms = s1->natoms;
+        state_change_natoms(s2, s1->natoms);
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
-        s2->x.resize(s1->natoms + 1);
-        ems2->f.resize(s1->natoms + 1);
-        if (s2->flags & (1<<estCGP))
-        {
-            s2->cg_p.resize(s1->natoms + 1);
-        }
+        ems2->f.resize(s2->natoms + 1);
     }
     if (DOMAINDECOMP(cr) && s2->cg_gl.size() != s1->cg_gl.size())
     {
         s2->cg_gl.resize(s1->cg_gl.size());
     }
 
-    s2->natoms = s1->natoms;
     copy_mat(s1->box, s2->box);
     /* Copy free energy state */
     s2->lambda = s1->lambda;
@@ -1020,6 +1015,9 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     int               m, step, nminstep;
 
     step = 0;
+
+    // Ensure the extra per-atom state array gets allocated
+    state_global->flags |= (1<<estCGP);
 
     /* Create 4 states on the stack and extract pointers that we will swap */
     em_state_t  s0 {}, s1 {}, s2 {}, s3 {};
