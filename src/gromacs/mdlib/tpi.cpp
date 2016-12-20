@@ -290,6 +290,9 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     snew(enerd, 1);
     init_enerdata(groups->grps[egcENER].nr, inputrec->fepvals->n_lambda, enerd);
+    /* We need to allocate one element extra, since we might use
+     * (unaligned) 4-wide SIMD loads to access rvec entries.
+     */
     f.resize(top_global->natoms + 1);
 
     /* Print to log file  */
