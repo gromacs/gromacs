@@ -4414,8 +4414,6 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
                 case estV:   bV   = (state->flags & (1<<i)); break;
                 case est_SDX_NOTSUPPORTED: break;
                 case estCGP: bCGP = (state->flags & (1<<i)); break;
-                case estLD_RNG:
-                case estLD_RNGI:
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
                 case estORIRE_INITF:
@@ -9005,8 +9003,6 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
                 case estCGP:
                     order_vec_atom(dd->ncg_home, cgindex, cgsort, as_rvec_array(state->cg_p.data()), vbuf);
                     break;
-                case estLD_RNG:
-                case estLD_RNGI:
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
                 case estORIRE_INITF:

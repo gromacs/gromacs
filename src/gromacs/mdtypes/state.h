@@ -59,15 +59,15 @@ enum {
     estLAMBDA,
     estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
     estX,   estV,       est_SDX_NOTSUPPORTED,  estCGP,
-    estLD_RNG, estLD_RNGI,
+    est_LD_RNG_NOTSUPPORTED, est_LD_RNGI_NOTSUPPORTED,
     estDISRE_INITF, estDISRE_RM3TAV,
     estORIRE_INITF, estORIRE_DTAV,
     estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
-    estFEPSTATE, estMC_RNG, estMC_RNGI,
+    estFEPSTATE, est_MC_RNG_NOTSUPPORTED, est_MC_RNGI_NOTSUPPORTED,
     estNR
 };
 
-#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estMC_RNGI)))
+#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estFEPSTATE)))
 
 /* The names of the state entries, defined in src/gmxlib/checkpoint.c */
 extern const char *est_names[estNR];

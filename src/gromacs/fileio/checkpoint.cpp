@@ -101,10 +101,10 @@ const char *est_names[estNR] =
     "FE-lambda",
     "box", "box-rel", "box-v", "pres_prev",
     "nosehoover-xi", "thermostat-integral",
-    "x", "v", "sdx-unsupported", "CGp", "LD-rng", "LD-rng-i",
+    "x", "v", "sdx-unsupported", "CGp", "LD-rng-unsupported", "LD-rng-i-unsupported",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav",
-    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev", "fep_state", "MC-rng", "MC-rng-i"
+    "svir_prev", "nosehoover-vxi", "v_eta", "vol0", "nhpres_xi", "nhpres_vxi", "fvir_prev", "fep_state", "MC-rng-unsupported", "MC-rng-i-unsupported"
 };
 
 enum {
@@ -1046,13 +1046,6 @@ static int do_cpt_state(XDR *xd,
                 case estVOL0:    ret      = do_cpte_real(xd, part, i, sflags, &state->vol0, list); break;
                 case estX:       ret      = doPaddedVector(xd, part, i, sflags, state->natoms, &state->x, list); break;
                 case estV:       ret      = doPaddedVector(xd, part, i, sflags, state->natoms, &state->v, list); break;
-                /* The RNG entries are no longer written,
-                 * the next 4 lines are only for reading old files.
-                 */
-                case estLD_RNG:  ret      = do_cpte_ints(xd, part, i, sflags, 0, NULL, list); break;
-                case estLD_RNGI: ret      = do_cpte_ints(xd, part, i, sflags, 0, NULL, list); break;
-                case estMC_RNG:  ret      = do_cpte_ints(xd, part, i, sflags, 0, NULL, list); break;
-                case estMC_RNGI: ret      = do_cpte_ints(xd, part, i, sflags, 0, NULL, list); break;
                 case estDISRE_INITF:  ret = do_cpte_real (xd, part, i, sflags, &state->hist.disre_initf, list); break;
                 case estDISRE_RM3TAV: ret = do_cpte_n_reals(xd, part, i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
                 case estORIRE_INITF:  ret = do_cpte_real (xd, part, i, sflags, &state->hist.orire_initf, list); break;
