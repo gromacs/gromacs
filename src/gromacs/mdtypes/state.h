@@ -59,12 +59,12 @@
 enum {
     estLAMBDA,
     estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
-    estX,   estV,       est_SDX_NOTSUPPORTED,  estCGP,
-    estLD_RNG, estLD_RNGI,
+    estX,   estV,       estSDX_NOTSUPPORTED,  estCGP,
+    estLD_RNG_NOTSUPPORTED, estLD_RNGI_NOTSUPPORTED,
     estDISRE_INITF, estDISRE_RM3TAV,
     estORIRE_INITF, estORIRE_DTAV,
     estSVIR_PREV, estNH_VXI, estVETA, estVOL0, estNHPRES_XI, estNHPRES_VXI, estFVIR_PREV,
-    estFEPSTATE, estMC_RNG, estMC_RNGI,
+    estFEPSTATE, estMC_RNG_NOTSUPPORTED, estMC_RNGI_NOTSUPPORTED,
     estNR
 };
 
