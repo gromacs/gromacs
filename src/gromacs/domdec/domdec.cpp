@@ -1341,6 +1341,8 @@ void dd_collect_state(gmx_domdec_t *dd,
                     dd_collect_vec(dd, state_local, &state_local->v, &state->v);
                     break;
                 case est_SDX_NOTSUPPORTED:
+                case est_LD_RNG_NOTSUPPORTED:
+                case est_LD_RNGI_NOTSUPPORTED:
                     break;
                 case estCGP:
                     dd_collect_vec(dd, state_local, &state_local->cg_p, &state->cg_p);
@@ -1382,6 +1384,8 @@ static void dd_resize_state(t_state *state, PaddedRVecVector *f, int natoms)
                     state->v.resize(natoms + 1);
                     break;
                 case est_SDX_NOTSUPPORTED:
+                case est_LD_RNG_NOTSUPPORTED:
+                case est_LD_RNGI_NOTSUPPORTED:
                     break;
                 case estCGP:
                     state->cg_p.resize(natoms + 1);
@@ -1645,6 +1649,8 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
                     dd_distribute_vec(dd, cgs, as_rvec_array(state->v.data()), as_rvec_array(state_local->v.data()));
                     break;
                 case est_SDX_NOTSUPPORTED:
+                case est_LD_RNG_NOTSUPPORTED:
+                case est_LD_RNGI_NOTSUPPORTED:
                     break;
                 case estCGP:
                     dd_distribute_vec(dd, cgs, as_rvec_array(state->cg_p.data()), as_rvec_array(state_local->cg_p.data()));
@@ -4159,6 +4165,8 @@ static void rotate_state_atom(t_state *state, int a)
                     state->v[a][ZZ] = -state->v[a][ZZ];
                     break;
                 case est_SDX_NOTSUPPORTED:
+                case est_LD_RNG_NOTSUPPORTED:
+                case est_LD_RNGI_NOTSUPPORTED:
                     break;
                 case estCGP:
                     state->cg_p[a][YY] = -state->cg_p[a][YY];
@@ -4412,10 +4420,11 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
             {
                 case estX: /* Always present */ break;
                 case estV:   bV   = (state->flags & (1<<i)); break;
-                case est_SDX_NOTSUPPORTED: break;
+                case est_SDX_NOTSUPPORTED:
+                case est_LD_RNG_NOTSUPPORTED:
+                case est_LD_RNGI_NOTSUPPORTED:
+                    break;
                 case estCGP: bCGP = (state->flags & (1<<i)); break;
-                case estLD_RNG:
-                case estLD_RNGI:
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
                 case estORIRE_INITF:
@@ -9005,8 +9014,6 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
                 case estCGP:
                     order_vec_atom(dd->ncg_home, cgindex, cgsort, as_rvec_array(state->cg_p.data()), vbuf);
                     break;
-                case estLD_RNG:
-                case estLD_RNGI:
                 case estDISRE_INITF:
                 case estDISRE_RM3TAV:
                 case estORIRE_INITF:
