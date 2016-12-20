@@ -260,6 +260,9 @@ static void bc_groups(const t_commrec *cr, t_symtab *symtab,
 
 static void bcastPaddedRVecVector(const t_commrec *cr, PaddedRVecVector *v, unsigned int n)
 {
+    /* We need to allocate one element extra, since we might use
+     * (unaligned) 4-wide SIMD loads to access rvec entries.
+     */
     (*v).resize(n + 1);
     nblock_bc(cr, n, as_rvec_array(v->data()));
 }

@@ -1858,8 +1858,10 @@ void do_force(FILE *fplog, t_commrec *cr,
         flags &= ~GMX_FORCE_NONBONDED;
     }
 
-    GMX_ASSERT(coordinates->size() >= static_cast<unsigned int>(fr->natoms_force + 1), "We might need 1 element extra for SIMD");
-    GMX_ASSERT(force->size() >= static_cast<unsigned int>(fr->natoms_force + 1), "We might need 1 element extra for SIMD");
+    GMX_ASSERT(coordinates->size() >= static_cast<unsigned int>(fr->natoms_force + 1) ||
+               fr->natoms_force == 0, "We might need 1 element extra for SIMD");
+    GMX_ASSERT(force->size() >= static_cast<unsigned int>(fr->natoms_force + 1) ||
+               fr->natoms_force == 0, "We might need 1 element extra for SIMD");
 
     rvec *x = as_rvec_array(coordinates->data());
 

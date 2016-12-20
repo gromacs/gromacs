@@ -559,6 +559,7 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
 
 }
 
+// TODO Most of this logic seems to belong in the respective modules
 void set_state_entries(t_state *state, const t_inputrec *ir)
 {
     /* The entries in the state in the tpx file might not correspond
@@ -575,13 +576,6 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     if (EI_DYNAMICS(ir->eI))
     {
         state->flags |= (1<<estV);
-        state->v.resize(state->natoms + 1);
-    }
-    if (ir->eI == eiCG)
-    {
-        state->flags |= (1<<estCGP);
-        /* cg_p is not stored in the tpx file, so we need to allocate it */
-        state->cg_p.resize(state->natoms + 1);
     }
 
     state->nnhpres = 0;

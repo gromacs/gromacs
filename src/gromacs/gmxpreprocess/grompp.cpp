@@ -620,7 +620,11 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
      * a priori if the number of atoms in confin matches what we expect.
      */
     state->flags |= (1 << estX);
-    state->x.resize(state->natoms);
+    if (v != NULL)
+    {
+        state->flags |= (1 << estV);
+    }
+    state_change_natoms(state, state->natoms);
     for (int i = 0; i < state->natoms; i++)
     {
         copy_rvec(x[i], state->x[i]);
@@ -628,8 +632,6 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     sfree(x);
     if (v != nullptr)
     {
-        state->flags |= (1 << estV);
-        state->v.resize(state->natoms);
         for (int i = 0; i < state->natoms; i++)
         {
             copy_rvec(v[i], state->v[i]);

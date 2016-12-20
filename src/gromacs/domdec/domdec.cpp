@@ -1347,25 +1347,14 @@ static void dd_resize_state(t_state *state, PaddedRVecVector *f, int natoms)
         fprintf(debug, "Resizing state: currently %d, required %d\n", state->natoms, natoms);
     }
 
-    /* We need to allocate one element extra, since we might use
-     * (unaligned) 4-wide SIMD loads to access rvec entries.
-     */
-    if (state->flags & (1 << estX))
-    {
-        state->x.resize(natoms + 1);
-    }
-    if (state->flags & (1 << estV))
-    {
-        state->v.resize(natoms + 1);
-    }
-    if (state->flags & (1 << estCGP))
-    {
-        state->cg_p.resize(natoms + 1);
-    }
+    state_change_natoms(state, natoms);
 
     if (f != nullptr)
     {
-        (*f).resize(natoms + 1);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        f->resize(natoms + 1);
     }
 }
 
