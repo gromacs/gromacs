@@ -172,6 +172,8 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     RTYPE("y-tickfontsize", psr->Y.tickfontsize, psr->X.tickfontsize);
     STYPE("y-tickfont",     psr->Y.tickfont,     psr->Y.font);
 
+    check_warning_error(wi, FARGS);
+
     if (mpout != NULL)
     {
         write_inpfile(mpout, ninp, inp, TRUE, wi);

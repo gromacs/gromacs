@@ -491,7 +491,7 @@ if (HWLOC_FOUND)
 
     gmx_check_if_changed(HWLOC_FOUND_CHANGED HWLOC_FOUND)
     if (_STATIC_HWLOC AND HWLOC_FOUND_CHANGED)
-        message(STATUS "Static hwloc library found, will not attempt using it as it could lead to link-time errors. To use the detected library, manually set GMX_HWLOC=ON and you will likely have to pass appropriate linker flags too to satisfy the link-time dependencies of your hwloc library. Try "pkg-config --libs --static hwloc" for suggestions on what you will need.")
+        message(STATUS "Static hwloc library found, will not attempt using it as it could lead to link-time errors. To use the detected library, manually set GMX_HWLOC=ON and you will likely have to pass appropriate linker flags too to satisfy the link-time dependencies of your hwloc library. Try \"pkg-config --libs --static hwloc\" for suggestions on what you will need.")
         set(GMX_HWLOC_DEFAULT OFF)
     else()
         set(GMX_HWLOC_DEFAULT ON)
