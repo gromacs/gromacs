@@ -48,18 +48,28 @@
 namespace gmx
 {
 
+/*! \brief Interface for types that convert standard data types into a
+ * form suitable for storage or transfer.
+ *
+ * Different implementations could suit MPI, file I/O, or in-memory
+ * conversion. */
 class ISerializer
 {
     public:
+        //! Destructor.
         virtual ~ISerializer() {}
-
+        /*! \brief Returns whether the serializer is reading or
+         * writing, because details like memory management vary
+         * accordingly. */
         virtual bool reading() const = 0;
-
+        //! \brief Serialize values of different types.
+        ///@{
         virtual void doUChar(unsigned char *value) = 0;
         virtual void doInt(int *value)             = 0;
         virtual void doFloat(float *value)         = 0;
         virtual void doDouble(double *value)       = 0;
         virtual void doString(std::string *value)  = 0;
+        ///@}
 };
 
 } // namespace gmx
