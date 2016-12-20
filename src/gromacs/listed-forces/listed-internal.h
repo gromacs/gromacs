@@ -84,6 +84,8 @@ struct bonded_threading_t
     gmx_bitmask_t *mask;         /**< Mask array, one element corresponds to a block of reduction_block_size atoms of the force array, bit corresponding to thread indices set if a thread writes to that block */
     int            block_nalloc; /**< Allocation size of block_index and mask */
 
+    bool           haveBondeds;  /**< true if we have and thus need to reduce bonded forces */
+
     /* There are two different ways to distribute the bonded force calculation
      * over the threads. We dedice which to use based on the number of threads.
      */
