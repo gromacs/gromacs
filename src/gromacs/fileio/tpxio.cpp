@@ -3111,6 +3111,17 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         init_gtc_state(state, tpx.ngtc, 0, 0);
         if (x == nullptr)
         {
+            // v is also nullptr by the above assertion, so we may
+            // need to make memory in state for storing the contents
+            // of the tpx file.
+            if (tpx.bX)
+            {
+                state->flags |= (1 << estX);
+            }
+            if (tpx.bV)
+            {
+                state->flags |= (1 << estV);
+            }
             state_change_natoms(state, tpx.natoms);
         }
     }

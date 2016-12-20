@@ -120,15 +120,25 @@ void state_change_natoms(t_state *state, int natoms)
         /* We need to allocate one element extra, since we might use
          * (unaligned) 4-wide SIMD loads to access rvec entries.
          */
-        state->x.resize(state->natoms + 1);
-        state->v.resize(state->natoms + 1);
+        if (state->flags & (1 << estX))
+        {
+            state->x.resize(state->natoms + 1);
+        }
+        if (state->flags & (1 << estV))
+        {
+            state->v.resize(state->natoms + 1);
+        }
+        if (state->flags & (1 << estCGP))
+        {
+            state->cg_p.resize(state->natoms + 1);
+        }
     }
     else
     {
         state->x.resize(0);
         state->v.resize(0);
+        state->cg_p.resize(0);
     }
-    state->cg_p.resize(0);
 }
 
 void init_dfhist_state(t_state *state, int dfhistNumLambda)

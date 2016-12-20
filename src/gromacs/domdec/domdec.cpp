@@ -1359,48 +1359,19 @@ void dd_collect_state(gmx_domdec_t *dd,
 
 static void dd_resize_state(t_state *state, PaddedRVecVector *f, int natoms)
 {
-    int est;
-
     if (debug)
     {
         fprintf(debug, "Resizing state: currently %d, required %d\n", state->natoms, natoms);
     }
 
-    for (est = 0; est < estNR; est++)
-    {
-        if (EST_DISTR(est) && (state->flags & (1<<est)))
-        {
-            /* We need to allocate one element extra, since we might use
-             * (unaligned) 4-wide SIMD loads to access rvec entries.
-             */
-            switch (est)
-            {
-                case estX:
-                    state->x.resize(natoms + 1);
-                    break;
-                case estV:
-                    state->v.resize(natoms + 1);
-                    break;
-                case est_SDX_NOTSUPPORTED:
-                    break;
-                case estCGP:
-                    state->cg_p.resize(natoms + 1);
-                    break;
-                case estDISRE_INITF:
-                case estDISRE_RM3TAV:
-                case estORIRE_INITF:
-                case estORIRE_DTAV:
-                    /* No reallocation required */
-                    break;
-                default:
-                    gmx_incons("Unknown state entry encountered in dd_resize_state");
-            }
-        }
-    }
+    state_change_natoms(state, natoms);
 
     if (f != nullptr)
     {
-        (*f).resize(natoms + 1);
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        f->resize(natoms + 1);
     }
 }
 
