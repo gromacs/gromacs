@@ -67,8 +67,6 @@ enum {
     estNR
 };
 
-#define EST_DISTR(e) (!(((e) >= estLAMBDA && (e) <= estTC_INT) || ((e) >= estSVIR_PREV && (e) <= estMC_RNGI)))
-
 /* The names of the state entries, defined in src/gmxlib/checkpoint.c */
 extern const char *est_names[estNR];
 

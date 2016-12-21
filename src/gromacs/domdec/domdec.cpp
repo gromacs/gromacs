@@ -1291,13 +1291,11 @@ void dd_collect_vec(gmx_domdec_t           *dd,
 void dd_collect_state(gmx_domdec_t *dd,
                       t_state *state_local, t_state *state)
 {
-    int est, i, j, nh;
-
-    nh = state->nhchainlength;
+    int nh = state->nhchainlength;
 
     if (DDMASTER(dd))
     {
-        for (i = 0; i < efptNR; i++)
+        for (int i = 0; i < efptNR; i++)
         {
             state->lambda[i] = state_local->lambda[i];
         }
@@ -1310,92 +1308,59 @@ void dd_collect_state(gmx_domdec_t *dd,
         copy_mat(state_local->fvir_prev, state->fvir_prev);
         copy_mat(state_local->pres_prev, state->pres_prev);
 
-        for (i = 0; i < state_local->ngtc; i++)
+        for (int i = 0; i < state_local->ngtc; i++)
         {
-            for (j = 0; j < nh; j++)
+            for (int j = 0; j < nh; j++)
             {
                 state->nosehoover_xi[i*nh+j]        = state_local->nosehoover_xi[i*nh+j];
                 state->nosehoover_vxi[i*nh+j]       = state_local->nosehoover_vxi[i*nh+j];
             }
             state->therm_integral[i] = state_local->therm_integral[i];
         }
-        for (i = 0; i < state_local->nnhpres; i++)
+        for (int i = 0; i < state_local->nnhpres; i++)
         {
-            for (j = 0; j < nh; j++)
+            for (int j = 0; j < nh; j++)
             {
                 state->nhpres_xi[i*nh+j]        = state_local->nhpres_xi[i*nh+j];
                 state->nhpres_vxi[i*nh+j]       = state_local->nhpres_vxi[i*nh+j];
             }
         }
     }
-    for (est = 0; est < estNR; est++)
+    if (state_local->flags & (1 << estX))
     {
-        if (EST_DISTR(est) && (state_local->flags & (1<<est)))
-        {
-            switch (est)
-            {
-                case estX:
-                    dd_collect_vec(dd, state_local, &state_local->x, &state->x);
-                    break;
-                case estV:
-                    dd_collect_vec(dd, state_local, &state_local->v, &state->v);
-                    break;
-                case est_SDX_NOTSUPPORTED:
-                    break;
-                case estCGP:
-                    dd_collect_vec(dd, state_local, &state_local->cg_p, &state->cg_p);
-                    break;
-                case estDISRE_INITF:
-                case estDISRE_RM3TAV:
-                case estORIRE_INITF:
-                case estORIRE_DTAV:
-                    break;
-                default:
-                    gmx_incons("Unknown state entry encountered in dd_collect_state");
-            }
-        }
+        dd_collect_vec(dd, state_local, &state_local->x, &state->x);
+    }
+    if (state_local->flags & (1 << estV))
+    {
+        dd_collect_vec(dd, state_local, &state_local->v, &state->v);
+    }
+    if (state_local->flags & (1 << estCGP))
+    {
+        dd_collect_vec(dd, state_local, &state_local->cg_p, &state->cg_p);
     }
 }
 
 static void dd_resize_state(t_state *state, PaddedRVecVector *f, int natoms)
 {
-    int est;
-
     if (debug)
     {
         fprintf(debug, "Resizing state: currently %d, required %d\n", state->natoms, natoms);
     }
 
-    for (est = 0; est < estNR; est++)
+    /* We need to allocate one element extra, since we might use
+     * (unaligned) 4-wide SIMD loads to access rvec entries.
+     */
+    if (state->flags & (1 << estX))
     {
-        if (EST_DISTR(est) && (state->flags & (1<<est)))
-        {
-            /* We need to allocate one element extra, since we might use
-             * (unaligned) 4-wide SIMD loads to access rvec entries.
-             */
-            switch (est)
-            {
-                case estX:
-                    state->x.resize(natoms + 1);
-                    break;
-                case estV:
-                    state->v.resize(natoms + 1);
-                    break;
-                case est_SDX_NOTSUPPORTED:
-                    break;
-                case estCGP:
-                    state->cg_p.resize(natoms + 1);
-                    break;
-                case estDISRE_INITF:
-                case estDISRE_RM3TAV:
-                case estORIRE_INITF:
-                case estORIRE_DTAV:
-                    /* No reallocation required */
-                    break;
-                default:
-                    gmx_incons("Unknown state entry encountered in dd_resize_state");
-            }
-        }
+        state->x.resize(natoms + 1);
+    }
+    if (state->flags & (1 << estV))
+    {
+        state->v.resize(natoms + 1);
+    }
+    if (state->flags & (1 << estCGP))
+    {
+        state->cg_p.resize(natoms + 1);
     }
 
     if (f != NULL)
@@ -1572,13 +1537,11 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
                                 t_state *state, t_state *state_local,
                                 PaddedRVecVector *f)
 {
-    int  i, j, nh;
-
-    nh = state->nhchainlength;
+    int nh = state->nhchainlength;
 
     if (DDMASTER(dd))
     {
-        for (i = 0; i < efptNR; i++)
+        for (int i = 0; i < efptNR; i++)
         {
             state_local->lambda[i] = state->lambda[i];
         }
@@ -1594,18 +1557,18 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
         {
             copy_df_history(state_local->dfhist, state->dfhist);
         }
-        for (i = 0; i < state_local->ngtc; i++)
+        for (int i = 0; i < state_local->ngtc; i++)
         {
-            for (j = 0; j < nh; j++)
+            for (int j = 0; j < nh; j++)
             {
                 state_local->nosehoover_xi[i*nh+j]        = state->nosehoover_xi[i*nh+j];
                 state_local->nosehoover_vxi[i*nh+j]       = state->nosehoover_vxi[i*nh+j];
             }
             state_local->therm_integral[i] = state->therm_integral[i];
         }
-        for (i = 0; i < state_local->nnhpres; i++)
+        for (int i = 0; i < state_local->nnhpres; i++)
         {
-            for (j = 0; j < nh; j++)
+            for (int j = 0; j < nh; j++)
             {
                 state_local->nhpres_xi[i*nh+j]        = state->nhpres_xi[i*nh+j];
                 state_local->nhpres_vxi[i*nh+j]       = state->nhpres_vxi[i*nh+j];
@@ -1632,33 +1595,17 @@ static void dd_distribute_state(gmx_domdec_t *dd, t_block *cgs,
 
     dd_resize_state(state_local, f, dd->nat_home);
 
-    for (i = 0; i < estNR; i++)
+    if (state_local->flags & (1 << estX))
     {
-        if (EST_DISTR(i) && (state_local->flags & (1<<i)))
-        {
-            switch (i)
-            {
-                case estX:
-                    dd_distribute_vec(dd, cgs, as_rvec_array(state->x.data()), as_rvec_array(state_local->x.data()));
-                    break;
-                case estV:
-                    dd_distribute_vec(dd, cgs, as_rvec_array(state->v.data()), as_rvec_array(state_local->v.data()));
-                    break;
-                case est_SDX_NOTSUPPORTED:
-                    break;
-                case estCGP:
-                    dd_distribute_vec(dd, cgs, as_rvec_array(state->cg_p.data()), as_rvec_array(state_local->cg_p.data()));
-                    break;
-                case estDISRE_INITF:
-                case estDISRE_RM3TAV:
-                case estORIRE_INITF:
-                case estORIRE_DTAV:
-                    /* Not implemented yet */
-                    break;
-                default:
-                    gmx_incons("Unknown state entry encountered in dd_distribute_state");
-            }
-        }
+        dd_distribute_vec(dd, cgs, as_rvec_array(state->x.data()), as_rvec_array(state_local->x.data()));
+    }
+    if (state_local->flags & (1 << estV))
+    {
+        dd_distribute_vec(dd, cgs, as_rvec_array(state->v.data()), as_rvec_array(state_local->v.data()));
+    }
+    if (state_local->flags & (1 << estCGP))
+    {
+        dd_distribute_vec(dd, cgs, as_rvec_array(state->cg_p.data()), as_rvec_array(state_local->cg_p.data()));
     }
 }
 
@@ -4141,39 +4088,21 @@ static void cg_move_error(FILE *fplog,
 
 static void rotate_state_atom(t_state *state, int a)
 {
-    int est;
-
-    for (est = 0; est < estNR; est++)
+    if (state->flags & (1 << estX))
     {
-        if (EST_DISTR(est) && (state->flags & (1<<est)))
-        {
-            switch (est)
-            {
-                case estX:
-                    /* Rotate the complete state; for a rectangular box only */
-                    state->x[a][YY] = state->box[YY][YY] - state->x[a][YY];
-                    state->x[a][ZZ] = state->box[ZZ][ZZ] - state->x[a][ZZ];
-                    break;
-                case estV:
-                    state->v[a][YY] = -state->v[a][YY];
-                    state->v[a][ZZ] = -state->v[a][ZZ];
-                    break;
-                case est_SDX_NOTSUPPORTED:
-                    break;
-                case estCGP:
-                    state->cg_p[a][YY] = -state->cg_p[a][YY];
-                    state->cg_p[a][ZZ] = -state->cg_p[a][ZZ];
-                    break;
-                case estDISRE_INITF:
-                case estDISRE_RM3TAV:
-                case estORIRE_INITF:
-                case estORIRE_DTAV:
-                    /* These are distances, so not affected by rotation */
-                    break;
-                default:
-                    gmx_incons("Unknown state entry encountered in rotate_state_atom");
-            }
-        }
+        /* Rotate the complete state; for a rectangular box only */
+        state->x[a][YY] = state->box[YY][YY] - state->x[a][YY];
+        state->x[a][ZZ] = state->box[ZZ][ZZ] - state->x[a][ZZ];
+    }
+    if (state->flags & (1 << estV))
+    {
+        state->v[a][YY] = -state->v[a][YY];
+        state->v[a][ZZ] = -state->v[a][ZZ];
+    }
+    if (state->flags & (1 << estCGP))
+    {
+        state->cg_p[a][YY] = -state->cg_p[a][YY];
+        state->cg_p[a][ZZ] = -state->cg_p[a][ZZ];
     }
 }
 
@@ -4377,13 +4306,12 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
 {
     int               *move;
     int                npbcdim;
-    int                ncg[DIM*2], nat[DIM*2];
-    int                c, i, cg, k, d, dim, dim2, dir, d2, d3;
+    int                ncg[DIM*2] = { 0 }, nat[DIM*2] = { 0 };
+    int                i, cg, k, d, dim, dim2, dir, d2, d3;
     int                mc, cdd, nrcg, ncg_recv, nvs, nvr, nvec, vec;
     int                sbuf[2], rbuf[2];
     int                home_pos_cg, home_pos_at, buf_pos;
     int                flag;
-    gmx_bool           bV = FALSE, bCGP = FALSE;
     real               pos_d;
     matrix             tcm;
     rvec              *cg_cm = NULL, cell_x0, cell_x1, limitd, limit0, limit1;
@@ -4404,29 +4332,9 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         cg_cm = fr->cg_cm;
     }
 
-    for (i = 0; i < estNR; i++)
-    {
-        if (EST_DISTR(i))
-        {
-            switch (i)
-            {
-                case estX: /* Always present */ break;
-                case estV:   bV   = (state->flags & (1<<i)); break;
-                case est_SDX_NOTSUPPORTED: break;
-                case estCGP: bCGP = (state->flags & (1<<i)); break;
-                case estLD_RNG:
-                case estLD_RNGI:
-                case estDISRE_INITF:
-                case estDISRE_RM3TAV:
-                case estORIRE_INITF:
-                case estORIRE_DTAV:
-                    /* No processing required */
-                    break;
-                default:
-                    gmx_incons("Unknown state entry encountered in dd_redistribute_cg");
-            }
-        }
-    }
+    // Positions are always present, so there's nothing to flag
+    bool bV   = state->flags & (1<<estV);
+    bool bCGP = state->flags & (1<<estCGP);
 
     if (dd->ncg_tot > comm->nalloc_int)
     {
@@ -4434,13 +4342,6 @@ static void dd_redistribute_cg(FILE *fplog, gmx_int64_t step,
         srenew(comm->buf_int, comm->nalloc_int);
     }
     move = comm->buf_int;
-
-    /* Clear the count */
-    for (c = 0; c < dd->ndim*2; c++)
-    {
-        ncg[c] = 0;
-        nat[c] = 0;
-    }
 
     npbcdim = dd->npbcdim;
 
@@ -8988,37 +8889,19 @@ static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state 
     }
 
     /* Reorder the state */
-    for (i = 0; i < estNR; i++)
+    if (state->flags & (1 << estX))
     {
-        if (EST_DISTR(i) && (state->flags & (1<<i)))
-        {
-            switch (i)
-            {
-                case estX:
-                    order_vec_atom(dd->ncg_home, cgindex, cgsort, as_rvec_array(state->x.data()), vbuf);
-                    break;
-                case estV:
-                    order_vec_atom(dd->ncg_home, cgindex, cgsort, as_rvec_array(state->v.data()), vbuf);
-                    break;
-                case est_SDX_NOTSUPPORTED:
-                    break;
-                case estCGP:
-                    order_vec_atom(dd->ncg_home, cgindex, cgsort, as_rvec_array(state->cg_p.data()), vbuf);
-                    break;
-                case estLD_RNG:
-                case estLD_RNGI:
-                case estDISRE_INITF:
-                case estDISRE_RM3TAV:
-                case estORIRE_INITF:
-                case estORIRE_DTAV:
-                    /* No ordering required */
-                    break;
-                default:
-                    gmx_incons("Unknown state entry encountered in dd_sort_state");
-                    break;
-            }
-        }
+        order_vec_atom(dd->ncg_home, cgindex, cgsort, as_rvec_array(state->x.data()), vbuf);
     }
+    if (state->flags & (1 << estV))
+    {
+        order_vec_atom(dd->ncg_home, cgindex, cgsort, as_rvec_array(state->v.data()), vbuf);
+    }
+    if (state->flags & (1 << estCGP))
+    {
+        order_vec_atom(dd->ncg_home, cgindex, cgsort, as_rvec_array(state->cg_p.data()), vbuf);
+    }
+
     if (fr->cutoff_scheme == ecutsGROUP)
     {
         /* Reorder cgcm */
