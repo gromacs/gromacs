@@ -42,5 +42,6 @@ gmx_add_unit_test(UtilityUnitTests utility-test
                   logger.cpp
                   path.cpp
                   stringutil.cpp
+                  textreader.cpp
                   textwriter.cpp
                   )

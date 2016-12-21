@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Strings Name="NothingTrimmed">
+    <String Name="0"><![CDATA[
+
+]]></String>
+    <String Name="1"><![CDATA[
+ 	 
+]]></String>
+    <String Name="2"><![CDATA[
+expected text
+]]></String>
+    <String Name="3"><![CDATA[
+ expected text 
+]]></String>
+    <String Name="4"><![CDATA[
+expected text 	
+]]></String>
+    <String Name="5"><![CDATA[
+ 	 expected text
+]]></String>
+    <String Name="6"><![CDATA[
+ 	 expected text 	
+]]></String>
+  </Strings>
+  <Strings Name="LeadingWhiteSpaceTrimmed">
+    <String Name="0"><![CDATA[
+]]></String>
+    <String Name="1"><![CDATA[
+]]></String>
+    <String Name="2"><![CDATA[
+expected text
+]]></String>
+    <String Name="3"><![CDATA[
+expected text 
+]]></String>
+    <String Name="4"><![CDATA[
+expected text 	
+]]></String>
+    <String Name="5"><![CDATA[
+expected text
+]]></String>
+    <String Name="6"><![CDATA[
+expected text 	
+]]></String>
+  </Strings>
+  <Strings Name="TrailingWhiteSpaceTrimmed">
+    <String Name="0"><![CDATA[
+]]></String>
+    <String Name="1"><![CDATA[
+]]></String>
+    <String Name="2"><![CDATA[
+expected text]]></String>
+    <String Name="3"><![CDATA[
+ expected text]]></String>
+    <String Name="4"><![CDATA[
+expected text]]></String>
+    <String Name="5"><![CDATA[
+ 	 expected text]]></String>
+    <String Name="6"><![CDATA[
+ 	 expected text]]></String>
+  </Strings>
+  <Strings Name="LeadingAndTrailingWhiteSpaceTrimmed">
+    <String Name="0"><![CDATA[
+]]></String>
+    <String Name="1"><![CDATA[
+]]></String>
+    <String Name="2"><![CDATA[
+expected text]]></String>
+    <String Name="3"><![CDATA[
+expected text]]></String>
+    <String Name="4"><![CDATA[
+expected text]]></String>
+    <String Name="5"><![CDATA[
+expected text]]></String>
+    <String Name="6"><![CDATA[
+expected text]]></String>
+  </Strings>
+</ReferenceData>

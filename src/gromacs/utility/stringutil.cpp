@@ -219,6 +219,92 @@ std::vector<std::string> splitDelimitedString(const std::string &str, char delim
 namespace
 {
 
+//! Helper function to check whether \c c is whitespace.
+bool gmx_inline isWhiteSpace(const char c)
+{
+    const char whiteSpaceChars[] = " \t\r\n";
+    for (auto charIt = std::begin(whiteSpaceChars); charIt != std::end(whiteSpaceChars); ++charIt)
+    {
+        if (c == *charIt)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+}
+
+/* This implementation does a single pass through the input
+ * string. There are alternative implementations that are easier to
+ * understand, but which would create multiple strings, etc. */
+std::vector<std::string> splitAndTrimDelimitedString(const std::string &str, char delim)
+{
+    std::vector<std::string> result;
+    const size_t             len     = str.length();
+    if (len == 0)
+    {
+        return result;
+    }
+
+    /* Loop through the string, noting the last non-whitespace
+       character found, until either a delimiter character or the end
+       is reached. End-of-string conditions are handled with
+       explicit break statements in the loop body. */
+    for (size_t pos = 0; true; ++pos)
+    {
+        // Find the first non-delimiter, non-whitespace char
+        for (; (pos != len &&
+                str[pos] != delim &&
+                isWhiteSpace(str[pos])); ++pos)
+        {
+            ;
+        }
+
+        if (pos == len || str[pos] == delim)
+        {
+            // Nothing was found after the previous delimiter
+            result.push_back(std::string());
+            if (pos == len)
+            {
+                break;
+            }
+            if (str[pos] == delim)
+            {
+                continue;
+            }
+        }
+        size_t firstNonWhiteSpaceChar = pos;
+        // Continue looking for the next delimiter, while tracking
+        // the last non-whitespace char found before it.
+        size_t lastNonWhiteSpaceChar = pos;
+        for (++pos; pos != len; ++pos)
+        {
+            if (str[pos] == delim)
+            {
+                break;
+            }
+            if (!isWhiteSpace(str[pos]))
+            {
+                lastNonWhiteSpaceChar = pos;
+            }
+        }
+
+        // Some terminator has been reached after finding a
+        // non-whitespace character. Push a string containing all that
+        // was found after the previous delimiter.
+        result.push_back(str.substr(firstNonWhiteSpaceChar, lastNonWhiteSpaceChar - firstNonWhiteSpaceChar + 1));
+        if (pos == len)
+        {
+            break;
+        }
+    }
+    return result;
+}
+
+namespace
+{
+
 /*! \brief
  * Helper function to identify word boundaries for replaceAllWords().
  *

@@ -168,7 +168,16 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
  * \throws    std::bad_alloc if out of memory.
  */
 std::string stripString(const std::string &str);
-
+/*! \brief Returns a vector of strings from \c str delimited by \c
+ * delim, and removes leading and trailing whitespace from those
+ * strings.
+ *
+ * \param[in] str    String to process.
+ * \param[in] delim  Delimiter between tokens
+ * \returns   Vector of trimmed tokens, or empty if no delimiter was found.
+ * \throws    std::bad_alloc if out of memory.
+ */
+std::vector<std::string> splitAndTrimDelimitedString(const std::string &str, char delim);
 /*! \brief
  * Formats a string (snprintf() wrapper).
  *
@@ -351,7 +360,7 @@ std::vector<std::string> splitString(const std::string &str);
  * \returns   \p str split into tokens at delimiter.
  * \throws    std::bad_alloc if out of memory.
  *
- * Unlike splitString(), consencutive delimiters will generate empty tokens, as
+ * Unlike splitString(), consecutive delimiters will generate empty tokens, as
  * will leading or trailing delimiters.
  * Empty input will return an empty vector.
  */
