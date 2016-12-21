@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,11 @@ namespace gmx
  *
  * All methods that read from the stream can throw any exceptions that the
  * underlying stream throws.
+ *
+ * Some of the functions understand a comment character that indicates
+ * where on a line a comment begins, which will not be returned to the
+ * client calling readLineWithoutCommentsAndTrimmed(). The character
+ * defaults to ';' and may be set with setCommentChar().
  *
  * \inlibraryapi
  * \ingroup module_utility
@@ -148,7 +153,29 @@ class TextReader
          * \see readLine()
          */
         bool readLineTrimmed(std::string *line);
-
+        /*! \brief Sets the identify of a single character used by
+         * readLineWithoutCommentsAndTrimmed() to denote the beginning
+         * of a comment.
+         *
+         * \param[in]  commentChar  The character that begins a comment.
+         */
+        void setCommentChar(char commentChar);
+        /*! \brief
+         * Reads a single line from the stream.
+         *
+         * \param[out] line         String to receive the line.
+         * \returns    false if nothing was read because the file ended.
+         *
+         * On error or when false is returned, \p line will be empty.
+         * Works as readLineTrimmed(), except that all text read from
+         * the stream beginning with the first comment delimiter
+         * character will not be returned in \p line, and trailing
+         * whitespace that preceded any comment delimiter will not be
+         * returned either.
+         *
+         * \see readLineTrimmed()
+         */
+        bool readLineWithoutCommentsAndTrimmed(std::string *line);
         /*! \brief
          * Reads all remaining lines from the stream as a single string.
          *
