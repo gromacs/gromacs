@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Strings Name="TrailingCommentTrimmed">
+    <String Name="0"><![CDATA[
+
+]]></String>
+    <String Name="1"><![CDATA[
+ 	 
+]]></String>
+    <String Name="2"><![CDATA[
+expected text
+]]></String>
+    <String Name="3"><![CDATA[
+expected text 	 
+]]></String>
+    <String Name="4"><![CDATA[
+expected text]]></String>
+    <String Name="5"><![CDATA[
+expected text	 ]]></String>
+    <String Name="6"><![CDATA[
+expected text   ]]></String>
+    <String Name="7"><![CDATA[
+]]></String>
+    <String Name="8"><![CDATA[
+	 ]]></String>
+    <String Name="9"><![CDATA[
+   ]]></String>
+  </Strings>
+  <Strings Name="TrailingCommentAndWhiteSpaceTrimmed">
+    <String Name="0"><![CDATA[
+]]></String>
+    <String Name="1"><![CDATA[
+]]></String>
+    <String Name="2"><![CDATA[
+expected text]]></String>
+    <String Name="3"><![CDATA[
+expected text]]></String>
+    <String Name="4"><![CDATA[
+expected text]]></String>
+    <String Name="5"><![CDATA[
+expected text]]></String>
+    <String Name="6"><![CDATA[
+expected text]]></String>
+    <String Name="7"><![CDATA[
+]]></String>
+    <String Name="8"><![CDATA[
+]]></String>
+    <String Name="9"><![CDATA[
+]]></String>
+  </Strings>
+</ReferenceData>

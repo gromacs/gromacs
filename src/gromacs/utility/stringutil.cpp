@@ -219,6 +219,69 @@ std::vector<std::string> splitDelimitedString(const std::string &str, char delim
 namespace
 {
 
+//! Helper function to check whether \c c is whitespace.
+bool gmx_inline isWhiteSpace(const char c)
+{
+    const char whiteSpaceChars[] = " \t\r\n";
+    return (std::find(std::begin(whiteSpaceChars), std::end(whiteSpaceChars), c) !=
+            std::end(whiteSpaceChars));
+}
+
+}
+
+std::vector<std::string> splitAndTrimDelimitedString(const std::string &str, char delim)
+{
+    std::vector<std::string> result;
+
+    /* Find sequences of meaningful 'token' characters between
+       delimiters, removing only leading and trailing white space. */
+    for (auto startIt = str.begin(); startIt != str.end(); )
+    {
+        // Find the next delimiter.
+        auto delimIt = std::find(startIt, str.end(), delim);
+        // Find the first non-whitespace char before the delimiter.
+        auto charIt = std::find_if_not(startIt, delimIt, isWhiteSpace);
+        if (charIt == delimIt)
+        {
+            // Found no token characters, push an empty string
+            result.push_back(std::string());
+        }
+        else
+        {
+            auto tokensStart = charIt, tokensEnd = charIt;
+            // Find the last non-whitespace char before the delimiter.
+            for (; charIt != delimIt; ++charIt)
+            {
+                if (!isWhiteSpace(*charIt))
+                {
+                    tokensEnd = charIt;
+                }
+            }
+
+            // Some terminator has been reached after finding a
+            // non-whitespace character. Push a string containing all
+            // that was found after the previous delimiter.
+            result.push_back(std::string(tokensStart, ++tokensEnd));
+        }
+
+        // Make sure to start next iteration properly.
+        startIt = delimIt;
+        if (startIt != str.end())
+        {
+            ++startIt;
+            if (startIt == str.end())
+            {
+                // A trailing delimiter creates an empty string.
+                result.push_back(std::string());
+            }
+        }
+    }
+    return result;
+}
+
+namespace
+{
+
 /*! \brief
  * Helper function to identify word boundaries for replaceAllWords().
  *
