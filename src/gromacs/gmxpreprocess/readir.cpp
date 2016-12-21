@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,6 +77,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -1824,7 +1825,8 @@ void get_ir(const char *mdparin, const char *mdparout,
     t_expanded *expand = ir->expandedvals;
 
     init_inputrec_strings();
-    inp = read_inpfile(mdparin, &ninp, wi);
+    gmx::TextReader reader(mdparin);
+    inp = read_inpfile(&reader, mdparin, &ninp, wi);
 
     snew(dumstr[0], STRLEN);
     snew(dumstr[1], STRLEN);

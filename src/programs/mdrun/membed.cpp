@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,9 +55,11 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/textreader.h"
 
 /* information about scaling center */
 typedef struct {
@@ -221,7 +223,9 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
 
     wi = init_warning(TRUE, 0);
 
-    inp = read_inpfile(membed_input, &ninp, wi);
+    gmx::TextReader reader(membed_input);
+    inp = read_inpfile(&reader, membed_input, &ninp, wi);
+
     ITYPE ("nxy", *it_xy, 1000);
     ITYPE ("nz", *it_z, 0);
     RTYPE ("xyinit", *xy_fac, 0.5);
@@ -1055,9 +1059,13 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
     if (MASTER(cr))
     {
         /* get input data out membed file */
-        membed_input = opt2fn("-membed", nfile, fnm);
-        get_input(membed_input, &xy_fac, &xy_max, &z_fac, &z_max, &it_xy, &it_z, &probe_rad, &low_up_rm,
-                  &maxwarn, &pieces, &bALLOW_ASYMMETRY);
+        try
+        {
+            membed_input = opt2fn("-membed", nfile, fnm);
+            get_input(membed_input, &xy_fac, &xy_max, &z_fac, &z_max, &it_xy, &it_z, &probe_rad, &low_up_rm,
+                      &maxwarn, &pieces, &bALLOW_ASYMMETRY);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
         if (!EI_DYNAMICS(inputrec->eI) )
         {
