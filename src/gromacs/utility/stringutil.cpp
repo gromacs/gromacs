@@ -216,6 +216,15 @@ std::vector<std::string> splitDelimitedString(const std::string &str, char delim
     return result;
 }
 
+std::vector<std::string> splitAndTrimDelimitedString(const std::string &str, char delim)
+{
+    std::vector<std::string> result;
+
+    result = splitDelimitedString(str, delim);
+    std::transform(result.begin(), result.end(), result.begin(), stripString);
+    return result;
+}
+
 namespace
 {
 
