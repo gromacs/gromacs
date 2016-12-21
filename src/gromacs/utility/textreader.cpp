@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,15 +65,20 @@ std::string TextReader::readFileToString(const std::string &filename)
     return readFileToString(filename.c_str());
 }
 
+//! Implementation class
 class TextReader::Impl
 {
     public:
+        // !Constructor.
         explicit Impl(const TextInputStreamPointer &stream)
-            : stream_(stream)
+            : stream_(stream), commentChar_(';')
         {
         }
 
+        //! Stream used by this reader.
         TextInputStreamPointer stream_;
+        //! Character that denotes the start of a comment on a line.
+        char                   commentChar_;
 };
 
 TextReader::TextReader(const std::string &filename)
@@ -110,6 +115,55 @@ bool TextReader::readLineTrimmed(std::string *line)
     if (endPos != std::string::npos)
     {
         line->resize(endPos + 1);
+    }
+    return true;
+}
+
+void TextReader::setCommentChar(char commentChar)
+{
+    impl_->commentChar_ = commentChar;
+}
+
+bool TextReader::readLineWithoutCommentsAndTrimmed(std::string *linePtr)
+{
+    if (!readLine(linePtr))
+    {
+        return false;
+    }
+    auto       &line                  = *linePtr;
+    const char  whiteSpaceChars[]     = " \t\r\n";
+    std::size_t lastNonWhiteSpaceChar = std::string::npos;
+    /* Loop through the string, noting the last non-whitespace
+       character found, until either the comment character or the end
+       is reached. */
+    for (std::size_t pos = 0; pos != line.length(); ++pos)
+    {
+        if (line[pos] == impl_->commentChar_)
+        {
+            break;
+        }
+
+        bool foundWhiteSpace = false;
+        for (auto charIt = std::begin(whiteSpaceChars); charIt != std::end(whiteSpaceChars); ++charIt)
+        {
+            if (line[pos] == *charIt)
+            {
+                foundWhiteSpace = true;
+                break;
+            }
+        }
+        if (!foundWhiteSpace)
+        {
+            lastNonWhiteSpaceChar = pos;
+        }
+    }
+    if (lastNonWhiteSpaceChar == std::string::npos)
+    {
+        line.resize(0);
+    }
+    else
+    {
+        line.resize(lastNonWhiteSpaceChar+1);
     }
     return true;
 }

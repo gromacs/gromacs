@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,131 +50,113 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/qsort_threadsafe.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textstream.h"
 
-t_inpfile *read_inpfile(const char *fn, int *ninp,
+t_inpfile *read_inpfile(gmx::TextInputStream *stream, const char *fn, int *ninp,
                         warninp_t wi)
 {
-    FILE      *in;
-    char       buf[STRLEN], lbuf[STRLEN], rbuf[STRLEN], warn_buf[STRLEN];
-    char      *ptr, *cptr;
     t_inpfile *inp = NULL;
-    int        nin, lc, i, j, k;
 
+    using gmx::stripString;
 
     if (debug)
     {
         fprintf(debug, "Reading MDP file %s\n", fn);
     }
 
-    in = gmx_ffopen(fn, "r");
-
-    nin = lc  = 0;
-    do
+    int             indexOfLineReadFromFile = 0;
+    int             countOfUniqueKeysFound  = 0;
+    std::string     line;
+    gmx::TextReader reader(stream);
+    // By default, a TextReader treats ';' as beginning a comment.
+    while (reader.readLineWithoutCommentsAndTrimmed(&line))
     {
-        ptr = fgets2(buf, STRLEN-1, in);
-        lc++;
-        set_warning_line(wi, fn, lc);
-        if (ptr)
+        indexOfLineReadFromFile++;
+        set_warning_line(wi, fn, indexOfLineReadFromFile);
+
+        if (line.empty())
         {
-            // TODO This parsing should be using strip_comment, trim,
-            // strchr, etc. rather than re-inventing wheels.
+            continue;
+        }
 
-            /* Strip comment */
-            if ((cptr = std::strchr(buf, COMMENTSIGN)) != NULL)
+        auto tokens = gmx::splitAndTrimDelimitedString(line, '=');
+        if (tokens.size() < 2)
+        {
+            // TODO this seems like it silently ignores the user accidentally deleting an equals sign...
+            if (debug)
             {
-                *cptr = '\0';
+                fprintf(debug, "No = on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn);
             }
-            /* Strip spaces */
-            trim(buf);
+            continue;
+        }
+        if (tokens.size() > 2)
+        {
+            // TODO ignoring such lines does not seem like good behaviour
+            if (debug)
+            {
+                fprintf(debug, "Multiple equals signs on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn);
+            }
+            continue;
+        }
+        if (tokens[0].empty())
+        {
+            // TODO ignoring such lines does not seem like good behaviour
+            if (debug)
+            {
+                fprintf(debug, "Empty left hand side on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn);
+            }
+            continue;
+        }
+        if (tokens[1].empty())
+        {
+            // TODO ignoring such lines does not seem like good behaviour
+            if (debug)
+            {
+                fprintf(debug, "Empty right hand side on line %d in file %s, ignored\n", indexOfLineReadFromFile, fn);
+            }
+            continue;
+        }
 
-            for (j = 0; (buf[j] != '=') && (buf[j] != '\0'); j++)
-            {
-                ;
-            }
-            if (buf[j] == '\0')
-            {
-                if (j > 0)
-                {
-                    if (debug)
-                    {
-                        fprintf(debug, "No = on line %d in file %s, ignored\n", lc, fn);
-                    }
-                }
-            }
-            else
-            {
-                for (i = 0; (i < j); i++)
-                {
-                    lbuf[i] = buf[i];
-                }
-                lbuf[i] = '\0';
-                trim(lbuf);
-                if (lbuf[0] == '\0')
-                {
-                    if (debug)
-                    {
-                        fprintf(debug, "Empty left hand side on line %d in file %s, ignored\n", lc, fn);
-                    }
-                }
-                else
-                {
-                    for (i = j+1, k = 0; (buf[i] != '\0'); i++, k++)
-                    {
-                        rbuf[k] = buf[i];
-                    }
-                    rbuf[k] = '\0';
-                    trim(rbuf);
-                    if (rbuf[0] == '\0')
-                    {
-                        if (debug)
-                        {
-                            fprintf(debug, "Empty right hand side on line %d in file %s, ignored\n", lc, fn);
-                        }
-                    }
-                    else
-                    {
-                        /* Now finally something sensible; check for duplicates */
-                        int found_index = search_einp(nin, inp, lbuf);
+        /* Now finally something sensible; check for duplicates */
+        int found_index = search_einp(countOfUniqueKeysFound, inp, tokens[0].c_str());
 
-                        if (found_index == -1)
-                        {
-                            /* add a new item */
-                            srenew(inp, ++nin);
-                            inp[nin-1].inp_count  = 1;
-                            inp[nin-1].count      = 0;
-                            inp[nin-1].bObsolete  = FALSE;
-                            inp[nin-1].bSet       = FALSE;
-                            inp[nin-1].name       = gmx_strdup(lbuf);
-                            inp[nin-1].value      = gmx_strdup(rbuf);
-                        }
-                        else
-                        {
-                            sprintf(warn_buf,
-                                    "Parameter \"%s\" doubly defined\n",
-                                    lbuf);
-                            warning_error(wi, warn_buf);
-                        }
-                    }
-                }
-            }
+        if (found_index == -1)
+        {
+            /* add a new item */
+            srenew(inp, ++countOfUniqueKeysFound);
+            inp[countOfUniqueKeysFound-1].inp_count  = 1;
+            inp[countOfUniqueKeysFound-1].count      = 0;
+            inp[countOfUniqueKeysFound-1].bObsolete  = FALSE;
+            inp[countOfUniqueKeysFound-1].bSet       = FALSE;
+            inp[countOfUniqueKeysFound-1].name       = gmx_strdup(tokens[0].c_str());
+            inp[countOfUniqueKeysFound-1].value      = gmx_strdup(tokens[1].c_str());
+        }
+        else
+        {
+            auto message = gmx::formatString("Parameter \"%s\" doubly defined\n",
+                                             tokens[0].c_str());
+            warning_error(wi, message.c_str());
         }
     }
-    while (ptr);
-
-    gmx_ffclose(in);
+    /* This preserves the behaviour of the old code, which issues some
+       warnings after completing parsing. Regenerating regressiontest
+       warning files is not worth the effort. */
+    indexOfLineReadFromFile++;
+    set_warning_line(wi, fn, indexOfLineReadFromFile);
 
     if (debug)
     {
         fprintf(debug, "Done reading MDP file, there were %d entries in there\n",
-                nin);
+                countOfUniqueKeysFound);
     }
 
-    *ninp = nin;
+    *ninp = countOfUniqueKeysFound;
 
     return inp;
 }

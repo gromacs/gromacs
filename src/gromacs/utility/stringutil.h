@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -168,7 +168,16 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
  * \throws    std::bad_alloc if out of memory.
  */
 std::string stripString(const std::string &str);
-
+/*! \brief Returns a vector of strings from \c str delimited by \c
+ * delim, and removes leading and trailing whitespace from those
+ * strings.
+ *
+ * \param[in] str    String to process.
+ * \param[in] delim  Delimiter between tokens
+ * \returns   Vector of trimmed tokens, or empty if no delimiter was found.
+ * \throws    std::bad_alloc if out of memory.
+ */
+std::vector<std::string> splitAndTrimDelimitedString(const std::string &str, char delim);
 /*! \brief
  * Formats a string (snprintf() wrapper).
  *
@@ -351,7 +360,7 @@ std::vector<std::string> splitString(const std::string &str);
  * \returns   \p str split into tokens at delimiter.
  * \throws    std::bad_alloc if out of memory.
  *
- * Unlike splitString(), consencutive delimiters will generate empty tokens, as
+ * Unlike splitString(), consecutive delimiters will generate empty tokens, as
  * will leading or trailing delimiters.
  * Empty input will return an empty vector.
  */
