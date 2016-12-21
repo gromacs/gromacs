@@ -93,6 +93,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -1833,6 +1834,8 @@ int gmx_grompp(int argc, char *argv[])
 
     /* Initiate some variables */
     gmx::MDModules mdModules;
+    t_inputrec     irInstance;
+    t_inputrec    *ir = &irInstance;
     snew(opts, 1);
     snew(opts->include, STRLEN);
     snew(opts->define, STRLEN);
@@ -1842,9 +1845,11 @@ int gmx_grompp(int argc, char *argv[])
     /* PARAMETER file processing */
     mdparin = opt2fn("-f", NFILE, fnm);
     set_warning_line(wi, mdparin, -1);
-    t_inputrec  irInstance;
-    t_inputrec *ir = &irInstance;
-    get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, ir, opts, WriteMdpHeader::yes, wi);
+    try
+    {
+        get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, ir, opts, WriteMdpHeader::yes, wi);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     if (bVerbose)
     {

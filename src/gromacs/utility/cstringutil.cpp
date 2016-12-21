@@ -56,6 +56,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
 
+//! Comment sign to use.
+#define COMMENTSIGN ';'
+
 int continuing(char *s)
 {
     int sl;

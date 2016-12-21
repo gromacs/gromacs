@@ -55,7 +55,9 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -221,7 +223,9 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
 
     wi = init_warning(TRUE, 0);
 
-    inp = read_inpfile(membed_input, &ninp, wi);
+    gmx::TextInputFile stream(membed_input);
+    inp = read_inpfile(&stream, membed_input, &ninp, wi);
+
     ITYPE ("nxy", *it_xy, 1000);
     ITYPE ("nz", *it_z, 0);
     RTYPE ("xyinit", *xy_fac, 0.5);
@@ -1026,7 +1030,6 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
     gmx_membed_t             *membed    = nullptr;
 
     /* input variables */
-    const char *membed_input;
     real        xy_fac           = 0.5;
     real        xy_max           = 1.0;
     real        z_fac            = 1.0;
@@ -1055,9 +1058,13 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
     if (MASTER(cr))
     {
         /* get input data out membed file */
-        membed_input = opt2fn("-membed", nfile, fnm);
-        get_input(membed_input, &xy_fac, &xy_max, &z_fac, &z_max, &it_xy, &it_z, &probe_rad, &low_up_rm,
-                  &maxwarn, &pieces, &bALLOW_ASYMMETRY);
+        try
+        {
+            get_input(opt2fn("-membed", nfile, fnm),
+                      &xy_fac, &xy_max, &z_fac, &z_max, &it_xy, &it_z, &probe_rad, &low_up_rm,
+                      &maxwarn, &pieces, &bALLOW_ASYMMETRY);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
         if (!EI_DYNAMICS(inputrec->eI) )
         {
