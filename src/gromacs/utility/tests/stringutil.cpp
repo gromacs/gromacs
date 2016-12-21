@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,10 @@
 #include "testutils/refdata.h"
 #include "testutils/stringtest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -136,6 +140,42 @@ TEST(StringUtilityTest, SplitDelimitedString)
     EXPECT_THAT(gmx::splitDelimitedString("foo", ';'), ElementsAre("foo"));
     EXPECT_THAT(gmx::splitDelimitedString(";", ';'), ElementsAre("", ""));
     EXPECT_THAT(gmx::splitDelimitedString("", ';'), IsEmpty());
+}
+
+//! Test fixture for gmx::TextLineWrapper.
+class SplitAndTrimDelimitedStringTest : public StringTestBase
+{
+    public:
+        //! Check the size of \c v, and each of its elements.
+        void checkTextSequence(const std::vector<std::string> &v, const char *id)
+        {
+            TestReferenceChecker compound(checker().checkCompound("Strings", id));
+            compound.checkUInt64(v.size(), "NumberOfStrings");
+            int                  i = 0;
+            for (auto &s : v)
+            {
+                StringTestBase::checkText(&compound, s, formatString("%d", i).c_str());
+                ++i;
+            }
+        }
+};
+
+TEST_F(SplitAndTrimDelimitedStringTest, Works)
+{
+    checkTextSequence(splitAndTrimDelimitedString("", ';'), "NoText");
+    checkTextSequence(splitAndTrimDelimitedString(" \t\n ", ';'), "OnlySpace");
+    checkTextSequence(splitAndTrimDelimitedString("foo", ';'), "NoDelimiter");
+    checkTextSequence(splitAndTrimDelimitedString(" foo ", ';'), "NoDelimiterAndSpace");
+    checkTextSequence(splitAndTrimDelimitedString("foo;bar", ';'), "NoSpaces");
+    checkTextSequence(splitAndTrimDelimitedString(";foo;bar", ';'), "NoSpacesStartsWithDelimiter");
+    checkTextSequence(splitAndTrimDelimitedString("foo;bar;", ';'), "NoSpacesEndsWithDelimiter");
+    checkTextSequence(splitAndTrimDelimitedString(";foo;bar;", ';'), "NoSpacesDelimiterAtStartAndEnd");
+    checkTextSequence(splitAndTrimDelimitedString("foo;;bar", ';'), "NoSpacesAndAdjacentDelimiters");
+    checkTextSequence(splitAndTrimDelimitedString("foo  ;  bar ", ';'), "Spaces");
+    checkTextSequence(splitAndTrimDelimitedString("  ; foo ;  bar ", ';'), "SpacesStartsWithDelimiter");
+    checkTextSequence(splitAndTrimDelimitedString(" foo  ;  bar ; ", ';'), "SpacesEndsWithDelimiter");
+    checkTextSequence(splitAndTrimDelimitedString(" ;  foo\n ;  bar ;  ", ';'), "SpacesDelimiterAtStartAndEnd");
+    checkTextSequence(splitAndTrimDelimitedString(" foo  ; ; \tbar", ';'), "SpacesAndAdjacentDelimiters");
 }
 
 /********************************************************************
@@ -402,4 +442,6 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
               "WrappedAt14");
 }
 
+} // namespace
+} // namespace
 } // namespace
