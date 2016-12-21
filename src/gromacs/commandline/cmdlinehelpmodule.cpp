@@ -553,7 +553,8 @@ HelpExportReStructuredText::HelpExportReStructuredText(
 {
     TextReader   linksFile("links.dat");
     std::string  line;
-    while (linksFile.readLineTrimmed(&line))
+    linksFile.setTrimTrailingWhiteSpace(true);
+    while (linksFile.readLine(&line))
     {
         links_.addLink("[REF]." + line + "[ref]",
                        formatString(":ref:`.%s <%s>`", line.c_str(), line.c_str()),

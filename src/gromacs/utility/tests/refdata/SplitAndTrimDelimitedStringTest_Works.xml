@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Strings Name="NoText">
+    <UInt64 Name="NumberOfStrings">0</UInt64>
+  </Strings>
+  <Strings Name="OnlySpace">
+    <UInt64 Name="NumberOfStrings">1</UInt64>
+    <String Name="0"><![CDATA[
+]]></String>
+  </Strings>
+  <Strings Name="NoDelimiter">
+    <UInt64 Name="NumberOfStrings">1</UInt64>
+    <String Name="0"><![CDATA[
+foo]]></String>
+  </Strings>
+  <Strings Name="NoDelimiterAndSpace">
+    <UInt64 Name="NumberOfStrings">1</UInt64>
+    <String Name="0"><![CDATA[
+foo]]></String>
+  </Strings>
+  <Strings Name="NoSpaces">
+    <UInt64 Name="NumberOfStrings">2</UInt64>
+    <String Name="0"><![CDATA[
+foo]]></String>
+    <String Name="1"><![CDATA[
+bar]]></String>
+  </Strings>
+  <Strings Name="NoSpacesStartsWithDelimiter">
+    <UInt64 Name="NumberOfStrings">3</UInt64>
+    <String Name="0"><![CDATA[
+]]></String>
+    <String Name="1"><![CDATA[
+foo]]></String>
+    <String Name="2"><![CDATA[
+bar]]></String>
+  </Strings>
+  <Strings Name="NoSpacesEndsWithDelimiter">
+    <UInt64 Name="NumberOfStrings">3</UInt64>
+    <String Name="0"><![CDATA[
+foo]]></String>
+    <String Name="1"><![CDATA[
+bar]]></String>
+    <String Name="2"><![CDATA[
+]]></String>
+  </Strings>
+  <Strings Name="NoSpacesDelimiterAtStartAndEnd">
+    <UInt64 Name="NumberOfStrings">4</UInt64>
+    <String Name="0"><![CDATA[
+]]></String>
+    <String Name="1"><![CDATA[
+foo]]></String>
+    <String Name="2"><![CDATA[
+bar]]></String>
+    <String Name="3"><![CDATA[
+]]></String>
+  </Strings>
+  <Strings Name="NoSpacesAndAdjacentDelimiters">
+    <UInt64 Name="NumberOfStrings">3</UInt64>
+    <String Name="0"><![CDATA[
+foo]]></String>
+    <String Name="1"><![CDATA[
+]]></String>
+    <String Name="2"><![CDATA[
+bar]]></String>
+  </Strings>
+  <Strings Name="Spaces">
+    <UInt64 Name="NumberOfStrings">2</UInt64>
+    <String Name="0"><![CDATA[
+foo]]></String>
+    <String Name="1"><![CDATA[
+bar]]></String>
+  </Strings>
+  <Strings Name="SpacesStartsWithDelimiter">
+    <UInt64 Name="NumberOfStrings">3</UInt64>
+    <String Name="0"><![CDATA[
+]]></String>
+    <String Name="1"><![CDATA[
+foo]]></String>
+    <String Name="2"><![CDATA[
+bar]]></String>
+  </Strings>
+  <Strings Name="SpacesEndsWithDelimiter">
+    <UInt64 Name="NumberOfStrings">3</UInt64>
+    <String Name="0"><![CDATA[
+foo]]></String>
+    <String Name="1"><![CDATA[
+bar]]></String>
+    <String Name="2"><![CDATA[
+]]></String>
+  </Strings>
+  <Strings Name="SpacesDelimiterAtStartAndEnd">
+    <UInt64 Name="NumberOfStrings">4</UInt64>
+    <String Name="0"><![CDATA[
+]]></String>
+    <String Name="1"><![CDATA[
+foo]]></String>
+    <String Name="2"><![CDATA[
+bar]]></String>
+    <String Name="3"><![CDATA[
+]]></String>
+  </Strings>
+  <Strings Name="SpacesAndAdjacentDelimiters">
+    <UInt64 Name="NumberOfStrings">3</UInt64>
+    <String Name="0"><![CDATA[
+foo]]></String>
+    <String Name="1"><![CDATA[
+]]></String>
+    <String Name="2"><![CDATA[
+bar]]></String>
+  </Strings>
+</ReferenceData>

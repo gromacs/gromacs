@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,11 @@ namespace gmx
  *
  * All methods that read from the stream can throw any exceptions that the
  * underlying stream throws.
+ *
+ * Some of the functions understand a comment character that indicates
+ * where on a line a comment begins, which will not be returned to the
+ * client calling readLineWithoutCommentsAndTrimmed(). The character
+ * defaults to ';' and may be set with setCommentChar().
  *
  * \inlibraryapi
  * \ingroup module_utility
@@ -133,22 +138,41 @@ class TextReader
                // ...
            }
            \endcode
+         *
+         * Behaviours such as trimming whitespace or comments can be
+         * configured by calling other methods before this one.
          */
         bool readLine(std::string *line);
-        /*! \brief
-         * Reads a single line from the stream.
+        /*! \brief Sets whether the reader should trim leading whitespace
+         * from a line before returning it.
          *
-         * \param[out] line    String to receive the line.
-         * \returns    false if nothing was read because the file ended.
-         *
-         * On error or when false is returned, \p line will be empty.
-         * Works as readLine(), except that trailing whitespace will be removed
-         * from \p line.
-         *
-         * \see readLine()
+         * \param[in] doTrimming  Whether trimming should be active.
          */
-        bool readLineTrimmed(std::string *line);
-
+        void setTrimLeadingWhiteSpace(bool doTrimming);
+        /*! \brief Sets whether the reader should trim trailing whitespace
+         * from a line before returning it.
+         *
+         * Note that comment trimming will precede whitespace trimming
+         * when both are active.
+         *
+         * \param[in] doTrimming  Whether trimming should be active.
+         */
+        void setTrimTrailingWhiteSpace(bool doTrimming);
+        /*! \brief Sets whether the reader should trim at trailing
+         * comment from a line before returning it.
+         *
+         * Note that comment trimming will precede whitespace trimming
+         * when both are active.
+         *
+         * \param[in] doTrimming  Whether trimming should be active.
+         */
+        void setTrimTrailingComment(bool doTrimming);
+        /*! \brief Sets the identify of a single character used to
+         * denote the beginning of a comment.
+         *
+         * \param[in]  commentChar  The character that begins a comment.
+         */
+        void setCommentChar(char commentChar);
         /*! \brief
          * Reads all remaining lines from the stream as a single string.
          *
