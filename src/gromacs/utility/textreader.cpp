@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,15 +65,30 @@ std::string TextReader::readFileToString(const std::string &filename)
     return readFileToString(filename.c_str());
 }
 
+//! Implementation class
 class TextReader::Impl
 {
     public:
+        //! Constructor.
         explicit Impl(const TextInputStreamPointer &stream)
-            : stream_(stream)
+            : stream_(stream), trimLeadingWhiteSpace_(false), trimTrailingWhiteSpace_(false),
+              trimTrailingComment_(false), commentChar_(0)
         {
         }
 
+        //! Stream used by this reader.
         TextInputStreamPointer stream_;
+        //! Whether leading whitespace should be removed.
+        bool                   trimLeadingWhiteSpace_;
+        //! Whether trailing whitespace should be removed.
+        bool                   trimTrailingWhiteSpace_;
+        //! Whether a trailing comment should be removed.
+        bool                   trimTrailingComment_;
+        /*! \brief Character that denotes the start of a comment on a line.
+         *
+         * Zero until TextReader::setTrimTrailingComment is called to
+         * activate such trimming with a given character. */
+        char                   commentChar_;
 };
 
 TextReader::TextReader(const std::string &filename)
@@ -95,23 +110,66 @@ TextReader::~TextReader()
 {
 }
 
-bool TextReader::readLine(std::string *line)
+bool TextReader::readLine(std::string *linePtr)
 {
-    return impl_->stream_->readLine(line);
-}
-
-bool TextReader::readLineTrimmed(std::string *line)
-{
-    if (!readLine(line))
+    if (!impl_->stream_->readLine(linePtr))
     {
         return false;
     }
-    const size_t endPos = line->find_last_not_of(" \t\r\n");
-    if (endPos != std::string::npos)
+    auto      &line              = *linePtr;
+    const char whiteSpaceChars[] = " \t\r\n";
+    if (impl_->trimLeadingWhiteSpace_)
     {
-        line->resize(endPos + 1);
+        const size_t endPos = line.find_first_not_of(whiteSpaceChars);
+        if (endPos == std::string::npos)
+        {
+            line.resize(0);
+        }
+        else
+        {
+            line = line.substr(endPos, std::string::npos);
+        }
+    }
+    if (impl_->trimTrailingComment_)
+    {
+        auto commentPos = line.find(impl_->commentChar_);
+        if (commentPos != std::string::npos)
+        {
+            line.resize(commentPos);
+        }
+    }
+    if (impl_->trimTrailingWhiteSpace_)
+    {
+        const size_t endPos = line.find_last_not_of(whiteSpaceChars);
+        if (endPos == std::string::npos)
+        {
+            line.resize(0);
+        }
+        else
+        {
+            line.resize(endPos + 1);
+        }
     }
     return true;
+}
+
+void TextReader::setTrimLeadingWhiteSpace(bool doTrimming)
+{
+    impl_->trimLeadingWhiteSpace_ = doTrimming;
+}
+
+void TextReader::setTrimTrailingWhiteSpace(bool doTrimming)
+{
+    impl_->trimTrailingWhiteSpace_ = doTrimming;
+}
+
+void TextReader::setTrimTrailingComment(bool doTrimming, char commentChar)
+{
+    impl_->trimTrailingComment_ = doTrimming;
+    if (impl_->trimTrailingComment_)
+    {
+        impl_->commentChar_ = commentChar;
+    }
 }
 
 std::string TextReader::readAll()

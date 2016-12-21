@@ -71,6 +71,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetree.h"
@@ -1822,7 +1823,8 @@ void get_ir(const char *mdparin, const char *mdparout,
     t_expanded *expand = ir->expandedvals;
 
     init_inputrec_strings();
-    inp = read_inpfile(mdparin, &ninp, wi);
+    gmx::TextInputFile stream(mdparin);
+    inp = read_inpfile(&stream, mdparin, &ninp, wi);
 
     snew(dumstr[0], STRLEN);
     snew(dumstr[1], STRLEN);
