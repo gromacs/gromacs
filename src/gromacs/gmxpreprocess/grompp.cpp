@@ -93,6 +93,7 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -1840,7 +1841,11 @@ int gmx_grompp(int argc, char *argv[])
     /* PARAMETER file processing */
     mdparin = opt2fn("-f", NFILE, fnm);
     set_warning_line(wi, mdparin, -1);
-    get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, opts, wi);
+    try
+    {
+        get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, opts, wi);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     t_inputrec *ir = mdModules.inputrec();
 
     if (bVerbose)
