@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -168,7 +168,13 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
  * \throws    std::bad_alloc if out of memory.
  */
 std::string stripString(const std::string &str);
-
+/*! \brief
+ * Removes all characters after and including the first occurence of the comment symbol ';'
+ *
+ * \param[in] str  String to process
+ * \returns   \p str with any trailing comment removed.
+ * \throws    std::bad_alloc if out of memory. */
+std::string stripComment(const std::string &str);
 /*! \brief
  * Formats a string (snprintf() wrapper).
  *

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/utility/commentsign.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -129,6 +130,19 @@ std::string stripString(const std::string &str)
         --end;
     }
     return std::string(start, end);
+}
+
+std::string stripComment(const std::string &str)
+{
+    auto commentPosition = str.find_first_of(COMMENTSIGN);
+    if (commentPosition != std::string::npos)
+    {
+        return str.substr(0, commentPosition);
+    }
+    else
+    {
+        return str;
+    }
 }
 
 std::string formatString(const char *fmt, ...)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,10 +54,12 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/textreader.h"
 
 #define FUDGE 1.2
 #define DDD   2
@@ -124,7 +126,8 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
     if (mpin != NULL)
     {
-        inp = read_inpfile(mpin, &ninp, wi);
+        gmx::TextReader reader(mpin);
+        inp = read_inpfile(&reader, mpin, &ninp, wi);
     }
     else
     {
@@ -799,7 +802,11 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
 
     /* memory leak: */
     libm2p = m2p ? gmxlibfn(m2p) : m2p;
-    get_params(libm2p, m2pout, &psrec);
+    try
+    {
+        get_params(libm2p, m2pout, &psrec);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     psr = &psrec;
 
