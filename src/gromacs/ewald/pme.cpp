@@ -229,8 +229,6 @@ static void init_atomcomm(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
             snew(atc->thread_plist[thread].n, atc->nthread+2*gmxCacheLineSize);
             atc->thread_plist[thread].n += gmxCacheLineSize;
         }
-        snew(atc->spline[thread].thread_one, pme->nthread);
-        atc->spline[thread].thread_one[thread] = 1;
     }
 }
 
@@ -266,7 +264,6 @@ static void destroy_atomcomm(pme_atomcomm_t *atc)
             sfree(n_ptr);
             sfree(atc->thread_plist[i].i);
         }
-        sfree(atc->spline[i].thread_one);
         sfree(atc->spline[i].ind);
     }
     if (atc->nthread > 1)

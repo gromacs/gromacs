@@ -156,7 +156,6 @@ typedef real *splinevec[DIM];
 
 /*! \brief Data structure for beta-spline interpolation */
 typedef struct {
-    int      *thread_one;
     int       n;
     int      *ind;
     splinevec theta;
