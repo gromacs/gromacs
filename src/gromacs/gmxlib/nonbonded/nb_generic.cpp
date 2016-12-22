@@ -291,8 +291,7 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
                             }
                             r           = rsq*rinv;
                             velec       = qq*erf(r*zeff)*rinv;
-                            felec       = erf(r*zeff)*rinvsq - (2.0/sqrt(M_PI))*exp(-gmx::square(r*zeff))*(zeff*rinv);
-                            felec      *= qq;
+                            felec       = (qq*rinv)*(erf(r*zeff)*rinvsq - (2.0/sqrt(M_PI))*exp(-gmx::square(r*zeff))*(zeff*rinv));
                         }
                         /* The shift for the Coulomb potential is stored in
                          * the RF parameter c_rf, which is 0 without shift

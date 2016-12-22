@@ -124,7 +124,7 @@ int alex_gentop(int argc, char *argv[])
         { efTOP, "-o",        "out",       ffOPTWR },
         { efITP, "-oi",       "out",       ffOPTWR },
         { efSTO, "-c",        "out",       ffWRITE },
-        { efLOG, "-g03",      "gauss",     ffOPTRD },
+        { efLOG, "-g03",      "gauss",     ffRDMULT},
         { efNDX, "-n",        "renum",     ffOPTWR },
         { efDAT, "-q",        "qout",      ffOPTWR },
         { efDAT, "-mpdb",     "molprops",  ffOPTRD },
@@ -166,6 +166,7 @@ int alex_gentop(int argc, char *argv[])
     static real                      dbox           = 0.370424;
     static real                      penalty_fac    = 1;
     static real                      rDecrZeta      = -1;
+    static real                      efield         = 0;
     static char                     *molnm          = (char *)"";
     static char                     *iupac          = (char *)"";
     static char                     *dbname         = (char *)"";
@@ -322,7 +323,9 @@ int alex_gentop(int argc, char *argv[])
         { "-kp",    FALSE, etREAL, {&kp},
           "HIDDENDihedral angle force constant (kJ/mol/rad^2)" },
         { "-jobtype",  FALSE, etSTR, {&jobtype},
-          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." }
+          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." },
+        { "-efield",  FALSE, etREAL, {&efield},
+          "The magnitude of the external electeric field to calculate polarizability tensor." },
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm,
@@ -350,7 +353,7 @@ int alex_gentop(int argc, char *argv[])
 
     /* Check the options */
     bITP = opt2bSet("-oi", NFILE, fnm);
-    bTOP = TRUE;
+    bTOP = true;
 
     if (!bRandZeta)
     {
@@ -419,35 +422,30 @@ int alex_gentop(int argc, char *argv[])
     }
     else
     {
-        alexandria::MolProp  mp;
-        const char          *fn;
-
-        if (opt2bSet("-g03", NFILE, fnm))
-        {
-            fn = opt2fn("-g03", NFILE, fnm);
-        }
-        else
-        {
-            fn = opt2fn("-f", NFILE, fnm);
-        }
-        if (bVerbose)
-        {
-            printf("Will read (gaussian) file %s\n", fn);
-        }
+        char **fns = nullptr;
+        int    i, nfn;
+        
         if (strlen(molnm) == 0)
         {
             molnm = (char *)"XXX";
         }
-
-        ReadGauss(fn, mp, molnm, iupac, conf, basis,
-                  maxpot, nsymm, pd.getForceField().c_str(), jobtype);
-
-        mps.push_back(mp);
-
-        mpi = mps.begin();
+        
+        nfn = ftp2fns(&fns, efLOG, NFILE, fnm);
+               
+        for (i = 0; (i < nfn); i++)
+        {
+            alexandria::MolProp  mp;
+            ReadGauss(fns[i], mp, molnm, iupac, conf, basis,
+                      maxpot, nsymm, pd.getForceField().c_str(), jobtype);
+            mps.push_back(mp);
+        }
     }
 
-    mymol.molProp()->Merge(mpi);
+    for (auto mpi = mps.begin(); mpi < mps.end(); mpi++)
+    {
+        mymol.molProp()->Merge(mpi);
+    }
+    
     mymol.SetForceField(forcefield);
 
     gmx::MDModules mdModules;
@@ -511,7 +509,7 @@ int alex_gentop(int argc, char *argv[])
             mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) :
                                 ftp2fn(efTOP, NFILE, fnm),
                                 iChargeDistributionModel, bVerbose,
-                                pd, aps);
+                                pd, aps, cr, efield, lot);
         }
 
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));

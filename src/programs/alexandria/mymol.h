@@ -291,7 +291,7 @@ class MyMol
         immStatus getExpProps(gmx_bool bQM, gmx_bool bZero,
                               gmx_bool bZPE, char *lot,
                               const Poldata &pd);
-
+                              
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.
          *
@@ -305,7 +305,10 @@ class MyMol
                            ChargeDistributionModel iModel,
                            bool                    bVerbose,
                            const Poldata          &pd,
-                           gmx_atomprop_t          aps);
+                           gmx_atomprop_t          aps,
+                           t_commrec              *cr,
+                           double                  efield,
+                           const char             *lot);
 
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.
@@ -321,7 +324,10 @@ class MyMol
                            bool                     bVerbose,
                            const Poldata           &pd,
                            gmx_atomprop_t           aps,
-                           bool                     bITP);
+                           bool                     bITP,
+                           t_commrec               *cr,
+                           double                   efield,
+                           const char              *lot);
 
         /*! \brief
          *  Compute or derive global info about the molecule

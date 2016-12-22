@@ -1378,7 +1378,7 @@ bool MyMol::getOptimizedGeometry(rvec *x)
 class MyForceProvider : public IForceProvider
 {
     private:
-        std::vector<double> ElectricField_;
+        std::vector<double> efield_;
         
     public:
     
@@ -1389,7 +1389,7 @@ class MyForceProvider : public IForceProvider
                              PaddedRVecVector *force,
                              double            t);
                          
-        void setField(std::vector<double> field) { ElectricField_ = field; }
+        void setField(std::vector<double> field) { efield_ = field; }
 };
 
 MyForceProvider::MyForceProvider() {};
@@ -1402,7 +1402,7 @@ void MyForceProvider::calculateForces(const t_commrec  *cr,
     rvec *f = as_rvec_array(force->data());
     for(int dim = 0; dim < DIM; dim++)
     {       
-        double efield = FIELDFAC*ElectricField_[dim]; 
+        double efield = FIELDFAC*efield_[dim]; 
         if (efield != 0)
         {      
             for(int i = 0; i < mdatoms->nr; i++)
@@ -1413,25 +1413,28 @@ void MyForceProvider::calculateForces(const t_commrec  *cr,
     }
     if (MASTER(cr) && nullptr != debug)
     {
-        fprintf(debug, "%10g  %10g  %10g  %10g\n", t,
-                ElectricField_[XX], ElectricField_[YY], 
-                ElectricField_[ZZ]);
+        fprintf(debug, "Electric Field. t: %4g  Ex: %4g  Ey: %4g  Ez: %4g\n", 
+                t, efield_[XX], efield_[YY], efield_[ZZ]);
     }
 }
 
 
-std::vector<double> MyMol::computePolarizability(double    efield,
+std::vector<double> MyMol::computePolarizability(double     efield,
                                                  t_commrec *cr,
                                                  FILE      *fplog)
 {
-    const double        POLFAC = 29.957004; /*pol unit from (C.m**2.V*-1) to (Å**3)*/
-    std::vector<double> field = {0.0, 0.0, 0.0};
+    const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
+    std::vector<double> field(DIM, 0);
     std::vector<double> pols;
     MyForceProvider    *myforce;
     rvec                mu_ref, mu_tot;
     
-    myforce = new MyForceProvider;   
-    fr_->efield = myforce;
+    myforce          = new MyForceProvider;
+    fr_->forceBufferNoVirialSummation  = new PaddedRVecVector; 
+    fr_->forceBufferNoVirialSummation->resize(f_.size());     
+    fr_->efield      = myforce; 
+    fr_->bF_NoVirSum = true;
+    
     myforce->setField(field);          
     computeForces(fplog, cr, mu_ref);
     for (int dim = 0; dim < DIM; dim++)
@@ -1441,7 +1444,6 @@ std::vector<double> MyMol::computePolarizability(double    efield,
         computeForces(fplog, cr, mu_tot);
         pols.push_back(((mu_tot[dim]-mu_ref[dim])/efield)*(POLFAC));
         field[dim] = 0.0;
-        myforce->setField(field);
     }
     return pols;
 }
@@ -1984,18 +1986,19 @@ void MyMol::PrintTopology(const char             *fn,
                           ChargeDistributionModel iChargeDistributionModel,
                           bool                    bVerbose,
                           const Poldata          &pd,
-                          gmx_atomprop_t          aps)
+                          gmx_atomprop_t          aps,
+                          t_commrec              *cr,
+                          double                  efield,
+                          const char             *lot)
 {
     FILE                    *fp;
     bool                     bITP;
 
-
-    /* Write topology_ file */
     bITP = (fn2ftp(fn) == efITP);
     fp   = gmx_ffopen(fn, "w");
 
     PrintTopology(fp, iChargeDistributionModel,
-                  bVerbose, pd, aps, bITP);
+                  bVerbose, pd, aps, bITP, cr, efield, lot);
 
     fclose(fp);
 }
@@ -2005,12 +2008,19 @@ void MyMol::PrintTopology(FILE                   *fp,
                           bool                    bVerbose,
                           const Poldata          &pd,
                           gmx_atomprop_t          aps,
-                          bool                    bITP)
+                          bool                    bITP,
+                          t_commrec              *cr,
+                          double                  efield,
+                          const char             *lot)
 {
 
     t_mols                   printmol;
     std::vector<std::string> commercials;
     char                     buf[256];
+    double                   vec[DIM];
+    double                   value, error, T;    
+    tensor                   polar;
+    std::string              myref, mylot;
 
     if (fp == nullptr)
     {
@@ -2018,7 +2028,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     }
 
     CalcQPol(pd);
-
+    
     if (molProp()->getMolname().size() > 0)
     {
         printmol.name = strdup(molProp()->getMolname().c_str());
@@ -2031,13 +2041,30 @@ void MyMol::PrintTopology(FILE                   *fp,
     {
         printmol.name = strdup("Onbekend");
     }
-    printmol.nr   = 1;
-
+    
+    printmol.nr = 1;
     snprintf(buf, sizeof(buf), "ref_enthalpy   = %.3f kJ/mol", ref_enthalpy_);
     commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "polarizability = %.3f +/- %.3f A^3",
-             polarizability_, sig_pol_);
+    snprintf(buf, sizeof(buf), "polarizability = %.3f +/- %.3f A^3", polarizability_, sig_pol_);
     commercials.push_back(buf);
+    
+    if (1 == molProp()->getPropRef(MPO_POLARIZABILITY, iqmBoth, lot, "",
+                                   (char *)"electronic", &value, &error,
+                                   &T, myref, mylot, vec, polar))
+    {
+        snprintf(buf, sizeof(buf), "%s: axx = %.3f  ayy = %.3f  azz = %.3f", 
+                 lot, polar[XX][XX], polar[YY][YY], polar[ZZ][ZZ]);
+        commercials.push_back(buf);
+    }
+      
+    if (efield > 0 && nullptr != cr)
+    {
+        auto alphas = computePolarizability(efield, cr, fp);
+        snprintf(buf, sizeof(buf), "Alexandria: axx = %.3f  ayy = %.3f  azz = %.3f", 
+                 alphas[XX], alphas[YY], alphas[ZZ]);
+        commercials.push_back(buf);
+    }
+    
     snprintf(buf, sizeof(buf), "total charge   = %d e", molProp()->getCharge());
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "total mass     = %.3f Da", molProp()->getMass());

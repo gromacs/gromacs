@@ -615,7 +615,7 @@ static void add_exper_properties(xmlNodePtr              exp,
     const char *ptr;
     double      value, error, x, y, z, xx, yy, zz, xy, xz, yz;
 
-    for (alexandria::MolecularEnergyIterator me_it = exper.BeginEnergy();
+    for (auto me_it = exper.BeginEnergy();
          (me_it < exper.EndEnergy()); me_it++)
     {
         me_it->get(&value, &error);
@@ -628,7 +628,7 @@ static void add_exper_properties(xmlNodePtr              exp,
         add_xml_string(child, exml_names[exmlPHASE], phase2string(me_it->getPhase()));
     }
 
-    for (alexandria::MolecularDipoleIterator mdp_it = exper.BeginDipole();
+    for (auto mdp_it = exper.BeginDipole();
          (mdp_it < exper.EndDipole()); mdp_it++)
     {
         mdp_it->get(&x, &y, &z, &value, &error);
@@ -652,7 +652,7 @@ static void add_exper_properties(xmlNodePtr              exp,
         }
     }
 
-    for (alexandria::MolecularPolarizabilityIterator mdp_it = exper.BeginPolar(); (mdp_it < exper.EndPolar()); mdp_it++)
+    for (auto mdp_it = exper.BeginPolar(); (mdp_it < exper.EndPolar()); mdp_it++)
     {
         mdp_it->get(&xx, &yy, &zz, &xy, &xz, &yz, &value, &error);
 
@@ -684,7 +684,7 @@ static void add_exper_properties(xmlNodePtr              exp,
         }
     }
 
-    for (alexandria::MolecularQuadrupoleIterator mq_it = exper.BeginQuadrupole();
+    for (auto mq_it = exper.BeginQuadrupole();
          (mq_it < exper.EndQuadrupole()); mq_it++)
     {
         mq_it->get(&xx, &yy, &zz, &xy, &xz, &yz);
