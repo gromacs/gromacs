@@ -1234,44 +1234,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t          ap,
     return imm;
 }
 
-void MyMol::CalcMultipoles()
-{
-    int                     i, m;
-    rvec                    mu, mm;
-    real                    r2, dfac, q;
-    gmx_mtop_atomloop_all_t aloop;
-    const t_atom           *atom;
-    int                     at_global;
-    
-    clear_rvec(mu);
-    aloop = gmx_mtop_atomloop_all_init(mtop_);
-    i     = 0;
-    clear_mat(Q_calc);
-    clear_rvec(coq);
-    while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
-    {
-        q = atom->q;
-        svmul(ENM2DEBYE*q, x_[i], mm);
-        rvec_inc(mu, mm);
-
-        dfac = q*0.5*10*ENM2DEBYE;
-        r2   = iprod(x_[i], x_[i]);
-        for (m = 0; (m < DIM); m++)
-        {
-            Q_calc[m][m] += dfac*(3*gmx::square(x_[i][m]) - r2);
-        }
-        Q_calc[XX][YY] += dfac*3*(x_[i][XX]+coq[XX])*(x_[i][YY]+coq[YY]);
-        Q_calc[XX][ZZ] += dfac*3*(x_[i][XX]+coq[XX])*(x_[i][ZZ]+coq[ZZ]);
-        Q_calc[YY][ZZ] += dfac*3*(x_[i][YY]+coq[YY])*(x_[i][ZZ]+coq[ZZ]);
-
-        i++;
-    }
-    GMX_RELEASE_ASSERT(i == topology_->atoms.nr, "Inconsistency 1 in mymol.cpp");
-    copy_rvec(mu, mu_calc);
-    dip_calc = norm(mu);
-}
-
-void MyMol::computeForces(FILE *fplog, t_commrec *cr,rvec mu_tot)
+void MyMol::computeForces(FILE *fplog, t_commrec *cr)
 {
     tensor          force_vir;
     t_nrnb          my_nrnb;
@@ -1305,15 +1268,14 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr,rvec mu_tot)
                             &f_, force_vir, mdatoms_,
                             &my_nrnb, wcycle, nullptr,
                             &(mtop_->groups),
-                            shellfc_, fr_, false, t, mu_tot,
+                            shellfc_, fr_, false, t, nullptr,
                             nullptr);
         cr->nnodes = nnodes;
         
         for (int i = 0; i < mtop_->natoms; i++)
         {
             copy_rvec(state_->x[i], x_[i]);
-        }
-       
+        }      
     }
     else
     {   
@@ -1325,7 +1287,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr,rvec mu_tot)
                  &f_, force_vir, mdatoms_,
                  enerd_, fcd_,
                  &(state_->lambda), nullptr,
-                 fr_, nullptr, mu_tot, t,
+                 fr_, nullptr, nullptr, t,
                  nullptr, false,
                  flags);
     }
@@ -1405,7 +1367,7 @@ void MyForceProvider::calculateForces(const t_commrec  *cr,
         double efield = FIELDFAC*efield_[dim]; 
         if (efield != 0)
         {      
-            for(int i = 0; i < mdatoms->nr; i++)
+            for(int i = 0; i < mdatoms->nr; ++i)
             {
                 f[i][dim] += mdatoms->chargeA[i]*efield;
             }
@@ -1418,10 +1380,60 @@ void MyForceProvider::calculateForces(const t_commrec  *cr,
     }
 }
 
+void MyMol::CalcDipole(rvec mu)
+{
+    clear_rvec(mu);
+    for (int i = 0; i < topology_->atoms.nr; i++)
+    {
+        auto q = ENM2DEBYE*topology_->atoms.atom[i].q;
+        
+        for (int m = 0; m < DIM; m++)
+        {
+            mu[m] += x_[i][m]*q;
+        }
+    }
+}
 
-std::vector<double> MyMol::computePolarizability(double     efield,
-                                                 t_commrec *cr,
-                                                 FILE      *fplog)
+void MyMol::CalcMultipoles()
+{
+    int                     i, m;
+    rvec                    mu, mm;
+    real                    r2, dfac, q;
+    gmx_mtop_atomloop_all_t aloop;
+    const t_atom           *atom;
+    int                     at_global;
+    
+    clear_rvec(mu);
+    aloop = gmx_mtop_atomloop_all_init(mtop_);
+    i     = 0;
+    clear_mat(Q_calc);
+    clear_rvec(coq);
+    while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
+    {
+        q = atom->q;
+        svmul(ENM2DEBYE*q, x_[i], mm);
+        rvec_inc(mu, mm);
+
+        dfac = q*0.5*10*ENM2DEBYE;
+        r2   = iprod(x_[i], x_[i]);
+        for (m = 0; (m < DIM); m++)
+        {
+            Q_calc[m][m] += dfac*(3*gmx::square(x_[i][m]) - r2);
+        }
+        Q_calc[XX][YY] += dfac*3*(x_[i][XX]+coq[XX])*(x_[i][YY]+coq[YY]);
+        Q_calc[XX][ZZ] += dfac*3*(x_[i][XX]+coq[XX])*(x_[i][ZZ]+coq[ZZ]);
+        Q_calc[YY][ZZ] += dfac*3*(x_[i][YY]+coq[YY])*(x_[i][ZZ]+coq[ZZ]);
+
+        i++;
+    }
+    GMX_RELEASE_ASSERT(i == topology_->atoms.nr, "Inconsistency 1 in mymol.cpp");
+    copy_rvec(mu, mu_calc);
+    dip_calc = norm(mu);
+}
+
+std::vector<double> MyMol::CalcPolarizability(double     efield,
+                                              t_commrec *cr,
+                                              FILE      *fplog)
 {
     const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field(DIM, 0);
@@ -1433,19 +1445,53 @@ std::vector<double> MyMol::computePolarizability(double     efield,
     fr_->forceBufferNoVirialSummation  = new PaddedRVecVector; 
     fr_->forceBufferNoVirialSummation->resize(f_.size());     
     fr_->efield      = myforce; 
-    fr_->bF_NoVirSum = true;
-    
-    myforce->setField(field);          
-    computeForces(fplog, cr, mu_ref);
-    for (int dim = 0; dim < DIM; dim++)
+    fr_->bF_NoVirSum = true;  
+    myforce->setField(field); 
+    CalcDipole(mu_ref);       
+    computeForces(fplog, cr);
+    for (int m = 0; m < DIM; m++)
     {
-        field[dim] = efield;
+        field[m] = efield;
         myforce->setField(field);
-        computeForces(fplog, cr, mu_tot);
-        pols.push_back(((mu_tot[dim]-mu_ref[dim])/efield)*(POLFAC));
-        field[dim] = 0.0;
+        computeForces(fplog, cr);
+        CalcDipole(mu_tot);
+        pols.push_back((((mu_tot[m]-mu_ref[m]))/efield)*(POLFAC));
+        field[m] = 0.0;
     }
     return pols;
+}
+
+void MyMol::CalcQPol(const Poldata &pd)
+
+{
+    int     i, np;
+    double  poltot, pol, sigpol, sptot, ereftot, eref;
+    rvec    mu;
+
+    poltot  = 0;
+    sptot   = 0;
+    ereftot = 0;
+    np      = 0;
+    clear_rvec(mu);
+    for (i = 0; (i < topology_->atoms.nr); i++)
+    {
+        if (pd.getAtypePol(*topology_->atoms.atomtype[i], &pol, &sigpol))
+        {
+            np++;
+            poltot += pol;
+            sptot  += gmx::square(sigpol);
+        }
+        if (1 ==
+            pd.getAtypeRefEnthalpy(*topology_->atoms.atomtype[i], &eref))
+        {
+            ereftot += eref;
+        }
+    }
+    CalcDipole(mu);
+    mutot_          = norm(mu);
+    ref_enthalpy_   = ereftot;
+    polarizability_ = poltot;
+    sig_pol_        = sqrt(sptot/topology_->atoms.nr);
 }
 
 immStatus MyMol::GenerateCharges(const Poldata             &pd,
@@ -1462,7 +1508,6 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  const char                *tabfn,
                                  gmx_hw_info_t             *hwinfo)
 {
-    rvec      mu_tot;
     immStatus imm       = immOK;
     real      tolerance = 1e-8;
     int       maxiter   = 1000;
@@ -1554,7 +1599,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 }
                 if (nullptr != shellfc_)
                 {
-                    computeForces(nullptr, cr, mu_tot);
+                    computeForces(nullptr, cr);
                 }
                 gr_.calcPot();
                 EspRms_ = chi2[cur] = gr_.getRms(&wtot, &rrms);
@@ -2059,7 +2104,7 @@ void MyMol::PrintTopology(FILE                   *fp,
       
     if (efield > 0 && nullptr != cr)
     {
-        auto alphas = computePolarizability(efield, cr, fp);
+        auto alphas = CalcPolarizability(efield, cr, fp);
         snprintf(buf, sizeof(buf), "Alexandria: axx = %.3f  ayy = %.3f  azz = %.3f", 
                  alphas[XX], alphas[YY], alphas[ZZ]);
         commercials.push_back(buf);
@@ -2600,42 +2645,6 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         imm = immNoData;
     }
     return imm;
-}
-
-void MyMol::CalcQPol(const Poldata &pd)
-
-{
-    int     i, m, np;
-    double  poltot, pol, sigpol, sptot, ereftot, eref;
-    rvec    mu;
-
-    poltot  = 0;
-    sptot   = 0;
-    ereftot = 0;
-    np      = 0;
-    clear_rvec(mu);
-    for (i = 0; (i < topology_->atoms.nr); i++)
-    {
-        if (pd.getAtypePol(*topology_->atoms.atomtype[i], &pol, &sigpol))
-        {
-            np++;
-            poltot += pol;
-            sptot  += gmx::square(sigpol);
-        }
-        if (1 ==
-            pd.getAtypeRefEnthalpy(*topology_->atoms.atomtype[i], &eref))
-        {
-            ereftot += eref;
-        }
-        for (m = 0; (m < DIM); m++)
-        {
-            mu[m] += x_[i][m]*topology_->atoms.atom[i].q;
-        }
-    }
-    mutot_          = ENM2DEBYE*norm(mu);
-    ref_enthalpy_   = ereftot;
-    polarizability_ = poltot;
-    sig_pol_        = sqrt(sptot/topology_->atoms.nr);
 }
 
 void MyMol::UpdateIdef(const Poldata   &pd,

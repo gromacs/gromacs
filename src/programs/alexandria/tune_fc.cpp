@@ -1501,7 +1501,6 @@ static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
 double Optimization::calcDeviation()
 {
     int     j;
-    rvec    mu_tot;
     FILE   *dbcopy;
     double  ener    = 0;
     double  optHF   = 0;
@@ -1578,7 +1577,7 @@ double Optimization::calcDeviation()
                         debug  = nullptr;
 
                         mymol.changeCoordinate(ei);
-                        mymol.computeForces(debug, _cr, mu_tot);
+                        mymol.computeForces(debug, _cr);
 
                         debug         = dbcopy;
                         mymol.Force2  = 0.0; 

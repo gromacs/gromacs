@@ -242,7 +242,7 @@ class MyMol
          * \param[in]  cr
          * \param[out] isoPol   Isotropic polarizability
          */
-        std::vector<double> computePolarizability(double efield, t_commrec *cr, FILE *fplog);
+        std::vector<double> CalcPolarizability(double efield, t_commrec *cr, FILE *fplog);
 
         /*! \brief
          * Generate atomic partial charges
@@ -335,6 +335,8 @@ class MyMol
          * \param[in] pd   Data structure containing atomic properties
          */
         void CalcQPol(const Poldata &pd);
+        
+        void CalcDipole(rvec mu);
 
         /*! \brief
          * Relax the shells (if any) or compute the forces in the molecule
@@ -343,7 +345,7 @@ class MyMol
          * \param[in] cr
          * \param[in] mu_tot
          */
-        void computeForces(FILE *fplog, t_commrec *cr, rvec mu_tot);
+        void computeForces(FILE *fplog, t_commrec *cr);
 
         /*! \brief
          * Set the force field

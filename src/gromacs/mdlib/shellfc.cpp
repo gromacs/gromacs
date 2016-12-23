@@ -1270,8 +1270,8 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
 
         bConverged = (df[Try] < ftol);
         
-        //if ((df[Try] < df[Min]))
-        if (Epot[Try] < Epot[Min])
+        if ((df[Try] < df[Min]))
+            //if (Epot[Try] < Epot[Min])
         {
             if (debug)
             {
