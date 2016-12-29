@@ -62,18 +62,35 @@ typedef gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> PmeSafePointer;
 typedef std::vector<real> ChargesVector;
 //! Coordinates
 typedef std::vector<RVec> CoordinatesVector;
+//! Forces
+typedef std::vector<RVec> ForcesVector;
 //! Gridline indices
 typedef std::vector<IVec> GridLineIndicesVector;
 //! Spline parameters (theta or dtheta)
 typedef std::vector<real> SplineParamsVector;
-//! Non-zero grid values
-typedef std::map<IVec, real> SparseGridValues;
+//! Non-zero grid values accessed by their gridline indices
+template<typename ValueType>using SparseGridValues = std::map<IVec, ValueType>;
+//! Non-zero real grid values accessed by their gridline indices
+typedef SparseGridValues<real> SparseRealGridValues;
 //! TODO: make proper C++ matrix for the whole Gromacs, get rid of this
 typedef std::array<real, DIM * DIM> Matrix3x3;
 //! PME code path being tested
 enum class PmeCodePath
 {
     CPU, // serial CPU code
+};
+//! Type of spline data
+enum class PmeSplineDataType
+{
+    Values,      // theta
+    Derivatives, //dtheta
+};
+
+//! PME gathering input forces treatment
+enum class PmeGatherInputHandling
+{
+    Overwrite,
+    ReduceWith,
 };
 
 // PME stages
@@ -89,6 +106,21 @@ PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
 //! PME spline computation and charge spreading
 void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
                                bool computeSplines, bool spreadCharges);
+//! PME force gathering
+void PmePerformGather(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+                      PmeGatherInputHandling inputTreatment, ForcesVector &forces);
+
+// PME stage inputs - setters for skipping stages
+
+//! Setting atom spline values or derivatives to be used in spread/gather
+void PmeSetSplineData(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+                      const SplineParamsVector &splineValues, PmeSplineDataType type);
+//! Setting gridline indices be used in spread/gather
+void PmeSetGridLineIndices(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+                           const GridLineIndicesVector &gridLineIndices);
+//! Setting real grid to be used in gather
+void PmeSetRealGrid(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+                    const SparseRealGridValues &gridValues);
 
 // PME stage outputs
 
@@ -100,6 +132,9 @@ void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 
 //! Fetching the spreading output of PmePerformSplineAndSpread()
 void PmeFetchOutputsSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
-                           SparseGridValues &gridValues);
+                           SparseRealGridValues &gridValues);
+
+// Fetching the output of PmePerformGather() is not needed since it gets
+// passed the forces buffer (the only output)
 }
 #endif

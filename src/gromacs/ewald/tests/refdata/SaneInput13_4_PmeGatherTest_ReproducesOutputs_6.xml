@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Forces">
+    <Int Name="Length">13</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1.9557508355192463</Real>
+      <Real Name="Y">-1.0471636311140122</Real>
+      <Real Name="Z">-2.3132536930997265</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-3.2462035066427677</Real>
+      <Real Name="Y">-19.872029316894373</Real>
+      <Real Name="Z">-3.2912541171241583</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.37686445552659548</Real>
+      <Real Name="Y">-0.29608872098901035</Real>
+      <Real Name="Z">-10.766115367409757</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.20302825470506328</Real>
+      <Real Name="Y">-0.025428479148445125</Real>
+      <Real Name="Z">-0.0075195643948705714</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-10.106386055873758</Real>
+      <Real Name="Y">-10.967727921372378</Real>
+      <Real Name="Z">-18.546486239861682</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

@@ -170,7 +170,7 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
 
                     if (spreadCharges)
                     {
-                        SparseGridValues nonZeroGridValues;
+                        SparseRealGridValues nonZeroGridValues;
                         PmeFetchOutputsSpread(pmeSafe, mode.first, nonZeroGridValues);
 
                         /* The wrapped grid */
