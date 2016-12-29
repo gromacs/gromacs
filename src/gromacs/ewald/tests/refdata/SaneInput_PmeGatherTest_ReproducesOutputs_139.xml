@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Forces">
+    <Int Name="Length">2</Int>
+    <Vector>
+      <Real Name="X">-3.4931516109310436</Real>
+      <Real Name="Y">-1.5468356615629757</Real>
+      <Real Name="Z">5.3783896370486106</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-6.1476176241634404</Real>
+      <Real Name="Y">-8.1950556639762215</Real>
+      <Real Name="Z">13.522671663166642</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>
