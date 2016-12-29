@@ -188,11 +188,10 @@ class PmeSplineAndSpreadTest : public ::testing::TestWithParam<SplineAndSpreadIn
 
                     if (spreadCharges)
                     {
-                        SparseGridValues nonZeroGridValues = pmeGetRealGrid(pmeSafe.get(), mode.first);
-
                         /* The wrapped grid */
-                        TestReferenceChecker gridValuesChecker(defaultChecker.checkCompound("NonZeroGridValues", "RealSpaceGrid"));
-                        const auto           ulpToleranceGrid = 2 * ulpToleranceSplineValues * (int)(ceil(sqrt(atomCount)));
+                        SparseRealGridValuesOutput nonZeroGridValues = pmeGetRealGrid(pmeSafe.get(), mode.first);
+                        TestReferenceChecker       gridValuesChecker(defaultChecker.checkCompound("NonZeroGridValues", "RealSpaceGrid"));
+                        const auto                 ulpToleranceGrid = 2 * ulpToleranceSplineValues * (int)(ceil(sqrt(atomCount)));
                         /* 2 is empiric; sqrt(atomCount) assumes all the input charges may spread onto the same cell */
                         SCOPED_TRACE(formatString("Testing grid values with tolerance of %ld", ulpToleranceGrid));
                         gridValuesChecker.setDefaultTolerance(relativeToleranceAsUlp(1.0, ulpToleranceGrid));
