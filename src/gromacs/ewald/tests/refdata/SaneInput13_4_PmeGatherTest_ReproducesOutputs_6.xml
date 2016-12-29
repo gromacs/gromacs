@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Forces">
+    <Int Name="Length">13</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1.9557508596825601</Real>
+      <Real Name="Y">-1.047163692329528</Real>
+      <Real Name="Z">-2.3132537050008781</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-3.2462033375237307</Real>
+      <Real Name="Y">-19.872029658474347</Real>
+      <Real Name="Z">-3.2912540777407391</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.3768644641931938</Real>
+      <Real Name="Y">-0.29608870710843993</Real>
+      <Real Name="Z">-10.766114679896596</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.20302824843910725</Real>
+      <Real Name="Y">-0.025428479141353176</Real>
+      <Real Name="Z">-0.0075195647570039719</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-10.106385906424284</Real>
+      <Real Name="Y">-10.967727625048926</Real>
+      <Real Name="Z">-18.546485964477537</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

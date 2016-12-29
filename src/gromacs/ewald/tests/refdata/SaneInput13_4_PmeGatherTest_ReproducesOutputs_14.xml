@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Forces">
+    <Int Name="Length">13</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-2.2351438396372116</Real>
+      <Real Name="Y">-1.1485021817146481</Real>
+      <Real Name="Z">4.1807387985396707</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-3.7099466714556919</Real>
+      <Real Name="Y">-21.795130584678329</Real>
+      <Real Name="Z">32.143028962270918</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.43070224479222147</Real>
+      <Real Name="Y">-0.3247424720567002</Real>
+      <Real Name="Z">-5.5153267936943076</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.23203228393040826</Real>
+      <Real Name="Y">-0.027889301343671156</Real>
+      <Real Name="Z">0.46522242414362253</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-11.550155321627752</Real>
+      <Real Name="Y">-12.02912132848928</Real>
+      <Real Name="Z">25.101388786825328</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

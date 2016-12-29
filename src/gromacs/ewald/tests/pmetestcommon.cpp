@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,7 +43,10 @@
 
 #include "pmetestcommon.h"
 
+#include <cstring>
+
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme-gather.h"
 #include "gromacs/ewald/pme-grid.h"
 #include "gromacs/ewald/pme-internal.h"
 #include "gromacs/ewald/pme-spread.h"
@@ -54,6 +57,24 @@
 
 namespace gmx
 {
+
+//! Getting local PME real grid pointer for test I/O
+real *PmeGetRealGrid(const PmeSafePointer &pmeSafe)
+{
+    const size_t gridIndex = 0;
+    return pmeSafe->fftgrid[gridIndex];
+}
+
+//! Getting local PME real grid dimensions
+void PmeGetRealGridSizes(const PmeSafePointer &pmeSafe,
+                         IVec                 &gridSize,
+                         IVec                 &paddedGridSize)
+{
+    const size_t gridIndex = 0;
+    IVec         gridOffsetUnused;
+    gmx_parallel_3dfft_real_limits(pmeSafe->pfft_setup[gridIndex], gridSize, gridOffsetUnused, paddedGridSize);
+}
+
 //! PME initialization - internal
 PmeSafePointer PmeInitInternal(const t_inputrec *inputRec, size_t atomCount)
 {
@@ -109,6 +130,7 @@ void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
     const size_t    gridIndex                    = 0;
     const bool      computeSplinesForZeroCharges = true;
     real           *fftgrid                      = spreadCharges ? pmeSafe->fftgrid[gridIndex] : nullptr;
+
     switch (mode)
     {
         case PmeCodePath::CPU:
@@ -118,6 +140,140 @@ void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
             {
                 wrap_periodic_pmegrid(pmeUnsafe, pmeSafe->pmegrid[gridIndex].grid.grid);
                 copy_pmegrid_to_fftgrid(pmeUnsafe, pmeSafe->pmegrid[gridIndex].grid.grid, fftgrid, gridIndex);
+            }
+            break;
+
+        default:
+            GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
+    }
+}
+
+//! PME force gathering
+void PmePerformGather(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+                      PmeGatherInputHandling inputTreatment, ForcesVector &forces)
+{
+    gmx_pme_t      *pmeUnsafe               = pmeSafe.get();
+    pme_atomcomm_t *atc                     = &(pmeSafe->atc[0]);
+    const size_t    atomCount               = atc->n;
+    GMX_RELEASE_ASSERT(forces.size() == atomCount, "Bad force buffer size");
+    const bool      forceReductionWithInput = (inputTreatment == PmeGatherInputHandling::ReduceWith);
+    const real      scale                   = 1.0;
+    const size_t    threadIndex             = 0;
+    const size_t    gridIndex               = 0;
+    real           *grid                    = pmeSafe->pmegrid[gridIndex].grid.grid;
+    switch (mode)
+    {
+        case PmeCodePath::CPU:
+            atc->f = as_rvec_array(forces.data());
+            if (atc->nthread == 1)
+            {
+                // something which is normally done in serial spline computation (make_thread_local_ind())
+                atc->spline[threadIndex].n = atomCount;
+            }
+            copy_fftgrid_to_pmegrid(pmeUnsafe, pmeSafe->fftgrid[gridIndex], grid, gridIndex, pmeSafe->nthread, threadIndex);
+            unwrap_periodic_pmegrid(pmeUnsafe, grid);
+            gather_f_bsplines(pmeUnsafe, grid, !forceReductionWithInput,
+                              atc, &atc->spline[threadIndex], scale);
+            break;
+
+        default:
+            GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
+    }
+}
+
+//! Setting atom spline values/derivatives to be used in spread/gather
+void PmeSetSplineData(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+                      const SplineParamsVector &splineValues, PmeSplineDataType type)
+{
+    const pme_atomcomm_t *atc         = &(pmeSafe->atc[0]);
+    const size_t          atomCount   = atc->n;
+    const size_t          pmeOrder    = pmeSafe->pme_order;
+    const size_t          dimSize     = pmeOrder * atomCount;
+    GMX_RELEASE_ASSERT(DIM * dimSize == splineValues.size(), "Mismatch in spline data");
+    const size_t          threadIndex   = 0;
+    real                **targetBuffers = nullptr;
+    switch (type)
+    {
+        case PmeSplineDataType::Values:
+            targetBuffers = atc->spline[threadIndex].theta;
+            break;
+
+        case PmeSplineDataType::Derivatives:
+            targetBuffers = atc->spline[threadIndex].dtheta;
+            break;
+
+        default:
+            GMX_THROW(InternalError("Unknown spline data type"));
+    }
+
+    switch (mode)
+    {
+        case PmeCodePath::CPU:
+            // spline values - XX...XXYY...YYZZ...ZZ
+            for (int i = 0; i < DIM; i++)
+            {
+                std::copy(splineValues.begin() + i * dimSize,
+                          splineValues.begin() + (i + 1) * dimSize,
+                          targetBuffers[i]);
+            }
+            break;
+
+        default:
+            GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
+    }
+}
+
+//! Setting gridline indices to be used in spread/gather
+void PmeSetGridLineIndices(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+                           const GridLineIndicesVector &gridLineIndices)
+{
+    pme_atomcomm_t       *atc         = &(pmeSafe->atc[0]);
+    const size_t          atomCount   = atc->n;
+    GMX_RELEASE_ASSERT(atomCount == gridLineIndices.size(), "Mismatch in gridline indices size");
+
+    IVec paddedGridSizeUnused, gridSize;
+    PmeGetRealGridSizes(pmeSafe, gridSize, paddedGridSizeUnused);
+    for (const auto &index : gridLineIndices)
+    {
+        for (int i = 0; i < DIM; i++)
+        {
+            GMX_RELEASE_ASSERT((0 <= index[i]) && (index[i] < gridSize[i]), "Invalid gridline index");
+        }
+    }
+
+    switch (mode)
+    {
+        case PmeCodePath::CPU:
+            // incompatible IVec and ivec assignment?
+            //std::copy(gridLineIndices.begin(), gridLineIndices.end(), atc->idx);
+            memcpy(atc->idx, gridLineIndices.data(), atomCount * sizeof(gridLineIndices[0]));
+            break;
+
+        default:
+            GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
+    }
+}
+
+//! Setting real grid to be used in gather
+void PmeSetRealGrid(const PmeSafePointer   &pmeSafe,
+                    PmeCodePath             mode,
+                    const SparseGridValues &gridValues)
+{
+    real *grid = PmeGetRealGrid(pmeSafe);
+    IVec  gridSize, paddedGridSize;
+    PmeGetRealGridSizes(pmeSafe, gridSize, paddedGridSize);
+    switch (mode)
+    {
+        case PmeCodePath::CPU:
+            std::memset(grid, 0, paddedGridSize[XX] * paddedGridSize[YY] * paddedGridSize[ZZ] * sizeof(real));
+            for (const auto &gridValue : gridValues)
+            {
+                for (int i = 0; i < DIM; i++)
+                {
+                    GMX_RELEASE_ASSERT((0 <= gridValue.first[i]) && (gridValue.first[i] < gridSize[i]), "Invalid grid value index");
+                }
+                const size_t gridValueIndex = (gridValue.first[XX] * paddedGridSize[YY] + gridValue.first[YY]) * paddedGridSize[ZZ] + gridValue.first[ZZ];
+                grid[gridValueIndex] = gridValue.second;
             }
             break;
 
@@ -162,15 +318,15 @@ void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 void PmeFetchOutputsSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
                            SparseGridValues &gridValues)
 {
-    const size_t          gridIndex = 0;
-    IVec                  gridSize, gridOffsetUnused, paddedGridSize;
+    real *grid = PmeGetRealGrid(pmeSafe);
+    IVec  gridSize, paddedGridSize;
+    PmeGetRealGridSizes(pmeSafe, gridSize, paddedGridSize);
 
     switch (mode)
     {
         case PmeCodePath::CPU:
             gridValues.clear();
 
-            gmx_parallel_3dfft_real_limits(pmeSafe->pfft_setup[gridIndex], gridSize, gridOffsetUnused, paddedGridSize);
             for (int ix = 0; ix < gridSize[XX]; ix++)
             {
                 for (int iy = 0; iy < gridSize[YY]; iy++)
@@ -178,7 +334,7 @@ void PmeFetchOutputsSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
                     for (int iz = 0; iz < gridSize[ZZ]; iz++)
                     {
                         const size_t gridValueIndex = (ix * paddedGridSize[YY] + iy) * paddedGridSize[ZZ] + iz;
-                        const real   value          = pmeSafe->fftgrid[gridIndex][gridValueIndex];
+                        const real   value          = grid[gridValueIndex];
                         if (value != 0.0)
                         {
                             IVec key = {ix, iy, iz};
