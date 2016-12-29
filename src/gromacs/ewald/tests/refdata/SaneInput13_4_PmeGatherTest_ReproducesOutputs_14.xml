@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Forces">
+    <Int Name="Length">13</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-2.2351438120219957</Real>
+      <Real Name="Y">-1.1485021145750465</Real>
+      <Real Name="Z">4.1807386702748595</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-3.7099468647345915</Real>
+      <Real Name="Y">-21.795130210042213</Real>
+      <Real Name="Z">32.143028831759068</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.43070223488753762</Real>
+      <Real Name="Y">-0.32474248728055255</Real>
+      <Real Name="Z">-5.5153272229314947</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.23203229109150089</Real>
+      <Real Name="Y">-0.027889301351449423</Real>
+      <Real Name="Z">0.46522243780672717</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-11.550155492427152</Real>
+      <Real Name="Y">-12.029121653489213</Real>
+      <Real Name="Z">25.101389341209018</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

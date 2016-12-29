@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Forces">
+    <Int Name="Length">13</Int>
+    <Vector>
+      <Real Name="X">0.020096402511495408</Real>
+      <Real Name="Y">0.87009328627459159</Real>
+      <Real Name="Z">0.95078549369635756</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.6600000262260437</Real>
+      <Real Name="Y">0.67000001668930054</Real>
+      <Real Name="Z">0.076221646491874295</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.44999998807907104</Real>
+      <Real Name="Y">0.039999999105930328</Real>
+      <Real Name="Z">0.93999999761581421</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.54000002145767212</Real>
+      <Real Name="Y">0.75999999046325684</Real>
+      <Real Name="Z">0.57999998331069946</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-14.265142989104236</Real>
+      <Real Name="Y">-7.9457761893414673</Real>
+      <Real Name="Z">-83.938019505560561</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1.8578787119278921</Real>
+      <Real Name="Y">-0.83514698213068372</Real>
+      <Real Name="Z">-8.9193098318303896</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.80390746567398663</Real>
+      <Real Name="Y">-1.3196571260046956</Real>
+      <Real Name="Z">-13.859267138133456</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.27000001072883606</Real>
+      <Real Name="Y">0.98000001907348633</Real>
+      <Real Name="Z">0.82999998331069946</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.10999999940395355</Real>
+      <Real Name="Y">0.30000001192092896</Real>
+      <Real Name="Z">0.41999998688697815</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.95295795777769488</Real>
+      <Real Name="Y">0.70900587723009756</Real>
+      <Real Name="Z">0.62184788234169885</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.28999999165534973</Real>
+      <Real Name="Y">0.10000000149011612</Real>
+      <Real Name="Z">0.68000000715255737</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.6558649407912831</Real>
+      <Real Name="Y">0.59276265902551173</Real>
+      <Real Name="Z">-0.092173504598847322</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.4699999988079071</Real>
+      <Real Name="Y">0.039999999105930328</Real>
+      <Real Name="Z">0.4699999988079071</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>
