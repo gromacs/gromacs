@@ -38,13 +38,11 @@
 
 #include "readinp.h"
 
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
 #include <algorithm>
 
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
@@ -56,6 +54,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textwriter.h"
 
 t_inpfile *read_inpfile(gmx::TextReader *reader, const char *fn, int *ninp,
                         warninp_t wi)
@@ -189,53 +188,49 @@ static void sort_inp(int ninp, t_inpfile inp[])
     gmx_qsort(inp, ninp, static_cast<size_t>(sizeof(inp[0])), inp_comp);
 }
 
-void write_inpfile(const char *fn, int ninp, t_inpfile inp[], gmx_bool bHaltOnUnknown,
+void write_inpfile(gmx::TextWriter *writer, const char *fn, int ninp, t_inpfile inp[], gmx_bool bHaltOnUnknown,
                    warninp_t wi)
 {
-    FILE *out;
-    int   i;
-    char  warn_buf[STRLEN];
+    using gmx::formatString;
 
     sort_inp(ninp, inp);
-    out = gmx_fio_fopen(fn, "w");
-    nice_header(out, fn);
-    try
-    {
-        gmx::BinaryInformationSettings settings;
-        settings.generatedByHeader(true);
-        settings.linePrefix(";\t");
-        gmx::printBinaryInformation(out, gmx::getProgramContext(), settings);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    for (i = 0; (i < ninp); i++)
+    std::string output;
+    output += gmx::niceHeader(fn);
+
+    gmx::BinaryInformationSettings settings;
+    settings.generatedByHeader(true);
+    settings.linePrefix(";\t");
+    output += gmx::printBinaryInformation(gmx::getProgramContext(), settings);
+
+    for (int i = 0; (i < ninp); i++)
     {
         if (inp[i].bSet)
         {
             if (inp[i].name[0] == ';' || (strlen(inp[i].name) > 2 && inp[i].name[1] == ';'))
             {
-                fprintf(out, "%-24s\n", inp[i].name);
+                output += formatString("%-24s\n", inp[i].name);
             }
             else
             {
-                fprintf(out, "%-24s = %s\n", inp[i].name, inp[i].value ? inp[i].value : "");
+                output += formatString("%-24s = %s\n", inp[i].name, inp[i].value ? inp[i].value : "");
             }
         }
         else if (!inp[i].bObsolete)
         {
-            sprintf(warn_buf, "Unknown left-hand '%s' in parameter file\n",
-                    inp[i].name);
+            auto message = formatString("Unknown left-hand '%s' in parameter file\n",
+                                        inp[i].name);
             if (bHaltOnUnknown)
             {
-                warning_error(wi, warn_buf);
+                warning_error(wi, message.c_str());
             }
             else
             {
-                warning(wi, warn_buf);
+                warning(wi, message.c_str());
             }
         }
     }
-    gmx_fio_fclose(out);
+    writer->writeString(output);
 
     check_warning_error(wi, FARGS);
 }

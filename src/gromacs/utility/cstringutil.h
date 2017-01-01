@@ -90,9 +90,6 @@ void rtrim(char *str);
 /** Remove leading and trailing whitespace from a string. */
 void trim(char *str);
 
-/** Prints creation time stamp and user information into a file as comments. */
-void nice_header(FILE *out, const char *fn);
-
 /** Version of gmx_strcasecmp() that also ignores '-' and '_'. */
 int gmx_strcasecmp_min(const char *str1, const char *str2);
 /** Version of gmx_strncasecmp() that also ignores '-' and '_'. */

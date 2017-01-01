@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,19 +37,21 @@
 
 #include "cuda_version_information.h"
 
-#include <cstdio>
+#include <string>
 
 #include "buildinfo.h"
+#include "gromacs/utility/stringutil.h"
 
-void gmx_print_version_info_cuda_gpu(FILE *fp)
+std::string gmx_print_version_info_cuda_gpu()
 {
-    int cuda_driver, cuda_runtime;
-    fprintf(fp, "CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO);
-    fprintf(fp, "CUDA compiler flags:%s\n", CUDA_NVCC_COMPILER_FLAGS);
-    cuda_driver = 0;
+    std::string output;
+    output += formatString("CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO);
+    output += formatString("CUDA compiler flags:%s\n", CUDA_NVCC_COMPILER_FLAGS);
+    int cuda_driver = 0;
     cudaDriverGetVersion(&cuda_driver);
-    cuda_runtime = 0;
+    int cuda_runtime = 0;
     cudaRuntimeGetVersion(&cuda_runtime);
-    fprintf(fp, "CUDA driver:        %d.%d\n", cuda_driver/1000, cuda_driver%100);
-    fprintf(fp, "CUDA runtime:       %d.%d\n", cuda_runtime/1000, cuda_runtime%100);
+    output += formatString("CUDA driver:        %d.%d\n", cuda_driver/1000, cuda_driver%100);
+    output += formatString("CUDA runtime:       %d.%d\n", cuda_runtime/1000, cuda_runtime%100);
+    return output;
 }
