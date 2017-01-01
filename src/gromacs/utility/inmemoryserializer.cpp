@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,6 +107,11 @@ void InMemorySerializer::doInt(int *value)
     impl_->doValue(*value);
 }
 
+void InMemorySerializer::doInt64(gmx_int64_t *value)
+{
+    impl_->doValue(*value);
+}
+
 void InMemorySerializer::doFloat(float *value)
 {
     impl_->doValue(*value);
@@ -168,6 +173,11 @@ void InMemoryDeserializer::doUChar(unsigned char *value)
 }
 
 void InMemoryDeserializer::doInt(int *value)
+{
+    impl_->doValue(value);
+}
+
+void InMemoryDeserializer::doInt64(gmx_int64_t *value)
 {
     impl_->doValue(value);
 }

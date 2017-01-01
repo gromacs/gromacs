@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1061,6 +1061,19 @@ int TestReferenceChecker::readInteger(const char *id)
     int value = 0;
     EXPECT_PLAIN(impl_->processItem(Impl::cIntegerNodeName, id,
                                     ValueExtractor<int>(&value)));
+    return value;
+}
+
+
+gmx_int64_t TestReferenceChecker::readInt64(const char *id)
+{
+    if (impl_->shouldIgnore())
+    {
+        GMX_THROW(TestException("Trying to read from non-existent reference data value"));
+    }
+    gmx_int64_t value = 0;
+    EXPECT_PLAIN(impl_->processItem(Impl::cInt64NodeName, id,
+                                    ValueExtractor<gmx_int64_t>(&value)));
     return value;
 }
 
