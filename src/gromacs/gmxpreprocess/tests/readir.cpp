@@ -146,8 +146,6 @@ TEST_F(GetIrTest, UserErrorsSilentlyTolerated)
     const char *inputMdpFile = "title simulation\n"
         "xtc_grps = \n"
         "= -I/home/me/stuff\n"
-        // This final line causes the first STYPENC to be mishandled,
-        // mysteriously...
         "=\n";
     runTest(inputMdpFile);
 }

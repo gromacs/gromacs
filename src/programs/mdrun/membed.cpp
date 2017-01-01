@@ -223,9 +223,11 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
 
     wi = init_warning(TRUE, 0);
 
-    gmx::TextInputFile stream(membed_input);
-    inp = read_inpfile(&stream, membed_input, &ninp, wi);
-
+    {
+        gmx::TextInputFile stream(membed_input);
+        inp = read_inpfile(&stream, membed_input, &ninp, wi);
+        stream.close();
+    }
     ITYPE ("nxy", *it_xy, 1000);
     ITYPE ("nz", *it_z, 0);
     RTYPE ("xyinit", *xy_fac, 0.5);
@@ -237,8 +239,13 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
     ITYPE ("maxwarn", *maxwarn, 0);
     ITYPE ("pieces", *pieces, 1);
     EETYPE("asymmetry", *bALLOW_ASYMMETRY, yesno_names);
+
     check_warning_error(wi, FARGS);
-    write_inpfile(membed_input, ninp, inp, FALSE, true, wi);
+    {
+        gmx::TextOutputFile stream(membed_input);
+        write_inpfile(&stream, membed_input, ninp, inp, FALSE, true, wi);
+        stream.close();
+    }
     done_warning(wi, FARGS);
 }
 
