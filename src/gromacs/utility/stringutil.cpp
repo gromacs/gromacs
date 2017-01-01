@@ -53,6 +53,7 @@
 #include <vector>
 
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/sysinfo.h"
 
 namespace gmx
 {

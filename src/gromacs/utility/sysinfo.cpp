@@ -65,6 +65,8 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace
 {
@@ -173,4 +175,26 @@ int gmx_set_nice(int level)
     GMX_UNUSED_VALUE(level);
 #endif
     return -1;
+}
+
+void niceHeader(gmx::TextWriter *writer, const char *fn, char commentChar)
+{
+    int            uid;
+    char           userbuf[256];
+    char           hostbuf[256];
+    char           timebuf[256];
+
+    /* Write a nice header for an output file */
+    writer->writeString(gmx::formatString("%c\n", commentChar));
+    writer->writeString(gmx::formatString("%c\tFile '%s' was generated\n", commentChar, fn ? fn : "unknown"));
+
+    uid  = gmx_getuid();
+    gmx_getusername(userbuf, 256);
+    gmx_gethostname(hostbuf, 256);
+    gmx_format_current_time(timebuf, 256);
+
+    writer->writeString(gmx::formatString("%c\tBy user: %s (%d)\n", commentChar, userbuf, uid));
+    writer->writeString(gmx::formatString("%c\tOn host: %s\n", commentChar, hostbuf));
+    writer->writeString(gmx::formatString("%c\tAt date: %s\n", commentChar, timebuf));
+    writer->writeString(gmx::formatString("%c\n", commentChar));
 }

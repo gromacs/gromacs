@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,9 +47,12 @@
 #include <stddef.h>
 #include <time.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace gmx
+{
+
+class TextWriter;
+
+} // namespace
 
 /*! \addtogroup module_utility
  * \{
@@ -115,10 +118,15 @@ void gmx_format_current_time(char *buf, size_t len);
  */
 int gmx_set_nice(int level);
 
-/*! \} */
+/*! \brief
+ * Prints creation time stamp and user information into a string as comments, and returns it.
+ *
+ * \param[out] writer         Where to print the information.
+ * \param[in]  fn             Name of the file being written; if nullptr, described as "unknown".
+ * \param[in]  commentChar    Character to use as the starting delimiter for comments.
+ * \throws     std::bad_alloc if out of memory. */
+void niceHeader(gmx::TextWriter *writer, const char *fn, char commentChar);
 
-#ifdef __cplusplus
-}
-#endif
+/*! \} */
 
 #endif
