@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,6 +68,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 /* This file is completely threadsafe - keep it that way! */
 
@@ -79,11 +80,14 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "cuda_version_information.h"
 
 namespace
 {
+
+using gmx::formatString;
 
 //! \cond Doxygen does not need to care about most of this stuff, and the macro usage is painful to document
 
@@ -92,13 +96,13 @@ int centeringOffset(int width, int length)
     return std::max(width - length, 0) / 2;
 }
 
-void printCentered(FILE *fp, int width, const char *text)
+std::string formatCentered(int width, const char *text)
 {
     const int offset = centeringOffset(width, std::strlen(text));
-    fprintf(fp, "%*s%s", offset, "", text);
+    return formatString("%*s%s", offset, "", text);
 }
 
-void printCopyright(FILE *fp)
+void printCopyright(gmx::TextWriter *writer)
 {
     static const char * const Contributors[] = {
         "Emile Apol",
@@ -157,8 +161,8 @@ void printCopyright(FILE *fp)
 #define NLICENSE (int)asize(LicenseText)
 #endif
 
-    printCentered(fp, 78, "GROMACS is written by:");
-    fprintf(fp, "\n");
+    // TODO a centering behaviour of TextWriter could be useful here
+    writer->writeLine(formatCentered(78, "GROMACS is written by:"));
     for (int i = 0; i < NCONTRIBUTORS; )
     {
         for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
@@ -170,22 +174,20 @@ void printCopyright(FILE *fp)
                                "Formatting buffer is not long enough");
             std::fill(buf, buf+width, ' ');
             std::strcpy(buf+offset, Contributors[i]);
-            fprintf(fp, " %-*s", width, buf);
+            writer->writeString(formatString(" %-*s", width, buf));
         }
-        fprintf(fp, "\n");
+        writer->writeString("\n");
     }
-    printCentered(fp, 78, "and the project leaders:");
-    fprintf(fp, "\n");
-    printCentered(fp, 78, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel");
-    fprintf(fp, "\n\n");
+    writer->writeLine(formatCentered(78, "and the project leaders:"));
+    writer->writeLine(formatCentered(78, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel"));
     for (int i = 0; i < NCR; ++i)
     {
-        fprintf(fp, "%s\n", CopyrightText[i]);
+        writer->writeLine(formatString("%s", CopyrightText[i]));
     }
-    fprintf(fp, "\n");
+    writer->writeString(formatString("\n"));
     for (int i = 0; i < NLICENSE; ++i)
     {
-        fprintf(fp, "%s\n", LicenseText[i]);
+        writer->writeLine(formatString("%s", LicenseText[i]));
     }
 }
 
@@ -214,96 +216,96 @@ const char *getFftDescriptionString()
 #endif
 };
 
-void gmx_print_version_info(FILE *fp)
+void gmx_print_version_info(gmx::TextWriter *writer)
 {
-    fprintf(fp, "GROMACS version:    %s\n", gmx_version());
+    writer->writeString(formatString("GROMACS version:    %s\n", gmx_version()));
     const char *const git_hash = gmx_version_git_full_hash();
     if (git_hash[0] != '\0')
     {
-        fprintf(fp, "GIT SHA1 hash:      %s\n", git_hash);
+        writer->writeString(formatString("GIT SHA1 hash:      %s\n", git_hash));
     }
     const char *const base_hash = gmx_version_git_central_base_hash();
     if (base_hash[0] != '\0')
     {
-        fprintf(fp, "Branched from:      %s\n", base_hash);
+        writer->writeString(formatString("Branched from:      %s\n", base_hash));
     }
 
 #if GMX_DOUBLE
-    fprintf(fp, "Precision:          double\n");
+    writer->writeString(formatString("Precision:          double\n"));
 #else
-    fprintf(fp, "Precision:          single\n");
+    writer->writeString(formatString("Precision:          single\n"));
 #endif
-    fprintf(fp, "Memory model:       %u bit\n", (unsigned)(8*sizeof(void *)));
+    writer->writeString(formatString("Memory model:       %u bit\n", (unsigned)(8*sizeof(void *))));
 
 #if GMX_THREAD_MPI
-    fprintf(fp, "MPI library:        thread_mpi\n");
+    writer->writeString(formatString("MPI library:        thread_mpi\n"));
 #elif GMX_MPI
-    fprintf(fp, "MPI library:        MPI\n");
+    writer->writeString(formatString("MPI library:        MPI\n"));
 #else
-    fprintf(fp, "MPI library:        none\n");
+    writer->writeString(formatString("MPI library:        none\n"));
 #endif
 #if GMX_OPENMP
-    fprintf(fp, "OpenMP support:     enabled (GMX_OPENMP_MAX_THREADS = %d)\n", GMX_OPENMP_MAX_THREADS);
+    writer->writeString(formatString("OpenMP support:     enabled (GMX_OPENMP_MAX_THREADS = %d)\n", GMX_OPENMP_MAX_THREADS));
 #else
-    fprintf(fp, "OpenMP support:     disabled\n");
+    writer->writeString(formatString("OpenMP support:     disabled\n"));
 #endif
-    fprintf(fp, "GPU support:        %s\n", getGpuImplementationString());
-    fprintf(fp, "SIMD instructions:  %s\n", GMX_SIMD_STRING);
-    fprintf(fp, "FFT library:        %s\n", getFftDescriptionString());
+    writer->writeString(formatString("GPU support:        %s\n", getGpuImplementationString()));
+    writer->writeString(formatString("SIMD instructions:  %s\n", GMX_SIMD_STRING));
+    writer->writeString(formatString("FFT library:        %s\n", getFftDescriptionString()));
 #ifdef HAVE_RDTSCP
-    fprintf(fp, "RDTSCP usage:       enabled\n");
+    writer->writeString(formatString("RDTSCP usage:       enabled\n"));
 #else
-    fprintf(fp, "RDTSCP usage:       disabled\n");
+    writer->writeString(formatString("RDTSCP usage:       disabled\n"));
 #endif
 #ifdef GMX_USE_TNG
-    fprintf(fp, "TNG support:        enabled\n");
+    writer->writeString(formatString("TNG support:        enabled\n"));
 #else
-    fprintf(fp, "TNG support:        disabled\n");
+    writer->writeString(formatString("TNG support:        disabled\n"));
 #endif
 #if GMX_HWLOC
-    fprintf(fp, "Hwloc support:      hwloc-%d.%d.%d\n",
-            HWLOC_API_VERSION>>16,
-            (HWLOC_API_VERSION>>8) & 0xFF,
-            HWLOC_API_VERSION & 0xFF);
+    writer->writeString(formatString("Hwloc support:      hwloc-%d.%d.%d\n",
+                                     HWLOC_API_VERSION>>16,
+                                     (HWLOC_API_VERSION>>8) & 0xFF,
+                                     HWLOC_API_VERSION & 0xFF));
 #else
-    fprintf(fp, "Hwloc support:      disabled\n");
+    writer->writeString(formatString("Hwloc support:      disabled\n"));
 #endif
 #if HAVE_EXTRAE
     unsigned major, minor, revision;
     Extrae_get_version(&major, &minor, &revision);
-    fprintf(fp, "Tracing support:    enabled. Using Extrae-%d.%d.%d\n", major, minor, revision);
+    writer->writeString(formatString("Tracing support:    enabled. Using Extrae-%d.%d.%d\n", major, minor, revision));
 #else
-    fprintf(fp, "Tracing support:    disabled\n");
+    writer->writeString(formatString("Tracing support:    disabled\n"));
 #endif
 
 
-    fprintf(fp, "Built on:           %s\n", BUILD_TIME);
-    fprintf(fp, "Built by:           %s\n", BUILD_USER);
-    fprintf(fp, "Build OS/arch:      %s\n", BUILD_HOST);
-    fprintf(fp, "Build CPU vendor:   %s\n", BUILD_CPU_VENDOR);
-    fprintf(fp, "Build CPU brand:    %s\n", BUILD_CPU_BRAND);
-    fprintf(fp, "Build CPU family:   %d   Model: %d   Stepping: %d\n",
-            BUILD_CPU_FAMILY, BUILD_CPU_MODEL, BUILD_CPU_STEPPING);
+    writer->writeString(formatString("Built on:           %s\n", BUILD_TIME));
+    writer->writeString(formatString("Built by:           %s\n", BUILD_USER));
+    writer->writeString(formatString("Build OS/arch:      %s\n", BUILD_HOST));
+    writer->writeString(formatString("Build CPU vendor:   %s\n", BUILD_CPU_VENDOR));
+    writer->writeString(formatString("Build CPU brand:    %s\n", BUILD_CPU_BRAND));
+    writer->writeString(formatString("Build CPU family:   %d   Model: %d   Stepping: %d\n",
+                                     BUILD_CPU_FAMILY, BUILD_CPU_MODEL, BUILD_CPU_STEPPING));
     /* TODO: The below strings can be quite long, so it would be nice to wrap
      * them. Can wait for later, as the master branch has ready code to do all
      * that. */
-    fprintf(fp, "Build CPU features: %s\n", BUILD_CPU_FEATURES);
-    fprintf(fp, "C compiler:         %s\n", BUILD_C_COMPILER);
-    fprintf(fp, "C compiler flags:   %s\n", BUILD_CFLAGS);
-    fprintf(fp, "C++ compiler:       %s\n", BUILD_CXX_COMPILER);
-    fprintf(fp, "C++ compiler flags: %s\n", BUILD_CXXFLAGS);
+    writer->writeString(formatString("Build CPU features: %s\n", BUILD_CPU_FEATURES));
+    writer->writeString(formatString("C compiler:         %s\n", BUILD_C_COMPILER));
+    writer->writeString(formatString("C compiler flags:   %s\n", BUILD_CFLAGS));
+    writer->writeString(formatString("C++ compiler:       %s\n", BUILD_CXX_COMPILER));
+    writer->writeString(formatString("C++ compiler flags: %s\n", BUILD_CXXFLAGS));
 #ifdef HAVE_LIBMKL
     /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
-    fprintf(fp, "Linked with Intel MKL version %d.%d.%d.\n",
-            __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__);
+    writer->writeString(formatString("Linked with Intel MKL version %d.%d.%d.\n",
+                                     __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__));
 #endif
 #if GMX_GPU == GMX_GPU_OPENCL
-    fprintf(fp, "OpenCL include dir: %s\n", OPENCL_INCLUDE_DIR);
-    fprintf(fp, "OpenCL library:     %s\n", OPENCL_LIBRARY);
-    fprintf(fp, "OpenCL version:     %s\n", OPENCL_VERSION_STRING);
+    writer->writeString(formatString("OpenCL include dir: %s\n", OPENCL_INCLUDE_DIR));
+    writer->writeString(formatString("OpenCL library:     %s\n", OPENCL_LIBRARY));
+    writer->writeString(formatString("OpenCL version:     %s\n", OPENCL_VERSION_STRING));
 #endif
 #if GMX_GPU == GMX_GPU_CUDA
-    gmx_print_version_info_cuda_gpu(fp);
+    writer->writeString(gmx_print_version_info_cuda_gpu());
 #endif
 }
 
@@ -323,10 +325,23 @@ BinaryInformationSettings::BinaryInformationSettings()
 void printBinaryInformation(FILE                  *fp,
                             const IProgramContext &programContext)
 {
-    printBinaryInformation(fp, programContext, BinaryInformationSettings());
+    TextWriter writer(fp);
+    printBinaryInformation(&writer, programContext, BinaryInformationSettings());
 }
 
 void printBinaryInformation(FILE                            *fp,
+                            const IProgramContext           &programContext,
+                            const BinaryInformationSettings &settings)
+{
+    try
+    {
+        TextWriter writer(fp);
+        printBinaryInformation(&writer, programContext, settings);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+}
+
+void printBinaryInformation(TextWriter                      *writer,
                             const IProgramContext           &programContext,
                             const BinaryInformationSettings &settings)
 {
@@ -339,7 +354,7 @@ void printBinaryInformation(FILE                            *fp,
     const char *const name = programContext.displayName();
     if (settings.bGeneratedByHeader_)
     {
-        fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
+        writer->writeString(formatString("%sCreated by:%s\n", prefix, suffix));
     }
     // TODO: It would be nice to know here whether we are really running a
     // Gromacs binary or some other binary that is calling Gromacs; we
@@ -348,50 +363,50 @@ void printBinaryInformation(FILE                            *fp,
         = formatString(":-) GROMACS - %s, %s%s (-:", name, gmx_version(), precisionString);
     const int   indent
         = centeringOffset(78 - std::strlen(prefix) - std::strlen(suffix), title.length()) + 1;
-    fprintf(fp, "%s%*c%s%s\n", prefix, indent, ' ', title.c_str(), suffix);
-    fprintf(fp, "%s%s\n", prefix, suffix);
+    writer->writeString(formatString("%s%*c%s%s\n", prefix, indent, ' ', title.c_str(), suffix));
+    writer->writeString(formatString("%s%s\n", prefix, suffix));
     if (settings.bCopyright_)
     {
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
                            "Prefix/suffix not supported with copyright");
-        printCopyright(fp);
-        fprintf(fp, "\n");
+        printCopyright(writer);
+        writer->writeString(formatString("\n"));
         // This line is printed again after the copyright notice to make it
         // appear together with all the other information, so that it is not
         // necessary to read stuff above the copyright notice.
         // The line above the copyright notice puts the copyright notice is
         // context, though.
-        fprintf(fp, "%sGROMACS:      %s, version %s%s%s\n", prefix, name,
-                gmx_version(), precisionString, suffix);
+        writer->writeString(formatString("%sGROMACS:      %s, version %s%s%s\n", prefix, name,
+                                         gmx_version(), precisionString, suffix));
     }
     const char *const binaryPath = programContext.fullBinaryPath();
     if (!gmx::isNullOrEmpty(binaryPath))
     {
-        fprintf(fp, "%sExecutable:   %s%s\n", prefix, binaryPath, suffix);
+        writer->writeString(formatString("%sExecutable:   %s%s\n", prefix, binaryPath, suffix));
     }
     const gmx::InstallationPrefixInfo installPrefix = programContext.installationPrefix();
     if (!gmx::isNullOrEmpty(installPrefix.path))
     {
-        fprintf(fp, "%sData prefix:  %s%s%s\n", prefix, installPrefix.path,
-                installPrefix.bSourceLayout ? " (source tree)" : "", suffix);
+        writer->writeString(formatString("%sData prefix:  %s%s%s\n", prefix, installPrefix.path,
+                                         installPrefix.bSourceLayout ? " (source tree)" : "", suffix));
     }
     const std::string workingDir = Path::getWorkingDirectory();
     if (!workingDir.empty())
     {
-        fprintf(fp, "%sWorking dir:  %s%s\n", prefix, workingDir.c_str(), suffix);
+        writer->writeString(formatString("%sWorking dir:  %s%s\n", prefix, workingDir.c_str(), suffix));
     }
     const char *const commandLine = programContext.commandLine();
     if (!gmx::isNullOrEmpty(commandLine))
     {
-        fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
-                prefix, suffix, prefix, commandLine, suffix);
+        writer->writeString(formatString("%sCommand line:%s\n%s  %s%s\n",
+                                         prefix, suffix, prefix, commandLine, suffix));
     }
     if (settings.bExtendedInfo_)
     {
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
                            "Prefix/suffix not supported with extended info");
-        fprintf(fp, "\n");
-        gmx_print_version_info(fp);
+        writer->writeString(formatString("\n"));
+        gmx_print_version_info(writer);
     }
 }
 
