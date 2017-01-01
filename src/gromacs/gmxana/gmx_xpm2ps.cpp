@@ -179,7 +179,13 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
     if (mpout != nullptr)
     {
-        write_inpfile(mpout, ninp, inp, TRUE, true, wi);
+        try
+        {
+            gmx::TextOutputFile stream(mpout);
+            write_inpfile(&stream, mpout, ninp, inp, TRUE, true, wi);
+            stream.close();
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     done_warning(wi, FARGS);

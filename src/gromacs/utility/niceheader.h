@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,26 +32,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
-#include "gmxpre.h"
-
-#include "cuda_version_information.h"
-
-#include <utility>
+/*! \libinternal \file
+ * \brief
+ * Declares function for printing a nice header for text output files.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \inlibraryapi
+ * \ingroup module_utility
+ */
+#ifndef GMX_UTILITY_NICEHEADER_H
+#define GMX_UTILITY_NICEHEADER_H
 
 namespace gmx
 {
 
-std::pair<int, int> getCudaDriverVersion()
-{
-    int cuda_driver;
-    cudaDriverGetVersion(&cuda_driver);
-    return std::pair<int, int>(cuda_driver/1000, cuda_driver%100);
-}
+class TextWriter;
 
-std::pair<int, int> getCudaRuntimeVersion()
-{
-    int cuda_runtime;
-    cudaRuntimeGetVersion(&cuda_runtime);
-    return std::pair<int, int>(cuda_runtime/1000, cuda_runtime%100);
-}
+/*! \brief
+ * Prints creation time stamp and user information into a string as comments, and returns it.
+ *
+ * \param[out] writer         Where to print the information.
+ * \param[in]  fn             Name of the file being written; if nullptr, described as "unknown".
+ * \param[in]  commentChar    Character to use as the starting delimiter for comments.
+ * \throws     std::bad_alloc if out of memory. */
+void niceHeader(TextWriter *writer, const char *fn, char commentChar);
+
+} // namespace
+
+#endif

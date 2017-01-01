@@ -54,7 +54,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/sysinfo.h"
 
 //! Comment sign to use.
 #define COMMENTSIGN ';'
@@ -180,28 +179,6 @@ void trim (char *str)
 {
     ltrim (str);
     rtrim (str);
-}
-
-void nice_header(FILE *out, const char *fn)
-{
-    int            uid;
-    char           userbuf[256];
-    char           hostbuf[256];
-    char           timebuf[STRLEN];
-
-    /* Print a nice header above the file */
-    fprintf(out, "%c\n", COMMENTSIGN);
-    fprintf(out, "%c\tFile '%s' was generated\n", COMMENTSIGN, fn ? fn : "unknown");
-
-    uid  = gmx_getuid();
-    gmx_getusername(userbuf, 256);
-    gmx_gethostname(hostbuf, 256);
-    gmx_format_current_time(timebuf, STRLEN);
-
-    fprintf(out, "%c\tBy user: %s (%d)\n", COMMENTSIGN, userbuf, uid);
-    fprintf(out, "%c\tOn host: %s\n", COMMENTSIGN, hostbuf);
-    fprintf(out, "%c\tAt date: %s\n", COMMENTSIGN, timebuf);
-    fprintf(out, "%c\n", COMMENTSIGN);
 }
 
 int gmx_strcasecmp_min(const char *str1, const char *str2)

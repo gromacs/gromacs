@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,8 +34,9 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares functions for obtaining information about the operating environment
- * and the current process.
+ * Declares functions that wrap platform-specific calls for obtaining
+ * information about the operating environment and the current
+ * process.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
@@ -46,10 +47,6 @@
 
 #include <stddef.h>
 #include <time.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /*! \addtogroup module_utility
  * \{
@@ -116,9 +113,5 @@ void gmx_format_current_time(char *buf, size_t len);
 int gmx_set_nice(int level);
 
 /*! \} */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
