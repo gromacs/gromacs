@@ -71,11 +71,13 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/niceheader.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
@@ -549,14 +551,17 @@ void print_top_comment(FILE       *out,
     char  ffdir_parent[STRLEN];
     char *p;
 
-    nice_header(out, filename);
-    fprintf(out, ";\tThis is a %s topology file\n;\n", bITP ? "include" : "standalone");
     try
     {
+        gmx::TextWriter writer(out);
+        gmx::niceHeader(&writer, filename, ';');
+        writer.writeLine(gmx::formatString(";\tThis is a %s topology file", bITP ? "include" : "standalone"));
+        writer.writeLine(";");
+
         gmx::BinaryInformationSettings settings;
         settings.generatedByHeader(true);
         settings.linePrefix(";\t");
-        gmx::printBinaryInformation(out, gmx::getProgramContext(), settings);
+        gmx::printBinaryInformation(&writer, gmx::getProgramContext(), settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
