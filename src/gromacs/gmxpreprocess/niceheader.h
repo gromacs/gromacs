@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,26 +32,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief
+ * Declares function for printing a nice header for text output files.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \inlibraryapi
+ * \ingroup module_gmxpreprocess
+ */
+#ifndef GMX_GMXPREPROCESS_NICEHEADER_H
+#define GMX_GMXPREPROCESS_NICEHEADER_H
 
-#include "gmxpre.h"
-
-#include "cuda_version_information.h"
-
-#include <string>
-
-#include "buildinfo.h"
-#include "gromacs/utility/stringutil.h"
-
-std::string gmx_print_version_info_cuda_gpu()
+namespace gmx
 {
-    std::string output;
-    output += gmx::formatString("CUDA compiler:      %s\n", CUDA_NVCC_COMPILER_INFO);
-    output += gmx::formatString("CUDA compiler flags:%s\n", CUDA_NVCC_COMPILER_FLAGS);
-    int cuda_driver = 0;
-    cudaDriverGetVersion(&cuda_driver);
-    int cuda_runtime = 0;
-    cudaRuntimeGetVersion(&cuda_runtime);
-    output += gmx::formatString("CUDA driver:        %d.%d\n", cuda_driver/1000, cuda_driver%100);
-    output += gmx::formatString("CUDA runtime:       %d.%d\n", cuda_runtime/1000, cuda_runtime%100);
-    return output;
-}
+
+class TextWriter;
+
+/*! \brief
+ * Prints creation time stamp and user information into a string as comments, and returns it.
+ *
+ * \param[out] writer         Where to print the information.
+ * \param[in]  fn             Name of the file being written; if nullptr, described as "unknown".
+ * \param[in]  commentChar    Character to use as the starting delimiter for comments.
+ * \throws     std::bad_alloc if out of memory. */
+void niceHeader(TextWriter *writer, const char *fn, char commentChar);
+
+} // namespace
+
+#endif
