@@ -405,6 +405,13 @@ std::string replaceAllWords(const std::string &input,
 std::string replaceAllWords(const std::string &input,
                             const std::string &from, const std::string &to);
 
+/*! \brief
+ * Prints creation time stamp and user information into a string as comments, and returns it.
+ *
+ * \return    String containing useful information.
+ * \throws    std::bad_alloc if out of memory. */
+std::string niceHeader(const char *fn);
+
 class TextLineWrapper;
 
 /*! \brief

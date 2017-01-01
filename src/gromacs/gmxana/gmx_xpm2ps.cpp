@@ -60,6 +60,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textwriter.h"
 
 #define FUDGE 1.2
 #define DDD   2
@@ -179,7 +180,12 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
     if (mpout != NULL)
     {
-        write_inpfile(mpout, ninp, inp, TRUE, wi);
+        try
+        {
+            gmx::TextWriter writer(mpout);
+            write_inpfile(&writer, mpout, ninp, inp, TRUE, wi);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     done_warning(wi, FARGS);

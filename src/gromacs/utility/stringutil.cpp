@@ -54,6 +54,7 @@
 
 #include "gromacs/utility/commentsign.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/sysinfo.h"
 
 namespace gmx
 {
@@ -457,6 +458,30 @@ TextLineWrapper::wrapToVector(const std::string &input) const
         lineStart = nextLineStart;
     }
     return result;
+}
+
+std::string niceHeader(const char *fn)
+{
+    int            uid;
+    char           userbuf[256];
+    char           hostbuf[256];
+    char           timebuf[256];
+
+    std::string    output;
+    /* Print a nice header above the file */
+    output += formatString("%c\n", COMMENTSIGN);
+    output += formatString("%c\tFile '%s' was generated\n", COMMENTSIGN, fn ? fn : "unknown");
+
+    uid  = gmx_getuid();
+    gmx_getusername(userbuf, 256);
+    gmx_gethostname(hostbuf, 256);
+    gmx_format_current_time(timebuf, 256);
+
+    output += formatString("%c\tBy user: %s (%d)\n", COMMENTSIGN, userbuf, uid);
+    output += formatString("%c\tOn host: %s\n", COMMENTSIGN, hostbuf);
+    output += formatString("%c\tAt date: %s\n", COMMENTSIGN, timebuf);
+    output += formatString("%c\n", COMMENTSIGN);
+    return output;
 }
 
 } // namespace gmx

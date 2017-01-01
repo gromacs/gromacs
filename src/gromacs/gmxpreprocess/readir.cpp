@@ -78,6 +78,7 @@
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textwriter.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -2357,7 +2358,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     RTYPE ("userreal4",   ir->userreal4,  0);
 #undef CTYPE
 
-    write_inpfile(mdparout, ninp, inp, FALSE, wi);
+    gmx::TextWriter writer(mdparout);
+    write_inpfile(&writer, mdparout, ninp, inp, FALSE, wi);
+
     for (i = 0; (i < ninp); i++)
     {
         sfree(inp[i].name);

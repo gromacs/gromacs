@@ -60,6 +60,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/textwriter.h"
 
 /* information about scaling center */
 typedef struct {
@@ -237,8 +238,10 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
     ITYPE ("maxwarn", *maxwarn, 0);
     ITYPE ("pieces", *pieces, 1);
     EETYPE("asymmetry", *bALLOW_ASYMMETRY, yesno_names);
+
+    gmx::TextWriter writer(membed_input);
+    write_inpfile(&writer, membed_input, ninp, inp, FALSE, wi);
     check_warning_error(wi, FARGS);
-    write_inpfile(membed_input, ninp, inp, FALSE, wi);
     done_warning(wi, FARGS);
 }
 
