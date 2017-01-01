@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,28 +32,44 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \internal \file
+ * \brief
+ * Implements functions from niceheader.h.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_utility
+ */
 #include "gmxpre.h"
 
-#include "cuda_version_information.h"
+#include "niceheader.h"
 
-#include <utility>
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/sysinfo.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace gmx
 {
 
-std::pair<int, int> getCudaDriverVersion()
+void niceHeader(TextWriter *writer, const char *fn, char commentChar)
 {
-    int cuda_driver;
-    cudaDriverGetVersion(&cuda_driver);
-    return std::pair<int, int>(cuda_driver/1000, cuda_driver%100);
-}
+    int            uid;
+    char           userbuf[256];
+    char           hostbuf[256];
+    char           timebuf[256];
 
-std::pair<int, int> getCudaRuntimeVersion()
-{
-    int cuda_runtime;
-    cudaRuntimeGetVersion(&cuda_runtime);
-    return std::pair<int, int>(cuda_runtime/1000, cuda_runtime%100);
+    /* Write a nice header for an output file */
+    writer->writeLine(formatString("%c", commentChar));
+    writer->writeLine(formatString("%c\tFile '%s' was generated", commentChar, fn ? fn : "unknown"));
+
+    uid  = gmx_getuid();
+    gmx_getusername(userbuf, 256);
+    gmx_gethostname(hostbuf, 256);
+    gmx_format_current_time(timebuf, 256);
+
+    writer->writeLine(formatString("%c\tBy user: %s (%d)", commentChar, userbuf, uid));
+    writer->writeLine(formatString("%c\tOn host: %s", commentChar, hostbuf));
+    writer->writeLine(formatString("%c\tAt date: %s", commentChar, timebuf));
+    writer->writeLine(formatString("%c", commentChar));
 }
 
 } // namespace

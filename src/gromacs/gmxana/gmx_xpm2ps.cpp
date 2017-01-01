@@ -179,7 +179,9 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
     if (mpout != nullptr)
     {
-        write_inpfile(mpout, ninp, inp, TRUE, WriteMdpHeader::yes, wi);
+        gmx::TextOutputFile stream(mpout);
+        write_inpfile(&stream, mpout, ninp, inp, TRUE, WriteMdpHeader::yes, wi);
+        stream.close();
     }
 
     done_warning(wi, FARGS);

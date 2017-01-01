@@ -48,6 +48,7 @@ namespace gmx
 {
 class KeyValueTreeObject;
 class TextInputStream;
+class TextOutputStream;
 }
 
 typedef struct t_inpfile {
@@ -82,7 +83,18 @@ enum class WriteMdpHeader
     no, yes
 };
 
-void write_inpfile(const char *fn, int ninp, t_inpfile inp[],
+/*! \brief Write "key = value" lines from \c inp to \c stream.
+ *
+ * \param[in]  stream          Text stream to write.
+ * \param[in]  fn              Filename corresponding to \c stream.
+ * \param[in]  ninp            Length of \c inp.
+ * \param[in]  inp             Array of key-value pairs.
+ * \param[in]  bHaltOnUnknown  Whether to issue a fatal error if an unknown key is found.
+ * \param[in]  writeHeader     Whether to write a header recording some context a user might like.
+ * \param[out] wi              Handler for context-sensitive warnings.
+ * \throws     std::bad_alloc  If out of memory.
+ * \throws     Anything the stream underlying \c writer can throw. */
+void write_inpfile(gmx::TextOutputStream *stream, const char *fn, int ninp, t_inpfile inp[],
                    gmx_bool bHaltOnUnknown,
                    WriteMdpHeader writeHeader,
                    warninp_t wi);

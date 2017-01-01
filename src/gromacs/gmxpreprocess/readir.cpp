@@ -2353,7 +2353,12 @@ void get_ir(const char *mdparin, const char *mdparout,
     RTYPE ("userreal4",   ir->userreal4,  0);
 #undef CTYPE
 
-    write_inpfile(mdparout, ninp, inp, FALSE, writeMdpHeader, wi);
+    {
+        gmx::TextOutputFile stream(mdparout);
+        write_inpfile(&stream, mdparout, ninp, inp, FALSE, writeMdpHeader, wi);
+        stream.close();
+    }
+
     for (i = 0; (i < ninp); i++)
     {
         sfree(inp[i].name);
