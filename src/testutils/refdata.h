@@ -394,6 +394,8 @@ class TestReferenceChecker
         unsigned char readUChar(const char *id);
         //! Reads an integer value.
         int readInteger(const char *id);
+        //! Reads a 64-bit integer value.
+        gmx_int64_t readInt64(const char *id);
         //! Reads a float value.
         float readFloat(const char *id);
         //! Reads a double value.

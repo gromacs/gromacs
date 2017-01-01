@@ -1065,6 +1065,19 @@ int TestReferenceChecker::readInteger(const char *id)
 }
 
 
+gmx_int64_t TestReferenceChecker::readInt64(const char *id)
+{
+    if (impl_->shouldIgnore())
+    {
+        GMX_THROW(TestException("Trying to read from non-existent reference data value"));
+    }
+    gmx_int64_t value = 0;
+    EXPECT_PLAIN(impl_->processItem(Impl::cInt64NodeName, id,
+                                    ValueExtractor<gmx_int64_t>(&value)));
+    return value;
+}
+
+
 float TestReferenceChecker::readFloat(const char *id)
 {
     if (impl_->shouldIgnore())

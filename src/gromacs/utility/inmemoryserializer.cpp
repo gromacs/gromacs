@@ -107,6 +107,11 @@ void InMemorySerializer::doInt(int *value)
     impl_->doValue(*value);
 }
 
+void InMemorySerializer::doInt64(gmx_int64_t *value)
+{
+    impl_->doValue(*value);
+}
+
 void InMemorySerializer::doFloat(float *value)
 {
     impl_->doValue(*value);
@@ -168,6 +173,11 @@ void InMemoryDeserializer::doUChar(unsigned char *value)
 }
 
 void InMemoryDeserializer::doInt(int *value)
+{
+    impl_->doValue(value);
+}
+
+void InMemoryDeserializer::doInt64(gmx_int64_t *value)
 {
     impl_->doValue(value);
 }

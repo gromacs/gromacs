@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,8 @@
 
 #include <string>
 
+#include "gromacs/utility/basedefinitions.h"
+
 namespace gmx
 {
 
@@ -67,6 +69,7 @@ class ISerializer
         ///@{
         virtual void doUChar(unsigned char *value) = 0;
         virtual void doInt(int *value)             = 0;
+        virtual void doInt64(gmx_int64_t *value)   = 0;
         virtual void doFloat(float *value)         = 0;
         virtual void doDouble(double *value)       = 0;
         virtual void doString(std::string *value)  = 0;

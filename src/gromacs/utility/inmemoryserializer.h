@@ -63,6 +63,7 @@ class InMemorySerializer : public ISerializer
         virtual bool reading() const { return false; }
         virtual void doUChar(unsigned char *value);
         virtual void doInt(int *value);
+        virtual void doInt64(gmx_int64_t *value);
         virtual void doFloat(float *value);
         virtual void doDouble(double *value);
         virtual void doString(std::string *value);
@@ -83,6 +84,7 @@ class InMemoryDeserializer : public ISerializer
         virtual bool reading() const { return true; }
         virtual void doUChar(unsigned char *value);
         virtual void doInt(int *value);
+        virtual void doInt64(gmx_int64_t *value);
         virtual void doFloat(float *value);
         virtual void doDouble(double *value);
         virtual void doString(std::string *value);

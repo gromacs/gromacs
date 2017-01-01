@@ -691,6 +691,11 @@ void FileIOXdrSerializer::doInt(int *value)
     gmx_fio_do_int(fio_, *value);
 }
 
+void FileIOXdrSerializer::doInt64(gmx_int64_t *value)
+{
+    gmx_fio_do_int64(fio_, *value);
+}
+
 void FileIOXdrSerializer::doFloat(float *value)
 {
     gmx_fio_do_float(fio_, *value);
