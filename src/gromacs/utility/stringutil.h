@@ -408,6 +408,15 @@ std::string replaceAllWords(const std::string &input,
 std::string replaceAllWords(const std::string &input,
                             const std::string &from, const std::string &to);
 
+/*! \brief
+ * Prints creation time stamp and user information into a string as comments, and returns it.
+ *
+ * \param[in] fn           Name of the file being written; if nullptr, described as "unknown".
+ * \param[in] commentChar  Character to use as the starting delimiter for comments.
+ * \return    String containing useful information.
+ * \throws    std::bad_alloc if out of memory. */
+std::string niceHeader(const char *fn, char commentChar);
+
 class TextLineWrapper;
 
 /*! \brief

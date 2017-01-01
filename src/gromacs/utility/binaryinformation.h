@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 #define GMX_UTILITY_BINARYINFORMATION_H
 
 #include <cstdio>
+
+#include <string>
 
 namespace gmx
 {
@@ -102,8 +104,8 @@ class BinaryInformationSettings
         const char *suffix_;
 
         //! Needed to read the members without otherwise unnecessary accessors.
-        friend void printBinaryInformation(
-            FILE *fp, const IProgramContext &programContext,
+        friend std::string printBinaryInformation(
+            const IProgramContext           &programContext,
             const BinaryInformationSettings &settings);
 };
 
@@ -127,6 +129,19 @@ void printBinaryInformation(FILE                          *fp,
 void printBinaryInformation(FILE                            *fp,
                             const IProgramContext           &programContext,
                             const BinaryInformationSettings &settings);
+
+/*! \brief
+ * Print basic information about the executable with custom settings.
+ *
+ * \param[in] programContext Program information object to use.
+ * \param[in] settings       Specifies what to print.
+ * \return                   Information about the binary suitable for printing.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * \see BinaryInformationSettings
+ */
+std::string printBinaryInformation(const IProgramContext           &programContext,
+                                   const BinaryInformationSettings &settings);
 
 }     // namespace gmx
 

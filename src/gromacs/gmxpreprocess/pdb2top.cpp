@@ -549,10 +549,11 @@ void print_top_comment(FILE       *out,
     char  ffdir_parent[STRLEN];
     char *p;
 
-    nice_header(out, filename);
-    fprintf(out, ";\tThis is a %s topology file\n;\n", bITP ? "include" : "standalone");
     try
     {
+        fputs(gmx::niceHeader(filename, ';').c_str(), out);
+        fprintf(out, ";\tThis is a %s topology file\n;\n", bITP ? "include" : "standalone");
+
         gmx::BinaryInformationSettings settings;
         settings.generatedByHeader(true);
         settings.linePrefix(";\t");
