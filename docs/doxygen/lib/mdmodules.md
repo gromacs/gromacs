@@ -93,9 +93,6 @@ the modules) will do the following things to make mdp input work:
   defined conversions in the process.  This transformation is one-way only,
   although the framework keeps track of the origin of each value to provide
   sensible error messages that have the original mdp option name included.
-  Because the mapping is not two-way, there is some loss of functionality
-  related to mdp file handling in grompp (in particular, the `-po` option) for
-  options belonging to the new-style modules.
 
   It calls initMdpOptions() for the module(s), initializing a single Options
   object that has the input options.
@@ -116,6 +113,12 @@ the modules) will do the following things to make mdp input work:
   implementation, but it also, in part, enforces that the mdp file written out
   by `gmx grompp -po` cannot produce different behavior because of set/not-set
   differences.
+
+* grompp -po writes an mdp file that was equivalent to the input,
+  which is implemented by calling buildMdpOutput() for each module, to
+  prepare a builder object that is used with writeKeyValueTreeAsMdp().
+  As with the old flat tree, the values given by the user's input are
+  preserved, but not the ordering of options, or their formatting.
 
 * When grompp writes the tpr file, it writes the structured tree (after the
   default value and native value conversion) into the tpr file.
