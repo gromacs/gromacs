@@ -41,6 +41,7 @@
 
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
@@ -58,22 +59,33 @@ std::vector<std::string> splitPathElements(const std::string &path)
     return splitDelimitedString(path.substr(1), '/');
 }
 
-//! Helper function to format a simple KeyValueTreeValue.
-std::string formatSingleValue(const KeyValueTreeValue &value)
+}   // namespace
+
+std::string valueToString(const KeyValueTreeValue &value)
 {
     if (value.isType<float>())
     {
-        return formatString("%g", value.cast<float>());
+        return toString(value.cast<float>());
     }
     else if (value.isType<double>())
     {
-        return formatString("%g", value.cast<double>());
+        return toString(value.cast<double>());
+    }
+    else if (value.isType<int>())
+    {
+        return toString(value.cast<int>());
+    }
+    else if (value.isType<gmx_int64_t>())
+    {
+        return toString(value.cast<gmx_int64_t>());
+    }
+    else if (value.isType<std::string>())
+    {
+        return value.cast<std::string>();
     }
     GMX_RELEASE_ASSERT(false, "Unknown value type");
     return std::string();
 }
-
-}   // namespace
 
 /********************************************************************
  * KeyValueTreePath
@@ -143,13 +155,13 @@ void KeyValueTreeObject::writeUsing(TextWriter *writer) const
                     GMX_RELEASE_ASSERT(!elem.isObject() && !elem.isArray(),
                                        "Arrays of objects not currently implemented");
                     writer->writeString(" ");
-                    writer->writeString(formatSingleValue(elem));
+                    writer->writeString(valueToString(elem));
                 }
                 writer->writeString(" ]");
             }
             else
             {
-                writer->writeString(formatSingleValue(value));
+                writer->writeString(valueToString(value));
             }
             writer->writeLine();
         }
@@ -284,7 +296,7 @@ class CompareHelper
             {
                 return "present";
             }
-            return formatSingleValue(value);
+            return valueToString(value);
         }
 
         KeyValueTreePath  currentPath_;
@@ -305,6 +317,7 @@ void compareKeyValueTrees(TextWriter               *writer,
     CompareHelper helper(writer, ftol, abstol);
     helper.compareObjects(tree1, tree2);
 }
+
 //! \endcond
 
 } // namespace gmx

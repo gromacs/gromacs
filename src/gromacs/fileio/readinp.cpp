@@ -128,12 +128,13 @@ t_inpfile *read_inpfile(gmx::TextInputStream *stream, const char *fn, int *ninp,
         {
             /* add a new item */
             srenew(inp, ++countOfUniqueKeysFound);
-            inp[countOfUniqueKeysFound-1].inp_count  = 1;
-            inp[countOfUniqueKeysFound-1].count      = 0;
-            inp[countOfUniqueKeysFound-1].bObsolete  = FALSE;
-            inp[countOfUniqueKeysFound-1].bSet       = FALSE;
-            inp[countOfUniqueKeysFound-1].name       = gmx_strdup(tokens[0].c_str());
-            inp[countOfUniqueKeysFound-1].value      = gmx_strdup(tokens[1].c_str());
+            inp[countOfUniqueKeysFound-1].inp_count              = 1;
+            inp[countOfUniqueKeysFound-1].count                  = 0;
+            inp[countOfUniqueKeysFound-1].bObsolete              = FALSE;
+            inp[countOfUniqueKeysFound-1].bHandledAsKeyValueTree = FALSE;
+            inp[countOfUniqueKeysFound-1].bSet                   = FALSE;
+            inp[countOfUniqueKeysFound-1].name                   = gmx_strdup(tokens[0].c_str());
+            inp[countOfUniqueKeysFound-1].value                  = gmx_strdup(tokens[1].c_str());
         }
         else
         {
@@ -218,7 +219,10 @@ void write_inpfile(gmx::TextOutputStream *stream, const char *fn, int ninp, t_in
 
     for (int i = 0; (i < ninp); i++)
     {
-        if (inp[i].bSet)
+        if (inp[i].bHandledAsKeyValueTree)
+        {
+        }
+        else if (inp[i].bSet)
         {
             if (inp[i].name[0] == ';' || (strlen(inp[i].name) > 2 && inp[i].name[1] == ';'))
             {
@@ -297,6 +301,10 @@ void mark_einp_set(int ninp, t_inpfile *inp, const char *name)
     {
         inp[i].count = inp[0].inp_count++;
         inp[i].bSet  = TRUE;
+        /* Prevent mdp lines being written twice for
+           options that are handled via key-value trees. */
+        inp[i].bHandledAsKeyValueTree = TRUE;
+
     }
 }
 
@@ -311,8 +319,9 @@ static int get_einp(int *ninp, t_inpfile **inp, const char *name)
         notfound = TRUE;
         i        = (*ninp)++;
         srenew(*inp, (*ninp));
-        (*inp)[i].name = gmx_strdup(name);
-        (*inp)[i].bSet = TRUE;
+        (*inp)[i].name                   = gmx_strdup(name);
+        (*inp)[i].bSet                   = TRUE;
+        (*inp)[i].bHandledAsKeyValueTree = FALSE;
         if (i == 0)
         {
             (*inp)[i].inp_count = 1;
