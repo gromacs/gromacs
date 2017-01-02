@@ -100,6 +100,8 @@ class IInputRecExtension
          * Defines input (mdp) parameters for this extension.
          */
         virtual void initMdpOptions(IOptionsContainerWithSections *options) = 0;
+        //! Prepares a transform from structured key-value tree to flat mdp.
+        virtual void initMdpBackTransform(IKeyValueTreeTransformRules *rules) const = 0;
 
         /*! \brief Initiate output parameters
          *

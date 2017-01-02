@@ -41,6 +41,7 @@
 
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
@@ -59,15 +60,27 @@ std::vector<std::string> splitPathElements(const std::string &path)
 }
 
 //! Helper function to format a simple KeyValueTreeValue.
-std::string formatSingleValue(const KeyValueTreeValue &value)
+std::string valueToString(const KeyValueTreeValue &value)
 {
     if (value.isType<float>())
     {
-        return formatString("%g", value.cast<float>());
+        return toString(value.cast<float>());
     }
     else if (value.isType<double>())
     {
-        return formatString("%g", value.cast<double>());
+        return toString(value.cast<double>());
+    }
+    else if (value.isType<int>())
+    {
+        return toString(value.cast<int>());
+    }
+    else if (value.isType<gmx_int64_t>())
+    {
+        return toString(value.cast<gmx_int64_t>());
+    }
+    else if (value.isType<std::string>())
+    {
+        return value.cast<std::string>();
     }
     GMX_RELEASE_ASSERT(false, "Unknown value type");
     return std::string();
@@ -143,15 +156,64 @@ void KeyValueTreeObject::writeUsing(TextWriter *writer) const
                     GMX_RELEASE_ASSERT(!elem.isObject() && !elem.isArray(),
                                        "Arrays of objects not currently implemented");
                     writer->writeString(" ");
-                    writer->writeString(formatSingleValue(elem));
+                    writer->writeString(valueToString(elem));
                 }
                 writer->writeString(" ]");
             }
             else
             {
-                writer->writeString(formatSingleValue(value));
+                writer->writeString(valueToString(value));
             }
             writer->writeLine();
+        }
+    }
+}
+
+void KeyValueTreeObject::writeMdpUsing(TextWriter *writer) const
+{
+
+    for (const auto &prop : properties())
+    {
+        const auto &value = prop.value();
+        if (value.isObject())
+        {
+            value.asObject().writeMdpUsing(writer);
+        }
+        else
+        {
+            // Recognize a special key prefix that identifies comment
+            // lines. This mechanism is not pretty, but our plan is to
+            // write key-value trees, rather than old-style mdp, and
+            // comments will need different handling then.
+            if (prop.key().compare(0, 7, "comment") == 0)
+            {
+                GMX_RELEASE_ASSERT(prop.value().isType<std::string>(), "Comments must have string-typed values");
+                auto comment = prop.value().cast<std::string>();
+                if (!comment.empty())
+                {
+                    writer->writeLine(comment);
+                }
+            }
+            else
+            {
+                writer->writeString(formatString("%-24s", prop.key().c_str()));
+                writer->writeString(" = ");
+                if (value.isArray())
+                {
+                    for (const auto &elem : value.asArray().values())
+                    {
+                        GMX_RELEASE_ASSERT(!elem.isObject() && !elem.isArray(),
+                                           "Arrays of objects not currently implemented");
+                        writer->writeString(" ");
+                        writer->writeString(valueToString(elem));
+                    }
+                }
+                else
+                {
+                    writer->writeString(valueToString(value));
+                }
+                writer->writeLine();
+            }
         }
     }
 }
@@ -284,7 +346,7 @@ class CompareHelper
             {
                 return "present";
             }
-            return formatSingleValue(value);
+            return valueToString(value);
         }
 
         KeyValueTreePath  currentPath_;

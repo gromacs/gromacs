@@ -79,6 +79,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -2355,6 +2356,25 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         gmx::TextOutputFile stream(mdparout);
         write_inpfile(&stream, mdparout, ninp, inp, FALSE, writeMdpHeader, wi);
+
+        // Prepare to map structured key-value tree back to mdp.
+        gmx::KeyValueTreeTransformer backTransform;
+        // All rules (ie. starting with /) will do string matching for
+        // key names that is insensitive to case and '_' or '-'.
+        backTransform.rules()->addRule()
+            .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+        // Add all the rules for each module for the back transformation.
+        mdModules->initMdpBackTransform(backTransform.rules());
+        // Set up an error handler - but really none should exist here!
+        MdpErrorHandler errorHandler(wi);
+        // Transform options + values back to a key-value tree that is
+        // equivalent to mdp input.
+        gmx::KeyValueTreeTransformResult result
+            = backTransform.transform(*ir->params, &errorHandler);
+        {
+            gmx::TextWriter writer(&stream);
+            result.object().writeMdpUsing(&writer);
+        }
         stream.close();
     }
 

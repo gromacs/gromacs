@@ -44,6 +44,7 @@
 #include "electricfield.h"
 
 #include <cmath>
+#include <string>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -160,6 +161,7 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         // From IInputRecExtension
         virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
         virtual void initMdpOptions(IOptionsContainerWithSections *options);
+        virtual void initMdpBackTransform(IKeyValueTreeTransformRules *rules) const;
 
         virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
                                 bool bAppendFiles, const gmx_output_env_t *oenv);
@@ -308,6 +310,45 @@ void ElectricField::initMdpOptions(IOptionsContainerWithSections *options)
     efield_[XX].initMdpOptions(&section, "x");
     efield_[YY].initMdpOptions(&section, "y");
     efield_[ZZ].initMdpOptions(&section, "z");
+}
+
+void convertFieldDataParametersBack(gmx::KeyValueTreeObjectBuilder *builder,
+                                    const KeyValueTreeObject       &object,
+                                    const std::string              &name)
+{
+    builder->addValue<std::string>(name, "1 " + toString(object["E0"].cast<real>()) + " -1");
+    builder->addValue<std::string>(name + "t", (toString<real>(object["omega"].cast<real>()) + ' ' +
+                                                toString<real>(object["t0"].cast<real>()) + ' ' +
+                                                toString<real>(object["sigma"].cast<real>())));
+}
+
+void convertParametersBack(gmx::KeyValueTreeObjectBuilder *builder,
+                           const KeyValueTreeObject       &object)
+{
+    const char *comment =
+        "; Electric fields\n"
+        "; Format for E-x, etc. is: number of cosines (int; only 1 is supported),\n"
+        "; amplitude (real; V/nm), and phase (real; value is meaningless\n"
+        "; for a cosine of frequency 0.\n"
+        "; Format for E-xt, etc. is: omega (1/ps), time for the pulse peak (ps),\n"
+        "; and sigma (ps) width of the pulse. Sigma = 0 removes the pulse,\n"
+        "; leaving the field to be a cosine function.";
+    builder->addValue<std::string>("comment-electric-field", comment);
+    convertFieldDataParametersBack(builder, object["x"].asObject(), "E-x");
+    convertFieldDataParametersBack(builder, object["y"].asObject(), "E-y");
+    convertFieldDataParametersBack(builder, object["z"].asObject(), "E-z");
+}
+
+void ElectricField::initMdpBackTransform(IKeyValueTreeTransformRules *rules) const
+{
+    // TODO This responsibility should be handled by the caller,
+    // e.g. embedded in the rules, somehow.
+    std::string prefix = "/applied-forces/";
+
+    rules->addRule()
+        .from<KeyValueTreeObject>(prefix + "electric-field")
+        .toObject("/electric-field")
+        .transformWith(&convertParametersBack);
 }
 
 void ElectricField::initOutput(FILE *fplog, int nfile, const t_filenm fnm[],

@@ -119,6 +119,19 @@ class MDModules
          */
         void initMdpTransform(IKeyValueTreeTransformRules *rules);
 
+        /*! \brief Initializes a transform from sectioned options to
+         * flat mdp key-values.
+         *
+         * This transform is the opposite of of that set up by
+         * initMdpTransform, ie from an Options structure to a flat
+         * KeyValueTreeObject that contains each mdp value as a
+         * property, plus comments.
+         *
+         * Once the transition from mdp to key-value input is
+         * complete, this method will probably not exist.
+         */
+        void initMdpBackTransform(IKeyValueTreeTransformRules *rules);
+
         /*! \brief Use \c mdpOptionValues to set the options (e.g.read
          * from mdp input) for each module.
          *

@@ -58,6 +58,7 @@ namespace gmx
 
 class KeyValueTreeArray;
 class KeyValueTreeObject;
+class TextOutputStream;
 class TextWriter;
 
 /*! \libinternal \brief
@@ -214,7 +215,16 @@ class KeyValueTreeObject
         }
 
         bool hasDistinctProperties(const KeyValueTreeObject &obj) const;
+        //! Write a structured key-value tree as text to \c writer.
         void writeUsing(TextWriter *writer) const;
+        /*! \brief Write a flat key-value tree to \c writer in mdp style.
+         *
+         * Sub-objects will output nothing, so they can be used to
+         * contain a special key-value pair to create a comment, as
+         * well as the normal key and value. The comment pair will
+         * have a key of "comment", and the value will be used as a
+         * comment (if non-empty). */
+        void writeMdpUsing(TextWriter *writer) const;
 
     private:
         KeyValueTreeValue &operator[](const std::string &key)
