@@ -51,6 +51,8 @@ struct t_inputrec;
 namespace gmx
 {
 
+class KeyValueTreeObjectBuilder;
+class KeyValueTreeObject;
 class IKeyValueTreeErrorHandler;
 class IKeyValueTreeTransformRules;
 class IMDOutputProvider;
@@ -103,6 +105,18 @@ class MDModules
          * Initializes the combined transform from all modules.
          */
         void initMdpTransform(IKeyValueTreeTransformRules *rules);
+
+        /*! \brief Initializes a builder of flat mdp-style key-value pairs
+         * suitable for output.
+         *
+         * If used as input to initMdpTransform(), the key-value pairs
+         * resulting from this function would leave the module
+         * settings unchanged.
+         *
+         * Once the transition from mdp to key-value input is
+         * complete, this method will probably not exist.
+         */
+        void buildMdpOutput(KeyValueTreeObjectBuilder *builder);
 
         /*! \brief
          * Sets input parameters from `params` for each module.

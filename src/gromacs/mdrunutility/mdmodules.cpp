@@ -48,6 +48,7 @@
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -111,6 +112,11 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
     // embed the necessary prefix (and similarly for other groupings
     // of modules). For now, electric-field embeds this itself.
     impl_->field_->mdpOptionProvider()->initMdpTransform(rules);
+}
+
+void MDModules::buildMdpOutput(KeyValueTreeObjectBuilder *builder)
+{
+    impl_->field_->mdpOptionProvider()->buildMdpOutput(builder);
 }
 
 void MDModules::assignOptionsToModules(const KeyValueTreeObject  &params,

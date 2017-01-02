@@ -316,7 +316,6 @@ simulated-tempering      = no
 simulated-tempering-scaling = geometric
 sim-temp-low             = 300
 sim-temp-high            = 300
-E-x                      = 1 1.2 -1
 
 ; Ion/water position swapping for computational electrophysiology setups
 ; Swap positions along direction: no, X, Y, Z
@@ -334,5 +333,18 @@ userreal1                = 0
 userreal2                = 0
 userreal3                = 0
 userreal4                = 0
+; Electric fields
+; Format for E-x, etc. is: number of cosines (int; only 1 is supported),
+; amplitude (real; V/nm), and phase (real; value is meaningless
+; for a cosine of frequency 0.
+; Format for E-xt, etc. is: omega (1/ps), time for the pulse peak (ps),
+; and sigma (ps) width of the pulse. Sigma = 0 removes the pulse,
+; leaving the field to be a cosine function.
+E-x                      = 1 1.2 -1
+E-xt                     = 0 0 0
+E-y                      = 1 0 -1
+E-yt                     = 0 0 0
+E-z                      = 1 0 -1
+E-zt                     = 0 0 0
 </String>
 </ReferenceData>
