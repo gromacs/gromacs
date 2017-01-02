@@ -50,6 +50,7 @@
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/chargegroup.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/gmxpreprocess/keyvaluetreemdpwriter.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -75,10 +76,12 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/ikeyvaluetreeerror.h"
 #include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -2355,6 +2358,15 @@ void get_ir(const char *mdparin, const char *mdparout,
     {
         gmx::TextOutputFile stream(mdparout);
         write_inpfile(&stream, mdparout, ninp, inp, FALSE, writeMdpHeader, wi);
+
+        // Transform module data into a flat key-value tree for output.
+        gmx::KeyValueTreeBuilder       builder;
+        gmx::KeyValueTreeObjectBuilder builderObject = builder.rootObject();
+        mdModules->buildMdpOutput(&builderObject);
+        {
+            gmx::TextWriter writer(&stream);
+            writeKeyValueTreeAsMdp(&writer, builder.build());
+        }
         stream.close();
     }
 

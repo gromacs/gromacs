@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,9 +34,10 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares common utility functions for conversions from strings.
+ * Declares common utility functions for conversions to and from strings.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \inlibraryapi
  * \ingroup module_utility
  */
@@ -46,6 +47,7 @@
 #include <string>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -133,6 +135,55 @@ float fromString<float>(const char *str) { return floatFromString(str); }
 //! Implementation for double values.
 template <> inline
 double fromString<double>(const char *str) { return doubleFromString(str); }
+
+/*! \brief Returns a string containing the value of \c t.
+ *
+ * \throws std::bad_alloc if out of memory. */
+static inline std::string intToString(const int &t)
+{
+    return formatString("%d", t);
+}
+//! \copydoc intToString(const int &)
+static inline std::string int64ToString(const gmx_int64_t &t)
+{
+    return formatString("%" GMX_PRId64, t);
+}
+//! \copydoc intToString(const int &)
+static inline std::string doubleToString(const double &t)
+{
+    return formatString("%g", t);
+}
+
+/*! \brief
+ * Prints a value of a given type to a string.
+ *
+ * \tparam T Type of value to print.
+ *
+ * `T` can only be one of the types that is explicity supported.
+ * The main use for this function is to write `toString<real>(value)`,
+ * but it can also be used for other types for consistency.
+ *
+ * \throws std::bad_alloc if out of memory. */
+template <typename T> static inline std::string toString(const T &t);
+
+//! Implementation for boolean values.
+template <> inline
+std::string toString<bool>(const bool &t) { return boolToString(t); }
+//! Implementation for integer values.
+template <> inline
+std::string toString<int>(const int &t) { return intToString(t); }
+//! Implementation for 64-bit integer values.
+template <> inline
+std::string toString<gmx_int64_t>(const gmx_int64_t &t) { return int64ToString(t); }
+//! Implementation for float values.
+template <> inline
+std::string toString<float>(const float &t) { return doubleToString(t); }
+//! Implementation for double values.
+template <> inline
+std::string toString<double>(const double &t) { return doubleToString(t); }
+//! Implementation for string values.
+template <> inline
+std::string toString<std::string>(const std::string &t) { return t; }
 
 //! \}
 //! \endcond

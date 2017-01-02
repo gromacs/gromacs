@@ -64,6 +64,7 @@ namespace gmx
 class IKeyValueTreeTransformRules;
 class IOptionsContainerWithSections;
 class KeyValueTreeObject;
+class KeyValueTreeObjectBuilder;
 
 /*! \libinternal \brief
  * Inputrec extension interface for a mdrun module.
@@ -100,6 +101,8 @@ class IInputRecExtension
          * Defines input (mdp) parameters for this extension.
          */
         virtual void initMdpOptions(IOptionsContainerWithSections *options) = 0;
+        //! Prepares to write a flat key-value tree like an mdp file.
+        virtual void buildMdpOutput(KeyValueTreeObjectBuilder *builder) const = 0;
 
         /*! \brief Initiate output parameters
          *

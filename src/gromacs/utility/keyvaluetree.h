@@ -214,6 +214,7 @@ class KeyValueTreeObject
         }
 
         bool hasDistinctProperties(const KeyValueTreeObject &obj) const;
+        //! Write a structured key-value tree as text to \c writer.
         void writeUsing(TextWriter *writer) const;
 
     private:
@@ -277,6 +278,10 @@ void compareKeyValueTrees(TextWriter               *writer,
                           const KeyValueTreeObject &tree2,
                           real                      ftol,
                           real                      abstol);
+
+//! Helper function to format a simple KeyValueTreeValue.
+std::string valueToString(const KeyValueTreeValue &value);
+
 //! \endcond
 
 } // namespace gmx
