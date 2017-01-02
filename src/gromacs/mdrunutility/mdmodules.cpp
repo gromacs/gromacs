@@ -48,6 +48,7 @@
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -98,6 +99,11 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
 {
     auto appliedForcesScope = rules->scopedTransform("/applied-forces");
     impl_->field_->mdpOptionProvider()->initMdpTransform(appliedForcesScope.rules());
+}
+
+void MDModules::buildMdpOutput(KeyValueTreeObjectBuilder *builder)
+{
+    impl_->field_->mdpOptionProvider()->buildMdpOutput(builder);
 }
 
 void MDModules::assignOptionsToModules(const KeyValueTreeObject  &params,

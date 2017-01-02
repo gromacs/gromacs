@@ -51,6 +51,7 @@
 #ifndef GMX_UTILITY_KEYVALUETREEBUILDER_H
 #define GMX_UTILITY_KEYVALUETREEBUILDER_H
 
+#include <initializer_list>
 #include <string>
 #include <utility>
 #include <vector>
@@ -331,6 +332,23 @@ class KeyValueTreeObjectBuilder
         {
             auto iter = addProperty(key, KeyValueTreeBuilder::createValue<KeyValueTreeArray>());
             return KeyValueTreeUniformArrayBuilder<T>(&iter->second.asArray());
+        }
+        /*! \brief
+         * Adds an array-valued property with uniform value types with given
+         * key and values.
+         *
+         * \tparam T  Type for all values in the array.
+         *
+         * The array is created to contain the values from `values`.
+         */
+        template <typename T>
+        void addUniformArray(const std::string &key, std::initializer_list<T> values)
+        {
+            auto builder = addUniformArray<T>(key);
+            for (const auto &value : values)
+            {
+                builder.addValue(value);
+            }
         }
         /*! \brief
          * Adds an array-valued property with objects in the array with given
