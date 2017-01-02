@@ -144,7 +144,7 @@ class MolDip
     private:
     public:
         bool                            _bDone, _bFinal, _bGaussianBug;
-        bool                            _bFitZeta;
+        bool                            _bFitZeta, bfullTensor_;
         std::vector<alexandria::MyMol>  _mymol;
         int                             _nmol_support;
         ChargeDistributionModel         _iChargeDistributionModel;
@@ -179,7 +179,8 @@ class MolDip
                   real fc_bound, real fc_mu, real fc_quad, real fc_charge,
                   real fc_esp, real fc_epot, real fc_force, char *fixchi,
                   gmx_bool bOptHfac, real hfac,
-                  gmx_bool bPol, gmx_bool bFitZeta, gmx_hw_info_t *hwinfo);
+                  gmx_bool bPol, gmx_bool bFitZeta, 
+                  gmx_hw_info_t *hwinfo, gmx_bool bfullTensor);
 
         void Read(FILE *fp, const char *fn, const char *pd_fn,
                   int minimum_data, gmx_bool bZero,
@@ -189,7 +190,6 @@ class MolDip
                   bool bPairs, bool bDihedral,
                   bool bPolar, bool bZPE, const char *tabfn);
 
-        void CalcDeviation();
 };
 
 }

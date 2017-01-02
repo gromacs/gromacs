@@ -41,22 +41,30 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
-
 #include <random>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/hardware/detecthardware.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/mdlib/force.h"
+#include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/shellfc.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/mtop_util.h"
+#include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/smalloc.h"
 
+#include "getmdlogger.h"
 #include "gmx_simple_comm.h"
 #include "moldip.h"
-#include "nmsimplex.h"
+#include "optparam.h"
 #include "poldata.h"
 #include "poldata_xml.h"
 
@@ -94,73 +102,6 @@ static void print_lsq_set(FILE *fp, gmx_stats_t lsq)
     fprintf(fp, "&\n");
 }
 
-static void print_quad(FILE *fp, tensor Q_exp, tensor Q_calc, char *calc_name,
-                       real q_toler)
-{
-    tensor dQ;
-    real   delta;
-    if (nullptr != calc_name)
-    {
-        m_sub(Q_exp, Q_calc, dQ);
-        delta = sqrt(gmx::square(dQ[XX][XX])+gmx::square(dQ[XX][YY])+gmx::square(dQ[XX][ZZ])+
-                     gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
-        fprintf(fp,
-                "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
-                "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n",
-                calc_name,
-                Q_calc[XX][XX], Q_calc[XX][YY], Q_calc[XX][ZZ],
-                dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
-                "", Q_calc[YY][YY], Q_calc[YY][ZZ],
-                "", dQ[YY][YY], dQ[YY][ZZ]);
-    }
-    else
-    {
-        fprintf(fp, "Quadrupole analysis (5 independent components only)\n");
-        fprintf(fp,
-                "Exp  (%6.2f %6.2f %6.2f)\n"
-                "     (%6s %6.2f %6.2f)\n",
-                Q_exp[XX][XX], Q_exp[XX][YY], Q_exp[XX][ZZ],
-                "", Q_exp[YY][YY], Q_exp[YY][ZZ]);
-    }
-}
-
-static void print_dip(FILE *fp, rvec mu_exp, rvec mu_calc, char *calc_name,
-                      real toler)
-{
-    rvec dmu;
-    real ndmu, cosa;
-    char ebuf[32];
-
-    if (nullptr != calc_name)
-    {
-        rvec_sub(mu_exp, mu_calc, dmu);
-        ndmu = norm(dmu);
-        cosa = cos_angle(mu_exp, mu_calc);
-        if (ndmu > toler)
-        {
-            sprintf(ebuf, "XXX");
-        }
-        else if (fabs(cosa) < 0.1)
-        {
-            sprintf(ebuf, "YYY");
-        }
-        else
-        {
-            ebuf[0] = '\0';
-        }
-        fprintf(fp, "%-4s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
-                calc_name,
-                mu_calc[XX], mu_calc[YY], mu_calc[ZZ], norm(mu_calc),
-                dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
-    }
-    else
-    {
-        fprintf(fp, "Dipole analysis\n");
-        fprintf(fp, "Exp  (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f\n",
-                mu_exp[XX], mu_exp[YY], mu_exp[ZZ], norm(mu_exp));
-    }
-}
-
 static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
                            const gmx_output_env_t * oenv)
 {
@@ -174,32 +115,634 @@ static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
     }
 }
 
-static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
-                       const char *cdiff, const char *mudiff, const char *Qdiff,
-                       const char *espdiff,
-                       std::vector<alexandria::MyMol> mol,
-                       real hfac,
-                       real dip_toler, real quad_toler, real q_toler, const gmx_output_env_t * oenv)
+namespace alexandria
+{
+
+class OPtimization : public MolDip
+{
+    using param_type = std::vector<double>;
+    
+    private:    
+    public:
+    
+        OPtimization() {};
+        
+       ~OPtimization() {};
+       
+        param_type    param_, lower_, upper_, best_;
+        param_type    orig_, psigma_, pmean_;
+          
+        double harmonic (double x, 
+                         double min, 
+                         double max)
+       {
+           return (x < min) ? (gmx::square(x-min)) : ((x > max) ? (gmx::square(x-max)) : 0);
+       }
+     
+        void print_molecules(FILE *fp, const char *xvgfn, const char *qhisto,
+                             const char *cdiff, const char *mudiff, const char *Qdiff,
+                             const char *espdiff, real dip_toler, real quad_toler, 
+                             real q_toler, const gmx_output_env_t * oenv);
+        
+        void print_dipole(FILE  *fp, 
+                          MyMol *mol, 
+                          char  *calc_name, 
+                          real   toler);
+    
+        void print_quadrapole(FILE  *fp, 
+                              MyMol *mol, 
+                              char  *calc_name, 
+                              real   toler);
+        
+        void polData2TuneDip();
+        
+        void tuneDip2PolData();
+        
+        void InitOpt(real factor);
+        
+        void split_shell_charges(gmx_mtop_t *mtop,
+                                 t_idef     *idef,
+                                 t_topology *topology);
+                                 
+        void calcDeviation();
+    
+        double objFunction(const double v[]);
+        
+        void optRun(FILE *fp, FILE *fplog, int maxiter,
+                    int nrun, real stepsize, int seed,
+                    const gmx_output_env_t *oenv,
+                    int nprint, const char *xvgconv, 
+                    const char *xvgepot, real temperature, 
+                    bool bBound);
+};
+
+void OPtimization::split_shell_charges(gmx_mtop_t *mtop,
+                                       t_idef     *idef,
+                                       t_topology *topology)
+{
+    int                     k, ai, aj;
+    real                    q, Z;
+    gmx_mtop_atomloop_all_t aloop;
+    const t_atom           *atom;
+    t_atom                 *atom_i, *atom_j;
+    int                     at_global;
+
+    for (k = 0; k < idef->il[F_POLARIZATION].nr; )
+    {
+        k++; // Skip over the type.
+        ai = idef->il[F_POLARIZATION].iatoms[k++];
+        aj = idef->il[F_POLARIZATION].iatoms[k++];
+
+        atom_i = &topology->atoms.atom[ai];
+        atom_j = &topology->atoms.atom[aj];
+
+        if ((atom_i->ptype == eptAtom) &&
+            (atom_j->ptype == eptShell))
+        {
+            q         = atom_i->q;
+            Z         = atom_i->atomnumber;
+            atom_i->q = Z;
+            atom_j->q = q-Z;
+        }
+        else if ((atom_j->ptype == eptAtom) &&
+                 (atom_i->ptype == eptShell))
+        {
+            q         = atom_j->q;
+            Z         = atom_j->atomnumber;
+            atom_j->q = Z;
+            atom_i->q = q-Z;
+        }
+        else
+        {
+            gmx_incons("Polarization entry does not have one atom and one shell");
+        }
+    }
+    q     = 0;
+    aloop = gmx_mtop_atomloop_all_init(mtop);
+    while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
+    {
+        q += atom->q;
+    }
+    Z = std::lround(q);
+    if (fabs(q-Z) > 1e-3)
+    {
+        gmx_fatal(FARGS, "Total charge in molecule is not zero, but %f", q-Z);
+    }
+}
+
+void OPtimization::calcDeviation()
+{
+    int  j;
+
+    if (PAR(_cr))
+    {
+        gmx_bcast(sizeof(_bFinal), &_bFinal, _cr);
+    }
+
+    if (PAR(_cr) && !_bFinal)
+    {
+        pd_.broadcast(_cr);
+    }
+    
+    for (j = 0; j < ermsNR; j++)
+    {
+        _ener[j] = 0;
+    }
+    
+    for (auto &mymol : _mymol)
+    {
+        if ((mymol.eSupp == eSupportLocal) ||
+            (_bFinal && (mymol.eSupp == eSupportRemote)))
+        {
+
+            QgenEem qgen(pd_, &(mymol.topology_->atoms),
+                         mymol.x_, 
+                         _iChargeDistributionModel,
+                         _hfac,
+                         mymol.molProp()->getCharge());
+
+            double chieq = 0;
+            auto   eQ    = qgen.generateChargesSm(debug,
+                                                  pd_, &(mymol.topology_->atoms),
+                                                  1e-4, 100,
+                                                  &chieq);
+            mymol.chieq = chieq;
+            if (eQ != eQGEN_OK)
+            {
+                fprintf(stderr, "%s\n", qgen.message());
+            }
+            else
+            {
+                GMX_RELEASE_ASSERT(mymol.mtop_->natoms == mymol.topology_->atoms.nr, "Inconsistency 3 in moldip.cpp");
+            }
+            
+            if (mymol.shellfc_)
+            {
+                real                 t = 0.0;
+                rvec                 mu_tot;
+                tensor               force_vir;
+                t_nrnb               my_nrnb;
+                gmx_wallcycle_t      wcycle;
+                
+                init_nrnb(&my_nrnb);
+                wcycle  = wallcycle_init(stdout, 0, _cr);
+                split_shell_charges(mymol.mtop_, &mymol.ltop_->idef, mymol.topology_);
+                fprintf(stderr, "Check whether we need atoms2md here %s %d\n", __FILE__, __LINE__);
+                atoms2md(mymol.mtop_, mymol.inputrec_, 0, nullptr, 0, mymol.mdatoms_);
+                
+                (void)
+                    relax_shell_flexcon(debug, _cr, false, 0,
+                                        mymol.inputrec_, true,
+                                        GMX_FORCE_ALLFORCES,
+                                        mymol.ltop_, nullptr,
+                                        nullptr, mymol.fcd_,
+                                        mymol.state_,
+                                        &mymol.f_,
+                                        force_vir, mymol.mdatoms_,
+                                        &my_nrnb, wcycle, nullptr,
+                                        &(mymol.mtop_->groups),
+                                        mymol.shellfc_, mymol.fr_,
+                                        false, t, mu_tot,
+                                        nullptr);
+            }
+            
+            mymol.CalcMultipoles();
+            double qtot = 0;
+            for (j = 0; j < mymol.topology_->atoms.nr; j++)
+            {
+                auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
+                auto qq     = mymol.topology_->atoms.atom[j].q;
+                qtot       += qq;
+                if (((qq < 0) && (atomnr == 1)) ||
+                    ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) ||
+                                  (atomnr == 16) || (atomnr == 17) ||
+                                  (atomnr == 35) || (atomnr == 53))))
+                {
+                    _ener[ermsBOUNDS] += fabs(qq);
+                }
+                if (_bQM)
+                {
+                    _ener[ermsCHARGE] += gmx::square(qq - mymol.qESP[j]);
+                }
+            }
+            if (fabs(qtot - mymol.molProp()->getCharge()) > 1e-2)
+            {
+                fprintf(stderr, "Warning qtot for %s is %g, should be %d\n",
+                        mymol.molProp()->getMolname().c_str(),
+                        qtot, mymol.molProp()->getCharge());
+            }
+            if (_bQM)
+            {
+                rvec dmu;
+                rvec_sub(mymol.mu_calc, mymol.mu_exp, dmu);
+                _ener[ermsMU]  += iprod(dmu, dmu);
+                for (int mm = 0; mm < DIM; mm++)
+                {
+                    if (bfullTensor_)
+                    {
+                        for (int nn = 0; nn < DIM; nn++)
+                        {
+                            _ener[ermsQUAD] += gmx::square(mymol.Q_calc[mm][nn] - mymol.Q_exp[mm][nn]);
+                        }
+                    }
+                    else
+                    {
+                        _ener[ermsQUAD] += gmx::square(mymol.Q_calc[mm][mm] - mymol.Q_exp[mm][mm]);
+                    }
+                }
+            }
+            else
+            {
+                _ener[ermsMU]  += gmx::square(mymol.dip_calc - mymol.dip_exp);
+            }
+        }
+    }
+    
+    if (PAR(_cr) && !_bFinal)
+    {
+        gmx_sum(ermsNR, _ener, _cr);
+    }    
+    if (MASTER(_cr))
+    {
+        for (j = 0; j < ermsTOT; j++)
+        {
+            _ener[ermsTOT] += ((_fc[j]*_ener[j])/_nmol_support);
+        }
+    }   
+    if (nullptr != debug && MASTER(_cr))
+    {
+        fprintf(debug, "ENER:");
+        for (j = 0; j < ermsNR; j++)
+        {
+            fprintf(debug, "  %8.3f", _ener[j]);
+        }
+        fprintf(debug, "\n");
+    }    
+}
+
+void OPtimization::polData2TuneDip()
+{
+    param_.clear();
+    
+    auto *ic = indexCount();
+    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
+    {               
+        auto J00  = pd_.getJ00(_iChargeDistributionModel, ai->name());
+        param_.push_back(std::move(J00));
+
+        if (ai->name().compare(_fixchi) != 0)
+        {
+            auto Chi0 = pd_.getChi0(_iChargeDistributionModel, ai->name());
+            param_.push_back(std::move(Chi0));
+        }        
+        if (_bFitZeta)
+        {
+            auto nzeta = pd_.getNzeta(_iChargeDistributionModel, ai->name());
+            for (int zz = 0; zz < nzeta; zz++)
+            {
+                auto zeta = pd_.getZeta(_iChargeDistributionModel, ai->name(), zz);
+                if (0 != zeta)
+                {
+                    param_.push_back(std::move(zeta));
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "Zeta is zero for atom %s in %d model\n",
+                              ai->name().c_str(), _iChargeDistributionModel);
+                }
+            }
+        }       
+    }
+    if (_bOptHfac)
+    {
+        param_.push_back(std::move(_hfac));
+    }       
+}
+}
+
+void OPtimization::tuneDip2PolData()
+{
+
+    int   n = 0;
+    char  zstr[STRLEN];
+    char  buf[STRLEN];
+        
+    auto *ic = indexCount();
+    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
+    {
+        std::string qstr   = pd_.getQstr(_iChargeDistributionModel, ai->name());
+        std::string rowstr = pd_.getRowstr(_iChargeDistributionModel, ai->name());
+        
+        if (qstr.size() == 0 || rowstr.size() == 0)
+        {
+            gmx_fatal(FARGS, "No qstr/rowstr for atom %s in %d model\n",
+                      ai->name().c_str(), _iChargeDistributionModel);
+        }
+        
+        auto ei = pd_.findEem(_iChargeDistributionModel, ai->name());
+        GMX_RELEASE_ASSERT(ei != pd_.EndEemprops(), "Cannot find eemprops");
+        
+        ei->setJ0(param_[n++]);
+        
+        if (ai->name().compare(_fixchi) != 0)
+        {      
+            ei->setChi0(param_[n++]);           
+        }       
+        if (_bFitZeta)
+        {
+            zstr[0] = '\0';
+            auto nzeta = pd_.getNzeta(_iChargeDistributionModel, ai->name());
+            for (int zz = 0; zz < nzeta; zz++)
+            {
+                auto zeta = param_[n++];
+                sprintf(buf, "  %10g", zeta);
+                strcat(zstr, buf);
+            }
+            
+            ei->setRowZetaQ(rowstr, zstr, qstr);
+        }               
+    }
+    if (_bOptHfac)
+    {
+        _hfac = param_[n++];
+    }   
+}
+
+void OPtimization::InitOpt(real  factor)
+{
+    polData2TuneDip();
+
+    orig_.resize(param_.size(), 0);
+    best_.resize(param_.size(), 0);
+    lower_.resize(param_.size(), 0);
+    upper_.resize(param_.size(), 0);
+    psigma_.resize(param_.size(), 0);
+    pmean_.resize(param_.size(), 0);
+
+    if (factor < 1)
+    {
+        factor = 1/factor;
+    }
+    for (size_t i = 0; (i < param_.size()); i++)
+    {
+        best_[i]  = orig_[i] = param_[i];
+        lower_[i] = orig_[i]/factor;
+        upper_[i] = orig_[i]*factor;
+    }
+}
+
+double OPtimization::objFunction(const double v[])
+{    
+    double bounds = 0;
+    int    n      = 0;
+    
+    auto *iCount = indexCount();
+    for (auto ai = iCount->beginIndex(); ai < iCount->endIndex(); ++ai)
+    {
+        auto name = ai->name();
+        auto J00  = v[n++];
+        bounds   += harmonic(J00, _J0_0, _J0_1);
+        
+        if (strcasecmp(name.c_str(), _fixchi) != 0)
+        {
+            auto Chi0 = v[n++];
+            bounds   += harmonic(Chi0, _Chi0_0, _Chi0_1);
+        }
+        
+        if (_bFitZeta)
+        {
+            auto nzeta = pd_.getNzeta(_iChargeDistributionModel, ai->name());
+            for (int zz = 0; zz < nzeta; zz++)
+            {
+                auto zeta = v[n++];
+                bounds += harmonic(zeta, _w_0, _w_1);
+            }
+        }
+    }
+    
+    if (_bOptHfac)
+    {
+        _hfac = v[n++];
+        if (_hfac > _hfac0)
+        {
+            bounds += 100*gmx::square(_hfac - _hfac0);
+        }
+        else if (_hfac < -(_hfac0))
+        {
+            bounds += 100*gmx::square(_hfac + _hfac0);
+        }
+    }
+    
+    size_t np  = param_.size();
+    for (size_t i = 0; i < np; i++)
+    {
+        param_[i] = v[i];
+    }
+
+    tuneDip2PolData();
+    calcDeviation();
+
+    _ener[ermsBOUNDS] += bounds;
+    _ener[ermsTOT]    += bounds;
+
+    return _ener[ermsTOT];
+}
+
+void OPtimization::optRun(FILE *fp, FILE *fplog, int maxiter,
+                          int nrun, real stepsize, int seed,
+                          const gmx_output_env_t *oenv,
+                          int nprint, const char *xvgconv, 
+                          const char *xvgepot, real temperature, 
+                          bool bBound)
+{
+    std::vector<double> optx, opts, optm;
+    double              chi2, chi2_min;
+    gmx_bool            bMinimum = false;
+    
+    auto func = [&] (const double v[]) {
+        return objFunction(v);
+    };
+    
+    if (MASTER(_cr))
+    {    
+        if (PAR(_cr))
+        {
+            for (int dest = 1; dest < _cr->nnodes; dest++)
+            {
+                gmx_send_int(_cr, dest, (nrun*maxiter*param_.size()));
+            }
+        }
+        
+        chi2 = chi2_min  = GMX_REAL_MAX;
+        Bayes <double> TuneDip(func, param_, lower_, upper_, &chi2);
+        TuneDip.Init(xvgconv, xvgepot, oenv, seed, stepsize, 
+                     maxiter, nprint,temperature, bBound);
+                     
+        for (int n = 0; n < nrun; n++)
+        {
+            if ((nullptr != fp) && (0 == n))
+            {
+                fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
+            }
+            
+            TuneDip.simulate();
+            TuneDip.getBestParam(optx);
+            TuneDip.getPsigma(opts);
+            TuneDip.getPmean(optm);
+
+            if (chi2 < chi2_min)
+            {
+                bMinimum = true;
+                for (size_t k = 0; k < param_.size(); k++)
+                {
+                    best_[k]   = optx[k];
+                    psigma_[k] = opts[k];
+                    pmean_[k]  = optm[k];
+                }
+                chi2_min = chi2;
+            }
+            TuneDip.setParam(best_);
+        }
+        if (bMinimum)
+        {
+            param_  = best_;
+            double emin = objFunction(best_.data());
+            if (fplog)
+            {
+                fprintf(fplog, "\nMinimum rmsd value during optimization: %.3f.\n", sqrt(emin));
+                fprintf(fplog, "Average and standard deviation of parameters\n");
+                for (size_t k = 0; k < param_.size(); k++)
+                {
+                    fprintf(fplog, "%5zu  %10g  %10g\n", k, pmean_[k], psigma_[k]);
+                }
+            }
+        }
+    }
+    else
+    {
+        /* S L A V E   N O D E S */
+        int niter = gmx_recv_int(_cr, 0);
+        for (int n = 0; n < niter + 2; n++)
+        {
+            calcDeviation();
+        }
+    }
+    
+    _bFinal = true;
+    if(MASTER(_cr))
+    {
+        chi2 = objFunction(best_.data());;
+        if (nullptr != fp)
+        {
+            fprintf(fp, "rmsd: %4.3f  ermsBOUNDS: %4.3f  after %d run(s)\n",
+                    sqrt(chi2), _ener[ermsBOUNDS], nrun);
+        }
+        if (nullptr != fplog)
+        {
+            fprintf(fplog, "rmsd: %4.3f   ermsBOUNDS: %4.3f  after %d run(s)\n",
+                    sqrt(chi2), _ener[ermsBOUNDS], nrun);
+            fflush(fplog);
+        }
+    }
+}
+
+void OPtimization::print_quadrapole(FILE  *fp, 
+                                    MyMol *mol,
+                                    char  *calc_name,
+                                    real   q_toler)
+{
+    tensor dQ;
+    real   delta;
+    if (nullptr != calc_name)
+    {
+        m_sub(mol->Q_exp, mol->Q_calc, dQ);
+        delta = sqrt(gmx::square(dQ[XX][XX])+gmx::square(dQ[XX][YY])+gmx::square(dQ[XX][ZZ])+
+                     gmx::square(dQ[YY][YY])+gmx::square(dQ[YY][ZZ]));
+        fprintf(fp,
+                "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
+                "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n",
+                calc_name,
+                mol->Q_calc[XX][XX], mol->Q_calc[XX][YY], mol->Q_calc[XX][ZZ],
+                dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
+                "", mol->Q_calc[YY][YY], mol->Q_calc[YY][ZZ], "", dQ[YY][YY], dQ[YY][ZZ]);
+    }
+    else
+    {
+        fprintf(fp, "Quadrupole analysis (5 independent components only)\n");
+        fprintf(fp,
+                "Exp  (%6.2f %6.2f %6.2f)\n"
+                "     (%6s %6.2f %6.2f)\n",
+                mol->Q_exp[XX][XX], mol->Q_exp[XX][YY], mol->Q_exp[XX][ZZ],
+                "", mol->Q_exp[YY][YY], mol->Q_exp[YY][ZZ]);
+    }
+}
+
+void OPtimization::print_dipole(FILE  *fp, 
+                                MyMol *mol, 
+                                char  *calc_name, 
+                                real   toler)
+{
+    rvec dmu;
+    real ndmu, cosa;
+    char ebuf[32];
+
+    if (nullptr != calc_name)
+    {
+        rvec_sub(mol->mu_exp, mol->mu_calc, dmu);
+        ndmu = norm(dmu);
+        cosa = cos_angle(mol->mu_exp, mol->mu_calc);
+        if (ndmu > toler)
+        {
+            sprintf(ebuf, "XXX");
+        }
+        else if (fabs(cosa) < 0.1)
+        {
+            sprintf(ebuf, "YYY");
+        }
+        else
+        {
+            ebuf[0] = '\0';
+        }
+        fprintf(fp, "%-4s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
+                calc_name, mol->mu_calc[XX], mol->mu_calc[YY], mol->mu_calc[ZZ], 
+                norm(mol->mu_calc), dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
+    }
+    else
+    {
+        fprintf(fp, "Dipole analysis\n");
+        fprintf(fp, "Exp  (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f\n",
+                mol->mu_exp[XX], mol->mu_exp[YY], mol->mu_exp[ZZ], norm(mol->mu_exp));
+    }
+}
+
+void OPtimization::print_molecules(FILE *fp, const char *xvgfn, const char *qhisto,
+                                   const char *cdiff, const char *mudiff, const char *Qdiff,
+                                   const char *espdiff, real dip_toler, real quad_toler, 
+                                   real q_toler, const gmx_output_env_t * oenv)
 {
     FILE         *xvgf, *qdiff, *mud, *tdiff, *hh, *espd;
     double        d2 = 0;
     real          rms, sigma, aver, error, qq, chi2;
-    int           j, n, nout, mm, nn;
+    int           j, n, nout, mm, nn, at_global, resnr;
     char         *resnm, *atomnm;
+    
+    gmx_mtop_atomloop_all_t   aloop;
+    const t_atom             *atom;
+
+    
     struct AtomTypeLsq {
         std::string atomtype;
         gmx_stats_t lsq;
     };
+    
     enum {
         eprEEM, eprESP, eprNR
     };
+    
     gmx_stats_t               lsq_q, lsq_mu[eprNR], lsq_quad[eprNR], lsq_esp;
     std::vector<AtomTypeLsq>  lsqt;
     const char               *eprnm[eprNR] = { "EEM", "ESP" };
-    gmx_mtop_atomloop_all_t   aloop;
-    const t_atom             *atom;
-    int                       at_global, resnr;
-
+    
 
     xvgf  = xvgropen(xvgfn, "Correlation between dipoles",
                      "Experimental", "Predicted", oenv);
@@ -211,69 +754,60 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
     lsq_mu[1]   = gmx_stats_init();
     lsq_esp     = gmx_stats_init();
     n           = 0;
-    for (auto mi = mol.begin(); (mi < mol.end()); mi++)
+    
+    for (auto &mol: _mymol)
     {
-        if (mi->eSupp != eSupportNo)
+        if (mol.eSupp != eSupportNo)
         {
-            fprintf(fp, "Molecule %d: %s. Qtot: %d, Multiplicity %d\n",
-                    n+1,
-                    mi->molProp()->getMolname().c_str(),
-                    mi->molProp()->getCharge(),
-                    mi->molProp()->getMultiplicity());
+            fprintf(fp, "Molecule %d: %s. Qtot: %d, Multiplicity %d\n", n+1,
+                    mol.molProp()->getMolname().c_str(),
+                    mol.molProp()->getCharge(),
+                    mol.molProp()->getMultiplicity());
 
-            print_dip(fp, mi->mu_exp, nullptr, nullptr, dip_toler);
-            print_dip(fp, mi->mu_exp, mi->mu_calc, (char *)"EEM", dip_toler);
-            print_dip(fp, mi->mu_exp, mi->mu_esp, (char *)"ESP", dip_toler);
+            print_dipole(fp, &mol, nullptr, dip_toler);
+            print_dipole(fp, &mol, (char *)"EEM", dip_toler);
+            print_dipole(fp, &mol, (char *)"ESP", dip_toler);
 
-            print_quad(fp, mi->Q_exp, nullptr, nullptr, quad_toler);
-            print_quad(fp, mi->Q_exp, mi->Q_calc, (char *)"EEM", quad_toler);
-            print_quad(fp, mi->Q_exp, mi->Q_esp, (char *)"ESP", quad_toler);
-            chi2 = mi->espRms();
-            fprintf(fp, "ESP chi2 %g Hartree/e\n", chi2);
-            //mi->gr_.potLsq( lsq_esp);
-            //while (estatsOK == gmx_stats_get_point(lsq_esp, &espx, &espy,
-            //&espdx, &espdy, 5))
-            //{
-            //  fprintf(fp, "ESP outlier: EEM = %g, should be %g\n", espy, espx);
-            //}
-
-            fprintf(xvgf, "%10g  %10g\n", mi->dip_exp, mi->dip_calc);
-            for (mm = 0; (mm < DIM); mm++)
+            print_quadrapole(fp, &mol, nullptr, quad_toler);
+            print_quadrapole(fp, &mol, (char *)"EEM", quad_toler);
+            print_quadrapole(fp, &mol, (char *)"ESP", quad_toler);
+            
+            chi2 = mol.espRms();
+            fprintf(fp, "ESP chi2 %g Hartree/e\n", chi2);           
+            fprintf(xvgf, "%10g  %10g\n", mol.dip_exp, mol.dip_calc);
+            
+            for (mm = 0; mm < DIM; mm++)
             {
-                gmx_stats_add_point(lsq_mu[0], mi->mu_exp[mm], mi->mu_calc[mm], 0, 0);
-                gmx_stats_add_point(lsq_mu[1], mi->mu_exp[mm], mi->mu_esp[mm], 0, 0);
+                gmx_stats_add_point(lsq_mu[0], mol.mu_exp[mm], mol.mu_calc[mm], 0, 0);
+                gmx_stats_add_point(lsq_mu[1], mol.mu_exp[mm], mol.mu_esp[mm], 0, 0);
                 if (0)
                 {
-                    for (nn = mm; (nn < DIM); nn++)
+                    for (nn = mm; nn < DIM; nn++)
                     {
                         if (mm < ZZ)
                         {
-                            gmx_stats_add_point(lsq_quad[0], mi->Q_exp[mm][nn],
-                                                mi->Q_calc[mm][nn], 0, 0);
-                            gmx_stats_add_point(lsq_quad[1], mi->Q_exp[mm][nn],
-                                                mi->Q_esp[mm][nn], 0, 0);
+                            gmx_stats_add_point(lsq_quad[0], mol.Q_exp[mm][nn], mol.Q_calc[mm][nn], 0, 0);
+                            gmx_stats_add_point(lsq_quad[1], mol.Q_exp[mm][nn], mol.Q_esp[mm][nn], 0, 0);
                         }
                     }
                 }
                 else
                 {
                     /* Ignore off-diagonal components */
-                    gmx_stats_add_point(lsq_quad[0], mi->Q_exp[mm][mm],
-                                        mi->Q_calc[mm][mm], 0, 0);
-                    gmx_stats_add_point(lsq_quad[1], mi->Q_exp[mm][mm],
-                                        mi->Q_esp[mm][mm], 0, 0);
+                    gmx_stats_add_point(lsq_quad[0], mol.Q_exp[mm][mm], mol.Q_calc[mm][mm], 0, 0);
+                    gmx_stats_add_point(lsq_quad[1], mol.Q_exp[mm][mm], mol.Q_esp[mm][mm], 0, 0);
 
                 }
             }
 
-            d2 += gmx::square(mi->dip_exp-mi->dip_calc);
+            d2 += gmx::square(mol.dip_exp - mol.dip_calc);
             fprintf(fp, "Atom   Type      q_EEM     q_ESP       x       y       z\n");
-            aloop = gmx_mtop_atomloop_all_init(mi->mtop_);
+            aloop = gmx_mtop_atomloop_all_init(mol.mtop_);
             j     = 0;
             while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
             {
                 gmx_mtop_atomloop_all_names(aloop, &atomnm, &resnr, &resnm);
-                const char *at = *(mi->topology_->atoms.atomtype[j]);
+                const char *at = *(mol.topology_->atoms.atomtype[j]);
                 auto        k  = std::find_if(lsqt.begin(), lsqt.end(),
                                               [at](const AtomTypeLsq &atlsq)
                                               {
@@ -290,29 +824,29 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
                 fprintf(fp, "%-2s%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f %s\n",
                         atomnm,
                         j+1,
-                        *(mi->topology_->atoms.atomtype[j]),
-                        qq, mi->qESP[j],
-                        mi->x_[j][XX], mi->x_[j][YY], mi->x_[j][ZZ],
-                        fabs(qq-mi->qESP[j]) > q_toler ? "ZZZ" : "");
-                gmx_stats_add_point(k->lsq, mi->qESP[j], atom->q, 0, 0);
-                gmx_stats_add_point(lsq_q, mi->qESP[j], atom->q, 0, 0);
+                        *(mol.topology_->atoms.atomtype[j]),
+                        qq,mol.qESP[j],
+                        mol.x_[j][XX], mol.x_[j][YY], mol.x_[j][ZZ],
+                        fabs(qq - mol.qESP[j]) > q_toler ? "ZZZ" : "");
+                gmx_stats_add_point(k->lsq, mol.qESP[j], atom->q, 0, 0);
+                gmx_stats_add_point(lsq_q, mol.qESP[j], atom->q, 0, 0);
                 j++;
             }
-            GMX_RELEASE_ASSERT(j == mi->topology_->atoms.nr, "Inconsistency 1 in tune_dip.cpp.");
+            GMX_RELEASE_ASSERT(j == mol.topology_->atoms.nr, "Inconsistency 1 in tune_dip.cpp.");
             fprintf(fp, "\n");
             n++;
         }
     }
     fclose(xvgf);
 
-    print_stats(fp, (char *)"dipoles", lsq_mu[0], TRUE, (char *)"Elec", (char *)"EEM");
-    print_stats(fp, (char *)"quadrupoles", lsq_quad[0], FALSE, (char *)"Elec", (char *)"EEM");
-    print_stats(fp, (char *)"charges", lsq_q, FALSE, (char *)"ESP", (char *)"EEM");
-    print_stats(fp, (char *)"esp", lsq_esp, FALSE, (char *)"Elec", (char *)"EEM");
+    print_stats(fp, (char *)"dipoles", lsq_mu[0], true, (char *)"Elec", (char *)"EEM");
+    print_stats(fp, (char *)"quadrupoles", lsq_quad[0], false, (char *)"Elec", (char *)"EEM");
+    print_stats(fp, (char *)"charges", lsq_q, false, (char *)"ESP", (char *)"EEM");
+    print_stats(fp, (char *)"esp", lsq_esp, false, (char *)"Elec", (char *)"EEM");
     fprintf(fp, "\n");
 
-    print_stats(fp, (char *)"dipoles", lsq_mu[1], TRUE, (char *)"Elec", (char *)"ESP");
-    print_stats(fp, (char *)"quadrupoles", lsq_quad[1], FALSE, (char *)"Elec", (char *)"ESP");
+    print_stats(fp, (char *)"dipoles", lsq_mu[1], true, (char *)"Elec", (char *)"ESP");
+    print_stats(fp, (char *)"quadrupoles", lsq_quad[1], false, (char *)"Elec", (char *)"ESP");
 
     mud = xvgropen(mudiff, "Correlation between Mu Elec and others",
                    "muElec", "mu", oenv);
@@ -334,23 +868,25 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
     print_lsq_set(tdiff, lsq_quad[1]);
     fclose(tdiff);
     qdiff = xvgropen(cdiff, "Correlation between ESP and EEM", "qESP", "qEEM", oenv);
+    
     std::vector<const char *> atypes;
     for (const auto &k : lsqt)
     {
         atypes.push_back(k.atomtype.c_str());
     }
+    
     xvgr_legend(qdiff, atypes.size(), atypes.data(), oenv);
     xvgr_symbolize(qdiff, atypes.size(), atypes.data(), oenv);
     hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
     xvgr_legend(hh, atypes.size(), atypes.data(), oenv);
     fprintf(fp, "\nDeviations of the charges separated per atomtype:\n");
+    
     for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
     {
         int   N;
         real *x, *y;
 
-        print_stats(fp, k->atomtype.c_str(), k->lsq, (k == lsqt.begin()),
-                    (char *)"ESP", (char *)"EEM");
+        print_stats(fp, k->atomtype.c_str(), k->lsq, (k == lsqt.begin()), (char *)"ESP", (char *)"EEM");
         print_lsq_set(qdiff, k->lsq);
         if (gmx_stats_get_npoints(k->lsq, &N) == estatsOK)
         {
@@ -358,7 +894,7 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
             if (gmx_stats_make_histogram(k->lsq, 0, &N, ehistoY, 0, &x, &y) == estatsOK)
             {
                 fprintf(hh, "@type xy\n");
-                for (int i = 0; (i < N); i++)
+                for (int i = 0; i < N; i++)
                 {
                     fprintf(hh, "%10g  %10g\n", x[i], y[i]);
                 }
@@ -373,7 +909,7 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
 
     rms = sqrt(d2/n);
     fprintf(fp, "RMSD = %.3f D\n", rms);
-    fprintf(fp, "hfac = %g\n", hfac);
+    fprintf(fp, "hfac = %g\n", _hfac);
     gmx_stats_get_ase(lsq_mu[0], &aver, &sigma, &error);
     sigma = rms;
     nout  = 0;
@@ -381,18 +917,19 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
     fprintf(fp, "----------------------------------\n");
     fprintf(fp, "%-20s  %12s  %12s  %12s\n",
             "Name", "Predicted", "Experimental", "Mu-Deviation");
-    for (std::vector<alexandria::MyMol>::iterator mi = mol.begin(); (mi < mol.end()); mi++)
+            
+    for (auto &mol : _mymol)
     {
         rvec dmu;
-        rvec_sub(mi->mu_exp, mi->mu_calc, dmu);
-        if ((mi->eSupp != eSupportNo) &&
-            (mi->dip_exp > sigma) &&
+        rvec_sub(mol.mu_exp, mol.mu_calc, dmu);
+        if ((mol.eSupp != eSupportNo) &&
+            (mol.dip_exp > sigma) &&
             (norm(dmu) > 2*sigma))
         {
             fprintf(fp, "%-20s  %12.3f  %12.3f  %12.3f\n",
-                    mi->molProp()->getMolname().c_str(),
-                    mi->dip_calc, mi->dip_exp,
-                    mi->dip_calc-mi->dip_exp);
+                    mol.molProp()->getMolname().c_str(),
+                    mol.dip_calc, mol.dip_exp,
+                    mol.dip_calc - mol.dip_exp);
             nout++;
         }
     }
@@ -405,442 +942,13 @@ static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
     {
         printf("No outliers! Well done.\n");
     }
-    do_view(oenv, xvgfn, NULL);
-
+    
+    do_view(oenv, xvgfn, nullptr);
     gmx_stats_free(lsq_q);
     gmx_stats_free(lsq_quad[0]);
     gmx_stats_free(lsq_quad[1]);
     gmx_stats_free(lsq_mu[0]);
     gmx_stats_free(lsq_mu[1]);
-}
-
-static double dipole_function(void *params, double v[])
-{
-    alexandria::MolDip        *md = (alexandria::MolDip *) params;
-    int                        j, k, zz, nzeta;
-    double                     chi0, z, J0, bounds = 0;
-    std::string                name, rowstr;
-    std::string                qstr;
-    char                       zstr[STRLEN], buf[STRLEN];
-
-#define HARMONIC(x, xmin, xmax) (x < xmin) ? (gmx::square(x-xmin)) : ((x > xmax) ? (gmx::square(x-xmax)) : 0)
-
-    /* Set parameters in eem record. There is a penalty if parameters
-     * go out of bounds as well.
-     */
-    k    = 0;
-    IndexCount *iCount = md->indexCount();
-    for (auto ai = iCount->beginIndex(); ai < iCount->endIndex(); ++ai)
-    {
-        std::string name = ai->name();
-        J0      = v[k++];
-        bounds += HARMONIC(J0, md->_J0_0, md->_J0_1);
-        if (strcasecmp(name.c_str(), md->_fixchi) != 0)
-        {
-            chi0    = v[k++];
-            bounds += HARMONIC(chi0, md->_Chi0_0, md->_Chi0_1);
-        }
-        else
-        {
-            chi0 = md->pd_.getChi0( md->_iChargeDistributionModel, name);
-        }
-
-        qstr    = md->pd_.getQstr( md->_iChargeDistributionModel, name);
-        rowstr  = md->pd_.getRowstr( md->_iChargeDistributionModel, name);
-        nzeta   = md->pd_.getNzeta( md->_iChargeDistributionModel, name);
-        zstr[0] = '\0';
-        for (zz = 0; (zz < nzeta); zz++)
-        {
-            z = md->pd_.getZeta( md->_iChargeDistributionModel, name, zz);
-            if ((0 != z) && (md->_bFitZeta))
-            {
-                z       = v[k++];
-                bounds += HARMONIC(z, md->_w_0, md->_w_1);
-            }
-            sprintf(buf, "  %g", z);
-            strcat(zstr, buf);
-        }
-        EempropsIterator ei = md->pd_.findEem(md->_iChargeDistributionModel, name);
-        GMX_RELEASE_ASSERT(ei != md->pd_.EndEemprops(), "Can not find eemprops");
-
-        ei->setRowZetaQ(rowstr, zstr, qstr);
-        ei->setJ0(J0);
-        ei->setChi0(chi0);
-    }
-    if (md->_bOptHfac)
-    {
-        md->_hfac = v[k++];
-        if (md->_hfac >  md->_hfac0)
-        {
-            bounds += 100*gmx::square(md->_hfac - md->_hfac0);
-        }
-        else if (md->_hfac < -md->_hfac0)
-        {
-            bounds += 100*gmx::square(md->_hfac + md->_hfac0);
-        }
-    }
-    for (j = 0; (j < ermsNR); j++)
-    {
-        md->_ener[j] = 0;
-    }
-    md->CalcDeviation();
-
-    /* This contribution is not scaled with force constant because
-     * it are essential to charge generation convergence and can hence
-     * not be left out of the optimization.
-     */
-    md->_ener[ermsBOUNDS] += bounds;
-    md->_ener[ermsTOT]    += bounds;
-
-    return md->_ener[ermsTOT];
-}
-
-static real guess_new_param(real     x,
-                            real     step,
-                            real     x0,
-                            real     x1,
-                            real     randomNumber,
-                            gmx_bool bRandom)
-{
-    if (bRandom)
-    {
-        x = x0+(x1-x0)*randomNumber;
-    }
-    else
-    {
-        x = x*(1-step+2*step*randomNumber);
-    }
-
-    if (x < x0)
-    {
-        return x0;
-    }
-    else if (x > x1)
-    {
-        return x1;
-    }
-    else
-    {
-        return x;
-    }
-}
-
-static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
-                           int run, int iter, real stepsize,
-                           gmx_bool bRandom,
-                           std::mt19937 &gen,
-                           std::uniform_real_distribution<> dis,
-                           double orig_param[], double test_param[])
-{
-    double           J00, xxx, chi0, zeta;
-    std::string      rowstr;
-    std::string      qstr;
-    char             zstr[STRLEN], buf[STRLEN];
-    gmx_bool         bStart = (/*(run == 0) &&*/ (iter == 0));
-    gmx_bool         bRand  = bRandom && (iter == 0);
-    int              zz, nzeta, k = 0;
-
-    fprintf(fplog, "%-5s %10s %10s %10s Run/Iter %d/%d - %s randomization\n", "Name",
-            "J00", "chi0", "zeta", run, iter,
-            bRand ? "Complete" : (bStart ? "Initial" : "Limited"));
-    IndexCount *ic = md->indexCount();
-    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
-    {
-        if (bStart)
-        {
-            J00 = md->pd_.getJ00(md->_iChargeDistributionModel,
-                                 ai->name());
-            xxx = guess_new_param(J00, stepsize, md->_J0_0, md->_J0_1, dis(gen), bRand);
-            if (bRand)
-            {
-                orig_param[k] = xxx;
-            }
-            else
-            {
-                orig_param[k] = J00;
-            }
-            J00 = xxx;
-        }
-        else
-        {
-            J00 = guess_new_param(orig_param[k], stepsize, md->_J0_0, md->_J0_1, dis(gen), bRand);
-        }
-        test_param[k++] = J00;
-
-        chi0 = md->pd_.getChi0( md->_iChargeDistributionModel,
-                                ai->name());
-        if (ai->name().compare(md->_fixchi) != 0)
-        {
-            if (bStart)
-            {
-                xxx = guess_new_param(chi0, stepsize, md->_Chi0_0, md->_Chi0_1, dis(gen), bRand);
-                if (bRand)
-                {
-                    orig_param[k] = xxx;
-                }
-                else
-                {
-                    orig_param[k] = chi0;
-                }
-                chi0 = xxx;
-            }
-            else
-            {
-                chi0 = guess_new_param(orig_param[k], stepsize, md->_Chi0_0, md->_Chi0_1, dis(gen), bRand);
-            }
-            test_param[k++] = chi0;
-        }
-        qstr = md->pd_.getQstr(md->_iChargeDistributionModel, ai->name());
-        if (qstr.size() == 0)
-        {
-            gmx_fatal(FARGS, "No qstr for atom %s model %d\n",
-                      ai->name().c_str(),
-                      md->_iChargeDistributionModel);
-        }
-        rowstr = md->pd_.getRowstr(md->_iChargeDistributionModel,
-                                   ai->name());
-        if (rowstr.size() == 0)
-        {
-            gmx_fatal(FARGS, "No rowstr for atom %s model %d\n",
-                      ai->name().c_str(),
-                      md->_iChargeDistributionModel);
-        }
-        nzeta   = md->pd_.getNzeta(md->_iChargeDistributionModel,
-                                   ai->name());
-        zstr[0] = '\0';
-        for (zz = 0; (zz < nzeta); zz++)
-        {
-            zeta = md->pd_.getZeta(md->_iChargeDistributionModel,
-                                   ai->name(), zz);
-            if ((md->_bFitZeta) && (0 != zeta))
-            {
-                if (bStart)
-                {
-                    xxx           = guess_new_param(zeta, stepsize, md->_w_0, md->_w_1, dis(gen), bRand);
-                    orig_param[k] = (bRand) ? xxx : zeta;
-                    zeta          = xxx;
-                }
-                else
-                {
-                    zeta = guess_new_param(orig_param[k], stepsize, md->_w_0, md->_w_1, dis(gen), bRand);
-                }
-                test_param[k++] = zeta;
-            }
-            sprintf(buf, "  %10g", zeta);
-            strcat(zstr, buf);
-        }
-        EempropsIterator ei = md->pd_.findEem(md->_iChargeDistributionModel, ai->name());
-        GMX_RELEASE_ASSERT(ei != md->pd_.EndEemprops(), "Can not find eemprops");
-        ei->setRowZetaQ(rowstr, zstr, qstr);
-        ei->setJ0(J00);
-        ei->setChi0(chi0);
-        fprintf(fplog, "%-5s %10g %10g %10s\n",
-                ai->name().c_str(), J00, chi0, zstr);
-    }
-    fprintf(fplog, "\n");
-    fflush(fplog);
-    if (md->_bOptHfac)
-    {
-        test_param[k++] = md->_hfac;
-    }
-    return k;
-}
-
-static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
-                            alexandria::MolDip *md, int maxiter, real tol,
-                            int nrun, real stepsize,
-                            gmx_bool bRandom, const gmx_output_env_t * oenv)
-{
-    FILE                            *cfp = nullptr;
-    double                           chi2, chi2_min;
-    int                              nzeta, zz;
-    int                              i, k, n, nparam;
-    std::vector<double>              test_param, orig_param, best_param, start;
-    gmx_bool                         bMinimum = false;
-    double                           J00, chi0, zeta;
-    std::string                      name;
-    std::string                      qstr, rowstr;
-    char                             zstr[STRLEN], buf[STRLEN];
-    std::random_device               rd;
-    std::mt19937                     gen(rd());
-    std::uniform_real_distribution<> dis(0, 1);
-
-
-    if (MASTER(md->_cr))
-    {
-        nparam = 0;
-        IndexCount *ic = md->indexCount();
-        for (auto ai = ic->beginIndex(); ai > ic->endIndex(); ++ai)
-        {
-            /* One parameter for J00 and one for chi0 */
-            nparam++;
-            if (ai->name().compare(md->_fixchi) != 0)
-            {
-                nparam++;
-            }
-            if (md->_bFitZeta)
-            {
-                nzeta  = md->pd_.getNzeta( md->_iChargeDistributionModel, ai->name());
-                for (i = 0; (i < nzeta); i++)
-                {
-                    zeta = md->pd_.getZeta( md->_iChargeDistributionModel, ai->name(), i);
-                    if (zeta > 0)
-                    {
-                        nparam++;
-                    }
-                }
-            }
-        }
-        /* Check whether we have to optimize the fudge factor for J00 H */
-        if (md->_hfac != 0)
-        {
-            nparam++;
-        }
-        test_param.resize(nparam+1, 0);
-        orig_param.resize(nparam+1, 0);
-        best_param.resize(nparam+1, 0);
-
-        /* Starting point */
-        start.resize(nparam, 0);
-
-        /* Monitor convergence graphically */
-        if (nullptr != convfn)
-        {
-            cfp = xvgropen(convfn, "Convergence", "Value", "Iter", oenv);
-        }
-        chi2_min = GMX_REAL_MAX;
-        for (n = 0; (n < nrun); n++)
-        {
-            if ((nullptr != fp) && (0 == n))
-            {
-                fprintf(fp, "\nStarting run %d out of %d\n", n+1, nrun);
-                fprintf(fp, "%5s %8s %8s %8s %8s %8s %8s %8s\n",
-                        "Run", "d2", "Total", "Bounds",
-                        "Dipole", "Quad.", "Charge", "ESP");
-            }
-            if (nullptr != cfp)
-            {
-                fflush(cfp);
-            }
-
-            k = guess_all_param(fplog, md, n, 0, stepsize, bRandom, gen, dis,
-                                orig_param.data(), test_param.data());
-            if (k != nparam)
-            {
-                gmx_fatal(FARGS, "Inconsistency in guess_all_param: k = %d, should be %d", k, nparam);
-            }
-            for (k = 0; (k < nparam); k++)
-            {
-                start[k] = test_param[k];
-            }
-
-            nmsimplex(cfp, (void *)md, dipole_function, start.data(), start.size(),
-                      tol, 1, maxiter, &chi2);
-
-            if (chi2 < chi2_min)
-            {
-                bMinimum = TRUE;
-                /* Print convergence if needed */
-                if (nullptr != cfp)
-                {
-                    fprintf(cfp, "%5d  ", n*maxiter);
-                }
-                for (k = 0; (k < nparam); k++)
-                {
-                    best_param[k] = start[k];
-                    if (nullptr != cfp)
-                    {
-                        fprintf(cfp, " %10g", best_param[k]);
-                    }
-                }
-                if (nullptr != cfp)
-                {
-                    fprintf(cfp, "\n");
-                }
-                chi2_min   = chi2;
-            }
-
-            if (fp)
-            {
-                fprintf(fp, "%5d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
-                        n, chi2,
-                        sqrt(md->_ener[ermsTOT]),
-                        sqrt(md->_ener[ermsBOUNDS]),
-                        sqrt(md->_ener[ermsMU]),
-                        sqrt(md->_ener[ermsQUAD]),
-                        sqrt(md->_ener[ermsCHARGE]),
-                        sqrt(md->_ener[ermsESP]));
-            }
-        }
-
-        if (bMinimum)
-        {
-            for (k = 0; (k < nparam); k++)
-            {
-                start[k] = best_param[k];
-            }
-            k    = 0;
-            IndexCount *ic = md->indexCount();
-            for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
-            {
-                J00    = start[k++];
-                chi0   = md->pd_.getChi0( md->_iChargeDistributionModel, ai->name());
-                if (ai->name().compare(md->_fixchi) != 0)
-                {
-                    chi0 = start[k++];
-                }
-                qstr    = md->pd_.getQstr( md->_iChargeDistributionModel, ai->name());
-                rowstr  = md->pd_.getRowstr( md->_iChargeDistributionModel, ai->name());
-                nzeta   = md->pd_.getNzeta( md->_iChargeDistributionModel, ai->name());
-                zstr[0] = '\0';
-                for (zz = 0; (zz < nzeta); zz++)
-                {
-                    zeta = md->pd_.getZeta( md->_iChargeDistributionModel, ai->name(), zz);
-                    if ((0 != zeta) && md->_bFitZeta)
-                    {
-                        zeta = start[k++];
-                    }
-                    sprintf(buf, " %g", zeta);
-                    strcat(zstr, buf);
-                }
-                EempropsIterator ei = md->pd_.findEem(md->_iChargeDistributionModel, ai->name());
-                GMX_RELEASE_ASSERT(ei != md->pd_.EndEemprops(), "Could not find eemprops");
-                ei->setRowZetaQ(rowstr, zstr, qstr);
-                ei->setJ0(J00);
-                ei->setChi0(chi0);
-            }
-            if (md->_bOptHfac)
-            {
-                md->_hfac = start[k++];
-            }
-            GMX_RELEASE_ASSERT(k == nparam, "Inconsistency 2 in tune_dip.cpp");
-
-            md->CalcDeviation();
-            chi2        = sqrt(md->_ener[ermsTOT]);
-            md->_bFinal = true;
-            md->CalcDeviation();
-            if (fplog)
-            {
-                fprintf(fplog, "\nMinimum value for RMSD during optimization: %.3f.\n", chi2);
-            }
-        }
-        md->_bDone = true;
-        md->CalcDeviation();
-
-        if (nullptr != cfp)
-        {
-            fclose(cfp);
-        }
-    }
-    else
-    {
-        /* Slave calculators */
-        do
-        {
-            md->CalcDeviation();
-        }
-        while (!md->_bDone);
-    }
 }
 
 int alex_tune_dip(int argc, char *argv[])
@@ -884,43 +992,80 @@ int alex_tune_dip(int argc, char *argv[])
     };
 
     t_filenm                    fnm[] = {
-        { efDAT, "-f", "allmols",    ffREAD  },
-        { efDAT, "-d", "gentop",     ffOPTRD },
-        { efDAT, "-o", "tunedip",    ffWRITE },
-        { efDAT, "-sel", "molselect", ffREAD },
-        { efXVG, "-tab", "table", ffOPTRD },
-        { efLOG, "-g", "charges",    ffWRITE },
-        { efXVG, "-x", "dipcorr",    ffWRITE },
-        { efXVG, "-qhisto", "q_histo",    ffWRITE },
-        { efXVG, "-qdiff", "q_diff",    ffWRITE },
-        { efXVG, "-mudiff", "mu_diff",    ffWRITE },
-        { efXVG, "-thetadiff", "theta_diff",    ffWRITE },
-        { efXVG, "-espdiff", "esp_diff",    ffWRITE },
-        { efXVG, "-conv", "convergence", ffOPTWR }
+        { efDAT, "-f",         "allmols",     ffREAD  },
+        { efDAT, "-d",         "gentop",      ffOPTRD },
+        { efDAT, "-o",         "tunedip",     ffWRITE },
+        { efDAT, "-sel",       "molselect",   ffREAD  },
+        { efXVG, "-table",     "table",       ffOPTRD },
+        { efLOG, "-g",         "charges",     ffWRITE },
+        { efXVG, "-x",         "dipcorr",     ffWRITE },
+        { efXVG, "-qhisto",    "q_histo",     ffWRITE },
+        { efXVG, "-qdiff",     "q_diff",      ffWRITE },
+        { efXVG, "-mudiff",    "mu_diff",     ffWRITE },
+        { efXVG, "-thetadiff", "theta_diff",  ffWRITE },
+        { efXVG, "-espdiff",   "esp_diff",    ffWRITE },
+        { efXVG, "-conv",      "convergence", ffOPTWR }
     };
-#define NFILE sizeof(fnm)/sizeof(fnm[0])
-    static int                  nrun          = 1, maxiter = 100, reinit = 0, seed = 0;
-    static int                  minimum_data  = 3, compress = 1;
-    static real                 tol           = 1e-3, stol = 1e-6, watoms = 0;
-    static gmx_bool             bRandom       = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE;
-    static gmx_bool             bCharged      = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE, bZPE = FALSE;
-    static real                 J0_0          = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
-    static real                 J0_1          = 30, Chi0_1 = 30, w_1 = 50;
-    static real                 fc_mu         = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0;
-    static real                 th_toler      = 170, ph_toler = 5, dip_toler = 0.5, quad_toler = 5, q_toler = 0.25;
-    static char                *opt_elem      = NULL, *const_elem = NULL, *fixchi = (char *)"H";
+    
+    const  int                  NFILE         = asize(fnm);
+
+    static int                  nrun          = 1;
+    static int                  nprint        = 10;
+    static int                  maxiter       = 100;
+    static int                  reinit        = 0;
+    static int                  seed          = 0;
+    static int                  minimum_data  = 3;
+    static int                  compress      = 1;
+    static real                 tol           = 1e-3;
+    static real                 stol          = 1e-6;
+    static real                 watoms        = 0;
+    static real                 J0_0          = 5;
+    static real                 Chi0_0        = 1;
+    static real                 w_0           = 5;
+    static real                 step          = 0.01;
+    static real                 hfac          = 0;
+    static real                 rDecrZeta     = -1;
+    static real                 J0_1          = 30;
+    static real                 Chi0_1        = 30;
+    static real                 w_1           = 50;
+    static real                 fc_mu         = 1;
+    static real                 fc_bound      = 1;
+    static real                 fc_quad       = 1;
+    static real                 fc_charge     = 0;
+    static real                 fc_esp        = 0;
+    static real                 th_toler      = 170;
+    static real                 ph_toler      = 5;
+    static real                 dip_toler     = 0.5;
+    static real                 quad_toler    = 5;
+    static real                 q_toler       = 0.25;
+    static real                 factor        = 0.8;
+    static real                 temperature   = 300;
+    static char                *opt_elem      = nullptr;
+    static char                *const_elem    = nullptr;
+    static char                *fixchi        = (char *)"H";
     static char                *lot           = (char *)"B3LYP/aug-cc-pVTZ";
-    static const char          *cqdist[]      = {
-        NULL, "AXp", "AXg", "AXs", NULL
-    };
-    static const char          *cqgen[]      = {
-        NULL, "None", "EEM", "ESP", "RESP", NULL
-    };
+    static gmx_bool             bRandom       = false;
+    static gmx_bool             bOptHfac      = false;
+    static gmx_bool             bQM           = false;
+    static gmx_bool             bPolar        = false;
+    static gmx_bool             bZPE          = false;
+    static gmx_bool             bfullTensor   = false;
+    static gmx_bool             bBound        = false;
+    static gmx_bool             bZero         = true;
+    static gmx_bool             bWeighted     = true;   
+    static gmx_bool             bCharged      = true;
+    static gmx_bool             bGaussianBug  = true;   
+    static gmx_bool             bFitZeta      = true;   
+    static const char          *cqdist[]      = {nullptr, "AXp", "AXg", "AXs", nullptr};
+    static const char          *cqgen[]       = {nullptr, "None", "EEM", "ESP", "RESP", nullptr};
+    
     t_pargs                     pa[]         = {
         { "-tol",   FALSE, etREAL, {&tol},
           "Tolerance for convergence in optimization" },
         { "-maxiter", FALSE, etINT, {&maxiter},
           "Max number of iterations for optimization" },
+        { "-nprint",  FALSE, etINT, {&nprint},
+          "How often to print the parameters during the simulation" },
         { "-reinit", FALSE, etINT, {&reinit},
           "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
         { "-stol",   FALSE, etREAL, {&stol},
@@ -932,7 +1077,9 @@ int alex_tune_dip(int argc, char *argv[])
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
         { "-charged", FALSE, etBOOL, {&bCharged},
-          "Use charged molecules in the parameter tuning as well" },
+          "Use charged molecules in the parameter tuning as well" },          
+        { "-fullTensor", FALSE, etBOOL, {&bfullTensor},
+          "consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization" },        
         { "-qdist",   FALSE, etENUM, {cqdist},
           "Model used for charge distribution" },
         { "-qgen",   FALSE, etENUM, {cqgen},
@@ -977,7 +1124,7 @@ int alex_tune_dip(int argc, char *argv[])
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-watoms", FALSE, etREAL, {&watoms},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended (the default)." },
-        { "-pol",    FALSE, etBOOL, {&bPol},
+        { "-polar",    FALSE, etBOOL, {&bPolar},
           "Add polarizabilities to the topology and coordinate file" },
         { "-fitzeta", FALSE, etBOOL, {&bFitZeta},
           "Controls whether or not the Gaussian/Slater widths are optimized." },
@@ -1002,27 +1149,36 @@ int alex_tune_dip(int argc, char *argv[])
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" },
         { "-bgaussquad", FALSE, etBOOL, {&bGaussianBug},
-          "[HIDDEN]Work around a bug in the off-diagonal quadrupole components in Gaussian" }
+          "[HIDDEN]Work around a bug in the off-diagonal quadrupole components in Gaussian" },
+        { "-factor", FALSE, etREAL, {&factor},
+          "Factor for generating random parameters. Parameters will be taken within the limit factor*x - x/factor" },
+        { "-bound", FALSE, etBOOL, {&bBound},
+          "Impose box-constrains for the optimization. Box constraints give lower and upper bounds for each parameter seperately." },
+        { "-temp",    FALSE, etREAL, {&temperature},
+          "'Temperature' for the Monte Carlo simulation" }
     };
-    alexandria::MolDip          md;
-    FILE                       *fp;
-    t_commrec                  *cr;
-    gmx_output_env_t *          oenv;
-    time_t                      my_t;
 
-    cr = init_commrec();
-
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm,
-                           sizeof(pa)/sizeof(pa[0]), pa,
-                           sizeof(desc)/sizeof(desc[0]), desc, 0, NULL, &oenv))
+    FILE                 *fp;
+    gmx_output_env_t     *oenv;
+    time_t                my_t;
+    MolSelect             gms;
+    
+    t_commrec     *cr     = init_commrec(); 
+    gmx::MDLogger  mdlog  = getMdLogger(cr, stdout);
+    gmx_hw_info_t *hwinfo = gmx_detect_hardware(mdlog, cr, false);
+    
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
+        sfree(cr);
         return 0;
     }
 
-    ChargeDistributionModel   iChargeDistributionModel   = name2eemtype(cqdist[0]);
-    ChargeGenerationAlgorithm iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
-
+    if (MASTER(cr))
+    {
+        printf("There are %d threads/processes.\n", cr->nnodes);
+    }
+    
     if (MASTER(cr))
     {
         fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
@@ -1034,45 +1190,70 @@ int alex_tune_dip(int argc, char *argv[])
     }
     else
     {
-        fp = NULL;
+        fp = nullptr;
     }
-    MolSelect gms;
+    
     if (MASTER(cr))
     {
-        gms.read(opt2fn("-sel", NFILE, fnm));
+        gms.read(opt2fn_null("-sel", NFILE, fnm));
     }
-    md.Init(cr, bQM, bGaussianBug,
-            iChargeDistributionModel,
-            iChargeGenerationAlgorithm,
-            rDecrZeta,
-            J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
-            fc_bound, fc_mu, fc_quad, fc_charge,
-            fc_esp, 1, 1, fixchi, bOptHfac, hfac, bPol, bFitZeta, nullptr);
-    md.Read(fp ? fp : (debug ? debug : NULL),
-            opt2fn("-f", NFILE, fnm),
-            opt2fn_null("-d", NFILE, fnm),
-            minimum_data, bZero,
-            opt_elem, const_elem,
-            lot, gms, watoms, TRUE,
-            false, false, bPol, bZPE,
-            opt2fn_null("-tab", NFILE, fnm));
-    printf("Read %d molecules\n", (int)md._mymol.size());
+    
+    alexandria::OPtimization       opt;
+    ChargeDistributionModel        iChargeDistributionModel   = name2eemtype(cqdist[0]);
+    ChargeGenerationAlgorithm      iChargeGenerationAlgorithm = (ChargeGenerationAlgorithm) get_option(cqgen);
+    const char                    *tabfn                      = opt2fn_null("-table", NFILE, fnm);
 
-    optimize_moldip(MASTER(cr) ? stderr : NULL, fp, opt2fn_null("-conv", NFILE, fnm),
-                    &md, maxiter, tol, nrun, step,
-                    bRandom, oenv);
+    if (iChargeDistributionModel == eqdAXs && nullptr == tabfn)
+    {
+        gmx_fatal(FARGS, "Cannot generate charges with the %s charge model without a potential table. "
+                  "Please supply a table file.", getEemtypeName(iChargeDistributionModel));
+    }
+    
+    opt.Init(cr, bQM, bGaussianBug,
+             iChargeDistributionModel,
+             iChargeGenerationAlgorithm,
+             rDecrZeta, J0_0, Chi0_0, w_0, 
+             J0_1, Chi0_1, w_1, fc_bound, 
+             fc_mu, fc_quad, fc_charge,
+             fc_esp, 1, 1, fixchi, bOptHfac, hfac, 
+             bPolar, bFitZeta, hwinfo, bfullTensor);
+            
+    opt.Read(fp ? fp : (debug ? debug : nullptr),
+             opt2fn("-f", NFILE, fnm),
+             opt2fn_null("-d", NFILE, fnm),
+             minimum_data, bZero,
+             opt_elem, const_elem,
+             lot, gms, watoms, true,
+             false, false, bPolar, bZPE,
+             opt2fn_null("-table", NFILE, fnm));
+            
+    if (nullptr != fp)
+    {
+        fprintf(fp, "In the total data set of %zu molecules we have:\n", opt._mymol.size());
+    }
+
     if (MASTER(cr))
     {
-        print_mols(fp, opt2fn("-x", NFILE, fnm), opt2fn("-qhisto", NFILE, fnm),
-                   opt2fn("-qdiff", NFILE, fnm), opt2fn("-mudiff", NFILE, fnm),
-                   opt2fn("-thetadiff", NFILE, fnm), opt2fn("-espdiff", NFILE, fnm),
-                   md._mymol, md._hfac,
-                   dip_toler, quad_toler, q_toler, oenv);
-
+        opt.InitOpt(factor);
+    }
+    
+    opt.optRun(MASTER(cr) ? stderr : nullptr, fp,
+               maxiter, nrun, step, seed,
+               oenv, nprint,
+               opt2fn("-conv", NFILE, fnm),
+               opt2fn("-epot", NFILE, fnm),
+               temperature, bBound);
+               
+    if (MASTER(cr))
+    {
+        opt.print_molecules(fp, opt2fn("-x", NFILE, fnm), opt2fn("-qhisto", NFILE, fnm),
+                            opt2fn("-qdiff", NFILE, fnm), opt2fn("-mudiff", NFILE, fnm),
+                            opt2fn("-thetadiff", NFILE, fnm), opt2fn("-espdiff", NFILE, fnm),
+                            dip_toler, quad_toler, q_toler, oenv);
+                            
+        writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, compress);
+        done_filenms(NFILE, fnm);
         gmx_ffclose(fp);
-
-        alexandria::writePoldata(opt2fn("-o", NFILE, fnm), md.pd_, compress);
     }
-
     return 0;
 }

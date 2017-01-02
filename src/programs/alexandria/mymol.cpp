@@ -1428,7 +1428,7 @@ void MyMol::CalcMultipoles()
     }
     GMX_RELEASE_ASSERT(i == topology_->atoms.nr, "Inconsistency 1 in mymol.cpp");
     copy_rvec(mu, mu_calc);
-    dip_calc = norm(mu);
+    dip_calc = norm(mu_calc);
 }
 
 std::vector<double> MyMol::CalcPolarizability(double     efield,
@@ -1629,7 +1629,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                                  maxiter))
             {
                 imm = immChargeGeneration;
-            }
+            }           
         }
         break;
         default:
@@ -2539,7 +2539,7 @@ void MyMol::GenerateCube(ChargeDistributionModel iChargeDistributionModel,
 }
 
 immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
-                             gmx_bool bZPE, char *lot,
+                             gmx_bool bZPE, const char *lot,
                              const Poldata &pd)
 {
     immStatus    imm = immOK;

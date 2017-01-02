@@ -906,7 +906,7 @@ class Optimization : public MolDip
         
         CommunicationStatus Receive(t_commrec *cr, int src);
         
-    void broadcast(t_commrec *cr);
+        void broadcast(t_commrec *cr);
 };
 
 CommunicationStatus Optimization::Send(t_commrec *cr, int dest)
@@ -1948,7 +1948,7 @@ int alex_tune_fc(int argc, char *argv[])
         { efXVG, "-epot",  "param-epot", ffWRITE }
     };
     
-    const  int            NFILE = asize(fnm);
+    const  int            NFILE         = asize(fnm);
 
     static int            nrun          = 1;
     static int            maxiter       = 100; 
@@ -1994,6 +1994,7 @@ int alex_tune_fc(int argc, char *argv[])
     static gmx_bool       bPolar        = false;
     static gmx_bool       bFitZeta      = false;
     static gmx_bool       bZPE          = false;
+    static gmx_bool       bfullTensor   = false;
     static gmx_bool       bGaussianBug  = true;
     static gmx_bool       bZero         = true;  
     static const char    *cqdist[]      = {nullptr, "AXp", "AXg", "AXs","Yang", "Bultinck", "Rappe", nullptr};
@@ -2017,6 +2018,8 @@ int alex_tune_fc(int argc, char *argv[])
           "If reinit is -1 then a reinit will be done as soon as the simplex size is below this treshold." },
         { "-nrun",    FALSE, etINT,  {&nrun},
           "This many runs will be done, before each run a complete randomization will be done" },
+        { "-fullTensor", FALSE, etBOOL, {&bfullTensor},
+          "consider both diagonal and off-diagonal elements of the Q_Calc matrix for optimization" },
         { "-qdist",   FALSE, etENUM, {cqdist},
           "Model used for charge distribution" },
         { "-qgen",    FALSE, etENUM, {cqgen},
@@ -2133,7 +2136,8 @@ int alex_tune_fc(int argc, char *argv[])
              J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
              fc_bound, fc_mu, fc_quad, fc_charge,
              fc_esp, fc_epot, fc_force, fixchi,
-             bOptHfac, hfac, bPolar, bFitZeta, hwinfo);
+             bOptHfac, hfac, bPolar, bFitZeta, 
+             hwinfo, bfullTensor);
 
     opt.Read(fp ? fp : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),

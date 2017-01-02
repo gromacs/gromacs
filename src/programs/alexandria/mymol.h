@@ -289,7 +289,7 @@ class MyMol
          * \param[in] gap      Gaussian atom property
          */
         immStatus getExpProps(gmx_bool bQM, gmx_bool bZero,
-                              gmx_bool bZPE, char *lot,
+                              gmx_bool bZPE, const char *lot,
                               const Poldata &pd);
                               
         /*! \brief

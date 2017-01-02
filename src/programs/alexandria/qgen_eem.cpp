@@ -112,11 +112,11 @@ QgenEem::QgenEem(const Poldata            &pd,
                           *(atoms->resinfo[i].name),
                           *(atoms->atomname[j]));
             }
-            atp.assign(*atoms->atomtype[j]);
-            if (!pd.haveEemSupport(_iChargeDistributionModel, atp, TRUE))
+            atp.assign(*atoms->atomtype[i]);
+            if (!pd.haveEemSupport(_iChargeDistributionModel, atp, true))
             {
                 fprintf(stderr, "No charge distribution support for atom %s, model %s\n",
-                        *atoms->atomtype[j],
+                        *atoms->atomtype[i],
                         getEemtypeName(_iChargeDistributionModel));
                 bSupport = false;
             }
@@ -205,61 +205,6 @@ double QgenEem::getZeta(int atom, int z)
 double CoulombNN(double r)
 {
     return 1/r;
-}
-
-double QgenEem::calcJab(ChargeDistributionModel iChargeDistributionModel,
-                        rvec xi, rvec xj,
-                        int nZi, int nZj,
-                        std::vector<double> zetaI, std::vector<double> zetaJ,
-                        std::vector<int> rowI, std::vector<int> rowJ)
-{
-    int    i, j;
-    rvec   dx;
-    double r;
-    double eTot = 0;
-
-    rvec_sub(xi, xj, dx);
-    r = norm(dx);
-    if (r == 0)
-    {
-        gmx_fatal(FARGS, "Zero distance between atoms!\n");
-    }
-    if ((zetaI[0] <= 0) || (zetaJ[0] <= 0))
-    {
-        iChargeDistributionModel = eqdAXp;
-    }
-    switch (iChargeDistributionModel)
-    {
-        case eqdAXp:
-            eTot = CoulombNN(r);
-            break;
-        case eqdAXs:
-        case eqdRappe:
-        case eqdYang:
-            eTot = 0;
-            for (i = nZi-1; (i < nZi); i++)
-            {
-                for (j = nZj-1; (j < nZj); j++)
-                {
-                    eTot += Coulomb_SS(r, rowI[i], rowJ[j], zetaI[i], zetaJ[j]);
-                }
-            }
-            break;
-        case eqdAXg:
-            eTot = 0;
-            for (i = nZi-1; (i < nZi); i++)
-            {
-                for (j = nZj-1; (j < nZj); j++)
-                {
-                    eTot += Coulomb_GG(r, zetaI[i], zetaJ[j]);
-                }
-            }
-            break;
-        default:
-            gmx_fatal(FARGS, "Unsupported model %d in calc_jab", iChargeDistributionModel);
-    }
-
-    return ONE_4PI_EPS0*(eTot)/ELECTRONVOLT;
 }
 
 void QgenEem::solveQEem(FILE *fp,  double hardnessFactor)
@@ -478,6 +423,61 @@ double QgenEem::calcSij(int i, int j)
     return Sij;
 }
 
+double QgenEem::calcJab(ChargeDistributionModel iChargeDistributionModel,
+                        rvec xi, rvec xj,
+                        int nZi, int nZj,
+                        std::vector<double> zetaI, std::vector<double> zetaJ,
+                        std::vector<int> rowI, std::vector<int> rowJ)
+{
+    int    i, j;
+    rvec   dx;
+    double r;
+    double eTot = 0;
+
+    rvec_sub(xi, xj, dx);
+    r = norm(dx);
+    if (r == 0)
+    {
+        gmx_fatal(FARGS, "Zero distance between atoms!\n");
+    }
+    if ((zetaI[0] <= 0) || (zetaJ[0] <= 0))
+    {
+        iChargeDistributionModel = eqdAXp;
+    }
+    switch (iChargeDistributionModel)
+    {
+        case eqdAXp:
+            eTot = CoulombNN(r);
+            break;
+        case eqdAXs:
+        case eqdRappe:
+        case eqdYang:
+            eTot = 0;
+            for (i = nZi-1; (i < nZi); i++)
+            {
+                for (j = nZj-1; (j < nZj); j++)
+                {
+                    eTot += Coulomb_SS(r, rowI[i], rowJ[j], zetaI[i], zetaJ[j]);
+                }
+            }
+            break;
+        case eqdAXg:
+            eTot = 0;
+            for (i = nZi-1; (i < nZi); i++)
+            {
+                for (j = nZj-1; (j < nZj); j++)
+                {
+                    eTot += Coulomb_GG(r, zetaI[i], zetaJ[j]);
+                }
+            }
+            break;
+        default:
+            gmx_fatal(FARGS, "Unsupported model %d in calc_jab", iChargeDistributionModel);
+    }
+
+    return ONE_4PI_EPS0*(eTot)/ELECTRONVOLT;
+}
+
 void QgenEem::calcJab()
 {
     int    i, j;
@@ -685,7 +685,7 @@ void QgenEem::checkSupport(const Poldata &pd)
 
     for (i = 0; (i < _natom); i++)
     {
-        if (!pd.haveEemSupport(_iChargeDistributionModel, _elem[i].c_str(), TRUE))
+        if (!pd.haveEemSupport(_iChargeDistributionModel, _elem[i].c_str(), true))
         {
             fprintf(stderr, "No charge generation support for atom %s, model %s\n",
                     _elem[i].c_str(), getEemtypeName(_iChargeDistributionModel));
