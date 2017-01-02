@@ -67,7 +67,7 @@ class QgenEem
         void debugFun(FILE *fp);
 
     private:
-        gmx_bool                                           _bWarned;
+        gmx_bool                                           bWarned_;
         ChargeDistributionModel                            _iChargeDistributionModel;
         int                                                _natom, _eQGEN;
         double                                             _qtotal, _chieq, _hfac;
@@ -77,7 +77,7 @@ class QgenEem
         std::vector<double>                                _chi0, _rhs, _j00;
         std::vector<gmx::RVec>                             _x;
         /* Jab is a matrix over atom pairs */
-        std::vector<std::vector<double> >                  _Jab;
+        std::vector<std::vector<double>>                  _Jab;
         /* For each atom i there are nZeta[i] row, q and zeta entries */
         std::vector<int>                                   _nZeta;
         std::vector<std::vector<int> >                     _row;
