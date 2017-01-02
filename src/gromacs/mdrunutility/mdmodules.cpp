@@ -116,6 +116,14 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
     impl_->field_->initMdpTransform(rules);
 }
 
+void MDModules::initMdpBackTransform(IKeyValueTreeTransformRules *rules)
+{
+    // TODO The transform rules for applied-forces modules should
+    // embed the necessary prefix (and similarly for other groupings
+    // of modules). For now, electric-field embeds this itself.
+    impl_->field_->initMdpBackTransform(rules);
+}
+
 void MDModules::assignOptionsToModulesFromMdp(const KeyValueTreeObject  &mdpOptionValues,
                                               IKeyValueTreeErrorHandler *errorHandler)
 {
