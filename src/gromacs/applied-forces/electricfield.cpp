@@ -45,6 +45,8 @@
 
 #include <cmath>
 
+#include <string>
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
@@ -93,6 +95,14 @@ class ElectricFieldData
             section.addOption(RealOption("omega").store(&omega_));
             section.addOption(RealOption("t0").store(&t0_));
             section.addOption(RealOption("sigma").store(&sigma_));
+        }
+        /*! \brief
+         * Creates mdp parameters for this field component.
+         */
+        void buildMdpOutput(KeyValueTreeObjectBuilder *builder, const std::string &name) const
+        {
+            builder->addUniformArray<real>("E-" + name, {1, a_, -1});
+            builder->addUniformArray<real>("E-" + name + "t", {omega_, t0_, sigma_});
         }
 
         /*! \brief Evaluates this field component at given time.
@@ -170,6 +180,7 @@ class ElectricField : public IMDModule,
         // From IMdpOptionProvider
         virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
         virtual void initMdpOptions(IOptionsContainerWithSections *options);
+        virtual void buildMdpOutput(KeyValueTreeObjectBuilder *builder) const;
 
         // From IMDOutputProvider
         virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
@@ -315,11 +326,27 @@ void ElectricField::initMdpTransform(IKeyValueTreeTransformRules *rules)
 
 void ElectricField::initMdpOptions(IOptionsContainerWithSections *options)
 {
-    //CTYPE ("Format is E0 (V/nm), omega (1/ps), t0 (ps), sigma (ps) ");
     auto section = options->addSection(OptionSection("electric-field"));
     efield_[XX].initMdpOptions(&section, "x");
     efield_[YY].initMdpOptions(&section, "y");
     efield_[ZZ].initMdpOptions(&section, "z");
+}
+
+void ElectricField::buildMdpOutput(KeyValueTreeObjectBuilder *builder) const
+{
+    const char *const comment[] = {
+        "; Electric fields",
+        "; Format for E-x, etc. is: number of cosines (int; only 1 is supported),",
+        "; amplitude (real; V/nm), and phase (real; value is meaningless",
+        "; for a cosine of frequency 0.",
+        "; Format for E-xt, etc. is: omega (1/ps), time for the pulse peak (ps),",
+        "; and sigma (ps) width of the pulse. Sigma = 0 removes the pulse,",
+        "; leaving the field to be a cosine function."
+    };
+    builder->addValue<std::string>("comment-electric-field", joinStrings(comment, "\n"));
+    efield_[XX].buildMdpOutput(builder, "x");
+    efield_[YY].buildMdpOutput(builder, "y");
+    efield_[ZZ].buildMdpOutput(builder, "z");
 }
 
 void ElectricField::initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
