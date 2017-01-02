@@ -52,13 +52,14 @@ class TextOutputStream;
 }
 
 typedef struct t_inpfile {
-    int      count;     /* sort order for output  */
-    gmx_bool bObsolete; /* whether it is an obsolete param value */
-    gmx_bool bSet;      /* whether it it has been read out */
-    char    *name;      /* name of the parameter */
-    char    *value;     /* parameter value string */
-    int      inp_count; /* number of einps read. Only valid for the first item
-                                                 in the inpfile list. */
+    int      count;                  /* sort order for output  */
+    gmx_bool bObsolete;              /* whether it is an obsolete param value */
+    gmx_bool bSet;                   /* whether it it has been read out */
+    gmx_bool bHandledAsKeyValueTree; /* whether it it has been handled with key-value machinery */
+    char    *name;                   /* name of the parameter */
+    char    *value;                  /* parameter value string */
+    int      inp_count;              /* number of einps read. Only valid for the first item
+                                                              in the inpfile list. */
 } t_inpfile;
 /* entry in input files (like .mdp files).
    Initally read in with read_inpfile, then filled in with missing values
@@ -108,6 +109,7 @@ void replace_inp_entry(int ninp, t_inpfile *inp,
 int search_einp(int ninp, const t_inpfile *inp, const char *name);
 /* Return the index of an .mdp field with the given name within the
  * inp array, if it exists. Return -1 if it does not exist. */
+
 void mark_einp_set(int ninp, t_inpfile *inp, const char *name);
 
 int get_eint(int *ninp, t_inpfile **inp, const char *name, int def,

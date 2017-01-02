@@ -49,6 +49,7 @@ namespace gmx
 
 class IKeyValueTreeTransformRules;
 class IOptionsContainerWithSections;
+class KeyValueTreeObjectBuilder;
 
 /*! \libinternal \brief
  * Interface for handling mdp/tpr input to a mdrun module.
@@ -98,6 +99,8 @@ class IMdpOptionProvider
          * module.
          */
         virtual void initMdpOptions(IOptionsContainerWithSections *options) = 0;
+        //! Prepares to write a flat key-value tree like an mdp file.
+        virtual void buildMdpOutput(KeyValueTreeObjectBuilder *builder) const = 0;
 
     protected:
         ~IMdpOptionProvider() {}

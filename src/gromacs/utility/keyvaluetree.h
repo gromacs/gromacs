@@ -317,6 +317,10 @@ void compareKeyValueTrees(TextWriter               *writer,
                           const KeyValueTreeObject &tree2,
                           real                      ftol,
                           real                      abstol);
+
+//! Helper function to format a simple KeyValueTreeValue.
+std::string valueToString(const KeyValueTreeValue &value);
+
 //! \endcond
 
 } // namespace gmx
