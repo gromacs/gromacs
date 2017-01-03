@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1262,40 +1262,33 @@ static void combine_idef(t_idef *dest, const thread_work_t *src, int nsrc,
             /* Position restraints need an additional treatment */
             if (ftype == F_POSRES || ftype == F_FBPOSRES)
             {
-                int nposres = dest->il[ftype].nr/2;
-                if (nposres > dest->iparams_posres_nalloc)
+                int          nposres       = dest->il[ftype].nr/2;
+                // TODO: Simplify this code using std::vector
+                t_iparams * &iparams_dest  = (ftype == F_POSRES ? dest->iparams_posres : dest->iparams_fbposres);
+                int         &posres_nalloc = (ftype == F_POSRES ? dest->iparams_posres_nalloc : dest->iparams_fbposres_nalloc);
+                if (nposres > posres_nalloc)
                 {
-                    dest->iparams_posres_nalloc = over_alloc_large(nposres);
-                    srenew(dest->iparams_posres, dest->iparams_posres_nalloc);
+                    posres_nalloc = over_alloc_large(nposres);
+                    srenew(iparams_dest, posres_nalloc);
                 }
+
                 /* Set nposres to the number of original position restraints in dest */
                 for (int s = 1; s < nsrc; s++)
                 {
                     nposres -= src[s].idef.il[ftype].nr/2;
                 }
+
                 for (int s = 1; s < nsrc; s++)
                 {
-                    if (ftype == F_POSRES)
+                    const t_iparams *iparams_src = (ftype == F_POSRES ? src[s].idef.iparams_posres : src[s].idef.iparams_fbposres);
+
+                    for (int i = 0; i < src[s].idef.il[ftype].nr/2; i++)
                     {
-                        for (int i = 0; i < src[s].idef.il[ftype].nr/2; i++)
-                        {
-                            /* Correct the index into iparams_posres */
-                            dest->il[ftype].iatoms[nposres*2] = nposres;
-                            /* Copy the position restraint force parameters */
-                            dest->iparams_posres[nposres] = src[s].idef.iparams_posres[i];
-                            nposres++;
-                        }
-                    }
-                    else
-                    {
-                        for (int i = 0; i < src[s].idef.il[ftype].nr/2; i++)
-                        {
-                            /* Correct the index into iparams_fbposres */
-                            dest->il[ftype].iatoms[nposres*2] = nposres;
-                            /* Copy the position restraint force parameters */
-                            dest->iparams_fbposres[nposres] = src[s].idef.iparams_fbposres[i];
-                            nposres++;
-                        }
+                        /* Correct the index into iparams_posres */
+                        dest->il[ftype].iatoms[nposres*2] = nposres;
+                        /* Copy the position restraint force parameters */
+                        iparams_dest[nposres]             = iparams_src[i];
+                        nposres++;
                     }
                 }
             }
