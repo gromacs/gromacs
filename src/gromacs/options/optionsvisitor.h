@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,20 +124,20 @@ class OptionsTypeVisitor : public OptionsVisitor
    class Visitor : public gmx::OptionsVisitor
    {
        public:
-           void visitSection(const Options &section)
+           virtual void visitSection(const OptionSectionInfo &section)
            {
                OptionsIterator iterator(section);
                iterator.acceptSections(this);
                iterator.acceptOptions(this);
            }
 
-           void visitOption(const OptionInfo &option)
+           virtual void visitOption(const OptionInfo &option)
            {
                // Do something.
            }
    }
 
-   Visitor().visitSection(options);
+   Visitor().visitSection(options.rootSection());
  * \endcode
  *
  * \inlibraryapi
