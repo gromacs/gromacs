@@ -50,12 +50,15 @@ struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct pull_params_t;
 struct pull_t;
+struct t_gromppopts;
 struct t_grpopts;
 struct t_inpfile;
 struct t_inputrec;
+struct t_inputrec_strings;
 struct t_rot;
 struct warninp;
 typedef warninp *warninp_t;
+struct InputrecStrings;
 
 enum {
     eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR
@@ -65,34 +68,9 @@ enum {
     ecouplamVDWQ, ecouplamVDW, ecouplamQ, ecouplamNONE, ecouplamNR
 };
 
-struct t_gromppopts
-{
-    int      warnings;
-    int      nshake;
-    char    *include;
-    char    *define;
-    gmx_bool bGenVel;
-    gmx_bool bGenPairs;
-    real     tempi;
-    int      seed;
-    gmx_bool bOrire;
-    gmx_bool bMorse;
-    char    *wall_atomtype[2];
-    char    *couple_moltype;
-    int      couple_lam0;
-    int      couple_lam1;
-    gmx_bool bCoupleIntra;
-};
-
-/*! \brief Initialise object to hold strings parsed from an .mdp file */
-void init_inputrec_strings();
-
-/*! \brief Clean up object that holds strings parsed from an .mdp file */
-void done_inputrec_strings();
-
-void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
+void check_ir(const char *mdparin, t_inputrec *ir, const t_gromppopts *opts,
               warninp_t wi);
-/* Validate inputrec data.
+/* Validate (and modify) inputrec data.
  * Fatal errors will be added to nerror.
  */
 int search_string(const char *s, int ng, char *gn[]);
@@ -114,19 +92,21 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
 /* Even more checks, charge group radii vs. cut-off's only. */
 
 void get_ir(const char *mdparin, const char *mdparout,
-            gmx::MDModules *mdModules, t_gromppopts *opts,
+            gmx::MDModules *mdModules,
             bool writeMdpHeader, warninp_t wi);
 /* Read the input file, and retrieve data for inputrec.
  * More data are read, but the are only evaluated when the next
  * function is called. Also prints the input file back to mdparout.
  */
 
-void do_index(const char* mdparin,
-              const char *ndx,
-              gmx_mtop_t *mtop,
-              gmx_bool    bVerbose,
-              t_inputrec *ir,
-              warninp_t   wi);
+void do_index(const char              * mdparin,
+              const char               *ndx,
+              gmx_mtop_t               *mtop,
+              gmx_bool                  bVerbose,
+              t_inputrec               *ir,
+              const t_inputrec_strings *is,
+              const InputrecStrings    *inputrecStrings,
+              warninp_t                 wi);
 /* Read the index file and assign grp numbers to atoms.
  */
 

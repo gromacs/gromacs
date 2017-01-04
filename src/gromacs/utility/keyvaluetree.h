@@ -226,7 +226,7 @@ class KeyValueTreeObject
         std::map<std::string, KeyValueTreeValue>::iterator
         addProperty(const std::string &key, KeyValueTreeValue &&value)
         {
-            GMX_RELEASE_ASSERT(!keyExists(key), "Duplicate key value");
+            GMX_RELEASE_ASSERT(!keyExists(key), ("Duplicate key value '" + key + "'").c_str());
             values_.reserve(values_.size() + 1);
             auto iter = valueMap_.insert(std::make_pair(key, std::move(value))).first;
             values_.push_back(KeyValueTreeProperty(iter));

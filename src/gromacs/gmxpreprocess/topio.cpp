@@ -65,6 +65,7 @@
 #include "gromacs/math/utilities.h"
 #include "gromacs/mdlib/genborn.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/legacymdp.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
@@ -577,7 +578,7 @@ static char **read_topol(const char *infile, const char *outfile,
                          t_params    plist[],
                          int         *combination_rule,
                          double      *reppow,
-                         t_gromppopts *opts,
+                         const t_gromppopts *opts,
                          real        *fudgeQQ,
                          int         *nmolblock,
                          gmx_molblock_t **molblock,
@@ -1134,25 +1135,27 @@ static char **read_topol(const char *infile, const char *outfile,
     return title;
 }
 
-char **do_top(gmx_bool          bVerbose,
-              const char       *topfile,
-              const char       *topppfile,
-              t_gromppopts     *opts,
-              gmx_bool          bZero,
-              t_symtab         *symtab,
-              t_params          plist[],
-              int              *combination_rule,
-              double           *repulsion_power,
-              real             *fudgeQQ,
-              gpp_atomtype_t    atype,
-              int              *nrmols,
-              t_molinfo       **molinfo,
-              t_molinfo       **intermolecular_interactions,
-              const t_inputrec *ir,
-              int              *nmolblock,
-              gmx_molblock_t  **molblock,
-              gmx_bool          bGenborn,
-              warninp_t         wi)
+char **do_top(gmx_bool            bVerbose,
+              const char         *topfile,
+              const char         *topppfile,
+              const t_gromppopts *opts,
+              const char         *define,
+              const char         *include,
+              gmx_bool            bZero,
+              t_symtab           *symtab,
+              t_params            plist[],
+              int                *combination_rule,
+              double             *repulsion_power,
+              real               *fudgeQQ,
+              gpp_atomtype_t      atype,
+              int                *nrmols,
+              t_molinfo         **molinfo,
+              t_molinfo         **intermolecular_interactions,
+              const t_inputrec   *ir,
+              int                *nmolblock,
+              gmx_molblock_t    **molblock,
+              gmx_bool            bGenborn,
+              warninp_t           wi)
 {
     /* Tmpfile might contain a long path */
     const char *tmpfile;
@@ -1171,7 +1174,7 @@ char **do_top(gmx_bool          bVerbose,
     {
         printf("processing topology...\n");
     }
-    title = read_topol(topfile, tmpfile, opts->define, opts->include,
+    title = read_topol(topfile, tmpfile, define, include,
                        symtab, atype,
                        nrmols, molinfo, intermolecular_interactions,
                        plist, combination_rule, repulsion_power,

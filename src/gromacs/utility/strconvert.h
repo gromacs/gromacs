@@ -135,6 +135,9 @@ float fromString<float>(const char *str) { return floatFromString(str); }
 //! Implementation for double values.
 template <> inline
 double fromString<double>(const char *str) { return doubleFromString(str); }
+//! Implementation for string values.
+template <> inline
+std::string fromString<std::string>(const char *str) { return str; }
 
 /*! \brief Returns a string containing the value of \c t.
  *

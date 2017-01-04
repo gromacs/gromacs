@@ -51,6 +51,7 @@ namespace gmx
 {
 
 class KeyValueTreeObject;
+class LegacyMdp;
 class IKeyValueTreeErrorHandler;
 class IKeyValueTreeTransformRules;
 
@@ -88,6 +89,8 @@ class IKeyValueTreeTransformRules;
  * for each module, respectively for mdp- and tpr-style input of those
  * options.
  *
+ * TODO talk more about legacy mdp module
+ *
  * \inlibraryapi
  * \ingroup module_mdrunutility
  */
@@ -106,6 +109,18 @@ class MDModules
         t_inputrec *inputrec();
         //! \copydoc t_inputrec *inputrec()
         const t_inputrec *inputrec() const;
+        /*! \brief
+         * Returns an initialized LegacyMdp structure.
+         *
+         * This handle is used to get access to data structures (other
+         * than t_inputrec) that are filled during mdp reading. The
+         * structure is owned by MDModules and will be destroyed with
+         * it. This getter will no longer exist once all mdp options
+         * are handled by modules.
+         */
+        LegacyMdp *legacyMdp();
+        //! \copydoc LegacyMdp *legacyMdp()
+        const LegacyMdp *legacyMdp() const;
 
         /*! \brief Initializes a transform from mdp values to
          * sectioned options.

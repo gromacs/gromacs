@@ -251,7 +251,7 @@ void ValueSerializer::serialize(const KeyValueTreeValue &value, ISerializer *ser
 {
     auto iter = s_serializers.find(value.type());
     GMX_RELEASE_ASSERT(iter != s_serializers.end(),
-                       "Unknown value type for serializization");
+                       "Unknown value type for serialization");
     unsigned char typeTag = iter->second.typeTag;
     serializer->doUChar(&typeTag);
     iter->second.serialize(value, serializer);
@@ -263,7 +263,7 @@ KeyValueTreeValue ValueSerializer::deserialize(ISerializer *serializer)
     serializer->doUChar(&typeTag);
     auto          iter = s_deserializers.find(typeTag);
     GMX_RELEASE_ASSERT(iter != s_deserializers.end(),
-                       "Unknown type tag for deserializization");
+                       "Unknown type tag for deserialization");
     KeyValueTreeValueBuilder builder;
     iter->second(&builder, serializer);
     return builder.build();

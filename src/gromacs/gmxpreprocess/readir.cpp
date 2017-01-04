@@ -57,6 +57,7 @@
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/legacymdp.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull-params.h"
 #include "gromacs/options/options.h"
@@ -83,51 +84,6 @@
 
 #define MAXPTR 254
 #define NOGID  255
-
-/* Resource parameters
- * Do not change any of these until you read the instruction
- * in readinp.h. Some cpp's do not take spaces after the backslash
- * (like the c-shell), which will give you a very weird compiler
- * message.
- */
-
-typedef struct t_inputrec_strings
-{
-    char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN],
-         acc[STRLEN], accgrps[STRLEN], freeze[STRLEN], frdim[STRLEN],
-         energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN], x_compressed_groups[STRLEN],
-         couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN],
-         wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN],
-         imd_grp[STRLEN];
-    char   fep_lambda[efptNR][STRLEN];
-    char   lambda_weights[STRLEN];
-    char **pull_grp;
-    char **rot_grp;
-    char   anneal[STRLEN], anneal_npoints[STRLEN],
-           anneal_time[STRLEN], anneal_temp[STRLEN];
-    char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN],
-           bSH[STRLEN], CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN],
-           SAoff[STRLEN], SAsteps[STRLEN], bTS[STRLEN], bOPT[STRLEN];
-
-} gmx_inputrec_strings;
-
-static gmx_inputrec_strings *is = nullptr;
-
-void init_inputrec_strings()
-{
-    if (is)
-    {
-        gmx_incons("Attempted to call init_inputrec_strings before calling done_inputrec_strings. Only one inputrec (i.e. .mdp file) can be parsed at a time.");
-    }
-    snew(is, 1);
-}
-
-void done_inputrec_strings()
-{
-    sfree(is);
-    is = nullptr;
-}
-
 
 enum {
     egrptpALL,         /* All particles have to be a member of a group.     */
@@ -238,7 +194,8 @@ static void process_interaction_modifier(const t_inputrec *ir, int *eintmod)
     }
 }
 
-void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
+/* NOTE: These are not only checks */
+void check_ir(const char *mdparin, t_inputrec *ir, const t_gromppopts *opts,
               warninp_t wi)
 /* Check internal consistency.
  * NOTE: index groups are not set here yet, don't check things
@@ -1395,6 +1352,11 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     }
 }
 
+int str_nelem(const std::string &str, int maxptr, char *ptr[])
+{
+    return str_nelem(str.c_str(), maxptr, ptr);
+}
+
 /* count the number of text elemets separated by whitespace in a string.
     str = the input string
     maxptr = the maximum number of allowed elements
@@ -1810,21 +1772,23 @@ class MdpErrorHandler : public gmx::IKeyValueTreeErrorHandler
 } // namespace
 
 void get_ir(const char *mdparin, const char *mdparout,
-            gmx::MDModules *mdModules, t_gromppopts *opts,
+            gmx::MDModules *mdModules,
             bool writeMdpHeader, warninp_t wi)
 {
-    char       *dumstr[2];
-    double      dumdub[2][6];
-    t_inpfile  *inp;
-    const char *tmp;
-    int         i, j, m, ninp;
-    char        warn_buf[STRLEN];
-    t_inputrec *ir     = mdModules->inputrec();
-    t_lambda   *fep    = ir->fepvals;
-    t_expanded *expand = ir->expandedvals;
+    char               *dumstr[2];
+    double              dumdub[2][6];
+    t_inpfile          *inp;
+    const char         *tmp;
+    int                 i, j, m, ninp;
+    char                warn_buf[STRLEN];
+    t_inputrec         *ir        = mdModules->inputrec();
+    gmx::LegacyMdp     *legacyMdp = mdModules->legacyMdp();
+    t_gromppopts       *opts      = legacyMdp->opts_;
+    t_inputrec_strings *is        = legacyMdp->is_;
+    t_lambda           *fep       = ir->fepvals;
+    t_expanded         *expand    = ir->expandedvals;
 
-    init_inputrec_strings();
-    gmx::TextInputFile stream(mdparin);
+    gmx::TextInputFile  stream(mdparin);
     inp = read_inpfile(&stream, mdparin, &ninp, wi);
 
     snew(dumstr[0], STRLEN);
@@ -1877,27 +1841,31 @@ void get_ir(const char *mdparin, const char *mdparout,
     REPL_TYPE("xtc-precision", "compressed-x-precision");
     REPL_TYPE("pull-print-com1", "pull-print-com");
 
-    CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
-    CTYPE ("Preprocessor information: use cpp syntax.");
-    CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/roe");
-    STYPE ("include", opts->include,  nullptr);
-    CTYPE ("e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)");
-    STYPE ("define",  opts->define,   nullptr);
+    /* TODO As an initial stage, the handling for several mdp options
+       has been migrated to LegacyMdp. All option handling will end up
+       there, before we break that out into independent modules. */
 
-    CCTYPE ("RUN CONTROL PARAMETERS");
-    EETYPE("integrator",  ir->eI,         ei_names);
-    CTYPE ("Start time and timestep in ps");
-    RTYPE ("tinit",   ir->init_t, 0.0);
+    /*CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
+       CTYPE ("Preprocessor information: use cpp syntax.");
+       CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/roe");
+       STYPE ("include", opts->include,  nullptr);
+       CTYPE ("e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)");
+       STYPE ("define",  opts->define,   nullptr);*/
+
+    /*CCTYPE ("RUN CONTROL PARAMETERS");
+       EETYPE("integrator",  ir->eI,         ei_names);*/
+    /*CTYPE ("Start time and timestep in ps");
+       RTYPE ("tinit",   ir->init_t, 0.0);*/
     RTYPE ("dt",      ir->delta_t,    0.001);
     STEPTYPE ("nsteps",   ir->nsteps,     0);
-    CTYPE ("For exact run continuation or redoing part of a run");
-    STEPTYPE ("init-step", ir->init_step,  0);
+    /*CTYPE ("For exact run continuation or redoing part of a run");
+       STEPTYPE ("init-step", ir->init_step,  0);*/
     CTYPE ("Part index is updated automatically on checkpointing (keeps files separate)");
     ITYPE ("simulation-part", ir->simulation_part, 1);
     CTYPE ("mode for center of mass motion removal");
     EETYPE("comm-mode",   ir->comm_mode,  ecm_names);
-    CTYPE ("number of steps for center of mass motion removal");
-    ITYPE ("nstcomm", ir->nstcomm,    100);
+    /*CTYPE ("number of steps for center of mass motion removal");
+       ITYPE ("nstcomm", ir->nstcomm,    100);*/
     CTYPE ("group(s) for center of mass motion removal");
     STYPE ("comm-grps",   is->vcm,            nullptr);
 
@@ -1935,10 +1903,10 @@ void get_ir(const char *mdparin, const char *mdparout,
     CTYPE ("Output frequency and precision for .xtc file");
     ITYPE ("nstxout-compressed", ir->nstxout_compressed,  0);
     RTYPE ("compressed-x-precision", ir->x_compression_precision, 1000.0);
-    CTYPE ("This selects the subset of atoms for the compressed");
-    CTYPE ("trajectory file. You can select multiple groups. By");
-    CTYPE ("default, all atoms will be written.");
-    STYPE ("compressed-x-grps", is->x_compressed_groups, nullptr);
+    /*CTYPE ("This selects the subset of atoms for the compressed");
+       CTYPE ("trajectory file. You can select multiple groups. By");
+       CTYPE ("default, all atoms will be written.");
+       TTYPE ("compressed-x-grps", is->x_compressed_groups, nullptr)*/
     CTYPE ("Selection of energy groups");
     STYPE ("energygrps",  is->energy,         nullptr);
 
@@ -2238,7 +2206,7 @@ void get_ir(const char *mdparin, const char *mdparout,
         read_expandedparams(&ninp, &inp, expand, wi);
     }
 
-    /* Electric fields */
+    /* Handle MDModules, including electric fields and legacy mdp */
     {
         gmx::KeyValueTreeObject      convertedValues = flatKeyValueTreeFromInpFile(ninp, inp);
         gmx::KeyValueTreeTransformer transform;
@@ -3203,7 +3171,7 @@ static void make_swap_groups(
 }
 
 
-void make_IMD_group(t_IMD *IMDgroup, char *IMDgname, t_blocka *grps, char **gnames)
+void make_IMD_group(t_IMD *IMDgroup, const char *IMDgname, t_blocka *grps, char **gnames)
 {
     int      ig, i;
 
@@ -3228,6 +3196,8 @@ void do_index(const char* mdparin, const char *ndx,
               gmx_mtop_t *mtop,
               gmx_bool bVerbose,
               t_inputrec *ir,
+              const t_inputrec_strings *is,
+              const InputrecStrings *inputrecStrings,
               warninp_t wi)
 {
     t_blocka     *grps;
@@ -3246,6 +3216,7 @@ void do_index(const char* mdparin, const char *ndx,
     int           nQMmethod, nQMbasis, nQMg;
     char          warn_buf[STRLEN];
     char*         endptr;
+
 
     if (bVerbose)
     {
@@ -3677,7 +3648,7 @@ void do_index(const char* mdparin, const char *ndx,
     nuser = str_nelem(is->user2, MAXPTR, ptr1);
     do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcUser2,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nuser = str_nelem(is->x_compressed_groups, MAXPTR, ptr1);
+    nuser = str_nelem(inputrecStrings->x_compressed_groups, MAXPTR, ptr1);
     do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcCompressedX,
                  restnm, egrptpONE, bVerbose, wi);
     nofg = str_nelem(is->orirefitgrp, MAXPTR, ptr1);

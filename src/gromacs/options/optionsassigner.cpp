@@ -49,6 +49,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/variant.h"
 
 #include "options-impl.h"
@@ -173,7 +174,7 @@ void OptionsAssigner::startSection(const char *name)
     Impl::Section *section = impl_->currentSection().findSection(name);
     if (section == nullptr)
     {
-        GMX_THROW(InvalidInputError("Unknown subsection"));
+        GMX_THROW(InvalidInputError(formatString("Subsection '%s' is unknown", name)));
     }
     impl_->sectionStack_.push_back(section);
     section->start();
