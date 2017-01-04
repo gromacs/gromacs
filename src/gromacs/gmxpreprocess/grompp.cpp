@@ -79,6 +79,7 @@
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/legacymdp.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/state.h"
@@ -503,7 +504,7 @@ static void molinfo2mtop(int nmi, t_molinfo *mi, gmx_mtop_t *mtop)
 
 static void
 new_status(const char *topfile, const char *topppfile, const char *confin,
-           t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
+           const t_gromppopts *opts, const GromppOptions *gromppOptions, t_inputrec *ir, gmx_bool bZero,
            gmx_bool bGenVel, gmx_bool bVerbose, t_state *state,
            gpp_atomtype_t atype, gmx_mtop_t *sys,
            int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
@@ -529,7 +530,8 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     }
 
     /* TOPOLOGY processing */
-    sys->name = do_top(bVerbose, topfile, topppfile, opts, bZero, &(sys->symtab),
+    sys->name = do_top(bVerbose, topfile, topppfile, opts, gromppOptions->define.c_str(),
+                       gromppOptions->include.c_str(), bZero, &(sys->symtab),
                        plist, comb, reppow, fudgeQQ,
                        atype, &nrmols, &molinfo, intermolecular_interactions,
                        ir,
@@ -683,13 +685,14 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
             mass[i] = atom->m;
         }
 
-        if (opts->seed == -1)
+        int seed = opts->seed;
+        if (seed == -1)
         {
-            opts->seed = static_cast<int>(gmx::makeRandomSeed());
-            fprintf(stderr, "Setting gen_seed to %d\n", opts->seed);
+            seed = static_cast<int>(gmx::makeRandomSeed());
+            fprintf(stderr, "Setting gen_seed to %d\n", seed);
         }
         state->flags |= (1 << estV);
-        maxwell_speed(opts->tempi, opts->seed, sys, as_rvec_array(state->v.data()));
+        maxwell_speed(opts->tempi, seed, sys, as_rvec_array(state->v.data()));
 
         stop_cm(stdout, state->natoms, mass, as_rvec_array(state->x.data()), as_rvec_array(state->v.data()));
         sfree(mass);
@@ -1023,7 +1026,7 @@ static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
     read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
 }
 
-static void set_wall_atomtype(gpp_atomtype_t at, t_gromppopts *opts,
+static void set_wall_atomtype(const gpp_atomtype_t at, const t_gromppopts *opts,
                               t_inputrec *ir, warninp_t wi)
 {
     int  i;
@@ -1767,7 +1770,6 @@ int gmx_grompp(int argc, char *argv[])
         "interpret the output messages before attempting to bypass them with",
         "this option."
     };
-    t_gromppopts      *opts;
     gmx_mtop_t        *sys;
     int                nmi;
     t_molinfo         *mi, *intermolecular_interactions;
@@ -1834,9 +1836,6 @@ int gmx_grompp(int argc, char *argv[])
 
     /* Initiate some variables */
     gmx::MDModules mdModules;
-    snew(opts, 1);
-    snew(opts->include, STRLEN);
-    snew(opts->define, STRLEN);
 
     wi = init_warning(TRUE, maxwarn);
 
@@ -1845,7 +1844,7 @@ int gmx_grompp(int argc, char *argv[])
     set_warning_line(wi, mdparin, -1);
     try
     {
-        get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, opts, true, wi);
+        get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, true, wi);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     t_inputrec *ir = mdModules.inputrec();
@@ -1854,6 +1853,12 @@ int gmx_grompp(int argc, char *argv[])
     {
         fprintf(stderr, "checking input for internal consistency...\n");
     }
+    const gmx::LegacyMdp     *legacyMdp       = mdModules.legacyMdp();
+    const t_inputrec_strings *is              = legacyMdp->is_;
+    const InputrecStrings    *inputrecStrings = legacyMdp->inputrecStrings_;
+    const t_gromppopts       *opts            = legacyMdp->opts_;
+    const GromppOptions      *gromppOptions   = legacyMdp->gromppOptions_;
+
     check_ir(mdparin, ir, opts, wi);
 
     if (ir->ld_seed == -1)
@@ -1896,7 +1901,7 @@ int gmx_grompp(int argc, char *argv[])
 
     t_state state;
     new_status(fn, opt2fn_null("-pp", NFILE, fnm), opt2fn("-c", NFILE, fnm),
-               opts, ir, bZero, bGenVel, bVerbose, &state,
+               opts, gromppOptions, ir, bZero, bGenVel, bVerbose, &state,
                atype, sys, &nmi, &mi, &intermolecular_interactions,
                plist, &comb, &reppow, &fudgeQQ,
                opts->bMorse,
@@ -2108,7 +2113,7 @@ int gmx_grompp(int argc, char *argv[])
         fprintf(stderr, "initialising group options...\n");
     }
     do_index(mdparin, ftp2fn_null(efNDX, NFILE, fnm),
-             sys, bVerbose, ir,
+             sys, bVerbose, ir, is, inputrecStrings,
              wi);
 
     if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0)
@@ -2373,7 +2378,6 @@ int gmx_grompp(int argc, char *argv[])
 
     done_atomtype(atype);
     done_mtop(sys);
-    done_inputrec_strings();
 
     return 0;
 }

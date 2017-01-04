@@ -40,6 +40,7 @@
 
 #include "gromacs/applied-forces/electricfield.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/legacymdp.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/treesupport.h"
@@ -56,7 +57,7 @@ class MDModules::Impl
 {
     public:
 
-        Impl() : field_(nullptr), ir_(nullptr)
+        Impl() : legacy_(nullptr), field_(nullptr), ir_(nullptr)
         {
             snew(ir_, 1);
             snew(ir_->fepvals, 1);
@@ -66,6 +67,7 @@ class MDModules::Impl
             // create*Module() would return a pointer. It might have
             // methods in its interface that return IInputRecExtension
             // (renamed IMdpOptionsProvider) and IForceProvider.
+            legacy_     = createLegacyMdpModule(ir_);
             field_      = createElectricFieldModule();
             ir_->efield = field_.get();
         }
@@ -80,14 +82,18 @@ class MDModules::Impl
 
         void makeModuleOptions(Options *options)
         {
+            // Create a section for legacy mdp modules
+            auto legacyMdpOptions = options->addSection(OptionSection("legacy"));
+            legacy_->initMdpOptions(&legacyMdpOptions);
             // Create a section for applied-forces modules
             auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));
             field_->initMdpOptions(&appliedForcesOptions);
             // In future, other sections would also go here.
         }
 
-        IInputRecExtensionPtr  field_;
-        t_inputrec            *ir_;
+        std::unique_ptr<LegacyMdp> legacy_;
+        IInputRecExtensionPtr      field_;
+        t_inputrec                *ir_;
 };
 
 MDModules::MDModules() : impl_(new Impl)
@@ -108,8 +114,19 @@ const t_inputrec *MDModules::inputrec() const
     return impl_->ir_;
 }
 
+LegacyMdp *MDModules::legacyMdp()
+{
+    return impl_->legacy_.get();
+}
+
+const LegacyMdp *MDModules::legacyMdp() const
+{
+    return impl_->legacy_.get();
+}
+
 void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
 {
+    impl_->legacy_->initMdpTransform(rules);
     // TODO The transform rules for applied-forces modules should
     // embed the necessary prefix (and similarly for other groupings
     // of modules). For now, electric-field embeds this itself.
@@ -118,6 +135,7 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
 
 void MDModules::initMdpBackTransform(IKeyValueTreeTransformRules *rules)
 {
+    impl_->legacy_->initMdpBackTransform(rules);
     // TODO The transform rules for applied-forces modules should
     // embed the necessary prefix (and similarly for other groupings
     // of modules). For now, electric-field embeds this itself.
@@ -155,6 +173,7 @@ void MDModules::assignOptionsToModulesFromTpr()
 void MDModules::adjustInputrecBasedOnModules()
 {
     gmx::Options                        options;
+    impl_->legacy_->initMdpOptions(&options);
     impl_->field_->initMdpOptions(&options);
     std::unique_ptr<KeyValueTreeObject> params(impl_->ir_->params);
     // Avoid double freeing if the next operation throws.

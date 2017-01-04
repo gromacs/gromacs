@@ -2,28 +2,12 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Bool Name="Error parsing mdp file">false</Bool>
-  <String Name="OutputMdpFile">
-; VARIOUS PREPROCESSING OPTIONS
-; Preprocessor information: use cpp syntax.
-; e.g.: -I/home/joe/doe -I/home/mary/roe
-include                  = -I/home/me/stuff
-; e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)
-define                   =
-
-; RUN CONTROL PARAMETERS
-integrator               = steep
-; Start time and timestep in ps
-tinit                    = 0.3
-dt                       = 0.001
+  <String Name="OutputMdpFile">dt                       = 0.001
 nsteps                   = 0
-; For exact run continuation or redoing part of a run
-init_step                = 0
 ; Part index is updated automatically on checkpointing (keeps files separate)
 simulation-part          = 1
 ; mode for center of mass motion removal
 comm-mode                = Linear
-; number of steps for center of mass motion removal
-nstcomm                  = 100
 ; group(s) for center of mass motion removal
 comm-grps                =
 
@@ -59,10 +43,6 @@ nstenergy                = 1000
 ; Output frequency and precision for .xtc file
 nstxout-compressed       = 0
 compressed-x-precision   = 1000
-; This selects the subset of atoms for the compressed
-; trajectory file. You can select multiple groups. By
-; default, all atoms will be written.
-compressed-x-grps        = System
 ; Selection of energy groups
 energygrps               =
 
@@ -333,6 +313,24 @@ userreal1                = 0
 userreal2                = 0
 userreal3                = 0
 userreal4                = 0
+; VARIOUS PREPROCESSING OPTIONS
+; Preprocessor information: use cpp syntax.
+; e.g.: -I/home/joe/doe -I/home/mary/roe
+include                  = -I/home/me/stuff
+e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)
+define                   = 
+; RUN CONTROL PARAMETERS
+integrator               = steep
+; Start time and timestep in ps
+tinit                    = 0.3
+; For exact run continuation or redoing part of a run
+init-step                = 0
+; number of steps for center of mass motion removal
+nstcomm                  = 100
+; This selects the subset of atoms for the compressed
+; trajectory file. You can select multiple groups. By
+; default, all atoms will be written.
+compressed-x-grps        = System
 ; Electric fields
 ; Format for E-x, etc. is: number of cosines (int; only 1 is supported),
 ; amplitude (real; V/nm), and phase (real; value is meaningless

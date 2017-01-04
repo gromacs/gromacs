@@ -53,7 +53,6 @@
 
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/mdrunutility/mdmodules.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
@@ -71,19 +70,7 @@ class GetIrTest : public ::testing::Test
 {
     public:
         GetIrTest() : fileManager_(), data_(), checker_(data_.rootChecker()),
-                      mdModules_(), opts_(),
-                      wi_(init_warning(FALSE, 0)), wiGuard_(wi_)
-
-        {
-            snew(opts_.include, STRLEN);
-            snew(opts_.define, STRLEN);
-        }
-        ~GetIrTest()
-        {
-            done_inputrec_strings();
-            sfree(opts_.include);
-            sfree(opts_.define);
-        }
+                      mdModules_(), wi_(init_warning(FALSE, 0)), wiGuard_(wi_) {}
         /*! \brief Test mdp reading and writing
          *
          * \todo Modernize read_inp and write_inp to use streams,
@@ -97,7 +84,7 @@ class GetIrTest : public ::testing::Test
             TextWriter::writeFileFromString(inputMdpFilename, inputMdpFileContents);
 
             get_ir(inputMdpFilename.c_str(), outputMdpFilename.c_str(),
-                   &mdModules_, &opts_, false, wi_);
+                   &mdModules_, false, wi_);
             bool failure = warning_errors_exist(wi_);
             checker_.checkBoolean(failure, "Error parsing mdp file");
             warning_reset(wi_);
@@ -110,7 +97,6 @@ class GetIrTest : public ::testing::Test
         TestReferenceData                  data_;
         TestReferenceChecker               checker_;
         MDModules                          mdModules_;
-        t_gromppopts                       opts_;
         warninp_t                          wi_;
         unique_cptr<warninp, free_warning> wiGuard_;
 };
