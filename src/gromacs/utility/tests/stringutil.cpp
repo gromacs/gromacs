@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include <vector>
 
 #include <gmock/gmock.h>
+#include <gsl/string_span>
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
@@ -83,11 +84,16 @@ TEST(StringUtilityTest, StartsWith)
 
 TEST(StringUtilityTest, EndsWith)
 {
-    EXPECT_TRUE(gmx::endsWith("foobar", "bar"));
+
     EXPECT_TRUE(gmx::endsWith("foobar", NULL));
+    EXPECT_FALSE(gmx::endsWith(NULL, "foobar"));
+    EXPECT_TRUE(gmx::endsWith(NULL, NULL));
+
     EXPECT_TRUE(gmx::endsWith("foobar", ""));
-    EXPECT_TRUE(gmx::endsWith("", ""));
     EXPECT_FALSE(gmx::endsWith("", "foobar"));
+    EXPECT_TRUE(gmx::endsWith("", ""));
+
+    EXPECT_TRUE(gmx::endsWith("foobar", "bar"));
     EXPECT_FALSE(gmx::endsWith("foobar", "bbar"));
     EXPECT_FALSE(gmx::endsWith("foobar", "barr"));
     EXPECT_FALSE(gmx::endsWith("foobar", "foofoobar"));
@@ -95,21 +101,30 @@ TEST(StringUtilityTest, EndsWith)
 
 TEST(StringUtilityTest, StripSuffixIfPresent)
 {
-    EXPECT_EQ("foo", gmx::stripSuffixIfPresent("foobar", "bar"));
-    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", NULL));
-    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", ""));
-    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", "bbar"));
-    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", "barr"));
-    EXPECT_EQ("foobar", gmx::stripSuffixIfPresent("foobar", "foofoobar"));
+    EXPECT_EQ("foo", gsl::to_string(gmx::stripSuffixIfPresent("foobar", "bar")));
+    EXPECT_EQ("foobar", gsl::to_string(gmx::stripSuffixIfPresent("foobar", NULL)));
+    EXPECT_EQ("foobar", gsl::to_string(gmx::stripSuffixIfPresent("foobar", "")));
+    EXPECT_EQ("foobar", gsl::to_string(gmx::stripSuffixIfPresent("foobar", "bbar")));
+    EXPECT_EQ("foobar", gsl::to_string(gmx::stripSuffixIfPresent("foobar", "barr")));
+    EXPECT_EQ("foobar", gsl::to_string(gmx::stripSuffixIfPresent("foobar", "foofoobar")));
 }
 
 TEST(StringUtilityTest, StripString)
 {
-    EXPECT_EQ("", gmx::stripString(""));
-    EXPECT_EQ("foo", gmx::stripString("foo"));
-    EXPECT_EQ("foo", gmx::stripString("  foo"));
-    EXPECT_EQ("foo", gmx::stripString("foo "));
-    EXPECT_EQ("f o o", gmx::stripString(" f o o  "));
+    EXPECT_EQ("", gsl::to_string(gmx::stripString("")));
+    EXPECT_EQ("foo", gsl::to_string(gmx::stripString("foo")));
+    EXPECT_EQ("foo", gsl::to_string(gmx::stripString("  foo")));
+    EXPECT_EQ("foo", gsl::to_string(gmx::stripString("foo ")));
+    EXPECT_EQ("f o o", gsl::to_string(gmx::stripString(" f o o  ")));
+}
+
+TEST(StringUtilityTest, StripComment)
+{
+    EXPECT_EQ("foo", gsl::to_string(gmx::stripComment("foo")));
+    EXPECT_EQ("foo", gsl::to_string(gmx::stripComment("foo;bar")));
+    EXPECT_EQ("foo ", gsl::to_string(gmx::stripComment("foo ;bar")));
+    EXPECT_EQ("foo ", gsl::to_string(gmx::stripComment("foo ; bar")));
+    EXPECT_EQ("foo", gsl::to_string(gmx::stripComment("foo; bar")));
 }
 
 TEST(StringUtilityTest, SplitString)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,8 @@
 
 #include <string>
 #include <vector>
+
+#include <gsl/string_span>
 
 #include "buildinfo.h"
 #include "gromacs/utility/exceptions.h"
@@ -331,7 +333,7 @@ CommandLineProgramContext::Impl::Impl(int argc, const char *const argv[],
     : executableEnv_(std::move(env)), invokedName_(argc != 0 ? argv[0] : ""), bSourceLayout_(false)
 {
     programName_ = Path::getFilename(invokedName_);
-    programName_ = stripSuffixIfPresent(programName_, ".exe");
+    programName_ = gsl::to_string(stripSuffixIfPresent(programName_, ".exe"));
 
     commandLine_ = quoteIfNecessary(programName_.c_str());
     for (int i = 1; i < argc; ++i)

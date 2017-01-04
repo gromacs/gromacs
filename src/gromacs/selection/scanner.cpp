@@ -554,6 +554,8 @@ static yyconst flex_int16_t yy_chk[151] =
  */
 
 #line 60 "scanner.l"
+#include <gsl/string_span>
+
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -962,7 +964,7 @@ YY_RULE_SETUP
 {
                     if (yytext[0] == ';' || state->statusWriter != NULL)
                     {
-                        state->pselstr = gmx::stripString(state->pselstr);
+                        state->pselstr = gsl::to_string(gmx::stripString(state->pselstr));
                         state->bCmdStart = true;
                         return CMD_SEP;
                     }

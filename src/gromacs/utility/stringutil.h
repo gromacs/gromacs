@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,8 @@
 #include <string>
 #include <vector>
 
+#include <gsl/string_span>
+
 namespace gmx
 {
 
@@ -63,6 +65,11 @@ namespace gmx
 static inline bool isNullOrEmpty(const char *str)
 {
     return str == NULL || str[0] == '\0';
+}
+//! \copydoc isNullOrEmpty(const char *str)
+static inline bool isNullOrEmpty(gsl::cstring_span<> str)
+{
+    return str.size() == 0 || str[0] == '\0';
 }
 
 /*! \brief
@@ -95,12 +102,11 @@ static inline bool startsWith(const char *str, const char *prefix)
  * Returns true if \p suffix is NULL or empty.
  * Does not throw.
  */
+bool endsWith(gsl::cstring_span<> str, gsl::cstring_span<> suffix);
+//! /copydoc endsWith()
 bool endsWith(const char *str, const char *suffix);
-//! \copydoc endsWith(const char *, const char *)
-static inline bool endsWith(const std::string &str, const char *suffix)
-{
-    return endsWith(str.c_str(), suffix);
-}
+//! /copydoc endsWith()
+bool endsWith(const std::string &str, const char *suffix);
 
 /*! \brief
  * Tests whether a string contains another as a substring.
@@ -142,33 +148,37 @@ countWords(const char *s);
 std::size_t
 countWords(const std::string &str);
 
-//! \copydoc endsWith(const std::string &str, const char *suffix)
-static inline bool endsWith(const std::string &str, const std::string &suffix)
-{
-    return endsWith(str, suffix.c_str());
-}
-
 /*! \brief
- * Removes a suffix from a string.
+ * Returns a span of \c str that does not include any final \c suffix (if it exists).
  *
  * \param[in] str    String to process.
  * \param[in] suffix Suffix to remove.
- * \returns   \p str with \p suffix removed, or \p str unmodified if it does
+ * \returns   A span of \p str with \p suffix removed, or \p str unmodified if it does
  *      not end with \p suffix.
- * \throws    std::bad_alloc if out of memory.
- *
- * Returns \p str if \p suffix is NULL or empty.
+ * \throws    Anything that gsl::cstring_span might throw.
  */
-std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
+gsl::cstring_span<> stripSuffixIfPresent(gsl::cstring_span<> str, const char *suffix);
 /*! \brief
- * Removes leading and trailing whitespace from a string.
+ * Returns a span of \c str excluding leading and trailing whitespace.
+ *
+ * The caller must ensure that the lifetime of the return does not
+ * exceed that of \c str.
  *
  * \param[in] str  String to process.
- * \returns   \p str with leading and trailing whitespaces removed.
- * \throws    std::bad_alloc if out of memory.
+ * \returns   A span of \p str with leading and trailing whitespaces removed.
+ * \throws    Anything that gsl::cstring_span might throw.
  */
-std::string stripString(const std::string &str);
-
+gsl::cstring_span<> stripString(gsl::cstring_span<> str);
+/*! \brief
+ * Returns a span of \c str excluding the first occurence of the comment symbol ';' and all subsequent characters.
+ *
+ * The caller must ensure that the lifetime of the return does not
+ * exceed that of \c str.
+ *
+ * \param[in] str  String to process
+ * \returns   A span of \p str with any trailing comment removed.
+ * \throws    Anything that gsl::cstring_span might throw. */
+gsl::cstring_span<> stripComment(gsl::cstring_span<> str);
 /*! \brief
  * Formats a string (snprintf() wrapper).
  *

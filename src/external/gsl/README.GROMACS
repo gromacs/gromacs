@@ -1,6 +1,18 @@
 Microsft Guidelines Support Library (GSL) was imported from commmit
 9d13cb14c3 of https://github.com/Microsoft/GSL.git.
 
-Various dotfiles and the tests directory has been omitted,
+Various dotfiles and the tests directory have been omitted,
 particularly because the tests also require the MS unittests package
 to work.
+
+span, string_span, gsl_byte and gsl_util were modified to get them to
+compile with GROMACS. multi_span and gsl_algorithm are unmodified.
+Three kinds of changes were made:
+* commenting out constexpr for functions that cannot be constexpr
+  with C++11 compilers, e.g. because there is a variable declaration
+  or assignment
+* various std:: helper types from recent versions of the C++ standards
+  are declared in gsl::details:: namespace (adding to std namespace is
+  unwise) in gsl_detail_types, and usages adapted accordingly
+* work-arounds for MSVC versions that GROMACS does not support were
+  removed

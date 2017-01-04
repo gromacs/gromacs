@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,8 @@
 
 #include <string>
 #include <vector>
+
+#include <gsl/string_span>
 
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/options/filenameoptionmanager.h"
@@ -388,7 +390,7 @@ void FileNameOptionStorage::processAll()
             GMX_ASSERT(endsWith(oldValue, defaultExtension()),
                        "Default value does not have the expected extension");
             const std::string  prefix
-                = stripSuffixIfPresent(oldValue, defaultExtension());
+                = gsl::to_string(stripSuffixIfPresent(oldValue, defaultExtension()));
             const std::string  newValue
                 = manager_->completeDefaultFileName(prefix, info_);
             if (!newValue.empty() && newValue != oldValue)

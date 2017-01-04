@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,35 +91,67 @@ countWords(const std::string &str)
     return countWords(str.c_str());
 }
 
+bool endsWithImpl(gsl::cstring_span<> str, gsl::cstring_span<> suffix)
+{
+    auto strIt = str.rbegin(), suffixIt = suffix.rbegin();
+    while (strIt != str.rend() && suffixIt != suffix.rend())
+    {
+        if (*strIt != *suffixIt)
+        {
+            return false;
+        }
+        suffixIt++;
+        strIt++;
+    }
+    return (strIt != str.rend() || suffixIt == suffix.rend());
+}
+bool endsWith(gsl::cstring_span<> str, gsl::cstring_span<> suffix)
+{
+    if (isNullOrEmpty(suffix))
+    {
+        return true;
+    }
+    return endsWithImpl(str, suffix);
+}
+
 bool endsWith(const char *str, const char *suffix)
 {
     if (isNullOrEmpty(suffix))
     {
         return true;
     }
-    const size_t strLength    = std::strlen(str);
-    const size_t suffixLength = std::strlen(suffix);
-    return (strLength >= suffixLength
-            && std::strcmp(&str[strLength - suffixLength], suffix) == 0);
+    if (isNullOrEmpty(str))
+    {
+        return false;
+    }
+    return endsWithImpl(gsl::ensure_z(str), gsl::ensure_z(suffix));
 }
 
-std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
+bool endsWith(const std::string &str, const char *suffix)
+{
+    if (isNullOrEmpty(suffix))
+    {
+        return true;
+    }
+    return endsWithImpl(str, gsl::ensure_z(suffix));
+}
+
+gsl::cstring_span<> stripSuffixIfPresent(gsl::cstring_span<> str, const char *suffix)
 {
     if (suffix != NULL)
     {
-        size_t suffixLength = std::strlen(suffix);
-        if (suffixLength > 0 && endsWith(str, suffix))
+        if (endsWith(str, gsl::ensure_z(suffix)))
         {
-            return str.substr(0, str.length() - suffixLength);
+            return str.subspan(0, str.size() - std::strlen(suffix));
         }
     }
     return str;
 }
 
-std::string stripString(const std::string &str)
+gsl::cstring_span<> stripString(gsl::cstring_span<> str)
 {
-    std::string::const_iterator start = str.begin();
-    std::string::const_iterator end   = str.end();
+    auto start = str.begin();
+    auto end   = str.end();
     while (start != end && std::isspace(*start))
     {
         ++start;
@@ -128,7 +160,13 @@ std::string stripString(const std::string &str)
     {
         --end;
     }
-    return std::string(start, end);
+    return str.subspan(start-str.begin(), end-start);
+}
+
+gsl::cstring_span<> stripComment(gsl::cstring_span<> str)
+{
+    auto commentPosition = std::find(str.begin(), str.end(), ';');
+    return str.subspan(0, commentPosition - str.begin());
 }
 
 std::string formatString(const char *fmt, ...)

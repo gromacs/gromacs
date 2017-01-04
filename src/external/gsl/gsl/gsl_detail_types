@@ -1,0 +1,79 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2017, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+/* This header file defines in gsl::details:: various helper types that
+ * will be placed in std:: in C++14/17. These are needed for the GSL to
+ * function, and trivial to define. When GROMACS upgrades to future
+ * C++ standards, the std:: versions should be preferred. */
+
+#ifndef GSL_DETAIL_TYPES_H
+#define GSL_DETAIL_TYPES_H
+
+namespace gsl
+{
+
+namespace details
+{
+    // Eventually these will be in std::, but not in C++11
+
+    template< bool B, class T = void >
+    using enable_if_t         = typename std::enable_if<B, T>::type;
+
+    template< class T >
+    using remove_cv_t = typename std::remove_cv<T>::type;
+
+    template< class T >
+    using remove_const_t = typename std::remove_const<T>::type;
+
+    template< bool B, class T, class F >
+    using conditional_t = typename std::conditional<B, T, F>::type;
+
+    template< class T >
+    using add_pointer_t = typename std::add_pointer<T>::type;
+
+    template< class T >
+    using add_const_t = typename std::add_const<T>::type;
+
+    template< class T >
+    using decay_t = typename std::decay<T>::type;
+
+    template< class T >
+    using add_lvalue_reference_t = typename std::add_lvalue_reference<T>::type;
+
+} // namespace details
+
+} // namespace gsl
+
+#endif
