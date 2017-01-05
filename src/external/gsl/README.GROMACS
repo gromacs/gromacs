@@ -1,0 +1,6 @@
+Microsft Guidelines Support Library (GSL) was imported from commmit
+9d13cb14c3 of https://github.com/Microsoft/GSL.git.
+
+Various dotfiles and the tests directory has been omitted,
+particularly because the tests also require the MS unittests package
+to work.
