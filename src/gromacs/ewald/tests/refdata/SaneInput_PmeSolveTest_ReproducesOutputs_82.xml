@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <NonZeroGridValues Name="ComplexSpaceGrid">
+    <Real Name="Cell 0 4 0 im">1.6924590738146162e-27</Real>
+    <Real Name="Cell 4 2 7 re">2.8783092087433198e-17</Real>
+    <Real Name="Cell 4 2 7 im">-8.3671777932149553e-17</Real>
+  </NonZeroGridValues>
+  <Real Name="Energy">3.7429264709972441e-15</Real>
+  <Matrix Name="Virial">
+    <Real Name="Cell 0 0">7.5333964580292379e-14</Real>
+    <Real Name="Cell 1 0">6.5907074058696808e-14</Real>
+    <Real Name="Cell 1 1">5.4390674464763948e-14</Real>
+    <Real Name="Cell 2 0">4.4568307686189152e-14</Real>
+    <Real Name="Cell 2 1">3.8046117202442027e-14</Real>
+    <Real Name="Cell 2 2">2.385644354781939e-14</Real>
+  </Matrix>
+</ReferenceData>
