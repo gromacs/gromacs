@@ -49,6 +49,7 @@
 #include "gromacs/ewald/pme-gather.h"
 #include "gromacs/ewald/pme-grid.h"
 #include "gromacs/ewald/pme-internal.h"
+#include "gromacs/ewald/pme-solve.h"
 #include "gromacs/ewald/pme-spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/invertmatrix.h"
@@ -75,37 +76,54 @@ void PmeGetRealGridSizes(const PmeSafePointer &pmeSafe,
     gmx_parallel_3dfft_real_limits(pmeSafe->pfft_setup[gridIndex], gridSize, gridOffsetUnused, paddedGridSize);
 }
 
+//! Getting local PME complex grid pointer for test I/O
+t_complex *PmeGetComplexGrid(const PmeSafePointer &pmeSafe)
+{
+    const size_t gridIndex = 0;
+    return pmeSafe->cfftgrid[gridIndex];
+}
+
+//! Getting local PME complex grid dimensions
+void PmeGetComplexGridSizes(const PmeSafePointer &pmeSafe,
+                            IVec                 &gridSize,
+                            IVec                 &paddedGridSize)
+{
+    const size_t gridIndex = 0;
+    IVec         gridOffsetUnused, complexOrderUnused;
+    gmx_parallel_3dfft_complex_limits(pmeSafe->pfft_setup[gridIndex], complexOrderUnused, gridSize, gridOffsetUnused, paddedGridSize); //what about YZX ordering?
+}
+
+//! Getting the PME grid memory buffer and its sizes - template definition
+template<typename ValueType> void PmeGetGridAndSizes(const PmeSafePointer &, ValueType * &, IVec &, IVec &)
+{
+    GMX_THROW(InternalError("Deleted function call"));
+    // explicitly deleting general template does not compile in clang/icc, see https://llvm.org/bugs/show_bug.cgi?id=17537
+}
+
+//! Getting the PME real grid memory buffer and its sizes
+template<> void PmeGetGridAndSizes<real>(const PmeSafePointer &pmeSafe, real * &grid, IVec &gridSize, IVec &paddedGridSize)
+{
+    grid = PmeGetRealGrid(pmeSafe);
+    PmeGetRealGridSizes(pmeSafe, gridSize, paddedGridSize);
+}
+
+//! Getting the PME complex grid memory buffer and its sizes
+template<> void PmeGetGridAndSizes<t_complex>(const PmeSafePointer &pmeSafe, t_complex * &grid, IVec &gridSize, IVec &paddedGridSize)
+{
+    grid = PmeGetComplexGrid(pmeSafe);
+    PmeGetComplexGridSizes(pmeSafe, gridSize, paddedGridSize);
+}
+
 //! PME initialization - internal
-PmeSafePointer PmeInitInternal(const t_inputrec *inputRec, size_t atomCount)
+PmeSafePointer PmeInitInternal(const t_inputrec *inputRec, size_t atomCount,
+                               const Matrix3x3          &box,
+                               real ewaldCoeff_q = 0.0f, real ewaldCoeff_lj = 0.0f
+                               )
 {
     gmx_pme_t *pmeDataRaw = NULL;
     gmx_pme_init(&pmeDataRaw, NULL, 1, 1, inputRec,
-                 atomCount, FALSE, FALSE, TRUE, 0.0, 0.0, 1);
+                 atomCount, FALSE, FALSE, TRUE, ewaldCoeff_q, ewaldCoeff_lj, 1);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
-    return pme;
-}
-
-//! Simple PME initialization based on input, no atom data
-PmeSafePointer PmeInitEmpty(const t_inputrec *inputRec)
-{
-    return PmeInitInternal(inputRec, 0);
-    // hiding the fact that PME actually needs to know the number of atoms in advance
-}
-
-//! PME initialization with atom data and system box
-PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
-                                const CoordinatesVector &coordinates,
-                                const ChargesVector     &charges,
-                                const Matrix3x3          box
-                                )
-{
-    const size_t    atomCount = coordinates.size();
-    GMX_RELEASE_ASSERT(atomCount == charges.size(), "Mismatch in atom data");
-    PmeSafePointer  pmeSafe = PmeInitInternal(inputRec, atomCount);
-    pme_atomcomm_t *atc     = &(pmeSafe->atc[0]);
-    atc->x           = const_cast<rvec *>(as_rvec_array(coordinates.data()));
-    atc->coefficient = const_cast<real *>(charges.data());
-    /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
 
     // TODO get rid of this with proper matrix type
     matrix boxTemp;
@@ -116,7 +134,35 @@ PmeSafePointer PmeInitWithAtoms(const t_inputrec        *inputRec,
             boxTemp[i][j] = box[i * DIM + j];
         }
     }
-    gmx::invertBoxMatrix(boxTemp, pmeSafe->recipbox);
+    invertBoxMatrix(boxTemp, pme->recipbox);
+
+    return pme;
+}
+
+//! Simple PME initialization based on input, no atom data
+PmeSafePointer PmeInitEmpty(const t_inputrec         *inputRec,
+                            const Matrix3x3          &box,
+                            real                      ewaldCoeff_q,
+                            real                      ewaldCoeff_lj)
+{
+    return PmeInitInternal(inputRec, 0, box, ewaldCoeff_q, ewaldCoeff_lj);
+    // hiding the fact that PME actually needs to know the number of atoms in advance
+}
+
+//! PME initialization with atom data
+PmeSafePointer PmeInitWithAtoms(const t_inputrec         *inputRec,
+                                const CoordinatesVector  &coordinates,
+                                const ChargesVector      &charges,
+                                const Matrix3x3          &box
+                                )
+{
+    const size_t    atomCount = coordinates.size();
+    GMX_RELEASE_ASSERT(atomCount == charges.size(), "Mismatch in atom data");
+    PmeSafePointer  pmeSafe = PmeInitInternal(inputRec, atomCount, box);
+    pme_atomcomm_t *atc     = &(pmeSafe->atc[0]);
+    atc->x           = const_cast<rvec *>(as_rvec_array(coordinates.data()));
+    atc->coefficient = const_cast<real *>(charges.data());
+    /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
 
     return pmeSafe;
 }
@@ -145,6 +191,39 @@ void PmePerformSplineAndSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 
         default:
             GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
+    }
+}
+
+//! PME solving
+void PmePerformSolve(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+                     PmeSolveAlgorithm method, real cellVolume)
+{
+    t_complex      *grid                   = PmeGetComplexGrid(pmeSafe);
+    const bool      computeEnergyAndVirial = true;
+    const bool      useLorentzBerthelot    = false;
+    const size_t    threadIndex            = 0;
+    switch (mode)
+    {
+        case PmeCodePath::CPU:
+            switch (method)
+            {
+                case PmeSolveAlgorithm::Normal:
+                    solve_pme_yzx(pmeSafe.get(), grid, cellVolume,
+                                  computeEnergyAndVirial, pmeSafe->nthread, threadIndex);
+                    break;
+
+                case PmeSolveAlgorithm::LennardJones:
+                    solve_pme_lj_yzx(pmeSafe.get(), &grid, useLorentzBerthelot,
+                                     cellVolume, computeEnergyAndVirial, pmeSafe->nthread, threadIndex);
+                    break;
+
+                default:
+                    GMX_THROW(InternalError("Test not implemented for this mode"));
+            }
+            break;
+
+        default:
+            GMX_THROW(InternalError("Test not implemented for this mode"));
     }
 }
 
@@ -254,18 +333,20 @@ void PmeSetGridLineIndices(const PmeSafePointer &pmeSafe, PmeCodePath mode,
     }
 }
 
-//! Setting real grid to be used in gather
-void PmeSetRealGrid(const PmeSafePointer   &pmeSafe,
-                    PmeCodePath             mode,
-                    const SparseGridValues &gridValues)
+//! Setting real or complex grid
+template<typename ValueType>
+void PmeSetGrid(const PmeSafePointer              &pmeSafe,
+                PmeCodePath                        mode,
+                const SparseGridValues<ValueType> &gridValues)
 {
-    real *grid = PmeGetRealGrid(pmeSafe);
-    IVec  gridSize, paddedGridSize;
-    PmeGetRealGridSizes(pmeSafe, gridSize, paddedGridSize);
+    IVec       gridSize, paddedGridSize;
+    ValueType *grid;
+    PmeGetGridAndSizes<ValueType>(pmeSafe, grid, gridSize, paddedGridSize);
+
     switch (mode)
     {
         case PmeCodePath::CPU:
-            std::memset(grid, 0, paddedGridSize[XX] * paddedGridSize[YY] * paddedGridSize[ZZ] * sizeof(real));
+            std::memset(grid, 0, paddedGridSize[XX] * paddedGridSize[YY] * paddedGridSize[ZZ] * sizeof(ValueType));
             for (const auto &gridValue : gridValues)
             {
                 for (int i = 0; i < DIM; i++)
@@ -274,6 +355,59 @@ void PmeSetRealGrid(const PmeSafePointer   &pmeSafe,
                 }
                 const size_t gridValueIndex = (gridValue.first[XX] * paddedGridSize[YY] + gridValue.first[YY]) * paddedGridSize[ZZ] + gridValue.first[ZZ];
                 grid[gridValueIndex] = gridValue.second;
+            }
+            break;
+
+        default:
+            GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
+    }
+}
+
+//! Setting real grid to be used in gather
+void PmeSetRealGrid(const PmeSafePointer       &pmeSafe,
+                    PmeCodePath                 mode,
+                    const SparseRealGridValues &gridValues)
+{
+    PmeSetGrid<real>(pmeSafe, mode, gridValues);
+}
+
+//! Setting complex grid to be used in solve
+void PmeSetComplexGrid(const PmeSafePointer          &pmeSafe,
+                       PmeCodePath                    mode,
+                       const SparseComplexGridValues &gridValues)
+{
+    PmeSetGrid<t_complex>(pmeSafe, mode, gridValues);
+}
+
+//! Getting real or complex grid - only non zero values
+template<typename ValueType>
+void PmeGetGrid(const PmeSafePointer        &pmeSafe,
+                PmeCodePath                  mode,
+                SparseGridValues<ValueType> &gridValues)
+{
+    IVec       gridSize, paddedGridSize;
+    ValueType *grid;
+    PmeGetGridAndSizes<ValueType>(pmeSafe, grid, gridSize, paddedGridSize);
+    switch (mode)
+    {
+        case PmeCodePath::CPU:
+            gridValues.clear();
+
+            for (int ix = 0; ix < gridSize[XX]; ix++)
+            {
+                for (int iy = 0; iy < gridSize[YY]; iy++)
+                {
+                    for (int iz = 0; iz < gridSize[ZZ]; iz++)
+                    {
+                        const size_t    gridValueIndex = (ix * paddedGridSize[YY] + iy) * paddedGridSize[ZZ] + iz;
+                        const ValueType value          = grid[gridValueIndex];
+                        if (value != ValueType {})
+                        {
+                            IVec key = {ix, iy, iz};
+                            gridValues[key] = value;
+                        }
+                    }
+                }
             }
             break;
 
@@ -316,37 +450,51 @@ void PmeFetchOutputsSpline(const PmeSafePointer &pmeSafe, PmeCodePath mode,
 
 //! Fetching the spreading output of PmePerformSplineAndSpread()
 void PmeFetchOutputsSpread(const PmeSafePointer &pmeSafe, PmeCodePath mode,
-                           SparseGridValues &gridValues)
+                           SparseRealGridValues &gridValues)
 {
-    real *grid = PmeGetRealGrid(pmeSafe);
-    IVec  gridSize, paddedGridSize;
-    PmeGetRealGridSizes(pmeSafe, gridSize, paddedGridSize);
+    PmeGetGrid<real>(pmeSafe, mode, gridValues);
+}
+
+//! Fetching the outputs of PmePerformSolve()
+void PmeFetchOutputsSolve(const PmeSafePointer &pmeSafe, PmeCodePath mode,
+                          PmeSolveAlgorithm method,
+                          SparseComplexGridValues &gridValues,
+                          real &energy,
+                          Matrix3x3 &virial)
+{
+    PmeGetGrid<t_complex>(pmeSafe, mode, gridValues);
+
+    matrix virialTemp;
 
     switch (mode)
     {
         case PmeCodePath::CPU:
-            gridValues.clear();
 
-            for (int ix = 0; ix < gridSize[XX]; ix++)
+            switch (method)
             {
-                for (int iy = 0; iy < gridSize[YY]; iy++)
-                {
-                    for (int iz = 0; iz < gridSize[ZZ]; iz++)
-                    {
-                        const size_t gridValueIndex = (ix * paddedGridSize[YY] + iy) * paddedGridSize[ZZ] + iz;
-                        const real   value          = grid[gridValueIndex];
-                        if (value != 0.0)
-                        {
-                            IVec key = {ix, iy, iz};
-                            gridValues[key] = value;
-                        }
-                    }
-                }
+                case PmeSolveAlgorithm::Normal:
+                    get_pme_ener_vir_q(pmeSafe->solve_work, pmeSafe->nthread, &energy, virialTemp);
+                    break;
+
+                case PmeSolveAlgorithm::LennardJones:
+                    get_pme_ener_vir_lj(pmeSafe->solve_work, pmeSafe->nthread, &energy, virialTemp);
+                    break;
+
+                default:
+                    GMX_THROW(InternalError("Test not implemented for this mode"));
             }
             break;
 
         default:
-            GMX_THROW(gmx::InternalError("Test not implemented for this mode"));
+            GMX_THROW(InternalError("Test not implemented for this mode"));
+    }
+
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            virial[i * DIM + j] = virialTemp[i][j];
+        }
     }
 }
 
