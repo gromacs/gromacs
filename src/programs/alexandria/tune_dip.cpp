@@ -255,8 +255,7 @@ void OPtimization::calcDeviation()
             (_bFinal && (mymol.eSupp == eSupportRemote)))
         {
 
-            QgenEem qgen(pd_, &(mymol.topology_->atoms),
-                         mymol.x_, 
+            QgenEem qgen(pd_, &(mymol.topology_->atoms), 
                          _iChargeDistributionModel,
                          _hfac,
                          mymol.molProp()->getCharge());
@@ -265,7 +264,8 @@ void OPtimization::calcDeviation()
             auto   eQ    = qgen.generateChargesSm(debug,
                                                   pd_, &(mymol.topology_->atoms),
                                                   1e-4, 100,
-                                                  &chieq);
+                                                  &chieq,
+                                                  mymol.x_);
             mymol.chieq = chieq;
             if (eQ != eQGEN_OK)
             {

@@ -1618,7 +1618,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
         break;
         case eqgEEM:
         {
-            QgenEem qgen(pd, &topology_->atoms, x_,
+            QgenEem qgen(pd, &topology_->atoms,
                          iChargeDistributionModel,
                          hfac, molProp()->getCharge());
 
@@ -1626,7 +1626,8 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                                  molProp()->getMolname().c_str(),
                                                  pd, &topology_->atoms,
                                                  tolerance,
-                                                 maxiter))
+                                                 maxiter,
+                                                 x_))
             {
                 imm = immChargeGeneration;
             }           

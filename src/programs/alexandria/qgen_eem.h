@@ -30,21 +30,24 @@ class QgenEem
     public:
         QgenEem(const Poldata &pd,
                 t_atoms *atoms,
-                PaddedRVecVector x,
                 ChargeDistributionModel   iChargeDistributionModel,
                 double hfac, int qtotal);
 
-        int generateChargesSm(FILE *fp,
-                              const Poldata &pd,
-                              t_atoms *atoms,
-                              double tol, int maxiter, 
-                              double *chieq);
+        int generateChargesSm(FILE            *fp,
+                              const Poldata    &pd,
+                              t_atoms         *atoms,
+                              double           tol, 
+                              int              maxiter, 
+                              double          *chieq,
+                              PaddedRVecVector x);
 
-        int generateCharges(FILE *fp,
-                            const std::string molname,
-                            const Poldata &pd,
-                            t_atoms *atoms,
-                            double tol, int maxiter);
+        int generateCharges(FILE              *fp,
+                            const std::string  molname,
+                            const Poldata     &pd,
+                            t_atoms           *atoms,
+                            double             tol, 
+                            int                maxiter,
+                            PaddedRVecVector   x);
 
         const char *message() const;
         
@@ -68,38 +71,49 @@ class QgenEem
 
     private:
         gmx_bool                                           bWarned_;
-        ChargeDistributionModel                            _iChargeDistributionModel;
-        int                                                _natom, _eQGEN;
-        double                                             _qtotal, _chieq, _hfac;
+        ChargeDistributionModel                            iChargeDistributionModel_;
+        int                                                natom_, eQGEN_;
+        double                                             qtotal_, chieq_, hfac_;
+        double                                             Jcs_, Jss_;
         /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
-        std::vector<std::string>                           _elem;
-        std::vector<int>                                   _atomnr;
-        std::vector<double>                                _chi0, _rhs, _j00;
-        std::vector<gmx::RVec>                             _x;
+        std::vector<std::string>                           elem_;
+        std::vector<int>                                   atomnr_;
+        std::vector<double>                                chi0_, rhs_, j00_;
+        std::vector<gmx::RVec>                             x_;
         /* Jab is a matrix over atom pairs */
-        std::vector<std::vector<double>>                  _Jab;
+        std::vector<std::vector<double>>                   Jcc_;
         /* For each atom i there are nZeta[i] row, q and zeta entries */
-        std::vector<int>                                   _nZeta;
-        std::vector<std::vector<int> >                     _row;
-        bool                                               _bAllocSave;
-        std::vector<std::vector<double> >                  _q, _zeta, _qsave, _zetasave;
+        std::vector<int>                                   nZeta_;
+        std::vector<std::vector<int> >                     row_;
+        bool                                               bAllocSave_;
+        std::vector<std::vector<double> >                  q_, zeta_, qsave_, zetasave_;
 
 
-        double calcJab(ChargeDistributionModel iChargeDistributionModel,
-                       rvec xi, rvec xj,
-                       int nZi, int nZj,
-                       std::vector<double> zetaI,
-                       std::vector<double> zetaJ,
-                       std::vector<int> rowI,
-                       std::vector<int> rowJ);
+        double calcJ(ChargeDistributionModel iChargeDistributionModel,
+                     rvec                    xI, 
+                     rvec                    xJ,
+                     double                  zetaI,
+                     double                  zetaJ,
+                     int                     rowI,
+                     int                     rowJ);
 
         void copyChargesToAtoms(t_atoms *atoms);
         
-        void calcJab();
+        void calcJcc(t_atoms *atoms);
+        
+        void calcJcs(t_atoms *atoms,
+                     int      top_ndx,
+                     int      eem_ndx);
+        
+        void calcJss(t_atoms *atoms,
+                     int      top_ndx,
+                     int      eem_ndx);
 
         void solveQEem(FILE *fp, double hardnessFactor);
 
         void updateJ00();
+        
+        void updatePositions(PaddedRVecVector x, t_atoms *atoms);
 
         double calcSij(int i, int j);
 
@@ -109,7 +123,7 @@ class QgenEem
         int generateChargesBultinck(FILE *fp,
                                     const Poldata &pd,
                                     t_atoms *atoms);
-        void calcRhs();
+        void calcRhs(t_atoms *atoms);
 };
 }
 #endif
