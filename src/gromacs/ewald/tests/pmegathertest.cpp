@@ -64,7 +64,7 @@ namespace
 /*! \brief Convenience typedef of the test input parameters - unit cell box, PME interpolation order, grid dimensions,
  *  grid values, overwriting/reducing the input forces, gridline indices, spline theta values, spline dtheta values, atom charges,
  */
-typedef std::tuple<Matrix3x3, int, IVec, SparseGridValues, PmeGatherInputHandling, GridLineIndicesVector, SplineParamsVector,
+typedef std::tuple<Matrix3x3, int, IVec, SparseRealGridValues, PmeGatherInputHandling, GridLineIndicesVector, SplineParamsVector,
                    SplineParamsVector, ChargesVector> GatherInputParameters;
 
 //! Test fixture
@@ -82,18 +82,18 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
         void RunTest()
         {
             /* Getting the input */
-            Matrix3x3                 box;
-            int                       pmeOrder;
-            IVec                      gridSize;
-            ChargesVector             charges;
-            GridLineIndicesVector     gridLineIndices;
-            SplineParamsVector        splineValues;
-            SplineParamsVector        splineDerivatives;
-            SparseGridValues          nonZeroGridValues;
-            PmeGatherInputHandling    inputForceTreatment;
+            Matrix3x3                     box;
+            int                           pmeOrder;
+            IVec                          gridSize;
+            ChargesVector                 charges;
+            GridLineIndicesVector         gridLineIndices;
+            SplineParamsVector            splineValues;
+            SplineParamsVector            splineDerivatives;
+            SparseRealGridValues          nonZeroGridValues;
+            PmeGatherInputHandling        inputForceTreatment;
             std::tie(box, pmeOrder, gridSize, nonZeroGridValues, inputForceTreatment, gridLineIndices, splineValues, splineDerivatives, charges) = GetParam();
-            const size_t              atomCount = charges.size();
-            CoordinatesVector         coordinatesDummy(atomCount, RVec {1e6, 1e7, -1e8});
+            const size_t                  atomCount = charges.size();
+            CoordinatesVector             coordinatesDummy(atomCount, RVec {1e6, 1e7, -1e8});
             /* The coordinates are intentionally bogus - only the size matters; the gridline indices are fed directly as inputs */
 
             /* Storing the input where it's needed, running the test */
@@ -319,46 +319,46 @@ static SplineParamsVector const sampleSplineDerivatives5_13(sampleSplineDerivati
                                                             sampleSplineDerivativesFull.begin() + splineDataStride5 * 16);
 
 //! 2 sample grids - only non-zero values have to be listed
-static std::vector<SparseGridValues> const sampleGrids
+static std::vector<SparseRealGridValues> const sampleGrids
 {
-    SparseGridValues {{
-                          IVec {
-                              0, 0, 0
-                          }, 3.5f
-                      }, {
-                          IVec {
-                              7, 0, 0
-                          }, -2.5f
-                      }, {
-                          IVec {
-                              3, 5, 7
-                          }, -0.006f
-                      }, {
-                          IVec {
-                              3, 1, 2
-                          }, 0.6f
-                      },  {
-                          IVec {
-                              6, 2, 4
-                          }, 30.1f
-                      }, },
-    SparseGridValues {{
-                          IVec {
-                              0, 4, 0
-                          }, 6.f
-                      }, {
-                          IVec {
-                              4, 2, 7
-                          }, 13.76f
-                      }, {
-                          IVec {
-                              0, 6, 7
-                          }, 3.6f
-                      }, {
-                          IVec {
-                              2, 5, 10
-                          }, 3.6f
-                      }, }
+    SparseRealGridValues {{
+                              IVec {
+                                  0, 0, 0
+                              }, 3.5f
+                          }, {
+                              IVec {
+                                  7, 0, 0
+                              }, -2.5f
+                          }, {
+                              IVec {
+                                  3, 5, 7
+                              }, -0.006f
+                          }, {
+                              IVec {
+                                  3, 1, 2
+                              }, 0.6f
+                          },  {
+                              IVec {
+                                  6, 2, 4
+                              }, 30.1f
+                          }, },
+    SparseRealGridValues {{
+                              IVec {
+                                  0, 4, 0
+                              }, 6.f
+                          }, {
+                              IVec {
+                                  4, 2, 7
+                              }, 13.76f
+                          }, {
+                              IVec {
+                                  0, 6, 7
+                              }, 3.6f
+                          }, {
+                              IVec {
+                                  2, 5, 10
+                              }, 3.6f
+                          }, }
 };
 
 //! Moved out from instantiations for readability
