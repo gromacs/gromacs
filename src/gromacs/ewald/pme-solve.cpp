@@ -291,7 +291,7 @@ gmx_inline static void calc_exponentials_lj(int start, int end, real *r, real *t
 }
 #endif
 
-int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid, real vol,
+int solve_pme_yzx(const gmx_pme_t *pme, t_complex *grid, real vol,
                   gmx_bool bEnerVir,
                   int nthread, int thread)
 {
@@ -542,7 +542,7 @@ int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid, real vol,
     return local_ndata[YY]*local_ndata[XX];
 }
 
-int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real vol,
+int solve_pme_lj_yzx(const gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real vol,
                      gmx_bool bEnerVir, int nthread, int thread)
 {
     /* do recip sum over local cells in grid */
