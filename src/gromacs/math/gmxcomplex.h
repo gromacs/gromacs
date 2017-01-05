@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -117,8 +117,6 @@ static real cabs2(t_complex c)
     return abs2;
 }
 
-
-
 static t_complex cdiv(t_complex teller, t_complex noemer)
 {
     t_complex res, anoemer;
@@ -128,4 +126,8 @@ static t_complex cdiv(t_complex teller, t_complex noemer)
 
     return rcmul(1.0/anoemer.re, res);
 }
+
+inline bool operator==(const t_complex &lhs, const t_complex &rhs){ return (lhs.re == rhs.re) && (lhs.im == rhs.im); }
+inline bool operator!=(const t_complex &lhs, const t_complex &rhs){ return !(lhs == rhs); }
+
 #endif

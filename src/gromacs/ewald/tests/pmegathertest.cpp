@@ -403,7 +403,7 @@ class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
                                           (inputForceTreatment == PmeGatherInputHandling::ReduceWith) ? "with reduction" : "without reduction"
                                           ));
 
-                PmeSafePointer pmeSafe = pmeInitWithAtoms(&inputRec, inputAtomData.coordinates, inputAtomData.charges, box);
+                PmeSafePointer pmeSafe = pmeInitAtoms(&inputRec, inputAtomData.coordinates, inputAtomData.charges, box);
 
                 /* Setting some more inputs */
                 pmeSetRealGrid(pmeSafe.get(), mode.first, nonZeroGridValues);
