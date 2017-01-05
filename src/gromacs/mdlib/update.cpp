@@ -80,6 +80,8 @@
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
 
+/* TODO: temporarily moved to update.h to use in shellfc.cpp */
+#if 0
 typedef struct {
     double em;
 } gmx_sd_const_t;
@@ -110,7 +112,7 @@ struct gmx_update_t
     gmx_int64_t     deformref_step;
     matrix          deformref_box;
 };
-
+#endif
 
 static void do_update_md(int start, int nrend, double dt,
                          t_grp_tcstat *tcstat,

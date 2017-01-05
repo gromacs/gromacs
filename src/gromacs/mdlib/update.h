@@ -59,7 +59,41 @@ struct t_nrnb;
 struct t_state;
 
 /* Abstract type for update */
+/* TODO: testing */
+#if 0
 struct gmx_update_t;
+#endif
+
+typedef struct {
+    double em;
+} gmx_sd_const_t;
+
+typedef struct {
+    real V;
+} gmx_sd_sigma_t;
+
+typedef struct {
+    /* BD stuff */
+    real           *bd_rf;
+    /* SD stuff */
+    gmx_sd_const_t *sdc;
+    gmx_sd_sigma_t *sdsig;
+    /* andersen temperature control stuff */
+    gmx_bool       *randomize_group;
+    real           *boltzfac;
+} gmx_stochd_t;
+
+struct gmx_update_t
+{
+    gmx_stochd_t *sd;
+    /* xprime for constraint algorithms */
+    rvec         *xp;
+    int           xp_nalloc;
+
+    /* Variables for the deform algorithm */
+    gmx_int64_t     deformref_step;
+    matrix          deformref_box;
+};
 
 /* Initialize the stochastic dynamics struct */
 gmx_update_t *init_update(const t_inputrec *ir);

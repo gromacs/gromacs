@@ -966,7 +966,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
  * down according to the Drude temperature set in the .mdp file
  */
 void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md,
-                          t_state *state, tensor force_vir, gmx_int64_t step, gmx_bool bVerbose)
+                          t_state *state, gmx_update_t *upd, tensor force_vir, gmx_int64_t step, gmx_bool bVerbose)
 {
 
     int     i, j, m, n;
@@ -1061,8 +1061,8 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
             }
 
             /* copy current positions and velocities for manipulation */
-            copy_rvec(state->x[ia], xa);
-            copy_rvec(state->x[ib], xb);
+            copy_rvec(upd->xp[ia], xa);
+            copy_rvec(upd->xp[ib], xb);
 
             if (debug)
             {
@@ -1254,8 +1254,8 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 {
                     for (n=0; n<DIM; n++)
                     {
-                        force_vir[m][n] += state->x[ia][m]*dfa[n];
-                        force_vir[m][n] += state->x[ib][m]*dfb[n];
+                        force_vir[m][n] += upd->xp[ia][m]*dfa[n];
+                        force_vir[m][n] += upd->xp[ib][m]*dfb[n];
                     }
                 }
 
@@ -1287,8 +1287,8 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms
                 }
 
                 /* copy new positions back */
-                copy_rvec(xa, state->x[ia]);
-                copy_rvec(xb, state->x[ib]);
+                copy_rvec(xa, upd->xp[ia]);
+                copy_rvec(xb, upd->xp[ib]);
 
                 /* copy new velocities back */
                 copy_rvec(va, state->v[ia]);

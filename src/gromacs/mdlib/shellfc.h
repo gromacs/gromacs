@@ -40,6 +40,7 @@
 #include <cstdio>
 #include <cstdint>
 
+#include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 
@@ -140,7 +141,7 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                         FILE *fp_field);
 
 void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, t_mdatoms *md,       
-                          t_state *state, tensor force_vir, gmx_int64_t step, gmx_bool bVerbose);
+                          t_state *state, gmx_update_t *upd, tensor force_vir, gmx_int64_t step, gmx_bool bVerbose);
 
 /* functions for DD */
 static void spread_shell(t_iatom ia[],
