@@ -1,0 +1,9 @@
+Verified+2: Jenkins Buildbot <jenkins@gromacs.org>
+Code-Review+1: Carsten Kutzner <ckutzne@gwdg.de>
+Verified+1: Carsten Kutzner <ckutzne@gwdg.de>
+Code-Review+2: Roland Schulz <roland.schulz@intel.com>
+Submitted-by: Roland Schulz <roland.schulz@intel.com>
+Submitted-at: Thu, 05 Jan 2017 17:11:18 +0100
+Reviewed-on: https://gerrit.gromacs.org/6405
+Project: gromacs
+Branch: refs/heads/release-2016
