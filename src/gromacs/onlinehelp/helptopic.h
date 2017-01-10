@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,13 +68,13 @@ namespace gmx
 class AbstractSimpleHelpTopic : public IHelpTopic
 {
     public:
-        virtual const char *name() const  = 0;
-        virtual const char *title() const = 0;
+        const char *name() const  override = 0;
+        const char *title() const override = 0;
 
-        virtual bool hasSubTopics() const;
-        virtual const IHelpTopic *findSubTopic(const char *name) const;
+        bool hasSubTopics() const override;
+        const IHelpTopic *findSubTopic(const char *name) const override;
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+        void writeHelp(const HelpWriterContext &context) const override;
 
     protected:
         /*! \brief
@@ -107,15 +107,15 @@ class AbstractCompositeHelpTopic : public IHelpTopic
 {
     public:
         AbstractCompositeHelpTopic();
-        virtual ~AbstractCompositeHelpTopic();
+        ~AbstractCompositeHelpTopic() override;
 
-        virtual const char *name() const  = 0;
-        virtual const char *title() const = 0;
+        const char *name() const  override = 0;
+        const char *title() const override = 0;
 
-        virtual bool hasSubTopics() const;
-        virtual const IHelpTopic *findSubTopic(const char *name) const;
+        bool hasSubTopics() const override;
+        const IHelpTopic *findSubTopic(const char *name) const override;
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+        void writeHelp(const HelpWriterContext &context) const override;
 
         /*! \brief
          * Adds a given topic as a subtopic of this topic.
@@ -224,17 +224,17 @@ template <class HelpText>
 class SimpleHelpTopic : public AbstractSimpleHelpTopic
 {
     public:
-        virtual const char *name() const
+        const char *name() const override
         {
             return HelpText::name;
         }
-        virtual const char *title() const
+        const char *title() const override
         {
             return HelpText::title;
         }
 
     protected:
-        virtual std::string helpText() const
+        std::string helpText() const override
         {
             return joinStrings(HelpText::text, "\n");
         }
@@ -259,19 +259,19 @@ class CompositeHelpTopic : public AbstractCompositeHelpTopic
     public:
         // copydocs are needed with Doxygen 1.8.10, but not 1.8.5...
         //! \copydoc gmx::AbstractCompositeHelpTopic::name()
-        virtual const char *name() const
+        const char *name() const override
         {
             return HelpText::name;
         }
         //! \copydoc gmx::AbstractCompositeHelpTopic::title()
-        virtual const char *title() const
+        const char *title() const override
         {
             return HelpText::title;
         }
 
     protected:
         //! \copydoc gmx::AbstractCompositeHelpTopic::helpText()
-        virtual std::string helpText() const
+        std::string helpText() const override
         {
             return joinStrings(HelpText::text, "\n");
         }

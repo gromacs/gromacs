@@ -552,17 +552,17 @@ class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
         {
         }
 
-        virtual const char *name() const
+        const char *name() const override
         {
             return name_.c_str();
         }
-        virtual const char *title() const
+        const char *title() const override
         {
             return method_.help.helpTitle;
         }
 
     protected:
-        virtual std::string helpText() const
+        std::string helpText() const override
         {
             return joinStrings(method_.help.help,
                                method_.help.help + method_.help.nlhelp, "\n");
@@ -585,7 +585,7 @@ class KeywordsHelpTopic : public CompositeHelpTopic<KeywordsHelpText>
     public:
         KeywordsHelpTopic();
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+        void writeHelp(const HelpWriterContext &context) const override;
 
     private:
         /*! \brief

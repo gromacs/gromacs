@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,7 +90,7 @@ class RepeatingOptionSection : public AbstractOptionSection
         }
 
     private:
-        virtual IOptionSectionStorage *createStorage() const;
+        IOptionSectionStorage *createStorage() const override;
 
         std::vector<T> *values_;
 
@@ -114,15 +114,15 @@ class RepeatingOptionSectionStorage : public IOptionSectionStorage
         {
         }
 
-        virtual void initStorage()
+        void initStorage() override
         {
             defaultValues_ = currentData_;
         }
-        virtual void startSection()
+        void startSection() override
         {
             resetSection();
         }
-        virtual void finishSection()
+        void finishSection() override
         {
             store_->append(currentData_);
             resetSection();

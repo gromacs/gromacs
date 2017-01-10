@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -233,8 +233,8 @@ class Variant
                 explicit Content(const T &value) : value_(value) {}
                 explicit Content(T &&value) : value_(std::move(value)) {}
 
-                virtual const std::type_info &typeInfo() const { return typeid(T); }
-                virtual IContent *clone() const { return new Content(value_); }
+                const std::type_info &typeInfo() const override { return typeid(T); }
+                IContent *clone() const override { return new Content(value_); }
 
                 T value_;
         };
