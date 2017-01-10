@@ -335,7 +335,7 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
             clear_rvec(deltaR_);
             clear_mat(box_);
         }
-        virtual ~InsertMolecules()
+        ~InsertMolecules() override
         {
             if (top_ != nullptr)
             {
@@ -345,17 +345,17 @@ class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvid
         }
 
         // From ITopologyProvider
-        virtual gmx_mtop_t *getTopology(bool /*required*/) { return top_; }
-        virtual int getAtomCount() { return 0; }
+        gmx_mtop_t *getTopology(bool /*required*/) override { return top_; }
+        int getAtomCount() override { return 0; }
 
         // From ICommandLineOptionsModule
-        virtual void init(CommandLineModuleSettings * /*settings*/)
+        void init(CommandLineModuleSettings * /*settings*/) override
         {
         }
-        virtual void initOptions(IOptionsContainer                 *options,
-                                 ICommandLineOptionsModuleSettings *settings);
-        virtual void optionsFinished();
-        virtual int run();
+        void initOptions(IOptionsContainer                 *options,
+                         ICommandLineOptionsModuleSettings *settings) override;
+        void optionsFinished() override;
+        int run() override;
 
     private:
         void loadSolute();

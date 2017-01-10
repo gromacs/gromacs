@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,10 +70,10 @@ class FileNameOptionStorage : public OptionStorageTemplateSimple<std::string>
         FileNameOptionStorage(const FileNameOption  &settings,
                               FileNameOptionManager *manager);
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const;
-        virtual std::string formatExtraDescription() const;
-        virtual std::string formatSingleValue(const std::string &value) const;
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override;
+        std::string formatExtraDescription() const override;
+        std::string formatSingleValue(const std::string &value) const override;
 
         //! \copydoc FileNameOptionInfo::isInputFile()
         bool isInputFile() const { return bRead_ && !bWrite_; }
@@ -100,9 +100,9 @@ class FileNameOptionStorage : public OptionStorageTemplateSimple<std::string>
         ConstArrayRef<int> fileTypes() const;
 
     private:
-        virtual void initConverter(ConverterType *converter);
-        virtual std::string processValue(const std::string &value) const;
-        virtual void processAll();
+        void initConverter(ConverterType *converter) override;
+        std::string processValue(const std::string &value) const override;
+        void processAll() override;
 
         FileNameOptionInfo      info_;
         FileNameOptionManager  *manager_;

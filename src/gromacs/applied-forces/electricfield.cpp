@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -165,25 +165,25 @@ class ElectricField : public IInputRecExtension, public IForceProvider
         ElectricField() : fpField_(nullptr) {}
 
         // From IInputRecExtension
-        virtual void doTpxIO(t_fileio *fio, bool bRead);
-        virtual void initMdpTransform(IKeyValueTreeTransformRules *transform);
-        virtual void initMdpOptions(IOptionsContainerWithSections *options);
-        virtual void broadCast(const t_commrec *cr);
-        virtual void compare(FILE                     *fp,
-                             const IInputRecExtension *field2,
-                             real                      reltol,
-                             real                      abstol);
-        virtual void printParameters(FILE *fp, int indent);
-        virtual void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
-                                bool bAppendFiles, const gmx_output_env_t *oenv);
-        virtual void finishOutput();
-        virtual void initForcerec(t_forcerec *fr);
+        void doTpxIO(t_fileio *fio, bool bRead) override;
+        void initMdpTransform(IKeyValueTreeTransformRules *transform) override;
+        void initMdpOptions(IOptionsContainerWithSections *options) override;
+        void broadCast(const t_commrec *cr) override;
+        void compare(FILE                     *fp,
+                     const IInputRecExtension *field2,
+                     real                      reltol,
+                     real                      abstol) override;
+        void printParameters(FILE *fp, int indent) override;
+        void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
+                        bool bAppendFiles, const gmx_output_env_t *oenv) override;
+        void finishOutput() override;
+        void initForcerec(t_forcerec *fr) override;
 
         //! \copydoc gmx::IForceProvider::calculateForces
-        virtual void calculateForces(const t_commrec  *cr,
-                                     const t_mdatoms  *atoms,
-                                     PaddedRVecVector *force,
-                                     double            t);
+        void calculateForces(const t_commrec  *cr,
+                             const t_mdatoms  *atoms,
+                             PaddedRVecVector *force,
+                             double            t) override;
 
     private:
         //! Return whether or not to apply a field
