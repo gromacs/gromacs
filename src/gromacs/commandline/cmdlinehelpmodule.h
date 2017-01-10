@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@ class CommandLineHelpModule : public ICommandLineModule
                               const std::string                &binaryName,
                               const CommandLineModuleMap       &modules,
                               const CommandLineModuleGroupList &groups);
-        ~CommandLineHelpModule();
+        ~CommandLineHelpModule() override;
 
         /*! \brief
          * Creates a help topic for a command-line module.
@@ -124,18 +124,18 @@ class CommandLineHelpModule : public ICommandLineModule
          */
         void setOutputRedirector(IFileOutputRedirector *output);
 
-        virtual const char *name() const { return "help"; }
-        virtual const char *shortDescription() const
+        const char *name() const override { return "help"; }
+        const char *shortDescription() const override
         {
             return "Print help information";
         }
 
-        virtual void init(CommandLineModuleSettings *settings)
+        void init(CommandLineModuleSettings *settings) override
         {
             settings->setDefaultNiceLevel(0);
         }
-        virtual int run(int argc, char *argv[]);
-        virtual void writeHelp(const CommandLineHelpContext &context) const;
+        int run(int argc, char *argv[]) override;
+        void writeHelp(const CommandLineHelpContext &context) const override;
 
     private:
         typedef CommandLineHelpModuleImpl Impl;

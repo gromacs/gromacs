@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@ class TestFileInputRedirector : public IFileInputRedirector
 {
     public:
         TestFileInputRedirector();
-        virtual ~TestFileInputRedirector();
+        ~TestFileInputRedirector() override;
 
         /*! \brief
          * Marks the provided path as an existing file.
@@ -81,8 +81,8 @@ class TestFileInputRedirector : public IFileInputRedirector
         void addExistingFile(const char *filename);
 
         // From IFileInputRedirector
-        virtual bool fileExists(const char            *filename,
-                                File::NotFoundHandler  onNotFound) const;
+        bool fileExists(const char            *filename,
+                        File::NotFoundHandler  onNotFound) const override;
 
     private:
         std::set<std::string> existingFiles_;
@@ -102,7 +102,7 @@ class TestFileOutputRedirector : public IFileOutputRedirector
 {
     public:
         TestFileOutputRedirector();
-        virtual ~TestFileOutputRedirector();
+        ~TestFileOutputRedirector() override;
 
         /*! \brief
          * Checks contents of all redirected files (including stdout).
@@ -115,8 +115,8 @@ class TestFileOutputRedirector : public IFileOutputRedirector
         void checkRedirectedFiles(TestReferenceChecker *checker);
 
         // From IFileOutputRedirector
-        virtual TextOutputStream &standardOutput();
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename);
+        TextOutputStream &standardOutput() override;
+        TextOutputStreamPointer openTextOutputFile(const char *filename) override;
 
     private:
         class Impl;

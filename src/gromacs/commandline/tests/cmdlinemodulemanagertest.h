@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,10 +72,10 @@ class MockModule : public gmx::ICommandLineModule
     public:
         //! Creates a mock module with the given name and description.
         MockModule(const char *name, const char *description);
-        ~MockModule();
+        ~MockModule() override;
 
-        virtual const char *name() const { return name_; }
-        virtual const char *shortDescription() const { return descr_; }
+        const char *name() const override { return name_; }
+        const char *shortDescription() const override { return descr_; }
 
         MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
         MOCK_METHOD2(run, int(int argc, char *argv[]));
@@ -105,7 +105,7 @@ class MockOptionsModule : public gmx::ICommandLineOptionsModule
 {
     public:
         MockOptionsModule();
-        ~MockOptionsModule();
+        ~MockOptionsModule() override;
 
         MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
         MOCK_METHOD2(initOptions, void(gmx::IOptionsContainer *options, gmx::ICommandLineOptionsModuleSettings *settings));
@@ -122,7 +122,7 @@ class CommandLineModuleManagerTestBase : public gmx::test::StringTestBase
 {
     public:
         CommandLineModuleManagerTestBase();
-        ~CommandLineModuleManagerTestBase();
+        ~CommandLineModuleManagerTestBase() override;
 
         //! Creates the manager to run the given command line.
         void initManager(const CommandLine &args, const char *realBinaryName);

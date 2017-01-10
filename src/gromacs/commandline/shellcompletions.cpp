@@ -75,13 +75,13 @@ class OptionsListWriter : public OptionsVisitor
     public:
         const std::string &optionList() const { return optionList_; }
 
-        virtual void visitSection(const OptionSectionInfo &section)
+        void visitSection(const OptionSectionInfo &section) override
         {
             OptionsIterator iterator(section);
             iterator.acceptSections(this);
             iterator.acceptOptions(this);
         }
-        virtual void visitOption(const OptionInfo &option)
+        void visitOption(const OptionInfo &option) override
         {
             if (option.isHidden())
             {
@@ -110,13 +110,13 @@ class OptionCompletionWriter : public OptionsVisitor
     public:
         explicit OptionCompletionWriter(TextWriter *out) : out_(*out) {}
 
-        virtual void visitSection(const OptionSectionInfo &section)
+        void visitSection(const OptionSectionInfo &section) override
         {
             OptionsIterator iterator(section);
             iterator.acceptSections(this);
             iterator.acceptOptions(this);
         }
-        virtual void visitOption(const OptionInfo &option);
+        void visitOption(const OptionInfo &option) override;
 
     private:
         void writeOptionCompletion(const OptionInfo  &option,

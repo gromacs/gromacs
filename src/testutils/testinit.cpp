@@ -111,23 +111,23 @@ class TestProgramContext : public IProgramContext
             dataPath_ = sourceRoot;
         }
 
-        virtual const char *programName() const
+        const char *programName() const override
         {
             return context_.programName();
         }
-        virtual const char *displayName() const
+        const char *displayName() const override
         {
             return context_.displayName();
         }
-        virtual const char *fullBinaryPath() const
+        const char *fullBinaryPath() const override
         {
             return context_.fullBinaryPath();
         }
-        virtual InstallationPrefixInfo installationPrefix() const
+        InstallationPrefixInfo installationPrefix() const override
         {
             return InstallationPrefixInfo(dataPath_.c_str(), true);
         }
-        virtual const char *commandLine() const
+        const char *commandLine() const override
         {
             return context_.commandLine();
         }

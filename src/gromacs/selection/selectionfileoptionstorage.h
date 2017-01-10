@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,19 +68,19 @@ class SelectionFileOptionStorage : public AbstractOptionStorage
         SelectionFileOptionStorage(const SelectionFileOption &settings,
                                    SelectionOptionManager    *manager);
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const { return "file"; }
-        virtual int valueCount() const { return 0; }
-        virtual std::vector<Variant> defaultValues() const { return {}; }
-        virtual std::vector<std::string> defaultValuesAsStrings() const { return {}; }
-        virtual std::vector<Variant>
-        normalizeValues(const std::vector<Variant> &values) const { return values; }
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override { return "file"; }
+        int valueCount() const override { return 0; }
+        std::vector<Variant> defaultValues() const override { return {}; }
+        std::vector<std::string> defaultValuesAsStrings() const override { return {}; }
+        std::vector<Variant>
+        normalizeValues(const std::vector<Variant> &values) const override { return values; }
 
     private:
-        virtual void clearSet();
-        virtual void convertValue(const Variant &value);
-        virtual void processSet();
-        virtual void processAll() {}
+        void clearSet() override;
+        void convertValue(const Variant &value) override;
+        void processSet() override;
+        void processAll() override {}
 
         SelectionFileOptionInfo  info_;
         SelectionOptionManager  &manager_;

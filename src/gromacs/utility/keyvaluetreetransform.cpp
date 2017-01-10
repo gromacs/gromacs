@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,8 +108,8 @@ class KeyValueTreeBackMapping : public IKeyValueTreeBackMapping
                 std::map<std::string, Entry> childEntries_;
         };
 
-        virtual KeyValueTreePath
-        originalPath(const KeyValueTreePath &path) const
+        KeyValueTreePath
+        originalPath(const KeyValueTreePath &path) const override
         {
             const Entry *entry = &rootEntry_;
             for (const auto &element : path.elements())
@@ -247,7 +247,7 @@ class KeyValueTreeTransformerImpl : public IKeyValueTreeTransformRules
                 KeyValueTreePath                         context_;
         };
 
-        virtual KeyValueTreeTransformRuleBuilder addRule()
+        KeyValueTreeTransformRuleBuilder addRule() override
         {
             return KeyValueTreeTransformRuleBuilder(this);
         }
