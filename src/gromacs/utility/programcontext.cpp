@@ -67,14 +67,14 @@ class DefaultProgramContext : public IProgramContext
     public:
         DefaultProgramContext() {}
 
-        virtual const char *programName() const { return "GROMACS"; }
-        virtual const char *displayName() const { return "GROMACS"; }
-        virtual const char *fullBinaryPath() const { return ""; }
-        virtual InstallationPrefixInfo installationPrefix() const
+        const char *programName() const override { return "GROMACS"; }
+        const char *displayName() const override { return "GROMACS"; }
+        const char *fullBinaryPath() const override { return ""; }
+        InstallationPrefixInfo installationPrefix() const override
         {
             return InstallationPrefixInfo("", false);
         }
-        virtual const char *commandLine() const { return ""; }
+        const char *commandLine() const override { return ""; }
 };
 
 //! Global program info; stores the object set with setProgramContext().

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,11 +58,11 @@ class MockThreadAffinityAccess : public IThreadAffinityAccess
 {
     public:
         MockThreadAffinityAccess();
-        ~MockThreadAffinityAccess();
+        ~MockThreadAffinityAccess() override;
 
         void setSupported(bool supported) { supported_ = supported; }
 
-        virtual bool isThreadAffinitySupported() const { return supported_; }
+        bool isThreadAffinitySupported() const override { return supported_; }
         MOCK_METHOD1(setCurrentThreadAffinityToCore, bool(int core));
 
     private:

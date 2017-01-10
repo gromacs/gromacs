@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,7 +104,7 @@ class Options : public IOptionsContainerWithSections
     public:
         //! Initializes an empty options root container.
         Options();
-        ~Options();
+        ~Options() override;
 
         /*! \brief
          * Adds an option manager.
@@ -129,7 +129,7 @@ class Options : public IOptionsContainerWithSections
         void addManager(IOptionManager *manager);
 
         // From IOptionsContainer
-        virtual IOptionsContainer &addGroup();
+        IOptionsContainer &addGroup() override;
 
         //! Returns a handle to the root section.
         OptionSectionInfo       &rootSection();
@@ -154,10 +154,10 @@ class Options : public IOptionsContainerWithSections
 
     private:
         // From IOptionsContainerWithSections
-        virtual internal::OptionSectionImpl *
-        addSectionImpl(const AbstractOptionSection &section);
+        internal::OptionSectionImpl *
+        addSectionImpl(const AbstractOptionSection &section) override;
         // From IOptionsContainer
-        virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
+        OptionInfo *addOptionImpl(const AbstractOption &settings) override;
 
         PrivateImplPointer<internal::OptionsImpl> impl_;
 

@@ -73,8 +73,8 @@ class XvgMatcher : public ITextBlockMatcher
         {
         }
 
-        virtual void checkStream(TextInputStream      *stream,
-                                 TestReferenceChecker *checker)
+        void checkStream(TextInputStream      *stream,
+                         TestReferenceChecker *checker) override
         {
             checkXvgFile(stream, checker, settings_);
         }

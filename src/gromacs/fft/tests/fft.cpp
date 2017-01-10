@@ -104,7 +104,7 @@ class BaseFFTTest : public ::testing::Test
             checker_.setDefaultTolerance(
                     gmx::test::relativeToleranceAsPrecisionDependentUlp(10.0, 64, 512));
         }
-        ~BaseFFTTest()
+        ~BaseFFTTest() override
         {
             gmx_fft_cleanup();
         }
@@ -121,7 +121,7 @@ class FFTTest : public BaseFFTTest
         FFTTest() : fft_(nullptr)
         {
         }
-        ~FFTTest()
+        ~FFTTest() override
         {
             if (fft_)
             {
@@ -137,7 +137,7 @@ class ManyFFTTest : public BaseFFTTest
         ManyFFTTest() : fft_(nullptr)
         {
         }
-        ~ManyFFTTest()
+        ~ManyFFTTest() override
         {
             if (fft_)
             {
@@ -161,7 +161,7 @@ class FFFTest3D : public BaseFFTTest
         FFFTest3D() : fft_(nullptr)
         {
         }
-        ~FFFTest3D()
+        ~FFFTest3D() override
         {
             if (fft_)
             {
