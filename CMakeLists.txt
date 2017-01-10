@@ -321,14 +321,13 @@ include(gmxManageOpenMP)
 include(gmxCFlags)
 gmx_c_flags()
 
-# These collect libraries that Gromacs requires for linking:
-#  - Libraries that are required for libgromacs (only)
-set(GMX_EXTRA_LIBRARIES "")
-#  - Libraries that are required for all code in the repository
-set(GMX_COMMON_LIBRARIES "")
-#  - Libraries that all code linked against libgromacs needs
+# Several variables collect libraries that aspects of GROMACS require
+# for linking. These lists should be appended to with list(APPEND
+# ${name} new-library) calls. They are:
+#  GMX_EXTRA_LIBRARIES - Libraries that are required for libgromacs (only)
+#  GMX_COMMON_LIBRARIES - Libraries that are required for all code in the repository
+#  GMX_PUBLIC_LIBRARIES - Libraries that all code linked against libgromacs needs
 #    (i.e., something that is exposed in installed headers).
-set(GMX_PUBLIC_LIBRARIES "")
 
 # This variable should be used for additional compiler flags which are not
 # generated in gmxCFlags nor are SIMD or MPI related.
