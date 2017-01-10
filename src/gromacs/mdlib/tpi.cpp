@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -184,12 +184,12 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     gmx_int64_t      nsteps, stepblocksize = 0, step;
     gmx_int64_t      seed;
     int              i;
-    FILE            *fp_tpi = NULL;
+    FILE            *fp_tpi = nullptr;
     char            *ptr, *dump_pdb, **leg, str[STRLEN], str2[STRLEN];
     double           dbl, dump_ener;
     gmx_bool         bCavity;
     int              nat_cavity  = 0, d;
-    real            *mass_cavity = NULL, mass_tot;
+    real            *mass_cavity = nullptr, mass_tot;
     int              nbin;
     double           invbinw, *bin, refvolshift, logV, bUlogV;
     real             prescorr, enercorr, dvdlcorr;
@@ -217,7 +217,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     if (bCavity)
     {
         ptr = getenv("GMX_TPIC_MASSES");
-        if (ptr == NULL)
+        if (ptr == nullptr)
         {
             nat_cavity = 1;
         }
@@ -285,7 +285,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         sscanf(dump_pdb, "%20lf", &dump_ener);
     }
 
-    atoms2md(top_global, inputrec, -1, NULL, top_global->natoms, mdatoms);
+    atoms2md(top_global, inputrec, -1, nullptr, top_global->natoms, mdatoms);
     update_mdatoms(mdatoms, inputrec->fepvals->init_lambda);
 
     snew(enerd, 1);
@@ -630,7 +630,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                     copy_rvec(x_mol[i-a_tp0], state_global->x[i]);
                 }
                 /* Rotate the molecule randomly */
-                rotate_conf(a_tp1-a_tp0, as_rvec_array(state_global->x.data())+a_tp0, NULL,
+                rotate_conf(a_tp1-a_tp0, as_rvec_array(state_global->x.data())+a_tp0, nullptr,
                             2*M_PI*dist(rng),
                             2*M_PI*dist(rng),
                             2*M_PI*dist(rng));
@@ -663,7 +663,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                      state_global->box, &state_global->x, &state_global->hist,
                      &f, force_vir, mdatoms, enerd, fcd,
                      &state_global->lambda,
-                     NULL, fr, NULL, mu_tot, t, NULL, FALSE,
+                     nullptr, fr, nullptr, mu_tot, t, nullptr, FALSE,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
                      (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS : 0) |
                      (bStateChanged ? GMX_FORCE_STATECHANGED : 0));
@@ -833,12 +833,12 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
 
     close_trj(status);
 
-    if (fp_tpi != NULL)
+    if (fp_tpi != nullptr)
     {
         xvgrclose(fp_tpi);
     }
 
-    if (fplog != NULL)
+    if (fplog != nullptr)
     {
         fprintf(fplog, "\n");
         fprintf(fplog, "  <V>  = %12.5e nm^3\n", V_all/frame);

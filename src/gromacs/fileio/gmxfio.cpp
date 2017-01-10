@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,7 +67,7 @@
 
 /* the list of open files is a linked list, with a dummy element at its head;
        it is initialized when the first file is opened. */
-static t_fileio *open_files = NULL;
+static t_fileio *open_files = nullptr;
 
 
 /* this mutex locks the open_files structure so that no two threads can
@@ -117,8 +117,8 @@ static void gmx_fio_make_dummy(void)
     if (!open_files)
     {
         snew(open_files, 1);
-        open_files->fp   = NULL;
-        open_files->fn   = NULL;
+        open_files->fp   = nullptr;
+        open_files->fn   = nullptr;
         open_files->next = open_files;
         open_files->prev = open_files;
         tMPI_Lock_init(&(open_files->mtx));
@@ -217,7 +217,7 @@ static t_fileio *gmx_fio_get_first(void)
     if (ret == open_files)
     {
         /* after this, the open_file pointer should never change */
-        ret = NULL;
+        ret = nullptr;
     }
     else
     {
@@ -239,7 +239,7 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
     /* check if that was the last one */
     if (fio->next == open_files)
     {
-        ret = NULL;
+        ret = nullptr;
         tMPI_Thread_mutex_unlock(&open_file_mutex);
     }
     else
@@ -268,7 +268,7 @@ static void gmx_fio_stop_getting_next(t_fileio *fio)
  *****************************************************************/
 t_fileio *gmx_fio_open(const char *fn, const char *mode)
 {
-    t_fileio *fio = NULL;
+    t_fileio *fio = nullptr;
     char      newmode[5];
     gmx_bool  bRead, bReadWrite;
 
@@ -312,8 +312,8 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     tMPI_Lock_init(&(fio->mtx));
     bRead      = (newmode[0] == 'r' && newmode[1] != '+');
     bReadWrite = (newmode[1] == '+');
-    fio->fp    = NULL;
-    fio->xdr   = NULL;
+    fio->fp    = nullptr;
+    fio->xdr   = nullptr;
     if (fn)
     {
         if (fn2ftp(fn) == efTNG)
@@ -365,13 +365,13 @@ static int gmx_fio_close_locked(t_fileio *fio)
 {
     int rc = 0;
 
-    if (fio->xdr != NULL)
+    if (fio->xdr != nullptr)
     {
         xdr_destroy(fio->xdr);
         sfree(fio->xdr);
     }
 
-    if (fio->fp != NULL)
+    if (fio->fp != nullptr)
     {
         rc = gmx_ffclose(fio->fp); /* fclose returns 0 if happy */
 
@@ -407,10 +407,10 @@ int gmx_fio_fp_close(t_fileio *fio)
 {
     int rc = 0;
     gmx_fio_lock(fio);
-    if (fio->xdr == NULL)
+    if (fio->xdr == nullptr)
     {
         rc      = gmx_ffclose(fio->fp); /* fclose returns 0 if happy */
-        fio->fp = NULL;
+        fio->fp = nullptr;
     }
     gmx_fio_unlock(fio);
 
@@ -712,7 +712,7 @@ int gmx_fio_fsync(t_fileio *fio)
 
 t_fileio *gmx_fio_all_output_fsync(void)
 {
-    t_fileio *ret = NULL;
+    t_fileio *ret = nullptr;
     t_fileio *cur;
 
     cur = gmx_fio_get_first();
@@ -778,7 +778,7 @@ int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos)
 
 FILE *gmx_fio_getfp(t_fileio *fio)
 {
-    FILE *ret = NULL;
+    FILE *ret = nullptr;
 
     gmx_fio_lock(fio);
     if (fio->fp)

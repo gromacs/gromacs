@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2007,2008,2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2007,2008,2009,2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -145,7 +145,7 @@ int gmx_spatial(int argc, char *argv[])
     int               i, nidx, nidxp;
     int               v;
     int               j, k;
-    int            ***bin = NULL;
+    int            ***bin = nullptr;
     int               nbin[3];
     FILE             *flp;
     int               x, y, z, minx, miny, minz, maxx, maxy, maxz;
@@ -153,12 +153,12 @@ int gmx_spatial(int argc, char *argv[])
     int               tot, maxval, minval;
     double            norm;
     gmx_output_env_t *oenv;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
 
     t_filenm          fnm[] = {
-        { efTPS,  NULL,  NULL, ffREAD }, /* this is for the topology */
-        { efTRX, "-f", NULL, ffREAD },   /* and this for the trajectory */
-        { efNDX, NULL, NULL, ffOPTRD }
+        { efTPS,  nullptr,  nullptr, ffREAD }, /* this is for the topology */
+        { efTRX, "-f", nullptr, ffREAD },      /* and this for the trajectory */
+        { efNDX, nullptr, nullptr, ffOPTRD }
     };
 
 #define NFILE asize(fnm)
@@ -171,7 +171,7 @@ int gmx_spatial(int argc, char *argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, TRUE);
     sfree(xtop);
 
     atoms = &(top.atoms);

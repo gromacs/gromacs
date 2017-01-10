@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -334,7 +334,7 @@ void gmx_check_hw_runconf_consistency(const gmx::MDLogger &mdlog,
 
     /* GPU emulation detection is done later, but we need here as well
      * -- uncool, but there's no elegant workaround */
-    bEmulateGPU       = (getenv("GMX_EMULATE_GPU") != NULL);
+    bEmulateGPU       = (getenv("GMX_EMULATE_GPU") != nullptr);
 
     if (hwinfo->gpu_info.n_dev_compatible > 0)
     {
@@ -958,14 +958,14 @@ gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger &mdlog, const t_commrec *
         /* detect GPUs */
         hwinfo_g->gpu_info.n_dev            = 0;
         hwinfo_g->gpu_info.n_dev_compatible = 0;
-        hwinfo_g->gpu_info.gpu_dev          = NULL;
+        hwinfo_g->gpu_info.gpu_dev          = nullptr;
 
         /* Run the detection if the binary was compiled with GPU support
          * and we requested detection.
          */
         hwinfo_g->gpu_info.bDetectGPUs =
             (bGPUBinary && bDetectGPUs &&
-             getenv("GMX_DISABLE_GPU_DETECTION") == NULL);
+             getenv("GMX_DISABLE_GPU_DETECTION") == nullptr);
         if (hwinfo_g->gpu_info.bDetectGPUs)
         {
             gmx_detect_gpus(mdlog, cr);
@@ -1220,7 +1220,7 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
 {
     const gmx::CpuInfo &cpuInfo = *hwinfo_g->cpuInfo;
 
-    if (fplog != NULL)
+    if (fplog != nullptr)
     {
         std::string detected;
 
@@ -1275,24 +1275,24 @@ void gmx_parse_gpu_ids(gmx_gpu_opt_t *gpu_opt)
 {
     char *env;
 
-    if (gpu_opt->gpu_id != NULL && !bGPUBinary)
+    if (gpu_opt->gpu_id != nullptr && !bGPUBinary)
     {
         gmx_fatal(FARGS, "GPU ID string set, but %s was compiled without GPU support!",
                   gmx::getProgramContext().displayName());
     }
 
     env = getenv("GMX_GPU_ID");
-    if (env != NULL && gpu_opt->gpu_id != NULL)
+    if (env != nullptr && gpu_opt->gpu_id != nullptr)
     {
         gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
     }
-    if (env == NULL)
+    if (env == nullptr)
     {
         env = gpu_opt->gpu_id;
     }
 
     /* parse GPU IDs if the user passed any */
-    if (env != NULL)
+    if (env != nullptr)
     {
         /* Parse a "plain" or comma-separated GPU ID string which contains a
          * sequence of digits corresponding to GPU IDs; the order will

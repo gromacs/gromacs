@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,7 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
     gmx_trr_read_frame_header(status, &head, &bOK);
     *natoms = head.natoms;
     snew(*xav, *natoms);
-    gmx_trr_read_frame_data(status, &head, box, *xav, NULL, NULL);
+    gmx_trr_read_frame_data(status, &head, box, *xav, nullptr, nullptr);
 
     if ((head.t >= -1.1) && (head.t <= -0.9))
     {
@@ -83,15 +83,15 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
         {
             fprintf(stderr, "Eigenvectors in %s were determined without fitting\n", file);
             sfree(*xref);
-            *xref = NULL;
+            *xref = nullptr;
         }
         gmx_trr_read_frame_header(status, &head, &bOK);
-        gmx_trr_read_frame_data(status, &head, box, *xav, NULL, NULL);
+        gmx_trr_read_frame_data(status, &head, box, *xav, nullptr, nullptr);
     }
     else
     {
         *bFit = TRUE;
-        *xref = NULL;
+        *xref = nullptr;
     }
     *bDMA = (head.lambda > 0.5);
     if ((head.t <= -0.01) || (head.t >= 0.01))
@@ -117,7 +117,7 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
     *nvec = 0;
     while (gmx_trr_read_frame_header(status, &head, &bOK))
     {
-        gmx_trr_read_frame_data(status, &head, box, x, NULL, NULL);
+        gmx_trr_read_frame_data(status, &head, box, x, nullptr, nullptr);
         if (*nvec >= snew_size)
         {
             snew_size += 10;
@@ -164,16 +164,16 @@ void write_eigenvectors(const char *trrname, int natoms, const real mat[],
     if (WriteXref == eWXR_YES)
     {
         /* misuse lambda: 0/1 mass weighted fit no/yes */
-        gmx_trr_write_frame(trrout, -1, -1, bDMR ? 1.0 : 0.0, zerobox, natoms, xref, NULL, NULL);
+        gmx_trr_write_frame(trrout, -1, -1, bDMR ? 1.0 : 0.0, zerobox, natoms, xref, nullptr, nullptr);
     }
     else if (WriteXref == eWXR_NOFIT)
     {
         /* misuse lambda: -1 no fit */
-        gmx_trr_write_frame(trrout, -1, -1, -1.0, zerobox, natoms, x, NULL, NULL);
+        gmx_trr_write_frame(trrout, -1, -1, -1.0, zerobox, natoms, x, nullptr, nullptr);
     }
 
     /* misuse lambda: 0/1 mass weighted analysis no/yes */
-    gmx_trr_write_frame(trrout, 0, 0, bDMA ? 1.0 : 0.0, zerobox, natoms, xav, NULL, NULL);
+    gmx_trr_write_frame(trrout, 0, 0, bDMA ? 1.0 : 0.0, zerobox, natoms, xav, nullptr, nullptr);
 
     for (i = 0; i <= (end-begin); i++)
     {
@@ -196,7 +196,7 @@ void write_eigenvectors(const char *trrname, int natoms, const real mat[],
         }
 
         /* Store the eigenvalue in the time field */
-        gmx_trr_write_frame(trrout, begin+i, eigval[vec], 0, zerobox, natoms, x, NULL, NULL);
+        gmx_trr_write_frame(trrout, begin+i, eigval[vec], 0, zerobox, natoms, x, nullptr, nullptr);
     }
     gmx_trr_close(trrout);
 

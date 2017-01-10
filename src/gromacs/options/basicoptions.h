@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -298,7 +298,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
         //! Initializes an option with the given name.
         explicit StringOption(const char *name)
-            : MyBase(name), enumValues_(NULL), enumValuesCount_(0),
+            : MyBase(name), enumValues_(nullptr), enumValuesCount_(0),
               defaultEnumIndex_(-1)
         {
         }
@@ -515,7 +515,7 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
 
         //! Initializes an option with the given name.
         explicit EnumOption(const char *name)
-            : MyBase(name), enumValues_(NULL), enumValuesCount_(0)
+            : MyBase(name), enumValues_(nullptr), enumValuesCount_(0)
         {
         }
 
@@ -564,7 +564,7 @@ class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
         //! Helper function to convert default values for storate initialization.
         static int convertToInt(const EnumType *defaultValue)
         {
-            return defaultValue != NULL ? static_cast<int>(*defaultValue) : -1;
+            return defaultValue != nullptr ? static_cast<int>(*defaultValue) : -1;
         }
 
         //! Creates a EnumOptionStorage object.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,7 +112,7 @@ class TestFileManager::Impl
 };
 
 std::string TestFileManager::Impl::s_inputDirectory;
-const char *TestFileManager::Impl::s_globalOutputTempDirectory = NULL;
+const char *TestFileManager::Impl::s_globalOutputTempDirectory = nullptr;
 /** Controls whether TestFileManager should delete temporary files
     after the test finishes. */
 static bool g_bDeleteFilesAfterTest = true;
@@ -206,7 +206,7 @@ const char *TestFileManager::getInputDataDirectory()
 
 const char *TestFileManager::getGlobalOutputTempDirectory()
 {
-    GMX_RELEASE_ASSERT(Impl::s_globalOutputTempDirectory != NULL, "Global path for temporary output files from tests is not set");
+    GMX_RELEASE_ASSERT(Impl::s_globalOutputTempDirectory != nullptr, "Global path for temporary output files from tests is not set");
     return Impl::s_globalOutputTempDirectory;
 }
 

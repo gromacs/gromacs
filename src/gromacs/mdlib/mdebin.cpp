@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -169,7 +169,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             md->nCrmsd = 1;
         }
-        md->bConstrVir = (getenv("GMX_CONSTRAINTVIR") != NULL);
+        md->bConstrVir = (getenv("GMX_CONSTRAINTVIR") != nullptr);
     }
     else
     {
@@ -311,7 +311,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     /* Pass NULL for unit to let get_ebin_space determine the units
      * for interaction_function[i].longname
      */
-    md->ie    = get_ebin_space(md->ebin, md->f_nre, ener_nm, NULL);
+    md->ie    = get_ebin_space(md->ebin, md->f_nre, ener_nm, nullptr);
     if (md->nCrmsd)
     {
         /* This should be called directly after the call for md->ie,
@@ -567,10 +567,10 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         do_enxnms(fp_ene, &md->ebin->nener, &md->ebin->enm);
     }
 
-    md->print_grpnms = NULL;
+    md->print_grpnms = nullptr;
 
     /* check whether we're going to write dh histograms */
-    md->dhc = NULL;
+    md->dhc = nullptr;
     if (ir->fepvals->separate_dhdl_file == esepdhdlfileNO)
     {
         /* Currently dh histograms are only written with dynamics */
@@ -580,7 +580,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
             mde_delta_h_coll_init(md->dhc, ir);
         }
-        md->fp_dhdl = NULL;
+        md->fp_dhdl = nullptr;
         snew(md->dE, ir->fepvals->n_lambda);
     }
     else
@@ -1105,7 +1105,7 @@ void upd_mdebin(t_mdebin       *md,
         {
             /* zero for simulated tempering */
             md->dE[i] = enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0];
-            if (md->temperatures != NULL)
+            if (md->temperatures != nullptr)
             {
                 /* MRS: is this right, given the way we have defined the exchange probabilities? */
                 /* is this even useful to have at all? */
@@ -1437,7 +1437,7 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
 
             if (md->nE > 1)
             {
-                if (md->print_grpnms == NULL)
+                if (md->print_grpnms == nullptr)
                 {
                     snew(md->print_grpnms, md->nE);
                     n = 0;

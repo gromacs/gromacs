@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,10 +67,10 @@ class HelpWriterContextTest : public gmx::test::StringTestBase
                             gmx::HelpOutputFormat  format,
                             const char            *id)
         {
-            gmx::HelpWriterContext context(NULL, format);
+            gmx::HelpWriterContext context(nullptr, format);
             std::string            result
                 = context.substituteMarkupAndWrapToString(settings_, text);
-            if (id == NULL)
+            if (id == nullptr)
             {
                 switch (format)
                 {
@@ -89,8 +89,8 @@ class HelpWriterContextTest : public gmx::test::StringTestBase
         void testFormatting(const gmx::ConstArrayRef<const char *> &text)
         {
             std::string testText = gmx::joinStrings(text, "\n");
-            testFormatting(testText, gmx::eHelpOutputFormat_Console, NULL);
-            testFormatting(testText, gmx::eHelpOutputFormat_Rst, NULL);
+            testFormatting(testText, gmx::eHelpOutputFormat_Console, nullptr);
+            testFormatting(testText, gmx::eHelpOutputFormat_Rst, nullptr);
         }
 
         gmx::TextLineWrapperSettings settings_;

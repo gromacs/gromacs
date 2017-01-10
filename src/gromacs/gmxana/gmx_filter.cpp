@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,7 +100,7 @@ int gmx_filter(int argc, char *argv[])
     char             *grpname;
     int               isize;
     int              *index;
-    real             *w_rls = NULL;
+    real             *w_rls = nullptr;
     t_trxstatus      *in;
     t_trxstatus      *outl, *outh;
     int               nffr, i, fr, nat, j, d, m;
@@ -108,20 +108,20 @@ int gmx_filter(int argc, char *argv[])
     real              flen, *filt, sum, *t;
     rvec              xcmtop, xcm, **x, *ptr, *xf, *xn, *xp, hbox;
     gmx_output_env_t *oenv;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
 
 #define NLEG asize(leg)
     t_filenm fnm[] = {
-        { efTRX, "-f", NULL, ffREAD  },
-        { efTPS, NULL, NULL, ffOPTRD },
-        { efNDX, NULL, NULL, ffOPTRD },
+        { efTRX, "-f", nullptr, ffREAD  },
+        { efTPS, nullptr, nullptr, ffOPTRD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
         { efTRO, "-ol", "lowpass",  ffOPTWR },
         { efTRO, "-oh", "highpass", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -140,7 +140,7 @@ int gmx_filter(int argc, char *argv[])
     if (topfile)
     {
         bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC,
-                             &xtop, NULL, topbox, TRUE);
+                             &xtop, nullptr, topbox, TRUE);
         if (bTop)
         {
             gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
@@ -208,7 +208,7 @@ int gmx_filter(int argc, char *argv[])
     }
     else
     {
-        outl = 0;
+        outl = nullptr;
     }
     if (highfile)
     {
@@ -216,7 +216,7 @@ int gmx_filter(int argc, char *argv[])
     }
     else
     {
-        outh = 0;
+        outh = nullptr;
     }
 
     fr = 0;
@@ -301,8 +301,8 @@ int gmx_filter(int argc, char *argv[])
             }
             if (outl && (bLowAll || fr % nf == nf - 1))
             {
-                write_trx(outl, nat, ind, topfile ? &(top.atoms) : NULL,
-                          0, t[nf - 1], bFit ? topbox : boxf, xf, NULL, NULL);
+                write_trx(outl, nat, ind, topfile ? &(top.atoms) : nullptr,
+                          0, t[nf - 1], bFit ? topbox : boxf, xf, nullptr, nullptr);
             }
             if (outh)
             {
@@ -328,8 +328,8 @@ int gmx_filter(int argc, char *argv[])
                         boxf[j][d] = topbox[j][d] + box[nf - 1][j][d] - boxf[j][d];
                     }
                 }
-                write_trx(outh, nat, ind, topfile ? &(top.atoms) : NULL,
-                          0, t[nf - 1], bFit ? topbox : boxf, xf, NULL, NULL);
+                write_trx(outh, nat, ind, topfile ? &(top.atoms) : nullptr,
+                          0, t[nf - 1], bFit ? topbox : boxf, xf, nullptr, nullptr);
             }
         }
         /* Cycle all the pointer and the box by one */

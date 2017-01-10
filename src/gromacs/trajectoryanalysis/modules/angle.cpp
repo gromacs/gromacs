@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -314,7 +314,7 @@ class Angle : public TrajectoryAnalysisModule
 };
 
 Angle::Angle()
-    : sel1info_(NULL), sel2info_(NULL),
+    : sel1info_(nullptr), sel2info_(nullptr),
       g1type_(Group1Type_Angle), g2type_(Group2Type_None),
       binWidth_(1.0), natoms1_(0), natoms2_(0)
 {

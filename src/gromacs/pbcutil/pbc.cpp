@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,7 @@
 
 const char *epbc_names[epbcNR+1] =
 {
-    "xyz", "no", "xy", "screw", NULL
+    "xyz", "no", "xy", "screw", nullptr
 };
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
@@ -140,7 +140,7 @@ const char *check_box(int ePBC, const matrix box)
 
     if (ePBC == epbcNONE)
     {
-        return NULL;
+        return nullptr;
     }
 
     if ((box[XX][YY] != 0) || (box[XX][ZZ] != 0) || (box[YY][ZZ] != 0))
@@ -160,7 +160,7 @@ const char *check_box(int ePBC, const matrix box)
     }
     else
     {
-        ptr = NULL;
+        ptr = nullptr;
     }
 
     return ptr;
@@ -390,7 +390,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
     }
     else
     {
-        if (ePBC == epbcSCREW && NULL != dd_pbc)
+        if (ePBC == epbcSCREW && nullptr != dd_pbc)
         {
             /* This combinated should never appear here */
             gmx_incons("low_set_pbc called with screw pbc and dd_nc != NULL");
@@ -612,7 +612,7 @@ void set_pbc(t_pbc *pbc, int ePBC, const matrix box)
         ePBC = guess_ePBC(box);
     }
 
-    low_set_pbc(pbc, ePBC, NULL, box);
+    low_set_pbc(pbc, ePBC, nullptr, box);
 }
 
 t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
@@ -623,12 +623,12 @@ t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
     {
         pbc->ePBC = ePBC;
 
-        return NULL;
+        return nullptr;
     }
 
     if (nullptr == domdecCells)
     {
-        low_set_pbc(pbc, ePBC, NULL, box);
+        low_set_pbc(pbc, ePBC, nullptr, box);
     }
     else
     {
@@ -661,7 +661,7 @@ t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
         }
     }
 
-    return (pbc->ePBC != epbcNONE ? pbc : NULL);
+    return (pbc->ePBC != epbcNONE ? pbc : nullptr);
 }
 
 void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)

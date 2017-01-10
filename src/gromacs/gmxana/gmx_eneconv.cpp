@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,7 +70,7 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
     int      *set;
     gmx_bool  bVerbose = TRUE;
 
-    if ((getenv("GMX_ENER_VERBOSE")) != NULL)
+    if ((getenv("GMX_ENER_VERBOSE")) != nullptr)
     {
         bVerbose = FALSE;
     }
@@ -163,7 +163,7 @@ static int scan_ene_files(char **fnms, int nfiles,
     for (f = 0; f < nfiles; f++)
     {
         in  = open_enx(fnms[f], "r");
-        enm = NULL;
+        enm = nullptr;
         do_enxnms(in, &nre, &enm);
 
         if (f == 0)
@@ -191,7 +191,7 @@ static int scan_ene_files(char **fnms, int nfiles,
                 fprintf(stderr,
                         "\nContinue conversion using only the first %d terms (n/y)?\n"
                         "(you should be sure that the energy terms match)\n", nremin);
-                if (NULL == fgets(inputstring, STRLEN-1, stdin))
+                if (nullptr == fgets(inputstring, STRLEN-1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input");
                 }
@@ -252,7 +252,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
             ok = FALSE;
             do
             {
-                if (NULL == fgets(inputstring, STRLEN-1, stdin))
+                if (nullptr == fgets(inputstring, STRLEN-1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input");
                 }
@@ -444,8 +444,8 @@ int gmx_eneconv(int argc, char *argv[])
     const char       *bugs[] = {
         "When combining trajectories the sigma and E^2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way."
     };
-    ener_file_t       in  = NULL, out = NULL;
-    gmx_enxnm_t      *enm = NULL;
+    ener_file_t       in  = nullptr, out = nullptr;
+    gmx_enxnm_t      *enm = nullptr;
 #if 0
     ener_file_t       in, out = NULL;
     gmx_enxnm_t      *enm = NULL;
@@ -455,7 +455,7 @@ int gmx_eneconv(int argc, char *argv[])
     t_energy         *ee_sum;
     gmx_int64_t       lastfilestep, laststep, startstep_file = 0;
     int               noutfr;
-    int               nre, nremax, this_nre, nfile, f, i, kkk, nset, *set = NULL;
+    int               nre, nremax, this_nre, nfile, f, i, kkk, nset, *set = nullptr;
     double            last_t;
     char            **fnms;
     real             *readtime, *settime, timestep, tadjust;
@@ -464,12 +464,12 @@ int gmx_eneconv(int argc, char *argv[])
     gmx_bool          bNewFile, bFirst, bNewOutput;
     gmx_output_env_t *oenv;
     gmx_bool          warned_about_dh = FALSE;
-    t_enxblock       *blocks          = NULL;
+    t_enxblock       *blocks          = nullptr;
     int               nblocks         = 0;
     int               nblocks_alloc   = 0;
 
     t_filenm          fnm[] = {
-        { efEDR, "-f", NULL,    ffRDMULT },
+        { efEDR, "-f", nullptr,    ffRDMULT },
         { efEDR, "-o", "fixed", ffWRITE  },
     };
 
@@ -549,7 +549,7 @@ int gmx_eneconv(int argc, char *argv[])
         bNewFile   = TRUE;
         bNewOutput = TRUE;
         in         = open_enx(fnms[f], "r");
-        enm        = NULL;
+        enm        = nullptr;
         do_enxnms(in, &this_nre, &enm);
         if (f == 0)
         {

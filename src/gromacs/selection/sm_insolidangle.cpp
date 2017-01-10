@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -327,9 +327,9 @@ is_surface_covered(t_methoddata_insolidangle *surf, rvec x);
 
 /** Parameters for the \p insolidangle selection method. */
 static gmx_ana_selparam_t smparams_insolidangle[] = {
-    {"center", {POS_VALUE,   1, {NULL}}, NULL, SPAR_DYNAMIC},
-    {"span",   {POS_VALUE,  -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
-    {"cutoff", {REAL_VALUE,  1, {NULL}}, NULL, SPAR_OPTIONAL},
+    {"center", {POS_VALUE,   1, {nullptr}}, nullptr, SPAR_DYNAMIC},
+    {"span",   {POS_VALUE,  -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
+    {"cutoff", {REAL_VALUE,  1, {nullptr}}, nullptr, SPAR_OPTIONAL},
 };
 
 /** Help text for the \p insolidangle selection method. */
@@ -356,12 +356,12 @@ gmx_ana_selmethod_t sm_insolidangle = {
     "insolidangle", GROUP_VALUE, SMETH_DYNAMIC,
     asize(smparams_insolidangle), smparams_insolidangle,
     &init_data_insolidangle,
-    NULL,
+    nullptr,
     &init_insolidangle,
-    NULL,
+    nullptr,
     &free_data_insolidangle,
     &init_frame_insolidangle,
-    NULL,
+    nullptr,
     &evaluate_insolidangle,
     {"insolidangle center POS span POS_EXPR [cutoff REAL]",
      "Selecting atoms in a solid angle",
@@ -387,13 +387,13 @@ init_data_insolidangle(int /* npar */, gmx_ana_selparam_t *param)
     // cppcheck-suppress uninitdata
     data->tbinsize      = 0.0;
     // cppcheck-suppress uninitdata
-    data->tbin          = NULL;
+    data->tbin          = nullptr;
     // cppcheck-suppress uninitdata
     data->maxbins       = 0;
     // cppcheck-suppress uninitdata
     data->nbins         = 0;
     // cppcheck-suppress uninitdata
-    data->bin           = NULL;
+    data->bin           = nullptr;
 
     param[0].val.u.p = &data->center;
     param[1].val.u.p = &data->span;
@@ -746,7 +746,7 @@ free_surface_points(t_methoddata_insolidangle *surf)
             sfree(surf->bin[i].x);
         }
         surf->bin[i].n_alloc = 0;
-        surf->bin[i].x       = NULL;
+        surf->bin[i].x       = nullptr;
     }
 }
 

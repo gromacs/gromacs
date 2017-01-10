@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -258,7 +258,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
                                   const char *sgslfn, const char *skslfn,
                                   const gmx_output_env_t *oenv)
 {
-    FILE        *fpsg = NULL, *fpsk = NULL;
+    FILE        *fpsg = nullptr, *fpsk = nullptr;
     t_topology   top;
     int          ePBC;
     t_trxstatus *status;
@@ -271,10 +271,10 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     char       **grpname;
     int          i, *isize, ng, nframes;
     real        *sg_slice, *sg_slice_tot, *sk_slice, *sk_slice_tot;
-    gmx_rmpbc_t  gpbc = NULL;
+    gmx_rmpbc_t  gpbc = nullptr;
 
 
-    read_tps_conf(fnTPS, &top, &ePBC, &xtop, NULL, box, FALSE);
+    read_tps_conf(fnTPS, &top, &ePBC, &xtop, nullptr, box, FALSE);
 
     snew(sg_slice, nslice);
     snew(sk_slice, nslice);
@@ -295,7 +295,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)",
                   top.atoms.nr, natoms);
     }
-    check_index(NULL, ng, index[0], NULL, natoms);
+    check_index(nullptr, ng, index[0], nullptr, natoms);
 
     fpsg = xvgropen(sgfn, "S\\sg\\N Angle Order Parameter", "Time (ps)", "S\\sg\\N",
                     oenv);
@@ -405,11 +405,11 @@ void calc_order(const char *fn, int *index, int *a, rvec **order,
     gmx_bool     use_unitvector         = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
     rvec         direction, com, dref, dvec;
     int          comsize, distsize;
-    int         *comidx  = NULL, *distidx = NULL;
-    char        *grpname = NULL;
+    int         *comidx  = nullptr, *distidx = nullptr;
+    char        *grpname = nullptr;
     t_pbc        pbc;
     real         arcdist, tmpdist;
-    gmx_rmpbc_t  gpbc = NULL;
+    gmx_rmpbc_t  gpbc = nullptr;
 
     /* PBC added for center-of-mass vector*/
     /* Initiate the pbc structure */
@@ -440,7 +440,7 @@ void calc_order(const char *fn, int *index, int *a, rvec **order,
     }
     if (distcalc)
     {
-        if (grpname != NULL)
+        if (grpname != nullptr)
         {
             sfree(grpname);
         }
@@ -739,15 +739,15 @@ void calc_order(const char *fn, int *index, int *a, rvec **order,
 
     sfree(x0); /* free memory used by coordinate arrays */
     sfree(x1);
-    if (comidx != NULL)
+    if (comidx != nullptr)
     {
         sfree(comidx);
     }
-    if (distidx != NULL)
+    if (distidx != nullptr)
     {
         sfree(distidx);
     }
-    if (grpname != NULL)
+    if (grpname != nullptr)
     {
         sfree(grpname);
     }
@@ -854,7 +854,7 @@ void write_bfactors(t_filenm  *fnm, int nfile, int *index, int *a, int nslices, 
     frout.natoms = nout;
     frout.bF     = FALSE;
     frout.bV     = FALSE;
-    frout.x      = 0;
+    frout.x      = nullptr;
     snew(frout.x, nout);
 
     init_t_atoms(&useatoms, nout, TRUE);
@@ -887,7 +887,7 @@ void write_bfactors(t_filenm  *fnm, int nfile, int *index, int *a, int nslices, 
         }
     }
 
-    write_sto_conf(opt2fn("-ob", nfile, fnm), "Order parameters", &useatoms, frout.x, NULL, frout.ePBC, frout.box);
+    write_sto_conf(opt2fn("-ob", nfile, fnm), "Order parameters", &useatoms, frout.x, nullptr, frout.ePBC, frout.box);
 
     sfree(frout.x);
     done_atom(&useatoms);
@@ -919,7 +919,7 @@ int gmx_order(int argc, char *argv[])
     static int         nslices       = 1;     /* nr of slices defined       */
     static gmx_bool    bSzonly       = FALSE; /* True if only Sz is wanted  */
     static gmx_bool    bUnsat        = FALSE; /* True if carbons are unsat. */
-    static const char *normal_axis[] = { NULL, "z", "x", "y", NULL };
+    static const char *normal_axis[] = { nullptr, "z", "x", "y", nullptr };
     static gmx_bool    permolecule   = FALSE; /*compute on a per-molecule basis */
     static gmx_bool    radial        = FALSE; /*compute a radial membrane normal */
     static gmx_bool    distcalc      = FALSE; /*calculate distance from a reference group */
@@ -955,13 +955,13 @@ int gmx_order(int argc, char *argv[])
     *a;                                               /* atom numbers in each group */
     t_blocka         *block;                          /* data from index file       */
     t_filenm          fnm[] = {                       /* files for g_order    */
-        { efTRX, "-f", NULL,  ffREAD },               /* trajectory file              */
-        { efNDX, "-n", NULL,  ffREAD },               /* index file           */
-        { efNDX, "-nr", NULL,  ffOPTRD },             /* index for radial axis calculation */
-        { efTPR, NULL, NULL,  ffREAD },               /* topology file                */
+        { efTRX, "-f", nullptr,  ffREAD },            /* trajectory file              */
+        { efNDX, "-n", nullptr,  ffREAD },            /* index file           */
+        { efNDX, "-nr", nullptr,  ffOPTRD },          /* index for radial axis calculation */
+        { efTPR, nullptr, nullptr,  ffREAD },         /* topology file                */
         { efXVG, "-o", "order", ffWRITE },            /* xvgr output file     */
         { efXVG, "-od", "deuter", ffWRITE },          /* xvgr output file           */
-        { efPDB, "-ob", NULL, ffOPTWR },              /* write Scd as B factors to PDB if permolecule           */
+        { efPDB, "-ob", nullptr, ffOPTWR },           /* write Scd as B factors to PDB if permolecule           */
         { efXVG, "-os", "sliced", ffWRITE },          /* xvgr output file           */
         { efXVG, "-Sg", "sg-ang", ffOPTWR },          /* xvgr output file           */
         { efXVG, "-Sk", "sk-dist", ffOPTWR },         /* xvgr output file           */
@@ -970,12 +970,12 @@ int gmx_order(int argc, char *argv[])
     };
     gmx_bool          bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
-    real            **distvals = NULL;
+    real            **distvals = nullptr;
     const char       *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
     gmx_output_env_t *oenv;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -990,7 +990,7 @@ int gmx_order(int argc, char *argv[])
     trxfnm = ftp2fn(efTRX, NFILE, fnm);
 
     /* Calculate axis */
-    GMX_RELEASE_ASSERT(normal_axis[0] != NULL, "Options inconsistency; normal_axis[0] is NULL");
+    GMX_RELEASE_ASSERT(normal_axis[0] != nullptr, "Options inconsistency; normal_axis[0] is NULL");
     if (std::strcmp(normal_axis[0], "x") == 0)
     {
         axis = XX;
@@ -1031,12 +1031,12 @@ int gmx_order(int argc, char *argv[])
                               opt2fn("-Sgsl", NFILE, fnm), opt2fn("-Sksl", NFILE, fnm),
                               oenv);
         /* view xvgr files */
-        do_view(oenv, opt2fn("-Sg", NFILE, fnm), NULL);
-        do_view(oenv, opt2fn("-Sk", NFILE, fnm), NULL);
+        do_view(oenv, opt2fn("-Sg", NFILE, fnm), nullptr);
+        do_view(oenv, opt2fn("-Sk", NFILE, fnm), nullptr);
         if (nslices > 1)
         {
-            do_view(oenv, opt2fn("-Sgsl", NFILE, fnm), NULL);
-            do_view(oenv, opt2fn("-Sksl", NFILE, fnm), NULL);
+            do_view(oenv, opt2fn("-Sgsl", NFILE, fnm), nullptr);
+            do_view(oenv, opt2fn("-Sksl", NFILE, fnm), nullptr);
         }
     }
     else
@@ -1110,12 +1110,12 @@ int gmx_order(int argc, char *argv[])
         }
 
 
-        do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);  /* view xvgr file */
-        do_view(oenv, opt2fn("-os", NFILE, fnm), NULL); /* view xvgr file */
-        do_view(oenv, opt2fn("-od", NFILE, fnm), NULL); /* view xvgr file */
+        do_view(oenv, opt2fn("-o", NFILE, fnm), nullptr);  /* view xvgr file */
+        do_view(oenv, opt2fn("-os", NFILE, fnm), nullptr); /* view xvgr file */
+        do_view(oenv, opt2fn("-od", NFILE, fnm), nullptr); /* view xvgr file */
     }
 
-    if (distvals != NULL)
+    if (distvals != nullptr)
     {
         for (i = 0; i < nslices; ++i)
         {

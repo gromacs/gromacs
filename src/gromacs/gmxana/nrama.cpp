@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,7 +76,7 @@ static void calc_dihs(t_xrama *xr)
     rvec         r_ij, r_kj, r_kl, m, n;
     real         sign;
     t_dih       *dd;
-    gmx_rmpbc_t  gpbc = NULL;
+    gmx_rmpbc_t  gpbc = nullptr;
 
     gpbc = gmx_rmpbc_init(xr->idef, xr->ePBC, xr->natoms);
     gmx_rmpbc(gpbc, xr->natoms, xr->box, xr->x);
@@ -87,7 +87,7 @@ static void calc_dihs(t_xrama *xr)
         dd      = &(xr->dih[i]);
         dd->ang = dih_angle(xr->x[dd->ai[0]], xr->x[dd->ai[1]],
                             xr->x[dd->ai[2]], xr->x[dd->ai[3]],
-                            NULL,
+                            nullptr,
                             r_ij, r_kj, r_kl, m, n, &sign, &t1, &t2, &t3);
     }
 }

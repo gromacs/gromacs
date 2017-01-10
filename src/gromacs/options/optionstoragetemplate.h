@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -395,19 +395,19 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
                           settings.maxValueCount_ : settings.minValueCount_)))
 {
     if (hasFlag(efOption_NoDefaultValue)
-        && (settings.defaultValue_ != NULL
-            || settings.defaultValueIfSet_ != NULL))
+        && (settings.defaultValue_ != nullptr
+            || settings.defaultValueIfSet_ != nullptr))
     {
         GMX_THROW(APIError("Option does not support default value, but one is set"));
     }
     if (!hasFlag(efOption_NoDefaultValue))
     {
         setFlag(efOption_HasDefaultValue);
-        if (settings.defaultValue_ != NULL)
+        if (settings.defaultValue_ != nullptr)
         {
             setDefaultValue(*settings.defaultValue_);
         }
-        if (settings.defaultValueIfSet_ != NULL)
+        if (settings.defaultValueIfSet_ != nullptr)
         {
             setDefaultValueIfSet(*settings.defaultValueIfSet_);
         }
@@ -492,7 +492,7 @@ std::vector<std::string> OptionStorageTemplate<T>::defaultValuesAsStrings() cons
     if (result.empty() || (result.size() == 1 && result[0].empty()))
     {
         result.clear();
-        if (defaultValueIfSet_.get() != NULL)
+        if (defaultValueIfSet_.get() != nullptr)
         {
             result.push_back(formatSingleValue(*defaultValueIfSet_));
         }
@@ -512,7 +512,7 @@ template <typename T>
 void OptionStorageTemplate<T>::processSet()
 {
     processSetValues(&setValues_);
-    if (setValues_.empty() && defaultValueIfSet_.get() != NULL)
+    if (setValues_.empty() && defaultValueIfSet_.get() != nullptr)
     {
         addValue(*defaultValueIfSet_);
         setFlag(efOption_HasDefaultValue);

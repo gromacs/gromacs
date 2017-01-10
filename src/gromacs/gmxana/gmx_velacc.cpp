@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -218,15 +218,15 @@ int gmx_velacc(int argc, char *argv[])
     rvec              mv_mol;
     /* Array for the correlation function */
     real            **c1;
-    real             *normm = NULL;
+    real             *normm = nullptr;
     gmx_output_env_t *oenv;
 
 #define NHISTO 360
 
     t_filenm  fnm[] = {
-        { efTRN, "-f",    NULL,   ffREAD  },
-        { efTPS, NULL,    NULL,   ffOPTRD },
-        { efNDX, NULL,    NULL,   ffOPTRD },
+        { efTRN, "-f",    nullptr,   ffREAD  },
+        { efTPS, nullptr,    nullptr,   ffOPTRD },
+        { efNDX, nullptr,    nullptr,   ffOPTRD },
         { efXVG, "-o",    "vac",  ffWRITE },
         { efXVG, "-os",   "spectrum", ffOPTWR }
     };
@@ -237,7 +237,7 @@ int gmx_velacc(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -250,7 +250,7 @@ int gmx_velacc(int argc, char *argv[])
 
     if (bTPS)
     {
-        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, NULL, NULL, box,
+        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box,
                              TRUE);
         get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
     }
@@ -274,7 +274,7 @@ int gmx_velacc(int argc, char *argv[])
     snew(c1, gnx);
     for (i = 0; (i < gnx); i++)
     {
-        c1[i] = NULL;
+        c1[i] = nullptr;
     }
 
     read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, TRX_NEED_V);

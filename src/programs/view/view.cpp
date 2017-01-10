@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,7 +134,7 @@ static bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
         case IDDOEXPORT:
             write_sto_conf(gmx->confout, *gmx->man->top.name,
                            &(gmx->man->top.atoms),
-                           gmx->man->x, NULL, gmx->man->molw->ePBC, gmx->man->box);
+                           gmx->man->x, nullptr, gmx->man->molw->ePBC, gmx->man->box);
             break;
         case IDQUIT:
             show_mb(gmx, emQuit);
@@ -311,7 +311,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     snew(gmx->wd, 1);
 
     ePBC = read_tpx_top(ftp2fn(efTPR, nfile, fnm),
-                        NULL, box, &natom, NULL, NULL, &top);
+                        nullptr, box, &natom, nullptr, nullptr, &top);
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, nfile, fnm), &fr, TRX_DONT_SKIP);
     close_trx(status);
@@ -333,7 +333,7 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     hints.min_width  = 2*EWIDTH+40;
     hints.min_height = EHEIGHT+LDHEIGHT+LEGHEIGHT+40;
     XSetStandardProperties(x11->disp, gmx->wd->self, gmx->wd->text, program,
-                           pm, NULL, 0, &hints);
+                           pm, nullptr, 0, &hints);
 
     x11->RegisterCallback(x11, gmx->wd->self, x11->root, MainCallBack, gmx);
     x11->SetInputMask(x11, gmx->wd->self,
@@ -396,21 +396,21 @@ int gmx_view(int argc, char *argv[])
 
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
-        { efTRX, "-f", NULL, ffREAD },
-        { efTPR, NULL, NULL, ffREAD },
-        { efNDX, NULL, NULL, ffOPTRD }
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPR, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD }
     };
 #define NFILE asize(fnm)
 
     if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
-                          0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
+                          0, nullptr, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
 #if !GMX_X11
         std::fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
 #else
         t_x11 *x11;
 
-        if ((x11 = GetX11(&argc, argv)) == NULL)
+        if ((x11 = GetX11(&argc, argv)) == nullptr)
         {
             std::fprintf(stderr, "Can't connect to X Server.\n"
                          "Check your DISPLAY environment variable\n");

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@ namespace
  *
  * \ingroup module_commandline
  */
-const CommandLineHelpContext *g_globalContext = NULL;
+const CommandLineHelpContext *g_globalContext = nullptr;
 
 }   // namespace
 
@@ -77,13 +77,13 @@ class CommandLineHelpContext::Impl
         Impl(TextWriter *writer, HelpOutputFormat format,
              const HelpLinks *links)
             : writerContext_(writer, format, links), moduleDisplayName_("gmx"),
-              completionWriter_(NULL), bHidden_(false)
+              completionWriter_(nullptr), bHidden_(false)
         {
         }
         //! Creates an implementation class from a low-level context.
         explicit Impl(const HelpWriterContext &writerContext)
             : writerContext_(writerContext),
-              completionWriter_(NULL), bHidden_(false)
+              completionWriter_(nullptr), bHidden_(false)
         {
         }
 
@@ -113,7 +113,7 @@ CommandLineHelpContext::CommandLineHelpContext(
 
 CommandLineHelpContext::CommandLineHelpContext(
         ShellCompletionWriter *writer)
-    : impl_(new Impl(&writer->outputWriter(), eHelpOutputFormat_Other, NULL))
+    : impl_(new Impl(&writer->outputWriter(), eHelpOutputFormat_Other, nullptr))
 {
     impl_->completionWriter_ = writer;
 }
@@ -173,7 +173,7 @@ bool CommandLineHelpContext::showHidden() const
 
 bool CommandLineHelpContext::isCompletionExport() const
 {
-    return impl_->completionWriter_ != NULL;
+    return impl_->completionWriter_ != nullptr;
 }
 
 ShellCompletionWriter &CommandLineHelpContext::shellCompletionWriter() const
@@ -196,14 +196,14 @@ const CommandLineHelpContext *GlobalCommandLineHelpContext::get()
 GlobalCommandLineHelpContext::GlobalCommandLineHelpContext(
         const CommandLineHelpContext &context)
 {
-    GMX_RELEASE_ASSERT(g_globalContext == NULL,
+    GMX_RELEASE_ASSERT(g_globalContext == nullptr,
                        "Global context set more than once");
     g_globalContext = &context;
 }
 
 GlobalCommandLineHelpContext::~GlobalCommandLineHelpContext()
 {
-    g_globalContext = NULL;
+    g_globalContext = nullptr;
 }
 
 } // namespace gmx

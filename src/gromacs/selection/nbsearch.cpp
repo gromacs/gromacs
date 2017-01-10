@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -323,11 +323,11 @@ class AnalysisNeighborhoodPairSearchImpl
             : search_(search)
         {
             testPosCount_     = 0;
-            testPositions_    = NULL;
-            testExclusionIds_ = NULL;
-            testIndices_      = NULL;
+            testPositions_    = nullptr;
+            testExclusionIds_ = nullptr;
+            testIndices_      = nullptr;
             nexcl_            = 0;
-            excl_             = NULL;
+            excl_             = nullptr;
             clear_rvec(xtest_);
             clear_rvec(testcell_);
             clear_ivec(currCell_);
@@ -408,9 +408,9 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
     }
     bXY_             = false;
     nref_            = 0;
-    xref_            = NULL;
-    refExclusionIds_ = NULL;
-    refIndices_      = NULL;
+    xref_            = nullptr;
+    refExclusionIds_ = nullptr;
+    refIndices_      = nullptr;
     std::memset(&pbc_, 0, sizeof(pbc_));
 
     bGrid_          = false;
@@ -884,7 +884,7 @@ void AnalysisNeighborhoodSearchImpl::init(
     GMX_RELEASE_ASSERT(positions.index_ == -1,
                        "Individual indexed positions not supported as reference");
     bXY_ = bXY;
-    if (bXY_ && pbc != NULL && pbc->ePBC != epbcNONE)
+    if (bXY_ && pbc != nullptr && pbc->ePBC != epbcNONE)
     {
         if (pbc->ePBC != epbcXY && pbc->ePBC != epbcXYZ)
         {
@@ -905,7 +905,7 @@ void AnalysisNeighborhoodSearchImpl::init(
         clear_rvec(box[ZZ]);
         set_pbc(&pbc_, epbcXY, box);
     }
-    else if (pbc != NULL)
+    else if (pbc != nullptr)
     {
         pbc_ = *pbc;
     }
@@ -932,13 +932,13 @@ void AnalysisNeighborhoodSearchImpl::init(
 
         for (int i = 0; i < nref_; ++i)
         {
-            const int ii = (refIndices_ != NULL) ? refIndices_[i] : i;
+            const int ii = (refIndices_ != nullptr) ? refIndices_[i] : i;
             rvec      refcell;
             mapPointToGridCell(positions.x_[ii], refcell, xrefAlloc_[i]);
             addToGridCell(refcell, i);
         }
     }
-    else if (refIndices_ != NULL)
+    else if (refIndices_ != nullptr)
     {
         xrefAlloc_.resize(nref_);
         xref_ = as_rvec_array(xrefAlloc_.data());
@@ -952,12 +952,12 @@ void AnalysisNeighborhoodSearchImpl::init(
         xref_ = positions.x_;
     }
     excls_           = excls;
-    refExclusionIds_ = NULL;
-    if (excls != NULL)
+    refExclusionIds_ = nullptr;
+    if (excls != nullptr)
     {
         // TODO: Check that the IDs are ascending, or remove the limitation.
         refExclusionIds_ = positions.exclusionIds_;
-        GMX_RELEASE_ASSERT(refExclusionIds_ != NULL,
+        GMX_RELEASE_ASSERT(refExclusionIds_ != nullptr,
                            "Exclusion IDs must be set for reference positions "
                            "when exclusions are enabled");
     }
@@ -973,7 +973,7 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
     if (testIndex_ >= 0 && testIndex_ < testPosCount_)
     {
         const int index =
-            (testIndices_ != NULL ? testIndices_[testIndex] : testIndex);
+            (testIndices_ != nullptr ? testIndices_[testIndex] : testIndex);
         if (search_.bGrid_)
         {
             search_.mapPointToGridCell(testPositions_[index], testcell_, xtest_);
@@ -985,7 +985,7 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
         {
             copy_rvec(testPositions_[index], xtest_);
         }
-        if (search_.excls_ != NULL)
+        if (search_.excls_ != nullptr)
         {
             const int exclIndex  = testExclusionIds_[index];
             if (exclIndex < search_.excls_->nr)
@@ -997,7 +997,7 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
             else
             {
                 nexcl_ = 0;
-                excl_  = NULL;
+                excl_  = nullptr;
             }
         }
     }
@@ -1022,7 +1022,7 @@ bool AnalysisNeighborhoodPairSearchImpl::isExcluded(int j)
     if (exclind_ < nexcl_)
     {
         const int index =
-            (search_.refIndices_ != NULL ? search_.refIndices_[j] : j);
+            (search_.refIndices_ != nullptr ? search_.refIndices_[j] : j);
         const int refId = search_.refExclusionIds_[index];
         while (exclind_ < nexcl_ && excl_[exclind_] < refId)
         {
@@ -1044,7 +1044,7 @@ void AnalysisNeighborhoodPairSearchImpl::startSearch(
     testPositions_    = positions.x_;
     testExclusionIds_ = positions.exclusionIds_;
     testIndices_      = positions.indices_;
-    GMX_RELEASE_ASSERT(search_.excls_ == NULL || testExclusionIds_ != NULL,
+    GMX_RELEASE_ASSERT(search_.excls_ == nullptr || testExclusionIds_ != nullptr,
                        "Exclusion IDs must be set when exclusions are enabled");
     if (positions.index_ < 0)
     {
@@ -1238,7 +1238,7 @@ class AnalysisNeighborhood::Impl
         typedef std::vector<SearchImplPointer> SearchList;
 
         Impl()
-            : cutoff_(0), excls_(NULL), mode_(eSearchMode_Automatic), bXY_(false)
+            : cutoff_(0), excls_(nullptr), mode_(eSearchMode_Automatic), bXY_(false)
         {
         }
         ~Impl()

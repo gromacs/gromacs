@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -209,7 +209,7 @@ static void edit_files(char **fnms, int nfiles, real *readtime, real *timestep,
             ok = FALSE;
             do
             {
-                if (NULL == fgets(inputstring, STRLEN - 1, stdin))
+                if (nullptr == fgets(inputstring, STRLEN - 1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input" );
                 }
@@ -383,11 +383,11 @@ static void do_demux(int nset, char *fnms[], char *fnms_out[], int nval,
             {
                 if (index)
                 {
-                    write_trxframe_indexed(fp_out[j], &trx[i], isize, index, NULL);
+                    write_trxframe_indexed(fp_out[j], &trx[i], isize, index, nullptr);
                 }
                 else
                 {
-                    write_trxframe(fp_out[j], &trx[i], NULL);
+                    write_trxframe(fp_out[j], &trx[i], nullptr);
                 }
             }
         }
@@ -470,7 +470,7 @@ int gmx_trjcat(int argc, char *argv[])
     };
 #define npargs asize(pa)
     int               ftpin, i, frame, frame_out;
-    t_trxstatus      *status, *trxout = NULL;
+    t_trxstatus      *status, *trxout = nullptr;
     real              t_corr;
     t_trxframe        fr, frout;
     char            **fnms, **fnms_out, *out_file;
@@ -482,16 +482,16 @@ int gmx_trjcat(int argc, char *argv[])
     gmx_bool          lastTimeSet = FALSE;
     real              last_frame_time, searchtime;
     int               isize = 0, j;
-    int              *index = NULL, imax;
+    int              *index = nullptr, imax;
     char             *grpname;
-    real            **val = NULL, *t = NULL, dt_remd;
+    real            **val = nullptr, *t = nullptr, dt_remd;
     int               n, nset, ftpout = -1, prevEndStep = 0, filetype;
     gmx_off_t         fpos;
     gmx_output_env_t *oenv;
     t_filenm          fnm[] =
     {
-        { efTRX, "-f", NULL, ffRDMULT },
-        { efTRO, "-o", NULL, ffWRMULT },
+        { efTRX, "-f", nullptr, ffRDMULT },
+        { efTRO, "-o", nullptr, ffWRMULT },
         { efNDX, "-n", "index", ffOPTRD },
         { efXVG, "-demux", "remd", ffOPTRD }
     };
@@ -499,7 +499,7 @@ int gmx_trjcat(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_TIME_UNIT, NFILE, fnm,
-                           asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -648,13 +648,13 @@ int gmx_trjcat(int argc, char *argv[])
                 }
                 if (bIndex)
                 {
-                    trjtools_gmx_prepare_tng_writing(out_file, 'w', NULL, &trxout,
-                                                     fnms[0], isize, NULL, index, grpname);
+                    trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr, &trxout,
+                                                     fnms[0], isize, nullptr, index, grpname);
                 }
                 else
                 {
-                    trjtools_gmx_prepare_tng_writing(out_file, 'w', NULL, &trxout,
-                                                     fnms[0], -1, NULL, NULL, NULL);
+                    trjtools_gmx_prepare_tng_writing(out_file, 'w', nullptr, &trxout,
+                                                     fnms[0], -1, nullptr, nullptr, nullptr);
                 }
             }
             else
@@ -894,11 +894,11 @@ int gmx_trjcat(int argc, char *argv[])
                         if (bIndex)
                         {
                             write_trxframe_indexed(trxout, &frout, isize, index,
-                                                   NULL);
+                                                   nullptr);
                         }
                         else
                         {
-                            write_trxframe(trxout, &frout, NULL);
+                            write_trxframe(trxout, &frout, nullptr);
                         }
                         if ( ((frame % 10) == 0) || (frame < 10) )
                         {

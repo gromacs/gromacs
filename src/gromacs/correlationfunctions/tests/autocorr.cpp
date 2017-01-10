@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,13 +99,13 @@ class AutocorrTest : public ::testing::Test
             std::string fileName = "testCOS3.xvg";
             data_                = CorrelationDataSetPointer(new CorrelationDataSet(fileName));
             nrFrames_            = data_->getNrLines();
-            tempArgs_            = add_acf_pargs(&n, NULL);
+            tempArgs_            = add_acf_pargs(&n, nullptr);
         }
 
         static void TearDownTestCase()
         {
             sfree(tempArgs_);
-            tempArgs_ = NULL;
+            tempArgs_ = nullptr;
             gmx_fft_cleanup();
         }
 
@@ -125,7 +125,7 @@ class AutocorrTest : public ::testing::Test
                 }
             }
             real *ptr = result.data();
-            low_do_autocorr(0, 0, 0,   nrFrames_, 1,
+            low_do_autocorr(nullptr, nullptr, nullptr,   nrFrames_, 1,
                             get_acfnout(), &ptr, data_->getDt(), mode,
                             nrRestart, bAverage, bNormalize,
                             bVerbose, data_->getStartTime(), data_->getEndTime(),

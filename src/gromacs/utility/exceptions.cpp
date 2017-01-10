@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -191,7 +191,7 @@ GromacsException::GromacsException(const ExceptionInitializer &details)
 const char *GromacsException::what() const noexcept
 {
     const ErrorMessage *msg = getInfo<ExceptionInfoMessage>();
-    if (msg == NULL)
+    if (msg == nullptr)
     {
         return "No reason provided";
     }
@@ -205,7 +205,7 @@ const char *GromacsException::what() const noexcept
 void GromacsException::prependContext(const std::string &context)
 {
     const ErrorMessage *msg = getInfo<ExceptionInfoMessage>();
-    GMX_RELEASE_ASSERT(msg != NULL, "Message should always be set");
+    GMX_RELEASE_ASSERT(msg != nullptr, "Message should always be set");
     setInfo(ExceptionInfoMessage(msg->prependContext(context)));
 }
 
@@ -339,7 +339,7 @@ class MessageWriterFileNoThrow : public IMessageWriter
         {
             std::fprintf(fp_, "%*sReason: %s\n", indent, "",
                          std::strerror(errorNumber));
-            if (funcName != NULL)
+            if (funcName != nullptr)
             {
                 std::fprintf(fp_, "%*s(call to %s() returned error code %d)\n",
                              indent, "", funcName, errorNumber);
@@ -371,7 +371,7 @@ class MessageWriterTextWriter : public IMessageWriter
         {
             writer_->wrapperSettings().setIndent(indent);
             writer_->writeLine(formatString("Reason: %s", std::strerror(errorNumber)));
-            if (funcName != NULL)
+            if (funcName != nullptr)
             {
                 writer_->writeLine(
                         formatString("(call to %s() returned error code %d)",
@@ -411,7 +411,7 @@ class MessageWriterString : public IMessageWriter
         {
             writeLine(formatString("Reason: %s", std::strerror(errorNumber)).c_str(),
                       indent);
-            if (funcName != NULL)
+            if (funcName != nullptr)
             {
                 writeLine(formatString("(call to %s() returned error code %d)",
                                        funcName, errorNumber).c_str(),
@@ -439,7 +439,7 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
                                     const std::exception &ex, int indent)
 {
     const GromacsException *gmxEx = dynamic_cast<const GromacsException *>(&ex);
-    if (gmxEx != NULL)
+    if (gmxEx != nullptr)
     {
         // TODO: Add an option to print location information for the tests
 
@@ -453,15 +453,15 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
         bool                bAnythingWritten = false;
         // TODO: Remove duplicate context if present in multiple nested exceptions.
         const ErrorMessage *msg = gmxEx->getInfo<ExceptionInfoMessage>();
-        if (msg != NULL)
+        if (msg != nullptr)
         {
-            while (msg != NULL && msg->isContext())
+            while (msg != nullptr && msg->isContext())
             {
                 writer->writeLine(msg->text().c_str(), indent*2);
                 ++indent;
                 msg = &msg->child();
             }
-            if (msg != NULL && !msg->text().empty())
+            if (msg != nullptr && !msg->text().empty())
             {
                 writer->writeLine(msg->text().c_str(), indent*2);
                 bAnythingWritten = true;
@@ -474,19 +474,19 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
         }
 
         const int *errorNumber = gmxEx->getInfo<ExceptionInfoErrno>();
-        if (errorNumber != NULL && *errorNumber != 0)
+        if (errorNumber != nullptr && *errorNumber != 0)
         {
             const char * const *funcName
                 = gmxEx->getInfo<ExceptionInfoApiFunction>();
             writer->writeErrNoInfo(*errorNumber,
-                                   funcName != NULL ? *funcName : NULL,
+                                   funcName != nullptr ? *funcName : nullptr,
                                    (indent+1)*2);
             bAnythingWritten = true;
         }
 
         const internal::NestedExceptionList *nested
             = gmxEx->getInfo<ExceptionInfoNestedExceptions>();
-        if (nested != NULL)
+        if (nested != nullptr)
         {
             internal::NestedExceptionList::const_iterator ni;
             for (ni = nested->begin(); ni != nested->end(); ++ni)
@@ -519,24 +519,24 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
     bool                    bPrintType = false;
     const GromacsException *gmxEx      = dynamic_cast<const GromacsException *>(&ex);
     // TODO: Treat more of the standard exceptions
-    if (gmxEx != NULL)
+    if (gmxEx != nullptr)
     {
         title = getErrorCodeString(gmxEx->errorCode());
     }
-    else if (dynamic_cast<const tMPI::system_error *>(&ex) != NULL)
+    else if (dynamic_cast<const tMPI::system_error *>(&ex) != nullptr)
     {
         title = "System error in thread synchronization";
     }
-    else if (dynamic_cast<const std::bad_alloc *>(&ex) != NULL)
+    else if (dynamic_cast<const std::bad_alloc *>(&ex) != nullptr)
     {
         title = "Memory allocation failed";
     }
-    else if (dynamic_cast<const std::logic_error *>(&ex) != NULL)
+    else if (dynamic_cast<const std::logic_error *>(&ex) != nullptr)
     {
         title      = "Standard library logic error (bug)";
         bPrintType = true;
     }
-    else if (dynamic_cast<const std::runtime_error *>(&ex) != NULL)
+    else if (dynamic_cast<const std::runtime_error *>(&ex) != nullptr)
     {
         title      = "Standard library runtime error (possible bug)";
         bPrintType = true;

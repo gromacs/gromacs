@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,19 +73,19 @@ static t_pdbfile *read_pdbf(const char *fn)
 
     snew(pdbf, 1);
     t_topology top;
-    read_tps_conf(fn, &top, &pdbf->ePBC, &pdbf->x, NULL, pdbf->box, FALSE);
+    read_tps_conf(fn, &top, &pdbf->ePBC, &pdbf->x, nullptr, pdbf->box, FALSE);
     pdbf->atoms = top.atoms;
     fp          = gmx_ffopen(fn, "r");
     char       buf[256], *ptr;
-    while ((ptr = fgets2(buf, 255, fp)) != NULL)
+    while ((ptr = fgets2(buf, 255, fp)) != nullptr)
     {
-        if (std::strstr(buf, "Intermolecular") != NULL)
+        if (std::strstr(buf, "Intermolecular") != nullptr)
         {
             ptr = std::strchr(buf, '=');
             sscanf(ptr+1, "%lf", &e);
             pdbf->edocked = e;
         }
-        else if (std::strstr(buf, "Estimated Free") != NULL)
+        else if (std::strstr(buf, "Estimated Free") != nullptr)
         {
             ptr = std::strchr(buf, '=');
             sscanf(ptr+1, "%lf", &e);
@@ -99,7 +99,7 @@ static t_pdbfile *read_pdbf(const char *fn)
 
 static t_pdbfile **read_em_all(const char *fn, int *npdbf)
 {
-    t_pdbfile **pdbf = 0;
+    t_pdbfile **pdbf = nullptr;
     int         i, maxpdbf;
     char        buf[256], name[256];
     gmx_bool    bExist;
@@ -208,9 +208,9 @@ static void clust_stat(FILE *fp, int start, int end, t_pdbfile *pdbf[])
         gmx_stats_add_point(ed, i-start, pdbf[i]->edocked, 0, 0);
         gmx_stats_add_point(ef, i-start, pdbf[i]->efree, 0, 0);
     }
-    gmx_stats_get_ase(ed, &aver, &sigma, NULL);
+    gmx_stats_get_ase(ed, &aver, &sigma, nullptr);
     fprintf(fp, "  <%12s> = %8.3f (+/- %6.3f)\n", etitles[FALSE], aver, sigma);
-    gmx_stats_get_ase(ef, &aver, &sigma, NULL);
+    gmx_stats_get_ase(ef, &aver, &sigma, nullptr);
     fprintf(fp, "  <%12s> = %8.3f (+/- %6.3f)\n", etitles[TRUE], aver, sigma);
     gmx_stats_free(ed);
     gmx_stats_free(ef);
@@ -344,7 +344,7 @@ int gmx_anadock(int argc, char *argv[])
         "energy or average energy."
     };
     t_filenm          fnm[] = {
-        { efPDB, "-f", NULL,       ffREAD  },
+        { efPDB, "-f", nullptr,       ffREAD  },
         { efXVG, "-od", "edocked", ffWRITE },
         { efXVG, "-of", "efree",   ffWRITE },
         { efLOG, "-g",  "anadock", ffWRITE }
@@ -364,11 +364,11 @@ int gmx_anadock(int argc, char *argv[])
 #define NPA asize(pa)
 
     FILE       *fp;
-    t_pdbfile **pdbf = NULL;
+    t_pdbfile **pdbf = nullptr;
     int         npdbf;
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0,
-                           NULL, &oenv))
+                           nullptr, &oenv))
     {
         return 0;
     }

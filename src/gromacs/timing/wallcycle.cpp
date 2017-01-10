@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -138,20 +138,20 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
 
     if (!wallcycle_have_counter())
     {
-        return NULL;
+        return nullptr;
     }
 
     snew(wc, 1);
 
     wc->haveInvalidCount    = FALSE;
     wc->wc_barrier          = FALSE;
-    wc->wcc_all             = NULL;
+    wc->wcc_all             = nullptr;
     wc->wc_depth            = 0;
     wc->ewc_prev            = -1;
     wc->reset_counters      = resetstep;
 
 #if GMX_MPI
-    if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != NULL)
+    if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != nullptr)
     {
         if (fplog)
         {
@@ -163,7 +163,7 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
 #endif
 
     snew(wc->wcc, ewcNR);
-    if (getenv("GMX_CYCLE_ALL") != NULL)
+    if (getenv("GMX_CYCLE_ALL") != nullptr)
     {
         if (fplog)
         {
@@ -186,20 +186,20 @@ gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec gmx_unused 
 
 void wallcycle_destroy(gmx_wallcycle_t wc)
 {
-    if (wc == NULL)
+    if (wc == nullptr)
     {
         return;
     }
 
-    if (wc->wcc != NULL)
+    if (wc->wcc != nullptr)
     {
         sfree(wc->wcc);
     }
-    if (wc->wcc_all != NULL)
+    if (wc->wcc_all != nullptr)
     {
         sfree(wc->wcc_all);
     }
-    if (wc->wcsc != NULL)
+    if (wc->wcsc != nullptr)
     {
         sfree(wc->wcsc);
     }
@@ -255,7 +255,7 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
 {
     gmx_cycles_t cycle;
 
-    if (wc == NULL)
+    if (wc == nullptr)
     {
         return;
     }
@@ -273,7 +273,7 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
 
     cycle              = gmx_cycles_read();
     wc->wcc[ewc].start = cycle;
-    if (wc->wcc_all != NULL)
+    if (wc->wcc_all != nullptr)
     {
         wc->wc_depth++;
         if (ewc == ewcRUN)
@@ -289,7 +289,7 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
 
 void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc)
 {
-    if (wc == NULL)
+    if (wc == nullptr)
     {
         return;
     }
@@ -302,7 +302,7 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
 {
     gmx_cycles_t cycle, last;
 
-    if (wc == NULL)
+    if (wc == nullptr)
     {
         return 0;
     }
@@ -364,7 +364,7 @@ void wallcycle_reset_all(gmx_wallcycle_t wc)
 {
     int i;
 
-    if (wc == NULL)
+    if (wc == nullptr)
     {
         return;
     }
@@ -423,7 +423,7 @@ static void subtract_cycles(wallcc_t *wcc, int ewc_main, int ewc_sub)
 
 void wallcycle_scale_by_num_threads(gmx_wallcycle_t wc, bool isPmeRank, int nthreads_pp, int nthreads_pme)
 {
-    if (wc == NULL)
+    if (wc == nullptr)
     {
         return;
     }
@@ -487,7 +487,7 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
     int             i;
     int             nsum;
 
-    if (wc == NULL)
+    if (wc == nullptr)
     {
         /* Default construction of std::array of non-class T can leave
            the values indeterminate, just like a C array, and icc
@@ -569,7 +569,7 @@ WallcycleCounts wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
         MPI_Allreduce(cycles, cycles_sum.data(), nsum, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
 
-        if (wc->wcc_all != NULL)
+        if (wc->wcc_all != nullptr)
         {
             double *buf_all, *cyc_all;
 
@@ -721,7 +721,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
     char        buf[STRLEN];
     const char *hline = "-----------------------------------------------------------------------------";
 
-    if (wc == NULL)
+    if (wc == nullptr)
     {
         return;
     }
@@ -809,7 +809,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
             tot_for_pp += cyc_sum[i];
         }
     }
-    if (wc->wcc_all != NULL)
+    if (wc->wcc_all != nullptr)
     {
         for (i = 0; i < ewcNR; i++)
         {
@@ -1015,7 +1015,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
 
 extern gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
 {
-    if (wc == NULL)
+    if (wc == nullptr)
     {
         return -1;
     }
@@ -1025,7 +1025,7 @@ extern gmx_int64_t wcycle_get_reset_counters(gmx_wallcycle_t wc)
 
 extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_int64_t reset_counters)
 {
-    if (wc == NULL)
+    if (wc == nullptr)
     {
         return;
     }
@@ -1035,7 +1035,7 @@ extern void wcycle_set_reset_counters(gmx_wallcycle_t wc, gmx_int64_t reset_coun
 
 void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs)
 {
-    if (useCycleSubcounters && wc != NULL)
+    if (useCycleSubcounters && wc != nullptr)
     {
         wc->wcsc[ewcs].start = gmx_cycles_read();
     }
@@ -1043,7 +1043,7 @@ void wallcycle_sub_start(gmx_wallcycle_t wc, int ewcs)
 
 void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs)
 {
-    if (useCycleSubcounters && wc != NULL)
+    if (useCycleSubcounters && wc != nullptr)
     {
         wallcycle_sub_start(wc, ewcs);
         wc->wcsc[ewcs].n--;
@@ -1052,7 +1052,7 @@ void wallcycle_sub_start_nocount(gmx_wallcycle_t wc, int ewcs)
 
 void wallcycle_sub_stop(gmx_wallcycle_t wc, int ewcs)
 {
-    if (useCycleSubcounters && wc != NULL)
+    if (useCycleSubcounters && wc != nullptr)
     {
         wc->wcsc[ewcs].c += gmx_cycles_read() - wc->wcsc[ewcs].start;
         wc->wcsc[ewcs].n++;

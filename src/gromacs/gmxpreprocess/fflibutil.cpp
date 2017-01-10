@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,7 +73,7 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen)
     char       *ptr;
 
     cptr = strrchr(filename, DIR_SEPARATOR);
-    if (cptr != NULL)
+    if (cptr != nullptr)
     {
         /* Skip the separator */
         cptr += 1;
@@ -90,7 +90,7 @@ void fflib_filename_base(const char *filename, char *filebase, int maxlen)
     strcpy(filebase, cptr);
     /* Remove the extension */
     ptr = strrchr(filebase, '.');
-    if (ptr != NULL)
+    if (ptr != nullptr)
     {
         ptr[0] = '\0';
     }
@@ -173,7 +173,7 @@ gmx_bool fflib_fexist(const char *file)
 
     file_fullpath = low_gmxlibfn(file, TRUE, FALSE);
 
-    if (file_fullpath == NULL)
+    if (file_fullpath == nullptr)
     {
         return FALSE;
     }

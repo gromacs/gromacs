@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -439,7 +439,7 @@ void calc_listed(const t_commrec             *cr,
     }
     else
     {
-        pbc_null = NULL;
+        pbc_null = nullptr;
     }
 
 #ifdef DEBUG
@@ -592,7 +592,7 @@ void calc_listed_lambda(const t_idef *idef,
     }
     else
     {
-        pbc_null = NULL;
+        pbc_null = nullptr;
     }
 
     /* Copy the whole idef, so we can modify the contents locally */

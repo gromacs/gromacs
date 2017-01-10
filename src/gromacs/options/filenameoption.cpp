@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,7 +141,7 @@ class FileTypeHandler
 };
 
 FileTypeHandler::FileTypeHandler(int fileType)
-    : fileType_(fileType), extensionCount_(0), genericTypes_(NULL)
+    : fileType_(fileType), extensionCount_(0), genericTypes_(nullptr)
 {
     if (fileType_ >= 0)
     {
@@ -166,7 +166,7 @@ int FileTypeHandler::extensionCount() const
 const char *FileTypeHandler::extension(int i) const
 {
     GMX_ASSERT(i >= 0 && i < extensionCount_, "Invalid extension index");
-    if (genericTypes_ != NULL)
+    if (genericTypes_ != nullptr)
     {
         return ftp2ext_with_dot(genericTypes_[i]);
     }
@@ -176,7 +176,7 @@ const char *FileTypeHandler::extension(int i) const
 bool
 FileTypeHandler::isValidType(int fileType) const
 {
-    if (genericTypes_ != NULL)
+    if (genericTypes_ != nullptr)
     {
         for (int i = 0; i < extensionCount(); ++i)
         {
@@ -240,7 +240,7 @@ FileNameOptionStorage::FileNameOptionStorage(const FileNameOption  &settings,
     {
         defaultExtension_ = typeHandler.extension(0);
     }
-    if (settings.defaultBasename_ != NULL)
+    if (settings.defaultBasename_ != nullptr)
     {
         std::string defaultValue(settings.defaultBasename_);
         int         type = fn2ftp(settings.defaultBasename_);
@@ -319,7 +319,7 @@ void FileNameOptionStorage::initConverter(ConverterType * /*converter*/)
 
 std::string FileNameOptionStorage::processValue(const std::string &value) const
 {
-    if (manager_ != NULL)
+    if (manager_ != nullptr)
     {
         std::string processedValue = manager_->completeFileName(value, info_);
         if (!processedValue.empty())
@@ -377,7 +377,7 @@ std::string FileNameOptionStorage::processValue(const std::string &value) const
 
 void FileNameOptionStorage::processAll()
 {
-    if (manager_ != NULL && hasFlag(efOption_HasDefaultValue))
+    if (manager_ != nullptr && hasFlag(efOption_HasDefaultValue))
     {
         ArrayRef<std::string> valueList = values();
         GMX_RELEASE_ASSERT(valueList.size() == 1,

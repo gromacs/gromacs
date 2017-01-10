@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,7 +101,7 @@ static void dump_dih_trr(int nframes, int nangles, real **dih, const char *fn,
                 }
             }
         }
-        gmx_trr_write_frame(fio, i, time[i], 0, box, na, x, NULL, NULL);
+        gmx_trr_write_frame(fio, i, time[i], 0, box, na, x, nullptr, nullptr);
     }
     gmx_trr_close(fio);
     sfree(x);
@@ -130,7 +130,7 @@ int gmx_g_angle(int argc, char *argv[])
         "records a histogram of the times between such transitions,",
         "assuming the input trajectory frames are equally spaced in time."
     };
-    static const char *opt[]    = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
+    static const char *opt[]    = { nullptr, "angle", "dihedral", "improper", "ryckaert-bellemans", nullptr };
     static gmx_bool    bALL     = FALSE, bChandler = FALSE, bAverCorr = FALSE, bPBC = TRUE;
     static real        binwidth = 1;
     t_pargs            pa[]     = {
@@ -167,18 +167,18 @@ int gmx_g_angle(int argc, char *argv[])
     real              aver, aver2, aversig; /* fraction trans dihedrals */
     double            tfrac = 0;
     char              title[256];
-    real            **dih = NULL; /* mega array with all dih. angles at all times*/
+    real            **dih = nullptr; /* mega array with all dih. angles at all times*/
     real             *time, *trans_frac, *aver_angle;
     t_filenm          fnm[] = {
-        { efTRX, "-f", NULL,  ffREAD  },
-        { efNDX, NULL, "angle",  ffREAD  },
+        { efTRX, "-f", nullptr,  ffREAD  },
+        { efNDX, nullptr, "angle",  ffREAD  },
         { efXVG, "-od", "angdist",  ffWRITE },
         { efXVG, "-ov", "angaver",  ffOPTWR },
         { efXVG, "-of", "dihfrac",  ffOPTWR },
         { efXVG, "-ot", "dihtrans", ffOPTWR },
         { efXVG, "-oh", "trhisto",  ffOPTWR },
         { efXVG, "-oc", "dihcorr",  ffOPTWR },
-        { efTRR, "-or", NULL,       ffOPTWR }
+        { efTRR, "-or", nullptr,       ffOPTWR }
     };
 #define NFILE asize(fnm)
     int               npargs;
@@ -199,7 +199,7 @@ int gmx_g_angle(int argc, char *argv[])
     maxang = 360.0;
     bRb    = FALSE;
 
-    GMX_RELEASE_ASSERT(opt[0] != NULL, "Internal option inconsistency; opt[0]==NULL after processing");
+    GMX_RELEASE_ASSERT(opt[0] != nullptr, "Internal option inconsistency; opt[0]==NULL after processing");
 
     switch (opt[0][0])
     {
@@ -434,7 +434,7 @@ int gmx_g_angle(int argc, char *argv[])
     {
         sprintf(title, "Dihedral Distribution: %s", grpname);
 
-        calc_distribution_props(maxangstat, angstat, -180.0, 0, NULL, &S2);
+        calc_distribution_props(maxangstat, angstat, -180.0, 0, nullptr, &S2);
         fprintf(stderr, "Order parameter S^2 = %g\n", S2);
     }
 

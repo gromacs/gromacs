@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -332,19 +332,19 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
     *nbfs = 0.0;
     for (i = 0; (i < eNR_NBKERNEL_ALLVSALLGB); i++)
     {
-        if (std::strstr(nbdata[i].name, "W3-W3") != NULL)
+        if (std::strstr(nbdata[i].name, "W3-W3") != nullptr)
         {
             *nbfs += 9e-6*nrnb->n[i];
         }
-        else if (std::strstr(nbdata[i].name, "W3") != NULL)
+        else if (std::strstr(nbdata[i].name, "W3") != nullptr)
         {
             *nbfs += 3e-6*nrnb->n[i];
         }
-        else if (std::strstr(nbdata[i].name, "W4-W4") != NULL)
+        else if (std::strstr(nbdata[i].name, "W4-W4") != nullptr)
         {
             *nbfs += 10e-6*nrnb->n[i];
         }
-        else if (std::strstr(nbdata[i].name, "W4") != NULL)
+        else if (std::strstr(nbdata[i].name, "W4") != nullptr)
         {
             *nbfs += 4e-6*nrnb->n[i];
         }
@@ -412,7 +412,7 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
             *mflop += mni*flop;
             frac    = 100.0*mni*flop/tflop;
             tfrac  += frac;
-            if (out != NULL)
+            if (out != nullptr)
             {
                 fprintf(out, " %-32s %16.6f %15.3f  %6.1f\n",
                         nbdata[i].name, mni, mni*flop, frac);
@@ -461,7 +461,7 @@ void print_perf(FILE *out, double time_per_thread, double time_per_node,
             mflop         = mflop/time_per_node;
             wallclocktime = nsteps*delta_t;
 
-            if (getenv("GMX_DETAILED_PERF_STATS") == NULL)
+            if (getenv("GMX_DETAILED_PERF_STATS") == nullptr)
             {
                 fprintf(out, "%12s %12s %12s\n",
                         "", "(ns/day)", "(hour/ns)");
@@ -480,7 +480,7 @@ void print_perf(FILE *out, double time_per_thread, double time_per_node,
         }
         else
         {
-            if (getenv("GMX_DETAILED_PERF_STATS") == NULL)
+            if (getenv("GMX_DETAILED_PERF_STATS") == nullptr)
             {
                 fprintf(out, "%12s %14s\n",
                         "", "(steps/hour)");

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -647,7 +647,7 @@ KeywordsHelpTopic::KeywordsHelpTopic()
         const std::string         &symname = symbol->name();
         const gmx_ana_selmethod_t *method  = symbol->methodValue();
         methods_.push_back(std::make_pair(std::string(symname), method));
-        if (method->help.nlhelp > 0 && method->help.help != NULL)
+        if (method->help.nlhelp > 0 && method->help.help != nullptr)
         {
             addSubTopic(HelpTopicPointer(
                                 new KeywordDetailsHelpTopic(symname, *method)));
@@ -675,7 +675,7 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
 
     writeKeywordListStart(context, "Additional keywords that directly select atoms:");
     printKeywordList(context, GROUP_VALUE, false);
-    writeKeywordListEnd(context, NULL);
+    writeKeywordListEnd(context, nullptr);
 
     writeKeywordListStart(context, "Keywords that directly evaluate to positions:");
     printKeywordList(context, POS_VALUE, false);
@@ -684,7 +684,7 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
     writeKeywordListStart(context, "Additional keywords:");
     printKeywordList(context, POS_VALUE, true);
     printKeywordList(context, NO_VALUE, true);
-    writeKeywordListEnd(context, NULL);
+    writeKeywordListEnd(context, nullptr);
 
     writeKeywordSubTopics(context);
 }
@@ -732,11 +732,11 @@ void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
             = (method.flags & SMETH_MODIFIER) != 0;
         if (method.type == type && bModifiers == bIsModifier)
         {
-            const bool bHasHelp = (method.help.nlhelp > 0 && method.help.help != NULL);
+            const bool bHasHelp = (method.help.nlhelp > 0 && method.help.help != nullptr);
             const bool bPrintHelpMark
                 = bHasHelp && context.outputFormat() == eHelpOutputFormat_Console;
             file.writeString(formatString("   %c ", bPrintHelpMark ? '+' : ' '));
-            if (method.help.syntax != NULL)
+            if (method.help.syntax != nullptr)
             {
                 file.writeLine(method.help.syntax);
             }
@@ -765,14 +765,14 @@ void KeywordsHelpTopic::writeKeywordSubTopics(const HelpWriterContext &context) 
     {
         const gmx_ana_selmethod_t &method = *iter->second;
         const bool                 bHasHelp
-            = (method.help.nlhelp > 0 && method.help.help != NULL);
+            = (method.help.nlhelp > 0 && method.help.help != nullptr);
         if (!bHasHelp || usedSymbols.count(iter->first) > 0)
         {
             continue;
         }
 
         std::string                title;
-        if (method.help.helpTitle != NULL)
+        if (method.help.helpTitle != nullptr)
         {
             title = method.help.helpTitle;
             title.append(" - ");
@@ -790,7 +790,7 @@ void KeywordsHelpTopic::writeKeywordSubTopics(const HelpWriterContext &context) 
         }
 
         const IHelpTopic         *subTopic = findSubTopic(iter->first.c_str());
-        GMX_RELEASE_ASSERT(subTopic != NULL, "Keyword subtopic no longer exists");
+        GMX_RELEASE_ASSERT(subTopic != nullptr, "Keyword subtopic no longer exists");
         HelpWriterContext         subContext(context);
         subContext.enterSubSection(title);
         subTopic->writeHelp(subContext);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,8 +87,8 @@ int gmx_dyecoupl(int argc, char *argv[])
 
     t_filenm fnm[] =
     {
-        { efTRX, "-f", NULL, ffREAD },
-        { efNDX, NULL, NULL, ffREAD },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffREAD },
         { efXVG, "-ot", "rkappa", ffOPTWR },
         { efXVG, "-oe", "insteff", ffOPTWR },
         { efDAT, "-o", "rkappa", ffOPTWR },
@@ -98,7 +98,7 @@ int gmx_dyecoupl(int argc, char *argv[])
 #define NFILE asize(fnm)
 
 
-    const char  *in_trajfile, *out_xvgrkfile = NULL, *out_xvginstefffile = NULL, *out_xvgrhistfile = NULL, *out_xvgkhistfile = NULL, *out_datfile = NULL;
+    const char  *in_trajfile, *out_xvgrkfile = nullptr, *out_xvginstefffile = nullptr, *out_xvgrhistfile = nullptr, *out_xvgkhistfile = nullptr, *out_datfile = nullptr;
     gmx_bool     bHaveFirstFrame, bHaveNextFrame, indexOK = TRUE;
     int          ndon, nacc;
     int         *donindex, *accindex;
@@ -115,10 +115,10 @@ int gmx_dyecoupl(int argc, char *argv[])
     /*we rely on PBC autodetection (...currently)*/
     int         ePBC = -1;
 
-    real       *rvalues = NULL, *kappa2values = NULL, *rhist = NULL, *khist = NULL;
-    t_pbc      *pbc     = NULL;
+    real       *rvalues = nullptr, *kappa2values = nullptr, *rhist = nullptr, *khist = nullptr;
+    t_pbc      *pbc     = nullptr;
     int         i, bin;
-    FILE       *rkfp = NULL, *rhfp = NULL, *khfp = NULL, *datfp = NULL, *iefp = NULL;
+    FILE       *rkfp = nullptr, *rhfp = nullptr, *khfp = nullptr, *datfp = nullptr, *iefp = nullptr;
     gmx_bool    bRKout, bRhistout, bKhistout, bDatout, bInstEffout, grident;
 
     const char *rkleg[2] = { "R", "\\f{Symbol}k\\f{}\\S2\\N" };
@@ -131,7 +131,7 @@ int gmx_dyecoupl(int argc, char *argv[])
     int         rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -166,10 +166,10 @@ int gmx_dyecoupl(int argc, char *argv[])
     }
 
     printf("Select group with donor atom pairs defining the transition moment\n");
-    get_index(NULL, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
+    get_index(nullptr, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
 
     printf("Select group with acceptor atom pairs defining the transition moment\n");
-    get_index(NULL, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
+    get_index(nullptr, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
 
     /*check if groups are identical*/
     grident = TRUE;

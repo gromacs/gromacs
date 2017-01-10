@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,13 +96,13 @@ class OptionManagerContainer
         template <class ManagerType>
         ManagerType *get() const
         {
-            ManagerType *result = NULL;
+            ManagerType *result = nullptr;
             for (ListType::const_iterator i = list_.begin(); i != list_.end(); ++i)
             {
                 ManagerType *curr = dynamic_cast<ManagerType *>(*i);
-                if (curr != NULL)
+                if (curr != nullptr)
                 {
-                    GMX_RELEASE_ASSERT(result == NULL,
+                    GMX_RELEASE_ASSERT(result == nullptr,
                                        "More than one applicable option manager is set");
                     result = curr;
                 }

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,16 +81,16 @@ static t_liedata *analyze_names(int nre, gmx_enxnm_t *names, const char *ligand)
     snew(ld, 1);
     for (; (i < nre); i++)
     {
-        if ((std::strstr(names[i].name, ligand) != NULL) &&
-            (std::strstr(names[i].name, self) == NULL))
+        if ((std::strstr(names[i].name, ligand) != nullptr) &&
+            (std::strstr(names[i].name, self) == nullptr))
         {
-            if (std::strstr(names[i].name, "LJ") != NULL)
+            if (std::strstr(names[i].name, "LJ") != nullptr)
             {
                 ld->nlj++;
                 srenew(ld->lj, ld->nlj);
                 ld->lj[ld->nlj-1] = i;
             }
-            else if (std::strstr(names[i].name, "Coul") != NULL)
+            else if (std::strstr(names[i].name, "Coul") != nullptr)
             {
                 ld->nqq++;
                 srenew(ld->qq, ld->nqq);
@@ -167,7 +167,7 @@ int gmx_lie(int argc, char *argv[])
     int               nre, nframes = 0, ct = 0;
     ener_file_t       fp;
     t_liedata        *ld;
-    gmx_enxnm_t      *enm = NULL;
+    gmx_enxnm_t      *enm = nullptr;
     t_enxframe       *fr;
     real              lie;
     double            lieaver = 0, lieav2 = 0;
@@ -180,7 +180,7 @@ int gmx_lie(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }

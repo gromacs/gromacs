@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -343,13 +343,13 @@ void init_em(FILE *fplog, const char *title,
     state_global->ngtc = 0;
 
     /* Initialize lambda variables */
-    initialize_lambdas(fplog, ir, &(state_global->fep_state), &state_global->lambda, NULL);
+    initialize_lambdas(fplog, ir, &(state_global->fep_state), &state_global->lambda, nullptr);
 
     init_nrnb(nrnb);
 
     /* Interactive molecular dynamics */
     init_IMD(ir, cr, top_global, fplog, 1, as_rvec_array(state_global->x.data()),
-             nfile, fnm, NULL, imdport, Flags);
+             nfile, fnm, nullptr, imdport, Flags);
 
     if (ir->eI == eiNM)
     {
@@ -368,9 +368,9 @@ void init_em(FILE *fplog, const char *title,
         /* With energy minimization, shells and flexible constraints are
          * automatically minimized when treated like normal DOFS.
          */
-        if (shellfc != NULL)
+        if (shellfc != nullptr)
         {
-            *shellfc = NULL;
+            *shellfc = nullptr;
         }
     }
 
@@ -385,10 +385,10 @@ void init_em(FILE *fplog, const char *title,
                             state_global, top_global, ir,
                             &ems->s, &ems->f, mdatoms, *top,
                             fr, vsite, constr,
-                            nrnb, NULL, FALSE);
+                            nrnb, nullptr, FALSE);
         dd_store_state(cr->dd, &ems->s);
 
-        *graph = NULL;
+        *graph = nullptr;
     }
     else
     {
@@ -403,7 +403,7 @@ void init_em(FILE *fplog, const char *title,
         snew(*top, 1);
         mdAlgorithmsSetupAtomData(cr, ir, top_global, *top, fr,
                                   graph, mdatoms,
-                                  vsite, shellfc ? *shellfc : NULL);
+                                  vsite, shellfc ? *shellfc : nullptr);
 
         update_mdatoms(mdatoms, state_global->lambda[efptFEP]);
 
@@ -431,14 +431,14 @@ void init_em(FILE *fplog, const char *title,
         {
             /* Constrain the starting coordinates */
             dvdl_constr = 0;
-            constrain(PAR(cr) ? NULL : fplog, TRUE, TRUE, constr, &(*top)->idef,
+            constrain(PAR(cr) ? nullptr : fplog, TRUE, TRUE, constr, &(*top)->idef,
                       ir, cr, -1, 0, 1.0, mdatoms,
                       as_rvec_array(ems->s.x.data()),
                       as_rvec_array(ems->s.x.data()),
-                      NULL,
+                      nullptr,
                       fr->bMolPBC, ems->s.box,
                       ems->s.lambda[efptFEP], &dvdl_constr,
-                      NULL, NULL, nrnb, econqCoord);
+                      nullptr, nullptr, nrnb, econqCoord);
         }
     }
 
@@ -448,19 +448,19 @@ void init_em(FILE *fplog, const char *title,
     }
     else
     {
-        *gstat = NULL;
+        *gstat = nullptr;
     }
 
-    *outf = init_mdoutf(fplog, nfile, fnm, 0, cr, ir, top_global, NULL, wcycle);
+    *outf = init_mdoutf(fplog, nfile, fnm, 0, cr, ir, top_global, nullptr, wcycle);
 
     snew(*enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
                   *enerd);
 
-    if (mdebin != NULL)
+    if (mdebin != nullptr)
     {
         /* Init bin for energy stuff */
-        *mdebin = init_mdebin(mdoutf_get_fp_ene(*outf), top_global, ir, NULL);
+        *mdebin = init_mdebin(mdoutf_get_fp_ene(*outf), top_global, ir, nullptr);
     }
 
     clear_rvec(mu_tot);
@@ -525,7 +525,7 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
                                      &state->s, state_global, energyHistory,
                                      &state->f);
 
-    if (confout != NULL && MASTER(cr))
+    if (confout != nullptr && MASTER(cr))
     {
         if (ir->ePBC != epbcNONE && !ir->bPeriodicMols && DOMAINDECOMP(cr))
         {
@@ -536,7 +536,7 @@ static void write_em_traj(FILE *fplog, t_commrec *cr,
 
         write_sto_conf_mtop(confout,
                             *top_global->name, top_global,
-                            as_rvec_array(state_global->x.data()), NULL, ir->ePBC, state_global->box);
+                            as_rvec_array(state_global->x.data()), nullptr, ir->ePBC, state_global->box);
     }
 }
 
@@ -661,12 +661,12 @@ static bool do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
         wallcycle_start(wcycle, ewcCONSTR);
         dvdl_constr = 0;
         validStep   =
-            constrain(NULL, TRUE, TRUE, constr, &top->idef,
+            constrain(nullptr, TRUE, TRUE, constr, &top->idef,
                       ir, cr, count, 0, 1.0, md,
                       as_rvec_array(s1->x.data()), as_rvec_array(s2->x.data()),
-                      NULL, bMolPBC, s2->box,
+                      nullptr, bMolPBC, s2->box,
                       s2->lambda[efptBONDED], &dvdl_constr,
-                      NULL, NULL, nrnb, econqCoord);
+                      nullptr, nullptr, nrnb, econqCoord);
         wallcycle_stop(wcycle, ewcCONSTR);
 
         // We should move this check to the different minimizers
@@ -690,7 +690,7 @@ static void em_dd_partition_system(FILE *fplog, int step, t_commrec *cr,
 {
     /* Repartition the domain decomposition */
     dd_partition_system(fplog, step, cr, FALSE, 1,
-                        NULL, top_global, ir,
+                        nullptr, top_global, ir,
                         &ems->s, &ems->f,
                         mdatoms, top, fr, vsite, constr,
                         nrnb, wcycle, FALSE);
@@ -737,7 +737,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
 
     if (vsite)
     {
-        construct_vsites(vsite, as_rvec_array(ems->s.x.data()), 1, NULL,
+        construct_vsites(vsite, as_rvec_array(ems->s.x.data()), 1, nullptr,
                          top->idef.iparams, top->idef.il,
                          fr->ePBC, fr->bMolPBC, cr, ems->s.box);
     }
@@ -758,7 +758,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
              count, nrnb, wcycle, top, &top_global->groups,
              ems->s.box, &ems->s.x, &ems->s.hist,
              &ems->f, force_vir, mdatoms, enerd, fcd,
-             &ems->s.lambda, graph, fr, vsite, mu_tot, t, NULL, TRUE,
+             &ems->s.lambda, graph, fr, vsite, mu_tot, t, nullptr, TRUE,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
              GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY |
              (bNS ? GMX_FORCE_NS : 0));
@@ -773,8 +773,8 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcMoveE);
 
         global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
-                    inputrec, NULL, NULL, NULL, 1, &terminate,
-                    NULL, FALSE,
+                    inputrec, nullptr, nullptr, nullptr, 1, &terminate,
+                    nullptr, FALSE,
                     CGLO_ENERGY |
                     CGLO_PRESSURE |
                     CGLO_CONSTRAINT);
@@ -798,12 +798,12 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcCONSTR);
         dvdl_constr = 0;
         rvec *f_rvec = as_rvec_array(ems->f.data());
-        constrain(NULL, FALSE, FALSE, constr, &top->idef,
+        constrain(nullptr, FALSE, FALSE, constr, &top->idef,
                   inputrec, cr, count, 0, 1.0, mdatoms,
                   as_rvec_array(ems->s.x.data()), f_rvec, f_rvec,
                   fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdl_constr,
-                  NULL, &shake_vir, nrnb, econqForceDispl);
+                  nullptr, &shake_vir, nrnb, econqForceDispl);
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
         wallcycle_stop(wcycle, ewcCONSTR);
@@ -1032,7 +1032,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     init_em(fplog, CG, cr, inputrec,
             state_global, top_global, s_min, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
-            vsite, constr, NULL,
+            vsite, constr, nullptr,
             nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
 
     /* Print to log file */
@@ -1066,7 +1066,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         /* Copy stuff to the energy bin for easy printing etc. */
         upd_mdebin(mdebin, FALSE, FALSE, (double)step,
                    mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
-                   NULL, NULL, vir, pres, NULL, mu_tot, constr);
+                   nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
         print_ebin_header(fplog, step, step);
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
@@ -1138,7 +1138,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         }
 
         /* Calculate the norm of the search vector */
-        get_f_norm_max(cr, &(inputrec->opts), mdatoms, pm, &pnorm, NULL, NULL);
+        get_f_norm_max(cr, &(inputrec->opts), mdatoms, pm, &pnorm, nullptr, nullptr);
 
         /* Just in case stepsize reaches zero due to numerical precision... */
         if (stepsize <= 0)
@@ -1194,7 +1194,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         do_x = do_per_step(step, inputrec->nstxout);
         do_f = do_per_step(step, inputrec->nstfout);
 
-        write_em_traj(fplog, cr, outf, do_x, do_f, NULL,
+        write_em_traj(fplog, cr, outf, do_x, do_f, nullptr,
                       top_global, inputrec, step,
                       s_min, state_global, energyHistory);
 
@@ -1497,7 +1497,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             /* Store the new (lower) energies */
             upd_mdebin(mdebin, FALSE, FALSE, (double)step,
                        mdatoms->tmass, enerd, &s_min->s, inputrec->fepvals, inputrec->expandedvals, s_min->s.box,
-                       NULL, NULL, vir, pres, NULL, mu_tot, constr);
+                       nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
@@ -1510,7 +1510,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                 print_ebin_header(fplog, step, step);
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
-                       do_log ? fplog : NULL, step, step, eprNORMAL,
+                       do_log ? fplog : nullptr, step, step, eprNORMAL,
                        mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
 
@@ -1559,7 +1559,7 @@ double do_cg(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         {
             /* Write final energy file entries */
             print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
-                       !do_log ? fplog : NULL, step, step, eprNORMAL,
+                       !do_log ? fplog : nullptr, step, step, eprNORMAL,
                        mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
     }
@@ -1673,7 +1673,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
         gmx_fatal(FARGS, "Cannot do parallel L-BFGS Minimization - yet.\n");
     }
 
-    if (NULL != constr)
+    if (nullptr != constr)
     {
         gmx_fatal(FARGS, "The combination of constraints and L-BFGS minimization is not implemented. Either do not use constraints, or use another minimizer (e.g. steepest descent).");
     }
@@ -1706,7 +1706,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     init_em(fplog, LBFGS, cr, inputrec,
             state_global, top_global, &ems, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
-            vsite, constr, NULL,
+            vsite, constr, nullptr,
             nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
 
     start = 0;
@@ -1755,7 +1755,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
 
     if (vsite)
     {
-        construct_vsites(vsite, as_rvec_array(state_global->x.data()), 1, NULL,
+        construct_vsites(vsite, as_rvec_array(state_global->x.data()), 1, nullptr,
                          top->idef.iparams, top->idef.il,
                          fr->ePBC, fr->bMolPBC, cr, state_global->box);
     }
@@ -1777,7 +1777,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
         /* Copy stuff to the energy bin for easy printing etc. */
         upd_mdebin(mdebin, FALSE, FALSE, (double)step,
                    mdatoms->tmass, enerd, state_global, inputrec->fepvals, inputrec->expandedvals, state_global->box,
-                   NULL, NULL, vir, pres, NULL, mu_tot, constr);
+                   nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
         print_ebin_header(fplog, step, step);
         print_ebin(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step, step, eprNORMAL,
@@ -2278,7 +2278,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
             /* Store the new (lower) energies */
             upd_mdebin(mdebin, FALSE, FALSE, (double)step,
                        mdatoms->tmass, enerd, state_global, inputrec->fepvals, inputrec->expandedvals, state_global->box,
-                       NULL, NULL, vir, pres, NULL, mu_tot, constr);
+                       nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
             if (do_log)
@@ -2286,7 +2286,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                 print_ebin_header(fplog, step, step);
             }
             print_ebin(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
-                       do_log ? fplog : NULL, step, step, eprNORMAL,
+                       do_log ? fplog : nullptr, step, step, eprNORMAL,
                        mdebin, fcd, &(top_global->groups), &(inputrec->opts));
         }
 
@@ -2334,7 +2334,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     if (!do_ene || !do_log) /* Write final energy file entries */
     {
         print_ebin(mdoutf_get_fp_ene(outf), !do_ene, FALSE, FALSE,
-                   !do_log ? fplog : NULL, step, step, eprNORMAL,
+                   !do_log ? fplog : nullptr, step, step, eprNORMAL,
                    mdebin, fcd, &(top_global->groups), &(inputrec->opts));
     }
 
@@ -2442,7 +2442,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
     init_em(fplog, SD, cr, inputrec,
             state_global, top_global, s_try, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
-            vsite, constr, NULL,
+            vsite, constr, nullptr,
             nfile, fnm, &outf, &mdebin, imdport, Flags, wcycle);
 
     /* Print to log file  */
@@ -2530,7 +2530,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
                 /* Store the new (lower) energies  */
                 upd_mdebin(mdebin, FALSE, FALSE, (double)count,
                            mdatoms->tmass, enerd, &s_try->s, inputrec->fepvals, inputrec->expandedvals,
-                           s_try->s.box, NULL, NULL, vir, pres, NULL, mu_tot, constr);
+                           s_try->s.box, nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
                 /* Prepare IMD energy record, if bIMD is TRUE. */
                 IMD_fill_energy_record(inputrec->bIMD, inputrec->imd, enerd, count, TRUE);
@@ -2568,7 +2568,7 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
             /* Write to trn, if necessary */
             do_x = do_per_step(steps_accepted, inputrec->nstxout);
             do_f = do_per_step(steps_accepted, inputrec->nstfout);
-            write_em_traj(fplog, cr, outf, do_x, do_f, NULL,
+            write_em_traj(fplog, cr, outf, do_x, do_f, nullptr,
                           top_global, inputrec, count,
                           s_min, state_global, energyHistory);
         }
@@ -2598,8 +2598,8 @@ double do_steep(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlo
         {
             if (MASTER(cr))
             {
-                warn_step(stderr, inputrec->em_tol, count == nsteps, constr != NULL);
-                warn_step(fplog, inputrec->em_tol, count == nsteps, constr != NULL);
+                warn_step(stderr, inputrec->em_tol, count == nsteps, constr != nullptr);
+                warn_step(fplog, inputrec->em_tol, count == nsteps, constr != nullptr);
             }
             bAbort = TRUE;
         }
@@ -2698,8 +2698,8 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     rvec                *fneg, *dfdx;
     gmx_bool             bSparse; /* use sparse matrix storage format */
     size_t               sz;
-    gmx_sparsematrix_t * sparse_matrix           = NULL;
-    real           *     full_matrix             = NULL;
+    gmx_sparsematrix_t * sparse_matrix           = nullptr;
+    real           *     full_matrix             = nullptr;
 
     /* added with respect to mdrun */
     int                       row, col;
@@ -2707,7 +2707,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
     real                      x_min;
     bool                      bIsMaster = MASTER(cr);
 
-    if (constr != NULL)
+    if (constr != nullptr)
     {
         gmx_fatal(FARGS, "Constraints present with Normal Mode Analysis, this combination is not supported");
     }
@@ -2721,7 +2721,7 @@ double do_nm(FILE *fplog, t_commrec *cr, const gmx::MDLogger &mdlog,
             state_global, top_global, &state_work, &top,
             nrnb, mu_tot, fr, &enerd, &graph, mdatoms, &gstat,
             vsite, constr, &shellfc,
-            nfile, fnm, &outf, NULL, imdport, Flags, wcycle);
+            nfile, fnm, &outf, nullptr, imdport, Flags, wcycle);
 
     std::vector<size_t> atom_index = get_atom_index(top_global);
     snew(fneg, atom_index.size());

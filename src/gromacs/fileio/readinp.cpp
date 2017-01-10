@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,7 +62,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
     FILE      *in;
     char       buf[STRLEN], lbuf[STRLEN], rbuf[STRLEN], warn_buf[STRLEN];
     char      *ptr, *cptr;
-    t_inpfile *inp = NULL;
+    t_inpfile *inp = nullptr;
     int        nin, lc, i, j, k;
 
 
@@ -85,7 +85,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
             // strchr, etc. rather than re-inventing wheels.
 
             /* Strip comment */
-            if ((cptr = std::strchr(buf, COMMENTSIGN)) != NULL)
+            if ((cptr = std::strchr(buf, COMMENTSIGN)) != nullptr)
             {
                 *cptr = '\0';
             }
@@ -296,7 +296,7 @@ int search_einp(int ninp, const t_inpfile *inp, const char *name)
 {
     int i;
 
-    if (inp == NULL)
+    if (inp == nullptr)
     {
         return -1;
     }
@@ -460,7 +460,7 @@ const char *get_estr(int *ninp, t_inpfile **inp, const char *name, const char *d
         }
         else
         {
-            (*inp)[(*ninp)-1].value = NULL;
+            (*inp)[(*ninp)-1].value = nullptr;
         }
 
         return def;
@@ -488,7 +488,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
         return 0;
     }
 
-    for (i = 0; (defs[i] != NULL); i++)
+    for (i = 0; (defs[i] != nullptr); i++)
     {
         if (gmx_strcasecmp_min(defs[i], (*inp)[ii].value) == 0)
         {
@@ -496,7 +496,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
         }
     }
 
-    if (defs[i] == NULL)
+    if (defs[i] == nullptr)
     {
         n += sprintf(buf, "Invalid enum '%s' for variable %s, using '%s'\n",
                      (*inp)[ii].value, name, defs[0]);
@@ -507,7 +507,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
             n += sprintf(buf+n, " '%s'", defs[j]);
             j++;
         }
-        if (wi != NULL)
+        if (wi != nullptr)
         {
             warning_error(wi, buf);
         }
@@ -526,5 +526,5 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
 
 int get_eenum(int *ninp, t_inpfile **inp, const char *name, const char **defs)
 {
-    return get_eeenum(ninp, inp, name, defs, NULL);
+    return get_eeenum(ninp, inp, name, defs, nullptr);
 }

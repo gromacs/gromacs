@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -224,7 +224,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
             {
                 wallcycle_start(wcycle, ewcMoveE);
                 global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot,
-                            ir, ekind, constr, bStopCM ? vcm : NULL,
+                            ir, ekind, constr, bStopCM ? vcm : nullptr,
                             signalBuffer.size(), signalBuffer.data(),
                             totalNumberOfBondedInteractions,
                             *bSumEkinhOld, flags);
@@ -631,7 +631,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
     }
     if (ir->eSwapCoords != eswapNO)
     {
-        if (state->swapstate == NULL)
+        if (state->swapstate == nullptr)
         {
             snew(state->swapstate, 1);
         }

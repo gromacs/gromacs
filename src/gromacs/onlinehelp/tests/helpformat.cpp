@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,9 +88,9 @@ TEST_F(TextTableFormatterTest, HandlesBasicCase)
 
 TEST_F(TextTableFormatterTest, HandlesEmptyColumnTitles)
 {
-    formatter_.addColumn(NULL, 4, false);
+    formatter_.addColumn(nullptr, 4, false);
     formatter_.addColumn("", 4, false);
-    formatter_.addColumn(NULL, 14, true);
+    formatter_.addColumn(nullptr, 14, true);
     formatter_.addColumn("", 14, true);
 
     formatter_.clear();

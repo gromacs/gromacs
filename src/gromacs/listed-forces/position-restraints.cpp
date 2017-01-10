@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -323,7 +323,7 @@ real posres(int nbonds,
     rvec             comA_sc, comB_sc, rdist, dpdl, dx;
     gmx_bool         bForceValid = TRUE;
 
-    if ((f == NULL) || (vir_diag == NULL))    /* should both be null together! */
+    if ((f == nullptr) || (vir_diag == nullptr))    /* should both be null together! */
     {
         bForceValid = FALSE;
     }
@@ -398,7 +398,7 @@ posres_wrapper(t_nrnb             *nrnb,
     v    = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
                   idef->iparams_posres,
                   x, as_rvec_array(fr->f_novirsum->data()), fr->vir_diag_posres,
-                  fr->ePBC == epbcNONE ? NULL : pbc,
+                  fr->ePBC == epbcNONE ? nullptr : pbc,
                   lambda[efptRESTRAINT], &dvdl,
                   fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
     enerd->term[F_POSRES] += v;
@@ -435,8 +435,8 @@ posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
         lambda_dum = (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i-1]);
         v          = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
                             idef->iparams_posres,
-                            x, NULL, NULL,
-                            fr->ePBC == epbcNONE ? NULL : pbc, lambda_dum, &dvdl_dum,
+                            x, nullptr, nullptr,
+                            fr->ePBC == epbcNONE ? nullptr : pbc, lambda_dum, &dvdl_dum,
                             fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
         enerd->enerpart_lambda[i] += v;
     }
@@ -457,7 +457,7 @@ void fbposres_wrapper(t_nrnb             *nrnb,
     v = fbposres(idef->il[F_FBPOSRES].nr, idef->il[F_FBPOSRES].iatoms,
                  idef->iparams_fbposres,
                  x, as_rvec_array(fr->f_novirsum->data()), fr->vir_diag_posres,
-                 fr->ePBC == epbcNONE ? NULL : pbc,
+                 fr->ePBC == epbcNONE ? nullptr : pbc,
                  fr->rc_scaling, fr->ePBC, fr->posres_com);
     enerd->term[F_FBPOSRES] += v;
     inc_nrnb(nrnb, eNR_FBPOSRES, idef->il[F_FBPOSRES].nr/2);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -615,7 +615,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
             gmx_bool bEnvSet;
             char     buf2[256];
 
-            bEnvSet = (getenv("OMP_NUM_THREADS") != NULL);
+            bEnvSet = (getenv("OMP_NUM_THREADS") != nullptr);
 
             if (bNtOmpOptionSet || bEnvSet)
             {
@@ -670,7 +670,7 @@ static void print_hw_opt(FILE *fp, const gmx_hw_opt_t *hw_opt)
             hw_opt->nthreads_tmpi,
             hw_opt->nthreads_omp,
             hw_opt->nthreads_omp_pme,
-            hw_opt->gpu_opt.gpu_id != NULL ? hw_opt->gpu_opt.gpu_id : "");
+            hw_opt->gpu_opt.gpu_id != nullptr ? hw_opt->gpu_opt.gpu_id : "");
 }
 
 /* Checks we can do when we don't (yet) know the cut-off scheme */

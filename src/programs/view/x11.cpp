@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,16 +80,16 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
 
     if (name)
     {
-        bFont = ((font = XLQF(err, disp, name)) != NULL);
+        bFont = ((font = XLQF(err, disp, name)) != nullptr);
     }
     else
     {
-        font = NULL;
+        font = nullptr;
     }
 
     for (i = 0; (!bFont && (i < MAXNAMES)); i++)
     {
-        bFont = ((font = XLQF(err, disp, fontnames[i])) != NULL);
+        bFont = ((font = XLQF(err, disp, fontnames[i])) != nullptr);
     }
 
     if (!bFont)
@@ -97,7 +97,7 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
         fontlist = XListFonts(disp, "?", 1, &count);
         if (count != 0)
         {
-            bFont = ((font = XLQF(err, disp, fontlist[0])) != NULL);
+            bFont = ((font = XLQF(err, disp, fontlist[0])) != nullptr);
         }
     }
     if (!bFont)
@@ -171,7 +171,7 @@ static void MainLoop(t_x11 *x11)
                         /* Filter out expose events with non-zero count field */
                         if (event.xexpose.count != 0)
                         {
-                            curs = NULL;
+                            curs = nullptr;
                         }
                         break;
                     case ConfigureNotify:
@@ -202,7 +202,7 @@ static void RegisterCallback(t_x11 *x11, Window w, Window Parent,
     item->cb     = cb;
     item->mask   = 0;
     item->data   = data;
-    item->next   = NULL;
+    item->next   = nullptr;
 
     if (x11->wlist)
     {
@@ -317,7 +317,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     char          **ARGV;
     char           *display;
     char           *fontname;
-    char           *title, *FG = NULL, *BG = NULL;
+    char           *title, *FG = nullptr, *BG = nullptr;
     bool            bVerbose = false;
     int             i;
 
@@ -380,7 +380,7 @@ t_x11 *GetX11(int *argc, char *argv[])
         argv[i] = ARGV[i];
     }
     *argc      = ARGC;
-    argv[ARGC] = NULL;
+    argv[ARGC] = nullptr;
 
     snew(x11, 1);
     x11->dispname = display;
@@ -389,27 +389,27 @@ t_x11 *GetX11(int *argc, char *argv[])
         x11->console = stderr;
     }
     else
-    if ((x11->console = std::fopen("/dev/null", "w")) == NULL)
+    if ((x11->console = std::fopen("/dev/null", "w")) == nullptr)
     {
         x11->console = stderr;
     }
 
-    if ((x11->disp = XOpenDisplay(display)) == NULL)
+    if ((x11->disp = XOpenDisplay(display)) == nullptr)
     {
         if (bVerbose)
         {
             std::fprintf(x11->console, "Display %s invalid\n", display);
         }
-        return NULL;
+        return nullptr;
     }
 
-    if ((x11->font = GetFont(x11->console, x11->disp, fontname)) == NULL)
+    if ((x11->font = GetFont(x11->console, x11->disp, fontname)) == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
-    if ((x11->gc = GetGC(x11->disp, x11->font)) == NULL)
+    if ((x11->gc = GetGC(x11->disp, x11->font)) == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
 
     x11->root   = DefaultRootWindow(x11->disp);
@@ -486,7 +486,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     }
     x11->title = gmx_strdup(title);
     sfree(title);
-    x11->wlist              = NULL;
+    x11->wlist              = nullptr;
     x11->GetNamedColor      = &GetNamedColor;
     x11->MainLoop           = &MainLoop;
     x11->RegisterCallback   = &RegisterCallback;

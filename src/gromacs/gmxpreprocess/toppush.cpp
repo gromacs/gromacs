@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -703,7 +703,7 @@ void push_bt(directive d, t_params bt[], int nral,
         return;
     }
 
-    ft    = strtol(alc[nral], NULL, 10);
+    ft    = strtol(alc[nral], nullptr, 10);
     ftype = ifunc_index(d, ft);
     nrfp  = NRFP(ftype);
     nrfpA = interaction_function[ftype].nrfpA;
@@ -812,7 +812,7 @@ void push_dihedraltype(directive d, t_params bt[],
     if (nn >= 3 && strlen(alc[2]) == 1 && isdigit(alc[2][0]))
     {
         nral  = 2;
-        ft    = strtol(alc[nral], NULL, 10);
+        ft    = strtol(alc[nral], nullptr, 10);
         /* Move atom types around a bit and use 'X' for wildcard atoms
          * to create a 4-atom dihedral definition with arbitrary atoms in
          * position 1 and 4.
@@ -837,7 +837,7 @@ void push_dihedraltype(directive d, t_params bt[],
     else if (nn == 5 && strlen(alc[4]) == 1 && isdigit(alc[4][0]))
     {
         nral  = 4;
-        ft    = strtol(alc[nral], NULL, 10);
+        ft    = strtol(alc[nral], nullptr, 10);
     }
     else
     {
@@ -1111,9 +1111,9 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     }
     start += nchar_consumed;
 
-    ft     = strtol(alc[nral], NULL, 10);
-    nxcmap = strtol(alc[nral+1], NULL, 10);
-    nycmap = strtol(alc[nral+2], NULL, 10);
+    ft     = strtol(alc[nral], nullptr, 10);
+    nxcmap = strtol(alc[nral+1], nullptr, 10);
+    nycmap = strtol(alc[nral+2], nullptr, 10);
 
     /* Check for equal grid spacing in x and y dims */
     if (nxcmap != nycmap)
@@ -1124,8 +1124,8 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 
     ncmap  = nxcmap*nycmap;
     ftype  = ifunc_index(d, ft);
-    nrfpA  = strtol(alc[6], NULL, 10)*strtol(alc[6], NULL, 10);
-    nrfpB  = strtol(alc[7], NULL, 10)*strtol(alc[7], NULL, 10);
+    nrfpA  = strtol(alc[6], nullptr, 10)*strtol(alc[6], nullptr, 10);
+    nrfpB  = strtol(alc[7], nullptr, 10)*strtol(alc[7], nullptr, 10);
     nrfp   = nrfpA+nrfpB;
 
     /* Allocate memory for the CMAP grid */
@@ -1142,7 +1142,7 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
         }
         nn  = sscanf(line+start+sl, " %s ", s);
         sl += strlen(s);
-        bt[F_CMAP].cmap[i+(bt[F_CMAP].ncmap)-nrfp] = strtod(s, NULL);
+        bt[F_CMAP].cmap[i+(bt[F_CMAP].ncmap)-nrfp] = strtod(s, nullptr);
 
         if (nn == 1)
         {
@@ -1263,7 +1263,7 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
             warning_error_and_exit(wi, errbuf, FARGS);
         }
     }
-    resnr = strtol(resnumberic, NULL, 10);
+    resnr = strtol(resnumberic, nullptr, 10);
 
     if (nr > 0)
     {
@@ -1460,7 +1460,7 @@ static gmx_bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
 {
     int          i, j, ti, tj, ntype;
     gmx_bool     bFound;
-    t_param     *pi    = NULL;
+    t_param     *pi    = nullptr;
     int          nr    = bt[ftype].nr;
     int          nral  = NRAL(ftype);
     int          nrfp  = interaction_function[ftype].nrfpA;
@@ -1634,8 +1634,8 @@ static gmx_bool default_params(int ftype, t_params bt[],
 {
     int          nparam_found;
     gmx_bool     bFound, bSame;
-    t_param     *pi    = NULL;
-    t_param     *pj    = NULL;
+    t_param     *pi    = nullptr;
+    t_param     *pj    = nullptr;
     int          nr    = bt[ftype].nr;
     int          nral  = NRAL(ftype);
     int          nrfpA = interaction_function[ftype].nrfpA;
@@ -2237,8 +2237,8 @@ void push_vsitesn(directive d, t_params bond[],
 {
     char   *ptr;
     int     type, ftype, j, n, ret, nj, a;
-    int    *atc    = NULL;
-    double *weight = NULL, weight_tot;
+    int    *atc    = nullptr;
+    double *weight = nullptr, weight_tot;
     t_param param;
     char    errbuf[STRLEN];
 
@@ -2411,7 +2411,7 @@ void init_block2(t_block2 *b2, int natom)
     snew(b2->a, b2->nr);
     for (i = 0; (i < b2->nr); i++)
     {
-        b2->a[i] = NULL;
+        b2->a[i] = nullptr;
     }
 }
 
@@ -2664,7 +2664,7 @@ static void convert_pairs_to_pairsQ(t_params *plist,
 
     /* Empty the LJ14 pairlist */
     plist[F_LJ14].nr    = 0;
-    plist[F_LJ14].param = NULL;
+    plist[F_LJ14].param = nullptr;
 }
 
 static void generate_LJCpairsNB(t_molinfo *mol, int nb_funct, t_params *nbp, warninp_t wi)

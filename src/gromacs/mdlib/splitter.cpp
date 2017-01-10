@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,9 +135,9 @@ static int first_colour(int fC, egCol Col, t_graph *g, egCol egc[])
 static int mk_sblocks(FILE *fp, t_graph *g, int maxsid, t_sid sid[])
 {
     int     ng, nnodes;
-    int     nW, nG, nB; /* Number of Grey, Black, White	*/
-    int     fW, fG;     /* First of each category	*/
-    egCol  *egc = NULL; /* The colour of each node	*/
+    int     nW, nG, nB;    /* Number of Grey, Black, White	*/
+    int     fW, fG;        /* First of each category	*/
+    egCol  *egc = nullptr; /* The colour of each node	*/
     int     g0, nblock;
 
     if (!g->nbound)
@@ -363,7 +363,7 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
     t_sid   *sid;
     int      nsid;
 
-    g = mk_graph(NULL, idef, at_start, at_end, TRUE, bSettle);
+    g = mk_graph(nullptr, idef, at_start, at_end, TRUE, bSettle);
     if (debug)
     {
         p_graph(debug, "Graaf Dracula", g);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2006, The GROMACS development team.
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -217,7 +217,7 @@ void connolly_plot(const char *fn, int ndots, real dots[], rvec x[], t_atoms *at
         srenew(atoms->resinfo, r0+1);
         atoms->atom[i0].resind = r0;
         t_atoms_set_resinfo(atoms, i0, symtab, resnm, r0+1, ' ', 0, ' ');
-        if (atoms->pdbinfo != NULL)
+        if (atoms->pdbinfo != nullptr)
         {
             srenew(atoms->pdbinfo, atoms->nr+ndots);
         }
@@ -234,7 +234,7 @@ void connolly_plot(const char *fn, int ndots, real dots[], rvec x[], t_atoms *at
             xnew[ii0][XX]              = dots[k++];
             xnew[ii0][YY]              = dots[k++];
             xnew[ii0][ZZ]              = dots[k++];
-            if (atoms->pdbinfo != NULL)
+            if (atoms->pdbinfo != nullptr)
             {
                 atoms->pdbinfo[ii0].type   = epdbATOM;
                 atoms->pdbinfo[ii0].atomnr = ii0;
@@ -244,7 +244,7 @@ void connolly_plot(const char *fn, int ndots, real dots[], rvec x[], t_atoms *at
         }
         atoms->nr   = i0+ndots;
         atoms->nres = r0+1;
-        write_sto_conf(fn, title, atoms, xnew, NULL, ePBC, const_cast<rvec *>(box));
+        write_sto_conf(fn, title, atoms, xnew, nullptr, ePBC, const_cast<rvec *>(box));
         atoms->nres = r0;
         atoms->nr   = i0;
     }
@@ -268,7 +268,7 @@ void connolly_plot(const char *fn, int ndots, real dots[], rvec x[], t_atoms *at
             aaa.pdbinfo[ii0].occup  = 0.0;
         }
         aaa.nr = ndots;
-        write_sto_conf(fn, title, &aaa, xnew, NULL, ePBC, const_cast<rvec *>(box));
+        write_sto_conf(fn, title, &aaa, xnew, nullptr, ePBC, const_cast<rvec *>(box));
         do_conect(fn, ndots, xnew);
         done_atom(&aaa);
     }
@@ -394,7 +394,7 @@ class Sasa : public TrajectoryAnalysisModule
 };
 
 Sasa::Sasa()
-    : solsize_(0.14), ndots_(24), dgsDefault_(0), bIncludeSolute_(true), top_(NULL)
+    : solsize_(0.14), ndots_(24), dgsDefault_(0), bIncludeSolute_(true), top_(nullptr)
 {
     //minarea_ = 0.5;
     registerAnalysisDataset(&area_, "area");
@@ -924,7 +924,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     // surfacedots contains nsurfacedots entries, and contains the actual
     // points.
     real  totarea, totvolume;
-    real *area = NULL, *surfacedots = NULL;
+    real *area = nullptr, *surfacedots = nullptr;
     int   nsurfacedots;
     calculator_.calculate(surfaceSel.coordinates().data(), pbc,
                           frameData.index_.size(), frameData.index_.data(), flag,
@@ -932,7 +932,7 @@ Sasa::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                           &surfacedots, &nsurfacedots);
     // Unpack the atomwise areas into the frameData.atomAreas_ array for easier
     // indexing in the case of dynamic surfaceSel.
-    if (area != NULL)
+    if (area != nullptr)
     {
         if (surfaceSel.isDynamic())
         {

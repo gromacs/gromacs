@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -117,7 +117,7 @@ gmx_nonbonded_setup(t_forcerec *   fr,
             /* Add the generic kernels to the structure stored statically in nb_kernel.c */
             nb_kernel_list_add_kernels(kernellist_c, kernellist_c_size);
 
-            if (!(fr != NULL && fr->use_simd_kernels == FALSE))
+            if (!(fr != nullptr && fr->use_simd_kernels == FALSE))
             {
                 /* Add interaction-specific kernels for different architectures */
                 /* Single precision */
@@ -225,15 +225,15 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
         /* We typically call this setup routine before starting timers,
          * but if that has not been done for whatever reason we do it now.
          */
-        gmx_nonbonded_setup(NULL, FALSE);
+        gmx_nonbonded_setup(nullptr, FALSE);
     }
 
     /* Not used yet */
     other = "";
 
-    nl->kernelptr_vf = NULL;
-    nl->kernelptr_v  = NULL;
-    nl->kernelptr_f  = NULL;
+    nl->kernelptr_vf = nullptr;
+    nl->kernelptr_v  = nullptr;
+    nl->kernelptr_f  = nullptr;
 
     elec     = gmx_nbkernel_elec_names[nl->ielec];
     elec_mod = eintmod_names[nl->ielecmod];
@@ -257,20 +257,20 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
     {
         /* Try to find a specific kernel first */
 
-        for (i = 0; i < narch && nl->kernelptr_vf == NULL; i++)
+        for (i = 0; i < narch && nl->kernelptr_vf == nullptr; i++)
         {
             nl->kernelptr_vf       = (void *) nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
             nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
         }
-        for (i = 0; i < narch && nl->kernelptr_f == NULL; i++)
+        for (i = 0; i < narch && nl->kernelptr_f == nullptr; i++)
         {
             nl->kernelptr_f        = (void *) nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force");
             nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
 
             /* If there is not force-only optimized kernel, is there a potential & force one? */
-            if (nl->kernelptr_f == NULL)
+            if (nl->kernelptr_f == nullptr)
             {
-                nl->kernelptr_f        = (void *) nb_kernel_list_findkernel(NULL, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
+                nl->kernelptr_f        = (void *) nb_kernel_list_findkernel(nullptr, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
                 nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
             }
         }
@@ -290,15 +290,15 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwS
             (nl->ivdw  != GMX_NBKERNEL_VDW_NONE)  && (nl->ivdwmod  == eintmodPOTSWITCH) &&
             bElecAndVdwSwitchDiffers)
         {
-            nl->kernelptr_vf = NULL;
-            nl->kernelptr_f  = NULL;
+            nl->kernelptr_vf = nullptr;
+            nl->kernelptr_f  = nullptr;
         }
 
         /* Give up, pick a generic one instead.
          * We only do this for particle-particle kernels; by leaving the water-optimized kernel
          * pointers to NULL, the water optimization will automatically be disabled for this interaction.
          */
-        if (nl->kernelptr_vf == NULL && !gmx_strcasecmp_min(geom, "Particle-Particle"))
+        if (nl->kernelptr_vf == nullptr && !gmx_strcasecmp_min(geom, "Particle-Particle"))
         {
             nl->kernelptr_vf       = (void *) gmx_nb_generic_kernel;
             nl->kernelptr_f        = (void *) gmx_nb_generic_kernel;
@@ -326,7 +326,7 @@ void do_nonbonded(t_forcerec *fr,
     int               n, n0, n1, i, i0, i1;
     t_nblists *       nblists;
     nb_kernel_data_t  kernel_data;
-    nb_kernel_t *     kernelptr = NULL;
+    nb_kernel_t *     kernelptr = nullptr;
     rvec *            f;
 
     kernel_data.flags                   = flags;
@@ -414,7 +414,7 @@ void do_nonbonded(t_forcerec *fr,
                         continue;
                     }
                     /* Neighborlists whose kernelptr==NULL will always be empty */
-                    if (kernelptr != NULL)
+                    if (kernelptr != nullptr)
                     {
                         (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
                     }

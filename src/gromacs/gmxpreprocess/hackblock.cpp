@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,7 +72,7 @@ static void free_t_bondeds(t_rbondeds *rbs)
         free_t_bonded(&rbs->b[i]);
     }
     sfree(rbs->b);
-    rbs->b  = NULL;
+    rbs->b  = nullptr;
     rbs->nb = 0;
 }
 
@@ -114,7 +114,7 @@ void free_t_hack(int nh, t_hack **h)
         }
     }
     sfree(*h);
-    *h = NULL;
+    *h = nullptr;
 }
 
 void free_t_hackblock(int nhb, t_hackblock **hb)
@@ -137,14 +137,14 @@ void clear_t_hackblock(t_hackblock *hb)
 {
     int i;
 
-    hb->name    = NULL;
+    hb->name    = nullptr;
     hb->nhack   = 0;
     hb->maxhack = 0;
-    hb->hack    = NULL;
+    hb->hack    = nullptr;
     for (i = 0; i < ebtsNR; i++)
     {
         hb->rb[i].nb = 0;
-        hb->rb[i].b  = NULL;
+        hb->rb[i].b  = nullptr;
     }
 }
 
@@ -153,15 +153,15 @@ void clear_t_hack(t_hack *hack)
     int i;
 
     hack->nr    = 0;
-    hack->oname = NULL;
-    hack->nname = NULL;
-    hack->atom  = NULL;
+    hack->oname = nullptr;
+    hack->nname = nullptr;
+    hack->atom  = nullptr;
     hack->cgnr  = NOTSET;
     hack->tp    = 0;
     hack->nctl  = 0;
     for (i = 0; i < 4; i++)
     {
-        hack->a[i]  = NULL;
+        hack->a[i]  = nullptr;
     }
     for (i = 0; i < DIM; i++)
     {
@@ -346,7 +346,7 @@ void copy_t_restp(t_restp *s, t_restp *d)
     {
         d->rb[i].type = s->rb[i].type;
         d->rb[i].nb   = 0;
-        d->rb[i].b    = NULL;
+        d->rb[i].b    = nullptr;
     }
     merge_t_bondeds(s->rb, d->rb, FALSE, FALSE);
 }
@@ -365,7 +365,7 @@ void copy_t_hack(t_hack *s, t_hack *d)
     }
     else
     {
-        d->atom = NULL;
+        d->atom = nullptr;
     }
     for (i = 0; i < 4; i++)
     {
@@ -407,11 +407,11 @@ void copy_t_hackblock(t_hackblock *s, t_hackblock *d)
     *d       = *s;
     d->name  = safe_strdup(s->name);
     d->nhack = 0;
-    d->hack  = NULL;
+    d->hack  = nullptr;
     for (i = 0; i < ebtsNR; i++)
     {
         d->rb[i].nb = 0;
-        d->rb[i].b  = NULL;
+        d->rb[i].b  = nullptr;
     }
     merge_t_hackblock(s, d);
 }

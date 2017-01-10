@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2005 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,7 +87,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t     *    pfft_setup,
     (*pfft_setup)->p2 = fft5d_plan_3d(Nb, Mb, Kb, rcomm,
                                       (flags|FFT5D_BACKWARD|FFT5D_NOMALLOC)^FFT5D_ORDER_YZ, complex_data, (t_complex**)real_data, &buf1, &buf2, nthreads);
 
-    return (*pfft_setup)->p1 != 0 && (*pfft_setup)->p2 != 0;
+    return (*pfft_setup)->p1 != nullptr && (*pfft_setup)->p2 != nullptr;
 }
 
 

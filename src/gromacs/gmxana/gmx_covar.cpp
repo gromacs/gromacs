@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,7 +109,7 @@ int gmx_covar(int argc, char *argv[])
         { "-pbc",  FALSE,  etBOOL, {&bPBC},
           "Apply corrections for periodic boundary conditions" }
     };
-    FILE             *out = NULL; /* initialization makes all compilers happy */
+    FILE             *out = nullptr; /* initialization makes all compilers happy */
     t_trxstatus      *status;
     t_topology        top;
     int               ePBC;
@@ -118,7 +118,7 @@ int gmx_covar(int argc, char *argv[])
     matrix            box, zerobox;
     real             *sqrtm, *mat, *eigenvalues, sum, trace, inv_nframes;
     real              t, tstart, tend, **mat2;
-    real              xj, *w_rls = NULL;
+    real              xj, *w_rls = nullptr;
     real              min, max, *axis;
     int               natoms, nat, nframes0, nframes, nlevels;
     gmx_int64_t       ndim, i, j, k, l;
@@ -134,16 +134,16 @@ int gmx_covar(int argc, char *argv[])
     t_rgb             rlo, rmi, rhi;
     real             *eigenvectors;
     gmx_output_env_t *oenv;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
 
     t_filenm          fnm[] = {
-        { efTRX, "-f",  NULL, ffREAD },
-        { efTPS, NULL,  NULL, ffREAD },
-        { efNDX, NULL,  NULL, ffOPTRD },
-        { efXVG, NULL,  "eigenval", ffWRITE },
+        { efTRX, "-f",  nullptr, ffREAD },
+        { efTPS, nullptr,  nullptr, ffREAD },
+        { efNDX, nullptr,  nullptr, ffOPTRD },
+        { efXVG, nullptr,  "eigenval", ffWRITE },
         { efTRN, "-v",  "eigenvec", ffWRITE },
         { efSTO, "-av", "average.pdb", ffWRITE },
-        { efLOG, NULL,  "covar", ffWRITE },
+        { efLOG, nullptr,  "covar", ffWRITE },
         { efDAT, "-ascii", "covar", ffOPTWR },
         { efXPM, "-xpm", "covar", ffOPTWR },
         { efXPM, "-xpma", "covara", ffOPTWR }
@@ -151,7 +151,7 @@ int gmx_covar(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -169,7 +169,7 @@ int gmx_covar(int argc, char *argv[])
     xpmfile    = opt2fn_null("-xpm", NFILE, fnm);
     xpmafile   = opt2fn_null("-xpma", NFILE, fnm);
 
-    read_tps_conf(fitfile, &top, &ePBC, &xref, NULL, box, TRUE);
+    read_tps_conf(fitfile, &top, &ePBC, &xref, nullptr, box, TRUE);
     atoms = &top.atoms;
 
     if (bFit)
@@ -247,7 +247,7 @@ int gmx_covar(int argc, char *argv[])
     }
     if (bFit)
     {
-        reset_x(nfit, ifit, atoms->nr, NULL, xref, w_rls);
+        reset_x(nfit, ifit, atoms->nr, nullptr, xref, w_rls);
     }
 
     snew(x, natoms);
@@ -276,7 +276,7 @@ int gmx_covar(int argc, char *argv[])
         }
         if (bFit)
         {
-            reset_x(nfit, ifit, nat, NULL, xread, w_rls);
+            reset_x(nfit, ifit, nat, nullptr, xread, w_rls);
             do_fit(nat, w_rls, xref, xread);
         }
         for (i = 0; i < natoms; i++)
@@ -297,7 +297,7 @@ int gmx_covar(int argc, char *argv[])
         }
     }
     write_sto_conf_indexed(opt2fn("-av", NFILE, fnm), "Average structure",
-                           atoms, xread, NULL, epbcNONE, zerobox, natoms, index);
+                           atoms, xread, nullptr, epbcNONE, zerobox, natoms, index);
     sfree(xread);
 
     fprintf(stderr, "Constructing covariance matrix (%dx%d) ...\n", static_cast<int>(ndim), static_cast<int>(ndim));
@@ -315,7 +315,7 @@ int gmx_covar(int argc, char *argv[])
         }
         if (bFit)
         {
-            reset_x(nfit, ifit, nat, NULL, xread, w_rls);
+            reset_x(nfit, ifit, nat, nullptr, xread, w_rls);
             do_fit(nat, w_rls, xref, xread);
         }
         if (bRef)

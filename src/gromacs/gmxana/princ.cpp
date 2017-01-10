@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -306,10 +306,10 @@ void orient_princ(const t_atoms *atoms, int isize, const int *index,
             trans[ZZ][m] = -trans[ZZ][m];
         }
     }
-    rotate_atoms(natoms, NULL, x, trans);
+    rotate_atoms(natoms, nullptr, x, trans);
     if (v)
     {
-        rotate_atoms(natoms, NULL, v, trans);
+        rotate_atoms(natoms, nullptr, v, trans);
     }
 
     for (i = 0; i < natoms; i++)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -127,49 +127,49 @@ typedef struct {
 
 /** Array of selection methods defined in the library. */
 static const t_register_method smtable_def[] = {
-    {NULL,         &sm_cog},
-    {NULL,         &sm_com},
+    {nullptr,         &sm_cog},
+    {nullptr,         &sm_com},
 
-    {NULL,         &sm_all},
-    {NULL,         &sm_none},
-    {NULL,         &sm_atomnr},
-    {NULL,         &sm_resnr},
+    {nullptr,         &sm_all},
+    {nullptr,         &sm_none},
+    {nullptr,         &sm_atomnr},
+    {nullptr,         &sm_resnr},
     {"resid",      &sm_resnr},
-    {NULL,         &sm_resindex},
+    {nullptr,         &sm_resindex},
     {"residue",    &sm_resindex},
-    {NULL,         &sm_molindex},
+    {nullptr,         &sm_molindex},
     {"mol",        &sm_molindex},
     {"molecule",   &sm_molindex},
-    {NULL,         &sm_atomname},
+    {nullptr,         &sm_atomname},
     {"name",       &sm_atomname},
-    {NULL,         &sm_pdbatomname},
+    {nullptr,         &sm_pdbatomname},
     {"pdbname",    &sm_pdbatomname},
-    {NULL,         &sm_atomtype},
+    {nullptr,         &sm_atomtype},
     {"type",       &sm_atomtype},
-    {NULL,         &sm_resname},
-    {NULL,         &sm_insertcode},
-    {NULL,         &sm_chain},
-    {NULL,         &sm_mass},
-    {NULL,         &sm_charge},
-    {NULL,         &sm_altloc},
-    {NULL,         &sm_occupancy},
-    {NULL,         &sm_betafactor},
+    {nullptr,         &sm_resname},
+    {nullptr,         &sm_insertcode},
+    {nullptr,         &sm_chain},
+    {nullptr,         &sm_mass},
+    {nullptr,         &sm_charge},
+    {nullptr,         &sm_altloc},
+    {nullptr,         &sm_occupancy},
+    {nullptr,         &sm_betafactor},
     {"beta",       &sm_betafactor},
-    {NULL,         &sm_x},
-    {NULL,         &sm_y},
-    {NULL,         &sm_z},
+    {nullptr,         &sm_x},
+    {nullptr,         &sm_y},
+    {nullptr,         &sm_z},
 
-    {NULL,         &sm_distance},
+    {nullptr,         &sm_distance},
     {"dist",       &sm_distance},
-    {NULL,         &sm_mindistance},
+    {nullptr,         &sm_mindistance},
     {"mindist",    &sm_mindistance},
-    {NULL,         &sm_within},
-    {NULL,         &sm_insolidangle},
-    {NULL,         &sm_same},
+    {nullptr,         &sm_within},
+    {nullptr,         &sm_insolidangle},
+    {nullptr,         &sm_same},
 
-    {NULL,         &sm_merge},
-    {NULL,         &sm_plus},
-    {NULL,         &sm_permute},
+    {nullptr,         &sm_merge},
+    {nullptr,         &sm_plus},
+    {nullptr,         &sm_permute},
 };
 
 /*! \brief
@@ -248,7 +248,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
     for (i = 0; i < nparams; ++i)
     {
         /* Check that there is at most one NULL name, in the beginning */
-        if (param[i].name == NULL && i > 0)
+        if (param[i].name == nullptr && i > 0)
         {
             report_error(fp, name, "error: NULL parameter should be the first one");
             bOk = false;
@@ -257,7 +257,7 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         /* Check for duplicates */
         for (j = 0; j < i; ++j)
         {
-            if (param[j].name == NULL)
+            if (param[j].name == nullptr)
             {
                 continue;
             }
@@ -356,16 +356,16 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             }
         }
         /* Check that the value pointer is NULL */
-        if (param[i].nvalptr != NULL)
+        if (param[i].nvalptr != nullptr)
         {
             report_param_error(fp, name, param[i].name, "warning: nvalptr is set");
         }
-        if (param[i].val.u.ptr != NULL && !(param[i].flags & SPAR_ENUMVAL))
+        if (param[i].val.u.ptr != nullptr && !(param[i].flags & SPAR_ENUMVAL))
         {
             report_param_error(fp, name, param[i].name, "warning: value pointer is set");
         }
         /* Check that the name contains only valid characters */
-        if (param[i].name == NULL)
+        if (param[i].name == nullptr)
         {
             continue;
         }
@@ -461,7 +461,7 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
         if (method->pupdate && !(method->flags & SMETH_DYNAMIC))
         {
             report_error(fp, method->name, "warning: pupdate not used because the method is static");
-            method->pupdate = NULL;
+            method->pupdate = nullptr;
         }
     }
     /* Check that there is an evaluation function */
@@ -687,7 +687,7 @@ gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
     {
         gmx_ana_selmethod_t *method = smtable_def[i].method;
 
-        if (smtable_def[i].name == NULL)
+        if (smtable_def[i].name == nullptr)
         {
             rc = gmx_ana_selmethod_register(symtab, method->name, method);
         }

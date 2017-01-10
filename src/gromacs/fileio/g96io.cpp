@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,7 @@ static int read_g96_pos(char line[], t_symtab *symtab,
     nwanted = fr->natoms;
 
     atoms = fr->atoms;
-    if (atoms != NULL)
+    if (atoms != nullptr)
     {
         atoms->haveMass    = FALSE;
         atoms->haveCharge  = FALSE;
@@ -242,7 +242,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr,
         {
             fr->bTitle = (std::strcmp(line, "TITLE") == 0);
         }
-        if (fr->title == NULL)
+        if (fr->title == nullptr)
         {
             fgets2(line, STRLEN, fp);
             fr->title = gmx_strdup(line);
@@ -275,7 +275,7 @@ int read_g96_conf(FILE *fp, const char *infile, t_trxframe *fr,
                 fr->bTime = bTime;
                 do
                 {
-                    bFinished = (fgets2(line, STRLEN, fp) == NULL);
+                    bFinished = (fgets2(line, STRLEN, fp) == nullptr);
                 }
                 while (!bFinished && (line[0] == '#'));
                 sscanf(line, "%15" GMX_SCNd64 "%15lf", &(fr->step), &db1);

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,9 +69,9 @@ static void calc_interpolation_idx(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
     int             nx, ny, nz;
     int            *g2tx, *g2ty, *g2tz;
     gmx_bool        bThreads;
-    int            *thread_idx = NULL;
-    thread_plist_t *tpl        = NULL;
-    int            *tpl_n      = NULL;
+    int            *thread_idx = nullptr;
+    thread_plist_t *tpl        = nullptr;
+    int            *tpl_n      = nullptr;
     int             thread_i;
 
     nx  = pme->nkx;
@@ -466,7 +466,7 @@ reduce_threadgrid_overlap(struct gmx_pme_t *pme,
     int  thread_f;
     const pmegrid_t *pmegrid, *pmegrid_g, *pmegrid_f;
     const real *grid_th;
-    real *commbuf = NULL;
+    real *commbuf = nullptr;
 
     gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
                                    local_fft_ndata,
@@ -755,7 +755,7 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
             sendptr = overlap->sendbuf + send_index0*local_fft_ndata[ZZ];
             recvptr = overlap->recvbuf;
 
-            if (debug != NULL)
+            if (debug != nullptr)
             {
                 fprintf(debug, "PME fftgrid comm y %2d x %2d x %2d\n",
                         local_fft_ndata[XX], send_nindex, local_fft_ndata[ZZ]);
@@ -821,7 +821,7 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
 
         recvptr = overlap->recvbuf;
 
-        if (debug != NULL)
+        if (debug != nullptr)
         {
             fprintf(debug, "PME fftgrid comm x %2d x %2d x %2d\n",
                     send_nindex, local_fft_ndata[YY], local_fft_ndata[ZZ]);
@@ -907,10 +907,10 @@ void spread_on_grid(struct gmx_pme_t *pme,
         try
         {
             splinedata_t *spline;
-            pmegrid_t *grid = NULL;
+            pmegrid_t *grid = nullptr;
 
             /* make local bsplines  */
-            if (grids == NULL || !pme->bUseThreads)
+            if (grids == nullptr || !pme->bUseThreads)
             {
                 spline = &atc->spline[0];
 

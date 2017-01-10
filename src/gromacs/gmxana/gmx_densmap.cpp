@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,8 +97,8 @@ int gmx_densmap(int argc, char *argv[])
     static int         n1      = 0, n2 = 0;
     static real        xmin    = -1, xmax = -1, bin = 0.02, dmin = 0, dmax = 0, amax = 0, rmax = 0;
     static gmx_bool    bMirror = FALSE, bSums = FALSE;
-    static const char *eaver[] = { NULL, "z", "y", "x", NULL };
-    static const char *eunit[] = { NULL, "nm-3", "nm-2", "count", NULL };
+    static const char *eaver[] = { nullptr, "z", "y", "x", nullptr };
+    static const char *eunit[] = { nullptr, "nm-3", "nm-2", "count", nullptr };
 
     t_pargs            pa[] = {
         { "-bin", FALSE, etREAL, {&bin},
@@ -140,8 +140,8 @@ int gmx_densmap(int argc, char *argv[])
     int                cav = 0, c1 = 0, c2 = 0;
     char             **grpname, buf[STRLEN];
     const char        *unit;
-    int                i, j, k, l, ngrps, anagrp, *gnx = NULL, nindex, nradial = 0, nfr, nmpower;
-    int              **ind = NULL, *index;
+    int                i, j, k, l, ngrps, anagrp, *gnx = nullptr, nindex, nradial = 0, nfr, nmpower;
+    int              **ind = nullptr, *index;
     real             **grid, maxgrid, m1, m2, box1, box2, *tickx, *tickz, invcellvol;
     real               invspa = 0, invspz = 0, axial, r, vol_old, vol, rowsum;
     int                nlev   = 51;
@@ -149,9 +149,9 @@ int gmx_densmap(int argc, char *argv[])
     gmx_output_env_t  *oenv;
     const char        *label[] = { "x (nm)", "y (nm)", "z (nm)" };
     t_filenm           fnm[]   = {
-        { efTRX, "-f",   NULL,       ffREAD },
-        { efTPS, NULL,   NULL,       ffOPTRD },
-        { efNDX, NULL,   NULL,       ffOPTRD },
+        { efTRX, "-f",   nullptr,       ffREAD },
+        { efTPS, nullptr,   nullptr,       ffOPTRD },
+        { efNDX, nullptr,   nullptr,       ffOPTRD },
         { efDAT, "-od",  "densmap",   ffOPTWR },
         { efXPM, "-o",   "densmap",   ffWRITE }
     };
@@ -161,7 +161,7 @@ int gmx_densmap(int argc, char *argv[])
     npargs = asize(pa);
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                           NFILE, fnm, npargs, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -177,7 +177,7 @@ int gmx_densmap(int argc, char *argv[])
         }
     }
 
-    GMX_RELEASE_ASSERT(eunit[0] != NULL, "Option setting inconsistency; eunit[0] is NULL");
+    GMX_RELEASE_ASSERT(eunit[0] != nullptr, "Option setting inconsistency; eunit[0] is NULL");
 
     if (std::strcmp(eunit[0], "nm-3") == 0)
     {
@@ -197,7 +197,7 @@ int gmx_densmap(int argc, char *argv[])
 
     if (ftp2bSet(efTPS, NFILE, fnm) || !ftp2bSet(efNDX, NFILE, fnm))
     {
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, NULL, box,
+        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box,
                       bRadial);
     }
     if (!bRadial)
@@ -226,7 +226,7 @@ int gmx_densmap(int argc, char *argv[])
         }
     }
 
-    GMX_RELEASE_ASSERT(eaver[0] != NULL, "Option setting inconsistency; eaver[0] is NULL");
+    GMX_RELEASE_ASSERT(eaver[0] != nullptr, "Option setting inconsistency; eaver[0] is NULL");
 
     switch (eaver[0][0])
     {
@@ -527,7 +527,7 @@ int gmx_densmap(int argc, char *argv[])
         gmx_ffclose(fp);
     }
 
-    do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);
+    do_view(oenv, opt2fn("-o", NFILE, fnm), nullptr);
 
     return 0;
 }

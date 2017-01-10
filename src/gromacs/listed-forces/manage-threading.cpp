@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -504,7 +504,7 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
             /* Note that thread 0 uses the global fshift and energy arrays,
              * but to keep the code simple, we initialize all data here.
              */
-            bt->f_t[t].f        = NULL;
+            bt->f_t[t].f        = nullptr;
             bt->f_t[t].f_nalloc = 0;
             snew(bt->f_t[t].fshift, SHIFTS);
             bt->f_t[t].grpp.nener = nenergrp*nenergrp;
@@ -517,8 +517,8 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
     }
 
     bt->nblock_used  = 0;
-    bt->block_index  = NULL;
-    bt->mask         = NULL;
+    bt->block_index  = nullptr;
+    bt->mask         = nullptr;
     bt->block_nalloc = 0;
 
     /* The optimal value after which to switch from uniform to localized
@@ -528,10 +528,10 @@ void init_bonded_threading(FILE *fplog, int nenergrp,
     const int max_nthread_uniform = 4;
     char *    ptr;
 
-    if ((ptr = getenv("GMX_BONDED_NTHREAD_UNIFORM")) != NULL)
+    if ((ptr = getenv("GMX_BONDED_NTHREAD_UNIFORM")) != nullptr)
     {
         sscanf(ptr, "%d", &bt->bonded_max_nthread_uniform);
-        if (fplog != NULL)
+        if (fplog != nullptr)
         {
             fprintf(fplog, "\nMax threads for uniform bonded distribution set to %d by env.var.\n",
                     bt->bonded_max_nthread_uniform);

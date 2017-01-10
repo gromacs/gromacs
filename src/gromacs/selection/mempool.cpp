@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,10 +100,10 @@ _gmx_sel_mempool_create()
     snew(mp, 1);
     mp->currsize          = 0;
     mp->freesize          = 0;
-    mp->buffer            = NULL;
-    mp->freeptr           = NULL;
+    mp->buffer            = nullptr;
+    mp->freeptr           = nullptr;
     mp->nblocks           = 0;
-    mp->blockstack        = NULL;
+    mp->blockstack        = nullptr;
     mp->blockstack_nalloc = 0;
     mp->maxsize           = 0;
     return mp;
@@ -129,7 +129,7 @@ _gmx_sel_mempool_destroy(gmx_sel_mempool_t *mp)
 void *
 _gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, size_t size)
 {
-    void   *ptr = NULL;
+    void   *ptr = nullptr;
     size_t  size_walign;
 
     size_walign = ((size + ALIGN_STEP - 1) / ALIGN_STEP) * ALIGN_STEP;
@@ -175,7 +175,7 @@ _gmx_sel_mempool_free(gmx_sel_mempool_t *mp, void *ptr)
 {
     int size;
 
-    if (ptr == NULL)
+    if (ptr == nullptr)
     {
         return;
     }
@@ -226,5 +226,5 @@ void
 _gmx_sel_mempool_free_group(gmx_sel_mempool_t *mp, gmx_ana_index_t *g)
 {
     _gmx_sel_mempool_free(mp, g->index);
-    g->index = NULL;
+    g->index = nullptr;
 }
