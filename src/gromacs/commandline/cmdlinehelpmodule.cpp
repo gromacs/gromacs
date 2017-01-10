@@ -100,8 +100,8 @@ class RootHelpTopic : public AbstractCompositeHelpTopic
         {
         }
 
-        virtual const char *name() const;
-        virtual const char *title() const { return title_.c_str(); }
+        const char *name() const override;
+        const char *title() const override { return title_.c_str(); }
 
         //! Adds a top-level topic and optionally marks it as exported.
         void addTopic(HelpTopicPointer topic, bool bExported)
@@ -115,11 +115,11 @@ class RootHelpTopic : public AbstractCompositeHelpTopic
         //! Exports all the top-level topics with the given exporter.
         void exportHelp(IHelpExport *exporter);
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+        void writeHelp(const HelpWriterContext &context) const override;
 
     private:
         // unused because of the writeHelp() override
-        virtual std::string helpText() const { return ""; }
+        std::string helpText() const override { return ""; }
 
         CommandLineHelpContext createContext(const HelpWriterContext &context) const;
 
@@ -365,15 +365,15 @@ class CommandsHelpTopic : public IHelpTopic
         {
         }
 
-        virtual const char *name() const { return "commands"; }
-        virtual const char *title() const { return "List of available commands"; }
-        virtual bool hasSubTopics() const { return false; }
-        virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
+        const char *name() const override { return "commands"; }
+        const char *title() const override { return "List of available commands"; }
+        bool hasSubTopics() const override { return false; }
+        const IHelpTopic *findSubTopic(const char * /*name*/) const override
         {
             return nullptr;
         }
 
-        virtual void writeHelp(const HelpWriterContext &context) const;
+        void writeHelp(const HelpWriterContext &context) const override;
 
     private:
         const CommandLineHelpModuleImpl &helpModule_;
@@ -447,14 +447,14 @@ class ModuleHelpTopic : public IHelpTopic
         {
         }
 
-        virtual const char *name() const { return module_.name(); }
-        virtual const char *title() const { return nullptr; }
-        virtual bool hasSubTopics() const { return false; }
-        virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
+        const char *name() const override { return module_.name(); }
+        const char *title() const override { return nullptr; }
+        bool hasSubTopics() const override { return false; }
+        const IHelpTopic *findSubTopic(const char * /*name*/) const override
         {
             return nullptr;
         }
-        virtual void writeHelp(const HelpWriterContext &context) const;
+        void writeHelp(const HelpWriterContext &context) const override;
 
     private:
         const ICommandLineModule         &module_;
@@ -521,19 +521,19 @@ class HelpExportReStructuredText : public IHelpExport
             const CommandLineHelpModuleImpl &helpModule,
             IFileOutputRedirector           *outputRedirector);
 
-        virtual void startModuleExport();
-        virtual void exportModuleHelp(
+        void startModuleExport() override;
+        void exportModuleHelp(
             const ICommandLineModule         &module,
             const std::string                &tag,
-            const std::string                &displayName);
-        virtual void finishModuleExport();
+            const std::string                &displayName) override;
+        void finishModuleExport() override;
 
-        virtual void startModuleGroupExport();
-        virtual void exportModuleGroup(const char                *title,
-                                       const ModuleGroupContents &modules);
-        virtual void finishModuleGroupExport();
+        void startModuleGroupExport() override;
+        void exportModuleGroup(const char                *title,
+                               const ModuleGroupContents &modules) override;
+        void finishModuleGroupExport() override;
 
-        virtual void exportTopic(const IHelpTopic &topic);
+        void exportTopic(const IHelpTopic &topic) override;
 
     private:
         IFileOutputRedirector          *outputRedirector_;
@@ -708,19 +708,19 @@ class HelpExportCompletion : public IHelpExport
         //! Initializes completion exporter.
         explicit HelpExportCompletion(const CommandLineHelpModuleImpl &helpModule);
 
-        virtual void startModuleExport();
-        virtual void exportModuleHelp(
+        void startModuleExport() override;
+        void exportModuleHelp(
             const ICommandLineModule         &module,
             const std::string                &tag,
-            const std::string                &displayName);
-        virtual void finishModuleExport();
+            const std::string                &displayName) override;
+        void finishModuleExport() override;
 
-        virtual void startModuleGroupExport() {}
-        virtual void exportModuleGroup(const char                * /*title*/,
-                                       const ModuleGroupContents & /*modules*/) {}
-        virtual void finishModuleGroupExport() {}
+        void startModuleGroupExport() override {}
+        void exportModuleGroup(const char                * /*title*/,
+                               const ModuleGroupContents & /*modules*/) override {}
+        void finishModuleGroupExport() override {}
 
-        virtual void exportTopic(const IHelpTopic & /*topic*/) {}
+        void exportTopic(const IHelpTopic & /*topic*/) override {}
 
     private:
         ShellCompletionWriter    bashWriter_;
@@ -844,8 +844,8 @@ class ModificationCheckingFileOutputStream : public TextOutputStream
         {
         }
 
-        virtual void write(const char *str) { contents_.write(str); }
-        virtual void close()
+        void write(const char *str) override { contents_.write(str); }
+        void close() override
         {
             const std::string &newContents = contents_.toString();
             // TODO: Redirect these for unit tests.
@@ -881,11 +881,11 @@ class ModificationCheckingFileOutputRedirector : public IFileOutputRedirector
         {
         }
 
-        virtual TextOutputStream &standardOutput()
+        TextOutputStream &standardOutput() override
         {
             return redirector_->standardOutput();
         }
-        virtual TextOutputStreamPointer openTextOutputFile(const char *filename)
+        TextOutputStreamPointer openTextOutputFile(const char *filename) override
         {
             return TextOutputStreamPointer(
                     new ModificationCheckingFileOutputStream(filename, redirector_));

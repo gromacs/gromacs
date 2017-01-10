@@ -96,7 +96,7 @@ class AnalysisData : public AbstractAnalysisData
          * \throws std::bad_alloc if out of memory.
          */
         AnalysisData();
-        virtual ~AnalysisData();
+        ~AnalysisData() override;
 
         /*! \brief
          * Sets the number of data sets.
@@ -140,7 +140,7 @@ class AnalysisData : public AbstractAnalysisData
          */
         void setMultipoint(bool bMultipoint);
 
-        virtual int frameCount() const;
+        int frameCount() const override;
 
         /*! \brief
          * Creates a handle for adding data.
@@ -194,8 +194,8 @@ class AnalysisData : public AbstractAnalysisData
         void finishData(AnalysisDataHandle handle);
 
     private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
+        AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
+        bool requestStorageInternal(int nframes) override;
 
         class Impl;
 

@@ -80,7 +80,7 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
 {
     public:
         explicit Impl(TrajectoryAnalysisSettings *settings);
-        ~Impl();
+        ~Impl() override;
 
         bool hasTrajectory() const { return !trjfile_.empty(); }
 
@@ -90,12 +90,12 @@ class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
         void finishTrajectory();
 
         // From ITopologyProvider
-        virtual gmx_mtop_t *getTopology(bool required)
+        gmx_mtop_t *getTopology(bool required) override
         {
             initTopology(required);
             return topInfo_.mtop_;
         }
-        virtual int getAtomCount()
+        int getAtomCount() override
         {
             if (!topInfo_.hasTopology())
             {
