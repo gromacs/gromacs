@@ -78,11 +78,11 @@ class RunnerModule : public ICommandLineOptionsModule
         {
         }
 
-        virtual void init(CommandLineModuleSettings * /*settings*/) {}
-        virtual void initOptions(IOptionsContainer                 *options,
-                                 ICommandLineOptionsModuleSettings *settings);
-        virtual void optionsFinished();
-        virtual int run();
+        void init(CommandLineModuleSettings * /*settings*/) override {}
+        void initOptions(IOptionsContainer                 *options,
+                         ICommandLineOptionsModuleSettings *settings) override;
+        void optionsFinished() override;
+        int run() override;
 
         TrajectoryAnalysisModulePointer module_;
         TrajectoryAnalysisSettings      settings_;

@@ -77,11 +77,11 @@ class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSetting
 
         const std::string &helpText() const { return helpText_; }
 
-        virtual void setHelpText(const ConstArrayRef<const char *> &help)
+        void setHelpText(const ConstArrayRef<const char *> &help) override
         {
             helpText_ = joinStrings(help, "\n");
         }
-        virtual void addOptionsBehavior(const OptionsBehaviorPointer &behavior)
+        void addOptionsBehavior(const OptionsBehaviorPointer &behavior) override
         {
             behaviors_.addBehavior(behavior);
         }
@@ -111,12 +111,12 @@ class CommandLineOptionsModule : public ICommandLineModule
             : name_(name), description_(description), module_(std::move(module))
         {
         }
-        virtual const char *name() const { return name_; }
-        virtual const char *shortDescription() const { return description_; }
+        const char *name() const override { return name_; }
+        const char *shortDescription() const override { return description_; }
 
-        virtual void init(CommandLineModuleSettings *settings);
-        virtual int run(int argc, char *argv[]);
-        virtual void writeHelp(const CommandLineHelpContext &context) const;
+        void init(CommandLineModuleSettings *settings) override;
+        int run(int argc, char *argv[]) override;
+        void writeHelp(const CommandLineHelpContext &context) const override;
 
     private:
         void parseOptions(int argc, char *argv[]);

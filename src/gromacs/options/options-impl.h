@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,8 +95,8 @@ class OptionSectionImpl : public IOptionsContainerWithSections
                 explicit Group(OptionSectionImpl *parent) : parent_(parent) {}
 
                 // From IOptionsContainer
-                virtual IOptionsContainer &addGroup();
-                virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
+                IOptionsContainer &addGroup() override;
+                OptionInfo *addOptionImpl(const AbstractOption &settings) override;
 
                 //! Containing options object.
                 OptionSectionImpl  *parent_;
@@ -131,11 +131,11 @@ class OptionSectionImpl : public IOptionsContainerWithSections
         }
 
         // From IOptionsContainerWithSections
-        virtual OptionSectionImpl *addSectionImpl(const AbstractOptionSection &section);
+        OptionSectionImpl *addSectionImpl(const AbstractOptionSection &section) override;
 
         // From IOptionsContainer
-        virtual IOptionsContainer &addGroup();
-        virtual OptionInfo *addOptionImpl(const AbstractOption &settings);
+        IOptionsContainer &addGroup() override;
+        OptionInfo *addOptionImpl(const AbstractOption &settings) override;
 
         //! Returns section info object for this section.
         OptionSectionInfo       &info() { return info_; }

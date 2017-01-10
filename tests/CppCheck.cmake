@@ -106,6 +106,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=redundantPointerOp:src/gromacs/fileio/gmxfio-xdr.cpp
         --suppress=passedByValue # See comment below
         --suppress=shiftTooManyBits:src/gromacs/gpu_utils/gpu_utils.cu # CUDA kernel launch false positive
+        --suppress=unusedPrivateFunction #1.76.1 too often wrong with override
         )
         # Passing non-trivial objects by value is rarely a problem for
         # GROMACS in performance-sensitive code, and shouldn't be

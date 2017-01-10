@@ -69,11 +69,11 @@ namespace
 class DefaultThreadAffinityAccess : public gmx::IThreadAffinityAccess
 {
     public:
-        virtual bool isThreadAffinitySupported() const
+        bool isThreadAffinitySupported() const override
         {
             return tMPI_Thread_setaffinity_support() == TMPI_SETAFFINITY_SUPPORT_YES;
         }
-        virtual bool setCurrentThreadAffinityToCore(int core)
+        bool setCurrentThreadAffinityToCore(int core) override
         {
             const int ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
             return ret == 0;

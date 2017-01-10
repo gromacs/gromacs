@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,13 +143,13 @@ class FileIOXdrSerializer : public ISerializer
     public:
         explicit FileIOXdrSerializer(t_fileio *fio) : fio_(fio) {}
 
-        virtual bool reading() const;
+        bool reading() const override;
 
-        virtual void doUChar(unsigned char *value);
-        virtual void doInt(int *value);
-        virtual void doFloat(float *value);
-        virtual void doDouble(double *value);
-        virtual void doString(std::string *value);
+        void doUChar(unsigned char *value) override;
+        void doInt(int *value) override;
+        void doFloat(float *value) override;
+        void doDouble(double *value) override;
+        void doString(std::string *value) override;
 
     private:
         t_fileio *fio_;
