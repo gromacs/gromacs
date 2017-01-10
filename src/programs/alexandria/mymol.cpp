@@ -1509,8 +1509,9 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                                  gmx_hw_info_t             *hwinfo)
 {
     immStatus imm       = immOK;
-    real      tolerance = 1e-8;
-    int       maxiter   = 1000;
+    real      tolerance = 1e-6;
+    bool      converged = false;
+    int       maxiter   = 1, iter;
 
     // This might be moved to a better place
     gmx_omp_nthreads_init(mdlog, cr, 1, 1, 0, false, false);
@@ -1583,8 +1584,6 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                             static_cast<int>(gr_.nEsp()));
                 }
             }
-
-            bool   converged = false;
             double chi2[2]   = { 1e8, 1e8 };
             real   rrms      = 0, wtot;
             int    cur       = 0;
@@ -1604,7 +1603,7 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
                 gr_.calcPot();
                 EspRms_ = chi2[cur] = gr_.getRms(&wtot, &rrms);
                 printf("RESP: RMS %g\n", chi2[cur]);
-                converged = (fabs(chi2[cur] - chi2[1-cur]) < 1e-6) || (nullptr == shellfc_);
+                converged = (fabs(chi2[cur] - chi2[1-cur]) < tolerance) || (nullptr == shellfc_);
                 cur       = 1-cur;
             }
             while (!converged);
@@ -1618,19 +1617,37 @@ immStatus MyMol::GenerateCharges(const Poldata             &pd,
         break;
         case eqgEEM:
         {
-            QgenEem qgen(pd, &topology_->atoms,
-                         iChargeDistributionModel,
-                         hfac, molProp()->getCharge());
-
-            if (eQGEN_OK != qgen.generateCharges(nullptr,
-                                                 molProp()->getMolname().c_str(),
-                                                 pd, &topology_->atoms,
-                                                 tolerance,
-                                                 maxiter,
-                                                 x_))
+            QgenEem eem(pd, &topology_->atoms,
+                        iChargeDistributionModel,
+                        hfac, molProp()->getCharge(),
+                        bHaveShells_);
+            iter = 0;
+            do
             {
-                imm = immChargeGeneration;
-            }           
+                if (eQGEN_OK == eem.generateCharges(nullptr,
+                                                     molProp()->getMolname().c_str(),
+                                                     pd, &topology_->atoms,
+                                                     x_))
+                {
+                    EemRms_ = eem.rms();                    
+                    if (nullptr != shellfc_)
+                    {
+                        computeForces(nullptr, cr);
+                    }
+                    converged = (EemRms_ < tolerance) || (nullptr == shellfc_);
+                    iter++;
+                }
+                else
+                {
+                    imm = immChargeGeneration;
+                }           
+            }
+            while(imm == immOK && (!converged) && (iter < maxiter));
+            
+            if (iter < maxiter)
+            {
+                printf("EEM converged to rms: %g after %d steps\n", EemRms_, iter);
+            }
         }
         break;
         default:
@@ -2552,7 +2569,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     int          ia;
 
     if (!molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
-                               lot, "", (char *)"elec",
+                               lot, "", (char *)"electronic",
                                &value, &error, &T, myref, mylot,
                                vec, quadrupole))
     {
@@ -2643,7 +2660,7 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
     }
     else
     {
-        imm = immNoData;
+        //imm = immNoData;
     }
     return imm;
 }

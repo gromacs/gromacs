@@ -31,23 +31,21 @@ class QgenEem
         QgenEem(const Poldata &pd,
                 t_atoms *atoms,
                 ChargeDistributionModel   iChargeDistributionModel,
-                double hfac, int qtotal);
+                double hfac, int qtotal, bool haveShell);
 
-        int generateChargesSm(FILE            *fp,
-                              const Poldata    &pd,
-                              t_atoms         *atoms,
-                              double           tol, 
-                              int              maxiter, 
-                              double          *chieq,
-                              PaddedRVecVector x);
+        void generateChargesSm(FILE            *fp,
+                               const Poldata    &pd,
+                               t_atoms         *atoms,  
+                               double          *chieq,
+                               PaddedRVecVector x);
 
         int generateCharges(FILE              *fp,
                             const std::string  molname,
                             const Poldata     &pd,
                             t_atoms           *atoms,
-                            double             tol, 
-                            int                maxiter,
                             PaddedRVecVector   x);
+                            
+        double rms() { return rms_; }
 
         const char *message() const;
         
@@ -74,7 +72,7 @@ class QgenEem
         ChargeDistributionModel                            iChargeDistributionModel_;
         int                                                natom_, eQGEN_;
         double                                             qtotal_, chieq_, hfac_;
-        double                                             Jcs_, Jss_;
+        double                                             Jcs_, Jss_, rms_, hardnessFactor_;
         /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
         std::vector<std::string>                           elem_;
         std::vector<int>                                   atomnr_;
@@ -85,7 +83,7 @@ class QgenEem
         /* For each atom i there are nZeta[i] row, q and zeta entries */
         std::vector<int>                                   nZeta_;
         std::vector<std::vector<int> >                     row_;
-        bool                                               bAllocSave_;
+        bool                                               bAllocSave_, bHaveShell_;
         std::vector<std::vector<double> >                  q_, zeta_, qsave_, zetasave_;
 
 
@@ -109,7 +107,7 @@ class QgenEem
                      int      top_ndx,
                      int      eem_ndx);
 
-        void solveQEem(FILE *fp, double hardnessFactor);
+        void solveQEem(FILE *fp);
 
         void updateJ00();
         

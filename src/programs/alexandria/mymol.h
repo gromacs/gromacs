@@ -116,7 +116,7 @@ class MyMol
         bool             bHaveShells_, bHaveVSites_;
         double           ref_enthalpy_, mutot_;
         double           polarizability_, sig_pol_;
-        double           EspRms_;
+        double           EspRms_, EemRms_;
 
 
         bool             IsSymmetric(real toler);

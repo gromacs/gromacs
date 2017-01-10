@@ -60,24 +60,28 @@ QgenEem::QgenEem(const Poldata            &pd,
                  t_atoms                  *atoms,
                  ChargeDistributionModel   iChargeDistributionModel,
                  double                    hfac,
-                 int                       qtotal)
+                 int                       qtotal,
+                 bool                      haveShell)
 {
     bWarned_    = false;
     bAllocSave_ = false;
+    bHaveShell_ = haveShell;
     eQGEN_      = eQGEN_OK;
-    chieq_      = 0;
-    Jcs_        = 0;
-    Jss_        = 0;
+    hardnessFactor_ = 1;
+    chieq_          = 0;
+    Jcs_            = 0;
+    Jss_            = 0;
+    rms_            = 0;
+    natom_          = 0;
     std::string  atp;
     bool         bSupport = true;
-    int          i, j, k, atm;
+    int          i, j, k, atm, nz;
 
     iChargeDistributionModel_   = iChargeDistributionModel;
     hfac_                       = hfac;
     qtotal_                     = qtotal;
-
-    natom_ = 0;
-    for (i = j = 0; (i < atoms->nr); i++)
+   
+    for (i = 0; i < atoms->nr; i++)
     {
         if (atoms->atom[i].ptype == eptAtom)
         {
@@ -125,7 +129,9 @@ QgenEem::QgenEem(const Poldata            &pd,
             {
                 elem_[j]   = atp;
                 atomnr_[j] = atm;
-                int nz     = pd.getNzeta(iChargeDistributionModel_, atp);
+                chi0_[j]   = pd.getChi0(iChargeDistributionModel_, atp);
+                j00_[j]    = pd.getJ00(iChargeDistributionModel_, atp);
+                nz         = pd.getNzeta(iChargeDistributionModel_, atp);
                 nZeta_[j]  = nz;
                 q_[j].resize(nz, 0);
                 zeta_[j].resize(nz, 0);
@@ -139,8 +145,7 @@ QgenEem::QgenEem(const Poldata            &pd,
                     snprintf(buf, sizeof(buf), "Row (in the periodic table) should be at least 1. Here: atype = %s q = %g zeta = %g row = %d model = %s",
                              atp.c_str(), q_[j][k], zeta_[j][k], row_[j][k],
                              getEemtypeName(iChargeDistributionModel_));
-                    GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp ||
-                                       row_[j][k] != 0, buf);
+                    GMX_RELEASE_ASSERT(iChargeDistributionModel == eqdAXp || row_[j][k] != 0, buf);
                     if (row_[j][k] > SLATER_MAX)
                     {
                         if (debug)
@@ -153,8 +158,6 @@ QgenEem::QgenEem(const Poldata            &pd,
                         row_[j][k] = SLATER_MAX;
                     }
                 }
-                chi0_[j]  = 0;
-                j00_[j]   = 0;
                 j++;
             }
         }
@@ -206,7 +209,7 @@ double CoulombNN(double r)
     return 1/r;
 }
 
-void QgenEem::solveQEem(FILE *fp,  double hardnessFactor)
+void QgenEem::solveQEem(FILE *fp)
 {
     double **a, qtot, q;
     int      i, j, n;
@@ -219,7 +222,7 @@ void QgenEem::solveQEem(FILE *fp,  double hardnessFactor)
         {
             a[i][j] = Jcc_[i][j];
         }
-        a[i][i] = hardnessFactor*Jcc_[i][i];
+        a[i][i] = hardnessFactor_*Jcc_[i][i];
     }
     for (j = 0; j < natom_; j++)
     {
@@ -254,12 +257,23 @@ void QgenEem::solveQEem(FILE *fp,  double hardnessFactor)
         }
     }
     chieq_      = q_[natom_][0];
+    
     qtot        = 0;
-    for (i = 0; i < natom_; i++)
+    if (bHaveShell_)
     {
-        for (j = 0; j < nZeta_[i]; j++)
+        for (i = 0; i < natom_; i++)
         {
-            qtot += q_[i][j];
+            for (j = 0; j < nZeta_[i]; j++)
+            {
+                qtot += q_[i][j];
+            }
+        }
+    }
+    else
+    {
+        for (i = 0; i < natom_; i++)
+        {
+            qtot += q_[i][0];
         }
     }
 
@@ -516,10 +530,6 @@ void QgenEem::calcJcs(t_atoms *atoms,
             }
         }
     }
-    else
-    {
-        Jcs_ = Jcs;
-    }
 }
 
 void QgenEem::calcJss(t_atoms *atoms,
@@ -549,10 +559,6 @@ void QgenEem::calcJss(t_atoms *atoms,
             }
         }
     }
-    else
-    {
-        Jss_ = Jss;
-    }
 }
 
 void QgenEem::calcRhs(t_atoms *atoms)
@@ -563,16 +569,19 @@ void QgenEem::calcRhs(t_atoms *atoms)
     int      shell_ndx = 1;
     
     for (int i = 0; i < natom_; i++)
-    {
-        calcJcs(atoms, core_ndx, i);
-        calcJss(atoms, shell_ndx, i);
+    {        
         rhs_[i]  -= chi0_[i];
-        rhs_[i]  -= j00_[i]*q_[i][1];
-        rhs_[i]  -= Jcs_;
-        rhs_[i]  -= Jss_;
-        qshell   += q_[i][1];
-        core_ndx  = core_ndx + 2;
-        shell_ndx = shell_ndx + 2;
+        if (bHaveShell_)
+        {
+            calcJcs(atoms, core_ndx, i);
+            calcJss(atoms, shell_ndx, i);
+            rhs_[i]   -= j00_[i]*hardnessFactor_*q_[i][1];
+            rhs_[i]   -= Jcs_;
+            rhs_[i]   -= Jss_;
+            qshell    += q_[i][1];
+            core_ndx  += 2;
+            shell_ndx += 2;
+        }       
     }    
     qcore = qtotal_ - qshell;
     rhs_[natom_] = qcore;
@@ -618,17 +627,16 @@ int atomicnumber2rowXX(int elem)
 void QgenEem::copyChargesToAtoms(t_atoms *atoms)
 {
     int j;
-    for (int i = j = 0; (i < atoms->nr); i++)
+    for (int i = j = 0; i < atoms->nr; i++)
     {
         if (atoms->atom[i].ptype == eptAtom)
         {
-            double qq = 0;
-            for (int k = 0; k < nZeta_[j]; k++)
-            {
-                qq += q_[j][k];
-            }
-            atoms->atom[i].q = atoms->atom[i].qB = qq;
+            atoms->atom[i].q = atoms->atom[i].qB = q_[j][0];
             j++;
+        }
+        else if (atoms->atom[i].ptype == eptShell)
+        {
+            atoms->atom[i].q = atoms->atom[i].qB = q_[j][1];
         }
     }
 }
@@ -736,10 +744,9 @@ void QgenEem::updateFromPoldata(t_atoms *atoms, const Poldata &pd)
             chi0_[j]       = pd.getChi0(iChargeDistributionModel_, elem_[j].c_str());
             j00_[j]        = pd.getJ00(iChargeDistributionModel_, elem_[j].c_str());
             nz             = pd.getNzeta(iChargeDistributionModel_, elem_[j].c_str());
-            for (n = 0; (n < nz); n++)
+            for (n = 0; n < nz; n++)
             {
                 zeta_[j][n] = pd.getZeta(iChargeDistributionModel_, elem_[j].c_str(), n);
-                q_[j][n]    = pd.getQ(iChargeDistributionModel_, elem_[j].c_str(), n);
                 row_[j][n]  = pd.getRow(iChargeDistributionModel_, elem_[j].c_str(), n);
             }
             j++;
@@ -747,84 +754,44 @@ void QgenEem::updateFromPoldata(t_atoms *atoms, const Poldata &pd)
     }
 }
 
-int QgenEem::generateChargesSm(FILE              *fp,
-                               const Poldata     &pd,
-                               t_atoms           *atoms,
-                               double             tol,
-                               int                maxiter,
-                               double            *chieq,
-                               PaddedRVecVector   x)
+void QgenEem::generateChargesSm(FILE              *fp,
+                                const Poldata     &pd,
+                                t_atoms           *atoms,
+                                double            *chieq,
+                                PaddedRVecVector   x)
 {
     std::vector<double>       qq;
-    int                       i, iter;
-    double                    rms;
+    int                       i;
 
     checkSupport(pd);
     if (eQGEN_OK == eQGEN_)
     {
-
         updateFromPoldata(atoms, pd);
-
         qq.resize(natom_ + 1);
         for (i = 0; i < natom_; i++)
         {           
             qq[i] = q_[i][0];
         }
-        iter = 0;
         updatePositions(x, atoms);
         calcJcc(atoms);
         calcRhs(atoms);
-        do
+        updateJ00();     
+        if (debug)
         {
-            updateJ00();
-            if (debug)
-            {
-                debugFun(debug);
-            }
-            solveQEem(debug, 2.0);
-            rms = 0;
-            for (i = 0; i < natom_; i++)
-            {
-                rms  += gmx::square(qq[i] - q_[i][0]);
-                qq[i] = q_[i][0];
-            }
-            rms = sqrt(rms/natom_);
-            iter++;
+            debugFun(debug);
         }
-        while ((rms > tol) && (iter < maxiter));
-
-        if (iter < maxiter)
+        solveQEem(debug);
+        rms_ = 0;
+        for (i = 0; i < natom_; i++)
         {
-            eQGEN_ = eQGEN_OK;
+            rms_  += gmx::square(qq[i] - q_[i][0]);
+            qq[i] = q_[i][0];
         }
-        else
-        {
-            eQGEN_ = eQGEN_NOTCONVERGED;
-        }
-
-        if (fp)
-        {
-            if (eQGEN_ == eQGEN_OK)
-            {
-                fprintf(fp, "Converged to tolerance %g after %d iterations\n",
-                        tol, iter);
-            }
-            else
-            {
-                fprintf(fp, "Did not converge within %d iterations. RMS = %g\n",
-                        maxiter, rms);
-            }
-        }
+        rms_   = sqrt(rms_/natom_);
         *chieq = chieq_;
     }
-
-    if (eQGEN_OK == eQGEN_)
-    {
-        copyChargesToAtoms(atoms);
-        print(fp, atoms);
-    }
-
-    return eQGEN_;
+    copyChargesToAtoms(atoms);
+    print(fp, atoms);
 }
 
 int QgenEem::generateChargesBultinck(FILE          *fp,
@@ -839,7 +806,7 @@ int QgenEem::generateChargesBultinck(FILE          *fp,
         calcJcc(atoms);
         calcRhs(atoms);
         updateJ00();
-        solveQEem(debug, 2.0);
+        solveQEem(debug);
         copyChargesToAtoms(atoms);
         print(fp, atoms);
     }
@@ -851,8 +818,6 @@ int QgenEem::generateCharges(FILE              *fp,
                              const std::string  molname,
                              const Poldata     &pd,
                              t_atoms           *atoms,
-                             double             tol,
-                             int                maxiter,
                              PaddedRVecVector   x)
 {
     double chieq;
@@ -869,10 +834,8 @@ int QgenEem::generateCharges(FILE              *fp,
     }
     else
     {
-        (void) generateChargesSm(fp, pd, atoms, tol, maxiter, &chieq, x);
+        generateChargesSm(fp, pd, atoms, &chieq, x);
     }
-    copyChargesToAtoms(atoms);
-
     return eQGEN_;
 }
 

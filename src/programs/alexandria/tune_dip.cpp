@@ -233,6 +233,7 @@ void OPtimization::split_shell_charges(gmx_mtop_t *mtop,
 void OPtimization::calcDeviation()
 {
     int  j;
+    bool bHaveShells = false;
 
     if (PAR(_cr))
     {
@@ -251,61 +252,31 @@ void OPtimization::calcDeviation()
     
     for (auto &mymol : _mymol)
     {
+        GMX_RELEASE_ASSERT(mymol.mtop_->natoms == mymol.topology_->atoms.nr, "Inconsistency 3 in moldip.cpp");
+        
         if ((mymol.eSupp == eSupportLocal) ||
             (_bFinal && (mymol.eSupp == eSupportRemote)))
         {
-
+            if (nullptr != mymol.shellfc_)
+            {
+                bHaveShells = true;
+                split_shell_charges(mymol.mtop_, &mymol.ltop_->idef, mymol.topology_);
+                mymol.computeForces(nullptr, _cr);
+            }
+            
             QgenEem qgen(pd_, &(mymol.topology_->atoms), 
                          _iChargeDistributionModel,
                          _hfac,
-                         mymol.molProp()->getCharge());
+                         mymol.molProp()->getCharge(),
+                         bHaveShells);
 
             double chieq = 0;
-            auto   eQ    = qgen.generateChargesSm(debug,
-                                                  pd_, &(mymol.topology_->atoms),
-                                                  1e-4, 100,
-                                                  &chieq,
-                                                  mymol.x_);
+            qgen.generateChargesSm(debug,
+                                   pd_, &(mymol.topology_->atoms),
+                                   &chieq,
+                                   mymol.x_);
             mymol.chieq = chieq;
-            if (eQ != eQGEN_OK)
-            {
-                fprintf(stderr, "%s\n", qgen.message());
-            }
-            else
-            {
-                GMX_RELEASE_ASSERT(mymol.mtop_->natoms == mymol.topology_->atoms.nr, "Inconsistency 3 in moldip.cpp");
-            }
-            
-            if (mymol.shellfc_)
-            {
-                real                 t = 0.0;
-                rvec                 mu_tot;
-                tensor               force_vir;
-                t_nrnb               my_nrnb;
-                gmx_wallcycle_t      wcycle;
-                
-                init_nrnb(&my_nrnb);
-                wcycle  = wallcycle_init(stdout, 0, _cr);
-                split_shell_charges(mymol.mtop_, &mymol.ltop_->idef, mymol.topology_);
-                fprintf(stderr, "Check whether we need atoms2md here %s %d\n", __FILE__, __LINE__);
-                atoms2md(mymol.mtop_, mymol.inputrec_, 0, nullptr, 0, mymol.mdatoms_);
-                
-                (void)
-                    relax_shell_flexcon(debug, _cr, false, 0,
-                                        mymol.inputrec_, true,
-                                        GMX_FORCE_ALLFORCES,
-                                        mymol.ltop_, nullptr,
-                                        nullptr, mymol.fcd_,
-                                        mymol.state_,
-                                        &mymol.f_,
-                                        force_vir, mymol.mdatoms_,
-                                        &my_nrnb, wcycle, nullptr,
-                                        &(mymol.mtop_->groups),
-                                        mymol.shellfc_, mymol.fr_,
-                                        false, t, mu_tot,
-                                        nullptr);
-            }
-            
+                        
             mymol.CalcMultipoles();
             double qtot = 0;
             for (j = 0; j < mymol.topology_->atoms.nr; j++)
@@ -322,7 +293,7 @@ void OPtimization::calcDeviation()
                 }
                 if (_bQM)
                 {
-                    _ener[ermsCHARGE] += gmx::square(qq - mymol.qESP[j]);
+                    //_ener[ermsCHARGE] += gmx::square(qq - mymol.qESP[j]);
                 }
             }
             if (fabs(qtot - mymol.molProp()->getCharge()) > 1e-2)
@@ -1015,7 +986,7 @@ int alex_tune_dip(int argc, char *argv[])
     static int                  reinit        = 0;
     static int                  seed          = 0;
     static int                  minimum_data  = 3;
-    static int                  compress      = 1;
+    static int                  compress      = 0;
     static real                 tol           = 1e-3;
     static real                 stol          = 1e-6;
     static real                 watoms        = 0;
@@ -1246,10 +1217,10 @@ int alex_tune_dip(int argc, char *argv[])
                
     if (MASTER(cr))
     {
-        opt.print_molecules(fp, opt2fn("-x", NFILE, fnm), opt2fn("-qhisto", NFILE, fnm),
-                            opt2fn("-qdiff", NFILE, fnm), opt2fn("-mudiff", NFILE, fnm),
-                            opt2fn("-thetadiff", NFILE, fnm), opt2fn("-espdiff", NFILE, fnm),
-                            dip_toler, quad_toler, q_toler, oenv);
+        //opt.print_molecules(fp, opt2fn("-x", NFILE, fnm), opt2fn("-qhisto", NFILE, fnm),
+        //                    opt2fn("-qdiff", NFILE, fnm), opt2fn("-mudiff", NFILE, fnm),
+        //                    opt2fn("-thetadiff", NFILE, fnm), opt2fn("-espdiff", NFILE, fnm),
+        //                    dip_toler, quad_toler, q_toler, oenv);
                             
         writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, compress);
         done_filenms(NFILE, fnm);
