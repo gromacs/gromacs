@@ -198,8 +198,8 @@ class FileNameOption : public OptionTemplate<std::string, FileNameOption>
         using MyBase::defaultValueIfSet;
 
         //! Creates a FileNameOptionStorage object.
-        virtual AbstractOptionStorage *createStorage(
-            const OptionManagerContainer &managers) const;
+        AbstractOptionStorage *createStorage(
+            const OptionManagerContainer &managers) const override;
 
         OptionFileType          optionType_;
         int                     legacyType_;

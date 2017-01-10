@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ class LogTargetCollection : public ILogTarget
             targets_.push_back(target);
         }
 
-        virtual void writeEntry(const LogEntry &entry)
+        void writeEntry(const LogEntry &entry) override
         {
             for (ILogTarget *target : targets_)
             {
@@ -72,7 +72,7 @@ class LogTargetFormatter : public ILogTarget
     public:
         explicit LogTargetFormatter(TextOutputStream *stream) : writer_(stream) {}
 
-        virtual void writeEntry(const LogEntry &entry);
+        void writeEntry(const LogEntry &entry) override;
 
     private:
         TextWriter writer_;

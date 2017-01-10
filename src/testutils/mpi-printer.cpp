@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,13 +52,13 @@
 #include "gromacs/utility/gmxassert.h"
 
 #define FORWARD_TO_DEFAULT_PRINTER1(MethodName, Param1Type) \
-    virtual void MethodName(const Param1Type &param1) { \
+    void MethodName(const Param1Type &param1) override { \
         if (rank_ == 0) { \
             defaultPrinter_->MethodName(param1); \
         } \
     }
 #define FORWARD_TO_DEFAULT_PRINTER2(MethodName, Param1Type, Param2Type) \
-    virtual void MethodName(const Param1Type &param1, Param2Type param2) { \
+    void MethodName(const Param1Type &param1, Param2Type param2) override { \
         if (rank_ == 0) { \
             defaultPrinter_->MethodName(param1, param2); \
         } \
@@ -81,11 +81,11 @@ class MPIEventForward : public ::testing::TestEventListener
         FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsSetUpEnd, ::testing::UnitTest);
         FORWARD_TO_DEFAULT_PRINTER1(OnTestCaseStart, ::testing::TestCase);
         FORWARD_TO_DEFAULT_PRINTER1(OnTestStart, ::testing::TestInfo);
-        virtual void OnTestPartResult(const ::testing::TestPartResult & /*result*/)
+        void OnTestPartResult(const ::testing::TestPartResult & /*result*/) override
         {
             // Do nothing; all printing is done in OnTestEnd().
         }
-        virtual void OnTestEnd(const ::testing::TestInfo &test_info);
+        void OnTestEnd(const ::testing::TestInfo &test_info) override;
         FORWARD_TO_DEFAULT_PRINTER1(OnTestCaseEnd, ::testing::TestCase);
         FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsTearDownStart, ::testing::UnitTest);
         FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsTearDownEnd, ::testing::UnitTest);
