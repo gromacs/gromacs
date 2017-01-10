@@ -179,8 +179,7 @@ AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings &settings)
 //! \endcond
 
 AbstractPlotModule::~AbstractPlotModule()
-{
-}
+    = default;
 
 
 void

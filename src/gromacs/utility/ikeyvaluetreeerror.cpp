@@ -61,8 +61,7 @@ class DefaultKeyValueTreeErrorHandler : public IKeyValueTreeErrorHandler
 }   // namespace
 
 IKeyValueTreeErrorHandler::~IKeyValueTreeErrorHandler()
-{
-}
+    = default;
 
 //! \cond libapi
 IKeyValueTreeErrorHandler *defaultKeyValueTreeErrorHandler()

@@ -62,8 +62,7 @@ CommandLineModuleSettings::CommandLineModuleSettings()
 }
 
 CommandLineModuleSettings::~CommandLineModuleSettings()
-{
-}
+    = default;
 
 int CommandLineModuleSettings::defaultNiceLevel() const
 {

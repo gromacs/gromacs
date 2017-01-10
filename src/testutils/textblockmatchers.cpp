@@ -78,12 +78,10 @@ class NoTextMatcher : public ITextBlockMatcher
 }       // namespace
 
 ITextBlockMatcher::~ITextBlockMatcher()
-{
-}
+    = default;
 
 ITextBlockMatcherSettings::~ITextBlockMatcherSettings()
-{
-}
+    = default;
 
 TextBlockMatcherPointer ExactTextMatch::createMatcher() const
 {

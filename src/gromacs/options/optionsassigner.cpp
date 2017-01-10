@@ -155,8 +155,7 @@ OptionsAssigner::OptionsAssigner(Options *options)
 }
 
 OptionsAssigner::~OptionsAssigner()
-{
-}
+    = default;
 
 void OptionsAssigner::setAcceptBooleanNoPrefix(bool bEnabled)
 {

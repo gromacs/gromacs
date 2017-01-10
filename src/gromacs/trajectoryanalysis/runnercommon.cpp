@@ -321,8 +321,7 @@ TrajectoryAnalysisRunnerCommon::TrajectoryAnalysisRunnerCommon(
 
 
 TrajectoryAnalysisRunnerCommon::~TrajectoryAnalysisRunnerCommon()
-{
-}
+    = default;
 
 
 ITopologyProvider *

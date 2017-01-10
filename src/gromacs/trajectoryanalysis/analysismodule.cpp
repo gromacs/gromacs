@@ -162,8 +162,7 @@ TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData(
 
 
 TrajectoryAnalysisModuleData::~TrajectoryAnalysisModuleData()
-{
-}
+    = default;
 
 
 void TrajectoryAnalysisModuleData::finishDataHandles()
@@ -274,8 +273,7 @@ TrajectoryAnalysisModule::TrajectoryAnalysisModule()
 
 
 TrajectoryAnalysisModule::~TrajectoryAnalysisModule()
-{
-}
+    = default;
 
 
 void TrajectoryAnalysisModule::optionsFinished(

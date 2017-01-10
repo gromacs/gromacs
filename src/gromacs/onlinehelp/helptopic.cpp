@@ -117,8 +117,7 @@ AbstractCompositeHelpTopic::AbstractCompositeHelpTopic()
 }
 
 AbstractCompositeHelpTopic::~AbstractCompositeHelpTopic()
-{
-}
+    = default;
 
 bool AbstractCompositeHelpTopic::hasSubTopics() const
 {

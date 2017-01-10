@@ -264,7 +264,7 @@ class GromacsException : public std::exception
     public:
         // Explicitly declared because some compiler/library combinations warn
         // about missing noexcept otherwise.
-        ~GromacsException() noexcept override {}
+        ~GromacsException() noexcept override = default;
 
         GMX_DEFAULT_CONSTRUCTORS(GromacsException);
 

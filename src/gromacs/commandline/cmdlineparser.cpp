@@ -125,8 +125,7 @@ CommandLineParser::CommandLineParser(Options *options)
 }
 
 CommandLineParser::~CommandLineParser()
-{
-}
+    = default;
 
 CommandLineParser &CommandLineParser::skipUnknown(bool bEnabled)
 {

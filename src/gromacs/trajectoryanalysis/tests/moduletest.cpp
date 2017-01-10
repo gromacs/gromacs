@@ -146,8 +146,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::AbstractTrajectoryAnalysisModuleTes
 }
 
 AbstractTrajectoryAnalysisModuleTestFixture::~AbstractTrajectoryAnalysisModuleTestFixture()
-{
-}
+    = default;
 
 void
 AbstractTrajectoryAnalysisModuleTestFixture::setTopology(const char *filename)

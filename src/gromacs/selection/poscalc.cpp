@@ -467,8 +467,7 @@ PositionCalculationCollection::PositionCalculationCollection()
 }
 
 PositionCalculationCollection::~PositionCalculationCollection()
-{
-}
+    = default;
 
 void
 PositionCalculationCollection::setTopology(const gmx_mtop_t *top)

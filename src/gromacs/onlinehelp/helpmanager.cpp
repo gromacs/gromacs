@@ -123,8 +123,7 @@ HelpManager::HelpManager(const IHelpTopic         &rootTopic,
 }
 
 HelpManager::~HelpManager()
-{
-}
+    = default;
 
 void HelpManager::enterTopic(const char *name)
 {

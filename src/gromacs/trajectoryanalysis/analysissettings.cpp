@@ -71,8 +71,7 @@ TrajectoryAnalysisSettings::TrajectoryAnalysisSettings()
 
 
 TrajectoryAnalysisSettings::~TrajectoryAnalysisSettings()
-{
-}
+    = default;
 
 
 void TrajectoryAnalysisSettings::setOptionsModuleSettings(

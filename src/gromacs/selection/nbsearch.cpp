@@ -1290,8 +1290,7 @@ AnalysisNeighborhood::AnalysisNeighborhood()
 }
 
 AnalysisNeighborhood::~AnalysisNeighborhood()
-{
-}
+    = default;
 
 void AnalysisNeighborhood::setCutoff(real cutoff)
 {

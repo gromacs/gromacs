@@ -192,8 +192,7 @@ Regex::Regex(const std::string &value)
 }
 
 Regex::~Regex()
-{
-}
+    = default;
 
 /*! \cond libapi */
 bool regexMatch(const char *str, const Regex &regex)

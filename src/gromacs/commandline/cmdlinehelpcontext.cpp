@@ -137,8 +137,7 @@ CommandLineHelpContext &CommandLineHelpContext::operator=(
 }
 
 CommandLineHelpContext::~CommandLineHelpContext()
-{
-}
+    = default;
 
 void CommandLineHelpContext::setModuleDisplayName(const std::string &name)
 {

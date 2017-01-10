@@ -218,8 +218,7 @@ TextInputFile::TextInputFile(FILE *fp)
 }
 
 TextInputFile::~TextInputFile()
-{
-}
+    = default;
 
 FILE *TextInputFile::handle()
 {
@@ -251,8 +250,7 @@ TextOutputFile::TextOutputFile(FILE *fp)
 }
 
 TextOutputFile::~TextOutputFile()
-{
-}
+    = default;
 
 void TextOutputFile::write(const char *str)
 {

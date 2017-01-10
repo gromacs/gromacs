@@ -162,8 +162,7 @@ CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder()
 }
 
 CommandLineCommonOptionsHolder::~CommandLineCommonOptionsHolder()
-{
-}
+    = default;
 
 void CommandLineCommonOptionsHolder::initOptions()
 {
@@ -446,8 +445,7 @@ CommandLineModuleManager::CommandLineModuleManager(
 }
 
 CommandLineModuleManager::~CommandLineModuleManager()
-{
-}
+    = default;
 
 void CommandLineModuleManager::setQuiet(bool bQuiet)
 {

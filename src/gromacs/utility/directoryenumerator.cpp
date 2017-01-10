@@ -280,8 +280,7 @@ DirectoryEnumerator::DirectoryEnumerator(const std::string &dirname, bool bThrow
 }
 
 DirectoryEnumerator::~DirectoryEnumerator()
-{
-}
+    = default;
 
 bool DirectoryEnumerator::nextFile(std::string *filename)
 {

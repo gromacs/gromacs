@@ -132,8 +132,7 @@ CommandLine::CommandLine(const CommandLine &other)
 }
 
 CommandLine::~CommandLine()
-{
-}
+    = default;
 
 void CommandLine::initFromArray(const ConstArrayRef<const char *> &cmdline)
 {
@@ -316,8 +315,7 @@ CommandLineTestHelper::CommandLineTestHelper(TestFileManager *fileManager)
 }
 
 CommandLineTestHelper::~CommandLineTestHelper()
-{
-}
+    = default;
 
 void CommandLineTestHelper::setInputFileContents(
         CommandLine *args, const char *option, const char *extension,
@@ -409,8 +407,7 @@ CommandLineTestBase::CommandLineTestBase()
 }
 
 CommandLineTestBase::~CommandLineTestBase()
-{
-}
+    = default;
 
 void CommandLineTestBase::setInputFile(
         const char *option, const char *filename)

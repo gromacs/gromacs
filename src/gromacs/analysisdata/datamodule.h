@@ -98,7 +98,7 @@ class IAnalysisDataModule
             efAllowMultipleDataSets     = 1<<4
         };
 
-        virtual ~IAnalysisDataModule() {};
+        virtual ~IAnalysisDataModule() = default;
 
         /*! \brief
          * Returns properties supported by the module.
@@ -240,7 +240,7 @@ class IAnalysisDataModule
 class AnalysisDataModuleSerial : public IAnalysisDataModule
 {
     public:
-        ~AnalysisDataModuleSerial() override {}
+        ~AnalysisDataModuleSerial() override = default;
 
         int flags() const override = 0;
 
@@ -270,7 +270,7 @@ class AnalysisDataModuleSerial : public IAnalysisDataModule
 class AnalysisDataModuleParallel : public IAnalysisDataModule
 {
     public:
-        ~AnalysisDataModuleParallel() override {}
+        ~AnalysisDataModuleParallel() override = default;
 
         int flags() const override = 0;
 

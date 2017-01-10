@@ -62,8 +62,7 @@ IntegrationTestFixture::IntegrationTestFixture()
 }
 
 IntegrationTestFixture::~IntegrationTestFixture()
-{
-}
+    = default;
 
 void
 IntegrationTestFixture::redirectStringToStdin(const char* theString)

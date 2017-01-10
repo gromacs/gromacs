@@ -211,8 +211,7 @@ ShellCompletionWriter::ShellCompletionWriter(const std::string     &binaryName,
 }
 
 ShellCompletionWriter::~ShellCompletionWriter()
-{
-}
+    = default;
 
 TextWriter &ShellCompletionWriter::outputWriter()
 {

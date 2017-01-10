@@ -98,8 +98,7 @@ DataFileFinder::DataFileFinder()
 }
 
 DataFileFinder::~DataFileFinder()
-{
-}
+    = default;
 
 void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
 {

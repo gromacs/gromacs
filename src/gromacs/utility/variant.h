@@ -221,7 +221,7 @@ class Variant
         class IContent
         {
             public:
-                virtual ~IContent() {}
+                virtual ~IContent() = default;
                 virtual const std::type_info &typeInfo() const = 0;
                 virtual IContent *clone() const                = 0;
         };

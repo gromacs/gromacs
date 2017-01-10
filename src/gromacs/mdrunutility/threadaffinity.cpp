@@ -86,8 +86,7 @@ DefaultThreadAffinityAccess g_defaultAffinityAccess;
 } // namespace
 
 gmx::IThreadAffinityAccess::~IThreadAffinityAccess()
-{
-}
+    = default;
 
 static bool invalidWithinSimulation(const t_commrec *cr, bool invalidLocally)
 {

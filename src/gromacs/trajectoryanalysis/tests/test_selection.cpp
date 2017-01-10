@@ -83,8 +83,7 @@ SelectionTester::SelectionTester()
 }
 
 SelectionTester::~SelectionTester()
-{
-}
+    = default;
 
 void
 SelectionTester::printSelections()

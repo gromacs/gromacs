@@ -89,7 +89,7 @@ class FreeVolume : public TrajectoryAnalysisModule
 {
     public:
         FreeVolume();
-        ~FreeVolume() override {};
+        ~FreeVolume() override = default;
 
         void initOptions(IOptionsContainer          *options,
                          TrajectoryAnalysisSettings *settings) override;

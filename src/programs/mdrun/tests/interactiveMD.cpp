@@ -62,8 +62,7 @@ ImdTestFixture::ImdTestFixture()
 }
 
 ImdTestFixture::~ImdTestFixture()
-{
-}
+    = default;
 
 
 //! Test fixture for mdrun with IMD settings
