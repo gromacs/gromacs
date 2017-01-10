@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -94,6 +94,21 @@ gmx_cpack_init()
 # Variables that accumulate stuff influencing the installed headers
 set(INSTALLED_HEADER_INCLUDE_DIRS "")
 set(INSTALLED_HEADER_DEFINITIONS "")
+
+########################################################################
+# Global non-cache variables for implementing the build system
+########################################################################
+
+# These variables collect libraries that GROMACS requires for
+# linking. They should be appended to with list(APPEND ${name}
+# new-library) calls. They are:
+#  - Libraries that are required for libgromacs (only)
+set(GMX_EXTRA_LIBRARIES "")
+#  - Libraries that are required for all code in the repository
+set(GMX_COMMON_LIBRARIES "")
+#  - Libraries that all code linked against libgromacs needs
+#    (i.e., something that is exposed in installed headers).
+set(GMX_PUBLIC_LIBRARIES "")
 
 ########################################################################
 # Check and warn if cache generated on a different host is being reused
@@ -320,15 +335,6 @@ include(gmxManageOpenMP)
 
 include(gmxCFlags)
 gmx_c_flags()
-
-# These collect libraries that Gromacs requires for linking:
-#  - Libraries that are required for libgromacs (only)
-set(GMX_EXTRA_LIBRARIES "")
-#  - Libraries that are required for all code in the repository
-set(GMX_COMMON_LIBRARIES "")
-#  - Libraries that all code linked against libgromacs needs
-#    (i.e., something that is exposed in installed headers).
-set(GMX_PUBLIC_LIBRARIES "")
 
 # This variable should be used for additional compiler flags which are not
 # generated in gmxCFlags nor are SIMD or MPI related.
