@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,12 +105,12 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
     };
 #define COFFS 70
     static t_mess   Mess[] = {
-        { "GROMACS",                         0,       20, NULL },
-        { NULL,                             16,        9, NULL },
-        { "Copyright (c) 1991-2013",        COFFS+ 2,  9, NULL },
-        { "D.v.d.Spoel, E.Lindahl, B.Hess", COFFS+11,  9, NULL },
-        { "& Groningen University ",        COFFS+20,  9, NULL },
-        { "click to dismiss",               COFFS+31,  8, NULL }
+        { "GROMACS",                         0,       20, nullptr },
+        { nullptr,                             16,        9, nullptr },
+        { "Copyright (c) 1991-2013",        COFFS+ 2,  9, nullptr },
+        { "D.v.d.Spoel, E.Lindahl, B.Hess", COFFS+11,  9, nullptr },
+        { "& Groningen University ",        COFFS+20,  9, nullptr },
+        { "click to dismiss",               COFFS+31,  8, nullptr }
     };
 #define NMESS asize(Mess)
     int             i;
@@ -201,7 +201,7 @@ t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
     logo->bQuitOnClick = bQuitOnClick;
     InitWin(&logo->wd, 0, 0, 360, 270, 1, "GROMACS");
     bg = LIGHTGREY;
-    if ((newcol = std::getenv("GMX_LOGO_COLOR")) != NULL)
+    if ((newcol = std::getenv("GMX_LOGO_COLOR")) != nullptr)
     {
         GetNamedColor(x11, newcol, &bg);
     }
@@ -209,9 +209,9 @@ t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
                                         logo->wd.x, logo->wd.y,
                                         logo->wd.width, logo->wd.height,
                                         logo->wd.bwidth, WHITE, bg);
-    for (i = 0, logo->bigfont = NULL; (i < NBF); i++)
+    for (i = 0, logo->bigfont = nullptr; (i < NBF); i++)
     {
-        if ((logo->bigfont = XLoadQueryFont(x11->disp, bfname[i])) != NULL)
+        if ((logo->bigfont = XLoadQueryFont(x11->disp, bfname[i])) != nullptr)
         {
             break;
         }
@@ -224,9 +224,9 @@ t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
 #ifdef DEBUG
     std::fprintf(stderr, "Big Logofont: %s\n", bfname[i]);
 #endif
-    for (i = 0, logo->smallfont = NULL; (i < NSF); i++)
+    for (i = 0, logo->smallfont = nullptr; (i < NSF); i++)
     {
-        if ((logo->smallfont = XLoadQueryFont(x11->disp, sfname[i])) != NULL)
+        if ((logo->smallfont = XLoadQueryFont(x11->disp, sfname[i])) != nullptr)
         {
             break;
         }

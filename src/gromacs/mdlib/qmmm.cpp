@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -250,9 +250,9 @@ static void punch_QMMM_excl(t_QMrec *qm, t_MMrec *mm, t_blocka *excls)
      * Only needed in case of QM/MM optimizations
      */
     FILE
-       *out = NULL;
+       *out = nullptr;
     int
-        i, j, k, nrexcl = 0, *excluded = NULL, max_excl = 0;
+        i, j, k, nrexcl = 0, *excluded = nullptr, max_excl = 0;
 
 
     out = fopen("QMMMexcl.dat", "w");
@@ -455,7 +455,7 @@ void init_QMMMrec(t_commrec  *cr,
      */
 
     gmx_groups_t            *groups;
-    int                     *qm_arr = NULL, vsite, ai, aj;
+    int                     *qm_arr = nullptr, vsite, ai, aj;
     int                      qm_max = 0, qm_nr = 0, i, j, jmax, k, l, nrvsite2 = 0;
     t_QMMMrec               *qr;
     t_MMrec                 *mm;
@@ -663,7 +663,7 @@ void init_QMMMrec(t_commrec  *cr,
         for (k = 0; k < qm_nr; k++)
         {
             int     indexInMolecule;
-            mtopGetMolblockIndex(mtop, qm_arr[k], &molb, NULL, &indexInMolecule);
+            mtopGetMolblockIndex(mtop, qm_arr[k], &molb, nullptr, &indexInMolecule);
             t_atom *atom = &mtop->moltype[mtop->molblock[molb].type].atoms.atom[indexInMolecule];
             atom->q  = 0.0;
             atom->qB = 0.0;
@@ -687,7 +687,7 @@ void init_QMMMrec(t_commrec  *cr,
          */
         for (i = 0; i < qm_nr; i++)
         {
-            mtopGetMolblockIndex(mtop, qm_arr[i], &molb, NULL, &a_offset);
+            mtopGetMolblockIndex(mtop, qm_arr[i], &molb, nullptr, &a_offset);
             ilist_mol = mtop->moltype[mtop->molblock[molb].type].ilist;
             nrvsite2  = ilist_mol[F_VSITE2].nr;
             iatoms    = ilist_mol[F_VSITE2].iatoms;
@@ -782,7 +782,7 @@ void update_QMMMrec(t_commrec      *cr,
     int
         mm_max = 0, mm_nr = 0, mm_nr_new, i, j, is, k, shift;
     t_j_particle
-       *mm_j_particles = NULL, *qm_i_particles = NULL;
+       *mm_j_particles = nullptr, *qm_i_particles = nullptr;
     t_QMMMrec
        *qr;
     t_nblist
@@ -796,7 +796,7 @@ void update_QMMMrec(t_commrec      *cr,
     t_pbc
         pbc;
     int
-       *parallelMMarray = NULL;
+       *parallelMMarray = nullptr;
     real
         c12au, c6au;
 
@@ -1087,10 +1087,10 @@ real calculate_QMMM(t_commrec *cr,
     t_QMrec
     *qm, *qm2;
     t_MMrec
-    *mm = NULL;
+    *mm = nullptr;
     rvec
-    *forces  = NULL, *fshift = NULL,
-    *forces2 = NULL, *fshift2 = NULL; /* needed for multilayer ONIOM */
+    *forces  = nullptr, *fshift = nullptr,
+    *forces2 = nullptr, *fshift2 = nullptr; /* needed for multilayer ONIOM */
     int
         i, j, k;
     /* make a local copy the QMMMrec pointer

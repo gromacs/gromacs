@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,7 +132,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
     /* just pray the arrays are big enough */
     for (i = 0; (i < natoms); i++)
     {
-        if ((fgets2(line, STRLEN, in)) == NULL)
+        if ((fgets2(line, STRLEN, in)) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of file in file %s at line %d",
                       infile, i+2);
@@ -148,12 +148,12 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         {
             bFirst = FALSE;
             p1     = strchr(line, '.');
-            if (p1 == NULL)
+            if (p1 == nullptr)
             {
                 gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile);
             }
             p2 = strchr(&p1[1], '.');
-            if (p2 == NULL)
+            if (p2 == nullptr)
             {
                 gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile);
             }
@@ -161,7 +161,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
             *ndec = ddist - 5;
 
             p3 = strchr(&p2[1], '.');
-            if (p3 == NULL)
+            if (p3 == nullptr)
             {
                 gmx_fatal(FARGS, "A coordinate in file %s does not contain a '.'", infile);
             }
@@ -369,7 +369,7 @@ gmx_bool gro_next_x_or_v(FILE *status, t_trxframe *fr)
     sfree(atoms.atomname);
     done_symtab(&symtab);
 
-    if ((p = strstr(title, "t=")) != NULL)
+    if ((p = strstr(title, "t=")) != nullptr)
     {
         p += 2;
         if (sscanf(p, "%lf", &tt) == 1)
@@ -455,7 +455,7 @@ void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     fprintf(out, "%5d\n", nx);
 
-    const char *format = get_hconf_format(v != NULL);
+    const char *format = get_hconf_format(v != nullptr);
 
     for (i = 0; (i < nx); i++)
     {
@@ -513,7 +513,7 @@ void write_hconf_mtop(FILE *out, const char *title, gmx_mtop_t *mtop,
     fprintf(out, "%s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     fprintf(out, "%5d\n", mtop->natoms);
 
-    const char *format = get_hconf_format(v != NULL);
+    const char *format = get_hconf_format(v != nullptr);
 
     aloop = gmx_mtop_atomloop_all_init(mtop);
     while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))

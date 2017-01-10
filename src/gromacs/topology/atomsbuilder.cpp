@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,7 @@ AtomsBuilder::~AtomsBuilder()
 
 char **AtomsBuilder::symtabString(char **source)
 {
-    if (symtab_ != NULL)
+    if (symtab_ != nullptr)
     {
         return put_symtab(symtab_, *source);
     }
@@ -268,7 +268,7 @@ void AtomsRemover::removeMarkedElements(std::vector<real> *container) const
 void AtomsRemover::removeMarkedAtoms(t_atoms *atoms) const
 {
     const int    originalAtomCount = atoms->nr;
-    AtomsBuilder builder(atoms, NULL);
+    AtomsBuilder builder(atoms, nullptr);
     if (atoms->nr > 0)
     {
         builder.setNextResidueNumber(atoms->resinfo[0].nr);

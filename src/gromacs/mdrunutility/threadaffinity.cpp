@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -154,7 +154,7 @@ get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
     {
         /* topology information not available or invalid, ignore it */
         hwThreads       = hwTop.machine().logicalProcessorCount;
-        *localityOrder  = NULL;
+        *localityOrder  = nullptr;
     }
     // Only warn about the first problem per node.  Otherwise, the first test
     // failing would essentially always cause also the other problems get
@@ -246,7 +246,7 @@ get_thread_affinity_layout(FILE *fplog, const gmx::MDLogger &mdlog,
     }
     validLayout = validLayout && !invalidValue;
 
-    if (validLayout && fplog != NULL)
+    if (validLayout && fplog != nullptr)
     {
         fprintf(fplog, "Pinning threads with a%s logical core stride of %d\n",
                 bPickPinStride ? "n auto-selected" : " user-specified",

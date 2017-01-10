@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,13 +94,13 @@ int gmx_rotacf(int argc, char *argv[])
     int               i, m, teller, n_alloc, natoms, nvec, ai, aj, ak;
     unsigned long     mode;
     real              t, t0, t1, dt;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
     t_topology       *top;
     int               ePBC;
     t_filenm          fnm[] = {
-        { efTRX, "-f", NULL,  ffREAD  },
-        { efTPR, NULL, NULL,  ffREAD },
-        { efNDX, NULL, NULL,  ffREAD  },
+        { efTRX, "-f", nullptr,  ffREAD  },
+        { efTPR, nullptr, nullptr,  ffREAD },
+        { efNDX, nullptr, nullptr,  ffREAD  },
         { efXVG, "-o", "rotacf",  ffWRITE }
     };
 #define NFILE asize(fnm)
@@ -113,7 +113,7 @@ int gmx_rotacf(int argc, char *argv[])
     ppa    = add_acf_pargs(&npargs, pa);
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -146,7 +146,7 @@ int gmx_rotacf(int argc, char *argv[])
     snew(c1, nvec);
     for (i = 0; (i < nvec); i++)
     {
-        c1[i] = NULL;
+        c1[i] = nullptr;
     }
     n_alloc = 0;
 
@@ -230,7 +230,7 @@ int gmx_rotacf(int argc, char *argv[])
                     teller, nvec, c1, dt, mode, bAver);
     }
 
-    do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
+    do_view(oenv, ftp2fn(efXVG, NFILE, fnm), nullptr);
 
     return 0;
 }

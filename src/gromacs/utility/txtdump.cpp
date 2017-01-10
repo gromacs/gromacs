@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,7 @@ int available(FILE *fp, const void *p, int indent, const char *title)
         }
         fprintf(fp, "%s: not available\n", title);
     }
-    return (p != NULL);
+    return (p != nullptr);
 }
 
 int pr_title(FILE *fp, int indent, const char *title)
@@ -129,7 +129,7 @@ void pr_reals_of_dim(FILE *fp, int indent, const char *title, const real *vec, i
     const char *flong  = "%15.8e";
     const char *format;
 
-    if (getenv("GMX_PRINT_LONGFORMAT") != NULL)
+    if (getenv("GMX_PRINT_LONGFORMAT") != nullptr)
     {
         format = flong;
     }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -209,7 +209,7 @@ PositionCalculationTest::initPositions(gmx_ana_poscalc_t *pc, const char *name)
 void PositionCalculationTest::checkInitialized()
 {
     gmx::test::TestReferenceChecker  compound(
-            checker_.checkCompound("InitializedPositions", NULL));
+            checker_.checkCompound("InitializedPositions", nullptr));
     PositionTestList::const_iterator pi;
     for (pi = posList_.begin(); pi != posList_.end(); ++pi)
     {
@@ -224,7 +224,7 @@ void PositionCalculationTest::updateAndCheck(
     gmx_ana_index_t g;
     g.isize = atoms.size();
     g.index = const_cast<int *>(atoms.data());
-    gmx_ana_poscalc_update(pc, p, &g, topManager_.frame(), NULL);
+    gmx_ana_poscalc_update(pc, p, &g, topManager_.frame(), nullptr);
     checkPositions(checker, name, p, true);
 }
 
@@ -248,7 +248,7 @@ void PositionCalculationTest::testSingleStatic(
             != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
     EXPECT_EQ(bExpectTop, requiresTopology);
     setMaximumGroup(pc, atoms);
-    gmx_ana_pos_t *p = initPositions(pc, NULL);
+    gmx_ana_pos_t *p = initPositions(pc, nullptr);
     checkInitialized();
     {
         generateCoordinates();
@@ -260,7 +260,7 @@ void PositionCalculationTest::testSingleStatic(
         pcc_.initFrame(frame);
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
-        updateAndCheck(pc, p, atoms, &frameCompound, NULL);
+        updateAndCheck(pc, p, atoms, &frameCompound, nullptr);
     }
 }
 
@@ -276,7 +276,7 @@ void PositionCalculationTest::testSingleDynamic(
             != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
     EXPECT_EQ(bExpectTop, requiresTopology);
     setMaximumGroup(pc, initAtoms);
-    gmx_ana_pos_t *p = initPositions(pc, NULL);
+    gmx_ana_pos_t *p = initPositions(pc, nullptr);
     checkInitialized();
     {
         generateCoordinates();
@@ -288,7 +288,7 @@ void PositionCalculationTest::testSingleDynamic(
         pcc_.initFrame(topManager_.frame());
         gmx::test::TestReferenceChecker frameCompound(
                 checker_.checkCompound("EvaluatedPositions", "Frame0"));
-        updateAndCheck(pc, p, evalAtoms, &frameCompound, NULL);
+        updateAndCheck(pc, p, evalAtoms, &frameCompound, nullptr);
     }
 }
 
@@ -334,7 +334,7 @@ void PositionCalculationTest::checkPositions(
     for (int i = 0; i < p->count(); ++i)
     {
         gmx::test::TestReferenceChecker posCompound(
-                compound.checkCompound("Position", NULL));
+                compound.checkCompound("Position", nullptr));
         posCompound.checkSequence(&p->m.mapb.a[p->m.mapb.index[i]],
                                   &p->m.mapb.a[p->m.mapb.index[i+1]],
                                   "Atoms");
@@ -343,11 +343,11 @@ void PositionCalculationTest::checkPositions(
         {
             posCompound.checkVector(p->x[i], "Coordinates");
         }
-        if (bCoordinates && p->v != NULL)
+        if (bCoordinates && p->v != nullptr)
         {
             posCompound.checkVector(p->v[i], "Velocity");
         }
-        if (bCoordinates && p->f != NULL)
+        if (bCoordinates && p->f != nullptr)
         {
             posCompound.checkVector(p->f[i], "Force");
         }

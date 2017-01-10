@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -182,11 +182,11 @@ static t_fitem *NewFItem(void)
 
     snew(fitem, 1);
     fitem->nname = 0;
-    fitem->name  = NULL;
-    fitem->set   = NULL;
-    fitem->get   = NULL;
-    fitem->def   = NULL;
-    fitem->help  = NULL;
+    fitem->name  = nullptr;
+    fitem->set   = nullptr;
+    fitem->get   = nullptr;
+    fitem->def   = nullptr;
+    fitem->help  = nullptr;
 
     return fitem;
 }
@@ -211,9 +211,9 @@ static t_fgroup *NewFGroup(void)
     t_fgroup *fgroup;
 
     snew(fgroup, 1);
-    fgroup->name   = NULL;
+    fgroup->name   = nullptr;
     fgroup->nfitem = 0;
-    fgroup->fitem  = NULL;
+    fgroup->fitem  = nullptr;
 
     return fgroup;
 }
@@ -246,9 +246,9 @@ static t_fgrid *NewFGrid(void)
     fgrid->w        = 0;
     fgrid->h        = 0;
     fgrid->nfgroup  = 0;
-    fgrid->fgroup   = NULL;
+    fgrid->fgroup   = nullptr;
     fgrid->nfsimple = 0;
-    fgrid->fsimple  = NULL;
+    fgrid->fsimple  = nullptr;
 
     return fgrid;
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,15 +72,15 @@ AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
         GMX_THROW(APIError("Inconsistent value counts for vector values"));
     }
 
-    if (settings.name_ != NULL)
+    if (settings.name_ != nullptr)
     {
         name_  = settings.name_;
     }
-    if (settings.descr_ != NULL)
+    if (settings.descr_ != nullptr)
     {
         descr_ = settings.descr_;
     }
-    if (storeIsSet_ != NULL)
+    if (storeIsSet_ != nullptr)
     {
         *storeIsSet_ = false;
     }
@@ -93,7 +93,7 @@ AbstractOptionStorage::~AbstractOptionStorage()
 
 bool AbstractOptionStorage::isBoolean() const
 {
-    return dynamic_cast<const BooleanOptionStorage *>(this) != NULL;
+    return dynamic_cast<const BooleanOptionStorage *>(this) != nullptr;
 }
 
 void AbstractOptionStorage::startSource()
@@ -134,7 +134,7 @@ void AbstractOptionStorage::appendValue(const Variant &value)
 void AbstractOptionStorage::markAsSet()
 {
     setFlag(efOption_Set);
-    if (storeIsSet_ != NULL)
+    if (storeIsSet_ != nullptr)
     {
         *storeIsSet_ = true;
     }

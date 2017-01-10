@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -120,7 +120,7 @@ static void mk_igraph(t_graph *g, int ftype, const t_ilist *il,
                 add_gbond(g, ia[1], ia[2]);
                 add_gbond(g, ia[1], ia[3]);
             }
-            else if (part == NULL)
+            else if (part == nullptr)
             {
                 /* Simply add this bond */
                 for (j = 1; j < np; j++)
@@ -412,7 +412,7 @@ void mk_graph_ilist(FILE *fplog,
             {
                 if (interaction_function[i].flags & IF_CHEMBOND)
                 {
-                    mk_igraph(g, i, &(ilist[i]), at_start, at_end, NULL);
+                    mk_igraph(g, i, &(ilist[i]), at_start, at_end, nullptr);
                 }
             }
 
@@ -442,10 +442,10 @@ void mk_graph_ilist(FILE *fplog,
         else
         {
             /* This is a special thing used in splitter.c to generate shake-blocks */
-            mk_igraph(g, F_CONSTR, &(ilist[F_CONSTR]), at_start, at_end, NULL);
+            mk_igraph(g, F_CONSTR, &(ilist[F_CONSTR]), at_start, at_end, nullptr);
             if (bSettle)
             {
-                mk_igraph(g, F_SETTLE, &(ilist[F_SETTLE]), at_start, at_end, NULL);
+                mk_igraph(g, F_SETTLE, &(ilist[F_SETTLE]), at_start, at_end, nullptr);
             }
         }
         g->nbound = 0;
@@ -459,7 +459,7 @@ void mk_graph_ilist(FILE *fplog,
     }
 
     g->negc = 0;
-    g->egc  = NULL;
+    g->egc  = nullptr;
 
     sfree(nbond);
 

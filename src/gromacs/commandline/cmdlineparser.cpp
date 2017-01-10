@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,7 @@ const char *CommandLineParser::Impl::toOptionName(const char *arg) const
     // Lone '-' or '--' is not an option.
     if (arg[0] != '-' || arg[1] == '\0' || (arg[1] == '-' && arg[2] == '\0'))
     {
-        return NULL;
+        return nullptr;
     }
     // Something starting with '--' is always an option.
     if (arg[1] == '-')
@@ -110,7 +110,7 @@ const char *CommandLineParser::Impl::toOptionName(const char *arg) const
     GMX_IGNORE_RETURN_VALUE(std::strtod(arg, &endptr));
     if (*endptr == '\0')
     {
-        return NULL;
+        return nullptr;
     }
     return arg + 1;
 }
@@ -146,7 +146,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
     {
         const char *const arg        = argv[i];
         const char *const optionName = impl_->toOptionName(arg);
-        if (optionName != NULL)
+        if (optionName != nullptr)
         {
             if (bInOption)
             {
@@ -213,7 +213,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
     if (impl_->bSkipUnknown_)
     {
         *argc      = newi;
-        argv[newi] = NULL;
+        argv[newi] = nullptr;
     }
     // Finish the last option.
     if (bInOption)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -136,24 +136,24 @@ int gmx_trjorder(int argc, char *argv[])
     int               natoms, nwat, ncut;
     char            **grpname;
     int               i, j, d, *isize, isize_ref = 0, isize_sol;
-    int               sa, sr, *swi, **index, *ind_ref = NULL, *ind_sol;
+    int               sa, sr, *swi, **index, *ind_ref = nullptr, *ind_sol;
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
-        { efTRX, "-f", NULL, ffREAD  },
-        { efTPS, NULL, NULL, ffREAD  },
-        { efNDX, NULL, NULL, ffOPTRD },
+        { efTRX, "-f", nullptr, ffREAD  },
+        { efTPS, nullptr, nullptr, ffREAD  },
+        { efNDX, nullptr, nullptr, ffOPTRD },
         { efTRO, "-o", "ordered", ffOPTWR },
         { efXVG, "-nshell", "nshell", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, NULL, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, TRUE);
     sfree(x);
 
     /* get index groups */
@@ -214,8 +214,8 @@ int gmx_trjorder(int argc, char *argv[])
         swi[i] = i;
     }
 
-    out     = NULL;
-    fp      = NULL;
+    out     = nullptr;
+    fp      = nullptr;
     bNShell = ((opt2bSet("-nshell", NFILE, fnm)) ||
                (opt2parg_bSet("-r", asize(pa), pa)));
     bPDBout = FALSE;
@@ -362,7 +362,7 @@ int gmx_trjorder(int argc, char *argv[])
                     }
                 }
             }
-            write_trx(out, natoms, swi, &top.atoms, 0, t, box, x, NULL, NULL);
+            write_trx(out, natoms, swi, &top.atoms, 0, t, box, x, nullptr, nullptr);
         }
     }
     while (read_next_x(oenv, status, &t, x, box));

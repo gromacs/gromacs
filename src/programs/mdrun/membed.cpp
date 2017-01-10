@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -726,7 +726,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
 
     for (i = 0; i < egcNR; i++)
     {
-        if (groups->grpnr[i] != NULL)
+        if (groups->grpnr[i] != nullptr)
         {
             groups->ngrpnr[i] = state->natoms;
             snew(new_egrp[i], state->natoms);
@@ -750,7 +750,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
         {
             for (j = 0; j < egcNR; j++)
             {
-                if (groups->grpnr[j] != NULL)
+                if (groups->grpnr[j] != nullptr)
                 {
                     new_egrp[j][i-rm] = groups->grpnr[j][i];
                 }
@@ -790,7 +790,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
 
     for (i = 0; i < egcNR; i++)
     {
-        if (groups->grpnr[i] != NULL)
+        if (groups->grpnr[i] != nullptr)
         {
             sfree(groups->grpnr[i]);
             groups->grpnr[i] = new_egrp[i];
@@ -908,7 +908,7 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
         if (buf[0] != ';')
         {
             strcpy(buf2, buf);
-            if ((temp = strchr(buf2, '\n')) != NULL)
+            if ((temp = strchr(buf2, '\n')) != nullptr)
             {
                 temp[0] = '\0';
             }
@@ -916,7 +916,7 @@ static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
             if (buf2[0] == '[')
             {
                 buf2[0] = ' ';
-                if ((temp = strchr(buf2, '\n')) != NULL)
+                if ((temp = strchr(buf2, '\n')) != nullptr)
                 {
                     temp[0] = '\0';
                 }
@@ -1013,7 +1013,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
     int                       i, rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;
     int                       ng, j, max_lip_rm, ins_grp_id, ntype, lip_rm;
     real                      prot_area;
-    rvec                     *r_ins = NULL;
+    rvec                     *r_ins = nullptr;
     t_block                  *ins_at, *rest_at;
     pos_ins_t                *pos_ins;
     mem_t                    *mem_p;
@@ -1022,8 +1022,8 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
     gmx_bool                  bExcl = FALSE;
     t_atoms                   atoms;
     t_pbc                    *pbc;
-    char                    **piecename = NULL;
-    gmx_membed_t             *membed    = NULL;
+    char                    **piecename = nullptr;
+    gmx_membed_t             *membed    = nullptr;
 
     /* input variables */
     const char *membed_input;

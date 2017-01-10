@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,9 +112,9 @@ enum {
 
 void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 {
-    static const char *gmx_bools[BOOL_NR+1]  = { "no", "yes", NULL };
+    static const char *gmx_bools[BOOL_NR+1]  = { "no", "yes", nullptr };
     /* this must correspond to t_rgb *linecolors[] below */
-    static const char *colors[] = { "none", "black", "white", NULL };
+    static const char *colors[] = { "none", "black", "white", nullptr };
     warninp_t          wi;
     t_inpfile         *inp;
     const char        *tmp;
@@ -122,13 +122,13 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
     wi = init_warning(FALSE, 0);
 
-    if (mpin != NULL)
+    if (mpin != nullptr)
     {
         inp = read_inpfile(mpin, &ninp, wi);
     }
     else
     {
-        inp = NULL;
+        inp = nullptr;
     }
     ETYPE("black&white",    psr->bw,             gmx_bools);
     RTYPE("linewidth",      psr->linewidth,      1.0);
@@ -174,7 +174,7 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
     check_warning_error(wi, FARGS);
 
-    if (mpout != NULL)
+    if (mpout != nullptr)
     {
         write_inpfile(mpout, ninp, inp, TRUE, wi);
     }
@@ -188,7 +188,7 @@ t_rgb red   = { 1, 0, 0 };
 t_rgb blue  = { 0, 0, 1 };
 #define BLACK (&black)
 /* this must correspond to *colors[] in get_params */
-t_rgb *linecolors[] = { NULL, &black, &white, NULL };
+t_rgb *linecolors[] = { nullptr, &black, &white, nullptr };
 
 gmx_bool diff_maps(int nmap1, t_mapping *map1, int nmap2, t_mapping *map2)
 {
@@ -278,7 +278,7 @@ void leg_continuous(t_psdata ps, real x0, real x, real y0, char *label,
         boxxh = fontsize;
     }
 
-    GMX_RELEASE_ASSERT(map != NULL, "NULL map array provided to leg_continuous()");
+    GMX_RELEASE_ASSERT(map != nullptr, "NULL map array provided to leg_continuous()");
 
     /* LANDSCAPE */
     xx0 = x0-((nmap-mapoffset)*boxxh)/2.0;
@@ -682,7 +682,7 @@ void xpm_mat(const char *outf, int nmat, t_matrix *mat, t_matrix *mat2,
     FILE      *out;
     int        i, x, y, col;
     int        nmap;
-    t_mapping *map = NULL;
+    t_mapping *map = nullptr;
 
     out = gmx_ffopen(outf, "w");
 
@@ -794,7 +794,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
     real          x0, y0, xx;
     real          w, h, dw, dh;
     int           nmap1 = 0, nmap2 = 0, leg_nmap;
-    t_mapping    *map1  = NULL, *map2 = NULL, *leg_map;
+    t_mapping    *map1  = nullptr, *map2 = nullptr, *leg_map;
     gmx_bool      bMap1, bNextMap1, bDiscrete;
 
     /* memory leak: */
@@ -1005,7 +1005,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
     {
         ps_comment(out, "Now it's legend time!");
         ps_linewidth(out, static_cast<int>(psr->linewidth));
-        if (mat2 == NULL || elegend != elSecond)
+        if (mat2 == nullptr || elegend != elSecond)
         {
             bDiscrete = mat[0].bDiscrete;
             legend    = mat[0].legend;
@@ -1052,7 +1052,7 @@ void make_axis_labels(int nmat, t_matrix *mat)
     for (i = 0; (i < nmat); i++)
     {
         /* Make labels for x axis */
-        if (mat[i].axis_x == NULL)
+        if (mat[i].axis_x == nullptr)
         {
             snew(mat[i].axis_x, mat[i].nx);
             for (j = 0; (j < mat[i].nx); j++)
@@ -1061,7 +1061,7 @@ void make_axis_labels(int nmat, t_matrix *mat)
             }
         }
         /* Make labels for y axis */
-        if (mat[i].axis_y == NULL)
+        if (mat[i].axis_y == nullptr)
         {
             snew(mat[i].axis_y, mat[i].ny);
             for (j = 0; (j < mat[i].ny); j++)
@@ -1186,13 +1186,13 @@ void write_combined_matrix(int ecombine, const char *fn,
                       " not match.\n", k, mat1[k].nx, mat1[k].ny, mat2[k].nx, mat2[k].ny);
         }
         printf("Combining two %dx%d matrices\n", mat1[k].nx, mat1[k].ny);
-        rmat1 = matrix2real(&mat1[k], NULL);
-        rmat2 = matrix2real(&mat2[k], NULL);
-        if (NULL == rmat1 || NULL == rmat2)
+        rmat1 = matrix2real(&mat1[k], nullptr);
+        rmat2 = matrix2real(&mat2[k], nullptr);
+        if (nullptr == rmat1 || nullptr == rmat2)
         {
             gmx_fatal(FARGS, "Could not extract real data from %s xpm matrices. Note that, e.g.,\n"
                       "g_rms and g_mdmat provide such data, but not do_dssp.\n",
-                      (NULL == rmat1 && NULL == rmat2) ? "both" : "one of the" );
+                      (nullptr == rmat1 && nullptr == rmat2) ? "both" : "one of the" );
         }
         rlo = 1e38;
         rhi = -1e38;
@@ -1295,13 +1295,13 @@ void do_mat(int nmat, t_matrix *mat, t_matrix *mat2,
         zero_lines(nmat, mat, mat);
     }
 
-    if (epsfile != NULL)
+    if (epsfile != nullptr)
     {
         ps_mat(epsfile, nmat, mat, mat2, bFrame, bDiag, bFirstDiag,
                bTitle, bTitleOnce, bYonce, elegend,
                size, boxx, boxy, m2p, m2pout, mapoffset);
     }
-    if (xpmfile != NULL)
+    if (xpmfile != nullptr)
     {
         xpm_mat(xpmfile, nmat, mat, mat2, bDiag, bFirstDiag);
     }
@@ -1433,9 +1433,9 @@ int gmx_xpm2ps(int argc, char *argv[])
     };
 
     gmx_output_env_t *oenv;
-    const char       *fn, *epsfile = NULL, *xpmfile = NULL;
+    const char       *fn, *epsfile = nullptr, *xpmfile = nullptr;
     int               i, nmat, nmat2, etitle, elegend, ediag, erainbow, ecombine;
-    t_matrix         *mat = NULL, *mat2 = NULL;
+    t_matrix         *mat = nullptr, *mat2 = nullptr;
     gmx_bool          bTitle, bTitleOnce, bDiag, bFirstDiag, bGrad;
     static gmx_bool   bFrame = TRUE, bZeroLine = FALSE, bYonce = FALSE;
     static real       size   = 400, boxx = 0, boxy = 0, cmin = 0, cmax = 0;
@@ -1443,20 +1443,20 @@ int gmx_xpm2ps(int argc, char *argv[])
     enum                    {
         etSel, etTop, etOnce, etYlabel, etNone, etNR
     };
-    const char *title[]   = { NULL, "top", "once", "ylabel", "none", NULL };
+    const char *title[]   = { nullptr, "top", "once", "ylabel", "none", nullptr };
     /* MUST correspond to enum elXxx as defined at top of file */
-    const char *legend[]  = { NULL, "both", "first", "second", "none", NULL };
+    const char *legend[]  = { nullptr, "both", "first", "second", "none", nullptr };
     enum                    {
         edSel, edFirst, edSecond, edNone, edNR
     };
-    const char *diag[]    = { NULL, "first", "second", "none", NULL };
+    const char *diag[]    = { nullptr, "first", "second", "none", nullptr };
     enum                    {
         erSel, erNo, erBlue, erRed, erNR
     };
-    const char *rainbow[] = { NULL, "no", "blue", "red", NULL };
+    const char *rainbow[] = { nullptr, "no", "blue", "red", nullptr };
     /* MUST correspond to enum ecXxx as defined at top of file */
     const char *combine[] = {
-        NULL, "halves", "add", "sub", "mult", "div", NULL
+        nullptr, "halves", "add", "sub", "mult", "div", nullptr
     };
     static int  skip = 1, mapoffset = 0;
     t_pargs     pa[] = {
@@ -1487,18 +1487,18 @@ int gmx_xpm2ps(int argc, char *argv[])
     };
 #define NPA asize(pa)
     t_filenm    fnm[] = {
-        { efXPM, "-f",  NULL,      ffREAD },
+        { efXPM, "-f",  nullptr,      ffREAD },
         { efXPM, "-f2", "root2",   ffOPTRD },
-        { efM2P, "-di", NULL,      ffLIBOPTRD },
+        { efM2P, "-di", nullptr,      ffLIBOPTRD },
         { efM2P, "-do", "out",     ffOPTWR },
-        { efEPS, "-o",  NULL,      ffOPTWR },
-        { efXPM, "-xpm", NULL,      ffOPTWR }
+        { efEPS, "-o",  nullptr,      ffOPTWR },
+        { efXPM, "-xpm", nullptr,      ffOPTWR }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            NFILE, fnm, NPA, pa,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -1524,7 +1524,7 @@ int gmx_xpm2ps(int argc, char *argv[])
 
     epsfile = ftp2fn_null(efEPS, NFILE, fnm);
     xpmfile = opt2fn_null("-xpm", NFILE, fnm);
-    if (epsfile == NULL && xpmfile == NULL)
+    if (epsfile == nullptr && xpmfile == nullptr)
     {
         if (ecombine != ecHalves)
         {
@@ -1541,7 +1541,7 @@ int gmx_xpm2ps(int argc, char *argv[])
                 "WARNING: can only write result of arithmetic combination "
                 "of two matrices to .xpm file\n"
                 "         file %s will not be written\n", epsfile);
-        epsfile = NULL;
+        epsfile = nullptr;
     }
 
     bDiag      = ediag != edNone;
@@ -1603,7 +1603,7 @@ int gmx_xpm2ps(int argc, char *argv[])
         }
     }
 
-    if ((mat2 == NULL) && (elegend != elNone))
+    if ((mat2 == nullptr) && (elegend != elNone))
     {
         elegend = elFirst;
     }
@@ -1611,8 +1611,8 @@ int gmx_xpm2ps(int argc, char *argv[])
     if (ecombine && ecombine != ecHalves)
     {
         write_combined_matrix(ecombine, xpmfile, nmat, mat, mat2,
-                              opt2parg_bSet("-cmin", NPA, pa) ? &cmin : NULL,
-                              opt2parg_bSet("-cmax", NPA, pa) ? &cmax : NULL);
+                              opt2parg_bSet("-cmin", NPA, pa) ? &cmin : nullptr,
+                              opt2parg_bSet("-cmax", NPA, pa) ? &cmax : nullptr);
     }
     else
     {

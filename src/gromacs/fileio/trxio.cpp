@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -168,13 +168,13 @@ static void initcount(t_trxstatus *status)
 static void status_init(t_trxstatus *status)
 {
     status->flags           = 0;
-    status->xframe          = NULL;
-    status->fio             = NULL;
+    status->xframe          = nullptr;
+    status->fio             = nullptr;
     status->__frame         = -1;
     status->t0              = 0;
     status->tf              = 0;
-    status->persistent_line = NULL;
-    status->tng             = NULL;
+    status->persistent_line = nullptr;
+    status->tng             = nullptr;
 }
 
 
@@ -297,16 +297,16 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
     {
         fr->bDouble   = FALSE;
         fr->natoms    = -1;
-        fr->title     = NULL;
+        fr->title     = nullptr;
         fr->step      = 0;
         fr->time      = 0;
         fr->lambda    = 0;
         fr->fep_state = 0;
-        fr->atoms     = NULL;
+        fr->atoms     = nullptr;
         fr->prec      = 0;
-        fr->x         = NULL;
-        fr->v         = NULL;
-        fr->f         = NULL;
+        fr->x         = nullptr;
+        fr->v         = nullptr;
+        fr->f         = nullptr;
         clear_mat(fr->box);
         fr->bPBC   = FALSE;
         fr->ePBC   = -1;
@@ -323,7 +323,7 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
                            const int *ind, gmx_conect gc)
 {
     char  title[STRLEN];
-    rvec *xout = NULL, *vout = NULL, *fout = NULL;
+    rvec *xout = nullptr, *vout = nullptr, *fout = nullptr;
     int   i, ftp = -1;
     real  prec;
 
@@ -423,7 +423,7 @@ int write_trxframe_indexed(t_trxstatus *status, const t_trxframe *fr, int nind,
             if (ftp == efGRO)
             {
                 write_hconf_indexed_p(gmx_fio_getfp(status->fio), title, fr->atoms, nind, ind,
-                                      fr->x, fr->bV ? fr->v : NULL, fr->box);
+                                      fr->x, fr->bV ? fr->v : nullptr, fr->box);
             }
             else
             {
@@ -478,13 +478,13 @@ void trjtools_gmx_prepare_tng_writing(const char       *filename,
         gmx_incons("Sorry, can only prepare for TNG output.");
     }
 
-    if (*out == NULL)
+    if (*out == nullptr)
     {
         snew((*out), 1);
     }
     status_init(*out);
 
-    if (in != NULL)
+    if (in != nullptr)
     {
         gmx_prepare_tng_writing(filename,
                                 filemode,
@@ -559,7 +559,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             break;
         case efTRR:
             gmx_trr_write_frame(status->fio, fr->step, fr->time, fr->lambda, fr->box, fr->natoms,
-                                fr->bX ? fr->x : NULL, fr->bV ? fr->v : NULL, fr->bF ? fr->f : NULL);
+                                fr->bX ? fr->x : nullptr, fr->bV ? fr->v : nullptr, fr->bF ? fr->f : nullptr);
             break;
         case efGRO:
         case efPDB:
@@ -574,7 +574,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             if (gmx_fio_getftp(status->fio) == efGRO)
             {
                 write_hconf_p(gmx_fio_getfp(status->fio), title, fr->atoms,
-                              fr->x, fr->bV ? fr->v : NULL, fr->box);
+                              fr->x, fr->bV ? fr->v : nullptr, fr->box);
             }
             else
             {
@@ -584,7 +584,7 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
             }
             break;
         case efG96:
-            write_g96_conf(gmx_fio_getfp(status->fio), fr, -1, NULL);
+            write_g96_conf(gmx_fio_getfp(status->fio), fr, -1, nullptr);
             break;
         default:
             gmx_fatal(FARGS, "Sorry, write_trxframe can not write %s",
@@ -606,11 +606,11 @@ int write_trx(t_trxstatus *status, int nind, const int *ind, const t_atoms *atom
     fr.step   = step;
     fr.bTime  = TRUE;
     fr.time   = time;
-    fr.bAtoms = atoms != NULL;
+    fr.bAtoms = atoms != nullptr;
     fr.atoms  = const_cast<t_atoms *>(atoms);
     fr.bX     = TRUE;
     fr.x      = x;
-    fr.bV     = v != NULL;
+    fr.bV     = v != nullptr;
     fr.v      = v;
     fr.bBox   = TRUE;
     copy_mat(box, fr.box);
@@ -668,7 +668,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
         fr->bBox      = sh.box_size > 0;
         if (status->flags & (TRX_READ_X | TRX_NEED_X))
         {
-            if (fr->x == NULL)
+            if (fr->x == nullptr)
             {
                 snew(fr->x, sh.natoms);
             }
@@ -676,7 +676,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
         }
         if (status->flags & (TRX_READ_V | TRX_NEED_V))
         {
-            if (fr->v == NULL)
+            if (fr->v == nullptr)
             {
                 snew(fr->v, sh.natoms);
             }
@@ -684,7 +684,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
         }
         if (status->flags & (TRX_READ_F | TRX_NEED_F))
         {
-            if (fr->f == NULL)
+            if (fr->f == nullptr)
             {
                 snew(fr->f, sh.natoms);
             }
@@ -721,12 +721,12 @@ static gmx_bool pdb_next_x(t_trxstatus *status, FILE *fp, t_trxframe *fr)
     double    dbl;
 
     atoms.nr      = fr->natoms;
-    atoms.atom    = NULL;
-    atoms.pdbinfo = NULL;
+    atoms.atom    = nullptr;
+    atoms.pdbinfo = nullptr;
     /* the other pointers in atoms should not be accessed if these are NULL */
     snew(symtab, 1);
     open_symtab(symtab);
-    na       = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &ePBC, boxpdb, TRUE, NULL);
+    na       = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &ePBC, boxpdb, TRUE, nullptr);
     free_symtab(symtab);
     sfree(symtab);
     set_trxframe_ePBC(fr, ePBC);
@@ -838,7 +838,7 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
                 t_symtab *symtab;
                 snew(symtab, 1);
                 open_symtab(symtab);
-                read_g96_conf(gmx_fio_getfp(status->fio), NULL, fr,
+                read_g96_conf(gmx_fio_getfp(status->fio), nullptr, fr,
                               symtab, status->persistent_line);
                 free_symtab(symtab);
                 bRet = (fr->natoms > 0);
@@ -869,7 +869,7 @@ gmx_bool read_next_frame(const gmx_output_env_t *oenv, t_trxstatus *status, t_tr
                 }
                 break;
             case efTNG:
-                bRet = gmx_read_next_tng_frame(status->tng, fr, NULL, 0);
+                bRet = gmx_read_next_tng_frame(status->tng, fr, nullptr, 0);
                 break;
             case efPDB:
                 bRet = pdb_next_x(status, gmx_fio_getfp(status->fio), fr);
@@ -1013,7 +1013,7 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
             break;
         case efTNG:
             fr->step = -1;
-            if (!gmx_read_next_tng_frame((*status)->tng, fr, NULL, 0))
+            if (!gmx_read_next_tng_frame((*status)->tng, fr, nullptr, 0))
             {
                 fr->not_ok = DATA_NOT_OK;
                 fr->natoms = 0;
@@ -1152,7 +1152,7 @@ t_topology *read_top(const char *fn, int *ePBC)
     t_topology *top;
 
     snew(top, 1);
-    epbc = read_tpx_top(fn, NULL, NULL, &natoms, NULL, NULL, top);
+    epbc = read_tpx_top(fn, nullptr, nullptr, &natoms, nullptr, nullptr, top);
     if (ePBC)
     {
         *ePBC = epbc;

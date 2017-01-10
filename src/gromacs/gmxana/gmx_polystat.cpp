@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,9 +141,9 @@ int gmx_polystat(int argc, char *argv[])
     };
 
     t_filenm        fnm[] = {
-        { efTPR, NULL, NULL,  ffREAD  },
-        { efTRX, "-f", NULL,  ffREAD  },
-        { efNDX, NULL, NULL,  ffOPTRD },
+        { efTPR, nullptr, nullptr,  ffREAD  },
+        { efTRX, "-f", nullptr,  ffREAD  },
+        { efNDX, nullptr, nullptr,  ffOPTRD },
         { efXVG, "-o", "polystat",  ffWRITE },
         { efXVG, "-v", "polyvec", ffOPTWR },
         { efXVG, "-p", "persist",  ffOPTWR },
@@ -158,14 +158,14 @@ int gmx_polystat(int argc, char *argv[])
     char             *grpname;
     t_trxstatus      *status;
     real              t;
-    rvec             *x, *bond = NULL;
+    rvec             *x, *bond = nullptr;
     matrix            box;
     int               natoms, i, j, frame, ind0, ind1, a, d, d2, ord[DIM] = {0};
     dvec              cm, sum_eig = {0, 0, 0};
     double          **gyr, **gyr_all, eig[DIM], **eigv;
     double            sum_eed2, sum_eed2_tot, sum_gyro, sum_gyro_tot, sum_pers_tot;
-    int              *ninp    = NULL;
-    double           *sum_inp = NULL, pers;
+    int              *ninp    = nullptr;
+    double           *sum_inp = nullptr, pers;
     double           *intd, ymax, ymin;
     double            mmol, m;
     char              title[STRLEN];
@@ -176,18 +176,18 @@ int gmx_polystat(int argc, char *argv[])
         "<R\\sg\\N eig1>", "<R\\sg\\N eig2>", "<R\\sg\\N eig3>"
     };
     char            **legp, buf[STRLEN];
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
 
     snew(top, 1);
     ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
-                        NULL, box, &natoms, NULL, NULL, top);
+                        nullptr, box, &natoms, nullptr, nullptr, top);
 
     fprintf(stderr, "Select a group of polymer mainchain atoms:\n");
     get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm),
@@ -242,7 +242,7 @@ int gmx_polystat(int argc, char *argv[])
     }
     else
     {
-        outv = NULL;
+        outv = nullptr;
     }
 
     if (opt2bSet("-p", NFILE, fnm))
@@ -255,7 +255,7 @@ int gmx_polystat(int argc, char *argv[])
     }
     else
     {
-        outp = NULL;
+        outp = nullptr;
     }
 
     if (opt2bSet("-i", NFILE, fnm))
@@ -267,8 +267,8 @@ int gmx_polystat(int argc, char *argv[])
     }
     else
     {
-        intd = NULL;
-        outi = NULL;
+        intd = nullptr;
+        outi = nullptr;
     }
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);

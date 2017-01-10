@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -117,7 +117,7 @@ static void gmx_signal(int signum)
     act.sa_handler = signal_handler;
     sigemptyset(&act.sa_mask);
     act.sa_flags = SA_RESTART;
-    sigaction(signum, &act, NULL);
+    sigaction(signum, &act, nullptr);
 #else
     signal(signum, signal_handler);
 #endif
@@ -125,7 +125,7 @@ static void gmx_signal(int signum)
 
 void signal_handler_install(void)
 {
-    if (getenv("GMX_NO_TERM") == NULL)
+    if (getenv("GMX_NO_TERM") == nullptr)
     {
         if (debug)
         {
@@ -133,7 +133,7 @@ void signal_handler_install(void)
         }
         gmx_signal(SIGTERM);
     }
-    if (getenv("GMX_NO_INT") == NULL)
+    if (getenv("GMX_NO_INT") == nullptr)
     {
         if (debug)
         {
@@ -142,7 +142,7 @@ void signal_handler_install(void)
         gmx_signal(SIGINT);
     }
 #if HAVE_SIGUSR1
-    if (getenv("GMX_NO_USR1") == NULL)
+    if (getenv("GMX_NO_USR1") == nullptr)
     {
         if (debug)
         {

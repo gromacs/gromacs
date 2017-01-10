@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -178,8 +178,8 @@ static void add_prop(aprop_t *ap, gmx_residuetype_t *restype,
             srenew(ap->bAvail, ap->maxprop);
             for (i = ap->nprop; (i < ap->maxprop); i++)
             {
-                ap->atomnm[i] = NULL;
-                ap->resnm[i]  = NULL;
+                ap->atomnm[i] = nullptr;
+                ap->resnm[i]  = nullptr;
                 ap->value[i]  = 0;
                 ap->bAvail[i] = FALSE;
             }
@@ -317,7 +317,7 @@ void gmx_atomprop_destroy(gmx_atomprop_t aps)
     gmx_atomprop *ap = (gmx_atomprop*) aps;
     int           p;
 
-    if (aps == NULL)
+    if (aps == nullptr)
     {
         printf("\nWARNING: gmx_atomprop_destroy called with a NULL pointer\n\n");
         return;
@@ -335,7 +335,7 @@ void gmx_atomprop_destroy(gmx_atomprop_t aps)
 
 static void vdw_warning(FILE *fp)
 {
-    if (NULL != fp)
+    if (nullptr != fp)
     {
         fprintf(fp, "NOTE: From version 5.0 %s uses the Van der Waals radii\n",
                 gmx::getProgramContext().displayName());
@@ -414,7 +414,7 @@ char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber)
             return ap->prop[epropElement].atomnm[i];
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *elem)

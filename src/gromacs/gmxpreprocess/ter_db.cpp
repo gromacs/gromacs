@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -122,7 +122,7 @@ static void read_atom(char *line, gmx_bool bAdd,
         }
         else
         {
-            *nname = NULL;
+            *nname = nullptr;
         }
     }
     a->type = get_atomtype_type(buf[i++], atype);
@@ -166,19 +166,19 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
         ndel  = 0;
         for (j = 0; j < tb[i].nhack; j++)
         {
-            if (tb[i].hack[j].oname != NULL && tb[i].hack[j].nname != NULL)
+            if (tb[i].hack[j].oname != nullptr && tb[i].hack[j].nname != nullptr)
             {
                 nrepl++;
             }
-            else if (tb[i].hack[j].oname == NULL && tb[i].hack[j].nname != NULL)
+            else if (tb[i].hack[j].oname == nullptr && tb[i].hack[j].nname != nullptr)
             {
                 nadd++;
             }
-            else if (tb[i].hack[j].oname != NULL && tb[i].hack[j].nname == NULL)
+            else if (tb[i].hack[j].oname != nullptr && tb[i].hack[j].nname == nullptr)
             {
                 ndel++;
             }
-            else if (tb[i].hack[j].oname == NULL && tb[i].hack[j].nname == NULL)
+            else if (tb[i].hack[j].oname == nullptr && tb[i].hack[j].nname == nullptr)
             {
                 gmx_fatal(FARGS, "invalid hack (%s) in termini database", tb[i].name);
             }
@@ -188,7 +188,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
             fprintf(out, "[ %s ]\n", kw_names[ekwRepl-ebtsNR-1]);
             for (j = 0; j < tb[i].nhack; j++)
             {
-                if (tb[i].hack[j].oname != NULL && tb[i].hack[j].nname != NULL)
+                if (tb[i].hack[j].oname != nullptr && tb[i].hack[j].nname != nullptr)
                 {
                     fprintf(out, "%s\t", tb[i].hack[j].oname);
                     print_atom(out, tb[i].hack[j].atom, atype);
@@ -200,7 +200,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
             fprintf(out, "[ %s ]\n", kw_names[ekwAdd-ebtsNR-1]);
             for (j = 0; j < tb[i].nhack; j++)
             {
-                if (tb[i].hack[j].oname == NULL && tb[i].hack[j].nname != NULL)
+                if (tb[i].hack[j].oname == nullptr && tb[i].hack[j].nname != nullptr)
                 {
                     print_ab(out, &(tb[i].hack[j]), tb[i].hack[j].nname);
                     print_atom(out, tb[i].hack[j].atom, atype);
@@ -212,7 +212,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
             fprintf(out, "[ %s ]\n", kw_names[ekwDel-ebtsNR-1]);
             for (j = 0; j < tb[i].nhack; j++)
             {
-                if (tb[i].hack[j].oname != NULL && tb[i].hack[j].nname == NULL)
+                if (tb[i].hack[j].oname != nullptr && tb[i].hack[j].nname == nullptr)
                 {
                     fprintf(out, "%s\n", tb[i].hack[j].oname);
                 }
@@ -255,7 +255,7 @@ static void read_ter_db_file(char *fn,
     fflib_filename_base(fn, filebase, STRLEN);
     /* Remove the C/N termini extension */
     ptr = strrchr(filebase, '.');
-    if (ptr != NULL)
+    if (ptr != nullptr)
     {
         ptr[0] = '\0';
     }
@@ -314,7 +314,7 @@ static void read_ter_db_file(char *fn,
                 clear_t_hack(&(tb[nb].hack[nh]));
                 for (i = 0; i < 4; i++)
                 {
-                    tb[nb].hack[nh].a[i] = NULL;
+                    tb[nb].hack[nh].a[i] = nullptr;
                 }
                 tb[nb].nhack++;
 
@@ -347,9 +347,9 @@ static void read_ter_db_file(char *fn,
                     read_atom(line+n, kwnr == ekwAdd,
                               &tb[nb].hack[nh].nname, tb[nb].hack[nh].atom, atype,
                               &tb[nb].hack[nh].cgnr);
-                    if (tb[nb].hack[nh].nname == NULL)
+                    if (tb[nb].hack[nh].nname == nullptr)
                     {
-                        if (tb[nb].hack[nh].oname != NULL)
+                        if (tb[nb].hack[nh].oname != nullptr)
                         {
                             tb[nb].hack[nh].nname = gmx_strdup(tb[nb].hack[nh].oname);
                         }
@@ -379,7 +379,7 @@ static void read_ter_db_file(char *fn,
                 }
                 for (; j < MAXATOMLIST; j++)
                 {
-                    tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = NULL;
+                    tb[nb].rb[kwnr].b[tb[nb].rb[kwnr].nb].a[j] = nullptr;
                 }
                 strcpy(buf, "");
                 sscanf(line+n, "%s", buf);
@@ -418,7 +418,7 @@ int read_ter_db(const char *ffdir, char ter,
      */
     ntdbf  = fflib_search_file_end(ffdir, ext, FALSE, &tdbf);
     ntb    = 0;
-    *tbptr = NULL;
+    *tbptr = nullptr;
     for (f = 0; f < ntdbf; f++)
     {
         read_ter_db_file(tdbf[f], &ntb, tbptr, atype);
@@ -472,7 +472,7 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
     restp         = get_restp(rtpname_match, nrtp, rtp);
 
     n    = 0;
-    list = NULL;
+    list = nullptr;
 
     for (i = 0; i < nb; i++)
     {
@@ -497,13 +497,13 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
             {
                 /* advance to next |-separated field */
                 s = strchr(s, '|');
-                if (s != NULL)
+                if (s != nullptr)
                 {
                     s++;
                 }
             }
         }
-        while (!found && s != NULL);
+        while (!found && s != nullptr);
     }
 
     /* All residue-specific termini have been added. We might have to fall
@@ -536,7 +536,7 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
                 /* A conjunction hyphen normally indicates a residue-specific
                    terminus, which is named like "GLY-COOH". A generic terminus
                    won't have a hyphen. */
-                bool bFoundAnyHyphen = (c != NULL);
+                bool bFoundAnyHyphen = (c != nullptr);
                 /* '-' as the last character indicates charge, so if that's
                    the only one found e.g. "COO-", then it was not a conjunction
                    hyphen, so this is a generic terminus */
@@ -549,7 +549,7 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
                     /* Check that we haven't already added a residue-specific version
                      * of this terminus.
                      */
-                    for (j = 0; j < n && strstr((*list[j]).name, s) == NULL; j++)
+                    for (j = 0; j < n && strstr((*list[j]).name, s) == nullptr; j++)
                     {
                         ;
                     }

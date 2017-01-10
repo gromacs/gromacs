@@ -184,8 +184,8 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
                                        gmx_int64_t          numMolecules,
                                        tng_molecule_t      *tngMol)
 {
-    tng_chain_t      tngChain = NULL;
-    tng_residue_t    tngRes   = NULL;
+    tng_chain_t      tngChain = nullptr;
+    tng_residue_t    tngRes   = nullptr;
 
     if (tng_molecule_add(tng, moleculeName, tngMol) != TNG_SUCCESS)
     {
@@ -203,7 +203,7 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
         {
             const t_resinfo *resInfo        = &atoms->resinfo[at->resind];
             char             chainName[2]   = {resInfo->chainid, 0};
-            tng_atom_t       tngAtom        = NULL;
+            tng_atom_t       tngAtom        = nullptr;
             t_atom          *prevAtom;
 
             if (atomIndex > 0)
@@ -212,7 +212,7 @@ static void addTngMoleculeFromTopology(tng_trajectory_t     tng,
             }
             else
             {
-                prevAtom = 0;
+                prevAtom = nullptr;
             }
 
             /* If this is the first atom or if the residue changed add the
@@ -252,7 +252,7 @@ void gmx_tng_add_mtop(tng_trajectory_t  tng,
 
     for (int molIndex = 0; molIndex < mtop->nmolblock; molIndex++)
     {
-        tng_molecule_t       tngMol  = NULL;
+        tng_molecule_t       tngMol  = nullptr;
         const gmx_moltype_t *molType =
             &mtop->moltype[mtop->molblock[molIndex].type];
 
@@ -1265,9 +1265,9 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t            input,
     gmx_bool                bOK = TRUE;
     tng_function_status     stat;
     gmx_int64_t             numberOfAtoms = -1, frameNumber = -1;
-    gmx_int64_t             nBlocks, blockId, *blockIds = NULL, codecId;
+    gmx_int64_t             nBlocks, blockId, *blockIds = nullptr, codecId;
     char                    datatype      = -1;
-    void                   *values        = NULL;
+    void                   *values        = nullptr;
     double                  frameTime     = -1.0;
     int                     size, blockDependency;
     double                  prec;
@@ -1620,7 +1620,7 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t     input,
     char                datatype = -1;
     gmx_int64_t         codecId;
     int                 blockDependency;
-    void               *data = 0;
+    void               *data = nullptr;
     double              localPrec;
 
     stat = tng_data_block_name_get(input, blockId, name, maxLen);

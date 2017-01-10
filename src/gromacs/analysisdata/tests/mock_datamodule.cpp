@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,7 +143,7 @@ namespace
 void checkReferenceDataPoint(TestReferenceChecker    *checker,
                              const AnalysisDataValue &value)
 {
-    TestReferenceChecker compound(checker->checkCompound("DataValue", NULL));
+    TestReferenceChecker compound(checker->checkCompound("DataValue", nullptr));
     compound.checkReal(value.value(), "Value");
     if (compound.checkPresent(value.hasError(), "Error"))
     {
@@ -158,7 +158,7 @@ void checkReferenceDataPoint(TestReferenceChecker    *checker,
 }       // namespace
 
 MockAnalysisDataModule::Impl::Impl(int flags)
-    : source_(NULL), flags_(flags), frameIndex_(0)
+    : source_(nullptr), flags_(flags), frameIndex_(0)
 {
 }
 
@@ -192,7 +192,7 @@ MockAnalysisDataModule::Impl::checkReferencePoints(
     if (frameChecker_)
     {
         TestReferenceChecker checker(
-                frameChecker_.checkCompound("DataValues", NULL));
+                frameChecker_.checkCompound("DataValues", nullptr));
         checker.checkInteger(points.columnCount(), "Count");
         if (checker.checkPresent(source_->dataSetCount() > 1, "DataSet"))
         {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -418,7 +418,7 @@ std::vector<std::string> Path::getExecutablePaths()
     result.push_back("");
 #endif
     const char *path = std::getenv("PATH");
-    if (path != NULL)
+    if (path != nullptr)
     {
         splitPathEnvironment(path, &result);
     }
@@ -481,12 +481,12 @@ void File::throwOnNotFound(const NotFoundInfo &info)
 // static
 bool File::exists(const char *filename, NotFoundHandler onNotFound)
 {
-    if (filename == NULL)
+    if (filename == nullptr)
     {
         return false;
     }
     FILE *test = std::fopen(filename, "r");
-    if (test == NULL)
+    if (test == nullptr)
     {
         const bool   wasError = (errno != ENOENT && errno != ENOTDIR);
         NotFoundInfo info(filename, "The file could not be opened.",
@@ -512,7 +512,7 @@ bool File::exists(const char *filename, NotFoundHandler onNotFound)
         if (!S_ISREG(st_buf.st_mode))
         {
             NotFoundInfo info(filename, "The file is not a regular file.",
-                              NULL, true, 0);
+                              nullptr, true, 0);
             onNotFound(info);
             return false;
         }

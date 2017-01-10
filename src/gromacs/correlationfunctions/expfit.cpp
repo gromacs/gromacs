@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,9 +75,9 @@ static const int nfp_ffn[effnNR] = { 0, 1, 2, 3, 5, 7, 9, 2, 4, 3, 6 };
  * the array).
  */
 const char      *s_ffn[effnNR+2] = {
-    NULL, "none", "exp", "aexp", "exp_exp",
+    nullptr, "none", "exp", "aexp", "exp_exp",
     "exp5", "exp7", "exp9",
-    NULL, NULL, NULL, NULL, NULL
+    nullptr, nullptr, nullptr, nullptr, nullptr
 };
 
 /*! \brief Long description for each fitting function type */
@@ -115,7 +115,7 @@ const char *effnDescription(int effn)
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -725,7 +725,7 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x0,
         {
             x[j]  = ttt;
             y[j]  = c1[i];
-            if (NULL == sig)
+            if (nullptr == sig)
             {
                 // No weighting if all values are divided by 1.
                 dy[j] = 1;
@@ -814,7 +814,7 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x0,
                 }
             }
             /* Generate debug output */
-            if (NULL != fn_fitted)
+            if (nullptr != fn_fitted)
             {
                 fp = xvgropen(fn_fitted, "Data + Fit", "Time (ps)",
                               "Data (t)", oenv);
@@ -861,7 +861,7 @@ real fit_acf(int ncorr, int fitfn, const gmx_output_env_t *oenv, gmx_bool bVerbo
         tendfit = ncorr*dt;
     }
     nf_int = std::min(ncorr, (int)(tendfit/dt));
-    sum    = print_and_integrate(debug, nf_int, dt, c1, NULL, 1);
+    sum    = print_and_integrate(debug, nf_int, dt, c1, nullptr, 1);
 
     if (bPrint)
     {
@@ -946,9 +946,9 @@ real fit_acf(int ncorr, int fitfn, const gmx_output_env_t *oenv, gmx_bool bVerbo
         }
 
         nf_int    = std::min(ncorr, (int)((tStart+1e-4)/dt));
-        sum       = print_and_integrate(debug, nf_int, dt, c1, NULL, 1);
-        tail_corr = do_lmfit(ncorr, c1, sig, dt, NULL, tStart, tendfit, oenv,
-                             bDebugMode(), fitfn, fitparm, 0, NULL);
+        sum       = print_and_integrate(debug, nf_int, dt, c1, nullptr, 1);
+        tail_corr = do_lmfit(ncorr, c1, sig, dt, nullptr, tStart, tendfit, oenv,
+                             bDebugMode(), fitfn, fitparm, 0, nullptr);
         sumtot = sum+tail_corr;
         if (fit && ((jmax == 1) || (j == 1)))
         {

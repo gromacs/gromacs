@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,12 +74,12 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
     int     *ibuf, p;
     gmx_bool bCompatible;
 
-    if (NULL != log && !bQuiet)
+    if (nullptr != log && !bQuiet)
     {
         fprintf(log, "Multi-checking %s ... ", name);
     }
 
-    if (ms == NULL)
+    if (ms == nullptr)
     {
         gmx_fatal(FARGS,
                   "check_multi_int called with a NULL communication pointer");
@@ -97,14 +97,14 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
 
     if (bCompatible)
     {
-        if (NULL != log && !bQuiet)
+        if (nullptr != log && !bQuiet)
         {
             fprintf(log, "OK\n");
         }
     }
     else
     {
-        if (NULL != log)
+        if (nullptr != log)
         {
             fprintf(log, "\n%s is not equal for all subsystems\n", name);
             for (p = 0; p < ms->nsim; p++)
@@ -127,12 +127,12 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
     int               p;
     gmx_bool          bCompatible;
 
-    if (NULL != log && !bQuiet)
+    if (nullptr != log && !bQuiet)
     {
         fprintf(log, "Multi-checking %s ... ", name);
     }
 
-    if (ms == NULL)
+    if (ms == nullptr)
     {
         gmx_fatal(FARGS,
                   "check_multi_int called with a NULL communication pointer");
@@ -150,7 +150,7 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
 
     if (bCompatible)
     {
-        if (NULL != log && !bQuiet)
+        if (nullptr != log && !bQuiet)
         {
             fprintf(log, "OK\n");
         }
@@ -159,7 +159,7 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
     {
         // TODO Part of this error message would also be good to go to
         // stderr (from one rank of one sim only)
-        if (NULL != log)
+        if (nullptr != log)
         {
             fprintf(log, "\n%s is not equal for all subsystems\n", name);
             for (p = 0; p < ms->nsim; p++)
@@ -232,7 +232,7 @@ void gmx_log_close(FILE *fp)
 {
     if (fp)
     {
-        gmx_fatal_set_log_file(NULL);
+        gmx_fatal_set_log_file(nullptr);
         gmx_fio_fclose(fp);
     }
 }

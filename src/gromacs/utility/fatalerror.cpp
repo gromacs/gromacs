@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,10 +66,10 @@
 static bool                bDebug         = false;
 static tMPI_Thread_mutex_t where_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
 
-FILE                      *debug          = NULL;
+FILE                      *debug          = nullptr;
 gmx_bool                   gmx_debug_at   = FALSE;
 
-static FILE               *log_file       = NULL;
+static FILE               *log_file       = nullptr;
 static tMPI_Thread_mutex_t error_mutex    = TMPI_THREAD_MUTEX_INITIALIZER;
 
 void gmx_init_debug(const int dbglevel, const char *dbgfile)
@@ -105,9 +105,9 @@ void _where(const char *file, int line)
         if (bFirst) /* we repeat the check in the locked section because things
                        might have changed */
         {
-            if ((temp = getenv("GMX_PRINT_DEBUG_LINES")) != NULL)
+            if ((temp = getenv("GMX_PRINT_DEBUG_LINES")) != nullptr)
             {
-                nskip = strtol(temp, NULL, 10);
+                nskip = strtol(temp, nullptr, 10);
             }
             bFirst = FALSE;
         }
@@ -143,11 +143,11 @@ static void default_error_handler(const char *title, const char *msg,
 {
     if (log_file)
     {
-        gmx::internal::printFatalErrorHeader(log_file, title, NULL, file, line);
+        gmx::internal::printFatalErrorHeader(log_file, title, nullptr, file, line);
         gmx::internal::printFatalErrorMessageLine(log_file, msg, 0);
         gmx::internal::printFatalErrorFooter(log_file);
     }
-    gmx::internal::printFatalErrorHeader(stderr, title, NULL, file, line);
+    gmx::internal::printFatalErrorHeader(stderr, title, nullptr, file, line);
     gmx::internal::printFatalErrorMessageLine(stderr, msg, 0);
     gmx::internal::printFatalErrorFooter(stderr);
 }
@@ -180,7 +180,7 @@ static const char *gmx_strerror(const char *key)
         { "range",  "Range checking error" }
     };
 
-    if (key == NULL)
+    if (key == nullptr)
     {
         return "NULL error type (should not occur)";
     }
@@ -196,7 +196,7 @@ static const char *gmx_strerror(const char *key)
 
 static void call_error_handler(const char *key, const char *file, int line, const char *msg)
 {
-    if (msg == NULL)
+    if (msg == nullptr)
     {
         msg = "Empty gmx_fatal message (bug).";
     }
@@ -289,7 +289,7 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
 
     if ((n < n_min) || (n >= n_max))
     {
-        if (warn_str != NULL)
+        if (warn_str != nullptr)
         {
             strcpy(buf, warn_str);
             strcat(buf, "\n");

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,7 @@ t_psdata ps_open(const char *fn, real x1, real y1, real x2, real y2)
 
     ps->nrgb     = 0;
     ps->maxrgb   = 0;
-    ps->rgb      = NULL;
+    ps->rgb      = nullptr;
     ps->gen_ybox = 0;
     ps->ostack   = 0;
 

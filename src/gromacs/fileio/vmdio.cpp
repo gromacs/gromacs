@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -170,7 +170,7 @@ static int load_sharedlibrary_plugins(const char *fullpath, gmx_vmdplugin_t *vmd
     }
 
     /* in case this library does not support the filetype, close it */
-    if (vmdplugin->api == NULL)
+    if (vmdplugin->api == nullptr)
     {
         vmddlclose(handle);
     }
@@ -283,7 +283,7 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
     sprintf(defpathenv, "%s\\University of Illinois\\VMD\\plugins\\WIN32\\molfile", progfolder);
 #endif
 
-    vmdplugin->api      = NULL;
+    vmdplugin->api      = nullptr;
     vmdplugin->filetype = strrchr(fn, '.');
     if (!vmdplugin->filetype)
     {
@@ -296,10 +296,10 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
      * given at configure time. This last might be hard-coded to the
      * default for VMD installs. */
     pathenv = getenv("VMD_PLUGIN_PATH");
-    if (pathenv == NULL)
+    if (pathenv == nullptr)
     {
         pathenv = getenv("VMDDIR");
-        if (NULL == pathenv)
+        if (nullptr == pathenv)
         {
             printf("\nNeither VMD_PLUGIN_PATH or VMDDIR set. ");
             printf("Using default location:\n%s\n", defpathenv);
@@ -320,7 +320,7 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
     strncpy(pathname, pathenv, sizeof(pathname));
 #if !GMX_NATIVE_WINDOWS
     strcat(pathname, "/*.so");
-    glob(pathname, 0, NULL, &globbuf);
+    glob(pathname, 0, nullptr, &globbuf);
     if (globbuf.gl_pathc == 0)
     {
         printf("\nNo VMD Plugins found\n"
@@ -329,7 +329,7 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
                "The architecture (e.g. 32bit versus 64bit) of GROMACS and VMD has to match.\n");
         return 0;
     }
-    for (size_t i = 0; i < globbuf.gl_pathc && vmdplugin->api == NULL; i++)
+    for (size_t i = 0; i < globbuf.gl_pathc && vmdplugin->api == nullptr; i++)
     {
         /* FIXME: Undefined which plugin is chosen if more than one plugin
            can read a certain file ending. Requires some additional command
@@ -372,7 +372,7 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
         return 0;
     }
 
-    if (vmdplugin->api == NULL)
+    if (vmdplugin->api == nullptr)
     {
         printf("\nNo plugin for %s found\n", vmdplugin->filetype);
         return 0;
@@ -392,7 +392,7 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
 
 int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxframe *fr)
 {
-    molfile_timestep_metadata_t *metadata = NULL;
+    molfile_timestep_metadata_t *metadata = nullptr;
     gmx_vmdplugin_t             *vmdplugin;
 
     snew(vmdplugin, 1);

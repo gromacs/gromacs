@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,7 +70,7 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption  &settings,
       info_(this), manager_(*manager), defaultText_(settings.defaultText_),
       selectionFlags_(settings.selectionFlags_)
 {
-    GMX_RELEASE_ASSERT(manager != NULL,
+    GMX_RELEASE_ASSERT(manager != nullptr,
                        "SelectionOptionManager must be added before SelectionOption");
     GMX_RELEASE_ASSERT(!hasFlag(efOption_MultipleTimes),
                        "allowMultiple() is not supported for selection options");
@@ -278,7 +278,7 @@ SelectionFileOptionStorage::SelectionFileOptionStorage(
                             | efOption_DontCheckMinimumCount),
       info_(this), manager_(*manager), bValueParsed_(false)
 {
-    GMX_RELEASE_ASSERT(manager != NULL,
+    GMX_RELEASE_ASSERT(manager != nullptr,
                        "SelectionOptionManager must be added before SelectionFileOption");
 }
 

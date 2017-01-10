@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,9 +52,9 @@
 
 gmx_ana_pos_t::gmx_ana_pos_t()
 {
-    x = NULL;
-    v = NULL;
-    f = NULL;
+    x = nullptr;
+    v = nullptr;
+    f = nullptr;
     gmx_ana_indexmap_clear(&m);
     nalloc_x = 0;
 }
@@ -183,7 +183,7 @@ gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
     copy_rvec(x, pos->x[0]);
     clear_rvec(pos->v[0]);
     clear_rvec(pos->f[0]);
-    gmx_ana_indexmap_init(&pos->m, NULL, NULL, INDEX_UNKNOWN);
+    gmx_ana_indexmap_init(&pos->m, nullptr, nullptr, INDEX_UNKNOWN);
 }
 
 /*!

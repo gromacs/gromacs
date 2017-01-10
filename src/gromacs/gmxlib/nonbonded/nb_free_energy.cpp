@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,7 +99,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
     const real *  shiftvec;
     real *        fshift;
     real          tabscale = 0;
-    const real *  VFtab    = NULL;
+    const real *  VFtab    = nullptr;
     const real *  x;
     real *        f;
     real          facel, krf, crf;
@@ -436,7 +436,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
             tj[STATE_A]      = ntiA+2*typeA[jnr];
             tj[STATE_B]      = ntiB+2*typeB[jnr];
 
-            if (nlist->excl_fep == NULL || nlist->excl_fep[k])
+            if (nlist->excl_fep == nullptr || nlist->excl_fep[k])
             {
                 c6[STATE_A]      = nbfp[tj[STATE_A]];
                 c6[STATE_B]      = nbfp[tj[STATE_B]];

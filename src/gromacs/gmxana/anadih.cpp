@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -377,16 +377,16 @@ void mk_multiplicity_lookup (int *multiplicity, int maxchi,
                 /* dihedrals to aromatic rings, COO, CONH2 or guanidinium are 2fold*/
                 if (Dih > edOmega && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1))
                 {
-                    if ( ((std::strstr(name, "PHE") != NULL) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "TYR") != NULL) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "PTR") != NULL) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "TRP") != NULL) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "HIS") != NULL) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "GLU") != NULL) && (Dih == edChi3))  ||
-                         ((std::strstr(name, "ASP") != NULL) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "GLN") != NULL) && (Dih == edChi3))  ||
-                         ((std::strstr(name, "ASN") != NULL) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "ARG") != NULL) && (Dih == edChi4))  )
+                    if ( ((std::strstr(name, "PHE") != nullptr) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "TYR") != nullptr) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "PTR") != nullptr) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "TRP") != nullptr) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "HIS") != nullptr) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "GLU") != nullptr) && (Dih == edChi3))  ||
+                         ((std::strstr(name, "ASP") != nullptr) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "GLN") != nullptr) && (Dih == edChi3))  ||
+                         ((std::strstr(name, "ASN") != nullptr) && (Dih == edChi2))  ||
+                         ((std::strstr(name, "ARG") != nullptr) && (Dih == edChi4))  )
                     {
                         multiplicity[j] = 2;
                     }
@@ -564,7 +564,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
 
             /* make a histogram pf culm. rotamer occupancy too */
             snew(chi_prhist, nbin);
-            make_histo(NULL, nframes, chi_prtrj, nbin, chi_prhist, 0, nbin);
+            make_histo(nullptr, nframes, chi_prtrj, nbin, chi_prhist, 0, nbin);
             if (bAll)
             {
                 sprintf(hisfile, "histo-chiprod%s.xvg", dlist[i].name);
@@ -848,9 +848,9 @@ void read_ang_dih(const char *trj_fn,
     total       = 0;
     teller      = 0;
     n_alloc     = 0;
-    *time       = NULL;
-    *trans_frac = NULL;
-    *aver_angle = NULL;
+    *time       = nullptr;
+    *trans_frac = nullptr;
+    *aver_angle = nullptr;
 
     do
     {

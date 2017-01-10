@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,7 +85,7 @@ class ExpfitTest : public ::testing::Test
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-            double                ** tempValues = NULL;
+            double                ** tempValues = nullptr;
             std::vector<std::string> fileName;
             fileName.push_back(test::TestFileManager::getInputFilePath("testINVEXP.xvg"));
             fileName.push_back(test::TestFileManager::getInputFilePath("testPRES.xvg"));
@@ -112,10 +112,10 @@ class ExpfitTest : public ::testing::Test
                 for (int j = 0; j < nrColumns; j++)
                 {
                     sfree(tempValues[j]);
-                    tempValues[j] = NULL;
+                    tempValues[j] = nullptr;
                 }
                 sfree(tempValues);
-                tempValues = NULL;
+                tempValues = nullptr;
             }
         }
 
@@ -136,12 +136,12 @@ class ExpfitTest : public ::testing::Test
             output_env_init_default(&oenv);
             do_lmfit(data_[testType].nrLines_,
                      &(data_[testType].y_[0]),
-                     NULL,
+                     nullptr,
                      data_[testType].dt_,
                      &(data_[testType].x_[0]),
                      data_[testType].startTime_,
                      data_[testType].endTime_,
-                     oenv, false, type, result, 0, NULL);
+                     oenv, false, type, result, 0, nullptr);
             output_env_done(oenv);
             checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, tolerance));
             checker_.checkSequenceArray(nfitparm, result, "result");

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -136,7 +136,7 @@ void HelpManager::enterTopic(const char *name)
                                        impl_->currentTopicAsString().c_str())));
     }
     const IHelpTopic *newTopic = topic.findSubTopic(name);
-    if (newTopic == NULL)
+    if (newTopic == nullptr)
     {
         if (impl_->isAtRootTopic())
         {
@@ -163,7 +163,7 @@ void HelpManager::writeCurrentTopic() const
     const IHelpTopic         &topic = impl_->currentTopic();
     const char               *title = topic.title();
     HelpWriterContext         context(impl_->rootContext_);
-    context.enterSubSection(title != NULL ? title : "");
+    context.enterSubSection(title != nullptr ? title : "");
     topic.writeHelp(context);
 }
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,7 +107,7 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
 
     if ((*nx <= 0) || (*ny <= 0) || (*nz <= 0))
     {
-        if (NULL != fp)
+        if (nullptr != fp)
         {
             fprintf(fp, "Calculating fourier grid dimensions for%s%s%s\n",
                     *nx > 0 ? "" : " X", *ny > 0 ? "" : " Y", *nz > 0 ? "" : " Z");
@@ -162,7 +162,7 @@ real calc_grid(FILE *fp, const matrix box, real gr_sp,
     *nx = n[XX];
     *ny = n[YY];
     *nz = n[ZZ];
-    if (NULL != fp)
+    if (nullptr != fp)
     {
         fprintf(fp, "Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
                 *nx, *ny, *nz, spacing[XX], spacing[YY], spacing[ZZ]);

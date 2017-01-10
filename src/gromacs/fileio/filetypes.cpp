@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,16 +114,16 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters" },
     { eftGEN, ".???", "traj", "-f", "Trajectory", NTRXS, trxs },
     { eftGEN, ".???", "trajout", "-f", "Trajectory", NTROS, tros },
-    { eftGEN, ".???", "traj", NULL,
+    { eftGEN, ".???", "traj", nullptr,
       "Full precision trajectory", NTRNS, trns },
-    { eftXDR, ".trr", "traj", NULL, "Trajectory in portable xdr format" },
-    { eftGEN, ".???", "traj_comp", NULL,
+    { eftXDR, ".trr", "traj", nullptr, "Trajectory in portable xdr format" },
+    { eftGEN, ".???", "traj_comp", nullptr,
       "Compressed trajectory (tng format or portable xdr format)", NTRCOMPRESSED, trcompressed},
-    { eftXDR, ".xtc", "traj", NULL,
+    { eftXDR, ".xtc", "traj", nullptr,
       "Compressed trajectory (portable xdr format): xtc" },
-    { eftTNG, ".tng", "traj", NULL,
+    { eftTNG, ".tng", "traj", nullptr,
       "Trajectory file (tng format)" },
-    { eftXDR, ".edr", "ener",   NULL, "Energy file"},
+    { eftXDR, ".edr", "ener",   nullptr, "Energy file"},
     { eftGEN, ".???", "conf", "-c", "Structure file", NSTXS, stxs },
     { eftGEN, ".???", "out", "-o", "Structure file", NSTOS, stos },
     { eftASC, ".gro", "conf", "-c", "Coordinate file in Gromos-87 format" },
@@ -139,24 +139,24 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".out", "hello",  "-o", "Generic output file"},
     { eftASC, ".ndx", "index",  "-n", "Index file", },
     { eftASC, ".top", "topol",  "-p", "Topology file"},
-    { eftASC, ".itp", "topinc", NULL, "Include file for topology"},
+    { eftASC, ".itp", "topinc", nullptr, "Include file for topology"},
     { eftGEN, ".???", "topol", "-s", "Structure+mass(db)", NTPSS, tpss },
     { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"},
     { eftASC, ".tex", "doc",    "-o", "LaTeX file"},
-    { eftASC, ".rtp", "residue", NULL, "Residue Type file used by pdb2gmx" },
-    { eftASC, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx" },
-    { eftASC, ".hdb", "polar",  NULL, "Hydrogen data base"},
-    { eftASC, ".dat", "nnnice", NULL, "Generic data file"},
-    { eftASC, ".dlg", "user",   NULL, "Dialog Box data for ngmx"},
-    { eftASC, ".map", "ss", NULL, "File that maps matrix data to colors" },
-    { eftASC, ".eps", "plot", NULL, "Encapsulated PostScript (tm) file" },
-    { eftASC, ".mat", "ss",     NULL, "Matrix Data file"},
-    { eftASC, ".m2p", "ps",     NULL, "Input file for mat2ps"},
+    { eftASC, ".rtp", "residue", nullptr, "Residue Type file used by pdb2gmx" },
+    { eftASC, ".atp", "atomtp", nullptr, "Atomtype file used by pdb2gmx" },
+    { eftASC, ".hdb", "polar",  nullptr, "Hydrogen data base"},
+    { eftASC, ".dat", "nnnice", nullptr, "Generic data file"},
+    { eftASC, ".dlg", "user",   nullptr, "Dialog Box data for ngmx"},
+    { eftASC, ".map", "ss", nullptr, "File that maps matrix data to colors" },
+    { eftASC, ".eps", "plot", nullptr, "Encapsulated PostScript (tm) file" },
+    { eftASC, ".mat", "ss",     nullptr, "Matrix Data file"},
+    { eftASC, ".m2p", "ps",     nullptr, "Input file for mat2ps"},
     { eftXDR, ".mtx", "hessian", "-m", "Hessian matrix"},
-    { eftASC, ".edi", "sam",    NULL, "ED sampling input"},
-    { eftASC, ".cub", "pot",  NULL, "Gaussian cube file" },
-    { eftASC, ".xpm", "root", NULL, "X PixMap compatible matrix file" },
-    { eftASC, "", "rundir", NULL, "Run directory" }
+    { eftASC, ".edi", "sam",    nullptr, "ED sampling input"},
+    { eftASC, ".cub", "pot",  nullptr, "Gaussian cube file" },
+    { eftASC, ".xpm", "root", nullptr, "X PixMap compatible matrix file" },
+    { eftASC, "", "rundir", nullptr, "Run directory" }
 };
 
 const char *ftp2ext(int ftp)
@@ -229,7 +229,7 @@ const int *ftp2generic_list(int ftp)
     }
     else
     {
-        return 0;
+        return nullptr;
     }
 }
 
@@ -271,7 +271,7 @@ const char *ftp2defnm(int ftp)
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -283,7 +283,7 @@ const char *ftp2defopt(int ftp)
     }
     else
     {
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -310,7 +310,7 @@ int fn2ftp(const char *fn)
 
     for (i = 0; (i < efNR); i++)
     {
-        if ((eptr = deffile[i].ext) != NULL)
+        if ((eptr = deffile[i].ext) != nullptr)
         {
             if (gmx_strcasecmp(feptr, eptr) == 0)
             {

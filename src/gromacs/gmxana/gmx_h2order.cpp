@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
         i, j, teller = 0,
         slice = 0,       /* current slice number */
     *count;              /* nr. of atoms in one slice */
-    gmx_rmpbc_t  gpbc = NULL;
+    gmx_rmpbc_t  gpbc = nullptr;
 
     if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0)
     {
@@ -287,24 +287,24 @@ int gmx_h2order(int argc, char *argv[])
     };
 
     gmx_output_env_t  *oenv;
-    real              *slOrder,             /* av. cosine, per slice      */
-                       slWidth = 0.0;       /* width of a slice           */
+    real              *slOrder,               /* av. cosine, per slice      */
+                       slWidth = 0.0;         /* width of a slice           */
     rvec              *slDipole;
-    char              *grpname,             /* groupnames                 */
+    char              *grpname,               /* groupnames                 */
     *micname;
-    int                ngx,                 /* nr. of atomsin sol group   */
-                       nmic = 0;            /* nr. of atoms in micelle    */
-    t_topology        *top;                 /* topology           */
+    int                ngx,                   /* nr. of atomsin sol group   */
+                       nmic = 0;              /* nr. of atoms in micelle    */
+    t_topology        *top;                   /* topology           */
     int                ePBC;
-    int               *index,               /* indices for solvent group  */
-    *micelle                  = NULL;
-    gmx_bool           bMicel =  FALSE;     /* think we're a micel        */
-    t_filenm           fnm[]  = {           /* files for g_order      */
-        { efTRX, "-f", NULL,  ffREAD },     /* trajectory file            */
-        { efNDX, NULL, NULL,  ffREAD },     /* index file         */
-        { efNDX, "-nm", NULL, ffOPTRD },    /* index with micelle atoms   */
-        { efTPR, NULL, NULL,  ffREAD },     /* topology file              */
-        { efXVG, "-o",  "order", ffWRITE }, /* xvgr output file       */
+    int               *index,                 /* indices for solvent group  */
+    *micelle                  = nullptr;
+    gmx_bool           bMicel =  FALSE;       /* think we're a micel        */
+    t_filenm           fnm[]  = {             /* files for g_order      */
+        { efTRX, "-f", nullptr,  ffREAD },    /* trajectory file            */
+        { efNDX, nullptr, nullptr,  ffREAD }, /* index file         */
+        { efNDX, "-nm", nullptr, ffOPTRD },   /* index with micelle atoms   */
+        { efTPR, nullptr, nullptr,  ffREAD }, /* topology file              */
+        { efXVG, "-o",  "order", ffWRITE },   /* xvgr output file       */
     };
 
 #define NFILE asize(fnm)

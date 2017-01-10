@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,7 @@ t_dlgitem *FindItem(t_dlg *dlg, t_id id)
             return dlg->dlgitem[i];
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 t_dlgitem *FindWin(t_dlg *dlg, Window win)
@@ -79,7 +79,7 @@ t_dlgitem *FindWin(t_dlg *dlg, Window win)
             return dlg->dlgitem[i];
         }
     }
-    return NULL;
+    return nullptr;
 }
 
 /*****************************
@@ -91,7 +91,7 @@ bool QueryDlgItemSize(t_dlg *dlg, t_id id, int *w, int *h)
 {
     t_dlgitem *dlgitem;
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
         *w = dlgitem->win.width;
         *h = dlgitem->win.height;
@@ -104,7 +104,7 @@ bool QueryDlgItemPos(t_dlg *dlg, t_id id, int *x0, int *y0)
 {
     t_dlgitem *dlgitem;
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
         *x0 = dlgitem->win.x;
         *y0 = dlgitem->win.y;
@@ -117,7 +117,7 @@ int QueryDlgItemX(t_dlg *dlg, t_id id)
 {
     t_dlgitem *dlgitem;
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
         return dlgitem->win.x;
     }
@@ -128,7 +128,7 @@ int QueryDlgItemY(t_dlg *dlg, t_id id)
 {
     t_dlgitem *dlgitem;
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
         return dlgitem->win.y;
     }
@@ -139,7 +139,7 @@ int QueryDlgItemW(t_dlg *dlg, t_id id)
 {
     t_dlgitem *dlgitem;
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
         return dlgitem->win.width;
     }
@@ -150,7 +150,7 @@ int QueryDlgItemH(t_dlg *dlg, t_id id)
 {
     t_dlgitem *dlgitem;
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
         return dlgitem->win.height;
     }
@@ -164,7 +164,7 @@ bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h)
     int        old_w, old_h;
 #endif
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
 #ifdef DEBUG
         old_w = dlgitem->win.width;
@@ -213,7 +213,7 @@ bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
     t_dlgitem *dlgitem;
     int        old_x, old_y;
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
         old_x          = dlgitem->win.x;
         old_y          = dlgitem->win.y;
@@ -259,7 +259,7 @@ bool IsCBChecked(t_dlg *dlg, t_id id)
 {
     t_dlgitem *dlgitem;
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
         if (dlgitem->type == edlgCB)
         {
@@ -291,7 +291,7 @@ int EditTextLen(t_dlg *dlg, t_id id)
 {
     t_dlgitem *dlgitem;
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
         if (dlgitem->type == edlgET)
         {
@@ -306,7 +306,7 @@ char *EditText(t_dlg *dlg, t_id id)
 {
     t_dlgitem *dlgitem;
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
         if (dlgitem->type == edlgET)
         {
@@ -314,7 +314,7 @@ char *EditText(t_dlg *dlg, t_id id)
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 /*****************************
@@ -369,7 +369,7 @@ void NoHelp(t_dlg *dlg)
         "No help for this item"
     };
     MessageBox(dlg->x11, dlg->wDad, "No Help", 2, lines,
-               MB_OK | MB_ICONSTOP | MB_APPLMODAL, NULL, NULL);
+               MB_OK | MB_ICONSTOP | MB_APPLMODAL, nullptr, nullptr);
 }
 
 void HelpDlg(t_dlg *dlg)
@@ -380,7 +380,7 @@ void HelpDlg(t_dlg *dlg)
         "First press the OK button."
     };
     MessageBox(dlg->x11, dlg->win.self, "Help Dialogbox",
-               3, lines, MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, NULL, NULL);
+               3, lines, MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, nullptr, nullptr);
 }
 
 void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
@@ -388,7 +388,7 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
     char     buf[80];
     bool     bCont = true;
     int      i, nlines = 0;
-    char   **lines = NULL;
+    char   **lines = nullptr;
 
     if (!dlgitem->help)
     {
@@ -431,7 +431,7 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
     while (bCont);
     MessageBox(dlg->x11, dlg->wDad, "Help",
                nlines, lines,
-               MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, NULL, NULL);
+               MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, nullptr, nullptr);
     for (i = 0; (i < nlines); i++)
     {
         sfree(lines[i]);
@@ -471,7 +471,7 @@ static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
     int        i, nWndProc;
     t_dlgitem *dlgitem;
 
-    if ((dlgitem = FindWin(dlg, w)) != NULL)
+    if ((dlgitem = FindWin(dlg, w)) != nullptr)
     {
         nWndProc = (dlgitem->WndProc)(x11, dlgitem, event);
 #ifdef DEBUG
@@ -630,7 +630,7 @@ void DoCreateDlg(t_dlg *dlg)
     hints.y     = dlg->win.y;
     hints.flags = PPosition;
     XSetStandardProperties(dlg->x11->disp, dlg->win.self, dlg->title,
-                           dlg->title, None, NULL, 0, &hints);
+                           dlg->title, None, nullptr, 0, &hints);
 }
 
 void AddDlgItem(t_dlg *dlg, t_dlgitem *item)
@@ -699,7 +699,7 @@ void FreeDlgItem(t_dlg *dlg, t_id id)
     t_dlgitem *dlgitem;
     int        i;
 
-    if ((dlgitem = FindItem(dlg, id)) != NULL)
+    if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
         dlg->x11->UnRegisterCallback(dlg->x11, dlgitem->win.self);
         if (dlgitem->win.self)
@@ -757,7 +757,7 @@ void FreeDlg(t_dlg *dlg)
         {
             XDestroyWindow(dlg->x11->disp, dlg->win.self);
         }
-        dlg->dlgitem = NULL;
+        dlg->dlgitem = nullptr;
     }
 }
 
@@ -783,7 +783,7 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
     }
     else
     {
-        dlg->title = NULL;
+        dlg->title = nullptr;
     }
     if (w == 0)
     {
@@ -820,14 +820,14 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
     {
         y = y0;
     }
-    InitWin(&(dlg->win), x, y, w, h, bw, NULL);
+    InitWin(&(dlg->win), x, y, w, h, bw, nullptr);
     SetDlgSize(dlg, w, h, x0 || y0);
 
     dlg->wDad    = Parent;
     dlg->fg      = x11->fg;
     dlg->bg      = x11->bg;
     dlg->nitem   = 0;
-    dlg->dlgitem = NULL;
+    dlg->dlgitem = nullptr;
 
     DoCreateDlg(dlg);
     return dlg;

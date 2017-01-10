@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -436,7 +436,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
             {
                 return DefWndProc(x11, dlgitem, event);
             }
-            XLookupString(&(event->xkey), c, BUFSIZE, &keysym, NULL);
+            XLookupString(&(event->xkey), c, BUFSIZE, &keysym, nullptr);
 #ifdef DEBUG
             std::printf("Keysym: %x\n", keysym);
 #endif
@@ -670,7 +670,7 @@ t_dlgitem *CreatePixmap(Pixmap pm, t_id id,
     t_dlgitem *dlgitem;
 
     dlgitem = newitem();
-    InitWin(&(dlgitem->win), x0, y0, w, h, bw, NULL);
+    InitWin(&(dlgitem->win), x0, y0, w, h, bw, nullptr);
     dlgitem->ID          = id;
     dlgitem->type        = edlgPM;
     dlgitem->u.pixmap.pm = pm;
@@ -700,7 +700,7 @@ t_dlgitem *CreateStaticText(t_x11 *x11,
         }
         w += 2*OFFS_X;
     }
-    InitWin(&(dlgitem->win), x0, y0, w, h, bw, NULL);
+    InitWin(&(dlgitem->win), x0, y0, w, h, bw, nullptr);
     dlgitem->ID                  = id;
     dlgitem->GroupID             = groupid;
     dlgitem->type                = edlgST;

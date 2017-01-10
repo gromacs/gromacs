@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -103,11 +103,11 @@ static int init_gb_nblist(int natoms, t_nblist *nl)
     nl->maxnrj      = 0;
     nl->nri         = 0;
     nl->nrj         = 0;
-    nl->iinr        = NULL;
-    nl->gid         = NULL;
-    nl->shift       = NULL;
-    nl->jindex      = NULL;
-    nl->jjnr        = NULL;
+    nl->iinr        = nullptr;
+    nl->gid         = nullptr;
+    nl->shift       = nullptr;
+    nl->jindex      = nullptr;
+    nl->jjnr        = nullptr;
     /*nl->nltype      = nltype;*/
 
     srenew(nl->iinr,   nl->maxnri);
@@ -265,11 +265,11 @@ int init_gb(gmx_genborn_t **p_born,
     snew(fr->invsqrta, natoms);
     snew(fr->dvda,     natoms);
 
-    fr->dadx              = NULL;
-    fr->dadx_rawptr       = NULL;
+    fr->dadx              = nullptr;
+    fr->dadx_rawptr       = nullptr;
     fr->nalloc_dadx       = 0;
-    born->gpol_still_work = NULL;
-    born->gpol_hct_work   = NULL;
+    born->gpol_still_work = nullptr;
+    born->gpol_hct_work   = nullptr;
 
     /* snew(born->asurf,natoms); */
     /* snew(born->dasurf,natoms); */
@@ -927,7 +927,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
     int   cnt;
     int   ndadx;
 
-    if (fr->bAllvsAll && fr->dadx == NULL)
+    if (fr->bAllvsAll && fr->dadx == nullptr)
     {
         /* We might need up to 8 atoms of padding before and after,
          * and another 4 units to guarantee SSE alignment.
@@ -1355,7 +1355,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
     }
     else
     {
-        pbc_null = NULL;
+        pbc_null = nullptr;
     }
 
     if (sa_algorithm == esaAPPROX)
@@ -1426,7 +1426,7 @@ static gbtmpnbl_t *find_gbtmplist(struct gbtmpnbls *lists, int shift)
             srenew(lists->list, lists->list_nalloc);
             for (i = lists->nlist; i < lists->list_nalloc; i++)
             {
-                lists->list[i].aj        = NULL;
+                lists->list[i].aj        = nullptr;
                 lists->list[i].aj_nalloc = 0;
             }
 
@@ -1455,7 +1455,7 @@ static void add_bondeds_to_gblist(t_ilist *il,
         aj = il->iatoms[ind+2];
 
         int shift = CENTRAL;
-        if (g != NULL)
+        if (g != nullptr)
         {
             rvec_sub(x[ai], x[aj], dx);
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
@@ -1504,7 +1504,7 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
     t_pbc             pbc;
 
     struct gbtmpnbls *nls;
-    gbtmpnbl_t       *list = NULL;
+    gbtmpnbl_t       *list = nullptr;
 
     set_pbc(&pbc, fr->ePBC, box);
     nls   = born->nblist_work;
@@ -1620,7 +1620,7 @@ int make_gb_nblist(t_commrec *cr, int gb_algorithm,
 void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
 {
     int           i, at0, at1;
-    gmx_domdec_t *dd = NULL;
+    gmx_domdec_t *dd = nullptr;
 
     if (DOMAINDECOMP(cr))
     {

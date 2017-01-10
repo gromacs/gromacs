@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -568,7 +568,7 @@ void pmegrid_init(pmegrid_t *grid,
     }
 
     grid->order = pme_order;
-    if (ptr == NULL)
+    if (ptr == nullptr)
     {
         gridsize = grid->s[XX]*grid->s[YY]*grid->s[ZZ];
         set_gridsize_alignment(&gridsize, pme_order);
@@ -628,7 +628,7 @@ static void make_subgrid_division(const ivec n, int ovl, int nthread,
     }
 
     env = getenv("GMX_PME_THREAD_DIVISION");
-    if (env != NULL)
+    if (env != nullptr)
     {
         sscanf(env, "%20d %20d %20d", &nsub[XX], &nsub[YY], &nsub[ZZ]);
     }
@@ -659,7 +659,7 @@ void pmegrids_init(pmegrids_t *grids,
     n_base[ZZ] = nz_base;
 
     pmegrid_init(&grids->grid, 0, 0, 0, 0, 0, 0, n[XX], n[YY], n[ZZ], FALSE, pme_order,
-                 NULL);
+                 nullptr);
 
     grids->nthread = nthread;
 
@@ -717,7 +717,7 @@ void pmegrids_init(pmegrids_t *grids,
     }
     else
     {
-        grids->grid_th = NULL;
+        grids->grid_th = nullptr;
     }
 
     snew(grids->g2t, DIM);
@@ -752,7 +752,7 @@ void pmegrids_init(pmegrids_t *grids,
         {
             grids->nthread_comm[d]++;
         }
-        if (debug != NULL)
+        if (debug != nullptr)
         {
             fprintf(debug, "pmegrid thread grid communication range in %c: %d\n",
                     'x'+d, grids->nthread_comm[d]);
@@ -769,7 +769,7 @@ void pmegrids_init(pmegrids_t *grids,
 
 void pmegrids_destroy(pmegrids_t *grids)
 {
-    if (grids->grid.grid != NULL)
+    if (grids->grid.grid != nullptr)
     {
         sfree_aligned(grids->grid.grid);
 
@@ -857,7 +857,7 @@ void reuse_pmegrids(const pmegrids_t *oldgrid, pmegrids_t *newgrid)
     sfree_aligned(newgrid->grid.grid);
     newgrid->grid.grid = oldgrid->grid.grid;
 
-    if (newgrid->grid_th != NULL && newgrid->nthread == oldgrid->nthread)
+    if (newgrid->grid_th != nullptr && newgrid->nthread == oldgrid->nthread)
     {
         sfree_aligned(newgrid->grid_all);
         newgrid->grid_all = oldgrid->grid_all;

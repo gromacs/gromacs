@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,18 +59,18 @@ static void zero_history(history_t *hist)
 {
     hist->disre_initf  = 0;
     hist->ndisrepairs  = 0;
-    hist->disre_rm3tav = NULL;
+    hist->disre_rm3tav = nullptr;
     hist->orire_initf  = 0;
     hist->norire_Dtav  = 0;
-    hist->orire_Dtav   = NULL;
+    hist->orire_Dtav   = nullptr;
 }
 
 static void zero_ekinstate(ekinstate_t *eks)
 {
     eks->ekin_n         = 0;
-    eks->ekinh          = NULL;
-    eks->ekinf          = NULL;
-    eks->ekinh_old      = NULL;
+    eks->ekinh          = nullptr;
+    eks->ekinf          = nullptr;
+    eks->ekinh_old      = nullptr;
     eks->ekinscalef_nhc.resize(0);
     eks->ekinscaleh_nhc.resize(0);
     eks->vscale_nhc.resize(0);
@@ -85,15 +85,15 @@ static void init_swapstate(swapstate_t *swapstate)
     swapstate->nIonTypes              = 0;
     swapstate->nAverage               = 0;
     swapstate->fluxleak               = 0;
-    swapstate->fluxleak_p             = NULL;
+    swapstate->fluxleak_p             = nullptr;
     swapstate->bFromCpt               = 0;
     swapstate->nat[eChan0]            = 0;
     swapstate->nat[eChan1]            = 0;
-    swapstate->xc_old_whole[eChan0]   = NULL;
-    swapstate->xc_old_whole[eChan1]   = NULL;
-    swapstate->xc_old_whole_p[eChan0] = NULL;
-    swapstate->xc_old_whole_p[eChan1] = NULL;
-    swapstate->ionType                = NULL;
+    swapstate->xc_old_whole[eChan0]   = nullptr;
+    swapstate->xc_old_whole[eChan1]   = nullptr;
+    swapstate->xc_old_whole_p[eChan0] = nullptr;
+    swapstate->xc_old_whole_p[eChan1] = nullptr;
+    swapstate->ionType                = nullptr;
 }
 
 void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
@@ -146,10 +146,10 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     }
     else
     {
-        state->dfhist = NULL;
+        state->dfhist = nullptr;
     }
-    state->swapstate       = NULL;
-    state->edsamstate      = NULL;
+    state->swapstate       = nullptr;
+    state->edsamstate      = nullptr;
     state->ddp_count       = 0;
     state->ddp_count_cg_gl = 0;
     state->cg_gl.resize(0);

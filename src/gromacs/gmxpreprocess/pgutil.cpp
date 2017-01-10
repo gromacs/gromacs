@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -96,8 +96,8 @@ int search_atom(const char *type, int start,
     t_atom         *at     = atoms->atom;
     char ** const * anm    = atoms->atomname;
 
-    bPrevious = (strchr(type, '-') != NULL);
-    bNext     = (strchr(type, '+') != NULL);
+    bPrevious = (strchr(type, '-') != nullptr);
+    bNext     = (strchr(type, '+') != nullptr);
 
     if (!bPrevious)
     {

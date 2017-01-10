@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,7 +111,7 @@ OptionSectionImpl::addSectionImpl(const AbstractOptionSection &section)
 {
     const char *name = section.name_;
     // Make sure that there are no duplicate sections.
-    GMX_RELEASE_ASSERT(findSection(name) == NULL, "Duplicate subsection name");
+    GMX_RELEASE_ASSERT(findSection(name) == nullptr, "Duplicate subsection name");
     std::unique_ptr<IOptionSectionStorage> storage(section.createStorage());
     subsections_.push_back(SectionPointer(new OptionSectionImpl(managers_, std::move(storage), name)));
     return subsections_.back().get();

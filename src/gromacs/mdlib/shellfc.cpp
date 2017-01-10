@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -297,7 +297,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
 {
     gmx_shellfc_t            *shfc;
     t_shell                  *shell;
-    int                      *shell_index = NULL, *at2cg;
+    int                      *shell_index = nullptr, *at2cg;
     const t_atom             *atom;
 
     int                       ns, nshell, nsi;
@@ -319,7 +319,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     if (nshell == 0 && nflexcon == 0)
     {
         /* We're not doing shells or flexible constraints */
-        return NULL;
+        return nullptr;
     }
 
     snew(shfc, 1);
@@ -550,7 +550,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     shfc->shell_gl       = shell;
     shfc->shell_index_gl = shell_index;
 
-    shfc->bPredict     = (getenv("GMX_NOPREDICT") == NULL);
+    shfc->bPredict     = (getenv("GMX_NOPREDICT") == nullptr);
     shfc->bRequireInit = FALSE;
     if (!shfc->bPredict)
     {
@@ -561,7 +561,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     }
     else
     {
-        shfc->bRequireInit = (getenv("GMX_REQUIRE_SHELL_INIT") != NULL);
+        shfc->bRequireInit = (getenv("GMX_REQUIRE_SHELL_INIT") != nullptr);
         if (shfc->bRequireInit && fplog)
         {
             fprintf(fplog, "\nWill always initiate shell positions\n");
@@ -594,7 +594,7 @@ void make_local_shells(t_commrec *cr, t_mdatoms *md,
 {
     t_shell      *shell;
     int           a0, a1, *ind, nshell, i;
-    gmx_domdec_t *dd = NULL;
+    gmx_domdec_t *dd = nullptr;
 
     if (DOMAINDECOMP(cr))
     {
@@ -943,13 +943,13 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
         }
     }
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
-              x, xnold, NULL, bMolPBC, box,
+              x, xnold, nullptr, bMolPBC, box,
               (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord);
+              nullptr, nullptr, nrnb, econqCoord);
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
-              x, xnew, NULL, bMolPBC, box,
+              x, xnew, nullptr, bMolPBC, box,
               (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqCoord);
+              nullptr, nullptr, nrnb, econqCoord);
 
     for (n = 0; n < end; n++)
     {
@@ -966,7 +966,7 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
     constrain(log, FALSE, FALSE, constr, idef, ir, cr, step, 0, 1.0, md,
               x_old, xnew, acc_dir, bMolPBC, box,
               (*lambda)[efptBONDED], &(dvdlambda[efptBONDED]),
-              NULL, NULL, nrnb, econqDeriv_FlexCon);
+              nullptr, nullptr, nrnb, econqDeriv_FlexCon);
 }
 
 void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
@@ -990,7 +990,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     int        nshell;
     t_shell   *shell;
     t_idef    *idef;
-    rvec      *acc_dir = NULL, *x_old = NULL;
+    rvec      *acc_dir = nullptr, *x_old = nullptr;
     real       Epot[2], df[2];
     real       sf_dir, invdt;
     real       ftol, dum = 0;
@@ -1094,7 +1094,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     if (shfc->bPredict && !bCont)
     {
         predict_shells(fplog, as_rvec_array(state->x.data()), as_rvec_array(state->v.data()), inputrec->delta_t, nshell, shell,
-                       md->massT, NULL, bInit);
+                       md->massT, nullptr, bInit);
     }
 
     /* do_force expected the charge groups to be in the box */
@@ -1112,7 +1112,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
              state->box, &state->x, &state->hist,
              force[Min], force_vir, md, enerd, fcd,
              &state->lambda, graph,
-             fr, vsite, mu_tot, t, NULL, bBornRadii,
+             fr, vsite, mu_tot, t, nullptr, bBornRadii,
              (bDoNS ? GMX_FORCE_NS : 0) | force_flags);
 
     sf_dir = 0;
@@ -1214,7 +1214,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                  top, groups, state->box, pos[Try], &state->hist,
                  force[Try], force_vir,
                  md, enerd, fcd, &state->lambda, graph,
-                 fr, vsite, mu_tot, t, NULL, bBornRadii,
+                 fr, vsite, mu_tot, t, nullptr, bBornRadii,
                  force_flags);
 
         if (gmx_debug_at)

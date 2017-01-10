@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -318,7 +318,7 @@ compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
     // better to be safe than sorry, so we check it with an assert.
     // If we are in this comparison routine in the first place, neig2 should not be 0,
     // so eigval2 should always be a valid pointer.
-    GMX_RELEASE_ASSERT(eigval2 != NULL, "NULL pointer provided for eigval2");
+    GMX_RELEASE_ASSERT(eigval2 != nullptr, "NULL pointer provided for eigval2");
 
     for (i = n; i < neig2; i++)
     {
@@ -511,19 +511,19 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     int noutvec, int *outvec, gmx_bool bSplit,
                     const gmx_output_env_t *oenv)
 {
-    FILE        *xvgrout = NULL;
+    FILE        *xvgrout = nullptr;
     int          nat, i, j, d, v, vec, nfr, nframes = 0, snew_size, frame;
-    t_trxstatus *out = NULL;
+    t_trxstatus *out = nullptr;
     t_trxstatus *status;
     int          noutvec_extr, imin, imax;
     real        *pmin, *pmax;
     int         *all_at;
     matrix       box;
     rvec        *xread, *x;
-    real         t, inp, **inprod = NULL;
+    real         t, inp, **inprod = nullptr;
     char         str[STRLEN], str2[STRLEN], **ylabel, *c;
     real         fact;
-    gmx_rmpbc_t  gpbc = NULL;
+    gmx_rmpbc_t  gpbc = nullptr;
 
     snew(x, natoms);
 
@@ -591,7 +591,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                 /* calculate x: a fitted struture of the selected atoms */
                 if (bFit)
                 {
-                    reset_x(nfit, ifit, nat, NULL, xread, w_rls);
+                    reset_x(nfit, ifit, nat, nullptr, xread, w_rls);
                     do_fit(nat, w_rls, xref, xread);
                 }
                 for (i = 0; i < natoms; i++)
@@ -627,7 +627,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                             }
                         }
                     }
-                    write_trx(out, natoms, index, atoms, 0, t, box, xread, NULL, NULL);
+                    write_trx(out, natoms, index, atoms, 0, t, box, xread, nullptr, nullptr);
                 }
                 nframes++;
             }
@@ -654,7 +654,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
 
     if (projfile)
     {
-        GMX_RELEASE_ASSERT(inprod != NULL, "inprod must be non-NULL if projfile is non-NULL");
+        GMX_RELEASE_ASSERT(inprod != nullptr, "inprod must be non-NULL if projfile is non-NULL");
         snew(ylabel, noutvec);
         for (v = 0; v < noutvec; v++)
         {
@@ -662,9 +662,9 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
             ylabel[v] = gmx_strdup(str);
         }
         sprintf(str, "projection on eigenvectors (%s)", proj_unit);
-        write_xvgr_graphs(projfile, noutvec, 1, str, NULL, output_env_get_xvgr_tlabel(oenv),
+        write_xvgr_graphs(projfile, noutvec, 1, str, nullptr, output_env_get_xvgr_tlabel(oenv),
                           (const char **)ylabel,
-                          nframes, inprod[noutvec], inprod, NULL,
+                          nframes, inprod[noutvec], inprod, nullptr,
                           output_env_get_time_factor(oenv), FALSE, bSplit, oenv);
     }
 
@@ -691,7 +691,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
     {
         t_atoms     atoms;
         rvec       *x;
-        real       *b = NULL;
+        real       *b = nullptr;
         matrix      box;
         char       *resnm, *atnm;
         gmx_bool    bPDB, b4D;
@@ -754,7 +754,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         }
         if ( ( b4D || bSplit ) && bPDB)
         {
-            GMX_RELEASE_ASSERT(inprod != NULL, "inprod must be non-NULL with 4D or split PDB output options");
+            GMX_RELEASE_ASSERT(inprod != nullptr, "inprod must be non-NULL with 4D or split PDB output options");
 
             out = gmx_ffopen(threedplotfile, "w");
             fprintf(out, "HEADER    %s\n", str);
@@ -783,7 +783,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         }
         else
         {
-            write_sto_conf(threedplotfile, str, &atoms, x, NULL, ePBC, box);
+            write_sto_conf(threedplotfile, str, &atoms, x, nullptr, ePBC, box);
         }
         done_atom(&atoms);
     }
@@ -794,7 +794,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         snew(pmax, noutvec_extr);
         if (extreme == 0)
         {
-            GMX_RELEASE_ASSERT(inprod != NULL, "inprod must be non-NULL");
+            GMX_RELEASE_ASSERT(inprod != nullptr, "inprod must be non-NULL");
             fprintf(stderr, "%11s %17s %17s\n", "eigenvector", "Minimum", "Maximum");
             fprintf(stderr,
                     "%11s %10s %10s %10s %10s\n", "", "value", "frame", "value", "frame");
@@ -862,7 +862,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                              *eigvec[outvec[v]][i][d]/sqrtm[i]);
                     }
                 }
-                write_trx(out, natoms, index, atoms, 0, frame, topbox, xread, NULL, NULL);
+                write_trx(out, natoms, index, atoms, 0, frame, topbox, xread, nullptr, nullptr);
             }
             close_trx(out);
         }
@@ -912,7 +912,7 @@ static void components(const char *outfile, int natoms,
     write_xvgr_graphs(outfile, noutvec, 4, "Eigenvector components",
                       "black: total, red: x, green: y, blue: z",
                       "Atom number", (const char **)ylabel,
-                      natoms, x, NULL, y, 1, FALSE, FALSE, oenv);
+                      natoms, x, nullptr, y, 1, FALSE, FALSE, oenv);
     fprintf(stderr, "\n");
 }
 
@@ -958,9 +958,9 @@ static void rmsf(const char *outfile, int natoms, real *sqrtm,
             y[g][i] = std::sqrt(eigval[eignr[v]]*norm2(eigvec[v][i]))/sqrtm[i];
         }
     }
-    write_xvgr_graphs(outfile, noutvec, 1, "RMS fluctuation (nm) ", NULL,
+    write_xvgr_graphs(outfile, noutvec, 1, "RMS fluctuation (nm) ", nullptr,
                       "Atom number", (const char **)ylabel,
-                      natoms, x, y, NULL, 1, TRUE, FALSE, oenv);
+                      natoms, x, y, nullptr, 1, TRUE, FALSE, oenv);
     fprintf(stderr, "\n");
 }
 
@@ -1071,11 +1071,11 @@ int gmx_anaeig(int argc, char *argv[])
 
     t_topology        top;
     int               ePBC  = -1;
-    const t_atoms    *atoms = NULL;
-    rvec             *xtop, *xref1, *xref2, *xrefp = NULL;
+    const t_atoms    *atoms = nullptr;
+    rvec             *xtop, *xref1, *xref2, *xrefp = nullptr;
     gmx_bool          bDMR1, bDMA1, bDMR2, bDMA2;
-    int               nvec1, nvec2, *eignr1 = NULL, *eignr2 = NULL;
-    rvec             *xav1, *xav2, **eigvec1 = NULL, **eigvec2 = NULL;
+    int               nvec1, nvec2, *eignr1 = nullptr, *eignr2 = nullptr;
+    rvec             *xav1, *xav2, **eigvec1 = nullptr, **eigvec2 = nullptr;
     matrix            topbox;
     real              totmass, *sqrtm, *w_rls, t;
     int               natoms;
@@ -1083,7 +1083,7 @@ int gmx_anaeig(int argc, char *argv[])
     const char       *indexfile;
     int               i, j, d;
     int               nout, *iout, noutvec, *outvec, nfit;
-    int              *index = NULL, *ifit = NULL;
+    int              *index = nullptr, *ifit = nullptr;
     const char       *VecFile, *Vec2File, *topfile;
     const char       *EigFile, *Eig2File;
     const char       *CompFile, *RmsfFile, *ProjOnVecFile;
@@ -1092,7 +1092,7 @@ int gmx_anaeig(int argc, char *argv[])
     const char       *OverlapFile, *InpMatFile;
     gmx_bool          bFit1, bFit2, bM, bIndex, bTPS, bTop, bVec2, bProj;
     gmx_bool          bFirstToLast, bFirstLastSet, bTraj, bCompare, bPDB3D;
-    real             *eigval1 = NULL, *eigval2 = NULL;
+    real             *eigval1 = nullptr, *eigval2 = nullptr;
     int               neig1, neig2;
     double          **xvgdata;
     gmx_output_env_t *oenv;
@@ -1101,9 +1101,9 @@ int gmx_anaeig(int argc, char *argv[])
     t_filenm          fnm[] = {
         { efTRN, "-v",    "eigenvec",    ffREAD  },
         { efTRN, "-v2",   "eigenvec2",   ffOPTRD },
-        { efTRX, "-f",    NULL,          ffOPTRD },
-        { efTPS, NULL,    NULL,          ffOPTRD },
-        { efNDX, NULL,    NULL,          ffOPTRD },
+        { efTRX, "-f",    nullptr,          ffOPTRD },
+        { efTPS, nullptr,    nullptr,          ffOPTRD },
+        { efNDX, nullptr,    nullptr,          ffOPTRD },
         { efXVG, "-eig", "eigenval",     ffOPTRD },
         { efXVG, "-eig2", "eigenval2",   ffOPTRD },
         { efXVG, "-comp", "eigcomp",     ffOPTWR },
@@ -1120,7 +1120,7 @@ int gmx_anaeig(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -1164,7 +1164,7 @@ int gmx_anaeig(int argc, char *argv[])
     neig1 = DIM*natoms;
 
     /* Overwrite eigenvalues from separate files if the user provides them */
-    if (EigFile != NULL)
+    if (EigFile != nullptr)
     {
         int neig_tmp = read_xvg(EigFile, &xvgdata, &i);
         if (neig_tmp != neig1)
@@ -1222,7 +1222,7 @@ int gmx_anaeig(int argc, char *argv[])
         neig2 = 0;
     }
 
-    if (Eig2File != NULL)
+    if (Eig2File != nullptr)
     {
         neig2 = read_xvg(Eig2File, &xvgdata, &i);
         srenew(eigval2, neig2);
@@ -1243,15 +1243,15 @@ int gmx_anaeig(int argc, char *argv[])
     {
         bM = FALSE;
     }
-    if ((xref1 == NULL) && (bM || bTraj))
+    if ((xref1 == nullptr) && (bM || bTraj))
     {
         bTPS = TRUE;
     }
 
-    xtop  = NULL;
+    xtop  = nullptr;
     nfit  = 0;
-    ifit  = NULL;
-    w_rls = NULL;
+    ifit  = nullptr;
+    w_rls = nullptr;
 
     if (!bTPS)
     {
@@ -1260,14 +1260,14 @@ int gmx_anaeig(int argc, char *argv[])
     else
     {
         bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
-                             &top, &ePBC, &xtop, NULL, topbox, bM);
+                             &top, &ePBC, &xtop, nullptr, topbox, bM);
         atoms = &top.atoms;
         gpbc  = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr);
         gmx_rmpbc(gpbc, atoms->nr, topbox, xtop);
         /* Fitting is only required for the projection */
         if (bProj && bFit1)
         {
-            if (xref1 == NULL)
+            if (xref1 == nullptr)
             {
                 printf("\nNote: the structure in %s should be the same\n"
                        "      as the one used for the fit in g_covar\n", topfile);
@@ -1289,7 +1289,7 @@ int gmx_anaeig(int argc, char *argv[])
             }
 
             snew(xrefp, atoms->nr);
-            if (xref1 != NULL)
+            if (xref1 != nullptr)
             {
                 /* Safety check between selected fit-group and reference structure read from the eigenvector file */
                 if (natoms != nfit)
@@ -1308,7 +1308,7 @@ int gmx_anaeig(int argc, char *argv[])
                 {
                     copy_rvec(xtop[ifit[i]], xrefp[ifit[i]]);
                 }
-                reset_x(nfit, ifit, atoms->nr, NULL, xrefp, w_rls);
+                reset_x(nfit, ifit, atoms->nr, nullptr, xrefp, w_rls);
             }
         }
         gmx_rmpbc_done(gpbc);
@@ -1402,7 +1402,7 @@ int gmx_anaeig(int argc, char *argv[])
     {
         printf("Select eigenvectors for output, end your selection with 0\n");
         nout = -1;
-        iout = NULL;
+        iout = nullptr;
 
         do
         {
@@ -1458,8 +1458,8 @@ int gmx_anaeig(int argc, char *argv[])
 
     if (bProj)
     {
-        project(bTraj ? opt2fn("-f", NFILE, fnm) : NULL,
-                bTop ? &top : NULL, ePBC, topbox,
+        project(bTraj ? opt2fn("-f", NFILE, fnm) : nullptr,
+                bTop ? &top : nullptr, ePBC, topbox,
                 ProjOnVecFile, TwoDPlotFile, ThreeDPlotFile, FilterFile, skip,
                 ExtremeFile, bFirstLastSet, max, nextr, atoms, natoms, index,
                 bFit1, xrefp, nfit, ifit, w_rls,

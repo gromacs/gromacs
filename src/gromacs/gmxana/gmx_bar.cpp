@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -255,11 +255,11 @@ static gmx_bool lambda_components_check(const lambda_components_t *lc,
     {
         return FALSE;
     }
-    if (name == NULL && lc->names[index] == NULL)
+    if (name == nullptr && lc->names[index] == nullptr)
     {
         return TRUE;
     }
-    if ((name == NULL) != (lc->names[index] == NULL))
+    if ((name == nullptr) != (lc->names[index] == nullptr))
     {
         return FALSE;
     }
@@ -566,11 +566,11 @@ static void hist_init(hist_t *h, int nhist, int *nbin)
 
 static void xvg_init(xvg_t *ba)
 {
-    ba->filename = NULL;
+    ba->filename = nullptr;
     ba->nset     = 0;
     ba->np_alloc = 0;
-    ba->np       = NULL;
-    ba->y        = NULL;
+    ba->np       = nullptr;
+    ba->y        = nullptr;
 }
 
 static void samples_init(samples_t *s, lambda_vec_t *native_lambda,
@@ -583,13 +583,13 @@ static void samples_init(samples_t *s, lambda_vec_t *native_lambda,
     s->derivative     = derivative;
 
     s->ndu        = 0;
-    s->du         = NULL;
-    s->t          = NULL;
+    s->du         = nullptr;
+    s->t          = nullptr;
     s->start_time = s->delta_time = 0;
-    s->hist       = NULL;
-    s->du_alloc   = NULL;
-    s->t_alloc    = NULL;
-    s->hist_alloc = NULL;
+    s->hist       = nullptr;
+    s->du_alloc   = nullptr;
+    s->t_alloc    = nullptr;
+    s->hist_alloc = nullptr;
     s->ndu_alloc  = 0;
     s->nt_alloc   = 0;
 
@@ -602,7 +602,7 @@ static void sample_range_init(sample_range_t *r, samples_t *s)
     r->start = 0;
     r->end   = s->ndu;
     r->use   = TRUE;
-    r->s     = NULL;
+    r->s     = nullptr;
 }
 
 static void sample_coll_init(sample_coll_t *sc, lambda_vec_t *native_lambda,
@@ -613,12 +613,12 @@ static void sample_coll_init(sample_coll_t *sc, lambda_vec_t *native_lambda,
     sc->temp           = temp;
 
     sc->nsamples       = 0;
-    sc->s              = NULL;
-    sc->r              = NULL;
+    sc->s              = nullptr;
+    sc->r              = nullptr;
     sc->nsamples_alloc = 0;
 
     sc->ntot = 0;
-    sc->next = sc->prev = NULL;
+    sc->next = sc->prev = nullptr;
 }
 
 static void sample_coll_destroy(sample_coll_t *sc)
@@ -635,12 +635,12 @@ static void lambda_data_init(lambda_data_t *l, lambda_vec_t *native_lambda,
     l->lambda = native_lambda;
     l->temp   = temp;
 
-    l->next = NULL;
-    l->prev = NULL;
+    l->next = nullptr;
+    l->prev = nullptr;
 
     l->sc = &(l->sc_head);
 
-    sample_coll_init(l->sc, native_lambda, NULL, 0.);
+    sample_coll_init(l->sc, native_lambda, nullptr, 0.);
     l->sc->next = l->sc;
     l->sc->prev = l->sc;
 }
@@ -656,8 +656,8 @@ static void barres_init(barres_t *br)
     br->dg_stddev     = 0;
     br->dg_stddev_err = 0;
 
-    br->a = NULL;
-    br->b = NULL;
+    br->a = nullptr;
+    br->b = nullptr;
 }
 
 
@@ -700,7 +700,7 @@ static sample_coll_t *lambda_data_find_sample_coll(lambda_data_t *l,
         sc = sc->next;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 /* insert li into an ordered list of lambda_colls */
@@ -995,10 +995,10 @@ void sim_data_histogram(sim_data_t *sd, const char *filename,
     FILE          *fp;
     lambda_data_t *bl;
     int            nsets     = 0;
-    char         **setnames  = NULL;
+    char         **setnames  = nullptr;
     gmx_bool       first_set = FALSE;
     /* histogram data: */
-    int           *hist       = NULL;
+    int           *hist       = nullptr;
     int            nbin       = 0;
     int            nbin_alloc = 0;
     double         dx         = 0;
@@ -1059,7 +1059,7 @@ void sim_data_histogram(sim_data_t *sd, const char *filename,
         {
             if (!first_set)
             {
-                xvgr_new_dataset(fp, 0, 0, NULL, oenv);
+                xvgr_new_dataset(fp, 0, 0, nullptr, oenv);
             }
 
             sample_coll_make_hist(sc, &hist, &nbin_alloc, &nbin, &dx, &minval,
@@ -2213,9 +2213,9 @@ static const char *find_value(const char *str)
     gmx_bool name_end_found = FALSE;
 
     /* if the string is a NULL pointer, return a NULL pointer. */
-    if (str == NULL)
+    if (str == nullptr)
     {
-        return NULL;
+        return nullptr;
     }
     while (*str != '\0')
     {
@@ -2236,7 +2236,7 @@ static const char *find_value(const char *str)
         }
         str++;
     }
-    return NULL;
+    return nullptr;
 }
 
 
@@ -2248,14 +2248,14 @@ static gmx_bool read_lambda_compvec(const char                *str,
                                     const char               **end,
                                     const char                *fn)
 {
-    gmx_bool    initialize_lc = FALSE; /* whether to initialize the lambda
-                                          components, or to check them */
-    gmx_bool    start_reached = FALSE; /* whether the start of component names
-                                          has been reached */
-    gmx_bool    vector        = FALSE; /* whether there are multiple components */
-    int         n             = 0;     /* current component number */
-    const char *val_start     = NULL;  /* start of the component name, or NULL
-                                          if not in a value */
+    gmx_bool    initialize_lc = FALSE;   /* whether to initialize the lambda
+                                            components, or to check them */
+    gmx_bool    start_reached = FALSE;   /* whether the start of component names
+                                            has been reached */
+    gmx_bool    vector        = FALSE;   /* whether there are multiple components */
+    int         n             = 0;       /* current component number */
+    const char *val_start     = nullptr; /* start of the component name, or NULL
+                                            if not in a value */
     char       *strtod_end;
     gmx_bool    OK = TRUE;
 
@@ -2270,7 +2270,7 @@ static gmx_bool read_lambda_compvec(const char                *str,
         initialize_lc = TRUE;
     }
 
-    if (lc_in == NULL)
+    if (lc_in == nullptr)
     {
         lc_in = lc_out;
     }
@@ -2302,7 +2302,7 @@ static gmx_bool read_lambda_compvec(const char                *str,
                 if (std::isspace(*str) || *str == ')' || *str == ',' || *str == '\0')
                 {
                     /* end of value */
-                    if (lv == NULL)
+                    if (lv == nullptr)
                     {
                         if (initialize_lc)
                         {
@@ -2329,7 +2329,7 @@ static gmx_bool read_lambda_compvec(const char                *str,
                         }
                     }
                     /* reset for the next identifier */
-                    val_start = NULL;
+                    val_start = nullptr;
                     n++;
                     if (!vector)
                     {
@@ -2354,12 +2354,12 @@ static gmx_bool read_lambda_compvec(const char                *str,
                 }
                 else
                 {
-                    GMX_RELEASE_ASSERT(lc_in != NULL, "Internal inconsistency? lc_in==NULL");
+                    GMX_RELEASE_ASSERT(lc_in != nullptr, "Internal inconsistency? lc_in==NULL");
                     if (n == lc_in->N)
                     {
                         return OK;
                     }
-                    else if (lv == NULL)
+                    else if (lv == nullptr)
                     {
                         return FALSE;
                     }
@@ -2397,7 +2397,7 @@ static gmx_bool read_lambda_components(const char          *str,
                                        const char         **end,
                                        const char          *fn)
 {
-    return read_lambda_compvec(str, NULL, NULL, lc, end, fn);
+    return read_lambda_compvec(str, nullptr, nullptr, lc, end, fn);
 }
 
 /* read an initialized lambda vector from a string */
@@ -2406,7 +2406,7 @@ static gmx_bool read_lambda_vector(const char   *str,
                                    const char  **end,
                                    const char   *fn)
 {
-    return read_lambda_compvec(str, lv, lv->lc, NULL, end, fn);
+    return read_lambda_compvec(str, lv, lv->lc, nullptr, end, fn);
 }
 
 
@@ -2422,12 +2422,12 @@ static gmx_bool legend2lambda(const char   *fn,
                               const char   *legend,
                               lambda_vec_t *lam)
 {
-    const char   *ptr    = NULL, *ptr2 = NULL;
+    const char   *ptr    = nullptr, *ptr2 = nullptr;
     gmx_bool      ok     = FALSE;
     gmx_bool      bdhdl  = FALSE;
     const char   *tostr  = " to ";
 
-    if (legend == NULL)
+    if (legend == nullptr)
     {
         gmx_fatal(FARGS, "There is no legend in file '%s', can not deduce lambda", fn);
     }
@@ -2437,13 +2437,13 @@ static gmx_bool legend2lambda(const char   *fn,
     do
     {
         ptr2 = std::strstr(ptr2, tostr);
-        if (ptr2 != NULL)
+        if (ptr2 != nullptr)
         {
             ptr = ptr2;
             ptr2++;
         }
     }
-    while (ptr2 != NULL && *ptr2 != '\0');
+    while (ptr2 != nullptr && *ptr2 != '\0');
 
     if (ptr)
     {
@@ -2465,7 +2465,7 @@ static gmx_bool legend2lambda(const char   *fn,
         ok    = TRUE;
         bdhdl = TRUE;
     }
-    else if (std::strchr(legend, 'D') != NULL && std::strchr(legend, 'H') != NULL)
+    else if (std::strchr(legend, 'D') != nullptr && std::strchr(legend, 'H') != nullptr)
     {
         ok    = TRUE;
         bdhdl = FALSE;
@@ -2486,7 +2486,7 @@ static gmx_bool legend2lambda(const char   *fn,
     if (!bdhdl)
     {
         ptr = find_value(ptr);
-        if (!ptr || !read_lambda_vector(ptr, lam, NULL, fn))
+        if (!ptr || !read_lambda_vector(ptr, lam, nullptr, fn))
         {
             gmx_fatal(FARGS, "lambda vector '%s' %s faulty", legend, fn);
         }
@@ -2610,7 +2610,7 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
             return FALSE;
         }
         lambda_vec_init(&(ba->native_lambda), lc);
-        if (!read_lambda_vector(ptr, &(ba->native_lambda), NULL, fn))
+        if (!read_lambda_vector(ptr, &(ba->native_lambda), nullptr, fn))
         {
             gmx_fatal(FARGS, "lambda vector in %s faulty", fn);
         }
@@ -2622,21 +2622,21 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
         /* compatibility mode: check for lambda in other ways. */
         /* plain text lambda string */
         ptr = std::strstr(subtitle, "lambda");
-        if (ptr == NULL)
+        if (ptr == nullptr)
         {
             /* xmgrace formatted lambda string */
             ptr = std::strstr(subtitle, "\\xl\\f{}");
         }
-        if (ptr == NULL)
+        if (ptr == nullptr)
         {
             /* xmgr formatted lambda string */
             ptr = std::strstr(subtitle, "\\8l\\4");
         }
-        if (ptr != NULL)
+        if (ptr != nullptr)
         {
             ptr = std::strstr(ptr, "=");
         }
-        if (ptr != NULL)
+        if (ptr != nullptr)
         {
             bFound = (sscanf(ptr+1, "%lf", &(native_lambda)) == 1);
             /* add the lambda component name as an empty string */
@@ -2677,7 +2677,7 @@ static double filename2lambda(const char *fn)
     }
     /* searching backward to find the second directory separator */
     dirsep   = 0;
-    digitptr = NULL;
+    digitptr = nullptr;
     while (ptr >= fn)
     {
         if (ptr[0] != DIR_SEPARATOR && ptr[1] == DIR_SEPARATOR)
@@ -2746,11 +2746,11 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
     }
 
     ba->temp = -1;
-    if (subtitle != NULL)
+    if (subtitle != nullptr)
     {
         /* try to extract temperature */
         ptr = std::strstr(subtitle, "T =");
-        if (ptr != NULL)
+        if (ptr != nullptr)
         {
             ptr += 3;
             if (sscanf(ptr, "%lf", &ba->temp) == 1)
@@ -2781,7 +2781,7 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
         }
     }
     snew(ba->lambda, ba->nset);
-    if (legend == NULL)
+    if (legend == nullptr)
     {
         /* Check if we have a single set, no legend, nset=1 means t and dH/dl */
         if (ba->nset == 1)
@@ -2835,7 +2835,7 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
         gmx_fatal(FARGS, "File %s contains multiple sets but no indication of the native lambda", fn);
     }
 
-    if (legend != NULL)
+    if (legend != nullptr)
     {
         for (i = 0; i < ba->nset-1; i++)
         {
@@ -3027,7 +3027,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
     nhist = blk->nsub-2;
     if (nhist == 0)
     {
-        return NULL;
+        return nullptr;
     }
     if (nhist > 2)
     {
@@ -3151,13 +3151,13 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
     ener_file_t    fp;
     t_enxframe    *fr;
     int            nre;
-    gmx_enxnm_t   *enm           = NULL;
+    gmx_enxnm_t   *enm           = nullptr;
     double         first_t       = -1;
     double         last_t        = -1;
-    samples_t    **samples_rawdh = NULL; /* contains samples for raw delta_h  */
-    int           *nhists        = NULL; /* array to keep count & print at end */
-    int           *npts          = NULL; /* array to keep count & print at end */
-    lambda_vec_t **lambdas       = NULL; /* array to keep count & print at end */
+    samples_t    **samples_rawdh = nullptr; /* contains samples for raw delta_h  */
+    int           *nhists        = nullptr; /* array to keep count & print at end */
+    int           *npts          = nullptr; /* array to keep count & print at end */
+    lambda_vec_t **lambdas       = nullptr; /* array to keep count & print at end */
     lambda_vec_t  *native_lambda;
     int            nsamples = 0;
     lambda_vec_t   start_lambda;
@@ -3167,7 +3167,7 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
     snew(fr, 1);
 
     snew(native_lambda, 1);
-    start_lambda.lc = NULL;
+    start_lambda.lc = nullptr;
 
     while (do_enx(fp, fr))
     {
@@ -3306,9 +3306,9 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
             {
                 nhists[i]        = 0;
                 npts[i]          = 0;
-                lambdas[i]       = NULL;
-                samples_rawdh[i] = NULL; /* init to NULL so we know which
-                                            ones contain values */
+                lambdas[i]       = nullptr;
+                samples_rawdh[i] = nullptr; /* init to NULL so we know which
+                                               ones contain values */
             }
         }
         else
@@ -3338,7 +3338,7 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
                     // nsamples is always >0 here, so samples_rawdh must be a valid pointer. Unfortunately
                     // cppcheck does not understand the logic unless the assert is inside the loop, but
                     // this is not performance-sensitive code.
-                    GMX_RELEASE_ASSERT(samples_rawdh != NULL, "samples_rawdh==NULL with nsamples>0");
+                    GMX_RELEASE_ASSERT(samples_rawdh != nullptr, "samples_rawdh==NULL with nsamples>0");
                     if (samples_rawdh[i])
                     {
                         /* insert it into the existing list */
@@ -3346,7 +3346,7 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
                                                        samples_rawdh[i]);
                         /* and make sure we'll allocate a new one this time
                            around */
-                        samples_rawdh[i] = NULL;
+                        samples_rawdh[i] = nullptr;
                     }
                 }
             }
@@ -3603,7 +3603,7 @@ int gmx_bar(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -3696,7 +3696,7 @@ int gmx_bar(int argc, char *argv[])
 
 
 
-    fpb = NULL;
+    fpb = nullptr;
     if (opt2bSet("-o", NFILE, fnm))
     {
         sprintf(buf, "%s (%s)", "\\DeltaG", "kT");
@@ -3704,7 +3704,7 @@ int gmx_bar(int argc, char *argv[])
                             "\\lambda", buf, exvggtXYDY, oenv);
     }
 
-    fpi = NULL;
+    fpi = nullptr;
     if (opt2bSet("-oi", NFILE, fnm))
     {
         sprintf(buf, "%s (%s)", "\\DeltaG", "kT");
@@ -3846,14 +3846,14 @@ int gmx_bar(int argc, char *argv[])
     for (f = 0; f < nresults; f++)
     {
 
-        if (fpi != NULL)
+        if (fpi != nullptr)
         {
             lambda_vec_print_short(results[f].a->native_lambda, buf);
             fprintf(fpi, xvg2format, buf, dg_tot);
         }
 
 
-        if (fpb != NULL)
+        if (fpb != nullptr)
         {
             lambda_vec_print_intermediate(results[f].a->native_lambda,
                                           results[f].b->native_lambda,
@@ -3922,13 +3922,13 @@ int gmx_bar(int argc, char *argv[])
     printf("\n");
 
 
-    if (fpi != NULL)
+    if (fpi != nullptr)
     {
         lambda_vec_print_short(results[nresults-1].b->native_lambda, buf);
         fprintf(fpi, xvg2format, buf, dg_tot);
         xvgrclose(fpi);
     }
-    if (fpb != NULL)
+    if (fpb != nullptr)
     {
         xvgrclose(fpb);
     }

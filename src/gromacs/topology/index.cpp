@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -229,8 +229,8 @@ typedef struct {
 static void analyse_other(const char ** restype, const t_atoms *atoms,
                           t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
-    restp_t *restp = NULL;
-    char   **attp  = NULL;
+    restp_t *restp = nullptr;
+    char   **attp  = nullptr;
     char    *rname, *aname;
     int     *aid, *aaid;
     int      i, j, k, l, resind, naid, naaid, natp, nrestp = 0;
@@ -331,7 +331,7 @@ static void analyse_other(const char ** restype, const t_atoms *atoms,
                         }
                     }
                     sfree(attp);
-                    attp = NULL;
+                    attp = nullptr;
                 }
             }
             sfree(aid);
@@ -388,7 +388,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
     };
 
     static const t_gmx_help_make_index_group constructing_data[] =
-    {{ NULL,   0, "Protein",      TRUE,  -1, -1},
+    {{ nullptr,   0, "Protein",      TRUE,  -1, -1},
      { pnoh,   asize(pnoh),   "Protein-H",    TRUE,  0,  -1},
      { calpha, asize(calpha), "C-alpha",      FALSE, -1, -1},
      { bb,     asize(bb),     "Backbone",     FALSE, -1, -1},
@@ -569,7 +569,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
 
 void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
-    gmx_residuetype_t*rt = NULL;
+    gmx_residuetype_t*rt = nullptr;
     char             *resnm;
     int              *aid;
     const char    **  restype;
@@ -600,7 +600,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 
     snew(restype, atoms->nres);
     ntypes     = 0;
-    p_typename = NULL;
+    p_typename = nullptr;
     if (atoms->nres > 0)
     {
         int i = 0;
@@ -765,10 +765,10 @@ t_blocka *init_index(const char *gfile, char ***grpname)
     in = gmx_ffopen(gfile, "r");
     snew(b, 1);
     b->nr      = 0;
-    b->index   = NULL;
+    b->index   = nullptr;
     b->nra     = 0;
-    b->a       = NULL;
-    *grpname   = NULL;
+    b->a       = nullptr;
+    *grpname   = nullptr;
     maxentries = 0;
     while (get_a_line(in, line, STRLEN))
     {
@@ -800,7 +800,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
                     srenew(b->a, maxentries);
                 }
                 assert(b->a != NULL); // for clang analyzer
-                b->a[i] = strtol(str, NULL, 10)-1;
+                b->a[i] = strtol(str, nullptr, 10)-1;
                 b->index[b->nr]++;
                 (b->nra)++;
                 pt = strstr(pt, str)+strlen(str);
@@ -888,7 +888,7 @@ int find_group(const char *s, int ngrps, char **grpname)
             strcpy(string, grpname[i]);
             upstring(string);
             minstring(string);
-            if (strstr(string, key) != NULL)
+            if (strstr(string, key) != nullptr)
             {
                 if (aa != -1)
                 {
@@ -1020,12 +1020,12 @@ void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
                int isize[], int *index[], char *grpnames[])
 {
     char    ***gnames;
-    t_blocka  *grps = NULL;
+    t_blocka  *grps = nullptr;
     int       *grpnr;
 
     snew(grpnr, ngrps);
     snew(gnames, 1);
-    if (fnm != NULL)
+    if (fnm != nullptr)
     {
         grps = init_index(fnm, gnames);
     }

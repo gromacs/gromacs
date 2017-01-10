@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,7 +110,7 @@ int gmx_genpr(int argc, char *argv[])
 #define npargs asize(pa)
 
     gmx_output_env_t *oenv;
-    t_atoms          *atoms = NULL;
+    t_atoms          *atoms = nullptr;
     int               i, j, k;
     FILE             *out;
     int               igrp;
@@ -120,18 +120,18 @@ int gmx_genpr(int argc, char *argv[])
     char             *gn_grp;
     matrix            box;
     gmx_bool          bFreeze;
-    rvec              dx, *x = NULL, *v = NULL;
+    rvec              dx, *x = nullptr, *v = nullptr;
 
     t_filenm          fnm[] = {
-        { efSTX, "-f",  NULL,    ffREAD },
-        { efNDX, "-n",  NULL,    ffOPTRD },
+        { efSTX, "-f",  nullptr,    ffREAD },
+        { efNDX, "-n",  nullptr,    ffOPTRD },
         { efITP, "-o",  "posre", ffWRITE },
         { efNDX, "-of", "freeze",    ffOPTWR }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, npargs, pa,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -141,7 +141,7 @@ int gmx_genpr(int argc, char *argv[])
     xfn     = opt2fn_null("-f", NFILE, fnm);
     nfn     = opt2fn_null("-n", NFILE, fnm);
 
-    if (( nfn == NULL ) && ( xfn == NULL))
+    if (( nfn == nullptr ) && ( xfn == nullptr))
     {
         gmx_fatal(FARGS, "no index file and no structure file supplied");
     }
@@ -156,15 +156,15 @@ int gmx_genpr(int argc, char *argv[])
     }
 
     const char *title = "";
-    if (xfn != NULL)
+    if (xfn != nullptr)
     {
         fprintf(stderr, "\nReading structure file\n");
-        t_topology *top = NULL;
+        t_topology *top = nullptr;
         snew(top, 1);
-        read_tps_conf(xfn, top, NULL, &x, &v, box, FALSE);
+        read_tps_conf(xfn, top, nullptr, &x, &v, box, FALSE);
         title = *top->name;
         atoms = &top->atoms;
-        if (atoms->pdbinfo == NULL)
+        if (atoms->pdbinfo == nullptr)
         {
             snew(atoms->pdbinfo, atoms->nr);
         }

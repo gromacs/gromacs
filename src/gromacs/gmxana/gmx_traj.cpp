@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,7 +72,7 @@ static void low_print_data(FILE *fp, real time, rvec x[], int n, int *index,
     fprintf(fp, " %g", time);
     for (i = 0; i < n; i++)
     {
-        if (index != NULL)
+        if (index != nullptr)
         {
             ii = index[i];
         }
@@ -111,7 +111,7 @@ static void average_data(rvec x[], rvec xav[], real *mass,
         for (i = 0; i < isize[g]; i++)
         {
             ind = index[g][i];
-            if (mass != NULL)
+            if (mass != nullptr)
             {
                 m = mass[ind];
                 svmul(m, x[ind], tmp);
@@ -129,7 +129,7 @@ static void average_data(rvec x[], rvec xav[], real *mass,
                 }
             }
         }
-        if (mass != NULL)
+        if (mass != nullptr)
         {
             for (d = 0; d < DIM; d++)
             {
@@ -151,16 +151,16 @@ static void print_data(FILE *fp, real time, rvec x[], real *mass, gmx_bool bCom,
                        int ngrps, int isize[], int **index, gmx_bool bDim[],
                        const char *sffmt)
 {
-    static rvec *xav = NULL;
+    static rvec *xav = nullptr;
 
     if (bCom)
     {
-        if (xav == NULL)
+        if (xav == nullptr)
         {
             snew(xav, ngrps);
         }
         average_data(x, xav, mass, ngrps, isize, index);
-        low_print_data(fp, time, xav, ngrps, NULL, bDim, sffmt);
+        low_print_data(fp, time, xav, ngrps, nullptr, bDim, sffmt);
     }
     else
     {
@@ -171,14 +171,14 @@ static void print_data(FILE *fp, real time, rvec x[], real *mass, gmx_bool bCom,
 static void write_trx_x(t_trxstatus *status, const t_trxframe *fr, real *mass, gmx_bool bCom,
                         int ngrps, int isize[], int **index)
 {
-    static rvec    *xav   = NULL;
-    static t_atoms *atoms = NULL;
+    static rvec    *xav   = nullptr;
+    static t_atoms *atoms = nullptr;
     t_trxframe      fr_av;
     int             i;
 
     if (bCom)
     {
-        if (xav == NULL)
+        if (xav == nullptr)
         {
             snew(xav, ngrps);
             snew(atoms, 1);
@@ -199,11 +199,11 @@ static void write_trx_x(t_trxstatus *status, const t_trxframe *fr, real *mass, g
         fr_av.natoms = ngrps;
         fr_av.atoms  = atoms;
         fr_av.x      = xav;
-        write_trxframe(status, &fr_av, NULL);
+        write_trxframe(status, &fr_av, nullptr);
     }
     else
     {
-        write_trxframe_indexed(status, fr, isize[0], index[0], NULL);
+        write_trxframe_indexed(status, fr, isize[0], index[0], nullptr);
     }
 }
 
@@ -260,14 +260,14 @@ static void make_legend(FILE *fp, int ngrps, int isize, int index[],
 
 static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
 {
-    static real **TCM = NULL, **L;
+    static real **TCM = nullptr, **L;
     double        tm, m0, lxx, lxy, lxz, lyy, lyz, lzz, ekrot;
     rvec          a0, ocm;
     dvec          dx, b0;
     dvec          xcm, vcm, acm;
     int           i, j, m, n;
 
-    if (TCM == NULL)
+    if (TCM == nullptr)
     {
         snew(TCM, DIM);
         for (i = 0; i < DIM; i++)
@@ -507,7 +507,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
                *(atoms->resinfo[atoms->atom[maxi].resind].name),
                atoms->resinfo[atoms->atom[maxi].resind].nr);
 
-        if (atoms->pdbinfo == NULL)
+        if (atoms->pdbinfo == nullptr)
         {
             snew(atoms->pdbinfo, atoms->nr);
         }
@@ -535,7 +535,7 @@ static void write_pdb_bfac(const char *fname, const char *xname,
                 atoms->pdbinfo[index[i]].bfac = sum[index[i]][onedim]*scale;
             }
         }
-        write_sto_conf_indexed(fname, title, atoms, x, NULL, ePBC, box, isize, index);
+        write_sto_conf_indexed(fname, title, atoms, x, nullptr, ePBC, box, isize, index);
     }
 }
 
@@ -545,7 +545,7 @@ static void update_histo(int gnx, int index[], rvec v[],
     int  i, m, in, nnn;
     real vn, vnmax;
 
-    if (*histo == NULL)
+    if (*histo == nullptr)
     {
         vnmax = 0;
         for (i = 0; (i < gnx); i++)
@@ -659,20 +659,20 @@ int gmx_traj(int argc, char *argv[])
         { "-scale", FALSE, etREAL, {&scale},
           "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
     };
-    FILE             *outx   = NULL, *outv = NULL, *outf = NULL, *outb = NULL, *outt = NULL;
-    FILE             *outekt = NULL, *outekr = NULL;
+    FILE             *outx   = nullptr, *outv = nullptr, *outf = nullptr, *outb = nullptr, *outt = nullptr;
+    FILE             *outekt = nullptr, *outekr = nullptr;
     t_topology        top;
     int               ePBC;
     real             *mass, time;
     const char       *indexfn;
     t_trxframe        fr;
-    int               flags, nvhisto = 0, *vhisto = NULL;
-    rvec             *xtop, *xp = NULL;
-    rvec             *sumx = NULL, *sumv = NULL, *sumf = NULL;
+    int               flags, nvhisto = 0, *vhisto = nullptr;
+    rvec             *xtop, *xp = nullptr;
+    rvec             *sumx = nullptr, *sumv = nullptr, *sumf = nullptr;
     matrix            topbox;
     t_trxstatus      *status;
-    t_trxstatus      *status_out = NULL;
-    gmx_rmpbc_t       gpbc       = NULL;
+    t_trxstatus      *status_out = nullptr;
+    gmx_rmpbc_t       gpbc       = nullptr;
     int               i, j;
     int               nr_xfr, nr_vfr, nr_ffr;
     char            **grpname;
@@ -687,9 +687,9 @@ int gmx_traj(int argc, char *argv[])
     gmx_output_env_t *oenv;
 
     t_filenm          fnm[] = {
-        { efTRX, "-f", NULL, ffREAD },
-        { efTPS, NULL, NULL, ffREAD },
-        { efNDX, NULL, NULL, ffOPTRD },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
         { efXVG, "-ox",  "coord",     ffOPTWR },
         { efTRX, "-oxt", "coord",     ffOPTWR },
         { efXVG, "-ov",  "veloc",     ffOPTWR },
@@ -708,7 +708,7 @@ int gmx_traj(int argc, char *argv[])
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -751,7 +751,7 @@ int gmx_traj(int argc, char *argv[])
     sprintf(sffmt6, "%s%s%s%s%s%s", sffmt, sffmt, sffmt, sffmt, sffmt, sffmt);
 
     bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC,
-                         &xtop, NULL, topbox,
+                         &xtop, nullptr, topbox,
                          bCom && (bOX || bOXT || bOV || bOT || bEKT || bEKR));
     sfree(xtop);
     if ((bMol || bCV || bCF) && !bTop)
@@ -814,7 +814,7 @@ int gmx_traj(int argc, char *argv[])
     }
     else
     {
-        mass = NULL;
+        mass = nullptr;
     }
 
     flags = 0;
@@ -986,7 +986,7 @@ int gmx_traj(int argc, char *argv[])
         }
         if (bOF && fr.bF)
         {
-            print_data(outf, time, fr.f, NULL, bCom, ngroups, isize, index, bDim, sffmt);
+            print_data(outf, time, fr.f, nullptr, bCom, ngroups, isize, index, bDim, sffmt);
         }
         if (bOB && fr.bBox)
         {
@@ -1053,7 +1053,7 @@ int gmx_traj(int argc, char *argv[])
     }
     while (read_next_frame(oenv, status, &fr));
 
-    if (gpbc != NULL)
+    if (gpbc != nullptr)
     {
         gmx_rmpbc_done(gpbc);
     }

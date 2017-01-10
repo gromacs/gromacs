@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -260,7 +260,7 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
     w_a1      = w_a2 = -1;
     w_period2 = -1.0;
 
-    w_moltype = NULL;
+    w_moltype = nullptr;
     for (molt = 0; molt < mtop->nmoltype; molt++)
     {
         moltype = &mtop->moltype[molt];
@@ -322,7 +322,7 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
                         }
                     }
                     if (!bFound &&
-                        (w_moltype == NULL || period2 < w_period2))
+                        (w_moltype == nullptr || period2 < w_period2))
                     {
                         w_moltype = moltype;
                         w_a1      = a1;
@@ -334,7 +334,7 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
         }
     }
 
-    if (w_moltype != NULL)
+    if (w_moltype != nullptr)
     {
         bWarn = (w_period2 < gmx::square(min_steps_warn*dt));
         /* A check that would recognize most water models */
@@ -509,7 +509,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
            gmx_bool bMorse,
            warninp_t wi)
 {
-    t_molinfo      *molinfo = NULL;
+    t_molinfo      *molinfo = nullptr;
     int             nmolblock;
     gmx_molblock_t *molblock, *molbs;
     int             mb, i, nrmols, nmismatch;
@@ -603,11 +603,11 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     }
 
     t_topology *conftop;
-    rvec       *x = NULL;
-    rvec       *v = NULL;
+    rvec       *x = nullptr;
+    rvec       *v = nullptr;
     snew(conftop, 1);
     init_state(state, 0, 0, 0, 0, 0);
-    read_tps_conf(confin, conftop, NULL, &x, &v, state->box, FALSE);
+    read_tps_conf(confin, conftop, nullptr, &x, &v, state->box, FALSE);
     state->natoms = conftop->atoms.nr;
     if (state->natoms != sys->natoms)
     {
@@ -625,7 +625,7 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
         copy_rvec(x[i], state->x[i]);
     }
     sfree(x);
-    if (v != NULL)
+    if (v != nullptr)
     {
         state->flags |= (1 << estV);
         state->v.resize(state->natoms);
@@ -844,7 +844,7 @@ static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
     t_atom         *atom;
 
     snew(top, 1);
-    read_tps_conf(fn, top, NULL, &x, &v, box, FALSE);
+    read_tps_conf(fn, top, nullptr, &x, &v, box, FALSE);
     natoms = top->atoms.nr;
     done_top(top);
     sfree(top);
@@ -1613,17 +1613,17 @@ int gmx_grompp(int argc, char *argv[])
     char               warn_buf[STRLEN];
 
     t_filenm           fnm[] = {
-        { efMDP, NULL,  NULL,        ffREAD  },
+        { efMDP, nullptr,  nullptr,        ffREAD  },
         { efMDP, "-po", "mdout",     ffWRITE },
-        { efSTX, "-c",  NULL,        ffREAD  },
-        { efSTX, "-r",  NULL,        ffOPTRD },
-        { efSTX, "-rb", NULL,        ffOPTRD },
-        { efNDX, NULL,  NULL,        ffOPTRD },
-        { efTOP, NULL,  NULL,        ffREAD  },
+        { efSTX, "-c",  nullptr,        ffREAD  },
+        { efSTX, "-r",  nullptr,        ffOPTRD },
+        { efSTX, "-rb", nullptr,        ffOPTRD },
+        { efNDX, nullptr,  nullptr,        ffOPTRD },
+        { efTOP, nullptr,  nullptr,        ffREAD  },
         { efTOP, "-pp", "processed", ffOPTWR },
-        { efTPR, "-o",  NULL,        ffWRITE },
-        { efTRN, "-t",  NULL,        ffOPTRD },
-        { efEDR, "-e",  NULL,        ffOPTRD },
+        { efTPR, "-o",  nullptr,        ffWRITE },
+        { efTRN, "-t",  nullptr,        ffOPTRD },
+        { efEDR, "-e",  nullptr,        ffOPTRD },
         /* This group is needed by the VMD viewer as the start configuration for IMD sessions: */
         { efGRO, "-imd", "imdgroup", ffOPTWR },
         { efTRN, "-ref", "rotref",   ffOPTRW }
@@ -1652,7 +1652,7 @@ int gmx_grompp(int argc, char *argv[])
 
     /* Parse the command line */
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, NULL, &oenv))
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -2095,7 +2095,7 @@ int gmx_grompp(int argc, char *argv[])
             }
             else
             {
-                if (ir->fepvals->all_lambda[i] == NULL)
+                if (ir->fepvals->all_lambda[i] == nullptr)
                 {
                     gmx_fatal(FARGS, "Values of lambda not set for a free energy calculation!");
                 }
@@ -2107,7 +2107,7 @@ int gmx_grompp(int argc, char *argv[])
         }
     }
 
-    struct pull_t *pull = NULL;
+    struct pull_t *pull = nullptr;
 
     if (ir->bPull)
     {

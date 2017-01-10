@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -180,7 +180,7 @@ class AlignedAllocator
          *  \throws std::bad_alloc if the allocation fails.
          */
         pointer
-        allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = 0)
+        allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
         {
             void *p = internal::alignedMalloc(n*sizeof(T));
 

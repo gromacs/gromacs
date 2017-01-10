@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -331,7 +331,7 @@ directive str2dir (char *dstr)
     return d_invalid;
 }
 
-static directive **necessary = NULL;
+static directive **necessary = nullptr;
 
 static void set_nec(directive **n, ...)
 /* Must always have at least one extra argument */
@@ -353,7 +353,7 @@ static void set_nec(directive **n, ...)
 
 void DS_Init(DirStack **DS)
 {
-    if (necessary == NULL)
+    if (necessary == nullptr)
     {
         int i;
 
@@ -423,7 +423,7 @@ void DS_Init(DirStack **DS)
             }
         }
     }
-    *DS = NULL;
+    *DS = nullptr;
 
 }
 
@@ -431,7 +431,7 @@ void DS_Done (DirStack **DS)
 {
     DirStack *D;
 
-    while (*DS != NULL)
+    while (*DS != nullptr)
     {
         D   = *DS;
         *DS = (*DS)->prev;
@@ -454,12 +454,12 @@ int DS_Search(DirStack *DS, directive d)
     DirStack *D;
 
     D = DS;
-    while ((D != NULL) && (D->d != d))
+    while ((D != nullptr) && (D->d != d))
     {
         D = D->prev;
     }
 
-    return (D != NULL);
+    return (D != nullptr);
 }
 
 int DS_Check_Order(DirStack *DS, directive d)

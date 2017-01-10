@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,9 +45,9 @@
 
 
 /* Static data structures to find kernels */
-static nb_kernel_info_t *   kernel_list           = NULL;
+static nb_kernel_info_t *   kernel_list           = nullptr;
 static unsigned int         kernel_list_size      = 0;
-static int *                kernel_list_hash      = NULL;
+static int *                kernel_list_hash      = nullptr;
 static unsigned int         kernel_list_hash_size = 0;
 
 static unsigned int
@@ -123,7 +123,7 @@ void
 nb_kernel_list_hash_destroy()
 {
     sfree(kernel_list_hash);
-    kernel_list_hash      = NULL;
+    kernel_list_hash      = nullptr;
     kernel_list_hash_size = 0;
 }
 
@@ -145,7 +145,7 @@ nb_kernel_list_findkernel(FILE gmx_unused *   log,
 
     if (kernel_list_hash_size == 0)
     {
-        return NULL;
+        return nullptr;
     }
 
     index = nb_kernel_hash_func(arch,
@@ -157,7 +157,7 @@ nb_kernel_list_findkernel(FILE gmx_unused *   log,
                                 other,
                                 vf) % kernel_list_hash_size;
 
-    kernelinfo_ptr = NULL;
+    kernelinfo_ptr = nullptr;
     while ( (i = kernel_list_hash[index]) != -1)
     {
         if (!gmx_strcasecmp_min(kernel_list[i].architecture, arch) &&
@@ -175,7 +175,7 @@ nb_kernel_list_findkernel(FILE gmx_unused *   log,
         index = (index+1) % kernel_list_hash_size;
     }
 
-    if (debug && kernelinfo_ptr != NULL)
+    if (debug && kernelinfo_ptr != nullptr)
     {
         fprintf(debug,
                 "NB kernel %s() with architecture '%s' used for neighborlist with\n"
@@ -187,5 +187,5 @@ nb_kernel_list_findkernel(FILE gmx_unused *   log,
     }
 
     /* If we did not find any kernel the pointer will still be NULL */
-    return (kernelinfo_ptr != NULL) ? kernelinfo_ptr->kernelptr : NULL;
+    return (kernelinfo_ptr != nullptr) ? kernelinfo_ptr->kernelptr : nullptr;
 }

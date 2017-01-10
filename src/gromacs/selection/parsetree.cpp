@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -282,10 +282,10 @@ _gmx_selparser_handle_exception(yyscan_t scanner, std::exception *ex)
         bool                   canContinue = false;
         gmx::GromacsException *gromacsException
             = dynamic_cast<gmx::GromacsException *>(ex);
-        if (gromacsException != NULL)
+        if (gromacsException != nullptr)
         {
             gromacsException->prependContext(formatCurrentErrorContext(scanner));
-            canContinue = (dynamic_cast<gmx::UserInputError *>(ex) != NULL);
+            canContinue = (dynamic_cast<gmx::UserInputError *>(ex) != nullptr);
         }
         _gmx_sel_lexer_set_exception(scanner, std::current_exception());
         return canContinue;
@@ -312,7 +312,7 @@ _gmx_selparser_handle_error(yyscan_t scanner)
         ex.prependContext(context);
         gmx::TextWriter *statusWriter
             = _gmx_sel_lexer_get_status_writer(scanner);
-        if (statusWriter != NULL)
+        if (statusWriter != nullptr)
         {
             gmx::formatExceptionMessageToWriter(statusWriter, ex);
             return true;
@@ -357,7 +357,7 @@ SelectionParserParameter::SelectionParserParameter(
         const char                      *name,
         SelectionParserValueListPointer  values,
         const SelectionLocation         &location)
-    : name_(name != NULL ? name : ""), location_(location),
+    : name_(name != nullptr ? name : ""), location_(location),
       values_(values ? std::move(values)
               : SelectionParserValueListPointer(new SelectionParserValueList))
 {
@@ -515,19 +515,19 @@ _gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer &sel,
     for (i = 0; i < nparams; ++i)
     {
         param[i].flags &= ~SPAR_SET;
-        _gmx_selvalue_setstore(&param[i].val, NULL);
+        _gmx_selvalue_setstore(&param[i].val, nullptr);
         if (param[i].flags & SPAR_VARNUM)
         {
             param[i].val.nr = -1;
         }
         /* Duplicate the enum value array if it is given statically */
-        if ((param[i].flags & SPAR_ENUMVAL) && orgparam[i].val.u.ptr != NULL)
+        if ((param[i].flags & SPAR_ENUMVAL) && orgparam[i].val.u.ptr != nullptr)
         {
             int n;
 
             /* Count the values */
             n = 1;
-            while (orgparam[i].val.u.s[n] != NULL)
+            while (orgparam[i].val.u.s[n] != nullptr)
             {
                 ++n;
             }
@@ -536,7 +536,7 @@ _gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer &sel,
                    (n+1)*sizeof(param[i].val.u.s[0]));
         }
     }
-    mdata = NULL;
+    mdata = nullptr;
     if (sel->u.expr.method->init_data)
     {
         mdata = sel->u.expr.method->init_data(nparams, param);
@@ -731,9 +731,9 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
         }
         SelectionParserParameterList params;
         params.push_back(
-                SelectionParserParameter::createFromExpression(NULL, child));
+                SelectionParserParameter::createFromExpression(nullptr, child));
         params.push_back(
-                SelectionParserParameter::create(NULL, std::move(args), location));
+                SelectionParserParameter::create(nullptr, std::move(args), location));
         _gmx_sel_parse_params(params, root->u.expr.method->nparams,
                               root->u.expr.method->param, root, scanner);
     }
@@ -877,7 +877,7 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t                      *method,
     else
     {
         params->push_front(
-                SelectionParserParameter::createFromExpression(NULL, sel));
+                SelectionParserParameter::createFromExpression(nullptr, sel));
         root = modifier;
     }
     /* Process the parameters */
@@ -907,7 +907,7 @@ _gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
     _gmx_selelem_set_kwpos_type(root.get(), type);
     /* Create the parameters for the parameter parser. */
     SelectionParserParameterList params;
-    params.push_back(SelectionParserParameter::createFromExpression(NULL, expr));
+    params.push_back(SelectionParserParameter::createFromExpression(nullptr, expr));
     /* Parse the parameters. */
     _gmx_sel_parse_params(params, root->u.expr.method->nparams,
                           root->u.expr.method->param, root, scanner);
@@ -979,7 +979,7 @@ _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
                     SEL_GROUPREF, _gmx_sel_lexer_get_current_location(scanner)));
     _gmx_selelem_set_vtype(sel, GROUP_VALUE);
     sel->setName(gmx::formatString("group %d", id));
-    sel->u.gref.name = NULL;
+    sel->u.gref.name = nullptr;
     sel->u.gref.id   = id;
 
     if (_gmx_sel_lexer_has_groups_set(scanner))
@@ -1064,7 +1064,7 @@ _gmx_sel_init_selection(const char                             *name,
 
     /* Print out some information if the parser is interactive */
     gmx::TextWriter *statusWriter = _gmx_sel_lexer_get_status_writer(scanner);
-    if (statusWriter != NULL)
+    if (statusWriter != nullptr)
     {
         const std::string message
             = gmx::formatString("Selection '%s' parsed",
@@ -1134,7 +1134,7 @@ _gmx_sel_assign_variable(const char                             *name,
     sc->varstrs[sc->nvars] = gmx_strdup(pselstr);
     ++sc->nvars;
     gmx::TextWriter *statusWriter = _gmx_sel_lexer_get_status_writer(scanner);
-    if (statusWriter != NULL)
+    if (statusWriter != nullptr)
     {
         const std::string message
             = gmx::formatString("Variable '%s' parsed", pselstr);

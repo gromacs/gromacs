@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,7 @@ static t_2morse *read_dissociation_energies(int *n2morse)
     char        ai[32], aj[32];
     double      e_diss;
     const char *fn     = "edissoc.dat";
-    t_2morse   *t2m    = NULL;
+    t_2morse   *t2m    = nullptr;
     int         maxn2m = 0, n2m = 0;
     int         nread;
 

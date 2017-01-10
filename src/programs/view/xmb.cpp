@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@
 #define ID_ICON    -2
 #define ID_TEXT    -1
 
-static bmchar         *icon_bits   = NULL;
+static bmchar         *icon_bits   = nullptr;
 static int             icon_width  = 0;
 static int             icon_height = 0;
 static unsigned long   icon_fg     = 0;

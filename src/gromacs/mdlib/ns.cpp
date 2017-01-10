@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,7 +143,7 @@ static void init_nblist(FILE *log, t_nblist *nl_sr,
         nl     = nl_sr;
         homenr = maxsr;
 
-        if (nl == NULL)
+        if (nl == nullptr)
         {
             return;
         }
@@ -177,12 +177,12 @@ static void init_nblist(FILE *log, t_nblist *nl_sr,
         nl->maxnrj      = 0;
         nl->nri         = -1;
         nl->nrj         = 0;
-        nl->iinr        = NULL;
-        nl->gid         = NULL;
-        nl->shift       = NULL;
-        nl->jindex      = NULL;
-        nl->jjnr        = NULL;
-        nl->excl_fep    = NULL;
+        nl->iinr        = nullptr;
+        nl->gid         = nullptr;
+        nl->shift       = nullptr;
+        nl->jindex      = nullptr;
+        nl->jjnr        = nullptr;
+        nl->excl_fep    = nullptr;
         reallocate_nblist(nl);
         nl->jindex[0] = 0;
 
@@ -225,7 +225,7 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
     type                     = GMX_NBLIST_INTERACTION_STANDARD;
     bElecAndVdwSwitchDiffers = ( (fr->rcoulomb_switch != fr->rvdw_switch) || (fr->rcoulomb != fr->rvdw));
 
-    fr->ns->bCGlist = (getenv("GMX_NBLISTCG") != 0);
+    fr->ns->bCGlist = (getenv("GMX_NBLISTCG") != nullptr);
     if (!fr->ns->bCGlist)
     {
         igeometry_def = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
@@ -233,7 +233,7 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
     else
     {
         igeometry_def = GMX_NBLIST_GEOMETRY_CG_CG;
-        if (log != NULL)
+        if (log != nullptr)
         {
             fprintf(log, "\nUsing charge-group - charge-group neighbor lists and kernels\n\n");
         }
@@ -270,13 +270,13 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
                     maxsr_wat, GMX_NBKERNEL_VDW_NONE, eintmodNONE, ielec, ielecmod, igeometry_ww, type, bElecAndVdwSwitchDiffers);
 
         /* Did we get the solvent loops so we can use optimized water kernels? */
-        if (nbl->nlist_sr[eNL_VDWQQ_WATER].kernelptr_vf == NULL
-            || nbl->nlist_sr[eNL_QQ_WATER].kernelptr_vf == NULL
-            || nbl->nlist_sr[eNL_VDWQQ_WATERWATER].kernelptr_vf == NULL
-            || nbl->nlist_sr[eNL_QQ_WATERWATER].kernelptr_vf == NULL)
+        if (nbl->nlist_sr[eNL_VDWQQ_WATER].kernelptr_vf == nullptr
+            || nbl->nlist_sr[eNL_QQ_WATER].kernelptr_vf == nullptr
+            || nbl->nlist_sr[eNL_VDWQQ_WATERWATER].kernelptr_vf == nullptr
+            || nbl->nlist_sr[eNL_QQ_WATERWATER].kernelptr_vf == nullptr)
         {
             fr->solvent_opt = esolNO;
-            if (log != NULL)
+            if (log != nullptr)
             {
                 fprintf(log, "Note: The available nonbonded kernels do not support water optimization - disabling.\n");
             }
@@ -295,7 +295,7 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
     /* QMMM MM list */
     if (fr->bQMMM && fr->qr->QMMMscheme != eQMMMschemeoniom)
     {
-        if (NULL == fr->QMMMlist)
+        if (nullptr == fr->QMMMlist)
         {
             snew(fr->QMMMlist, 1);
         }
@@ -303,7 +303,7 @@ void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr)
                     maxsr, 0, 0, ielec, ielecmod, GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE, GMX_NBLIST_INTERACTION_STANDARD, bElecAndVdwSwitchDiffers);
     }
 
-    if (log != NULL)
+    if (log != nullptr)
     {
         fprintf(log, "\n");
     }
@@ -564,11 +564,11 @@ put_in_list_at(gmx_bool              bHaveVdW[],
     t_nblist  *   vdwc;
     t_nblist  *   vdw;
     t_nblist  *   coul;
-    t_nblist  *   vdwc_free  = NULL;
-    t_nblist  *   vdw_free   = NULL;
-    t_nblist  *   coul_free  = NULL;
-    t_nblist  *   vdwc_ww    = NULL;
-    t_nblist  *   coul_ww    = NULL;
+    t_nblist  *   vdwc_free  = nullptr;
+    t_nblist  *   vdw_free   = nullptr;
+    t_nblist  *   coul_free  = nullptr;
+    t_nblist  *   vdwc_ww    = nullptr;
+    t_nblist  *   coul_ww    = nullptr;
 
     int           i, j, jcg, igid, gid, nbl_ind;
     int           jj, jj0, jj1, i_atom;
@@ -2132,7 +2132,7 @@ void init_ns(FILE *fplog, const t_commrec *cr,
     }
 
     ns->nra_alloc = 0;
-    ns->bexcl     = NULL;
+    ns->bexcl     = nullptr;
     if (!DOMAINDECOMP(cr))
     {
         ns_realloc_natoms(ns, mtop->natoms);
@@ -2145,7 +2145,7 @@ void init_ns(FILE *fplog, const t_commrec *cr,
         char *ptr = getenv("GMX_DUMP_NL");
         if (ptr)
         {
-            ns->dump_nl = strtol(ptr, NULL, 10);
+            ns->dump_nl = strtol(ptr, nullptr, 10);
             if (fplog)
             {
                 fprintf(fplog, "GMX_DUMP_NL = %d", ns->dump_nl);
@@ -2224,12 +2224,12 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         }
         else
         {
-            dd_zones = NULL;
+            dd_zones = nullptr;
 
-            get_nsgrid_boundaries(grid->nboundeddim, box, NULL, NULL, NULL, NULL,
+            get_nsgrid_boundaries(grid->nboundeddim, box, nullptr, nullptr, nullptr, nullptr,
                                   cgs->nr, fr->cg_cm, grid_x0, grid_x1, &grid_dens);
 
-            grid_first(log, grid, NULL, NULL, box, grid_x0, grid_x1,
+            grid_first(log, grid, nullptr, nullptr, box, grid_x0, grid_x1,
                        fr->rlist, grid_dens);
         }
 
@@ -2245,7 +2245,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         }
         else
         {
-            fill_grid(NULL, grid, cgs->nr, fr->cg0, fr->hcg, fr->cg_cm);
+            fill_grid(nullptr, grid, cgs->nr, fr->cg0, fr->hcg, fr->cg_cm);
             grid->icg0 = fr->cg0;
             grid->icg1 = fr->hcg;
         }
@@ -2265,7 +2265,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         /* Set the grid cell index for the test particle only.
          * The cell to cg index is not corrected, but that does not matter.
          */
-        fill_grid(NULL, ns->grid, fr->hcg, fr->hcg-1, fr->hcg, fr->cg_cm);
+        fill_grid(nullptr, ns->grid, fr->hcg, fr->hcg-1, fr->hcg, fr->cg_cm);
     }
 
     if (!fr->ns->bCGlist)

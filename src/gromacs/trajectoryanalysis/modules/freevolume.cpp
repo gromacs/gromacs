@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -317,7 +317,7 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     const Selection                     &sel  = pdata->parallelSelection(sel_);
     gmx::UniformRealDistribution<real>   dist;
 
-    GMX_RELEASE_ASSERT(NULL != pbc, "You have no periodic boundary conditions");
+    GMX_RELEASE_ASSERT(nullptr != pbc, "You have no periodic boundary conditions");
 
     // Analysis framework magic
     dh.startFrame(frnr, fr.time);

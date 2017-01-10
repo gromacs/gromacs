@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,7 +155,7 @@ choose_ff_impl(const char *ffsel,
     }
 
     int sel;
-    if (ffsel != NULL)
+    if (ffsel != nullptr)
     {
         sel         = -1;
         int cwdsel  = -1;
@@ -277,13 +277,13 @@ choose_ff_impl(const char *ffsel,
         {
             pret = fgets(buf, STRLEN, stdin);
 
-            if (pret != NULL)
+            if (pret != nullptr)
             {
-                sel = strtol(buf, NULL, 10);
+                sel = strtol(buf, nullptr, 10);
                 sel--;
             }
         }
-        while (pret == NULL || (sel < 0) || (sel >= nff));
+        while (pret == nullptr || (sel < 0) || (sel >= nff));
 
         /* Check for a current limitation of the fflib code.
          * It will always read from the first ff directory in the list.
@@ -365,7 +365,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 
     if (strcmp(wmsel, "none") == 0)
     {
-        *watermodel = NULL;
+        *watermodel = nullptr;
 
         return;
     }
@@ -382,7 +382,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
     {
         fprintf(stderr, "No file '%s' found, will not include a water model\n",
                 fn_watermodels);
-        *watermodel = NULL;
+        *watermodel = nullptr;
 
         return;
     }
@@ -390,7 +390,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
     fp = fflib_open(fn_list);
     printf("\nSelect the Water Model:\n");
     nwm   = 0;
-    model = NULL;
+    model = nullptr;
     while (get_a_line(fp, buf, STRLEN))
     {
         srenew(model, nwm+1);
@@ -415,17 +415,17 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
     {
         pret = fgets(buf, STRLEN, stdin);
 
-        if (pret != NULL)
+        if (pret != nullptr)
         {
-            sel = strtol(buf, NULL, 10);
+            sel = strtol(buf, nullptr, 10);
             sel--;
         }
     }
-    while (pret == NULL || sel < 0 || sel > nwm);
+    while (pret == nullptr || sel < 0 || sel > nwm);
 
     if (sel == nwm)
     {
-        *watermodel = NULL;
+        *watermodel = nullptr;
     }
     else
     {
@@ -560,7 +560,7 @@ void print_top_comment(FILE       *out,
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    if (strchr(ffdir, '/') == NULL)
+    if (strchr(ffdir, '/') == nullptr)
     {
         fprintf(out, ";\tForce field was read from the standard GROMACS share directory.\n;\n\n");
     }
@@ -599,7 +599,7 @@ void print_top_header(FILE *out, const char *filename,
     fprintf(out, "; Include forcefield parameters\n");
 
     p = strrchr(ffdir, '/');
-    p = (ffdir[0] == '.' || p == NULL) ? ffdir : p+1;
+    p = (ffdir[0] == '.' || p == nullptr) ? ffdir : p+1;
 
     fprintf(out, "#include \"%s/%s\"\n\n", p, fflib_forcefield_itp());
 }
@@ -620,7 +620,7 @@ static void print_top_water(FILE *out, const char *ffdir, const char *water)
     fprintf(out, "; Include water topology\n");
 
     p = strrchr(ffdir, '/');
-    p = (ffdir[0] == '.' || p == NULL) ? ffdir : p+1;
+    p = (ffdir[0] == '.' || p == nullptr) ? ffdir : p+1;
     fprintf(out, "#include \"%s/%s.itp\"\n", p, water);
 
     fprintf(out, "\n");
@@ -662,7 +662,7 @@ void print_top_mols(FILE *out,
         for (i = 0; (i < nincl); i++)
         {
             incl = strrchr(incls[i], DIR_SEPARATOR);
-            if (incl == NULL)
+            if (incl == nullptr)
             {
                 incl = incls[i];
             }
@@ -753,7 +753,7 @@ static void do_ssbonds(t_params *ps, t_atoms *atoms,
             gmx_fatal(FARGS, "Trying to make impossible special bond (%s-%s)!",
                       ssbonds[i].a1, ssbonds[i].a2);
         }
-        add_param(ps, ai, aj, NULL, NULL);
+        add_param(ps, ai, aj, nullptr, nullptr);
     }
 }
 
@@ -808,7 +808,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                     fprintf(stderr, "Warning: Short Bond (%d-%d = %g nm)\n",
                             ai+1, aj+1, std::sqrt(dist2));
                 }
-                add_param(psb, ai, aj, NULL, hb[resind].rb[ebtsBONDS].b[j].s);
+                add_param(psb, ai, aj, nullptr, hb[resind].rb[ebtsBONDS].b[j].s);
             }
         }
         /* add bonds from list of hacks (each added atom gets a bond) */
@@ -817,20 +817,20 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
             for (j = 0; j < hb[resind].nhack; j++)
             {
                 if ( ( hb[resind].hack[j].tp > 0 ||
-                       hb[resind].hack[j].oname == NULL ) &&
+                       hb[resind].hack[j].oname == nullptr ) &&
                      strcmp(hb[resind].hack[j].a[0], *(atoms->atomname[i])) == 0)
                 {
                     switch (hb[resind].hack[j].tp)
                     {
-                        case 9:                                   /* COOH terminus */
-                            add_param(psb, i, i+1, NULL, NULL);   /* C-O  */
-                            add_param(psb, i, i+2, NULL, NULL);   /* C-OA */
-                            add_param(psb, i+2, i+3, NULL, NULL); /* OA-H */
+                        case 9:                                         /* COOH terminus */
+                            add_param(psb, i, i+1, nullptr, nullptr);   /* C-O  */
+                            add_param(psb, i, i+2, nullptr, nullptr);   /* C-OA */
+                            add_param(psb, i+2, i+3, nullptr, nullptr); /* OA-H */
                             break;
                         default:
                             for (k = 0; (k < hb[resind].hack[j].nr); k++)
                             {
-                                add_param(psb, i, i+k+1, NULL, NULL);
+                                add_param(psb, i, i+k+1, nullptr, nullptr);
                             }
                     }
                 }
@@ -1030,11 +1030,11 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
     /* first the termini */
     for (i = 0; i < nterpairs; i++)
     {
-        if (rn[i] >= 0 && ntdb[i] != NULL)
+        if (rn[i] >= 0 && ntdb[i] != nullptr)
         {
             copy_t_hackblock(ntdb[i], &(*hb)[rn[i]]);
         }
-        if (rc[i] >= 0 && ctdb[i] != NULL)
+        if (rc[i] >= 0 && ctdb[i] != nullptr)
         {
             merge_t_hackblock(ctdb[i], &(*hb)[rc[i]]);
         }
@@ -1077,8 +1077,8 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
         }
         bRM = merge_t_bondeds(res->rb, (*hb)[i].rb, tern >= 0, terc >= 0);
 
-        if (bRM && ((tern >= 0 && ntdb[tern] == NULL) ||
-                    (terc >= 0 && ctdb[terc] == NULL)))
+        if (bRM && ((tern >= 0 && ntdb[tern] == nullptr) ||
+                    (terc >= 0 && ctdb[terc] == nullptr)))
         {
             gmx_fatal(FARGS, "There is a dangling bond at at least one of the terminal ends and the force field does not provide terminal entries or files. Fix your terminal residues so that they match the residue database (.rtp) entries, or provide terminal database entries (.tdb).");
         }
@@ -1102,9 +1102,9 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                 /* find atom in restp */
                 for (l = 0; l < (*restp)[i].natom; l++)
                 {
-                    if ( ( (*hb)[i].hack[j].oname == NULL &&
+                    if ( ( (*hb)[i].hack[j].oname == nullptr &&
                            strcmp((*hb)[i].hack[j].a[0], *(*restp)[i].atomname[l]) == 0 ) ||
-                         ( (*hb)[i].hack[j].oname != NULL &&
+                         ( (*hb)[i].hack[j].oname != nullptr &&
                            strcmp((*hb)[i].hack[j].oname, *(*restp)[i].atomname[l]) == 0 ) )
                     {
                         break;
@@ -1119,22 +1119,22 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                     /* Deleting can happen also only on the input atoms,
                      * not necessarily always on the rtp entry.
                      */
-                    if (!((*hb)[i].hack[j].oname != NULL &&
-                          (*hb)[i].hack[j].nname != NULL) &&
-                        !((*hb)[i].hack[j].oname != NULL &&
-                          (*hb)[i].hack[j].nname == NULL))
+                    if (!((*hb)[i].hack[j].oname != nullptr &&
+                          (*hb)[i].hack[j].nname != nullptr) &&
+                        !((*hb)[i].hack[j].oname != nullptr &&
+                          (*hb)[i].hack[j].nname == nullptr))
                     {
                         gmx_fatal(FARGS,
                                   "atom %s not found in buiding block %d%s "
                                   "while combining tdb and rtp",
-                                  (*hb)[i].hack[j].oname != NULL ?
+                                  (*hb)[i].hack[j].oname != nullptr ?
                                   (*hb)[i].hack[j].oname : (*hb)[i].hack[j].a[0],
                                   i+1, *resinfo[i].rtp);
                     }
                 }
                 else
                 {
-                    if ( (*hb)[i].hack[j].oname == NULL)
+                    if ( (*hb)[i].hack[j].oname == nullptr)
                     {
                         /* we're adding: */
                         add_atom_to_restp(&(*restp)[i], l, &(*hb)[i].hack[j]);
@@ -1142,7 +1142,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                     else
                     {
                         /* oname != NULL */
-                        if ( (*hb)[i].hack[j].nname == NULL)
+                        if ( (*hb)[i].hack[j].nname == nullptr)
                         {
                             /* we're deleting */
                             if (debug)
@@ -1237,7 +1237,7 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
     bDeleted = FALSE;
     for (j = 0; j < hbr->nhack; j++)
     {
-        if (hbr->hack[j].oname != NULL && hbr->hack[j].nname != NULL &&
+        if (hbr->hack[j].oname != nullptr && hbr->hack[j].nname != nullptr &&
             gmx_strcasecmp(oldnm, hbr->hack[j].oname) == 0)
         {
             /* This is a replace entry. */
@@ -1246,7 +1246,7 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
             for (k = 0; k < hbr->nhack; k++)
             {
                 if (k != j &&
-                    hbr->hack[k].oname != NULL && hbr->hack[k].nname != NULL &&
+                    hbr->hack[k].oname != nullptr && hbr->hack[k].nname != nullptr &&
                     gmx_strcasecmp(hbr->hack[k].nname, hbr->hack[j].oname) == 0)
                 {
                     /* The replace in hack[j] replaces an atom that
@@ -1283,8 +1283,8 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                 bFoundInAdd = FALSE;
                 for (k = 0; k < hbr->nhack; k++)
                 {
-                    if (hbr->hack[k].oname == NULL &&
-                        hbr->hack[k].nname != NULL &&
+                    if (hbr->hack[k].oname == nullptr &&
+                        hbr->hack[k].nname != nullptr &&
                         atomname_cmp_nr(newnm, &hbr->hack[k], &anmnr))
                     {
                         if (anmnr <= 1)
@@ -1333,7 +1333,7 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
             snew(pdba->atomname[atind], 1);
             *pdba->atomname[atind] = gmx_strdup(newnm);
         }
-        else if (hbr->hack[j].oname != NULL && hbr->hack[j].nname == NULL &&
+        else if (hbr->hack[j].oname != nullptr && hbr->hack[j].nname == nullptr &&
                  gmx_strcasecmp(oldnm, hbr->hack[j].oname) == 0)
         {
             /* This is a delete entry, check if this atom is present
@@ -1454,8 +1454,8 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
                 /* Skip this CMAP entry if it refers to residues before the
                  * first or after the last residue.
                  */
-                if (((strchr(pname, '-') != NULL) && (residx == 0)) ||
-                    ((strchr(pname, '+') != NULL) && (residx == nres-1)))
+                if (((strchr(pname, '-') != nullptr) && (residx == 0)) ||
+                    ((strchr(pname, '+') != nullptr) && (residx == nres-1)))
                 {
                     bAddCMAP = FALSE;
                     break;

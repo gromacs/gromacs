@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,7 +72,7 @@ static void norm_princ(const t_atoms *atoms, int isize, int *index, int natoms,
 
     /* equalize principal components: */
     /* orient principal axes, get principal components */
-    orient_princ(atoms, isize, index, natoms, x, NULL, princ);
+    orient_princ(atoms, isize, index, natoms, x, nullptr, princ);
 
     /* calc our own principal components */
     clear_rvec(vec);
@@ -159,15 +159,15 @@ int gmx_rms(int argc, char *argv[])
     };
     int         ewhat;
     const char *what[ewNR + 1] =
-    { NULL, "rmsd", "rho", "rhosc", NULL };
+    { nullptr, "rmsd", "rho", "rhosc", nullptr };
     const char *whatname[ewNR] =
-    { NULL, "RMSD", "Rho", "Rho sc" };
+    { nullptr, "RMSD", "Rho", "Rho sc" };
     const char *whatlabel[ewNR] =
-    { NULL, "RMSD (nm)", "Rho", "Rho sc" };
+    { nullptr, "RMSD (nm)", "Rho", "Rho sc" };
     const char *whatxvgname[ewNR] =
-    { NULL, "RMSD", "\\8r\\4", "\\8r\\4\\ssc\\N" };
+    { nullptr, "RMSD", "\\8r\\4", "\\8r\\4\\ssc\\N" };
     const char *whatxvglabel[ewNR] =
-    { NULL, "RMSD (nm)", "\\8r\\4", "\\8r\\4\\ssc\\N" };
+    { nullptr, "RMSD (nm)", "\\8r\\4", "\\8r\\4\\ssc\\N" };
     /* strings and things for fitting methods */
     enum
     {
@@ -175,9 +175,9 @@ int gmx_rms(int argc, char *argv[])
     };
     int             efit;
     const char     *fit[efNR + 1] =
-    { NULL, "rot+trans", "translation", "none", NULL };
+    { nullptr, "rot+trans", "translation", "none", nullptr };
     const char     *fitgraphlabel[efNR + 1] =
-    { NULL, "lsq fit", "translational fit", "no fit" };
+    { nullptr, "lsq fit", "translational fit", "no fit" };
     static int      nrms          = 1;
     static gmx_bool bMassWeighted = TRUE;
     t_pargs         pa[]          =
@@ -225,44 +225,44 @@ int gmx_rms(int argc, char *argv[])
     int             i, j, k, m, teller, teller2, tel_mat, tel_mat2;
 #define NFRAME 5000
     int             maxframe = NFRAME, maxframe2 = NFRAME;
-    real            t, *w_rls, *w_rms, *w_rls_m = NULL, *w_rms_m = NULL;
+    real            t, *w_rls, *w_rms, *w_rls_m = nullptr, *w_rms_m = nullptr;
     gmx_bool        bNorm, bAv, bFreq2, bFile2, bMat, bBond, bDelta, bMirror, bMass;
     gmx_bool        bFit, bReset;
     t_topology      top;
     int             ePBC;
-    t_iatom        *iatom = NULL;
+    t_iatom        *iatom = nullptr;
 
     matrix          box = {{0}};
-    rvec           *x, *xp, *xm = NULL, **mat_x = NULL, **mat_x2, *mat_x2_j = NULL, vec1,
+    rvec           *x, *xp, *xm = nullptr, **mat_x = nullptr, **mat_x2, *mat_x2_j = nullptr, vec1,
                     vec2;
     t_trxstatus    *status;
     char            buf[256], buf2[256];
     int             ncons = 0;
     FILE           *fp;
-    real            rlstot = 0, **rls, **rlsm = NULL, *time, *time2, *rlsnorm = NULL,
-    **rmsd_mat             = NULL, **bond_mat = NULL, *axis, *axis2, *del_xaxis,
+    real            rlstot = 0, **rls, **rlsm = nullptr, *time, *time2, *rlsnorm = nullptr,
+    **rmsd_mat             = nullptr, **bond_mat = nullptr, *axis, *axis2, *del_xaxis,
     *del_yaxis, rmsd_max, rmsd_min, rmsd_avg, bond_max, bond_min, ang;
-    real            **rmsdav_mat = NULL, av_tot, weight, weight_tot;
-    real            **delta      = NULL, delta_max, delta_scalex = 0, delta_scaley = 0,
+    real            **rmsdav_mat = nullptr, av_tot, weight, weight_tot;
+    real            **delta      = nullptr, delta_max, delta_scalex = 0, delta_scaley = 0,
     *delta_tot;
     int               delta_xsize = 0, del_lev = 100, mx, my, abs_my;
-    gmx_bool          bA1, bA2, bPrev, bTop, *bInMat = NULL;
-    int               ifit, *irms, ibond = 0, *ind_bond1 = NULL, *ind_bond2 = NULL, n_ind_m =
+    gmx_bool          bA1, bA2, bPrev, bTop, *bInMat = nullptr;
+    int               ifit, *irms, ibond = 0, *ind_bond1 = nullptr, *ind_bond2 = nullptr, n_ind_m =
         0;
-    int              *ind_fit, **ind_rms, *ind_m = NULL, *rev_ind_m = NULL, *ind_rms_m =
-        NULL;
+    int              *ind_fit, **ind_rms, *ind_m = nullptr, *rev_ind_m = nullptr, *ind_rms_m =
+        nullptr;
     char             *gn_fit, **gn_rms;
     t_rgb             rlo, rhi;
     gmx_output_env_t *oenv;
-    gmx_rmpbc_t       gpbc = NULL;
+    gmx_rmpbc_t       gpbc = nullptr;
 
     t_filenm          fnm[] =
     {
-        { efTPS, NULL, NULL, ffREAD },
-        { efTRX, "-f", NULL, ffREAD },
-        { efTRX, "-f2", NULL, ffOPTRD },
-        { efNDX, NULL, NULL, ffOPTRD },
-        { efXVG, NULL, "rmsd", ffWRITE },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTRX, "-f2", nullptr, ffOPTRD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, nullptr, "rmsd", ffWRITE },
         { efXVG, "-mir", "rmsdmir", ffOPTWR },
         { efXVG, "-a", "avgrp", ffOPTWR },
         { efXVG, "-dist", "rmsd-dist", ffOPTWR },
@@ -273,7 +273,7 @@ int gmx_rms(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr,
                            &oenv))
     {
         return 0;
@@ -359,7 +359,7 @@ int gmx_rms(int argc, char *argv[])
     }
 
     bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp,
-                         NULL, box, TRUE);
+                         nullptr, box, TRUE);
     snew(w_rls, top.atoms.nr);
     snew(w_rms, top.atoms.nr);
 
@@ -477,7 +477,7 @@ int gmx_rms(int argc, char *argv[])
     }
     if (bReset)
     {
-        reset_x(ifit, ind_fit, top.atoms.nr, NULL, xp, w_rls);
+        reset_x(ifit, ind_fit, top.atoms.nr, nullptr, xp, w_rls);
     }
     if (bMirror)
     {
@@ -621,7 +621,7 @@ int gmx_rms(int argc, char *argv[])
 
         if (bReset)
         {
-            reset_x(ifit, ind_fit, natoms, NULL, x, w_rls);
+            reset_x(ifit, ind_fit, natoms, nullptr, x, w_rls);
         }
         if (ewhat == ewRhoSc)
         {
@@ -666,7 +666,7 @@ int gmx_rms(int argc, char *argv[])
             }
             if (bReset)
             {
-                reset_x(ifit, ind_fit, natoms, NULL, xp, w_rls);
+                reset_x(ifit, ind_fit, natoms, nullptr, xp, w_rls);
             }
             if (bFit)
             {
@@ -749,7 +749,7 @@ int gmx_rms(int argc, char *argv[])
 
             if (bReset)
             {
-                reset_x(ifit, ind_fit, natoms, NULL, x, w_rls);
+                reset_x(ifit, ind_fit, natoms, nullptr, x, w_rls);
             }
             if (ewhat == ewRhoSc)
             {
@@ -1219,11 +1219,11 @@ int gmx_rms(int argc, char *argv[])
         xvgrclose(fp);
     }
     do_view(oenv, opt2fn_null("-a", NFILE, fnm), "-graphtype bar");
-    do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);
-    do_view(oenv, opt2fn_null("-mir", NFILE, fnm), NULL);
-    do_view(oenv, opt2fn_null("-m", NFILE, fnm), NULL);
-    do_view(oenv, opt2fn_null("-bm", NFILE, fnm), NULL);
-    do_view(oenv, opt2fn_null("-dist", NFILE, fnm), NULL);
+    do_view(oenv, opt2fn("-o", NFILE, fnm), nullptr);
+    do_view(oenv, opt2fn_null("-mir", NFILE, fnm), nullptr);
+    do_view(oenv, opt2fn_null("-m", NFILE, fnm), nullptr);
+    do_view(oenv, opt2fn_null("-bm", NFILE, fnm), nullptr);
+    do_view(oenv, opt2fn_null("-dist", NFILE, fnm), nullptr);
 
     return 0;
 }

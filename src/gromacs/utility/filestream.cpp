@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,7 +70,7 @@ bool readLineImpl(FILE *fp, std::string *line)
     std::string  result;
     char         buf[bufsize];
     buf[0] = '\0';
-    while (std::fgets(buf, bufsize, fp) != NULL)
+    while (std::fgets(buf, bufsize, fp) != nullptr)
     {
         const size_t length = std::strlen(buf);
         result.append(buf, length);
@@ -105,10 +105,10 @@ class FileStreamImpl
         {
         }
         FileStreamImpl(const char *filename, const char *mode)
-            : fp_(NULL), bClose_(true)
+            : fp_(nullptr), bClose_(true)
         {
             fp_ = std::fopen(filename, mode);
-            if (fp_ == NULL)
+            if (fp_ == nullptr)
             {
                 GMX_THROW_WITH_ERRNO(
                         FileIOError(formatString("Could not open file '%s'", filename)),
@@ -117,7 +117,7 @@ class FileStreamImpl
         }
         ~FileStreamImpl()
         {
-            if (fp_ != NULL && bClose_)
+            if (fp_ != nullptr && bClose_)
             {
                 if (std::fclose(fp_) != 0)
                 {
@@ -128,19 +128,19 @@ class FileStreamImpl
 
         FILE *handle()
         {
-            GMX_RELEASE_ASSERT(fp_ != NULL,
+            GMX_RELEASE_ASSERT(fp_ != nullptr,
                                "Attempted to access a file object that is not open");
             return fp_;
         }
 
         void close()
         {
-            GMX_RELEASE_ASSERT(fp_ != NULL,
+            GMX_RELEASE_ASSERT(fp_ != nullptr,
                                "Attempted to close a file object that is not open");
             GMX_RELEASE_ASSERT(bClose_,
                                "Attempted to close a file object that should not be");
             const bool bOk = (std::fclose(fp_) == 0);
-            fp_ = NULL;
+            fp_ = nullptr;
             if (!bOk)
             {
                 GMX_THROW_WITH_ERRNO(
@@ -192,7 +192,7 @@ StandardInputStream &StandardInputStream::instance()
 FILE *TextInputFile::openRawHandle(const char *filename)
 {
     FILE *fp = fopen(filename, "r");
-    if (fp == NULL)
+    if (fp == nullptr)
     {
         GMX_THROW_WITH_ERRNO(
                 FileIOError(formatString("Could not open file '%s'", filename)),

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -286,7 +286,7 @@ extern void set_reference_positions(
                 gmx_fatal(FARGS, "Number of atoms in file %s (%d) does not match the number of atoms in rotation group (%d)!\n",
                           reffile, header.natoms, rotg->nat);
             }
-            gmx_trr_read_single_frame(reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, NULL, NULL);
+            gmx_trr_read_single_frame(reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, nullptr, nullptr);
 
             /* Check whether the box is unchanged and output a warning if not: */
             check_box_unchanged(f_box, box, reffile, wi);
@@ -299,7 +299,7 @@ extern void set_reference_positions(
                 ii = rotg->ind[i];
                 copy_rvec(x[ii], rotg->x_ref[i]);
             }
-            gmx_trr_write_single_frame(reffile, g, 0.0, 0.0, box, rotg->nat, rotg->x_ref, NULL, NULL);
+            gmx_trr_write_single_frame(reffile, g, 0.0, 0.0, box, rotg->nat, rotg->x_ref, nullptr, nullptr);
         }
     }
 }

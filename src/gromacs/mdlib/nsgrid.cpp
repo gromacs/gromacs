@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -148,13 +148,13 @@ void get_nsgrid_boundaries(int nboundeddim, matrix box,
     {
         if (d < nboundeddim)
         {
-            grid_x0[d] = (gr0 != NULL ? (*gr0)[d] : 0);
-            grid_x1[d] = (gr1 != NULL ? (*gr1)[d] : box[d][d]);
+            grid_x0[d] = (gr0 != nullptr ? (*gr0)[d] : 0);
+            grid_x1[d] = (gr1 != nullptr ? (*gr1)[d] : box[d][d]);
             vol       *= (grid_x1[d] - grid_x0[d]);
         }
         else
         {
-            if (ddbox == NULL)
+            if (ddbox == nullptr)
             {
                 get_nsgrid_boundaries_vac(av[d], stddev[d],
                                           &grid_x0[d], &grid_x1[d],
@@ -173,13 +173,13 @@ void get_nsgrid_boundaries(int nboundeddim, matrix box,
                 bdens1 = grid_x1[d];
             }
             /* Check for a DD cell not at a lower edge */
-            if (dd != NULL && gr0 != NULL && dd->ci[d] > 0)
+            if (dd != nullptr && gr0 != nullptr && dd->ci[d] > 0)
             {
                 grid_x0[d] = (*gr0)[d];
                 bdens0     = (*gr0)[d];
             }
             /* Check for a DD cell not at a higher edge */
-            if (dd != NULL && gr1 != NULL && dd->ci[d] < dd->nc[d]-1)
+            if (dd != nullptr && gr1 != nullptr && dd->ci[d] < dd->nc[d]-1)
             {
                 grid_x1[d] = (*gr1)[d];
                 bdens1     = (*gr1)[d];
@@ -683,7 +683,7 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
         fprintf(debug, "Filling grid from %d to %d\n", cg0, cg1);
     }
 
-    if (dd_zones == NULL)
+    if (dd_zones == nullptr)
     {
         for (cg = cg0; cg < cg1; cg++)
         {

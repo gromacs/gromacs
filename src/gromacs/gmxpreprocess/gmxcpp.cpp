@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,9 +63,9 @@ typedef struct {
 } t_define;
 
 static int        ndef   = 0;
-static t_define  *defs   = NULL;
+static t_define  *defs   = nullptr;
 static int        nincl  = 0;
-static char     **incl   = 0;
+static char     **incl   = nullptr;
 
 /* enum used for handling ifdefs */
 enum {
@@ -93,7 +93,7 @@ static const char *strstrw(const char *buf, const char *word)
 {
     const char *ptr;
 
-    while ((ptr = strstr(buf, word)) != NULL)
+    while ((ptr = strstr(buf, word)) != nullptr)
     {
         /* Check if we did not find part of a longer word */
         if (ptr &&
@@ -105,7 +105,7 @@ static const char *strstrw(const char *buf, const char *word)
 
         buf = ptr + strlen(word);
     }
-    return NULL;
+    return nullptr;
 }
 
 static gmx_bool find_directive(char *buf, char **name, char **val)
@@ -143,7 +143,7 @@ static gmx_bool find_directive(char *buf, char **name, char **val)
         }
     }
     /* Check if anything is remaining */
-    *val = (*buf != 0) ? buf : NULL;
+    *val = (*buf != 0) ? buf : nullptr;
     return TRUE;
 }
 
@@ -156,7 +156,7 @@ static void add_include(const char *include)
 {
     int i;
 
-    if (include == NULL)
+    if (include == nullptr)
     {
         return;
     }
@@ -184,7 +184,7 @@ static void done_includes()
         sfree(incl[i]);
     }
     sfree(incl);
-    incl  = NULL;
+    incl  = nullptr;
     nincl = 0;
 }
 
@@ -220,7 +220,7 @@ static void add_define(const char *name, const char *value)
     }
     else
     {
-        defs[i].def  = NULL;
+        defs[i].def  = nullptr;
     }
 }
 
@@ -233,7 +233,7 @@ static void done_defines()
         sfree(defs[i].def);
     }
     sfree(defs);
-    defs = NULL;
+    defs = nullptr;
     ndef = 0;
 }
 
@@ -269,7 +269,7 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
                 }
                 else
                 {
-                    add_define(cppopts[i] + 2, NULL);
+                    add_define(cppopts[i] + 2, nullptr);
                 }
             }
             i++;
@@ -282,7 +282,7 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
 
     snew(cpp, 1);
     *handle      = cpp;
-    cpp->fn      = NULL;
+    cpp->fn      = nullptr;
     /* Find the file. First check whether it is in the current directory. */
     if (gmx_fexist(filenm))
     {
@@ -312,7 +312,7 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     {
         gmx_fatal(FARGS, "Topology include file \"%s\" not found", filenm);
     }
-    if (NULL != debug)
+    if (nullptr != debug)
     {
         fprintf(debug, "GMXCPP: cpp file open %s\n", cpp->fn);
     }
@@ -323,14 +323,14 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
     ptr  = strrchr(cpp->fn, '/');
     ptr2 = strrchr(cpp->fn, DIR_SEPARATOR);
 
-    if (ptr == NULL || (ptr2 != NULL && ptr2 > ptr))
+    if (ptr == nullptr || (ptr2 != nullptr && ptr2 > ptr))
     {
         ptr = ptr2;
     }
-    if (ptr == NULL)
+    if (ptr == nullptr)
     {
-        cpp->path = NULL;
-        cpp->cwd  = NULL;
+        cpp->path = nullptr;
+        cpp->cwd  = nullptr;
     }
     else
     {
@@ -340,33 +340,33 @@ int cpp_open_file(const char *filenm, gmx_cpp_t *handle, char **cppopts)
         snew(cpp->cwd, STRLEN);
 
         gmx_getcwd(cpp->cwd, STRLEN);
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "GMXCPP: cwd %s\n", cpp->cwd);
         }
         gmx_chdir(cpp->path);
 
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "GMXCPP: chdir to %s\n", cpp->path);
         }
     }
     cpp->line_len = 0;
-    cpp->line     = NULL;
+    cpp->line     = nullptr;
     cpp->line_nr  = 0;
     cpp->nifdef   = 0;
-    cpp->ifdefs   = NULL;
-    cpp->child    = NULL;
-    cpp->parent   = NULL;
-    if (cpp->fp == NULL)
+    cpp->ifdefs   = nullptr;
+    cpp->child    = nullptr;
+    cpp->parent   = nullptr;
+    if (cpp->fp == nullptr)
     {
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "GMXCPP: opening file %s\n", cpp->fn);
         }
         cpp->fp = fopen(cpp->fn, "r");
     }
-    if (cpp->fp == NULL)
+    if (cpp->fp == nullptr)
     {
         switch (errno)
         {
@@ -500,11 +500,11 @@ process_directive(gmx_cpp_t *handlep, const char *dname, const char *dval)
                     inc_fn, i0, len);
         }
         /* Open include file and store it as a child in the handle structure */
-        status = cpp_open_file(inc_fn, &(handle->child), NULL);
+        status = cpp_open_file(inc_fn, &(handle->child), nullptr);
         sfree(inc_fn);
         if (status != eCPP_OK)
         {
-            handle->child = NULL;
+            handle->child = nullptr;
             return status;
         }
         /* Make a linked list of open files and move on to the include file */
@@ -590,7 +590,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
     if (!bEOF)
     {
         /* Read the actual line now. */
-        if (fgets2(buf, n-1, handle->fp) == NULL)
+        if (fgets2(buf, n-1, handle->fp) == nullptr)
         {
             /* Recheck EOF, since we could have been at the end before
              * the fgets2 call, but we need to read past the end to know.
@@ -608,13 +608,13 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
 
     if (bEOF)
     {
-        if (handle->parent == NULL)
+        if (handle->parent == nullptr)
         {
             return eCPP_EOF;
         }
         cpp_close_file(handlep);
         *handlep      = handle->parent;
-        handle->child = NULL;
+        handle->child = nullptr;
         return cpp_read_line(handlep, n, buf);
     }
     else
@@ -663,7 +663,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
         {
             nn  = 0;
             ptr = buf;
-            while ((ptr = strstrw(ptr, defs[i].name)) != NULL)
+            while ((ptr = strstrw(ptr, defs[i].name)) != nullptr)
             {
                 nn++;
                 ptr += strlen(defs[i].name);
@@ -675,7 +675,7 @@ int cpp_read_line(gmx_cpp_t *handlep, int n, char buf[])
                 len = strlen(buf) + nn*std::max(four, four+strlen(defs[i].def)-strlen(defs[i].name));
                 snew(name, len);
                 ptr = buf;
-                while ((ptr2 = strstrw(ptr, defs[i].name)) != NULL)
+                while ((ptr2 = strstrw(ptr, defs[i].name)) != nullptr)
                 {
                     strncat(name, ptr, (int)(ptr2-ptr));
                     strcat(name, defs[i].def);
@@ -719,9 +719,9 @@ int cpp_close_file(gmx_cpp_t *handlep)
         fprintf(debug, "GMXCPP: closing file %s\n", handle->fn);
     }
     fclose(handle->fp);
-    if (NULL != handle->cwd)
+    if (nullptr != handle->cwd)
     {
-        if (NULL != debug)
+        if (nullptr != debug)
         {
             fprintf(debug, "GMXCPP: chdir to %s\n", handle->cwd);
         }
@@ -748,28 +748,28 @@ int cpp_close_file(gmx_cpp_t *handlep)
                 return eCPP_UNKNOWN;
         }
     }
-    handle->fp      = NULL;
+    handle->fp      = nullptr;
     handle->line_nr = 0;
-    if (NULL != handle->fn)
+    if (nullptr != handle->fn)
     {
         sfree(handle->fn);
-        handle->fn = NULL;
+        handle->fn = nullptr;
     }
-    if (NULL != handle->line)
+    if (nullptr != handle->line)
     {
         sfree(handle->line);
-        handle->line = NULL;
+        handle->line = nullptr;
     }
-    if (NULL != handle->ifdefs)
+    if (nullptr != handle->ifdefs)
     {
         sfree(handle->ifdefs);
     }
     handle->nifdef = 0;
-    if (NULL != handle->path)
+    if (nullptr != handle->path)
     {
         sfree(handle->path);
     }
-    if (NULL != handle->cwd)
+    if (nullptr != handle->cwd)
     {
         sfree(handle->cwd);
     }

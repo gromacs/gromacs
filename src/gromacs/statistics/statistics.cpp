@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,19 +143,19 @@ int gmx_stats_get_point(gmx_stats_t gstats, real *x, real *y,
         outlier = (r > rmsd*level);
         if (outlier)
         {
-            if (NULL != x)
+            if (nullptr != x)
             {
                 *x  = stats->x[stats->np_c];
             }
-            if (NULL != y)
+            if (nullptr != y)
             {
                 *y  = stats->y[stats->np_c];
             }
-            if (NULL != dx)
+            if (nullptr != dx)
             {
                 *dx = stats->dx[stats->np_c];
             }
-            if (NULL != dy)
+            if (nullptr != dy)
             {
                 *dy = stats->dy[stats->np_c];
             }
@@ -180,8 +180,8 @@ int gmx_stats_add_points(gmx_stats_t gstats, int n, real *x, real *y,
     {
         int ok;
         if ((ok = gmx_stats_add_point(gstats, x[i], y[i],
-                                      (NULL != dx) ? dx[i] : 0,
-                                      (NULL != dy) ? dy[i] : 0)) != estatsOK)
+                                      (nullptr != dx) ? dx[i] : 0,
+                                      (nullptr != dy) ? dy[i] : 0)) != estatsOK)
         {
             return ok;
         }
@@ -329,27 +329,27 @@ int gmx_stats_get_ab(gmx_stats_t gstats, int weight,
     {
         return ok;
     }
-    if (NULL != a)
+    if (nullptr != a)
     {
         *a    = stats->a;
     }
-    if (NULL != b)
+    if (nullptr != b)
     {
         *b    = stats->b;
     }
-    if (NULL != da)
+    if (nullptr != da)
     {
         *da   = stats->sigma_a;
     }
-    if (NULL != db)
+    if (nullptr != db)
     {
         *db   = stats->sigma_b;
     }
-    if (NULL != chi2)
+    if (nullptr != chi2)
     {
         *chi2 = stats->chi2;
     }
-    if (NULL != Rfit)
+    if (nullptr != Rfit)
     {
         *Rfit = stats->Rfit;
     }
@@ -367,19 +367,19 @@ int gmx_stats_get_a(gmx_stats_t gstats, int weight, real *a, real *da,
     {
         return ok;
     }
-    if (NULL != a)
+    if (nullptr != a)
     {
         *a    = stats->aa;
     }
-    if (NULL != da)
+    if (nullptr != da)
     {
         *da   = stats->sigma_aa;
     }
-    if (NULL != chi2)
+    if (nullptr != chi2)
     {
         *chi2 = stats->chi2aa;
     }
-    if (NULL != Rfit)
+    if (nullptr != Rfit)
     {
         *Rfit = stats->Rfitaa;
     }
@@ -412,15 +412,15 @@ int gmx_stats_get_ase(gmx_stats_t gstats, real *aver, real *sigma, real *error)
         return ok;
     }
 
-    if (NULL != aver)
+    if (nullptr != aver)
     {
         *aver  = stats->aver;
     }
-    if (NULL != sigma)
+    if (nullptr != sigma)
     {
         *sigma = stats->sigma_aver;
     }
-    if (NULL != error)
+    if (nullptr != error)
     {
         *error = stats->error;
     }
@@ -674,7 +674,7 @@ int lsq_y_ax(int n, real x[], real y[], real *a)
     int         ok;
     real        da, chi2, Rfit;
 
-    gmx_stats_add_points(lsq, n, x, y, 0, 0);
+    gmx_stats_add_points(lsq, n, x, y, nullptr, nullptr);
     ok = gmx_stats_get_a(lsq, elsqWEIGHT_NONE, a, &da, &chi2, &Rfit);
     gmx_stats_free(lsq);
 
@@ -691,11 +691,11 @@ static int low_lsq_y_ax_b(int n, real *xr, double *xd, real yr[],
     {
         double pt;
 
-        if (xd != NULL)
+        if (xd != nullptr)
         {
             pt = xd[i];
         }
-        else if (xr != NULL)
+        else if (xr != nullptr)
         {
             pt = xr[i];
         }
@@ -710,7 +710,7 @@ static int low_lsq_y_ax_b(int n, real *xr, double *xd, real yr[],
             return ok;
         }
     }
-    ok = gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, a, b, NULL, NULL, chi2, r);
+    ok = gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, a, b, nullptr, nullptr, chi2, r);
     gmx_stats_free(lsq);
 
     return ok;
@@ -718,13 +718,13 @@ static int low_lsq_y_ax_b(int n, real *xr, double *xd, real yr[],
 
 int lsq_y_ax_b(int n, real x[], real y[], real *a, real *b, real *r, real *chi2)
 {
-    return low_lsq_y_ax_b(n, x, NULL, y, a, b, r, chi2);
+    return low_lsq_y_ax_b(n, x, nullptr, y, a, b, r, chi2);
 }
 
 int lsq_y_ax_b_xdouble(int n, double x[], real y[], real *a, real *b,
                        real *r, real *chi2)
 {
-    return low_lsq_y_ax_b(n, NULL, x, y, a, b, r, chi2);
+    return low_lsq_y_ax_b(n, nullptr, x, y, a, b, r, chi2);
 }
 
 int lsq_y_ax_b_error(int n, real x[], real y[], real dy[],

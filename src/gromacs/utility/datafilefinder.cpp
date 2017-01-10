@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ class DataFileFinder::Impl
     public:
         static std::string getDefaultPath();
 
-        Impl() : envName_(NULL), bEnvIsSet_(false) {}
+        Impl() : envName_(nullptr), bEnvIsSet_(false) {}
 
         const char               *envName_;
         bool                      bEnvIsSet_;
@@ -125,7 +125,7 @@ FILE *DataFileFinder::openFile(const DataFileOptions &options) const
     std::string filename = findFile(options);
     if (filename.empty())
     {
-        return NULL;
+        return nullptr;
     }
 #if 0
     if (debug)
@@ -201,7 +201,7 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
             message.append(defaultPath);
             message.append(" (default)");
         }
-        if (!bEnvIsSet && envName != NULL)
+        if (!bEnvIsSet && envName != nullptr)
         {
             message.append(
                     formatString("\nYou can set additional directories to search "
