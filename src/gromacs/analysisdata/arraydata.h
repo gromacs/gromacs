@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,9 +73,9 @@ namespace gmx
 class AbstractAnalysisArrayData : public AbstractAnalysisData
 {
     public:
-        virtual ~AbstractAnalysisArrayData();
+        ~AbstractAnalysisArrayData() override;
 
-        virtual int frameCount() const
+        int frameCount() const override
         {
             return bReady_ ? rowCount_ : 0;
         }
@@ -206,8 +206,8 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
                                  AbstractAnalysisArrayData       *dest);
 
     private:
-        virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const;
-        virtual bool requestStorageInternal(int nframes);
+        AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
+        bool requestStorageInternal(int nframes) override;
 
         int                            rowCount_;
         AnalysisDataPointSetInfo       pointSetInfo_;

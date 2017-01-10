@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,15 +72,15 @@ class BooleanOptionStorage : public OptionStorageTemplateSimple<bool>
         {
         }
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const { return "bool"; }
-        virtual std::string formatSingleValue(const bool &value) const;
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override { return "bool"; }
+        std::string formatSingleValue(const bool &value) const override;
 
         //! \copydoc BooleanOptionInfo::defaultValue()
         bool defaultValue() const { return valueCount() > 0 && values()[0]; }
 
     private:
-        virtual void initConverter(ConverterType *converter);
+        void initConverter(ConverterType *converter) override;
 
         BooleanOptionInfo       info_;
 };
@@ -97,14 +97,14 @@ class IntegerOptionStorage : public OptionStorageTemplateSimple<int>
         {
         }
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override
         { return isVector() ? "vector" : "int"; }
-        virtual std::string formatSingleValue(const int &value) const;
+        std::string formatSingleValue(const int &value) const override;
 
     private:
-        virtual void initConverter(ConverterType *converter);
-        virtual void processSetValues(ValueList *values);
+        void initConverter(ConverterType *converter) override;
+        void processSetValues(ValueList *values) override;
 
         IntegerOptionInfo       info_;
 };
@@ -121,12 +121,12 @@ class Int64OptionStorage : public OptionStorageTemplateSimple<gmx_int64_t>
         {
         }
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const { return "int"; }
-        virtual std::string formatSingleValue(const gmx_int64_t &value) const;
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override { return "int"; }
+        std::string formatSingleValue(const gmx_int64_t &value) const override;
 
     private:
-        virtual void initConverter(ConverterType *converter);
+        void initConverter(ConverterType *converter) override;
 
         Int64OptionInfo       info_;
 };
@@ -140,9 +140,9 @@ class DoubleOptionStorage : public OptionStorageTemplateSimple<double>
         //! \copydoc IntegerOptionStorage::IntegerOptionStorage()
         explicit DoubleOptionStorage(const DoubleOption &settings);
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const;
-        virtual std::string formatSingleValue(const double &value) const;
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override;
+        std::string formatSingleValue(const double &value) const override;
 
         //! \copydoc DoubleOptionInfo::isTime()
         bool isTime() const { return bTime_; }
@@ -150,9 +150,9 @@ class DoubleOptionStorage : public OptionStorageTemplateSimple<double>
         void setScaleFactor(double factor);
 
     private:
-        virtual void initConverter(ConverterType *converter);
-        virtual double processValue(const double &value) const;
-        virtual void processSetValues(ValueList *values);
+        void initConverter(ConverterType *converter) override;
+        double processValue(const double &value) const override;
+        void processSetValues(ValueList *values) override;
 
         DoubleOptionInfo        info_;
         bool                    bTime_;
@@ -168,9 +168,9 @@ class FloatOptionStorage : public OptionStorageTemplateSimple<float>
         //! \copydoc IntegerOptionStorage::IntegerOptionStorage()
         explicit FloatOptionStorage(const FloatOption &settings);
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const;
-        virtual std::string formatSingleValue(const float &value) const;
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override;
+        std::string formatSingleValue(const float &value) const override;
 
         //! \copydoc DoubleOptionStorage::isTime()
         bool isTime() const { return bTime_; }
@@ -178,9 +178,9 @@ class FloatOptionStorage : public OptionStorageTemplateSimple<float>
         void setScaleFactor(double factor);
 
     private:
-        virtual void initConverter(ConverterType *converter);
-        virtual float processValue(const float &value) const;
-        virtual void processSetValues(ValueList *values);
+        void initConverter(ConverterType *converter) override;
+        float processValue(const float &value) const override;
+        void processSetValues(ValueList *values) override;
 
         FloatOptionInfo         info_;
         bool                    bTime_;
@@ -196,18 +196,18 @@ class StringOptionStorage : public OptionStorageTemplateSimple<std::string>
         //! \copydoc DoubleOptionStorage::DoubleOptionStorage()
         explicit StringOptionStorage(const StringOption &settings);
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override
         { return allowed_.empty() ? "string" : "enum"; }
-        virtual std::string formatExtraDescription() const;
-        virtual std::string formatSingleValue(const std::string &value) const;
+        std::string formatExtraDescription() const override;
+        std::string formatSingleValue(const std::string &value) const override;
 
         //! \copydoc StringOptionInfo::allowedValues()
         const ValueList &allowedValues() const { return allowed_; }
 
     private:
-        virtual void initConverter(ConverterType *converter);
-        virtual std::string processValue(const std::string &value) const;
+        void initConverter(ConverterType *converter) override;
+        std::string processValue(const std::string &value) const override;
 
         StringOptionInfo        info_;
         ValueList               allowed_;
@@ -240,16 +240,16 @@ class EnumOptionStorage : public OptionStorageTemplateSimple<int>
                           int defaultValue, int defaultValueIfSet,
                           StorePointer store);
 
-        virtual OptionInfo &optionInfo() { return info_; }
-        virtual std::string typeString() const { return "enum"; }
-        virtual std::string formatExtraDescription() const;
-        virtual std::string formatSingleValue(const int &value) const;
+        OptionInfo &optionInfo() override { return info_; }
+        std::string typeString() const override { return "enum"; }
+        std::string formatExtraDescription() const override;
+        std::string formatSingleValue(const int &value) const override;
 
         //! \copydoc EnumOptionInfo::allowedValues()
         const std::vector<std::string> &allowedValues() const { return allowed_; }
 
     private:
-        virtual void initConverter(ConverterType *converter);
+        void initConverter(ConverterType *converter) override;
 
         EnumOptionInfo            info_;
         std::vector<std::string>  allowed_;

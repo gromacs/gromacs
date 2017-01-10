@@ -98,11 +98,11 @@ class OptionStorageTemplate : public AbstractOptionStorage
         // the declarations are still included for clarity.
         // The various copydoc calls are needed with Doxygen 1.8.10, although
         // things work without with 1.8.5...
-        virtual std::string typeString() const = 0;
+        std::string typeString() const override = 0;
         //! \copydoc gmx::AbstractOptionStorage::valueCount()
-        virtual int valueCount() const { return store_->valueCount(); }
+        int valueCount() const override { return store_->valueCount(); }
         //! \copydoc gmx::AbstractOptionStorage::defaultValues()
-        virtual std::vector<Variant> defaultValues() const;
+        std::vector<Variant> defaultValues() const override;
         /*! \copydoc gmx::AbstractOptionStorage::defaultValuesAsStrings()
          *
          * OptionStorageTemplate implements handling of defaultValueIfSet()
@@ -110,7 +110,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * Derived classes must implement formatSingleValue() to provide the
          * actual formatting for a value of type \p T.
          */
-        virtual std::vector<std::string> defaultValuesAsStrings() const;
+        std::vector<std::string> defaultValuesAsStrings() const override;
 
     protected:
         //! Smart pointer for managing the final storage interface.
@@ -141,7 +141,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
                               StorePointer          store);
 
         //! \copydoc gmx::AbstractOptionStorage::clearSet()
-        virtual void clearSet();
+        void clearSet() override;
         /*! \copydoc gmx::AbstractOptionStorage::convertValue()
          *
          * Derived classes should call addValue() after they have converted
@@ -151,7 +151,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * should be considered whether the implementation can be made strongly
          * exception safe.
          */
-        virtual void convertValue(const Variant &value) = 0;
+        void convertValue(const Variant &value) override = 0;
         /*! \brief
          * Processes values for a set after all have been converted.
          *
@@ -177,12 +177,12 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * override that method instead of this one if set value processing is
          * necessary.
          */
-        virtual void processSet();
+        void processSet() override;
         /*! \copydoc gmx::AbstractOptionStorage::processAll()
          *
          * The implementation in OptionStorageTemplate does nothing.
          */
-        virtual void processAll()
+        void processAll() override
         {
         }
         /*! \brief
@@ -327,8 +327,8 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
         {
         }
 
-        virtual std::vector<Variant>
-        normalizeValues(const std::vector<Variant> &values) const
+        std::vector<Variant>
+        normalizeValues(const std::vector<Variant> &values) const override
         {
             const_cast<MyBase *>(this)->ensureConverterInitialized();
             std::vector<Variant> result;
@@ -361,7 +361,7 @@ class OptionStorageTemplateSimple : public OptionStorageTemplate<T>
         }
 
     private:
-        virtual void convertValue(const Variant &variant)
+        void convertValue(const Variant &variant) override
         {
             ensureConverterInitialized();
             this->addValue(processValue(converter_.convert(variant)));

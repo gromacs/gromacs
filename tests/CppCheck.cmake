@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -106,6 +106,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=redundantPointerOp:src/gromacs/fileio/gmxfio-xdr.cpp
         --suppress=passedByValue # See comment below
         --suppress=shiftTooManyBits:src/gromacs/gpu_utils/gpu_utils.cu # CUDA kernel launch false positive
+        --suppress=unusedPrivateFunction #1.76.1 too often wrong with override
         )
         # Passing non-trivial objects by value is rarely a problem for
         # GROMACS in performance-sensitive code, and shouldn't be
