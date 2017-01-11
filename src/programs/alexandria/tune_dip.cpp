@@ -284,16 +284,19 @@ void OPtimization::calcDeviation()
                 auto atomnr = mymol.topology_->atoms.atom[j].atomnumber;
                 auto qq     = mymol.topology_->atoms.atom[j].q;
                 qtot       += qq;
-                if (((qq < 0) && (atomnr == 1)) ||
-                    ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) ||
-                                  (atomnr == 16) || (atomnr == 17) ||
-                                  (atomnr == 35) || (atomnr == 53))))
+                if (mymol.topology_->atoms.atom[j].ptype != eptShell)
                 {
-                    _ener[ermsBOUNDS] += fabs(qq);
-                }
-                if (_bQM)
-                {
-                    //_ener[ermsCHARGE] += gmx::square(qq - mymol.qESP[j]);
+                    if (((qq < 0) && (atomnr == 1)) ||
+                        ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) ||
+                                      (atomnr == 16) || (atomnr == 17) ||
+                                      (atomnr == 35) || (atomnr == 53))))
+                    {
+                        _ener[ermsBOUNDS] += fabs(qq);
+                    }                    
+                    if (_bQM)
+                    {
+                        _ener[ermsCHARGE] += gmx::square(qq - mymol.qESP[j]);
+                    }
                 }
             }
             if (fabs(qtot - mymol.molProp()->getCharge()) > 1e-2)
@@ -307,7 +310,7 @@ void OPtimization::calcDeviation()
                 rvec dmu;
                 rvec_sub(mymol.mu_calc, mymol.mu_exp, dmu);
                 _ener[ermsMU]  += iprod(dmu, dmu);
-                for (int mm = 0; mm < DIM; mm++)
+                /*for (int mm = 0; mm < DIM; mm++)
                 {
                     if (bfullTensor_)
                     {
@@ -320,7 +323,7 @@ void OPtimization::calcDeviation()
                     {
                         _ener[ermsQUAD] += gmx::square(mymol.Q_calc[mm][mm] - mymol.Q_exp[mm][mm]);
                     }
-                }
+                    }*/
             }
             else
             {
@@ -975,7 +978,8 @@ int alex_tune_dip(int argc, char *argv[])
         { efXVG, "-mudiff",    "mu_diff",     ffWRITE },
         { efXVG, "-thetadiff", "theta_diff",  ffWRITE },
         { efXVG, "-espdiff",   "esp_diff",    ffWRITE },
-        { efXVG, "-conv",      "convergence", ffOPTWR }
+        { efXVG, "-conv",      "param-conv",  ffWRITE },
+        { efXVG, "-epot",      "param-epot",  ffWRITE }
     };
     
     const  int                  NFILE         = asize(fnm);
@@ -986,7 +990,6 @@ int alex_tune_dip(int argc, char *argv[])
     static int                  reinit        = 0;
     static int                  seed          = 0;
     static int                  minimum_data  = 3;
-    static int                  compress      = 0;
     static real                 tol           = 1e-3;
     static real                 stol          = 1e-6;
     static real                 watoms        = 0;
@@ -1013,10 +1016,11 @@ int alex_tune_dip(int argc, char *argv[])
     static real                 temperature   = 300;
     static char                *opt_elem      = nullptr;
     static char                *const_elem    = nullptr;
-    static char                *fixchi        = (char *)"H";
+    static char                *fixchi        = nullptr;
     static char                *lot           = (char *)"B3LYP/aug-cc-pVTZ";
     static gmx_bool             bRandom       = false;
     static gmx_bool             bOptHfac      = false;
+    static gmx_bool             bcompress     = false;
     static gmx_bool             bQM           = false;
     static gmx_bool             bPolar        = false;
     static gmx_bool             bZPE          = false;
@@ -1056,7 +1060,7 @@ int alex_tune_dip(int argc, char *argv[])
         { "-qgen",   FALSE, etENUM, {cqgen},
           "Algorithm used for charge generation" },
         { "-fixchi", FALSE, etSTR,  {&fixchi},
-          "Electronegativity for this element is fixed. Set to FALSE if you want this variable as well, but read the help text above." },
+          "Electronegativity for this atom type is fixed. Set to FALSE if you want this variable as well, but read the help text above." },
         { "-seed",   FALSE, etINT,  {&seed},
           "Random number seed. If zero, a seed will be generated." },
         { "-j0",    FALSE, etREAL, {&J0_0},
@@ -1088,9 +1092,9 @@ int alex_tune_dip(int argc, char *argv[])
         { "-min_data",  FALSE, etINT, {&minimum_data},
           "Minimum number of data points in order to be able to optimize the parameters for a given atomtype" },
         { "-opt_elem",  FALSE, etSTR, {&opt_elem},
-          "Space-separated list of elements to optimize, e.g. \"H C Br\". The other available elements in gentop.dat are left unmodified. If this variable is not set, all elements will be optimized." },
+          "Space-separated list of atom types to optimize, e.g. \"H C Br\". The other available atom types in gentop.dat are left unmodified. If this variable is not set, all elements will be optimized." },
         { "-const_elem",  FALSE, etSTR, {&const_elem},
-          "Space-separated list of elements to include but keep constant, e.g. \"O N\". These elements from gentop.dat are left unmodified" },
+          "Space-separated list of atom types to include but keep constant, e.g. \"O N\". These atom types from gentop.dat are left unmodified" },
         { "-random", FALSE, etBOOL, {&bRandom},
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-watoms", FALSE, etREAL, {&watoms},
@@ -1117,7 +1121,7 @@ int alex_tune_dip(int argc, char *argv[])
           "Minimum angle to be considered a linear A-B-C bond" },
         { "-ph_toler", FALSE, etREAL, {&ph_toler},
           "Maximum angle to be considered a planar A-B-C/B-C-D torsion" },
-        { "-compress", FALSE, etBOOL, {&compress},
+        { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML file" },
         { "-bgaussquad", FALSE, etBOOL, {&bGaussianBug},
           "[HIDDEN]Work around a bug in the off-diagonal quadrupole components in Gaussian" },
@@ -1222,7 +1226,7 @@ int alex_tune_dip(int argc, char *argv[])
         //                    opt2fn("-thetadiff", NFILE, fnm), opt2fn("-espdiff", NFILE, fnm),
         //                    dip_toler, quad_toler, q_toler, oenv);
                             
-        writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, compress);
+        writePoldata(opt2fn("-o", NFILE, fnm), opt.pd_, bcompress);
         done_filenms(NFILE, fnm);
         gmx_ffclose(fp);
     }

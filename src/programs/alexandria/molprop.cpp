@@ -54,7 +54,7 @@
 
 const char *mpo_name[MPO_NR] =
 {
-    "potential", "dipole", "quadrupole", "polarizability", "energy", "entropy"
+    "potential", "dipole", "quadrupole", "polarizability", "energy", "entropy", "charge"
 };
 
 const char *mpo_unit[MPO_NR] =
@@ -938,7 +938,7 @@ bool Experiment::getVal(const std::string  type,
                 }
             }
         }
-        break;
+            break;
         case MPO_QUADRUPOLE:
             for (auto mqi = BeginQuadrupole(); !done && (mqi < EndQuadrupole()); ++mqi)
             {
@@ -960,6 +960,27 @@ bool Experiment::getVal(const std::string  type,
                     done               = true;
                 }
             }
+            break;
+        case MPO_CHARGE:
+        {
+            int i = 0;
+            for (auto mai = BeginAtom(); mai < EndAtom(); ++mai)
+            {
+                for (auto q = mai->BeginQ(); q <  mai->EndQ(); ++q)
+                {
+                    if (((type.size() == 0) || (type.compare(q->getType()) == 0)) &&
+                        bCheckTemperature(Told, q->getTemperature()))
+                    {
+                        vec[i] = q->getQ();
+                        i++;
+                    }
+                }
+            }
+            if (i == NAtom())
+            {
+                done = true;
+            }
+        }
             break;
         default:
             break;

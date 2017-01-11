@@ -75,6 +75,7 @@ enum MolPropObservable {
     MPO_POLARIZABILITY,
     MPO_ENERGY,
     MPO_ENTROPY,
+    MPO_CHARGE,
     MPO_NR
 };
 

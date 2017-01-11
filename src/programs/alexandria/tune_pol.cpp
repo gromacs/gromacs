@@ -662,7 +662,7 @@ int alex_tune_pol(int argc, char *argv[])
     static int                             seed;
     static char                           *lot               = (char *)"B3LYP/aug-cc-pVTZ";
     static real                            sigma             = 0;
-    static gmx_bool                        bZero             = FALSE, bForceFit = FALSE, bCompress = TRUE;
+    static gmx_bool                        bZero             = false, bForceFit = false, bCompress = true;
     t_pargs                                pa[]              =
     {
         { "-sort",   FALSE, etENUM, {sort},

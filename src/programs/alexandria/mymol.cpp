@@ -2561,28 +2561,23 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
                              const Poldata &pd)
 {
     immStatus    imm = immOK;
-    unsigned int m, nwarn = 0;
+    unsigned int m, n, nwarn = 0;
     double       value, Hatom, ZPE;
-    double       T = -1, error, vec[3];
+    double       T = -1, error; 
+    double       vec[DIM];
+    double       q[topology_->atoms.nr];
     tensor       quadrupole;
     std::string  myref, mylot;
     int          ia;
 
-    if (!molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
-                               lot, "", (char *)"electronic",
-                               &value, &error, &T, myref, mylot,
-                               vec, quadrupole))
-    {
-        if (!bZero)
-        {
-            imm = immZeroDip;
-        }
-    }
-    else
-    {
+    if (molProp()->getPropRef(MPO_DIPOLE, (bQM ? iqmQM : iqmBoth),
+                              lot, "", (char *)"electronic",
+                              &value, &error, &T, myref, mylot,
+                              vec, quadrupole))
+    {       
         dip_exp  = value;
         dip_err  = error;
-        for (m = 0; (m < DIM); m++)
+        for (m = 0; m < DIM; m++)
         {
             mu_exp[m] = vec[m];
         }
@@ -2599,22 +2594,57 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         }
         dip_weight = gmx::square(1.0/error);
     }
-    /* Check handling of LOT */
+    else
+    {
+        if (!bZero)
+        {
+            imm = immZeroDip;
+        }
+    }
+    
     if (molProp()->getPropRef(MPO_DIPOLE, iqmQM,
                               (char *)mylot.c_str(), "", (char *)"ESP", &value, &error, &T,
                               myref, mylot, vec, quadrupole))
     {
-        for (m = 0; (m < DIM); m++)
+        for (m = 0; m < DIM; m++)
         {
             mu_esp[m] = vec[m];
         }
     }
+
+    if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM,
+                              lot, "", (char *)"electronic",
+                              &value, &error, &T, myref, mylot,
+                              vec, quadrupole))
+    {
+        for (m = 0; m < DIM; m++)
+        {
+            for (n = 0; n < DIM; n++)
+            {
+                Q_exp[m][n] = quadrupole[m][n];
+            }
+        }
+    }
+    
+    if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
+                              (char *)mylot.c_str(), "", (char *)"ESP", &value, &error, &T,
+                              myref, mylot, q, quadrupole))
+    {
+        for (ia = 0; ia < topology_->atoms.nr; ia++)
+        {
+            if (topology_->atoms.atom[ia].ptype != eptShell)
+            {
+                qESP[ia] = q[ia];
+            }
+        }
+    }
+    
     if (molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmBoth),
                            lot, "", (char *)"DeltaHform", &value, &error, &T))
     {
         Hform = value;
         Emol  = value;
-        for (ia = 0; (ia < topology_->atoms.nr); ia++)
+        for (ia = 0; ia < topology_->atoms.nr; ia++)
         {
             if (topology_->atoms.atom[ia].ptype != eptShell)
             {
@@ -2657,10 +2687,6 @@ immStatus MyMol::getExpProps(gmx_bool bQM, gmx_bool bZero,
         {
             imm = immNoData;
         }
-    }
-    else
-    {
-        //imm = immNoData;
     }
     return imm;
 }
