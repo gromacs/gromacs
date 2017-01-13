@@ -48,7 +48,7 @@ class MDLogger;
 
 void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
                              const gmx_gpu_info_t *gpu_info,
-                             gmx_bool bForceUseGPU,
-                             gmx_gpu_opt_t *gpu_opt);
+                             gmx_bool              bForceUseGPU,
+                             gmx_gpu_opt_t *       gpu_opt);
 
 #endif

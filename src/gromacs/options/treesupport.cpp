@@ -165,11 +165,11 @@ private:
         const std::string &name          = section.name();
         auto               parentBuilder = currentObjectBuilder_;
         auto               parentObject  = currentSourceObject_;
-        currentObjectBuilder_ = currentObjectBuilder_.addObject(name);
+        currentObjectBuilder_            = currentObjectBuilder_.addObject(name);
         currentSourceObject_
-            = (currentSourceObject_ != nullptr && currentSourceObject_->keyExists(name)
-               ? &(*currentSourceObject_)[name].asObject()
-               : nullptr);
+                = (currentSourceObject_ != nullptr && currentSourceObject_->keyExists(name)
+                           ? &(*currentSourceObject_)[name].asObject()
+                           : nullptr);
         processOptionSection(section);
         currentSourceObject_  = parentObject;
         currentObjectBuilder_ = parentBuilder;
@@ -234,7 +234,7 @@ private:
     KeyValueTreeObjectBuilder currentObjectBuilder_;
 };
 
-}   // namespace
+} // namespace
 
 //! \cond libapi
 

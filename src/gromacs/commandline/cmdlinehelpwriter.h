@@ -53,7 +53,8 @@ namespace gmx
 class CommandLineHelpContext;
 class Options;
 
-template <typename T> class ConstArrayRef;
+template <typename T>
+class ConstArrayRef;
 
 /*! \brief
  * Writes help information for Options.

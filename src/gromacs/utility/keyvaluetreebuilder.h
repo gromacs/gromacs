@@ -96,7 +96,7 @@ public:
         value_ = std::move(value);
     }
     KeyValueTreeObjectBuilder createObject();
-    KeyValueTreeArrayBuilder createArray();
+    KeyValueTreeArrayBuilder  createArray();
 
     KeyValueTreeValue build() { return KeyValueTreeValue(std::move(value_)); }
 

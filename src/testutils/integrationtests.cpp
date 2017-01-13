@@ -65,7 +65,7 @@ IntegrationTestFixture::~IntegrationTestFixture()
 {
 }
 
-void IntegrationTestFixture::redirectStringToStdin(const char* theString)
+void IntegrationTestFixture::redirectStringToStdin(const char *theString)
 {
     std::string fakeStdin("fake-stdin");
     gmx::TextWriter::writeFileFromString(fakeStdin, theString);

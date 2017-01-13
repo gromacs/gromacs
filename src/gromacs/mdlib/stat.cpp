@@ -139,20 +139,20 @@ static int filter_enerdterm(real *afrom, gmx_bool bToBuffer, real *ato,
 void global_stat(gmx_global_stat_t gs,
                  t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
-                 t_inputrec *inputrec,
+                 t_inputrec *    inputrec,
                  gmx_ekindata_t *ekind, gmx_constr_t constr,
                  t_vcm *vcm,
                  int nsig, real *sig,
-                 int *totalNumberOfBondedInteractions,
+                 int *    totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags)
 /* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
     t_bin *  rb;
     int *    itc0, *itc1;
-    int      ie    = 0, ifv = 0, isv = 0, irmsd = 0, imu = 0;
+    int      ie = 0, ifv = 0, isv = 0, irmsd = 0, imu = 0;
     int      idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
-    int      isig  = -1;
-    int      icj   = -1, ici = -1, icx = -1;
+    int      isig = -1;
+    int      icj = -1, ici = -1, icx = -1;
     int      inn[egNR];
     real     copyenerd[F_NRE];
     int      nener, j;
@@ -194,7 +194,7 @@ void global_stat(gmx_global_stat_t gs,
         where();
     }
 
-/* We need the force virial and the kinetic energy for the first time through with velocity verlet */
+    /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
     if (bTemp || !bVV)
     {
         if (ekind)

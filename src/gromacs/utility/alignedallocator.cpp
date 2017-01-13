@@ -48,11 +48,11 @@
 #include <cstdlib>
 
 #if HAVE_MM_MALLOC_H
-#    include <mm_malloc.h>
+#include <mm_malloc.h>
 #elif HAVE_MALLOC_H
-#    include <malloc.h>
+#include <malloc.h>
 #elif HAVE_XMMINTRIN_H
-#    include <xmmintrin.h>
+#include <xmmintrin.h>
 #endif
 
 #include "gromacs/utility/gmxassert.h"
@@ -92,7 +92,7 @@ static void *alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
     // The amount of extra memory (beyound what the user asked for) we need is:
     // - sizeof(void *), to store the original pointer
     // - alignment, to make sure we have an aligned pointer in the area
-    void * pMalloc = malloc(bytes + sizeof(void *) + alignment);
+    void *pMalloc = malloc(bytes + sizeof(void *) + alignment);
 
     if (pMalloc == nullptr)
     {
@@ -131,10 +131,9 @@ static void alignedFreeGeneric(void *p)
     if (p)
     {
         // Pick up the pointer stored just below p, and use that to call free()
-        free( reinterpret_cast<void **>(p)[-1] );
+        free(reinterpret_cast<void **>(p)[-1]);
     }
 }
-
 
 
 void *alignedMalloc(std::size_t bytes)
@@ -154,13 +153,13 @@ void *alignedMalloc(std::size_t bytes)
     // TODO LINCS code is copying this assumption independently (for now)
     std::size_t alignment = 128;
 
-    void * p;
+    void *p;
 
     // Pad memory at the end with another alignment bytes to avoid false sharing
     bytes += alignment;
 
 #if HAVE__MM_MALLOC
-    p = _mm_malloc( bytes, alignment );
+    p = _mm_malloc(bytes, alignment);
 #elif HAVE_POSIX_MEMALIGN
     if (posix_memalign(&p, alignment, bytes) != 0)
     {

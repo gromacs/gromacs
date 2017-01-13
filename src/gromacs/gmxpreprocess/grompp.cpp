@@ -105,7 +105,7 @@ static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
     /* For all the molecule types */
     for (i = 0; i < nrmols; i++)
     {
-        n                      += mols[i].plist[ifunc].nr;
+        n += mols[i].plist[ifunc].nr;
         mols[i].plist[ifunc].nr = 0;
     }
     return n;
@@ -132,7 +132,7 @@ static int check_atom_names(const char *fn1, const char *fn2,
         {
             for (j = 0; j < tat->nr; j++)
             {
-                if (strcmp( *(tat->atomname[j]), *(at->atomname[i]) ) != 0)
+                if (strcmp(*(tat->atomname[j]), *(at->atomname[i])) != 0)
                 {
                     if (nmismatch < MAXMISMATCH)
                     {
@@ -257,8 +257,8 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
 
     limit2 = gmx::square(min_steps_note * dt);
 
-    w_a1      = w_a2 = -1;
-    w_period2 = -1.0;
+    w_a1 = w_a2 = -1;
+    w_period2   = -1.0;
 
     w_moltype = nullptr;
     for (molt = 0; molt < mtop->nmoltype; molt++)
@@ -340,15 +340,16 @@ static void check_bonds_timestep(gmx_mtop_t *mtop, double dt, warninp_t wi)
         /* A check that would recognize most water models */
         bWater = ((*w_moltype->atoms.atomname[0])[0] == 'O'
                   && w_moltype->atoms.nr <= 5);
-        sprintf(warn_buf, "The bond in molecule-type %s between atoms %d %s and %d %s has an estimated oscillational period of %.1e ps, which is less than %d times the time step of %.1e ps.\n"
+        sprintf(warn_buf,
+                "The bond in molecule-type %s between atoms %d %s and %d %s has an estimated oscillational period of %.1e ps, which is less than %d times the time step of %.1e ps.\n"
                 "%s",
                 *w_moltype->name,
                 w_a1 + 1, *w_moltype->atoms.atomname[w_a1],
                 w_a2 + 1, *w_moltype->atoms.atomname[w_a2],
                 std::sqrt(w_period2), bWarn ? min_steps_warn : min_steps_note, dt,
                 bWater
-                ? "Maybe you asked for fexible water."
-                : "Maybe you forgot to change the constraints mdp option.");
+                        ? "Maybe you asked for fexible water."
+                        : "Maybe you forgot to change the constraints mdp option.");
         if (bWarn)
         {
             warning(wi, warn_buf);
@@ -505,7 +506,7 @@ static void new_status(const char *topfile, const char *topppfile, const char *c
                        int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
                        t_params plist[],
                        int *comb, double *reppow, real *fudgeQQ,
-                       gmx_bool bMorse,
+                       gmx_bool  bMorse,
                        warninp_t wi)
 {
     t_molinfo *     molinfo = nullptr;
@@ -543,7 +544,7 @@ static void new_status(const char *topfile, const char *topppfile, const char *c
         {
             /* Merge consecutive blocks with the same molecule type */
             sys->molblock[sys->nmolblock - 1].nmol += molblock[mb].nmol;
-            sys->natoms                            += molblock[mb].nmol * sys->molblock[sys->nmolblock - 1].natoms_mol;
+            sys->natoms += molblock[mb].nmol * sys->molblock[sys->nmolblock - 1].natoms_mol;
         }
         else if (molblock[mb].nmol > 0)
         {
@@ -553,7 +554,7 @@ static void new_status(const char *topfile, const char *topppfile, const char *c
             molbs->natoms_mol = molinfo[molbs->type].atoms.nr;
             molbs->nposres_xA = 0;
             molbs->nposres_xB = 0;
-            sys->natoms      += molbs->nmol * molbs->natoms_mol;
+            sys->natoms += molbs->nmol * molbs->natoms_mol;
             sys->nmolblock++;
         }
     }
@@ -610,7 +611,8 @@ static void new_status(const char *topfile, const char *topppfile, const char *c
     state->natoms = conftop->atoms.nr;
     if (state->natoms != sys->natoms)
     {
-        gmx_fatal(FARGS, "number of coordinates in coordinate file (%s, %d)\n"
+        gmx_fatal(FARGS,
+                  "number of coordinates in coordinate file (%s, %d)\n"
                   "             does not match topology (%s, %d)",
                   confin, state->natoms, topfile, sys->natoms);
     }
@@ -643,7 +645,8 @@ static void new_status(const char *topfile, const char *topppfile, const char *c
 
     if (nmismatch)
     {
-        sprintf(buf, "%d non-matching atom name%s\n"
+        sprintf(buf,
+                "%d non-matching atom name%s\n"
                 "atom names from %s will be used\n"
                 "atom names from %s will be ignored\n",
                 nmismatch, (nmismatch == 1) ? "" : "s", topfile, confin);
@@ -736,7 +739,7 @@ static void copy_state(const char *slog, t_trxframe *fr,
 static void cont_status(const char *slog, const char *ener,
                         gmx_bool bNeedVel, gmx_bool bGenVel, real fr_time,
                         t_inputrec *ir, t_state *state,
-                        gmx_mtop_t *sys,
+                        gmx_mtop_t *            sys,
                         const gmx_output_env_t *oenv)
 /* If fr_time == -1 read the last frame available which is complete */
 {
@@ -763,7 +766,8 @@ static void cont_status(const char *slog, const char *ener,
     {
         if (bGenVel)
         {
-            fprintf(stderr, "Velocities generated: "
+            fprintf(stderr,
+                    "Velocities generated: "
                     "ignoring velocities in input trajectory\n");
         }
         read_first_frame(oenv, &fp, slog, &fr, TRX_NEED_X);
@@ -777,7 +781,8 @@ static void cont_status(const char *slog, const char *ener,
             fprintf(stderr,
                     "\n"
                     "WARNING: Did not find a frame with velocities in file %s,\n"
-                    "         all velocities will be set to zero!\n\n", slog);
+                    "         all velocities will be set to zero!\n\n",
+                    slog);
             for (i = 0; i < sys->natoms; i++)
             {
                 clear_rvec(state->v[i]);
@@ -793,7 +798,8 @@ static void cont_status(const char *slog, const char *ener,
 
     if (sys->natoms != state->natoms)
     {
-        gmx_fatal(FARGS, "Number of atoms in Topology "
+        gmx_fatal(FARGS,
+                  "Number of atoms in Topology "
                   "is not the same as in Trajectory");
     }
     copy_state(slog, &fr, bReadVel, state, &use_time);
@@ -816,7 +822,7 @@ static void cont_status(const char *slog, const char *ener,
     fprintf(stderr, "Using frame at t = %g ps\n", use_time);
     fprintf(stderr, "Starting time for run is %g ps\n", ir->init_t);
 
-    if ((ir->epc != epcNO  || ir->etc == etcNOSEHOOVER) && ener)
+    if ((ir->epc != epcNO || ir->etc == etcNOSEHOOVER) && ener)
     {
         get_enx_state(ener, use_time, &sys->groups, ir, state);
         preserve_box_shape(ir, state->box_rel, state->boxv);
@@ -826,7 +832,7 @@ static void cont_status(const char *slog, const char *ener,
 static void read_posres(gmx_mtop_t *mtop, t_molinfo *molinfo, gmx_bool bTopB,
                         char *fn,
                         int rc_scaling, int ePBC,
-                        rvec com,
+                        rvec      com,
                         warninp_t wi)
 {
     gmx_bool *      hadAtom;
@@ -1011,7 +1017,7 @@ static void gen_posres(gmx_mtop_t *mtop, t_molinfo *mi,
                        rvec com, rvec comB,
                        warninp_t wi)
 {
-    read_posres  (mtop, mi, FALSE, fnA, rc_scaling, ePBC, com, wi);
+    read_posres(mtop, mi, FALSE, fnA, rc_scaling, ePBC, com, wi);
     /* It is safer to simply read the b-state posres rather than trying
      * to be smart and copy the positions.
      */
@@ -1056,20 +1062,28 @@ static int nrdf_internal(t_atoms *atoms)
     }
     switch (nmass)
     {
-        case 0:  nrdf = 0; break;
-        case 1:  nrdf = 0; break;
-        case 2:  nrdf = 1; break;
-        default: nrdf = nmass * 3 - 6; break;
+        case 0:
+            nrdf = 0;
+            break;
+        case 1:
+            nrdf = 0;
+            break;
+        case 2:
+            nrdf = 1;
+            break;
+        default:
+            nrdf = nmass * 3 - 6;
+            break;
     }
 
     return nrdf;
 }
 
-void spline1d( double   dx,
-               double * y,
-               int      n,
-               double * u,
-               double * y2 )
+void spline1d(double  dx,
+              double *y,
+              int     n,
+              double *u,
+              double *y2)
 {
     int    i;
     double p, q;
@@ -1094,13 +1108,13 @@ void spline1d( double   dx,
 }
 
 
-void interpolate1d( double   xmin,
-                    double   dx,
-                    double * ya,
-                    double * y2a,
-                    double   x,
-                    double * y,
-                    double * y1)
+void interpolate1d(double  xmin,
+                   double  dx,
+                   double *ya,
+                   double *y2a,
+                   double  x,
+                   double *y,
+                   double *y1)
 {
     int    ix;
     double a, b;
@@ -1115,10 +1129,10 @@ void interpolate1d( double   xmin,
 }
 
 
-void setup_cmap (int          grid_spacing,
-                 int          nc,
-                 real *       grid,
-                 gmx_cmap_t * cmap_grid)
+void setup_cmap(int         grid_spacing,
+                int         nc,
+                real *      grid,
+                gmx_cmap_t *cmap_grid)
 {
     double *tmp_u, *tmp_u2, *tmp_yy, *tmp_y1, *tmp_t2, *tmp_grid;
 
@@ -1265,11 +1279,11 @@ static void check_gbsa_params_charged(gmx_mtop_t *sys, gpp_atomtype_t atype)
         for (i = 0; i < natoms; i++)
         {
             q = atoms->atom[i].q;
-            if ((get_atomtype_radius(atoms->atom[i].type, atype)    == 0
-                 || get_atomtype_vol(atoms->atom[i].type, atype)       == 0
-                 || get_atomtype_surftens(atoms->atom[i].type, atype)  == 0
+            if ((get_atomtype_radius(atoms->atom[i].type, atype) == 0
+                 || get_atomtype_vol(atoms->atom[i].type, atype) == 0
+                 || get_atomtype_surftens(atoms->atom[i].type, atype) == 0
                  || get_atomtype_gb_radius(atoms->atom[i].type, atype) == 0
-                 || get_atomtype_S_hct(atoms->atom[i].type, atype)     == 0)
+                 || get_atomtype_S_hct(atoms->atom[i].type, atype) == 0)
                 && q != 0)
             {
                 fprintf(stderr, "\nGB parameter(s) zero for atom type '%s' while charge is %g\n",
@@ -1298,11 +1312,11 @@ static void check_gbsa_params(gpp_atomtype_t atype)
     nmiss = 0;
     for (i = 0; i < get_atomtype_ntypes(atype); i++)
     {
-        if (get_atomtype_radius(i, atype)    < 0
-            || get_atomtype_vol(i, atype)       < 0
-            || get_atomtype_surftens(i, atype)  < 0
+        if (get_atomtype_radius(i, atype) < 0
+            || get_atomtype_vol(i, atype) < 0
+            || get_atomtype_surftens(i, atype) < 0
             || get_atomtype_gb_radius(i, atype) < 0
-            || get_atomtype_S_hct(i, atype)     < 0)
+            || get_atomtype_S_hct(i, atype) < 0)
         {
             fprintf(stderr, "\nGB parameter(s) missing or negative for atom type '%s'\n",
                     get_atomtype_name(i, atype));
@@ -1314,7 +1328,6 @@ static void check_gbsa_params(gpp_atomtype_t atype)
     {
         gmx_fatal(FARGS, "Can't do GB electrostatics; the implicit_genborn_params section of the forcefield is missing parameters for %d atomtypes or they might be negative.", nmiss);
     }
-
 }
 
 static real calc_temp(const gmx_mtop_t *mtop,
@@ -1326,7 +1339,7 @@ static real calc_temp(const gmx_mtop_t *mtop,
     int                     a;
 
     double sum_mv2 = 0;
-    aloop = gmx_mtop_atomloop_all_init(mtop);
+    aloop          = gmx_mtop_atomloop_all_init(mtop);
     while (gmx_mtop_atomloop_all_next(aloop, &a, &atom))
     {
         sum_mv2 += atom->m * norm2(v[a]);
@@ -1587,63 +1600,57 @@ int gmx_grompp(int argc, char *argv[])
         "interpret the output messages before attempting to bypass them with",
         "this option."
     };
-    t_gromppopts *     opts;
-    gmx_mtop_t *       sys;
-    int                nmi;
-    t_molinfo *        mi, *intermolecular_interactions;
-    gpp_atomtype_t     atype;
-    t_inputrec *       ir;
-    int                nvsite, comb, mt;
-    t_params *         plist;
-    matrix             box;
-    real               fudgeQQ;
-    double             reppow;
-    char               fn[STRLEN], fnB[STRLEN];
-    const char *       mdparin;
-    int                ntype;
-    gmx_bool           bNeedVel, bGenVel;
-    gmx_bool           have_atomnumber;
-    gmx_output_env_t * oenv;
-    gmx_bool           bVerbose = FALSE;
-    warninp_t          wi;
-    char               warn_buf[STRLEN];
+    t_gromppopts *    opts;
+    gmx_mtop_t *      sys;
+    int               nmi;
+    t_molinfo *       mi, *intermolecular_interactions;
+    gpp_atomtype_t    atype;
+    t_inputrec *      ir;
+    int               nvsite, comb, mt;
+    t_params *        plist;
+    matrix            box;
+    real              fudgeQQ;
+    double            reppow;
+    char              fn[STRLEN], fnB[STRLEN];
+    const char *      mdparin;
+    int               ntype;
+    gmx_bool          bNeedVel, bGenVel;
+    gmx_bool          have_atomnumber;
+    gmx_output_env_t *oenv;
+    gmx_bool          bVerbose = FALSE;
+    warninp_t         wi;
+    char              warn_buf[STRLEN];
 
     t_filenm fnm[] = {
-        { efMDP, nullptr,  nullptr,        ffREAD  },
-        { efMDP, "-po", "mdout",     ffWRITE },
-        { efSTX, "-c",  nullptr,        ffREAD  },
-        { efSTX, "-r",  nullptr,        ffOPTRD },
-        { efSTX, "-rb", nullptr,        ffOPTRD },
-        { efNDX, nullptr,  nullptr,        ffOPTRD },
-        { efTOP, nullptr,  nullptr,        ffREAD  },
+        { efMDP, nullptr, nullptr, ffREAD },
+        { efMDP, "-po", "mdout", ffWRITE },
+        { efSTX, "-c", nullptr, ffREAD },
+        { efSTX, "-r", nullptr, ffOPTRD },
+        { efSTX, "-rb", nullptr, ffOPTRD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efTOP, nullptr, nullptr, ffREAD },
         { efTOP, "-pp", "processed", ffOPTWR },
-        { efTPR, "-o",  nullptr,        ffWRITE },
-        { efTRN, "-t",  nullptr,        ffOPTRD },
-        { efEDR, "-e",  nullptr,        ffOPTRD },
+        { efTPR, "-o", nullptr, ffWRITE },
+        { efTRN, "-t", nullptr, ffOPTRD },
+        { efEDR, "-e", nullptr, ffOPTRD },
         /* This group is needed by the VMD viewer as the start configuration for IMD sessions: */
         { efGRO, "-imd", "imdgroup", ffOPTWR },
-        { efTRN, "-ref", "rotref",   ffOPTRW }
+        { efTRN, "-ref", "rotref", ffOPTRW }
     };
 #define NFILE asize(fnm)
 
     /* Command line options */
     static gmx_bool bRenum   = TRUE;
     static gmx_bool bRmVSBds = TRUE, bZero = FALSE;
-    static int      i, maxwarn = 0;
+    static int      i, maxwarn             = 0;
     static real     fr_time = -1;
     t_pargs         pa[]    = {
-        { "-v",       FALSE, etBOOL, {&bVerbose},
-          "Be loud and noisy" },
-        { "-time",    FALSE, etREAL, {&fr_time},
-          "Take frame at or first after this time." },
-        { "-rmvsbds", FALSE, etBOOL, {&bRmVSBds},
-          "Remove constant bonded interactions with virtual sites" },
-        { "-maxwarn", FALSE, etINT,  {&maxwarn},
-          "Number of allowed warnings during input processing. Not for normal use and may generate unstable systems" },
-        { "-zero",    FALSE, etBOOL, {&bZero},
-          "Set parameters for bonded interactions without defaults to zero instead of generating an error" },
-        { "-renum",   FALSE, etBOOL, {&bRenum},
-          "Renumber atomtypes and minimize number of atomtypes" }
+        { "-v", FALSE, etBOOL, { &bVerbose }, "Be loud and noisy" },
+        { "-time", FALSE, etREAL, { &fr_time }, "Take frame at or first after this time." },
+        { "-rmvsbds", FALSE, etBOOL, { &bRmVSBds }, "Remove constant bonded interactions with virtual sites" },
+        { "-maxwarn", FALSE, etINT, { &maxwarn }, "Number of allowed warnings during input processing. Not for normal use and may generate unstable systems" },
+        { "-zero", FALSE, etBOOL, { &bZero }, "Set parameters for bonded interactions without defaults to zero instead of generating an error" },
+        { "-renum", FALSE, etBOOL, { &bRenum }, "Renumber atomtypes and minimize number of atomtypes" }
     };
 
     /* Parse the command line */
@@ -1710,7 +1717,7 @@ int gmx_grompp(int argc, char *argv[])
         gmx_fatal(FARGS, "%s does not exist", fn);
     }
 
-    t_state state {};
+    t_state state{};
     new_status(fn, opt2fn_null("-pp", NFILE, fnm), opt2fn("-c", NFILE, fnm),
                opts, ir, bZero, bGenVel, bVerbose, &state,
                atype, sys, &nmi, &mi, &intermolecular_interactions,
@@ -1728,7 +1735,7 @@ int gmx_grompp(int argc, char *argv[])
     for (mt = 0; mt < sys->nmoltype; mt++)
     {
         nvsite
-            += set_vsites(bVerbose, &sys->moltype[mt].atoms, atype, mi[mt].plist);
+                += set_vsites(bVerbose, &sys->moltype[mt].atoms, atype, mi[mt].plist);
     }
     /* now throw away all obsolete bonds, angles and dihedrals: */
     /* note: constraints are ALWAYS removed */
@@ -1765,7 +1772,7 @@ int gmx_grompp(int argc, char *argv[])
         }
     }
 
-    if (EI_SD (ir->eI) &&  ir->etc != etcNO)
+    if (EI_SD(ir->eI) && ir->etc != etcNO)
     {
         warning_note(wi, "Temperature coupling is ignored with SD integrators.");
     }
@@ -1964,7 +1971,7 @@ int gmx_grompp(int argc, char *argv[])
                  * Since we don't actually use verletbuf_tol, we set it to -1
                  * so it can't be misused later.
                  */
-                ir->rlist        *= 1.0 + verlet_buffer_ratio_NVE_T0;
+                ir->rlist *= 1.0 + verlet_buffer_ratio_NVE_T0;
                 ir->verletbuf_tol = -1;
             }
             else

@@ -249,7 +249,7 @@ static void make_legend(FILE *fp, int ngrps, int isize, int index[],
             }
         }
     }
-    xvgr_legend(fp, j, (const char**)leg, oenv);
+    xvgr_legend(fp, j, (const char **)leg, oenv);
 
     for (i = 0; i < j; i++)
     {
@@ -287,8 +287,8 @@ static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
     tm = 0.0;
     for (i = 0; i < isize; i++)
     {
-        j   = index[i];
-        m0  = mass[j];
+        j  = index[i];
+        m0 = mass[j];
         tm += m0;
         cprod(x[j], v[j], a0);
         for (m = 0; (m < DIM); m++)
@@ -323,15 +323,15 @@ static real ekrot(rvec x[], rvec v[], real mass[], int isize, int index[])
         lzz += dx[ZZ] * dx[ZZ] * m0;
     }
 
-    L[XX][XX] =  lyy + lzz;
+    L[XX][XX] = lyy + lzz;
     L[YY][XX] = -lxy;
     L[ZZ][XX] = -lxz;
     L[XX][YY] = -lxy;
-    L[YY][YY] =  lxx + lzz;
+    L[YY][YY] = lxx + lzz;
     L[ZZ][YY] = -lyz;
     L[XX][ZZ] = -lxz;
     L[YY][ZZ] = -lyz;
-    L[ZZ][ZZ] =  lxx + lyy;
+    L[ZZ][ZZ] = lxx + lyy;
 
     m_inv_gen(L, DIM, TCM);
 
@@ -379,7 +379,7 @@ static real temp(rvec v[], real mass[], int isize, int index[])
     ekin2 = 0;
     for (i = 0; i < isize; i++)
     {
-        j      = index[i];
+        j = index[i];
         ekin2 += mass[j] * norm2(v[j]);
     }
 
@@ -553,7 +553,7 @@ static void update_histo(int gnx, int index[], rvec v[],
             vn    = norm(v[index[i]]);
             vnmax = std::max(vn, vnmax);
         }
-        vnmax  *= 2;
+        vnmax *= 2;
         *nhisto = static_cast<int>(1 + (vnmax / binwidth));
         snew(*histo, *nhisto);
     }
@@ -594,7 +594,7 @@ static void print_histo(const char *fn, int nhisto, int histo[], real binwidth,
 
 int gmx_traj(int argc, char *argv[])
 {
-    const char *      desc[] = {
+    const char *desc[] = {
         "[THISMODULE] plots coordinates, velocities, forces and/or the box.",
         "With [TT]-com[tt] the coordinates, velocities and forces are",
         "calculated for the center of mass of each group.",
@@ -627,39 +627,26 @@ int gmx_traj(int argc, char *argv[])
         "",
         "See [gmx-trajectory] for plotting similar data for selections."
     };
-    static gmx_bool   bMol    = FALSE, bCom = FALSE, bPBC = TRUE, bNoJump = FALSE;
-    static gmx_bool   bX      = TRUE, bY = TRUE, bZ = TRUE, bNorm = FALSE, bFP = FALSE;
-    static int        ngroups = 1;
-    static real       ctime   = -1, scale = 0, binwidth = 1;
-    t_pargs           pa[]    = {
-        { "-com", FALSE, etBOOL, {&bCom},
-          "Plot data for the com of each group" },
-        { "-pbc", FALSE, etBOOL, {&bPBC},
-          "Make molecules whole for COM" },
-        { "-mol", FALSE, etBOOL, {&bMol},
-          "Index contains molecule numbers iso atom numbers" },
-        { "-nojump", FALSE, etBOOL, {&bNoJump},
-          "Remove jumps of atoms across the box" },
-        { "-x", FALSE, etBOOL, {&bX},
-          "Plot X-component" },
-        { "-y", FALSE, etBOOL, {&bY},
-          "Plot Y-component" },
-        { "-z", FALSE, etBOOL, {&bZ},
-          "Plot Z-component" },
-        { "-ng",       FALSE, etINT, {&ngroups},
-          "Number of groups to consider" },
-        { "-len", FALSE, etBOOL, {&bNorm},
-          "Plot vector length" },
-        { "-fp", FALSE, etBOOL, {&bFP},
-          "Full precision output" },
-        { "-bin", FALSE, etREAL, {&binwidth},
-          "Binwidth for velocity histogram (nm/ps)" },
-        { "-ctime", FALSE, etREAL, {&ctime},
-          "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x" },
-        { "-scale", FALSE, etREAL, {&scale},
-          "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
+    static gmx_bool bMol = FALSE, bCom = FALSE, bPBC = TRUE, bNoJump = FALSE;
+    static gmx_bool bX = TRUE, bY = TRUE, bZ = TRUE, bNorm = FALSE, bFP = FALSE;
+    static int      ngroups = 1;
+    static real     ctime = -1, scale = 0, binwidth = 1;
+    t_pargs         pa[] = {
+        { "-com", FALSE, etBOOL, { &bCom }, "Plot data for the com of each group" },
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "Make molecules whole for COM" },
+        { "-mol", FALSE, etBOOL, { &bMol }, "Index contains molecule numbers iso atom numbers" },
+        { "-nojump", FALSE, etBOOL, { &bNoJump }, "Remove jumps of atoms across the box" },
+        { "-x", FALSE, etBOOL, { &bX }, "Plot X-component" },
+        { "-y", FALSE, etBOOL, { &bY }, "Plot Y-component" },
+        { "-z", FALSE, etBOOL, { &bZ }, "Plot Z-component" },
+        { "-ng", FALSE, etINT, { &ngroups }, "Number of groups to consider" },
+        { "-len", FALSE, etBOOL, { &bNorm }, "Plot vector length" },
+        { "-fp", FALSE, etBOOL, { &bFP }, "Full precision output" },
+        { "-bin", FALSE, etREAL, { &binwidth }, "Binwidth for velocity histogram (nm/ps)" },
+        { "-ctime", FALSE, etREAL, { &ctime }, "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x" },
+        { "-scale", FALSE, etREAL, { &scale }, "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
     };
-    FILE *            outx   = nullptr, *outv = nullptr, *outf = nullptr, *outb = nullptr, *outt = nullptr;
+    FILE *            outx = nullptr, *outv = nullptr, *outf = nullptr, *outb = nullptr, *outt = nullptr;
     FILE *            outekt = nullptr, *outekr = nullptr;
     t_topology        top;
     int               ePBC;
@@ -690,19 +677,19 @@ int gmx_traj(int argc, char *argv[])
         { efTRX, "-f", nullptr, ffREAD },
         { efTPS, nullptr, nullptr, ffREAD },
         { efNDX, nullptr, nullptr, ffOPTRD },
-        { efXVG, "-ox",  "coord",     ffOPTWR },
-        { efTRX, "-oxt", "coord",     ffOPTWR },
-        { efXVG, "-ov",  "veloc",     ffOPTWR },
-        { efXVG, "-of",  "force",     ffOPTWR },
-        { efXVG, "-ob",  "box",       ffOPTWR },
-        { efXVG, "-ot",  "temp",      ffOPTWR },
-        { efXVG, "-ekt", "ektrans",   ffOPTWR },
-        { efXVG, "-ekr", "ekrot",     ffOPTWR },
-        { efXVG, "-vd",  "veldist",   ffOPTWR },
-        { efPDB, "-cv",  "veloc",     ffOPTWR },
-        { efPDB, "-cf",  "force",     ffOPTWR },
-        { efXVG, "-av",  "all_veloc", ffOPTWR },
-        { efXVG, "-af",  "all_force", ffOPTWR }
+        { efXVG, "-ox", "coord", ffOPTWR },
+        { efTRX, "-oxt", "coord", ffOPTWR },
+        { efXVG, "-ov", "veloc", ffOPTWR },
+        { efXVG, "-of", "force", ffOPTWR },
+        { efXVG, "-ob", "box", ffOPTWR },
+        { efXVG, "-ot", "temp", ffOPTWR },
+        { efXVG, "-ekt", "ektrans", ffOPTWR },
+        { efXVG, "-ekr", "ekrot", ffOPTWR },
+        { efXVG, "-vd", "veldist", ffOPTWR },
+        { efPDB, "-cv", "veloc", ffOPTWR },
+        { efPDB, "-cf", "force", ffOPTWR },
+        { efXVG, "-av", "all_veloc", ffOPTWR },
+        { efXVG, "-af", "all_force", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -715,7 +702,8 @@ int gmx_traj(int argc, char *argv[])
 
     if (bMol)
     {
-        fprintf(stderr, "Interpreting indexfile entries as molecules.\n"
+        fprintf(stderr,
+                "Interpreting indexfile entries as molecules.\n"
                 "Using center of mass.\n");
     }
 
@@ -822,8 +810,8 @@ int gmx_traj(int argc, char *argv[])
     {
         flags = flags | TRX_READ_X;
         outx  = xvgropen(opt2fn("-ox", NFILE, fnm),
-                         bCom ? "Center of mass" : "Coordinate",
-                         output_env_get_xvgr_tlabel(oenv), "Coordinate (nm)", oenv);
+                        bCom ? "Center of mass" : "Coordinate",
+                        output_env_get_xvgr_tlabel(oenv), "Coordinate (nm)", oenv);
         make_legend(outx, ngroups, isize0[0], index0[0], grpname, bCom, bMol, bDim, oenv);
     }
     if (bOXT)
@@ -835,16 +823,16 @@ int gmx_traj(int argc, char *argv[])
     {
         flags = flags | TRX_READ_V;
         outv  = xvgropen(opt2fn("-ov", NFILE, fnm),
-                         bCom ? "Center of mass velocity" : "Velocity",
-                         output_env_get_xvgr_tlabel(oenv), "Velocity (nm/ps)", oenv);
+                        bCom ? "Center of mass velocity" : "Velocity",
+                        output_env_get_xvgr_tlabel(oenv), "Velocity (nm/ps)", oenv);
         make_legend(outv, ngroups, isize0[0], index0[0], grpname, bCom, bMol, bDim, oenv);
     }
     if (bOF)
     {
         flags = flags | TRX_READ_F;
         outf  = xvgropen(opt2fn("-of", NFILE, fnm), "Force",
-                         output_env_get_xvgr_tlabel(oenv), "Force (kJ mol\\S-1\\N nm\\S-1\\N)",
-                         oenv);
+                        output_env_get_xvgr_tlabel(oenv), "Force (kJ mol\\S-1\\N nm\\S-1\\N)",
+                        oenv);
         make_legend(outf, ngroups, isize0[0], index0[0], grpname, bCom, bMol, bDim, oenv);
     }
     if (bOB)
@@ -862,7 +850,7 @@ int gmx_traj(int argc, char *argv[])
         bDum[DIM] = TRUE;
         flags     = flags | TRX_READ_V;
         outt      = xvgropen(opt2fn("-ot", NFILE, fnm), "Temperature",
-                             output_env_get_xvgr_tlabel(oenv), "(K)", oenv);
+                        output_env_get_xvgr_tlabel(oenv), "(K)", oenv);
         make_legend(outt, ngroups, isize[0], index[0], grpname, bCom, bMol, bDum, oenv);
     }
     if (bEKT)
@@ -873,7 +861,7 @@ int gmx_traj(int argc, char *argv[])
         bDum[DIM] = TRUE;
         flags     = flags | TRX_READ_V;
         outekt    = xvgropen(opt2fn("-ekt", NFILE, fnm), "Center of mass translation",
-                             output_env_get_xvgr_tlabel(oenv), "Energy (kJ mol\\S-1\\N)", oenv);
+                          output_env_get_xvgr_tlabel(oenv), "Energy (kJ mol\\S-1\\N)", oenv);
         make_legend(outekt, ngroups, isize[0], index[0], grpname, bCom, bMol, bDum, oenv);
     }
     if (bEKR)
@@ -884,7 +872,7 @@ int gmx_traj(int argc, char *argv[])
         bDum[DIM] = TRUE;
         flags     = flags | TRX_READ_X | TRX_READ_V;
         outekr    = xvgropen(opt2fn("-ekr", NFILE, fnm), "Center of mass rotation",
-                             output_env_get_xvgr_tlabel(oenv), "Energy (kJ mol\\S-1\\N)", oenv);
+                          output_env_get_xvgr_tlabel(oenv), "Energy (kJ mol\\S-1\\N)", oenv);
         make_legend(outekr, ngroups, isize[0], index[0], grpname, bCom, bMol, bDum, oenv);
     }
     if (bVD)
@@ -1104,7 +1092,8 @@ int gmx_traj(int argc, char *argv[])
         {
             if (ePBC != epbcNONE && !bNoJump)
             {
-                fprintf(stderr, "\nWARNING: More than one frame was used for option -cv or -cf\n"
+                fprintf(stderr,
+                        "\nWARNING: More than one frame was used for option -cv or -cf\n"
                         "If atoms jump across the box you should use the -nojump or -ctime option\n\n");
             }
             for (i = 0; i < isize[0]; i++)

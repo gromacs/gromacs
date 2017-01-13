@@ -99,8 +99,7 @@ typedef struct gmx_wallcycle
 
 /* Each name should not exceed 19 printing characters
    (ie. terminating null can be twentieth) */
-static const char *wcn[ewcNR] =
-{
+static const char *wcn[ewcNR] = {
     "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load",
     "DD comm. bounds", "Vsite constr.", "Send X to PME", "Neighbor search", "Launch GPU ops.",
     "Comm. coord.", "Born radii", "Force", "Wait + Comm. F", "PME mesh",
@@ -111,8 +110,7 @@ static const char *wcn[ewcNR] =
     "Enforced rotation", "Add rot. forces", "Position swapping", "IMD", "Test"
 };
 
-static const char *wcsn[ewcsNR] =
-{
+static const char *wcsn[ewcsNR] = {
     "DD redist.", "DD NS grid + sort", "DD setup comm.",
     "DD make top.", "DD make constr.", "DD top. other",
     "NS grid local", "NS grid non-loc.", "NS search local", "NS search non-loc.",
@@ -751,9 +749,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
            timing data might still be sensible for some non-Jenkins
            run, than is lost from diagnosing Jenkins FP exceptions on
            runs about whose execution time we don't care. */
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "WARNING: A total of %f CPU cycles was recorded, so mdrun cannot print a time accounting",
-                tot);
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("WARNING: A total of %f CPU cycles was recorded, so mdrun cannot print a time accounting", tot);
         return;
     }
 
@@ -839,7 +835,8 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
         fprintf(fplog,
                 "(*) Note that with separate PME ranks, the walltime column actually sums to\n"
                 "    twice the total reported, but the cycle count total and %% are correct.\n"
-                "%s\n", hline);
+                "%s\n",
+                hline);
     }
 
     if (wc->wcc[ewcPMEMESH].n > 0)
@@ -875,8 +872,8 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
     if (gpu_t)
     {
         const char *k_log_str[2][2] = {
-            {"Nonbonded F kernel", "Nonbonded F+ene k."},
-            {"Nonbonded F+prune k.", "Nonbonded F+ene+prune k."}
+            { "Nonbonded F kernel", "Nonbonded F+ene k." },
+            { "Nonbonded F+prune k.", "Nonbonded F+ene+prune k." }
         };
 
         tot_gpu = gpu_t->pl_h2d_t + gpu_t->nb_h2d_t + gpu_t->nb_d2h_t;
@@ -919,7 +916,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
             }
         }
 
-        print_gputimes(fplog, "F D2H",  gpu_t->nb_c, gpu_t->nb_d2h_t, tot_gpu);
+        print_gputimes(fplog, "F D2H", gpu_t->nb_c, gpu_t->nb_d2h_t, tot_gpu);
         fprintf(fplog, "%s\n", hline);
         print_gputimes(fplog, "Total ", gpu_t->nb_c, tot_gpu, tot_gpu);
         fprintf(fplog, "%s\n", hline);
@@ -999,8 +996,7 @@ void wallcycle_print(FILE *fplog, const gmx::MDLogger &mdlog, int nnodes, int np
                     "NOTE: %d %% of the run time was spent in domain decomposition,\n"
                     "      %d %% of the run time was spent in pair search,\n"
                     "      you might want to increase nstlist (this has no effect on accuracy)\n",
-                    (int)(100 * cyc_sum[ewcDOMDEC] / tot + 0.5),
-                    (int)(100 * cyc_sum[ewcNS] / tot + 0.5));
+                    (int)(100 * cyc_sum[ewcDOMDEC] / tot + 0.5), (int)(100 * cyc_sum[ewcNS] / tot + 0.5));
         }
     }
 

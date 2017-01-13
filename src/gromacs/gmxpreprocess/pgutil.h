@@ -51,16 +51,15 @@ struct t_atoms;
  * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
  */
 int search_atom(const char *type, int start,
-                t_atoms *atoms,
+                t_atoms *   atoms,
                 const char *bondtype, gmx_bool bAllowMissing);
 
 /* Similar to search_atom, but this routine searches for the specified
  * atom in residue resind.
  */
-int
-search_res_atom(const char *type, int resind,
-                t_atoms *atoms,
-                const char *bondtype, gmx_bool bAllowMissing);
+int search_res_atom(const char *type, int resind,
+                    t_atoms *   atoms,
+                    const char *bondtype, gmx_bool bAllowMissing);
 
 
 void set_at(t_atom *at, real m, real q, int type, int resind);

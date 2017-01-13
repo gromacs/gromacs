@@ -51,20 +51,16 @@ const char *enum_name(int index, int max_index, const char *names[])
     }
 }
 
-const char *yesno_names[BOOL_NR + 1] =
-{
+const char *yesno_names[BOOL_NR + 1] = {
     "no", "yes", nullptr
 };
 
 
-
-const char *ens_names[ensNR + 1] =
-{
+const char *ens_names[ensNR + 1] = {
     "Grid", "Simple", nullptr
 };
 
-const char *ei_names[eiNR + 1] =
-{
+const char *ei_names[eiNR + 1] = {
     "md", "steep", "cg", "bd", "sd2 - removed", "nm", "l-bfgs", "tpi", "tpic", "sd", "md-vv", "md-vv-avek", nullptr
 };
 
@@ -255,12 +251,10 @@ const char *gmx_nblist_interaction_names[GMX_NBLIST_INTERACTION_NR + 1] = {
     "Standard", "Free_Energy", nullptr
 };
 
-const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR + 1] =
-{
+const char *gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR + 1] = {
     "None", "Coulomb", "Reaction-Field", "Cubic-Spline-Table", "Generalized-Born", "Ewald", nullptr
 };
 
-const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR + 1] =
-{
+const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR + 1] = {
     "None", "Lennard-Jones", "Buckingham", "Cubic-Spline-Table", "LJEwald", nullptr
 };

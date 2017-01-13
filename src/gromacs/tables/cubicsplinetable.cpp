@@ -88,10 +88,10 @@ void calculateCubicSplineCoefficients(double  functionValue0,
                                       double *G,
                                       double *H)
 {
-    *Y =  functionValue0;
-    *F =  spacing * derivativeValue0;
-    *G =  3.0 * ( functionValue1 - functionValue0) - spacing * (derivativeValue1 + 2.0 * derivativeValue0);
-    *H = -2.0 * ( functionValue1 - functionValue0) + spacing * (derivativeValue1 + derivativeValue0);
+    *Y = functionValue0;
+    *F = spacing * derivativeValue0;
+    *G = 3.0 * (functionValue1 - functionValue0) - spacing * (derivativeValue1 + 2.0 * derivativeValue0);
+    *H = -2.0 * (functionValue1 - functionValue0) + spacing * (derivativeValue1 + derivativeValue0);
 }
 
 /*! \brief Perform cubic spline interpolation in interval from function/derivative
@@ -128,7 +128,6 @@ void cubicSplineInterpolationFromFunctionAndDerivative(double  functionValue0,
 }
 
 
-
 /*! \brief Construct the data for a single cubic table from analytical functions
  *
  * \param[in]  function             Analytical functiojn
@@ -139,9 +138,9 @@ void cubicSplineInterpolationFromFunctionAndDerivative(double  functionValue0,
  */
 void fillSingleCubicSplineTableData(const std::function<double(double)> &function,
                                     const std::function<double(double)> &derivative,
-                                    const std::pair<real, real>           &range,
-                                    double                                 spacing,
-                                    std::vector<real>                     *yfghTableData)
+                                    const std::pair<real, real> &range,
+                                    double             spacing,
+                                    std::vector<real> *yfghTableData)
 {
     int endIndex = range.second / spacing + 2;
 
@@ -199,7 +198,7 @@ void fillSingleCubicSplineTableData(const std::function<double(double)> &functio
             H = 0.0;
         }
 
-        (*yfghTableData)[4 * i  ]   = Y;
+        (*yfghTableData)[4 * i]     = Y;
         (*yfghTableData)[4 * i + 1] = F;
         (*yfghTableData)[4 * i + 2] = G;
         (*yfghTableData)[4 * i + 3] = H;
@@ -218,10 +217,10 @@ void fillSingleCubicSplineTableData(const std::function<double(double)> &functio
  */
 void fillSingleCubicSplineTableData(ConstArrayRef<double> function,
                                     ConstArrayRef<double> derivative,
-                                    double inputSpacing,
-                                    const std::pair<real, real>           &range,
-                                    double                                 spacing,
-                                    std::vector<real>                     *yfghTableData)
+                                    double                inputSpacing,
+                                    const std::pair<real, real> &range,
+                                    double             spacing,
+                                    std::vector<real> *yfghTableData)
 {
     int endIndex = range.second / spacing + 2;
 
@@ -268,8 +267,8 @@ void fillSingleCubicSplineTableData(ConstArrayRef<double> function,
         {
             double lastIndexFunction   = tmpFunction[lastIndexInRange];
             double lastIndexDerivative = tmpDerivative[lastIndexInRange];
-            tmpFunction[i]   = lastIndexFunction + lastIndexDerivative * (i - lastIndexInRange) * spacing;
-            tmpDerivative[i] = lastIndexDerivative;
+            tmpFunction[i]             = lastIndexFunction + lastIndexDerivative * (i - lastIndexInRange) * spacing;
+            tmpDerivative[i]           = lastIndexDerivative;
         }
     }
 
@@ -286,29 +285,29 @@ void fillSingleCubicSplineTableData(ConstArrayRef<double> function,
                                          tmpDerivative[i], nextDerivative,
                                          spacing,
                                          &Y, &F, &G, &H);
-        (*yfghTableData)[4 * i  ]   = Y;
+        (*yfghTableData)[4 * i]     = Y;
         (*yfghTableData)[4 * i + 1] = F;
         (*yfghTableData)[4 * i + 2] = G;
         (*yfghTableData)[4 * i + 3] = H;
     }
-
 }
 
-}   // namespace anonymous
-
+} // namespace anonymous
 
 
 #if GMX_DOUBLE
 const real
-CubicSplineTable::defaultTolerance = 1e-10;
+        CubicSplineTable::defaultTolerance
+        = 1e-10;
 #else
 const real
-CubicSplineTable::defaultTolerance = 10.0 * GMX_FLOAT_EPS;
+        CubicSplineTable::defaultTolerance
+        = 10.0 * GMX_FLOAT_EPS;
 #endif
 
 CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableInput> analyticalInputList,
-                                   const std::pair<real, real>                        &range,
-                                   real                                                tolerance)
+                                   const std::pair<real, real> &range,
+                                   real tolerance)
     : numFuncInTable_(analyticalInputList.size()), range_(range)
 {
     // Sanity check on input values
@@ -387,8 +386,8 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableIn
 
 
 CubicSplineTable::CubicSplineTable(std::initializer_list<NumericalSplineTableInput> numericalInputList,
-                                   const std::pair<real, real>                       &range,
-                                   real                                               tolerance)
+                                   const std::pair<real, real> &range,
+                                   real tolerance)
     : numFuncInTable_(numericalInputList.size()), range_(range)
 {
     // Sanity check on input values

@@ -49,7 +49,11 @@ typedef struct gmx_atomprop *gmx_atomprop_t;
 
 enum
 {
-    epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement,
+    epropMass,
+    epropVDW,
+    epropDGsol,
+    epropElectroneg,
+    epropElement,
     epropNR
 };
 

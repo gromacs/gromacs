@@ -84,7 +84,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
         {
             gmx_fatal(FARGS, "Atom index (%d) is larger than the number of atoms in the trajecory (%d)", index[a] + 1, natoms);
         }
-        w_rls[a]  = (bMW ? top->atoms.atom[index[a]].m : 1.0);
+        w_rls[a] = (bMW ? top->atoms.atom[index[a]].m : 1.0);
         tot_mass += w_rls[a];
     }
     gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
@@ -136,7 +136,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
                     msd += w_rls[a] * gmx::square(xi[i][a][r] - xf);
                 }
             }
-            msd      /= tot_mass;
+            msd /= tot_mass;
             srmsd[i] += std::sqrt(msd);
             srmsd[j] += std::sqrt(msd);
         }
@@ -202,19 +202,14 @@ int gmx_rotmat(int argc, char *argv[])
         "Option [TT]-fitxy[tt] fits in the [IT]x-y[it] plane before determining",
         "the rotation matrix."
     };
-    const char *reffit[] =
-    { nullptr, "none", "xyz", "xy", nullptr };
-    static int        skip   = 1;
-    static gmx_bool   bFitXY = FALSE, bMW = TRUE;
-    t_pargs           pa[]   = {
-        { "-ref", FALSE, etENUM, {reffit},
-          "Determine the optimal reference structure" },
-        { "-skip", FALSE, etINT, {&skip},
-          "Use every nr-th frame for [TT]-ref[tt]" },
-        { "-fitxy", FALSE, etBOOL, {&bFitXY},
-          "Fit the x/y rotation before determining the rotation" },
-        { "-mw", FALSE, etBOOL, {&bMW},
-          "Use mass weighted fitting" }
+    const char *    reffit[] = { nullptr, "none", "xyz", "xy", nullptr };
+    static int      skip     = 1;
+    static gmx_bool bFitXY = FALSE, bMW = TRUE;
+    t_pargs         pa[] = {
+        { "-ref", FALSE, etENUM, { reffit }, "Determine the optimal reference structure" },
+        { "-skip", FALSE, etINT, { &skip }, "Use every nr-th frame for [TT]-ref[tt]" },
+        { "-fitxy", FALSE, etBOOL, { &bFitXY }, "Fit the x/y rotation before determining the rotation" },
+        { "-mw", FALSE, etBOOL, { &bMW }, "Use mass weighted fitting" }
     };
     FILE *            out;
     t_trxstatus *     status;
@@ -233,10 +228,10 @@ int gmx_rotmat(int argc, char *argv[])
     const char *      leg[] = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
 #define NLEG asize(leg)
     t_filenm fnm[] = {
-        { efTRX, "-f",   nullptr,       ffREAD },
-        { efTPS, nullptr,   nullptr,       ffREAD },
-        { efNDX, nullptr,   nullptr,       ffOPTRD },
-        { efXVG, nullptr,   "rotmat",   ffWRITE }
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, nullptr, "rotmat", ffWRITE }
     };
 #define NFILE asize(fnm)
 

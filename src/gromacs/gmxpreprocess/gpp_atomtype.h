@@ -82,30 +82,29 @@ void done_atomtype(gpp_atomtype_t at);
 
 int set_atomtype(int nt, gpp_atomtype_t at, struct t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
-                 int bondatomtype,
+                 int  bondatomtype,
                  real radius, real vol, real surftens, int atomnumber,
                  real gb_radius, real S_hct);
 /* Set the values of an existing atom type nt. Returns nt on success or
    NOTSET on error. */
 
-int
-set_atomtype_gbparam(gpp_atomtype_t at, int i,
-                     real radius, real vol, real surftens,
-                     real gb_radius, real S_hct);
+int set_atomtype_gbparam(gpp_atomtype_t at, int i,
+                         real radius, real vol, real surftens,
+                         real gb_radius, real S_hct);
 
 int add_atomtype(gpp_atomtype_t at, struct t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
-                 int bondatomtype,
+                 int  bondatomtype,
                  real radius, real vol, real surftens, int atomnumber,
                  real gb_radius, real S_hct);
 /* Add a complete new atom type to an existing atomtype structure. Returns
    the number of the atom type. */
 
-void print_at (FILE * out, gpp_atomtype_t at);
+void print_at(FILE *out, gpp_atomtype_t at);
 /* Print an atomtype record to a text file */
 
 void renum_atype(t_params plist[], gmx_mtop_t *mtop,
-                 int *wall_atomtype,
+                 int *          wall_atomtype,
                  gpp_atomtype_t at, gmx_bool bVerbose);
 
 void copy_atomtype_atomtypes(gpp_atomtype_t atype, t_atomtypes *atypes);

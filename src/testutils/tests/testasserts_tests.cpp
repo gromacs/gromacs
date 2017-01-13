@@ -72,7 +72,7 @@ TEST(FloatingPointDifferenceTest, HandlesEqualValues)
     EXPECT_TRUE(diff.isDouble());
     EXPECT_FALSE(diff.isNaN());
     EXPECT_EQ(0.0, diff.asAbsolute());
-    EXPECT_EQ(0U,  diff.asUlps());
+    EXPECT_EQ(0U, diff.asUlps());
     EXPECT_FALSE(diff.signsDiffer());
 }
 
@@ -83,7 +83,7 @@ TEST(FloatingPointDifferenceTest, HandlesFloatValues)
     EXPECT_FALSE(diff.isDouble());
     EXPECT_FALSE(diff.isNaN());
     EXPECT_EQ(0.0, diff.asAbsolute());
-    EXPECT_EQ(0U,  diff.asUlps());
+    EXPECT_EQ(0U, diff.asUlps());
     EXPECT_FALSE(diff.signsDiffer());
 }
 
@@ -92,7 +92,7 @@ TEST(FloatingPointDifferenceTest, HandlesZerosOfDifferentSign)
     FloatingPointDifference diff(0.0, GMX_DOUBLE_NEGZERO);
     EXPECT_FALSE(diff.isNaN());
     EXPECT_EQ(0.0, diff.asAbsolute());
-    EXPECT_EQ(0U,  diff.asUlps());
+    EXPECT_EQ(0U, diff.asUlps());
     EXPECT_TRUE(diff.signsDiffer());
 }
 
@@ -135,7 +135,7 @@ TEST(FloatingPointDifferenceTest, HandlesUlpDifferences)
 TEST(FloatingPointDifferenceTest, HandlesUlpDifferenceAcrossZero)
 {
     const double            first  = addUlps(GMX_DOUBLE_NEGZERO, 2);
-    const double            second = addUlps( 0.0, 2);
+    const double            second = addUlps(0.0, 2);
     FloatingPointDifference diff(first, second);
     EXPECT_FALSE(diff.isNaN());
     EXPECT_DOUBLE_EQ(second - first, diff.asAbsolute());
@@ -162,8 +162,8 @@ TEST(FloatingPointToleranceTest, UlpTolerance)
     EXPECT_TRUE(ulpTolerance(2).isWithin(fulp2));
 
     FloatingPointDifference dequal(1.0, 1.0);
-    FloatingPointDifference dulp2(1.0,  addUlps(1.0, 2));
-    FloatingPointDifference dulp2f(1.0,  static_cast<double>(addUlps(1.0f, 2)));
+    FloatingPointDifference dulp2(1.0, addUlps(1.0, 2));
+    FloatingPointDifference dulp2f(1.0, static_cast<double>(addUlps(1.0f, 2)));
     EXPECT_TRUE(ulpTolerance(0).isWithin(dequal));
     EXPECT_TRUE(ulpTolerance(2).isWithin(dulp2));
     EXPECT_FALSE(ulpTolerance(2).isWithin(dulp2f));
@@ -221,7 +221,7 @@ TEST(FloatingPointToleranceTest, RelativeToleranceAsUlp)
 
     FloatingPointDifference dequal(1.0, 1.0);
     FloatingPointDifference dulp4(1.0, addUlps(1.0, 4));
-    FloatingPointDifference dulp4f(1.0,  static_cast<double>(addUlps(1.0f, 4)));
+    FloatingPointDifference dulp4f(1.0, static_cast<double>(addUlps(1.0f, 4)));
     FloatingPointDifference dsmall(0.1, addUlps(1.0, 2) - 0.9);
     FloatingPointDifference dsmall2(0.1, addUlps(1.0, 6) - 0.9);
     EXPECT_TRUE(relativeToleranceAsUlp(1.0, 2).isWithin(dequal));

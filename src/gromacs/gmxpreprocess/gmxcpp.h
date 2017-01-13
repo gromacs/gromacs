@@ -43,9 +43,15 @@ typedef struct gmx_cpp *gmx_cpp_t;
 /* The possible return codes for these functions */
 enum
 {
-    eCPP_OK, eCPP_FILE_NOT_FOUND, eCPP_EOF, eCPP_SYNTAX, eCPP_INTERRUPT,
+    eCPP_OK,
+    eCPP_FILE_NOT_FOUND,
+    eCPP_EOF,
+    eCPP_SYNTAX,
+    eCPP_INTERRUPT,
     eCPP_INVALID_HANDLE,
-    eCPP_FILE_NOT_OPEN, eCPP_UNKNOWN, eCPP_NR
+    eCPP_FILE_NOT_OPEN,
+    eCPP_UNKNOWN,
+    eCPP_NR
 };
 
 /* THESE FUNCTIONS ARE NOT THREAD SAFE!! */

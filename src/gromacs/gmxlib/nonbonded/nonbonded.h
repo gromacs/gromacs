@@ -47,32 +47,25 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/basedefinitions.h"
 
-void
-gmx_nonbonded_setup(t_forcerec *fr,
-                    gmx_bool    bGenericKernelOnly);
+void gmx_nonbonded_setup(t_forcerec *fr,
+                         gmx_bool    bGenericKernelOnly);
 
 
+void gmx_nonbonded_set_kernel_pointers(FILE *    fplog,
+                                       t_nblist *nl,
+                                       gmx_bool  bElecAndVdwSwitchDiffers);
 
 
+#define GMX_NONBONDED_DO_FORCE (1 << 1)
+#define GMX_NONBONDED_DO_SHIFTFORCE (1 << 2)
+#define GMX_NONBONDED_DO_FOREIGNLAMBDA (1 << 3)
+#define GMX_NONBONDED_DO_POTENTIAL (1 << 4)
+#define GMX_NONBONDED_DO_SR (1 << 5)
 
-void
-gmx_nonbonded_set_kernel_pointers(FILE *     fplog,
-                                  t_nblist * nl,
-                                  gmx_bool   bElecAndVdwSwitchDiffers);
-
-
-
-#define GMX_NONBONDED_DO_FORCE          (1 << 1)
-#define GMX_NONBONDED_DO_SHIFTFORCE     (1 << 2)
-#define GMX_NONBONDED_DO_FOREIGNLAMBDA  (1 << 3)
-#define GMX_NONBONDED_DO_POTENTIAL      (1 << 4)
-#define GMX_NONBONDED_DO_SR             (1 << 5)
-
-void
-do_nonbonded(t_forcerec *fr,
-             rvec x[], rvec f_shortrange[], t_mdatoms *md, t_blocka *excl,
-             gmx_grppairener_t *grppener,
-             t_nrnb *nrnb, real *lambda, real dvdlambda[],
-             int nls, int eNL, int flags);
+void do_nonbonded(t_forcerec *fr,
+                  rvec x[], rvec f_shortrange[], t_mdatoms *md, t_blocka *excl,
+                  gmx_grppairener_t *grppener,
+                  t_nrnb *nrnb, real *lambda, real dvdlambda[],
+                  int nls, int eNL, int flags);
 
 #endif

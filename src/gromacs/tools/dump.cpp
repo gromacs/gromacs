@@ -78,7 +78,7 @@ static void list_tpx(const char *fn,
 {
     FILE *        gp;
     int           indent, i, j, **gcount, atot;
-    t_state       state {};
+    t_state       state{};
     t_inputrec *  ir = nullptr;
     t_tpxheader   tpx;
     gmx_mtop_t    mtop;
@@ -229,9 +229,9 @@ static void list_trr(const char *fn)
         snew(f, trrheader.natoms);
         if (gmx_trr_read_frame_data(fpread, &trrheader,
                                     trrheader.box_size ? box : nullptr,
-                                    trrheader.x_size   ? x : nullptr,
-                                    trrheader.v_size   ? v : nullptr,
-                                    trrheader.f_size   ? f : nullptr))
+                                    trrheader.x_size ? x : nullptr,
+                                    trrheader.v_size ? v : nullptr,
+                                    trrheader.f_size ? f : nullptr))
         {
             sprintf(buf, "%s frame %d", fn, nframe);
             indent = 0;
@@ -552,9 +552,9 @@ void list_ene(const char *fn)
 
 static void list_mtx(const char *fn)
 {
-    int                  nrow, ncol, i, j, k;
-    real *               full   = nullptr, value;
-    gmx_sparsematrix_t * sparse = nullptr;
+    int                 nrow, ncol, i, j, k;
+    real *              full   = nullptr, value;
+    gmx_sparsematrix_t *sparse = nullptr;
 
     gmx_mtxio_read(fn, &nrow, &ncol, &full, &sparse);
 
@@ -608,7 +608,7 @@ int gmx_dump(int argc, char *argv[])
     const char *bugs[] = {
         "Position restraint output from -sys -s is broken"
     };
-    t_filenm    fnm[] = {
+    t_filenm fnm[] = {
         { efTPR, "-s", nullptr, ffOPTRD },
         { efTRX, "-f", nullptr, ffOPTRD },
         { efEDR, "-e", nullptr, ffOPTRD },
@@ -625,9 +625,9 @@ int gmx_dump(int argc, char *argv[])
     static gmx_bool bShowParams  = FALSE;
     static gmx_bool bSysTop      = FALSE;
     t_pargs         pa[]         = {
-        { "-nr", FALSE, etBOOL, {&bShowNumbers}, "Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },
-        { "-param", FALSE, etBOOL, {&bShowParams}, "Show parameters for each bonded interaction (for comparing dumps, it is useful to combine this with -nonr)" },
-        { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" }
+        { "-nr", FALSE, etBOOL, { &bShowNumbers }, "Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },
+        { "-param", FALSE, etBOOL, { &bShowParams }, "Show parameters for each bonded interaction (for comparing dumps, it is useful to combine this with -nonr)" },
+        { "-sys", FALSE, etBOOL, { &bSysTop }, "List the atoms and bonded interactions for the whole system instead of for each molecule type" }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,

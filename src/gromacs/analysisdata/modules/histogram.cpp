@@ -153,9 +153,9 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(
                 {
                     GMX_RELEASE_ASSERT(settings.binCount_ > 1,
                                        "Bin count must be at least two with integer bins");
-                    binWidth_   = (lastEdge_ - firstEdge_) / (binCount_ - 1);
+                    binWidth_ = (lastEdge_ - firstEdge_) / (binCount_ - 1);
                     firstEdge_ -= 0.5 * binWidth_;
-                    lastEdge_  += 0.5 * binWidth_;
+                    lastEdge_ += 0.5 * binWidth_;
                 }
                 else
                 {
@@ -233,7 +233,7 @@ StaticAverageHistogram::StaticAverageHistogram(
 {
 }
 
-}   // namespace
+} // namespace
 
 
 /********************************************************************
@@ -284,7 +284,7 @@ AverageHistogramPointer AbstractAverageHistogram::resampleDoubleBinWidth(bool bI
     AverageHistogramPointer dest(
             new StaticAverageHistogram(
                     histogramFromBins(settings().firstEdge(), nbins, 2 * xstep())
-                        .integerBins(bIntegerBins)));
+                            .integerBins(bIntegerBins)));
     dest->setColumnCount(columnCount());
     dest->allocateValues();
 
@@ -526,7 +526,7 @@ class BasicHistogramImpl
 public:
     //! Smart pointer to manage an BasicAverageHistogramModule object.
     typedef std::shared_ptr<BasicAverageHistogramModule>
-        BasicAverageHistogramModulePointer;
+            BasicAverageHistogramModulePointer;
 
     BasicHistogramImpl();
     //! Creates an histogram impl with defined bin parameters.
@@ -570,7 +570,7 @@ void BasicHistogramImpl::init(const AnalysisHistogramSettings &settings)
     averager_->init(settings);
 }
 
-}   // namespace internal
+} // namespace internal
 
 
 /********************************************************************
@@ -677,7 +677,7 @@ void AnalysisDataSimpleHistogramModule::frameStarted(const AnalysisDataFrameHead
 void AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
     Impl::FrameLocalData::DataSetHandle handle
-        = impl_->accumulator_.frameDataSet(points.frameIndex(), points.dataSetIndex());
+            = impl_->accumulator_.frameDataSet(points.frameIndex(), points.dataSetIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
         if (points.present(i))
@@ -695,7 +695,7 @@ void AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRe
 void AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader &header)
 {
     Impl::FrameLocalData::FrameHandle handle
-        = impl_->accumulator_.frameData(header.index());
+            = impl_->accumulator_.frameData(header.index());
     AnalysisDataStorageFrame &frame       = impl_->storage_.startFrame(header);
     const int                 columnCount = settings().binCount();
     for (int s = 0; s < dataSetCount(); ++s)
@@ -845,7 +845,7 @@ void AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSet
     if (bin != -1)
     {
         Impl::FrameLocalData::DataSetHandle handle
-            = impl_->accumulator_.frameDataSet(points.frameIndex(), points.dataSetIndex());
+                = impl_->accumulator_.frameDataSet(points.frameIndex(), points.dataSetIndex());
         for (int i = 1; i < points.columnCount(); ++i)
         {
             handle.value(bin) += points.y(i);
@@ -857,7 +857,7 @@ void AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSet
 void AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader &header)
 {
     Impl::FrameLocalData::FrameHandle handle
-        = impl_->accumulator_.frameData(header.index());
+            = impl_->accumulator_.frameData(header.index());
     AnalysisDataStorageFrame &frame       = impl_->storage_.startFrame(header);
     const int                 columnCount = settings().binCount();
     for (int s = 0; s < dataSetCount(); ++s)

@@ -105,7 +105,8 @@ public:
         {
             if (!ndxfile_.empty())
             {
-                std::fprintf(stderr, "NOTE: You provided an index file\n"
+                std::fprintf(stderr,
+                             "NOTE: You provided an index file\n"
                              "  %s\n(with -n), but it was not used by any selection.\n",
                              ndxfile_.c_str());
             }
@@ -196,10 +197,11 @@ SelectionOptionBehavior::~SelectionOptionBehavior()
 void SelectionOptionBehavior::initOptions(IOptionsContainer *options)
 {
     options->addOption(FileNameOption("n")
-                           .filetype(eftIndex).inputFile()
-                           .store(&impl_->ndxfile_)
-                           .defaultBasename("index")
-                           .description("Extra index groups"));
+                               .filetype(eftIndex)
+                               .inputFile()
+                               .store(&impl_->ndxfile_)
+                               .defaultBasename("index")
+                               .description("Extra index groups"));
     options->addOption(SelectionFileOption("sf"));
     impl_->manager_.initOptions(options);
 }

@@ -67,29 +67,29 @@ real dpot(real x, real qq, real c6, real cn, int npow)
 
 int gmx_sigeps(int argc, char *argv[])
 {
-    const char *      desc[] = {
+    const char *desc[] = {
         "[THISMODULE] is a simple utility that converts C6/C12 or C6/Cn combinations",
         "to [GRK]sigma[grk] and [GRK]epsilon[grk], or vice versa. It can also plot the potential",
         "in  file. In addition, it makes an approximation of a Buckingham potential",
         "to a Lennard-Jones potential."
     };
-    static real       c6   = 1.0e-3, cn = 1.0e-6, qi = 0, qj = 0, sig = 0.3, eps = 1, sigfac = 0.7;
-    static real       Abh  = 1e5, Bbh = 32, Cbh = 1e-3;
-    static int        npow = 12;
-    t_pargs           pa[] = {
-        { "-c6",   FALSE,  etREAL,  {&c6},  "C6"   },
-        { "-cn",   FALSE,  etREAL,  {&cn},  "Constant for repulsion"   },
-        { "-pow",  FALSE,  etINT,   {&npow}, "Power of the repulsion term" },
-        { "-sig",  FALSE,  etREAL,  {&sig}, "[GRK]sigma[grk]"  },
-        { "-eps",  FALSE,  etREAL,  {&eps}, "[GRK]epsilon[grk]"  },
-        { "-A",    FALSE,  etREAL,  {&Abh}, "Buckingham A" },
-        { "-B",    FALSE,  etREAL,  {&Bbh}, "Buckingham B" },
-        { "-C",    FALSE,  etREAL,  {&Cbh}, "Buckingham C" },
-        { "-qi",   FALSE,  etREAL,  {&qi},  "qi"   },
-        { "-qj",   FALSE,  etREAL,  {&qj},  "qj"   },
-        { "-sigfac", FALSE, etREAL, {&sigfac}, "Factor in front of [GRK]sigma[grk] for starting the plot" }
+    static real c6 = 1.0e-3, cn = 1.0e-6, qi = 0, qj = 0, sig = 0.3, eps = 1, sigfac = 0.7;
+    static real Abh = 1e5, Bbh = 32, Cbh = 1e-3;
+    static int  npow = 12;
+    t_pargs     pa[] = {
+        { "-c6", FALSE, etREAL, { &c6 }, "C6" },
+        { "-cn", FALSE, etREAL, { &cn }, "Constant for repulsion" },
+        { "-pow", FALSE, etINT, { &npow }, "Power of the repulsion term" },
+        { "-sig", FALSE, etREAL, { &sig }, "[GRK]sigma[grk]" },
+        { "-eps", FALSE, etREAL, { &eps }, "[GRK]epsilon[grk]" },
+        { "-A", FALSE, etREAL, { &Abh }, "Buckingham A" },
+        { "-B", FALSE, etREAL, { &Bbh }, "Buckingham B" },
+        { "-C", FALSE, etREAL, { &Cbh }, "Buckingham C" },
+        { "-qi", FALSE, etREAL, { &qi }, "qi" },
+        { "-qj", FALSE, etREAL, { &qj }, "qj" },
+        { "-sigfac", FALSE, etREAL, { &sigfac }, "Factor in front of [GRK]sigma[grk] for starting the plot" }
     };
-    t_filenm          fnm[] = {
+    t_filenm fnm[] = {
         { efXVG, "-o", "potje", ffWRITE }
     };
     gmx_output_env_t *oenv;
@@ -118,15 +118,15 @@ int gmx_sigeps(int argc, char *argv[])
         c6  = Cbh;
         sig = std::pow((6.0 / npow) * std::pow(npow / Bbh, npow - 6), 1.0 / (npow - 6));
         eps = c6 / (4 * gmx::power6(sig));
-        cn  = 4*eps*std::pow(sig, npow);
+        cn  = 4 * eps * std::pow(sig, npow);
     }
     else
     {
         if (opt2parg_bSet("-sig", asize(pa), pa)
             || opt2parg_bSet("-eps", asize(pa), pa))
         {
-            c6 = 4*eps*gmx::power6(sig);
-            cn = 4*eps*std::pow(sig, npow);
+            c6 = 4 * eps * gmx::power6(sig);
+            cn = 4 * eps * std::pow(sig, npow);
         }
         else if (opt2parg_bSet("-c6", asize(pa), pa)
                  || opt2parg_bSet("-cn", asize(pa), pa)
@@ -148,7 +148,7 @@ int gmx_sigeps(int argc, char *argv[])
         printf("Fit of Lennard Jones (%d-6) to Buckingham:\n", npow);
         Bbh = npow / minimum;
         Cbh = c6;
-        Abh = 4*eps*std::pow(sig / minimum, static_cast<real>(npow)) * std::exp(static_cast<real>(npow));
+        Abh = 4 * eps * std::pow(sig / minimum, static_cast<real>(npow)) * std::exp(static_cast<real>(npow));
         printf("A = %g, B = %g, C = %g\n", Abh, Bbh, Cbh);
     }
     qq = qi * qj;
@@ -180,7 +180,6 @@ int gmx_sigeps(int argc, char *argv[])
         }
         cur  = next;
         oldx = x;
-
     }
     xvgrclose(fp);
 

@@ -71,9 +71,9 @@ TEST(HardwareTopologyTest, Execute)
 
     // If we cannot even find the number of logical processors we want to flag it
     EXPECT_GT(hwTop.supportLevel(), gmx::HardwareTopology::SupportLevel::None)
-    << "Cannot determine number of processors. " << std::endl
-    << "GROMACS might still work, but it will likely hurt your performance." << std::endl
-    << "Please mail gmx-developers@gromacs.org so we can try to fix it.";
+            << "Cannot determine number of processors. " << std::endl
+            << "GROMACS might still work, but it will likely hurt your performance." << std::endl
+            << "Please mail gmx-developers@gromacs.org so we can try to fix it.";
 }
 
 #if GMX_HWLOC
@@ -84,9 +84,10 @@ TEST(HardwareTopologyTest, HwlocExecute)
 
     // On Linux with hwloc support we should be able to get at least basic information
     EXPECT_GE(hwTop.supportLevel(), gmx::HardwareTopology::SupportLevel::Basic)
-    << "Cannot determine basic hardware topology from hwloc. GROMACS will still\n" << std::endl
-    << "work, but it might affect your performance for large nodes." << std::endl
-    << "Please mail gmx-developers@gromacs.org so we can try to fix it.";
+            << "Cannot determine basic hardware topology from hwloc. GROMACS will still\n"
+            << std::endl
+            << "work, but it might affect your performance for large nodes." << std::endl
+            << "Please mail gmx-developers@gromacs.org so we can try to fix it.";
 #endif
 }
 #endif

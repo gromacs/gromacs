@@ -46,9 +46,9 @@
 #include "gromacs/utility/smalloc.h"
 
 const char *fontnm[efontNR] = {
-    "Times-Roman", "Times-Italic",     "Times-Bold",    "Times-BoldItalic",
-    "Helvetica",  "Helvetica-Oblique", "Helvetica-Bold", "Helvetica-BoldOblique",
-    "Courier",    "Courier-Oblique",  "Courier-Bold",  "Courier-BoldOblique"
+    "Times-Roman", "Times-Italic", "Times-Bold", "Times-BoldItalic",
+    "Helvetica", "Helvetica-Oblique", "Helvetica-Bold", "Helvetica-BoldOblique",
+    "Courier", "Courier-Oblique", "Courier-Bold", "Courier-BoldOblique"
 };
 
 
@@ -159,7 +159,8 @@ void ps_rgb(t_psdata ps, t_rgb *rgb)
 void ps_init_rgb_nbox(t_psdata ps, real xbox, real ybox)
 {
     ps->gen_ybox = ybox;
-    fprintf(ps->fp, "/by {def currentpoint "
+    fprintf(ps->fp,
+            "/by {def currentpoint "
             "%g y r %g %g r %g y neg r %g %g r f y add moveto} bind def\n",
             0.0, xbox, 0.0, 0.0, -xbox, 0.0);
     /* macro bn is used in ps_rgb_nbox to draw rectangular boxes */
@@ -182,12 +183,12 @@ void ps_rgb_nbox(t_psdata ps, t_rgb *rgb, real n)
             ps_rgb_box(ps, rgb);
         }
     }
-
 }
 
 void ps_init_rgb_box(t_psdata ps, real xbox, real ybox)
 {
-    fprintf(ps->fp, "/b {currentpoint "
+    fprintf(ps->fp,
+            "/b {currentpoint "
             "%g %g r %g %g r %g %g r %g %g r f %g add moveto} bind def\n",
             0.0, ybox, xbox, 0.0, 0.0, -ybox, -xbox, 0.0, ybox);
     /* macro b is used in search_col to define macro B */

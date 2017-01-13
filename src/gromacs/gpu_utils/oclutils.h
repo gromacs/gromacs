@@ -46,16 +46,15 @@
    it. */
 #define CL_USE_DEPRECATED_OPENCL_2_0_APIS
 #ifdef __APPLE__
-#    include <OpenCL/opencl.h>
+#include <OpenCL/opencl.h>
 #else
-#    include <CL/opencl.h>
+#include <CL/opencl.h>
 #endif
 
 #include <string>
 
 /*! \brief OpenCL vendor IDs */
-typedef enum
-{
+typedef enum {
     OCL_VENDOR_NVIDIA = 0,
     OCL_VENDOR_AMD,
     OCL_VENDOR_INTEL,
@@ -70,8 +69,8 @@ typedef enum
  */
 typedef struct
 {
-    cl_platform_id ocl_platform_id;      /**< Platform ID */
-    cl_device_id   ocl_device_id;        /**< Device ID */
+    cl_platform_id ocl_platform_id; /**< Platform ID */
+    cl_device_id   ocl_device_id;   /**< Device ID */
 } ocl_gpu_id_t;
 
 /*! \internal
@@ -83,14 +82,14 @@ typedef struct
  */
 struct gmx_device_info_t
 {
-    ocl_gpu_id_t    ocl_gpu_id;              /**< device ID assigned at detection   */
-    char            device_name[256];        /**< device name */
-    char            device_version[256];     /**< device version */
-    char            device_vendor[256];      /**< device vendor */
-    int             compute_units;           /**< number of compute units */
-    int             adress_bits;             /**< number of adress bits the device is capable of */
-    int             stat;                    /**< device status takes values of e_gpu_detect_res_t */
-    ocl_vendor_id_t vendor_e;                /**< device vendor as defined by ocl_vendor_id_t */
+    ocl_gpu_id_t    ocl_gpu_id;          /**< device ID assigned at detection   */
+    char            device_name[256];    /**< device name */
+    char            device_version[256]; /**< device version */
+    char            device_vendor[256];  /**< device vendor */
+    int             compute_units;       /**< number of compute units */
+    int             adress_bits;         /**< number of adress bits the device is capable of */
+    int             stat;                /**< device status takes values of e_gpu_detect_res_t */
+    ocl_vendor_id_t vendor_e;            /**< device vendor as defined by ocl_vendor_id_t */
 };
 
 /*! \internal
@@ -112,24 +111,24 @@ struct gmx_device_runtime_data_t
 #if !defined(NDEBUG)
 /* Debugger callable function that prints the name of a kernel function pointer */
 cl_int dbg_ocl_kernel_name(const cl_kernel kernel);
-cl_int dbg_ocl_kernel_name_address(void* kernel);
+cl_int dbg_ocl_kernel_name_address(void *kernel);
 #endif
 
 
 /*! \brief Launches asynchronous host to device memory copy. */
-int ocl_copy_H2D_async(cl_mem d_dest, void * h_src,
+int ocl_copy_H2D_async(cl_mem d_dest, void *h_src,
                        size_t offset, size_t bytes,
                        cl_command_queue command_queue,
-                       cl_event *copy_event);
+                       cl_event *       copy_event);
 
 /*! \brief Launches asynchronous device to host memory copy. */
-int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
+int ocl_copy_D2H_async(void *h_dest, cl_mem d_src,
                        size_t offset, size_t bytes,
                        cl_command_queue command_queue,
-                       cl_event *copy_event);
+                       cl_event *       copy_event);
 
 /*! \brief Launches synchronous host to device memory copy. */
-int ocl_copy_H2D(cl_mem d_dest, void * h_src,
+int ocl_copy_H2D(cl_mem d_dest, void *h_src,
                  size_t offset, size_t bytes,
                  cl_command_queue command_queue);
 

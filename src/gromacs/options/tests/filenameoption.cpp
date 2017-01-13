@@ -62,9 +62,7 @@ TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
     gmx::Options options;
     std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
-                                FileNameOption("f").store(&value).required()
-                                    .filetype(gmx::eftGenericData).outputFile()
-                                    .defaultBasename("testfile")));
+            FileNameOption("f").store(&value).required().filetype(gmx::eftGenericData).outputFile().defaultBasename("testfile")));
     EXPECT_EQ("testfile.dat", value);
 
     gmx::OptionsAssigner assigner(&options);
@@ -80,9 +78,7 @@ TEST(FileNameOptionTest, HandlesRequiredOptionWithoutValue)
     gmx::Options options;
     std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
-                                FileNameOption("f").store(&value).required()
-                                    .filetype(gmx::eftGenericData).outputFile()
-                                    .defaultBasename("testfile")));
+            FileNameOption("f").store(&value).required().filetype(gmx::eftGenericData).outputFile().defaultBasename("testfile")));
     EXPECT_EQ("testfile.dat", value);
 
     gmx::OptionsAssigner assigner(&options);
@@ -100,9 +96,7 @@ TEST(FileNameOptionTest, HandlesOptionalUnsetOption)
     gmx::Options options;
     std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
-                                FileNameOption("f").store(&value)
-                                    .filetype(gmx::eftTrajectory).outputFile()
-                                    .defaultBasename("testfile")));
+            FileNameOption("f").store(&value).filetype(gmx::eftTrajectory).outputFile().defaultBasename("testfile")));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options);
@@ -118,9 +112,7 @@ TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
     gmx::Options options;
     std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
-                                FileNameOption("f").store(&value)
-                                    .filetype(gmx::eftIndex).outputFile()
-                                    .defaultBasename("testfile")));
+            FileNameOption("f").store(&value).filetype(gmx::eftIndex).outputFile().defaultBasename("testfile")));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options);
@@ -138,10 +130,7 @@ TEST(FileNameOptionTest, HandlesRequiredCustomDefaultExtension)
     gmx::Options options;
     std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
-                                FileNameOption("f").store(&value).required()
-                                    .filetype(gmx::eftTrajectory).outputFile()
-                                    .defaultBasename("testfile")
-                                    .defaultType(efPDB)));
+            FileNameOption("f").store(&value).required().filetype(gmx::eftTrajectory).outputFile().defaultBasename("testfile").defaultType(efPDB)));
     EXPECT_EQ("testfile.pdb", value);
 
     gmx::OptionsAssigner assigner(&options);
@@ -157,10 +146,7 @@ TEST(FileNameOptionTest, HandlesOptionalCustomDefaultExtension)
     gmx::Options options;
     std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
-                                FileNameOption("f").store(&value)
-                                    .filetype(gmx::eftTrajectory).outputFile()
-                                    .defaultBasename("testfile")
-                                    .defaultType(efPDB)));
+            FileNameOption("f").store(&value).filetype(gmx::eftTrajectory).outputFile().defaultBasename("testfile").defaultType(efPDB)));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options);
@@ -178,8 +164,7 @@ TEST(FileNameOptionTest, GivesErrorOnUnknownFileSuffix)
     gmx::Options options;
     std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
-                                FileNameOption("f").store(&value)
-                                    .filetype(gmx::eftIndex).outputFile()));
+            FileNameOption("f").store(&value).filetype(gmx::eftIndex).outputFile()));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options);
@@ -198,8 +183,7 @@ TEST(FileNameOptionTest, GivesErrorOnInvalidFileSuffix)
     gmx::Options options;
     std::string  value;
     ASSERT_NO_THROW_GMX(options.addOption(
-                                FileNameOption("f").store(&value)
-                                    .filetype(gmx::eftTrajectory).outputFile()));
+            FileNameOption("f").store(&value).filetype(gmx::eftTrajectory).outputFile()));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options);

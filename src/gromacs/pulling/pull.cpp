@@ -94,7 +94,7 @@ static bool pull_coordinate_is_directional(const t_pull_coord *pcrd)
 
 const char *pull_coordinate_units(const t_pull_coord *pcrd)
 {
-    return pull_coordinate_is_angletype(pcrd) ?  "deg" : "nm";
+    return pull_coordinate_is_angletype(pcrd) ? "deg" : "nm";
 }
 
 double pull_conversion_factor_userinput2internal(const t_pull_coord *pcrd)
@@ -259,7 +259,7 @@ static void set_legend_for_coord_components(const pull_coord_work_t *pcrd, int c
     for (int g = 0; g < pcrd->params.ngroup; g += 2)
     {
         /* Loop over the components */
-        for (int m  = 0; m < DIM; m++)
+        for (int m = 0; m < DIM; m++)
         {
             if (pcrd->params.dim[m])
             {
@@ -302,7 +302,7 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
         if (bCoord)
         {
             sprintf(buf, "Position (nm%s)", pull->bAngle ? ", deg" : "");
-            xvgr_header(fp, "Pull COM",  "Time (ps)", buf,
+            xvgr_header(fp, "Pull COM", "Time (ps)", buf,
                         exvggtXNY, oenv);
         }
         else
@@ -371,7 +371,7 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
         }
         if (nsets > 1)
         {
-            xvgr_legend(fp, nsets, (const char**)setname, oenv);
+            xvgr_legend(fp, nsets, (const char **)setname, oenv);
         }
         for (c = 0; c < nsets; c++)
         {
@@ -409,7 +409,7 @@ static void apply_forces_grp_part(const pull_group_work_t *pgrp,
 
 /* Apply forces in a mass weighted fashion */
 static void apply_forces_grp(const pull_group_work_t *pgrp,
-                             const t_mdatoms *md,
+                             const t_mdatoms *        md,
                              const dvec f_pull, int sign, rvec *f,
                              int nthreads)
 {
@@ -446,15 +446,15 @@ static void apply_forces_grp(const pull_group_work_t *pgrp,
 
 /* Apply forces in a mass weighted fashion to a cylinder group */
 static void apply_forces_cyl_grp(const pull_group_work_t *pgrp,
-                                 const double dv_corr,
-                                 const t_mdatoms *md,
+                                 const double             dv_corr,
+                                 const t_mdatoms *        md,
                                  const dvec f_pull, double f_scal,
                                  int sign, rvec *f,
                                  int gmx_unused nthreads)
 {
     double inv_wm = pgrp->mwscale;
 
-    /* The cylinder group is always a slab in the system, thus large.
+/* The cylinder group is always a slab in the system, thus large.
      * Therefore we always thread-parallelize this group.
      */
 #pragma omp parallel for num_threads(nthreads) schedule(static)
@@ -516,13 +516,13 @@ static void apply_forces_vec_torque(const struct pull_t *    pull,
     apply_forces_grp(&pull->group[pcrd->params.group[2]], md,
                      f_perp, -1, f, pull->nthreads);
     apply_forces_grp(&pull->group[pcrd->params.group[3]], md,
-                     f_perp,  1, f, pull->nthreads);
+                     f_perp, 1, f, pull->nthreads);
 }
 
 /* Apply forces in a mass weighted fashion */
-static void apply_forces_coord(struct pull_t * pull, int coord,
-                               const t_mdatoms * md,
-                               rvec *f)
+static void apply_forces_coord(struct pull_t *pull, int coord,
+                               const t_mdatoms *md,
+                               rvec *           f)
 {
     /* Here it would be more efficient to use one large thread-parallel
      * region instead of potential parallel regions within apply_forces_grp.
@@ -570,14 +570,14 @@ static void apply_forces_coord(struct pull_t * pull, int coord,
             apply_forces_grp(&pull->group[pcrd->params.group[2]], md,
                              pcrd->f23, -1, f, pull->nthreads);
             apply_forces_grp(&pull->group[pcrd->params.group[3]], md,
-                             pcrd->f23,  1, f, pull->nthreads);
+                             pcrd->f23, 1, f, pull->nthreads);
         }
         if (pcrd->params.ngroup >= 6)
         {
             apply_forces_grp(&pull->group[pcrd->params.group[4]], md,
                              pcrd->f45, -1, f, pull->nthreads);
             apply_forces_grp(&pull->group[pcrd->params.group[5]], md,
-                             pcrd->f45,  1, f, pull->nthreads);
+                             pcrd->f45, 1, f, pull->nthreads);
         }
     }
 }
@@ -649,9 +649,9 @@ real max_pull_distance2(const pull_coord_work_t *pcrd,
 /* This function returns the distance based on coordinates xg and xref.
  * Note that the pull coordinate struct pcrd is not modified.
  */
-static void low_get_pull_coord_dr(const struct pull_t *pull,
+static void low_get_pull_coord_dr(const struct pull_t *    pull,
                                   const pull_coord_work_t *pcrd,
-                                  const t_pbc *pbc,
+                                  const t_pbc *            pbc,
                                   dvec xg, dvec xref, double max_dist2,
                                   dvec dr)
 {
@@ -669,7 +669,7 @@ static void low_get_pull_coord_dr(const struct pull_t *pull,
     dvec xrefr;
     copy_dvec(xref, xrefr);
 
-    dvec dref = {0, 0, 0};
+    dvec dref = { 0, 0, 0 };
     if (pcrd->params.eGeom == epullgDIRPBC)
     {
         for (int m = 0; m < DIM; m++)
@@ -862,8 +862,8 @@ static double get_dihedral_angle_coord(pull_coord_work_t *pcrd)
     dvec   dr32; /* store instead of dr23? */
 
     dsvmul(-1, pcrd->dr23, dr32);
-    dcprod(pcrd->dr01, dr32, pcrd->planevec_m);  /* Normal of first plane */
-    dcprod(dr32, pcrd->dr45, pcrd->planevec_n);  /* Normal of second plane */
+    dcprod(pcrd->dr01, dr32, pcrd->planevec_m); /* Normal of first plane */
+    dcprod(dr32, pcrd->dr45, pcrd->planevec_n); /* Normal of second plane */
     phi = gmx_angle_between_dvecs(pcrd->planevec_m, pcrd->planevec_n);
 
     /* Note 1: the sign below is opposite of that in the bondeds or Bekker 1994
@@ -999,10 +999,10 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
                           double dt, double t)
 {
 
-    dvec *   r_ij;        /* x[i] com of i in prev. step. Obeys constr. -> r_ij[i] */
-    dvec     unc_ij;      /* xp[i] com of i this step, before constr.   -> unc_ij  */
-    dvec *   rnew;        /* current 'new' positions of the groups */
-    double * dr_tot;      /* the total update of the coords */
+    dvec *   r_ij;   /* x[i] com of i in prev. step. Obeys constr. -> r_ij[i] */
+    dvec     unc_ij; /* xp[i] com of i this step, before constr.   -> unc_ij  */
+    dvec *   rnew;   /* current 'new' positions of the groups */
+    double * dr_tot; /* the total update of the coords */
     dvec     vec;
     double   inpr;
     double   lambda, rm, invdt = 0;
@@ -1011,7 +1011,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
     double   a;
     dvec     tmp, tmp3;
 
-    snew(r_ij,   pull->ncoord);
+    snew(r_ij, pull->ncoord);
     snew(dr_tot, pull->ncoord);
 
     snew(rnew, pull->ngroup);
@@ -1146,8 +1146,8 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
 
                     /* The position corrections dr due to the constraints */
                     dsvmul(-lambda * rm * pgrp1->invtm, r_ij[c], dr1);
-                    dsvmul( lambda * rm * pgrp0->invtm, r_ij[c], dr0);
-                    dr_tot[c] += -lambda*dnorm(r_ij[c]);
+                    dsvmul(lambda * rm * pgrp0->invtm, r_ij[c], dr0);
+                    dr_tot[c] += -lambda * dnorm(r_ij[c]);
                     break;
                 case epullgDIR:
                 case epullgDIRPBC:
@@ -1157,7 +1157,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
                     for (m = 0; m < DIM; m++)
                     {
                         vec[m] = pcrd->vec[m];
-                        a     += unc_ij[m] * vec[m];
+                        a += unc_ij[m] * vec[m];
                     }
                     /* Select only the component along the vector */
                     dsvmul(a, vec, unc_ij);
@@ -1169,7 +1169,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
 
                     /* The position corrections dr due to the constraints */
                     dsvmul(-lambda * rm * pgrp1->invtm, vec, dr1);
-                    dsvmul( lambda * rm * pgrp0->invtm, vec, dr0);
+                    dsvmul(lambda * rm * pgrp0->invtm, vec, dr0);
                     dr_tot[c] += -lambda;
                     break;
                 default:
@@ -1228,7 +1228,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
             {
                 case epullgDIST:
                     bConverged
-                        = fabs(dnorm(unc_ij) - pcrd->value_ref) < pull->params.constr_tol;
+                            = fabs(dnorm(unc_ij) - pcrd->value_ref) < pull->params.constr_tol;
                     break;
                 case epullgDIR:
                 case epullgDIRPBC:
@@ -1240,7 +1240,7 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
                     inpr = diprod(unc_ij, vec);
                     dsvmul(inpr, vec, unc_ij);
                     bConverged
-                        = fabs(diprod(unc_ij, vec) - pcrd->value_ref) < pull->params.constr_tol;
+                            = fabs(diprod(unc_ij, vec) - pcrd->value_ref) < pull->params.constr_tol;
                     break;
             }
 
@@ -1248,7 +1248,8 @@ static void do_constraint(struct pull_t *pull, t_pbc *pbc,
             {
                 if (debug)
                 {
-                    fprintf(debug, "NOT CONVERGED YET: Group %d:"
+                    fprintf(debug,
+                            "NOT CONVERGED YET: Group %d:"
                             "d_ref = %f, current d = %f\n",
                             g, pcrd->value_ref, dnorm(unc_ij));
                 }
@@ -1404,14 +1405,14 @@ static void calc_pull_coord_scalar_force_and_potential(pull_coord_work_t *pcrd,
                 dev = 0;
             }
 
-            pcrd->f_scal =       -k * dev;
-            *V          += 0.5*   k*gmx::square(dev);
-            *dVdl       += 0.5*dkdl*gmx::square(dev);
+            pcrd->f_scal = -k * dev;
+            *V += 0.5 * k * gmx::square(dev);
+            *dVdl += 0.5 * dkdl * gmx::square(dev);
             break;
         case epullCONST_F:
-            pcrd->f_scal =   -k;
-            *V          +=    k * pcrd->value;
-            *dVdl       += dkdl * pcrd->value;
+            pcrd->f_scal = -k;
+            *V += k * pcrd->value;
+            *dVdl += dkdl * pcrd->value;
             break;
         case epullEXTERNAL:
             gmx_incons("the scalar pull force should not be calculated internally for pull type external");
@@ -1491,7 +1492,7 @@ static void calc_pull_coord_vector_force(pull_coord_work_t *pcrd)
 
             invdr01 = 1. / dnorm(pcrd->dr01);
             dsvmul(invdr01, pcrd->dr01, normalized_dr01);
-            a = -gmx::invsqrt(1 - cos_theta2);       /* comes from d/dx acos(x) */
+            a = -gmx::invsqrt(1 - cos_theta2); /* comes from d/dx acos(x) */
             b = a * cos_theta;
 
             for (int m = 0; m < DIM; m++)
@@ -1540,9 +1541,9 @@ static void calc_pull_coord_vector_force(pull_coord_work_t *pcrd)
             /* Force on groups 2, 3 (defining the axis) */
             a_23_01 = -diprod(pcrd->dr01, dr32) * inv_sqrdist_32;
             a_23_45 = -diprod(pcrd->dr45, dr32) * inv_sqrdist_32;
-            dsvmul(-a_23_01, pcrd->f01, u);                     /* added sign to get force from group 0, not 1 */
+            dsvmul(-a_23_01, pcrd->f01, u); /* added sign to get force from group 0, not 1 */
             dsvmul(a_23_45, pcrd->f45, v);
-            dvec_sub(u, v, pcrd->f23);                          /* force on group 3 */
+            dvec_sub(u, v, pcrd->f23); /* force on group 3 */
         }
         else
         {
@@ -1630,9 +1631,9 @@ static void check_external_potential_registration(const struct pull_t *pull)
  * potential energy is added either to the pull term or to a term
  * specific to the external module.
  */
-void apply_external_pull_coord_force(struct pull_t *pull,
-                                     int coord_index,
-                                     double coord_force,
+void apply_external_pull_coord_force(struct pull_t *  pull,
+                                     int              coord_index,
+                                     double           coord_force,
                                      const t_mdatoms *mdatoms,
                                      rvec *force, tensor virial)
 {
@@ -1729,7 +1730,7 @@ real pull_potential(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
     GMX_ASSERT(pull->numExternalPotentialsStillToBeAppliedThisStep == 0, "Too few or too many external pull potentials have been applied the previous step");
     /* All external pull potentials still need to be applied */
     pull->numExternalPotentialsStillToBeAppliedThisStep
-        = pull->numCoordinatesWithExternalPotential;
+            = pull->numCoordinatesWithExternalPotential;
 
     return (MASTER(cr) ? V : 0.0);
 }
@@ -1748,7 +1749,7 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, t_pbc *pbc,
     }
 }
 
-static void make_local_pull_group(gmx_ga2la_t *ga2la,
+static void make_local_pull_group(gmx_ga2la_t *      ga2la,
                                   pull_group_work_t *pg, int start, int end)
 {
     int i, ii;
@@ -1848,9 +1849,9 @@ void dd_make_local_pull_groups(t_commrec *cr, struct pull_t *pull, t_mdatoms *md
         }
 
         bWillParticipate
-            = bMustParticipate
-                || (comm->bParticipate
-                    && comm->must_count >= comm->setup_count - history_count);
+                = bMustParticipate
+                  || (comm->bParticipate
+                      && comm->must_count >= comm->setup_count - history_count);
 
         if (debug && dd != nullptr)
         {
@@ -1994,7 +1995,7 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
         if (EI_ENERGY_MINIMIZATION(ir->eI))
         {
             /* Move the mass to the weight */
-            w                   *= m;
+            w *= m;
             m                    = 1;
             pg->params.weight[i] = w;
         }
@@ -2016,12 +2017,12 @@ static void init_pull_group_index(FILE *fplog, t_commrec *cr,
                     mbd = ir->delta_t / ir->opts.tau_t[groups->grpnr[egcTC][ii]];
                 }
             }
-            w                   *= m / mbd;
+            w *= m / mbd;
             m                    = mbd;
             pg->params.weight[i] = w;
         }
-        tmass  += m;
-        wmass  += m * w;
+        tmass += m;
+        wmass += m * w;
         wwmass += m * w * w;
     }
 
@@ -2152,7 +2153,7 @@ struct pull_t *init_pull(FILE *fplog, const pull_params_t *pull_params, const t_
         switch (pcrd->params.eGeom)
         {
             case epullgDIST:
-            case epullgDIRRELATIVE:  /* Direction vector is determined at each step */
+            case epullgDIRRELATIVE: /* Direction vector is determined at each step */
             case epullgANGLE:
             case epullgDIHEDRAL:
                 break;
@@ -2210,7 +2211,7 @@ struct pull_t *init_pull(FILE *fplog, const pull_params_t *pull_params, const t_
         /* We only need to calculate the plain COM of a group
          * when it is not only used as a cylinder group.
          */
-        calc_com_start = (pcrd->params.eGeom == epullgCYL         ? 1 : 0);
+        calc_com_start = (pcrd->params.eGeom == epullgCYL ? 1 : 0);
         calc_com_end   = pcrd->params.ngroup;
 
         for (g = calc_com_start; g <= calc_com_end; g++)
@@ -2251,15 +2252,21 @@ struct pull_t *init_pull(FILE *fplog, const pull_params_t *pull_params, const t_
     }
 
     pull->numUnregisteredExternalPotentials
-                                                        = pull->numCoordinatesWithExternalPotential;
+            = pull->numCoordinatesWithExternalPotential;
     pull->numExternalPotentialsStillToBeAppliedThisStep = 0;
 
     pull->ePBC = ir->ePBC;
     switch (pull->ePBC)
     {
-        case epbcNONE: pull->npbcdim = 0; break;
-        case epbcXY:   pull->npbcdim = 2; break;
-        default:       pull->npbcdim = 3; break;
+        case epbcNONE:
+            pull->npbcdim = 0;
+            break;
+        case epbcXY:
+            pull->npbcdim = 2;
+            break;
+        default:
+            pull->npbcdim = 3;
+            break;
     }
 
     if (fplog)

@@ -50,7 +50,7 @@ struct t_grpopts;
 struct t_mdatoms;
 
 void init_ekindata(FILE *log, gmx_mtop_t *mtop,
-                   t_grpopts *opts,
+                   t_grpopts *     opts,
                    gmx_ekindata_t *ekind);
 /* Allocate memory and set the grpnr array. */
 

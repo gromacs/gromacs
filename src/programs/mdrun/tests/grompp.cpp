@@ -54,8 +54,7 @@ namespace
 {
 
 //! Test fixture for grompp
-class GromppTest :
-    public gmx::test::MdrunTestFixture
+class GromppTest : public gmx::test::MdrunTestFixture
 {
 public:
     //! Execute the trajectory writing test

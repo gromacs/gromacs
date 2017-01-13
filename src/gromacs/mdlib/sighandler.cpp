@@ -45,8 +45,7 @@
 
 #include "gromacs/utility/fatalerror.h"
 
-const char *gmx_stop_cond_name[] =
-{
+const char *gmx_stop_cond_name[] = {
     "None",
     "Stop at the next neighbor search step",
     "Stop at the next step",
@@ -55,8 +54,7 @@ const char *gmx_stop_cond_name[] =
 
 /* these do not neccesarily match the stop condition, but are
    referred to in the signal handler. */
-const char *gmx_signal_name[] =
-{
+const char *gmx_signal_name[] = {
     "None",
     "INT",
     "TERM",
@@ -76,7 +74,7 @@ static void signal_handler(int n)
 {
     switch (n)
     {
-/* windows doesn't do SIGINT correctly according to ANSI (yes, signals are in
+        /* windows doesn't do SIGINT correctly according to ANSI (yes, signals are in
    ANSI C89, and windows spawns a thread specifically to run the INT signal
    handler), but that doesn't matter for a simple signal handler like this. */
         case SIGTERM:
@@ -182,7 +180,7 @@ const char *gmx_get_signal_name(void)
 gmx_bool gmx_got_usr_signal(void)
 {
 #if HAVE_SIGUSR1
-    gmx_bool ret = static_cast<gmx_bool>(usr_condition);
+    gmx_bool ret  = static_cast<gmx_bool>(usr_condition);
     usr_condition = 0;
     return ret;
 #else

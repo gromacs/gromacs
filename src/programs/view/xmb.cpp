@@ -52,9 +52,9 @@
 #include "xdlg.h"
 #include "xutil.h"
 
-#define ID_BOX     -3
-#define ID_ICON    -2
-#define ID_TEXT    -1
+#define ID_BOX -3
+#define ID_ICON -2
+#define ID_TEXT -1
 
 static bmchar *      icon_bits   = nullptr;
 static int           icon_width  = 0;
@@ -72,7 +72,7 @@ void SetIcon(unsigned char *bits, int w, int h, unsigned long fg, unsigned long 
 }
 
 t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
-                  int nlines, const char * const * lines, unsigned long Flags,
+                  int nlines, const char *const *lines, unsigned long Flags,
                   DlgCallback *cb, void *data)
 {
     t_dlg *       dlg;
@@ -136,11 +136,9 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
     x   = 2 * OFFS_X;
     if (nicon > 0)
     {
-        AddDlgItem(dlg, CreatePixmap
-                       (XCreatePixmapFromBitmapData
-                           (x11->disp, dlg->win.self, icon_bits, icon_width, icon_height,
-                           icon_fg, icon_bg, x11->depth),
-                       ID_ICON, ID_BOX, 2 * OFFS_X, 2 * OFFS_Y, icon_width, icon_height, 0));
+        AddDlgItem(dlg, CreatePixmap(XCreatePixmapFromBitmapData(x11->disp, dlg->win.self, icon_bits, icon_width, icon_height,
+                                                                 icon_fg, icon_bg, x11->depth),
+                                     ID_ICON, ID_BOX, 2 * OFFS_X, 2 * OFFS_Y, icon_width, icon_height, 0));
         x += QueryDlgItemW(dlg, ID_ICON) + 2 * OFFS_X;
     }
 
@@ -165,8 +163,8 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
             y = yi;
         }
     }
-    x    += QueryDlgItemW(dlg, ID_TEXT) + 2 * OFFS_X;
-    y    += 2 * OFFS_Y;
+    x += QueryDlgItemW(dlg, ID_TEXT) + 2 * OFFS_X;
+    y += 2 * OFFS_Y;
     width = (x - 8 * OFFS_X) / 2;
 
     if (((Flags & MB_OKCANCEL) == MB_OKCANCEL)
@@ -179,7 +177,7 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
         x0 = (x - width) / 2;
     }
 
-#define CB(name, butx, id) AddDlgItem(dlg, CreateButton(x11, name, \
+#define CB(name, butx, id) AddDlgItem(dlg, CreateButton(x11, name,        \
                                                         true, id, ID_BOX, \
                                                         butx, y, width, 0, 0))
     if (Flags & MB_OK)
@@ -200,7 +198,8 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
     }
 
     SetDlgSize(dlg, x, y + 2 * OFFS_Y
-               + QueryDlgItemH(dlg, (Flags & MB_OK) ? MB_OK : MB_YES), true);
+                               + QueryDlgItemH(dlg, (Flags & MB_OK) ? MB_OK : MB_YES),
+               true);
 
     if (Flags & MB_SYSTEMMODAL)
     {

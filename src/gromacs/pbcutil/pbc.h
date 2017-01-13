@@ -52,7 +52,11 @@ extern "C" {
 
 enum
 {
-    epbcXYZ, epbcNONE, epbcXY, epbcSCREW, epbcNR
+    epbcXYZ,
+    epbcNONE,
+    epbcXY,
+    epbcSCREW,
+    epbcNR
 };
 
 //! Strings corresponding to epbc enum values.

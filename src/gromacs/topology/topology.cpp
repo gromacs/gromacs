@@ -67,7 +67,6 @@ static void init_groups(gmx_groups_t *groups)
         groups->ngrpnr[g]      = 0;
         groups->grpnr[g]       = nullptr;
     }
-
 }
 
 void init_mtop(gmx_mtop_t *mtop)
@@ -263,7 +262,7 @@ static void pr_grps(FILE *fp, const char *title, const t_grps grps[], char **grp
 
 static void pr_groups(FILE *fp, int indent,
                       const gmx_groups_t *groups,
-                      gmx_bool bShowNumbers)
+                      gmx_bool            bShowNumbers)
 {
     int nat_max, i, g;
 
@@ -524,7 +523,7 @@ static void cmp_idef(FILE *fp, const t_idef *id1, const t_idef *id2, real ftol, 
     if (id2)
     {
         cmp_int(fp, "idef->ntypes", -1, id1->ntypes, id2->ntypes);
-        cmp_int(fp, "idef->atnr",  -1, id1->atnr, id2->atnr);
+        cmp_int(fp, "idef->atnr", -1, id1->atnr, id2->atnr);
         for (i = 0; (i < std::min(id1->ntypes, id2->ntypes)); i++)
         {
             sprintf(buf1, "idef->functype[%d]", i);

@@ -139,7 +139,7 @@ static uint16_t gmx_ntohs(uint16_t src)
 }
 
 
-extern IMDSocket* imdsock_create()
+extern IMDSocket *imdsock_create()
 {
     IMDSocket *sock = nullptr;
 
@@ -173,7 +173,7 @@ extern int imdsock_bind(IMDSocket *sock, int port)
     sock->address.sin_port   = gmx_htons(port);
 
     /* Try to bind to address and port ...*/
-    ret = bind(sock->sockfd, (struct sockaddr *) &sock->address, sizeof(sock->address));
+    ret = bind(sock->sockfd, (struct sockaddr *)&sock->address, sizeof(sock->address));
 #else
     ret = -1;
 #endif
@@ -208,7 +208,7 @@ extern int imd_sock_listen(IMDSocket *sock)
 }
 
 
-extern IMDSocket* imdsock_accept(IMDSocket *sock)
+extern IMDSocket *imdsock_accept(IMDSocket *sock)
 {
     int ret;
 
@@ -217,7 +217,7 @@ extern IMDSocket* imdsock_accept(IMDSocket *sock)
 
 
     length = sizeof(sock->address);
-    ret    = accept(sock->sockfd, (struct sockaddr *) &sock->address, &length);
+    ret    = accept(sock->sockfd, (struct sockaddr *)&sock->address, &length);
 
     /* successful, redirect to distinct clientsocket */
     if (ret >= 0)
@@ -248,7 +248,7 @@ extern int imdsock_getport(IMDSocket *sock, int *port)
 
 
     len = sizeof(struct sockaddr_in);
-    ret = getsockname(sock->sockfd, (struct sockaddr *) &(sock->address), &len);
+    ret = getsockname(sock->sockfd, (struct sockaddr *)&(sock->address), &len);
     if (ret)
     {
         fprintf(stderr, "%s getsockname failed with error %d.\n", IMDstr, ret);
@@ -269,10 +269,10 @@ extern int imdsock_getport(IMDSocket *sock, int *port)
 
 extern int imdsock_write(IMDSocket *sock, const char *buffer, int length)
 {
-    /* No read and write on windows, we have to use send and recv instead... */
+/* No read and write on windows, we have to use send and recv instead... */
 #if GMX_NATIVE_WINDOWS
 #ifdef GMX_HAVE_WINSOCK
-    return send(sock->sockfd, (const char *) buffer, length, NOFLAGS);
+    return send(sock->sockfd, (const char *)buffer, length, NOFLAGS);
 #else
     return -1;
 #endif
@@ -284,10 +284,10 @@ extern int imdsock_write(IMDSocket *sock, const char *buffer, int length)
 
 extern int imdsock_read(IMDSocket *sock, char *buffer, int length)
 {
-    /* See above... */
+/* See above... */
 #if GMX_NATIVE_WINDOWS
 #ifdef GMX_HAVE_WINSOCK
-    return recv(sock->sockfd, (char *) buffer, length, NOFLAGS);
+    return recv(sock->sockfd, (char *)buffer, length, NOFLAGS);
 #else
     return -1;
 #endif
@@ -332,7 +332,7 @@ extern int imdsock_destroy(IMDSocket *sock)
     }
 
 #if GMX_NATIVE_WINDOWS
-    /* On Windows, this function is called closesocket */
+/* On Windows, this function is called closesocket */
 #ifdef GMX_HAVE_WINSOCK
     ret = closesocket(sock->sockfd);
 #endif

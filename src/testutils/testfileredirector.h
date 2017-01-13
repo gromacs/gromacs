@@ -115,7 +115,7 @@ public:
     void checkRedirectedFiles(TestReferenceChecker *checker);
 
     // From IFileOutputRedirector
-    virtual TextOutputStream &standardOutput();
+    virtual TextOutputStream &      standardOutput();
     virtual TextOutputStreamPointer openTextOutputFile(const char *filename);
 
 private:

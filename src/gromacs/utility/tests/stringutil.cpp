@@ -117,7 +117,7 @@ TEST(StringUtilityTest, SplitString)
     using ::testing::ElementsAre;
     using ::testing::IsEmpty;
     using ::testing::Matcher;
-    Matcher<std::vector<std::string> > matcher = ElementsAre("foo", "bar");
+    Matcher<std::vector<std::string>> matcher = ElementsAre("foo", "bar");
     EXPECT_THAT(gmx::splitString("foo bar"), matcher);
     EXPECT_THAT(gmx::splitString("  foo bar"), matcher);
     EXPECT_THAT(gmx::splitString("foo bar  "), matcher);
@@ -161,8 +161,8 @@ TEST(FormatStringTest, HandlesLongStrings)
 TEST(StringFormatterTest, HandlesBasicFormatting)
 {
     int value = 103;
-    EXPECT_EQ("103", gmx::StringFormatter("%d") (value));
-    EXPECT_EQ("null", gmx::StringFormatter("null") (value));
+    EXPECT_EQ("103", gmx::StringFormatter("%d")(value));
+    EXPECT_EQ("null", gmx::StringFormatter("null")(value));
 }
 
 /********************************************************************
@@ -171,7 +171,7 @@ TEST(StringFormatterTest, HandlesBasicFormatting)
 
 TEST(formatAndJoinTest, Works)
 {
-    const char * const words[] = { "The", "quick", "brown", "fox" };
+    const char *const words[] = { "The", "quick", "brown", "fox" };
     EXPECT_EQ("The       .quick     .brown     .fox       ",
               gmx::formatAndJoin(gmx::ConstArrayRef<const char *>(words), ".",
                                  gmx::StringFormatter("%-10s")));
@@ -187,7 +187,7 @@ TEST(formatAndJoinTest, Works)
 
 TEST(JoinStringsTest, Works)
 {
-    const char * const               words[] = { "The", "quick", "brown", "fox" };
+    const char *const                words[] = { "The", "quick", "brown", "fox" };
     gmx::ConstArrayRef<const char *> refToWords(words);
     EXPECT_EQ("The; quick; brown; fox", gmx::joinStrings(refToWords.begin(), refToWords.end(), "; "));
     EXPECT_EQ("The-quick-brown-fox", gmx::joinStrings(refToWords, "-"));
@@ -254,7 +254,7 @@ const char g_wrapText2[] = "A quick brown fox jumps\nover the lazy dog";
 const char g_wrapText3[] = "A quick brown fox jumps\n\nover the lazy dog";
 //! Test string for wrapping with a long word.
 const char g_wrapTextLongWord[]
-    = "A quick brown fox jumps awordthatoverflowsaline over the lazy dog";
+        = "A quick brown fox jumps awordthatoverflowsaline over the lazy dog";
 //! Test string for wrapping with extra whitespace.
 const char g_wrapTextWhitespace[] = " A quick brown   fox jumps  \n over the lazy dog";
 

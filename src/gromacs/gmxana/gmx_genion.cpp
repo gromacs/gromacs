@@ -64,9 +64,9 @@ static void insert_ion(int nsa, int *nwater,
                        gmx_bool bSet[], int repl[], int index[],
                        rvec x[], t_pbc *pbc,
                        int sign, int q, const char *ionname,
-                       t_atoms *atoms,
-                       real rmin,
-                       gmx::DefaultRandomEngine * rng)
+                       t_atoms *                 atoms,
+                       real                      rmin,
+                       gmx::DefaultRandomEngine *rng)
 {
     int                              i, ei, nw;
     real                             rmin2;
@@ -74,8 +74,8 @@ static void insert_ion(int nsa, int *nwater,
     gmx_int64_t                      maxrand;
     gmx::UniformIntDistribution<int> dist(0, *nwater - 1);
 
-    nw       = *nwater;
-    maxrand  = nw;
+    nw      = *nwater;
+    maxrand = nw;
     maxrand *= 1000;
 
     do
@@ -345,7 +345,7 @@ static void update_topol(const char *topinout, int p_num, int n_num,
 
 int gmx_genion(int argc, char *argv[])
 {
-    const char *       desc[] = {
+    const char *desc[] = {
         "[THISMODULE] randomly replaces solvent molecules with monoatomic ions.",
         "The group of solvent molecules should be continuous and all molecules",
         "should have the same number of atoms.",
@@ -360,45 +360,44 @@ int gmx_genion(int argc, char *argv[])
         "added, without sign, for the uncommon states only.[PAR]",
         "For larger ions, e.g. sulfate we recommended using [gmx-insert-molecules]."
     };
-    const char *       bugs[] = {
+    const char *bugs[] = {
         "If you specify a salt concentration existing ions are not taken into "
         "account. In effect you therefore specify the amount of salt to be added.",
     };
-    static int         p_num    = 0, n_num = 0, p_q = 1, n_q = -1;
-    static const char *p_name   = "NA", *n_name = "CL";
-    static real        rmin     = 0.6, conc = 0;
+    static int         p_num = 0, n_num = 0, p_q = 1, n_q = -1;
+    static const char *p_name = "NA", *n_name = "CL";
+    static real        rmin = 0.6, conc = 0;
     static int         seed     = 0;
     static gmx_bool    bNeutral = FALSE;
     static t_pargs     pa[]     = {
-        { "-np",    FALSE, etINT,  {&p_num}, "Number of positive ions"       },
-        { "-pname", FALSE, etSTR,  {&p_name}, "Name of the positive ion"      },
-        { "-pq",    FALSE, etINT,  {&p_q},   "Charge of the positive ion"    },
-        { "-nn",    FALSE, etINT,  {&n_num}, "Number of negative ions"       },
-        { "-nname", FALSE, etSTR,  {&n_name}, "Name of the negative ion"      },
-        { "-nq",    FALSE, etINT,  {&n_q},   "Charge of the negative ion"    },
-        { "-rmin",  FALSE, etREAL, {&rmin},  "Minimum distance between ions" },
-        { "-seed",  FALSE, etINT,  {&seed},  "Seed for random number generator (0 means generate)" },
-        { "-conc",  FALSE, etREAL, {&conc},
-          "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [REF].tpr[ref] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
-        { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "}
+        { "-np", FALSE, etINT, { &p_num }, "Number of positive ions" },
+        { "-pname", FALSE, etSTR, { &p_name }, "Name of the positive ion" },
+        { "-pq", FALSE, etINT, { &p_q }, "Charge of the positive ion" },
+        { "-nn", FALSE, etINT, { &n_num }, "Number of negative ions" },
+        { "-nname", FALSE, etSTR, { &n_name }, "Name of the negative ion" },
+        { "-nq", FALSE, etINT, { &n_q }, "Charge of the negative ion" },
+        { "-rmin", FALSE, etREAL, { &rmin }, "Minimum distance between ions" },
+        { "-seed", FALSE, etINT, { &seed }, "Seed for random number generator (0 means generate)" },
+        { "-conc", FALSE, etREAL, { &conc }, "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [REF].tpr[ref] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
+        { "-neutral", FALSE, etBOOL, { &bNeutral }, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. " }
     };
-    t_topology         top;
-    rvec *             x, *v;
-    real               vol, qtot;
-    matrix             box;
-    t_atoms            atoms;
-    t_pbc              pbc;
-    int *              repl, ePBC;
-    int *              index;
-    char *             grpname;
-    gmx_bool *         bSet;
-    int                i, nw, nwa, nsa, nsalt, iqtot;
-    gmx_output_env_t * oenv;
-    t_filenm           fnm[] = {
-        { efTPR, nullptr,  nullptr,      ffREAD  },
-        { efNDX, nullptr,  nullptr,      ffOPTRD },
-        { efSTO, "-o",  nullptr,      ffWRITE },
-        { efTOP, "-p",  "topol",   ffOPTRW }
+    t_topology        top;
+    rvec *            x, *v;
+    real              vol, qtot;
+    matrix            box;
+    t_atoms           atoms;
+    t_pbc             pbc;
+    int *             repl, ePBC;
+    int *             index;
+    char *            grpname;
+    gmx_bool *        bSet;
+    int               i, nw, nwa, nsa, nsalt, iqtot;
+    gmx_output_env_t *oenv;
+    t_filenm          fnm[] = {
+        { efTPR, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efSTO, "-o", nullptr, ffWRITE },
+        { efTOP, "-p", "topol", ffOPTRW }
     };
 #define NFILE asize(fnm)
 
@@ -449,8 +448,10 @@ int gmx_genion(int argc, char *argv[])
         int gcd = gmx_greatest_common_divisor(n_q, p_q);
         if ((qdelta % gcd) != 0)
         {
-            gmx_fatal(FARGS, "Can't neutralize this system using -nq %d and"
-                      " -pq %d.\n", n_q, p_q);
+            gmx_fatal(FARGS,
+                      "Can't neutralize this system using -nq %d and"
+                      " -pq %d.\n",
+                      n_q, p_q);
         }
 
         while (qdelta != 0)
@@ -482,7 +483,8 @@ int gmx_genion(int argc, char *argv[])
         {
             if (index[i] != index[i - 1] + 1)
             {
-                gmx_fatal(FARGS, "The solvent group %s is not continuous: "
+                gmx_fatal(FARGS,
+                          "The solvent group %s is not continuous: "
                           "index[%d]=%d, index[%d]=%d",
                           grpname, i, index[i - 1] + 1, i + 1, index[i] + 1);
             }

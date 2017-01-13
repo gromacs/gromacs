@@ -40,8 +40,7 @@
 #include <stdio.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 double **alloc_matrix(int n, int m);

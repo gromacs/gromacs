@@ -68,7 +68,7 @@ const char *const c_RootNodeName = "ReferenceData";
 //! Name of the XML attribute used to store identifying strings for reference data elements.
 const char *const c_IdAttrName = "Name";
 
-}       // namespace
+} // namespace
 
 /********************************************************************
  * XML reading
@@ -198,7 +198,7 @@ void readEntry(XMLNodePtr element, ReferenceDataEntry *entry)
 
 //! \}
 
-}       // namespace
+} // namespace
 
 //! \cond internal
 ReferenceDataEntry::EntryPointer readReferenceDataFile(const std::string &path)
@@ -343,7 +343,7 @@ XMLElementPtr createRootElement(XMLDocumentPtr document)
 
 //! \}
 
-}       // namespace
+} // namespace
 
 //! \cond internal
 void writeReferenceDataFile(const std::string &       path,

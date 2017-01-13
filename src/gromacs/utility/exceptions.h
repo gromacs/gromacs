@@ -94,7 +94,7 @@ typedef std::unique_ptr<IExceptionInfo> ExceptionInfoPointer;
 
 class ExceptionData;
 
-}   // namespace internal
+} // namespace internal
 
 //! \addtogroup module_utility
 //! \{
@@ -157,13 +157,13 @@ struct ThrowLocation
 
 //! Stores `errno` value that triggered the exception.
 typedef ExceptionInfo<struct ExceptionInfoErrno_, int>
-    ExceptionInfoErrno;
+        ExceptionInfoErrno;
 //! Stores the function name that returned the `errno` in ExceptionInfoErrno.
 typedef ExceptionInfo<struct ExceptionInfoApiFunc_, const char *>
-    ExceptionInfoApiFunction;
+        ExceptionInfoApiFunction;
 //! Stores the location where the exception was thrown.
 typedef ExceptionInfo<struct ExceptionInfoLocation_, ThrowLocation>
-    ExceptionInfoLocation;
+        ExceptionInfoLocation;
 
 /*! \brief
  * Provides information for Gromacs exception constructors.
@@ -385,7 +385,8 @@ private:
  */
 template <class Exception, class Tag, class T>
 inline
-typename std::enable_if<std::is_base_of<GromacsException, Exception>::value, const Exception &>::type operator<<(const Exception &ex, const ExceptionInfo<Tag, T> &item)
+        typename std::enable_if<std::is_base_of<GromacsException, Exception>::value, const Exception &>::type
+        operator<<(const Exception &ex, const ExceptionInfo<Tag, T> &item)
 {
     const_cast<Exception &>(ex).setInfo(item);
     return ex;
@@ -579,7 +580,7 @@ public:
    \endcode
  */
 #define GMX_THROW(e) \
-    throw (e) << gmx::ExceptionInfoLocation(gmx::ThrowLocation(GMX_CURRENT_FUNCTION, __FILE__, __LINE__))
+    throw(e) << gmx::ExceptionInfoLocation(gmx::ThrowLocation(GMX_CURRENT_FUNCTION, __FILE__, __LINE__))
 
 /*! \brief
  * Macro for throwing an exception based on errno.
@@ -605,11 +606,12 @@ public:
    }
    \endcode
  */
-#define GMX_THROW_WITH_ERRNO(e, syscall, err) \
-    do { \
-        int stored_errno_ = (err); \
-        GMX_THROW((e) << gmx::ExceptionInfoErrno(stored_errno_) \
-                  << gmx::ExceptionInfoApiFunction(syscall)); \
+#define GMX_THROW_WITH_ERRNO(e, syscall, err)                     \
+    do                                                            \
+    {                                                             \
+        int stored_errno_ = (err);                                \
+        GMX_THROW((e) << gmx::ExceptionInfoErrno(stored_errno_)   \
+                      << gmx::ExceptionInfoApiFunction(syscall)); \
     } while (0)
 //TODO: Add an equivalent macro for Windows GetLastError
 
@@ -714,8 +716,9 @@ gmx_noreturn void processExceptionAsFatalError(const std::exception &ex);
    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
    \endcode
  */
-#define GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR \
-    catch (const std::exception &ex) { \
+#define GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR  \
+    catch (const std::exception &ex)             \
+    {                                            \
         ::gmx::processExceptionAsFatalError(ex); \
     }
 

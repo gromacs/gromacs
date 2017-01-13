@@ -62,7 +62,8 @@
  */
 struct t_methoddata_distance
 {
-    t_methoddata_distance() : cutoff(-1.0)
+    t_methoddata_distance()
+        : cutoff(-1.0)
     {
     }
 
@@ -135,20 +136,20 @@ evaluate_within(const gmx::SelMethodEvalContext & /*context*/,
 
 /** Parameters for the \p distance selection method. */
 static gmx_ana_selparam_t smparams_distance[] = {
-    {"cutoff", {REAL_VALUE, 1, {nullptr}}, nullptr, SPAR_OPTIONAL},
-    {"from",   {POS_VALUE,  1, {nullptr}}, nullptr, SPAR_DYNAMIC},
+    { "cutoff", { REAL_VALUE, 1, { nullptr } }, nullptr, SPAR_OPTIONAL },
+    { "from", { POS_VALUE, 1, { nullptr } }, nullptr, SPAR_DYNAMIC },
 };
 
 /** Parameters for the \p mindistance selection method. */
 static gmx_ana_selparam_t smparams_mindistance[] = {
-    {"cutoff", {REAL_VALUE, 1, {nullptr}}, nullptr, SPAR_OPTIONAL},
-    {"from",   {POS_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
+    { "cutoff", { REAL_VALUE, 1, { nullptr } }, nullptr, SPAR_OPTIONAL },
+    { "from", { POS_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_VARNUM },
 };
 
 /** Parameters for the \p within selection method. */
 static gmx_ana_selparam_t smparams_within[] = {
-    {nullptr, {REAL_VALUE,  1, {nullptr}}, nullptr, 0},
-    {"of", {POS_VALUE,  -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
+    { nullptr, { REAL_VALUE, 1, { nullptr } }, nullptr, 0 },
+    { "of", { POS_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_VARNUM },
 };
 
 //! Help title for distance selection methods.
@@ -176,57 +177,24 @@ static const char *const help_distance[] = {
 
 /** Selection method data for the \p distance method. */
 gmx_ana_selmethod_t sm_distance = {
-    "distance", REAL_VALUE, SMETH_DYNAMIC,
-    asize(smparams_distance), smparams_distance,
-    &init_data_common,
-    nullptr,
-    &init_common,
-    nullptr,
-    &free_data_common,
-    &init_frame_common,
-    nullptr,
-    &evaluate_distance,
-    {"distance from POS [cutoff REAL]",
-     helptitle_distance, asize(help_distance), help_distance},
+    "distance", REAL_VALUE, SMETH_DYNAMIC, asize(smparams_distance), smparams_distance, &init_data_common, nullptr, &init_common, nullptr, &free_data_common, &init_frame_common, nullptr, &evaluate_distance, { "distance from POS [cutoff REAL]", helptitle_distance, asize(help_distance), help_distance },
 };
 
 /** Selection method data for the \p distance method. */
 gmx_ana_selmethod_t sm_mindistance = {
-    "mindistance", REAL_VALUE, SMETH_DYNAMIC,
-    asize(smparams_mindistance), smparams_mindistance,
-    &init_data_common,
-    nullptr,
-    &init_common,
-    nullptr,
-    &free_data_common,
-    &init_frame_common,
-    nullptr,
-    &evaluate_distance,
-    {"mindistance from POS_EXPR [cutoff REAL]",
-     helptitle_distance, asize(help_distance), help_distance},
+    "mindistance", REAL_VALUE, SMETH_DYNAMIC, asize(smparams_mindistance), smparams_mindistance, &init_data_common, nullptr, &init_common, nullptr, &free_data_common, &init_frame_common, nullptr, &evaluate_distance, { "mindistance from POS_EXPR [cutoff REAL]", helptitle_distance, asize(help_distance), help_distance },
 };
 
 /** Selection method data for the \p within method. */
 gmx_ana_selmethod_t sm_within = {
-    "within", GROUP_VALUE, SMETH_DYNAMIC,
-    asize(smparams_within), smparams_within,
-    &init_data_common,
-    nullptr,
-    &init_common,
-    nullptr,
-    &free_data_common,
-    &init_frame_common,
-    nullptr,
-    &evaluate_within,
-    {"within REAL of POS_EXPR",
-     helptitle_distance, asize(help_distance), help_distance},
+    "within", GROUP_VALUE, SMETH_DYNAMIC, asize(smparams_within), smparams_within, &init_data_common, nullptr, &init_common, nullptr, &free_data_common, &init_frame_common, nullptr, &evaluate_within, { "within REAL of POS_EXPR", helptitle_distance, asize(help_distance), help_distance },
 };
 
 static void *init_data_common(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_distance *data = new t_methoddata_distance();
-    param[0].val.u.r = &data->cutoff;
-    param[1].val.u.p = &data->p;
+    param[0].val.u.r            = &data->cutoff;
+    param[1].val.u.p            = &data->p;
     return data;
 }
 

@@ -88,12 +88,12 @@ static int read_g96_pos(char line[], t_symtab *symtab,
             shift = 0;
         }
         newres = -1;
-        oldres = -666;  /* Unlikely number for the first residue! */
+        oldres = -666; /* Unlikely number for the first residue! */
         bEnd   = FALSE;
         while (!bEnd && fgets2(line, STRLEN, fp))
         {
             bEnd = (std::strncmp(line, "END", 3) == 0);
-            if (!bEnd  && (line[0] != '#'))
+            if (!bEnd && (line[0] != '#'))
             {
                 if (sscanf(line + shift, "%15lf%15lf%15lf", &db1, &db2, &db3) != 3)
                 {

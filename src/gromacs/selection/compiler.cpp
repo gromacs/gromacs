@@ -310,18 +310,18 @@ enum
      * evaluate non-atom-valued selection method parameters, as well as
      * those that are used directly as values of selections.
      */
-    SEL_CDATA_FULLEVAL =  1,
+    SEL_CDATA_FULLEVAL = 1,
     /*! \brief
      * Whether the whole subexpression should be treated as static.
      *
      * This flag is always false if \ref SEL_DYNAMIC is set for the element,
      * but it is also false for static elements within common subexpressions.
      */
-    SEL_CDATA_STATIC =  2,
+    SEL_CDATA_STATIC = 2,
     /** Whether the subexpression will always be evaluated in the same group. */
-    SEL_CDATA_STATICEVAL =  4,
+    SEL_CDATA_STATICEVAL = 4,
     /** Whether the compiler evaluation routine should return the maximal selection. */
-    SEL_CDATA_EVALMAX =  8,
+    SEL_CDATA_EVALMAX = 8,
     /** Whether memory has been allocated for \p gmin and \p gmax. */
     SEL_CDATA_MINMAXALLOC = 16,
     /** Whether to update \p gmin and \p gmax in static analysis. */
@@ -366,7 +366,7 @@ typedef struct t_compiler_data
  */
 static void print_group_info(FILE *fp, const char *name,
                              const SelectionTreeElement &sel,
-                             gmx_ana_index_t *g)
+                             gmx_ana_index_t *           g)
 {
     fprintf(fp, " %s=", name);
     if (!g)
@@ -375,15 +375,15 @@ static void print_group_info(FILE *fp, const char *name,
     }
     else if (sel.cdata->flags & SEL_CDATA_MINMAXALLOC)
     {
-        fprintf(fp, "(%d atoms, %p)", g->isize, (void*)g);
+        fprintf(fp, "(%d atoms, %p)", g->isize, (void *)g);
     }
     else if (sel.v.type == GROUP_VALUE && g == sel.v.u.g)
     {
-        fprintf(fp, "(static, %p)", (void*)g);
+        fprintf(fp, "(static, %p)", (void *)g);
     }
     else
     {
-        fprintf(fp, "%p", (void*)g);
+        fprintf(fp, "%p", (void *)g);
     }
 }
 
@@ -675,9 +675,9 @@ static SelectionTreeElementPointer reverse_selelem_chain(const SelectionTreeElem
     while (item)
     {
         SelectionTreeElementPointer next = item->next;
-        item->next = prev;
-        prev       = item;
-        item       = next;
+        item->next                       = prev;
+        prev                             = item;
+        item                             = next;
     }
     return prev;
 }
@@ -797,7 +797,7 @@ static SelectionTreeElementPointer extract_item_subselections(const SelectionTre
             child->child          = subexpr->child;
             create_subexpression_name(subexpr->child, ++*subexprn);
             /* Set the flags for the created elements */
-            subexpr->flags        |= (child->flags & SEL_VALFLAGMASK);
+            subexpr->flags |= (child->flags & SEL_VALFLAGMASK);
             subexpr->child->flags |= (child->flags & SEL_VALFLAGMASK);
         }
         if (child->type == SEL_SUBEXPRREF)
@@ -831,7 +831,7 @@ static SelectionTreeElementPointer extract_subexpressions(SelectionTreeElementPo
     while (next)
     {
         SelectionTreeElementPointer item
-            = extract_item_subselections(next, &subexprn);
+                = extract_item_subselections(next, &subexprn);
         if (item)
         {
             if (!root)
@@ -968,7 +968,7 @@ static void reorder_boolean_static_children(const SelectionTreeElementPointer &s
         // Add a dummy head element that precedes the first child.
         SelectionTreeElementPointer dummy(
                 new SelectionTreeElement(SEL_BOOLEAN, SelectionLocation::createEmpty()));
-        dummy->next = sel->child;
+        dummy->next                       = sel->child;
         SelectionTreeElementPointer prev  = dummy;
         SelectionTreeElementPointer child = dummy;
         while (child->next)
@@ -1121,9 +1121,15 @@ static void init_item_evalfunc(const SelectionTreeElementPointer &sel)
         case SEL_BOOLEAN:
             switch (sel->u.boolt)
             {
-                case BOOL_NOT: sel->evaluate = &_gmx_sel_evaluate_not; break;
-                case BOOL_AND: sel->evaluate = &_gmx_sel_evaluate_and; break;
-                case BOOL_OR:  sel->evaluate = &_gmx_sel_evaluate_or;  break;
+                case BOOL_NOT:
+                    sel->evaluate = &_gmx_sel_evaluate_not;
+                    break;
+                case BOOL_AND:
+                    sel->evaluate = &_gmx_sel_evaluate_and;
+                    break;
+                case BOOL_OR:
+                    sel->evaluate = &_gmx_sel_evaluate_or;
+                    break;
                 case BOOL_XOR:
                     GMX_THROW(gmx::NotImplementedError("xor expressions not implemented"));
             }
@@ -1147,8 +1153,8 @@ static void init_item_evalfunc(const SelectionTreeElementPointer &sel)
 
         case SEL_SUBEXPRREF:
             sel->evaluate = ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
-                             ? &_gmx_sel_evaluate_subexprref_simple
-                             : &_gmx_sel_evaluate_subexprref);
+                                     ? &_gmx_sel_evaluate_subexprref_simple
+                                     : &_gmx_sel_evaluate_subexprref);
             break;
 
         case SEL_GROUPREF:
@@ -1231,7 +1237,7 @@ static void init_item_evaloutput(const SelectionTreeElementPointer &sel)
         sel->evaluate        = &_gmx_sel_evaluate_subexpr_staticeval;
         sel->cdata->evaluate = sel->evaluate;
         sel->child->mempool  = nullptr;
-        sel->flags          &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
+        sel->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
         if (sel->v.type == GROUP_VALUE || sel->v.type == POS_VALUE)
         {
             _gmx_selvalue_setstore(&sel->v, sel->child->v.u.ptr);
@@ -1334,7 +1340,7 @@ static void init_item_compilerdata(const SelectionTreeElementPointer &sel)
     {
         bool bEvalMax;
 
-        bEvalMax = (sel->u.boolt == BOOL_AND);
+        bEvalMax                          = (sel->u.boolt == BOOL_AND);
         SelectionTreeElementPointer child = sel->child;
         while (child)
         {
@@ -1356,7 +1362,7 @@ static void init_item_compilerdata(const SelectionTreeElementPointer &sel)
         while (child)
         {
             child->cdata->flags |= SEL_CDATA_EVALMAX;
-            child                = child->next;
+            child = child->next;
         }
     }
 }
@@ -1403,7 +1409,7 @@ static void init_item_staticeval(const SelectionTreeElementPointer &sel)
                 && (sel->type == SEL_EXPRESSION || sel->type == SEL_MODIFIER)
                 && (child->flags & SEL_ATOMVAL))
             {
-                child->flags        |= SEL_DYNAMIC;
+                child->flags |= SEL_DYNAMIC;
                 child->cdata->flags &= ~SEL_CDATA_STATIC;
             }
             child = child->next;
@@ -1427,7 +1433,7 @@ static void init_item_staticeval(const SelectionTreeElementPointer &sel)
             while (child)
             {
                 child->cdata->flags &= ~SEL_CDATA_STATICEVAL;
-                child                = child->next;
+                child = child->next;
             }
         }
 
@@ -1518,7 +1524,7 @@ static void init_item_subexpr_flags(const SelectionTreeElementPointer &sel)
                 if (sel->type != SEL_EXPRESSION || (child->flags & SEL_ATOMVAL))
                 {
                     child->cdata->flags
-                        |= (sel->cdata->flags & SEL_CDATA_COMMONSUBEXPR);
+                            |= (sel->cdata->flags & SEL_CDATA_COMMONSUBEXPR);
                 }
                 init_item_subexpr_flags(child);
             }
@@ -1702,14 +1708,14 @@ static void make_static(const SelectionTreeElementPointer &sel)
     {
         if (sel->child->child->flags & SEL_ALLOCDATA)
         {
-            sel->flags               |= SEL_ALLOCDATA;
+            sel->flags |= SEL_ALLOCDATA;
             sel->child->child->flags &= ~SEL_ALLOCDATA;
         }
         if (sel->child->child->flags & SEL_ALLOCVAL)
         {
-            sel->flags                 |= SEL_ALLOCVAL;
-            sel->v.nalloc               = sel->child->child->v.nalloc;
-            sel->child->child->flags   &= ~SEL_ALLOCVAL;
+            sel->flags |= SEL_ALLOCVAL;
+            sel->v.nalloc = sel->child->child->v.nalloc;
+            sel->child->child->flags &= ~SEL_ALLOCVAL;
             sel->child->child->v.nalloc = -1;
         }
     }
@@ -1909,7 +1915,7 @@ static void evaluate_boolean_static_part(gmx_sel_evaluate_t *               data
         init_item_minmax_groups(child);
         child->cdata->flags &= ~SEL_CDATA_STATICEVAL;
         child->cdata->flags |= sel->cdata->flags & SEL_CDATA_STATICEVAL;
-        child->next          = next;
+        child->next = next;
         // Frees the old static subexpressions.
         sel->child = child;
     }
@@ -1971,7 +1977,7 @@ static void evaluate_boolean_static_part(gmx_sel_evaluate_t *               data
  * problem.
  */
 static void evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
-                                         gmx_ana_index_t *g,
+                                         gmx_ana_index_t *                  g,
                                          gmx_ana_index_t *gmin, gmx_ana_index_t *gmax)
 {
     SelectionTreeElementPointer child;
@@ -2228,10 +2234,10 @@ static void analyze_static(gmx_sel_evaluate_t *               data,
                 {
                     gmx_ana_index_reserve(sel->cdata->gmin,
                                           sel->cdata->gmin->isize
-                                          + sel->child->cdata->gmin->isize);
+                                                  + sel->child->cdata->gmin->isize);
                     gmx_ana_index_reserve(sel->cdata->gmax,
                                           sel->cdata->gmax->isize
-                                          + sel->child->cdata->gmax->isize);
+                                                  + sel->child->cdata->gmax->isize);
                     gmx_ana_index_merge(sel->cdata->gmin, sel->cdata->gmin,
                                         sel->child->cdata->gmin);
                     gmx_ana_index_merge(sel->cdata->gmax, sel->cdata->gmax,
@@ -2517,10 +2523,10 @@ static void postprocess_item_subexpressions(const SelectionTreeElementPointer &s
     {
         if (sel->child->child->flags & SEL_ALLOCVAL)
         {
-            sel->flags                 |= SEL_ALLOCVAL;
-            sel->flags                 |= (sel->child->child->flags & SEL_ALLOCDATA);
-            sel->v.nalloc               = sel->child->child->v.nalloc;
-            sel->child->child->flags   &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
+            sel->flags |= SEL_ALLOCVAL;
+            sel->flags |= (sel->child->child->flags & SEL_ALLOCDATA);
+            sel->v.nalloc = sel->child->child->v.nalloc;
+            sel->child->child->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
             sel->child->child->v.nalloc = -1;
         }
     }
@@ -2530,10 +2536,10 @@ static void postprocess_item_subexpressions(const SelectionTreeElementPointer &s
         && !(sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
         && (sel->cdata->flags & SEL_CDATA_FULLEVAL))
     {
-        sel->flags          |= SEL_ALLOCVAL;
-        sel->flags          |= (sel->child->flags & SEL_ALLOCDATA);
-        sel->v.nalloc        = sel->child->v.nalloc;
-        sel->child->flags   &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
+        sel->flags |= SEL_ALLOCVAL;
+        sel->flags |= (sel->child->flags & SEL_ALLOCDATA);
+        sel->v.nalloc = sel->child->v.nalloc;
+        sel->child->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
         sel->child->v.nalloc = -1;
     }
 
@@ -2571,7 +2577,7 @@ static void postprocess_item_subexpressions(const SelectionTreeElementPointer &s
  * No calculation is initialized if \p type equals \ref POS_ATOM and
  * the method also defines the \c gmx_ana_selmethod_t::update method.
  */
-static void init_item_comg(const SelectionTreeElementPointer &sel,
+static void init_item_comg(const SelectionTreeElementPointer & sel,
                            gmx::PositionCalculationCollection *pcc,
                            e_poscalc_t type, int flags)
 {
@@ -2589,7 +2595,7 @@ static void init_item_comg(const SelectionTreeElementPointer &sel,
             }
             if (!sel->u.expr.pc)
             {
-                cflags        |= flags;
+                cflags |= flags;
                 sel->u.expr.pc = pcc->createCalculation(type, cflags);
             }
             else
@@ -2677,7 +2683,7 @@ void SelectionCompiler::compile(SelectionCollection *coll)
     size_t                      i;
     int                         flags;
     bool                        bDebug = (coll->impl_->debugLevel_ >= 2
-                                          && coll->impl_->debugLevel_ != 3);
+                   && coll->impl_->debugLevel_ != 3);
 
     /* FIXME: Clean up the collection on exceptions */
 

@@ -117,6 +117,7 @@ public:
      *
      * \param[in] filename  Name of trajectory file to open and read. */
     explicit TrajectoryFrameReader(const std::string &filename);
+
 private:
     //! Name of trajectory file to open and read
     std::string filename_;

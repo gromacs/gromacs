@@ -72,31 +72,31 @@
 #include "gromacs/gmxlib/nonbonded/nb_kernel_c/nb_kernel_c.h"
 
 #if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_single/nb_kernel_sse2_single.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_single/nb_kernel_sse2_single.h"
 #endif
 #if GMX_SIMD_X86_SSE4_1 && !GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_single/nb_kernel_sse4_1_single.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_single/nb_kernel_sse4_1_single.h"
 #endif
 #if GMX_SIMD_X86_AVX_128_FMA && !GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_single/nb_kernel_avx_128_fma_single.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_single/nb_kernel_avx_128_fma_single.h"
 #endif
 #if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_single/nb_kernel_avx_256_single.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_single/nb_kernel_avx_256_single.h"
 #endif
 #if GMX_SIMD_X86_SSE2 && GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_double/nb_kernel_sse2_double.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_sse2_double/nb_kernel_sse2_double.h"
 #endif
 #if GMX_SIMD_X86_SSE4_1 && GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_double/nb_kernel_sse4_1_double.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_sse4_1_double/nb_kernel_sse4_1_double.h"
 #endif
 #if GMX_SIMD_X86_AVX_128_FMA && GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_avx_128_fma_double/nb_kernel_avx_128_fma_double.h"
 #endif
 #if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
 #endif
 #if GMX_SIMD_SPARC64_HPC_ACE && GMX_DOUBLE
-#    include "gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
+#include "gromacs/gmxlib/nonbonded/nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
 #endif
 
 
@@ -104,8 +104,8 @@ static tMPI_Thread_mutex_t nonbonded_setup_mutex = TMPI_THREAD_MUTEX_INITIALIZER
 static gmx_bool            nonbonded_setup_done  = FALSE;
 
 
-void gmx_nonbonded_setup(t_forcerec * fr,
-                         gmx_bool     bGenericKernelOnly)
+void gmx_nonbonded_setup(t_forcerec *fr,
+                         gmx_bool    bGenericKernelOnly)
 {
     tMPI_Thread_mutex_lock(&nonbonded_setup_mutex);
     /* Here we are guaranteed only one thread made it. */
@@ -118,8 +118,8 @@ void gmx_nonbonded_setup(t_forcerec * fr,
 
             if (!(fr != nullptr && fr->use_simd_kernels == FALSE))
             {
-                /* Add interaction-specific kernels for different architectures */
-                /* Single precision */
+/* Add interaction-specific kernels for different architectures */
+/* Single precision */
 #if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_sse2_single, kernellist_sse2_single_size);
 #endif
@@ -132,7 +132,7 @@ void gmx_nonbonded_setup(t_forcerec * fr,
 #if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_avx_256_single, kernellist_avx_256_single_size);
 #endif
-                /* Double precision */
+/* Double precision */
 #if GMX_SIMD_X86_SSE2 && GMX_DOUBLE
                 nb_kernel_list_add_kernels(kernellist_sse2_double, kernellist_sse2_double_size);
 #endif
@@ -160,24 +160,21 @@ void gmx_nonbonded_setup(t_forcerec * fr,
 }
 
 
-
 void gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAndVdwSwitchDiffers)
 {
-    const char * elec;
-    const char * elec_mod;
-    const char * vdw;
-    const char * vdw_mod;
-    const char * geom;
-    const char * other;
+    const char *elec;
+    const char *elec_mod;
+    const char *vdw;
+    const char *vdw_mod;
+    const char *geom;
+    const char *other;
 
     struct
     {
-        const char * arch;
-        int          simd_padding_width;
-    }
-    arch_and_padding[] =
-    {
-        /* Single precision */
+        const char *arch;
+        int         simd_padding_width;
+    } arch_and_padding[] = {
+/* Single precision */
 #if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !GMX_DOUBLE
         { "avx_256_single", 8 },
 #endif
@@ -190,7 +187,7 @@ void gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAn
 #if GMX_SIMD_X86_SSE2 && !GMX_DOUBLE
         { "sse2_single", 4 },
 #endif
-        /* Double precision */
+/* Double precision */
 #if (GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && GMX_DOUBLE
         { "avx_256_double", 4 },
 #endif
@@ -241,14 +238,14 @@ void gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAn
 
     if (nl->type == GMX_NBLIST_INTERACTION_FREE_ENERGY)
     {
-        nl->kernelptr_vf       = (void *) gmx_nb_free_energy_kernel;
-        nl->kernelptr_f        = (void *) gmx_nb_free_energy_kernel;
+        nl->kernelptr_vf       = (void *)gmx_nb_free_energy_kernel;
+        nl->kernelptr_f        = (void *)gmx_nb_free_energy_kernel;
         nl->simd_padding_width = 1;
     }
     else if (!gmx_strcasecmp_min(geom, "CG-CG"))
     {
-        nl->kernelptr_vf       = (void *) gmx_nb_generic_cg_kernel;
-        nl->kernelptr_f        = (void *) gmx_nb_generic_cg_kernel;
+        nl->kernelptr_vf       = (void *)gmx_nb_generic_cg_kernel;
+        nl->kernelptr_f        = (void *)gmx_nb_generic_cg_kernel;
         nl->simd_padding_width = 1;
     }
     else
@@ -257,18 +254,18 @@ void gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAn
 
         for (i = 0; i < narch && nl->kernelptr_vf == nullptr; i++)
         {
-            nl->kernelptr_vf       = (void *) nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
+            nl->kernelptr_vf       = (void *)nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
             nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
         }
         for (i = 0; i < narch && nl->kernelptr_f == nullptr; i++)
         {
-            nl->kernelptr_f        = (void *) nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force");
+            nl->kernelptr_f        = (void *)nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force");
             nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
 
             /* If there is not force-only optimized kernel, is there a potential & force one? */
             if (nl->kernelptr_f == nullptr)
             {
-                nl->kernelptr_f        = (void *) nb_kernel_list_findkernel(nullptr, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
+                nl->kernelptr_f        = (void *)nb_kernel_list_findkernel(nullptr, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
                 nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
             }
         }
@@ -285,7 +282,7 @@ void gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAn
          * tables are disabled.
          */
         if ((nl->ielec != GMX_NBKERNEL_ELEC_NONE) && (nl->ielecmod == eintmodPOTSWITCH)
-            && (nl->ivdw  != GMX_NBKERNEL_VDW_NONE)  && (nl->ivdwmod  == eintmodPOTSWITCH)
+            && (nl->ivdw != GMX_NBKERNEL_VDW_NONE) && (nl->ivdwmod == eintmodPOTSWITCH)
             && bElecAndVdwSwitchDiffers)
         {
             nl->kernelptr_vf = nullptr;
@@ -298,8 +295,8 @@ void gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl, gmx_bool bElecAn
          */
         if (nl->kernelptr_vf == nullptr && !gmx_strcasecmp_min(geom, "Particle-Particle"))
         {
-            nl->kernelptr_vf       = (void *) gmx_nb_generic_kernel;
-            nl->kernelptr_f        = (void *) gmx_nb_generic_kernel;
+            nl->kernelptr_vf       = (void *)gmx_nb_generic_kernel;
+            nl->kernelptr_f        = (void *)gmx_nb_generic_kernel;
             nl->simd_padding_width = 1;
             if (debug)
             {

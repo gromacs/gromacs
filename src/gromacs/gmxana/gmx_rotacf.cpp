@@ -55,7 +55,7 @@
 
 int gmx_rotacf(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] calculates the rotational correlation function",
         "for molecules. Atom triplets (i,j,k) must be given in the index",
         "file, defining two vectors ij and jk. The rotational ACF",
@@ -77,10 +77,8 @@ int gmx_rotacf(int argc, char *argv[])
     static gmx_bool bVec = FALSE, bAver = TRUE;
 
     t_pargs pa[] = {
-        { "-d",   FALSE, etBOOL, {&bVec},
-          "Use index doublets (vectors) for correlation function instead of triplets (planes)" },
-        { "-aver", FALSE, etBOOL, {&bAver},
-          "Average over molecules" }
+        { "-d", FALSE, etBOOL, { &bVec }, "Use index doublets (vectors) for correlation function instead of triplets (planes)" },
+        { "-aver", FALSE, etBOOL, { &bAver }, "Average over molecules" }
     };
 
     t_trxstatus * status;
@@ -98,10 +96,10 @@ int gmx_rotacf(int argc, char *argv[])
     t_topology *  top;
     int           ePBC;
     t_filenm      fnm[] = {
-        { efTRX, "-f", nullptr,  ffREAD  },
-        { efTPR, nullptr, nullptr,  ffREAD },
-        { efNDX, nullptr, nullptr,  ffREAD  },
-        { efXVG, "-o", "rotacf",  ffWRITE }
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPR, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffREAD },
+        { efXVG, "-o", "rotacf", ffWRITE }
     };
 #define NFILE asize(fnm)
     int      npargs;
@@ -132,12 +130,14 @@ int gmx_rotacf(int argc, char *argv[])
 
     if (((isize % 3) != 0) && !bVec)
     {
-        gmx_fatal(FARGS, "number of index elements not multiple of 3, "
+        gmx_fatal(FARGS,
+                  "number of index elements not multiple of 3, "
                   "these can not be atom triplets\n");
     }
     if (((isize % 2) != 0) && bVec)
     {
-        gmx_fatal(FARGS, "number of index elements not multiple of 2, "
+        gmx_fatal(FARGS,
+                  "number of index elements not multiple of 2, "
                   "these can not be atom doublets\n");
     }
 

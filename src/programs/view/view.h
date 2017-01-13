@@ -37,8 +37,7 @@
 #ifndef _view_h
 #define _view_h
 
-int
-gmx_view(int argc, char *argv[]);
+int gmx_view(int argc, char *argv[]);
 
 #endif
 /* _view_h */

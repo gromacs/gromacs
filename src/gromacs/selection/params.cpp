@@ -131,7 +131,7 @@ static void convert_value(SelectionParserValue *value, e_selvalue_t type,
             try
             {
                 SelectionTreeElementPointer expr
-                       = _gmx_sel_init_position(value->expr, nullptr, scanner);
+                        = _gmx_sel_init_position(value->expr, nullptr, scanner);
                 *value = SelectionParserValue::createExpr(expr);
             }
             catch (UserInputError &ex)
@@ -324,8 +324,9 @@ static void parse_values_range(const SelectionParserValueList &values,
         if (value->hasExpressionValue())
         {
             std::string text(_gmx_sel_lexer_get_text(scanner, value->location()));
-            std::string message("Only simple values or 'A to B' ranges are "
-                                "supported in this context");
+            std::string message(
+                    "Only simple values or 'A to B' ranges are "
+                    "supported in this context");
             InvalidInputError ex(message);
             ex.prependContext(formatString("Invalid expression '%s'", text.c_str()));
             GMX_THROW(ex);
@@ -381,7 +382,7 @@ static void parse_values_range(const SelectionParserValueList &values,
             {
                 idata[j]     = idata[i];
                 idata[j + 1] = idata[i + 1];
-                j           += 2;
+                j += 2;
             }
         }
     }
@@ -401,7 +402,7 @@ static void parse_values_range(const SelectionParserValueList &values,
             {
                 rdata[j]     = rdata[i];
                 rdata[j + 1] = rdata[i + 1];
-                j           += 2;
+                j += 2;
             }
         }
     }
@@ -428,8 +429,9 @@ static void parse_values_range(const SelectionParserValueList &values,
         {
             GMX_ASSERT(n == 1,
                        "Range parameters with a fixed count > 1 do not make sense");
-            GMX_THROW(InvalidInputError("Only one value or 'A to B' range is "
-                                        "supported in this context"));
+            GMX_THROW(InvalidInputError(
+                    "Only one value or 'A to B' range is "
+                    "supported in this context"));
         }
         if (param->val.type == INT_VALUE)
         {
@@ -509,7 +511,7 @@ static void parse_values_varnum(const SelectionParserValueList &   values,
         child->setName(param->name);
         child->flags &= ~SEL_ALLOCVAL;
         child->flags |= SEL_FLAGSSET | SEL_VARNUMVAL | SEL_ALLOCDATA;
-        child->v.nr   = valueCount;
+        child->v.nr = valueCount;
         _gmx_selvalue_setstore(&child->v, param->val.u.s);
         /* Because the child is not group-valued, the u union is not used
          * for anything, so we can abuse it by storing the parameter value
@@ -528,8 +530,9 @@ static void parse_values_varnum(const SelectionParserValueList &   values,
         if (value->hasExpressionValue())
         {
             std::string text(_gmx_sel_lexer_get_text(scanner, value->location()));
-            std::string message("Selection expressions are not supported in this "
-                                "context when multiple values are provided");
+            std::string message(
+                    "Selection expressions are not supported in this "
+                    "context when multiple values are provided");
             InvalidInputError ex(message);
             ex.prependContext(formatString("Invalid expression '%s'", text.c_str()));
             GMX_THROW(ex);
@@ -557,8 +560,8 @@ static void parse_values_varnum(const SelectionParserValueList &   values,
                 {
                     std::string text(_gmx_sel_lexer_get_text(scanner, value->location()));
                     std::string message
-                        = formatString("Real range ('%s') is not supported in this context",
-                                       text.c_str());
+                            = formatString("Real range ('%s') is not supported in this context",
+                                           text.c_str());
                     InvalidInputError ex(message);
                     GMX_THROW(ex);
                 }
@@ -567,7 +570,9 @@ static void parse_values_varnum(const SelectionParserValueList &   values,
             case STR_VALUE:
                 param->val.u.s[i++] = gmx_strdup(value->stringValue().c_str());
                 break;
-            case POS_VALUE:  copy_rvec(value->u.x, param->val.u.p->x[i++]); break;
+            case POS_VALUE:
+                copy_rvec(value->u.x, param->val.u.p->x[i++]);
+                break;
             default: /* Should not be reached */
                 GMX_RELEASE_ASSERT(false, "Variable-count value type not implemented");
         }
@@ -614,16 +619,17 @@ static SelectionTreeElementPointer add_child(const SelectionTreeElementPointer &
         child->child = expr;
     }
     /* Setup the child element */
-    child->flags  &= ~SEL_ALLOCVAL;
+    child->flags &= ~SEL_ALLOCVAL;
     child->u.param = param;
     if (child->v.type != param->val.type)
     {
         // TODO: It would be nice to say what is the expected type.
         std::string text(_gmx_sel_lexer_get_text(scanner, expr->location()));
         std::string message
-            = formatString("Expression '%s' is not valid in this context "
-                           "(produces the wrong type of values)",
-                           text.c_str());
+                = formatString(
+                        "Expression '%s' is not valid in this context "
+                        "(produces the wrong type of values)",
+                        text.c_str());
         GMX_THROW(InvalidInputError(message));
     }
     _gmx_selelem_update_flags(child);
@@ -631,9 +637,10 @@ static SelectionTreeElementPointer add_child(const SelectionTreeElementPointer &
     {
         std::string text(_gmx_sel_lexer_get_text(scanner, expr->location()));
         std::string message
-            = formatString("Expression '%s' is dynamic, which is not "
-                           "valid in this context",
-                           text.c_str());
+                = formatString(
+                        "Expression '%s' is dynamic, which is not "
+                        "valid in this context",
+                        text.c_str());
         GMX_THROW(InvalidInputError(message));
     }
     if (!(child->flags & SEL_DYNAMIC))
@@ -662,7 +669,7 @@ static void parse_values_varnum_expr(const SelectionParserValueList &   values,
                        "Called with an invalid type of value");
 
     SelectionTreeElementPointer child
-        = add_child(root, param, values.front().expr, scanner);
+            = add_child(root, param, values.front().expr, scanner);
 
     /* Process single-valued expressions */
     /* TODO: We should also handle SEL_SINGLEVAL expressions here */
@@ -683,12 +690,12 @@ static void parse_values_varnum_expr(const SelectionParserValueList &   values,
     {
         std::string text(_gmx_sel_lexer_get_text(scanner, values.front().location()));
         std::string message
-            = formatString("Expression '%s' is invalid in this context",
-                           text.c_str());
+                = formatString("Expression '%s' is invalid in this context",
+                               text.c_str());
         GMX_THROW(InvalidInputError(message));
     }
 
-    child->flags   |= SEL_ALLOCVAL;
+    child->flags |= SEL_ALLOCVAL;
     param->val.nr   = -1;
     *param->nvalptr = param->val.nr;
     /* Rest of the initialization is done during compilation in
@@ -715,17 +722,27 @@ static void set_expr_value_store(const SelectionTreeElementPointer &sel,
     {
         std::string text(_gmx_sel_lexer_get_text(scanner, sel->location()));
         std::string message
-            = formatString("Expression '%s' is invalid in this context",
-                           text.c_str());
+                = formatString("Expression '%s' is invalid in this context",
+                               text.c_str());
         GMX_THROW(InvalidInputError(message));
     }
     switch (sel->v.type)
     {
-        case INT_VALUE:   sel->v.u.i = &param->val.u.i[i]; break;
-        case REAL_VALUE:  sel->v.u.r = &param->val.u.r[i]; break;
-        case STR_VALUE:   sel->v.u.s = &param->val.u.s[i]; break;
-        case POS_VALUE:   sel->v.u.p = &param->val.u.p[i]; break;
-        case GROUP_VALUE: sel->v.u.g = &param->val.u.g[i]; break;
+        case INT_VALUE:
+            sel->v.u.i = &param->val.u.i[i];
+            break;
+        case REAL_VALUE:
+            sel->v.u.r = &param->val.u.r[i];
+            break;
+        case STR_VALUE:
+            sel->v.u.s = &param->val.u.s[i];
+            break;
+        case POS_VALUE:
+            sel->v.u.p = &param->val.u.p[i];
+            break;
+        case GROUP_VALUE:
+            sel->v.u.g = &param->val.u.g[i];
+            break;
         default: /* Error */
             GMX_THROW(InternalError("Invalid value type"));
     }
@@ -744,8 +761,8 @@ static void set_expr_value_store(const SelectionTreeElementPointer &sel,
  * For integer ranges, the sequence of numbers from the first to second value
  * is stored, each as a separate value.
  */
-static void parse_values_std(const SelectionParserValueList &values,
-                             gmx_ana_selparam_t *param,
+static void parse_values_std(const SelectionParserValueList &   values,
+                             gmx_ana_selparam_t *               param,
                              const SelectionTreeElementPointer &root, void *scanner)
 {
     int  i, j;
@@ -757,13 +774,13 @@ static void parse_values_std(const SelectionParserValueList &values,
         if (values.size() > 1)
         {
             GMX_THROW(InvalidInputError(
-                              "Only a single value or a single expression is "
-                              "supported in this context"));
+                    "Only a single value or a single expression is "
+                    "supported in this context"));
         }
         if (values.front().hasExpressionValue())
         {
             SelectionTreeElementPointer child
-                          = add_child(root, param, values.front().expr, scanner);
+                    = add_child(root, param, values.front().expr, scanner);
             child->flags |= SEL_ALLOCVAL;
             if (child->v.type != GROUP_VALUE && (child->flags & SEL_ATOMVAL))
             {
@@ -813,7 +830,7 @@ static void parse_values_std(const SelectionParserValueList &values,
         if (value->hasExpressionValue())
         {
             SelectionTreeElementPointer child
-                = add_child(root, param, value->expr, scanner);
+                    = add_child(root, param, value->expr, scanner);
             set_expr_value_store(child, param, i, scanner);
             if (child->flags & SEL_DYNAMIC)
             {
@@ -848,9 +865,10 @@ static void parse_values_std(const SelectionParserValueList &values,
                     {
                         std::string text(_gmx_sel_lexer_get_text(scanner, value->location()));
                         std::string message
-                            = formatString("Range ('%s') produces more values than is "
-                                           "accepted in this context",
-                                           text.c_str());
+                                = formatString(
+                                        "Range ('%s') produces more values than is "
+                                        "accepted in this context",
+                                        text.c_str());
                         GMX_THROW(InvalidInputError(message));
                     }
                     --i;
@@ -861,8 +879,8 @@ static void parse_values_std(const SelectionParserValueList &values,
                     {
                         std::string text(_gmx_sel_lexer_get_text(scanner, value->location()));
                         std::string message
-                            = formatString("Real range ('%s') is not supported in this context",
-                                           text.c_str());
+                                = formatString("Real range ('%s') is not supported in this context",
+                                               text.c_str());
                         GMX_THROW(InvalidInputError(message));
                     }
                     param->val.u.r[i] = value->u.r.r1;
@@ -883,15 +901,15 @@ static void parse_values_std(const SelectionParserValueList &values,
     if (value != values.end())
     {
         std::string message
-            = formatString("Too many values provided, expected %d",
-                           param->val.nr);
+                = formatString("Too many values provided, expected %d",
+                               param->val.nr);
         GMX_THROW(InvalidInputError(message));
     }
     if (i < param->val.nr)
     {
         std::string message
-            = formatString("Too few values provided, expected %d",
-                           param->val.nr);
+                = formatString("Too few values provided, expected %d",
+                               param->val.nr);
         GMX_THROW(InvalidInputError(message));
     }
     if (!bDynamic)
@@ -913,7 +931,7 @@ static void parse_values_std(const SelectionParserValueList &values,
  * \param     param  Parameter to parse.
  * \param[in] scanner Scanner data structure.
  */
-static void parse_values_bool(const std::string &name,
+static void parse_values_bool(const std::string &             name,
                               const SelectionParserValueList &values,
                               gmx_ana_selparam_t *param, void *scanner)
 {
@@ -923,8 +941,8 @@ static void parse_values_bool(const std::string &name,
     if (values.size() > 1 || (!values.empty() && values.front().type != INT_VALUE))
     {
         std::string message
-            = formatString("'%s' only accepts yes/no/on/off/0/1 (and empty) as a value",
-                           param->name);
+                = formatString("'%s' only accepts yes/no/on/off/0/1 (and empty) as a value",
+                               param->name);
         GMX_THROW(InvalidInputError(message));
     }
 
@@ -938,8 +956,8 @@ static void parse_values_bool(const std::string &name,
     if (bSetNo && !values.empty())
     {
         std::string message
-            = formatString("'no%s' cannot be followed by any value",
-                           param->name);
+                = formatString("'no%s' cannot be followed by any value",
+                               param->name);
         GMX_THROW(InvalidInputError(message));
     }
     if (!values.empty() && values.front().u.i.i1 == 0)
@@ -967,7 +985,7 @@ static void parse_values_enum(const SelectionParserValueList &values,
     if (values.size() != 1)
     {
         GMX_THROW(InvalidInputError(
-                          "Only a single string value is supported in this context"));
+                "Only a single string value is supported in this context"));
     }
     const SelectionParserValue &value = values.front();
     GMX_RELEASE_ASSERT(value.type == param->val.type,
@@ -976,8 +994,8 @@ static void parse_values_enum(const SelectionParserValueList &values,
     {
         std::string text(_gmx_sel_lexer_get_text(scanner, value.location()));
         std::string message
-            = formatString("Expression ('%s') is not supported in this context",
-                           text.c_str());
+                = formatString("Expression ('%s') is not supported in this context",
+                               text.c_str());
         GMX_THROW(InvalidInputError(message));
     }
 
@@ -992,7 +1010,7 @@ static void parse_values_enum(const SelectionParserValueList &values,
             if (match > 0)
             {
                 std::string message
-                    = formatString("Value '%s' is ambiguous", svalue.c_str());
+                        = formatString("Value '%s' is ambiguous", svalue.c_str());
                 GMX_THROW(InvalidInputError(message));
             }
             match = i;
@@ -1002,7 +1020,7 @@ static void parse_values_enum(const SelectionParserValueList &values,
     if (match == 0)
     {
         std::string message
-            = formatString("Value '%s' is not recognized", svalue.c_str());
+                = formatString("Value '%s' is not recognized", svalue.c_str());
         GMX_THROW(InvalidInputError(message));
     }
     param->val.u.s[0] = param->val.u.s[match];
@@ -1062,7 +1080,7 @@ static void convert_const_values(SelectionParserValueList *values)
 void _gmx_sel_parse_params(const gmx::SelectionParserParameterList &pparams,
                            int nparam, gmx_ana_selparam_t *params,
                            const gmx::SelectionTreeElementPointer &root,
-                           void *scanner)
+                           void *                                  scanner)
 {
     ExceptionInitializer errors("");
     /* Check that the value pointers of SPAR_VARNUM parameters are NULL and
@@ -1078,7 +1096,7 @@ void _gmx_sel_parse_params(const gmx::SelectionParserParameterList &pparams,
                                "and SPAR_ATOMVAL parameters");
             GMX_RELEASE_ASSERT(!((params[i].flags & SPAR_VARNUM)
                                  && (params[i].flags & SPAR_DYNAMIC))
-                               || params[i].nvalptr != nullptr,
+                                       || params[i].nvalptr != nullptr,
                                "nvalptr is NULL but both "
                                "SPAR_VARNUM and SPAR_DYNAMIC are specified");
         }
@@ -1102,7 +1120,7 @@ void _gmx_sel_parse_params(const gmx::SelectionParserParameterList &pparams,
             {
                 nullParamIndex = -1;
                 oparam
-                    = gmx_ana_selparam_find(pparam->name().c_str(), nparam, params);
+                        = gmx_ana_selparam_find(pparam->name().c_str(), nparam, params);
                 GMX_RELEASE_ASSERT(oparam != nullptr, "Inconsistent selection parameter");
             }
             else if (nullParamIndex >= 0)
@@ -1112,21 +1130,22 @@ void _gmx_sel_parse_params(const gmx::SelectionParserParameterList &pparams,
                 {
                     std::string text(_gmx_sel_lexer_get_text(scanner, pparam->location()));
                     std::string message
-                        = formatString("Unexpected '%s'", text.c_str());
+                            = formatString("Unexpected '%s'", text.c_str());
                     GMX_THROW(InvalidInputError(message));
                 }
                 ++nullParamIndex;
             }
             else
             {
-                GMX_RELEASE_ASSERT(false, "All NULL parameters should appear in "
+                GMX_RELEASE_ASSERT(false,
+                                   "All NULL parameters should appear in "
                                    "the beginning of the list");
             }
             if (oparam->flags & SPAR_SET)
             {
                 std::string message
-                    = formatString("'%s' appears multiple times",
-                                   pparam->name().c_str());
+                        = formatString("'%s' appears multiple times",
+                                       pparam->name().c_str());
                 GMX_THROW(InvalidInputError(message));
             }
             oparam->flags |= SPAR_SET;
@@ -1142,8 +1161,8 @@ void _gmx_sel_parse_params(const gmx::SelectionParserParameterList &pparams,
                     text = _gmx_sel_lexer_get_text(scanner, pparam->location());
                 }
                 std::string message
-                    = formatString("'%s' should be followed by a value/expression",
-                                   text.c_str());
+                        = formatString("'%s' should be followed by a value/expression",
+                                       text.c_str());
                 GMX_THROW(InvalidInputError(message));
             }
             /* Process the values for the parameter */

@@ -207,7 +207,7 @@ int getDefaultXvgFormat(gmx::ConstArrayRef<const char *> xvgFormats)
     if (select != nullptr)
     {
         ConstArrayRef<const char *>::const_iterator i
-            = std::find(xvgFormats.begin(), xvgFormats.end(), std::string(select));
+                = std::find(xvgFormats.begin(), xvgFormats.end(), std::string(select));
         if (i != xvgFormats.end())
         {
             return std::distance(xvgFormats.begin(), i);
@@ -272,7 +272,8 @@ private:
     struct FileNameData
     {
         //! Creates a conversion helper for a given `t_filenm` struct.
-        explicit FileNameData(t_filenm *fnm) : fnm(fnm), optionInfo(nullptr)
+        explicit FileNameData(t_filenm *fnm)
+            : fnm(fnm), optionInfo(nullptr)
         {
         }
 
@@ -325,11 +326,11 @@ void OptionsAdapter::filenmToOptions(Options *options, t_filenm *fnm)
         // opt2*() work even if fnm->opt is NULL for some options.
         fnm->opt = ftp2defopt(fnm->ftp);
     }
-    const bool        bRead     = ((fnm->flag & ffREAD)  != 0);
+    const bool        bRead     = ((fnm->flag & ffREAD) != 0);
     const bool        bWrite    = ((fnm->flag & ffWRITE) != 0);
-    const bool        bOptional = ((fnm->flag & ffOPT)   != 0);
-    const bool        bLibrary  = ((fnm->flag & ffLIB)   != 0);
-    const bool        bMultiple = ((fnm->flag & ffMULT)  != 0);
+    const bool        bOptional = ((fnm->flag & ffOPT) != 0);
+    const bool        bLibrary  = ((fnm->flag & ffLIB) != 0);
+    const bool        bMultiple = ((fnm->flag & ffMULT) != 0);
     const bool        bMissing  = ((fnm->flag & ffALLOW_MISSING) != 0);
     const char *const name      = &fnm->opt[1];
     const char *      defName   = fnm->fn;
@@ -346,14 +347,8 @@ void OptionsAdapter::filenmToOptions(Options *options, t_filenm *fnm)
     }
     fileNameOptions_.emplace_back(fnm);
     FileNameData &data = fileNameOptions_.back();
-    data.optionInfo = options->addOption(
-                FileNameOption(name).storeVector(&data.values)
-                    .defaultBasename(defName).defaultType(defType)
-                    .legacyType(fnm->ftp).legacyOptionalBehavior()
-                    .readWriteFlags(bRead, bWrite).required(!bOptional)
-                    .libraryFile(bLibrary).multiValue(bMultiple)
-                    .allowMissing(bMissing)
-                    .description(ftp2desc(fnm->ftp)));
+    data.optionInfo    = options->addOption(
+            FileNameOption(name).storeVector(&data.values).defaultBasename(defName).defaultType(defType).legacyType(fnm->ftp).legacyOptionalBehavior().readWriteFlags(bRead, bWrite).required(!bOptional).libraryFile(bLibrary).multiValue(bMultiple).allowMissing(bMissing).description(ftp2desc(fnm->ftp)));
 }
 
 void OptionsAdapter::pargsToOptions(Options *options, t_pargs *pa)
@@ -367,52 +362,40 @@ void OptionsAdapter::pargsToOptions(Options *options, t_pargs *pa)
     {
         case etINT:
             data.optionInfo = options->addOption(
-                        IntegerOption(name).store(pa->u.i)
-                            .description(desc).hidden(bHidden));
+                    IntegerOption(name).store(pa->u.i).description(desc).hidden(bHidden));
             return;
         case etINT64:
             data.optionInfo = options->addOption(
-                        Int64Option(name).store(pa->u.is)
-                            .description(desc).hidden(bHidden));
+                    Int64Option(name).store(pa->u.is).description(desc).hidden(bHidden));
             return;
         case etREAL:
             data.optionInfo = options->addOption(
-                        RealOption(name).store(pa->u.r)
-                            .description(desc).hidden(bHidden));
+                    RealOption(name).store(pa->u.r).description(desc).hidden(bHidden));
             return;
         case etTIME:
             data.optionInfo = options->addOption(
-                        RealOption(name).store(pa->u.r).timeValue()
-                            .description(desc).hidden(bHidden));
+                    RealOption(name).store(pa->u.r).timeValue().description(desc).hidden(bHidden));
             return;
         case etSTR:
         {
             const char *const defValue = (*pa->u.c != nullptr ? *pa->u.c : "");
-            data.optionInfo = options->addOption(
-                        StringOption(name).store(&data.stringValue)
-                            .defaultValue(defValue)
-                            .description(desc).hidden(bHidden));
+            data.optionInfo            = options->addOption(
+                    StringOption(name).store(&data.stringValue).defaultValue(defValue).description(desc).hidden(bHidden));
             return;
         }
         case etBOOL:
             data.optionInfo = options->addOption(
-                        BooleanOption(name).store(&data.boolValue)
-                            .defaultValue(*pa->u.b)
-                            .description(desc).hidden(bHidden));
+                    BooleanOption(name).store(&data.boolValue).defaultValue(*pa->u.b).description(desc).hidden(bHidden));
             return;
         case etRVEC:
             data.optionInfo = options->addOption(
-                        RealOption(name).store(*pa->u.rv).vector()
-                            .description(desc).hidden(bHidden));
+                    RealOption(name).store(*pa->u.rv).vector().description(desc).hidden(bHidden));
             return;
         case etENUM:
         {
             const int defaultIndex = (pa->u.c[0] != nullptr ? nenum(pa->u.c) - 1 : 0);
-            data.optionInfo = options->addOption(
-                        EnumIntOption(name).store(&data.enumIndex)
-                            .defaultValue(defaultIndex)
-                            .enumValueFromNullTerminatedArray(pa->u.c + 1)
-                            .description(desc).hidden(bHidden));
+            data.optionInfo        = options->addOption(
+                    EnumIntOption(name).store(&data.enumIndex).defaultValue(defaultIndex).enumValueFromNullTerminatedArray(pa->u.c + 1).description(desc).hidden(bHidden));
             return;
         }
     }
@@ -450,7 +433,7 @@ void OptionsAdapter::copyValues(bool bReadNode)
                 if (arg->pa->bSet)
                 {
                     std::vector<const char *>::const_iterator pos
-                        = std::find(argv_.begin(), argv_.end(), arg->stringValue);
+                            = std::find(argv_.begin(), argv_.end(), arg->stringValue);
                     GMX_RELEASE_ASSERT(pos != argv_.end(),
                                        "String argument got a value not in argv");
                     *arg->pa->u.c = *pos;
@@ -483,16 +466,16 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     /* This array should match the order of the enum in oenv.h */
     const char *const xvg_formats[] = { "xmgrace", "xmgr", "none" };
 
-    // Handle the flags argument, which is a bit field
-    // The FF macro returns whether or not the bit is set
+// Handle the flags argument, which is a bit field
+// The FF macro returns whether or not the bit is set
 #define FF(arg) ((Flags & arg) == arg)
 
     try
     {
-        double                         tbegin        = 0.0, tend = 0.0, tdelta = 0.0;
+        double                         tbegin = 0.0, tend = 0.0, tdelta = 0.0;
         bool                           bBeginTimeSet = false, bEndTimeSet = false, bDtSet = false;
-        bool                           bView         = false;
-        int                            xvgFormat     = 0;
+        bool                           bView     = false;
+        int                            xvgFormat = 0;
         gmx::OptionsAdapter            adapter(*argc, argv);
         gmx::Options                   options;
         gmx::OptionsBehaviorCollection behaviors(&options);
@@ -510,22 +493,28 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         {
             options.addOption(
                     gmx::DoubleOption("b")
-                        .store(&tbegin).storeIsSet(&bBeginTimeSet).timeValue()
-                        .description("First frame (%t) to read from trajectory"));
+                            .store(&tbegin)
+                            .storeIsSet(&bBeginTimeSet)
+                            .timeValue()
+                            .description("First frame (%t) to read from trajectory"));
         }
         if (FF(PCA_CAN_END))
         {
             options.addOption(
                     gmx::DoubleOption("e")
-                        .store(&tend).storeIsSet(&bEndTimeSet).timeValue()
-                        .description("Last frame (%t) to read from trajectory"));
+                            .store(&tend)
+                            .storeIsSet(&bEndTimeSet)
+                            .timeValue()
+                            .description("Last frame (%t) to read from trajectory"));
         }
         if (FF(PCA_CAN_DT))
         {
             options.addOption(
                     gmx::DoubleOption("dt")
-                        .store(&tdelta).storeIsSet(&bDtSet).timeValue()
-                        .description("Only use frame when t MOD dt = first time (%t)"));
+                            .store(&tdelta)
+                            .storeIsSet(&bDtSet)
+                            .timeValue()
+                            .description("Only use frame when t MOD dt = first time (%t)"));
         }
         gmx::TimeUnit timeUnit = gmx::TimeUnit_Default;
         if (FF(PCA_TIME_UNIT))
@@ -540,9 +529,8 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         if (FF(PCA_CAN_VIEW))
         {
             options.addOption(
-                    gmx::BooleanOption("w").store(&bView)
-                        .description("View output [REF].xvg[ref], [REF].xpm[ref], "
-                                     "[REF].eps[ref] and [REF].pdb[ref] files"));
+                    gmx::BooleanOption("w").store(&bView).description("View output [REF].xvg[ref], [REF].xpm[ref], "
+                                                                      "[REF].eps[ref] and [REF].pdb[ref] files"));
         }
 
         bool bXvgr = false;
@@ -554,9 +542,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         if (bXvgr)
         {
             options.addOption(
-                    gmx::EnumIntOption("xvg").enumValue(xvg_formats)
-                        .store(&xvgFormat)
-                        .description("xvg plot formatting"));
+                    gmx::EnumIntOption("xvg").enumValue(xvg_formats).store(&xvgFormat).description("xvg plot formatting"));
         }
 
         /* Now append the program specific arguments */
@@ -570,22 +556,21 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         }
 
         const gmx::CommandLineHelpContext *context
-            = gmx::GlobalCommandLineHelpContext::get();
+                = gmx::GlobalCommandLineHelpContext::get();
         if (context != nullptr)
         {
             GMX_RELEASE_ASSERT(gmx_node_rank() == 0,
                                "Help output should be handled higher up and "
                                "only get called only on the master rank");
             gmx::CommandLineHelpWriter(options)
-                .setHelpText(gmx::constArrayRefFromArray<const char *>(desc, ndesc))
-                .setKnownIssues(gmx::constArrayRefFromArray(bugs, nbugs))
-                .writeHelp(*context);
+                    .setHelpText(gmx::constArrayRefFromArray<const char *>(desc, ndesc))
+                    .setKnownIssues(gmx::constArrayRefFromArray(bugs, nbugs))
+                    .writeHelp(*context);
             return FALSE;
         }
 
         /* Now parse all the command-line options */
-        gmx::CommandLineParser(&options).skipUnknown(FF(PCA_NOEXIT_ON_ARGS))
-            .parse(argc, argv);
+        gmx::CommandLineParser(&options).skipUnknown(FF(PCA_NOEXIT_ON_ARGS)).parse(argc, argv);
         behaviors.optionsFinishing();
         options.finish();
 

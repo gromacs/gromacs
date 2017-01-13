@@ -71,7 +71,7 @@ public:
     virtual const char *name() const  = 0;
     virtual const char *title() const = 0;
 
-    virtual bool hasSubTopics() const;
+    virtual bool              hasSubTopics() const;
     virtual const IHelpTopic *findSubTopic(const char *name) const;
 
     virtual void writeHelp(const HelpWriterContext &context) const;
@@ -112,7 +112,7 @@ public:
     virtual const char *name() const  = 0;
     virtual const char *title() const = 0;
 
-    virtual bool hasSubTopics() const;
+    virtual bool              hasSubTopics() const;
     virtual const IHelpTopic *findSubTopic(const char *name) const;
 
     virtual void writeHelp(const HelpWriterContext &context) const;
@@ -186,7 +186,7 @@ private:
  * \inlibraryapi
  */
 typedef std::unique_ptr<AbstractCompositeHelpTopic>
-    CompositeHelpTopicPointer;
+        CompositeHelpTopicPointer;
 //! \endcond
 
 /*! \libinternal \brief

@@ -83,7 +83,7 @@ static int ocomp(const void *a, const void *b)
 
 int gmx_trjorder(int argc, char *argv[])
 {
-    const char *      desc[] = {
+    const char *desc[] = {
         "[THISMODULE] orders molecules according to the smallest distance",
         "to atoms in a reference group",
         "or on z-coordinate (with option [TT]-z[tt]).",
@@ -108,20 +108,15 @@ int gmx_trjorder(int argc, char *argv[])
         "With option [TT]-nshell[tt] the number of molecules within a shell",
         "of radius [TT]-r[tt] around the reference group are printed."
     };
-    static int        na   = 3, ref_a = 1;
-    static real       rcut = 0;
-    static gmx_bool   bCOM = FALSE, bZ = FALSE;
-    t_pargs           pa[] = {
-        { "-na", FALSE, etINT,  {&na},
-          "Number of atoms in a molecule" },
-        { "-da", FALSE, etINT,  {&ref_a},
-          "Atom used for the distance calculation, 0 is COM" },
-        { "-com", FALSE, etBOOL, {&bCOM},
-          "Use the distance to the center of mass of the reference group" },
-        { "-r",  FALSE, etREAL, {&rcut},
-          "Cutoff used for the distance calculation when computing the number of molecules in a shell around e.g. a protein" },
-        { "-z", FALSE, etBOOL, {&bZ},
-          "Order molecules on z-coordinate" }
+    static int      na = 3, ref_a = 1;
+    static real     rcut = 0;
+    static gmx_bool bCOM = FALSE, bZ = FALSE;
+    t_pargs         pa[] = {
+        { "-na", FALSE, etINT, { &na }, "Number of atoms in a molecule" },
+        { "-da", FALSE, etINT, { &ref_a }, "Atom used for the distance calculation, 0 is COM" },
+        { "-com", FALSE, etBOOL, { &bCOM }, "Use the distance to the center of mass of the reference group" },
+        { "-r", FALSE, etREAL, { &rcut }, "Cutoff used for the distance calculation when computing the number of molecules in a shell around e.g. a protein" },
+        { "-z", FALSE, etBOOL, { &bZ }, "Order molecules on z-coordinate" }
     };
     FILE *            fp;
     t_trxstatus *     out;
@@ -136,12 +131,12 @@ int gmx_trjorder(int argc, char *argv[])
     real              t, totmass, mass, rcut2 = 0, n2;
     int               natoms, nwat, ncut;
     char **           grpname;
-    int               i, j, d, *isize, isize_ref = 0, isize_sol;
+    int               i, j, d, *isize, isize_ref      = 0, isize_sol;
     int               sa, sr, *swi, **index, *ind_ref = nullptr, *ind_sol;
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
-        { efTRX, "-f", nullptr, ffREAD  },
-        { efTPS, nullptr, nullptr, ffREAD  },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
         { efNDX, nullptr, nullptr, ffOPTRD },
         { efTRO, "-o", "ordered", ffOPTWR },
         { efXVG, "-nshell", "nshell", ffOPTWR }
@@ -224,7 +219,7 @@ int gmx_trjorder(int argc, char *argv[])
     {
         rcut2 = rcut * rcut;
         fp    = xvgropen(opt2fn("-nshell", NFILE, fnm), "Number of molecules",
-                         "Time (ps)", "N", oenv);
+                      "Time (ps)", "N", oenv);
         printf("Will compute the number of molecules within a radius of %g\n",
                rcut);
     }
@@ -253,8 +248,8 @@ int gmx_trjorder(int argc, char *argv[])
                 clear_rvec(xsol[i]);
                 for (j = 0; j < na; j++)
                 {
-                    sa       = ind_sol[i * na + j];
-                    mass     = top.atoms.atom[sa].m;
+                    sa   = ind_sol[i * na + j];
+                    mass = top.atoms.atom[sa].m;
                     totmass += mass;
                     for (d = 0; d < DIM; d++)
                     {
@@ -288,7 +283,7 @@ int gmx_trjorder(int argc, char *argv[])
             clear_rvec(xcom);
             for (i = 0; i < isize_ref; i++)
             {
-                mass     = top.atoms.atom[ind_ref[i]].m;
+                mass = top.atoms.atom[ind_ref[i]].m;
                 totmass += mass;
                 for (j = 0; j < DIM; j++)
                 {

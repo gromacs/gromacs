@@ -83,7 +83,10 @@ public:
      * histogramFromBins().
      */
     AnalysisHistogramSettingsInitializer &start(real min)
-    { min_ = min; return *this; }
+    {
+        min_ = min;
+        return *this;
+    }
     /*! \brief
      * Sets the number of bins in the histogram.
      *
@@ -93,7 +96,10 @@ public:
      * binWidth() is required.
      */
     AnalysisHistogramSettingsInitializer &binCount(int binCount)
-    { binCount_ = binCount; return *this; }
+    {
+        binCount_ = binCount;
+        return *this;
+    }
     /*! \brief
      * Sets the first and last bin locations.
      *
@@ -101,7 +107,11 @@ public:
      * histogramFromRange().
      */
     AnalysisHistogramSettingsInitializer &range(real min, real max)
-    { min_ = min; max_ = max; return *this; }
+    {
+        min_ = min;
+        max_ = max;
+        return *this;
+    }
     /*! \brief
      * Sets the bin width of the histogram.
      *
@@ -114,7 +124,10 @@ public:
      * bin location is adjusted to match.
      */
     AnalysisHistogramSettingsInitializer &binWidth(real binWidth)
-    { binWidth_ = binWidth; return *this; }
+    {
+        binWidth_ = binWidth;
+        return *this;
+    }
     /*! \brief
      * Indicate that first and last bin locations to specify bin centers.
      *
@@ -126,7 +139,10 @@ public:
      * Cannot be specified together with roundRange().
      */
     AnalysisHistogramSettingsInitializer &integerBins(bool enabled = true)
-    { bIntegerBins_ = enabled; return *this; }
+    {
+        bIntegerBins_ = enabled;
+        return *this;
+    }
     /*! \brief
      * Round first and last bin locations.
      *
@@ -138,7 +154,10 @@ public:
      * Cannot be specified together with integerBins() or with binCount().
      */
     AnalysisHistogramSettingsInitializer &roundRange(bool enabled = true)
-    { bRoundRange_ = enabled; return *this; }
+    {
+        bRoundRange_ = enabled;
+        return *this;
+    }
     /*! \brief
      * Sets the histogram to match all values.
      *
@@ -146,7 +165,10 @@ public:
      * +-infinity.
      */
     AnalysisHistogramSettingsInitializer &includeAll(bool enabled = true)
-    { bIncludeAll_ = enabled; return *this; }
+    {
+        bIncludeAll_ = enabled;
+        return *this;
+    }
 
 private:
     real min_;
@@ -182,7 +204,9 @@ inline AnalysisHistogramSettingsInitializer histogramFromRange(real min, real ma
 inline AnalysisHistogramSettingsInitializer histogramFromBins(real start, int nbins, real binwidth)
 {
     return AnalysisHistogramSettingsInitializer()
-               .start(start).binCount(nbins).binWidth(binwidth);
+            .start(start)
+            .binCount(nbins)
+            .binWidth(binwidth);
 }
 
 
@@ -392,8 +416,8 @@ public:
     virtual int flags() const;
 
     virtual bool parallelDataStarted(
-        AbstractAnalysisData *             data,
-        const AnalysisDataParallelOptions &options);
+            AbstractAnalysisData *             data,
+            const AnalysisDataParallelOptions &options);
     virtual void frameStarted(const AnalysisDataFrameHeader &header);
     virtual void pointsAdded(const AnalysisDataPointSetRef &points);
     virtual void frameFinished(const AnalysisDataFrameHeader &header);
@@ -457,8 +481,8 @@ public:
     virtual int flags() const;
 
     virtual bool parallelDataStarted(
-        AbstractAnalysisData *             data,
-        const AnalysisDataParallelOptions &options);
+            AbstractAnalysisData *             data,
+            const AnalysisDataParallelOptions &options);
     virtual void frameStarted(const AnalysisDataFrameHeader &header);
     virtual void pointsAdded(const AnalysisDataPointSetRef &points);
     virtual void frameFinished(const AnalysisDataFrameHeader &header);
@@ -527,13 +551,13 @@ private:
 
 //! Smart pointer to manage an AnalysisDataSimpleHistogramModule object.
 typedef std::shared_ptr<AnalysisDataSimpleHistogramModule>
-    AnalysisDataSimpleHistogramModulePointer;
+        AnalysisDataSimpleHistogramModulePointer;
 //! Smart pointer to manage an AnalysisDataWeightedHistogramModule object.
 typedef std::shared_ptr<AnalysisDataWeightedHistogramModule>
-    AnalysisDataWeightedHistogramModulePointer;
+        AnalysisDataWeightedHistogramModulePointer;
 //! Smart pointer to manage an AnalysisDataBinAverageModule object.
 typedef std::shared_ptr<AnalysisDataBinAverageModule>
-    AnalysisDataBinAverageModulePointer;
+        AnalysisDataBinAverageModulePointer;
 
 } // namespace gmx
 

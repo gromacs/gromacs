@@ -128,8 +128,10 @@ int getcmap(FILE *in, const char *fn, t_mapping **map)
 
     if (fgets2(line, STRLEN - 1, in) == nullptr)
     {
-        gmx_fatal(FARGS, "Not enough lines in colormap file %s"
-                  "(just wanted to read number of entries)", fn);
+        gmx_fatal(FARGS,
+                  "Not enough lines in colormap file %s"
+                  "(just wanted to read number of entries)",
+                  fn);
     }
     sscanf(line, "%d", &n);
     snew(m, n);
@@ -137,8 +139,10 @@ int getcmap(FILE *in, const char *fn, t_mapping **map)
     {
         if (fgets2(line, STRLEN - 1, in) == nullptr)
         {
-            gmx_fatal(FARGS, "Not enough lines in colormap file %s"
-                      "(should be %d, found only %d)", fn, n + 1, i);
+            gmx_fatal(FARGS,
+                      "Not enough lines in colormap file %s"
+                      "(should be %d, found only %d)",
+                      fn, n + 1, i);
         }
         sscanf(line, "%s%s%lf%lf%lf", code, desc, &r, &g, &b);
         m[i].code.c1 = code[0];
@@ -228,7 +232,7 @@ static char *line2string(char **line)
 
     if (*line != nullptr)
     {
-        while (((*line)[0] != '\"' ) && ( (*line)[0] != '\0' ))
+        while (((*line)[0] != '\"') && ((*line)[0] != '\0'))
         {
             (*line)++;
         }
@@ -240,7 +244,7 @@ static char *line2string(char **line)
         (*line)++;
 
         i = 0;
-        while (( (*line)[i] != '\"' ) && ( (*line)[i] != '\0' ))
+        while (((*line)[i] != '\"') && ((*line)[i] != '\0'))
         {
             i++;
         }
@@ -273,8 +277,8 @@ static void parsestring(char *line, const char *label, char *string)
 static void read_xpm_entry(FILE *in, t_matrix *mm)
 {
     t_mapping *  map;
-    char *       line_buf = nullptr, *line = nullptr, *str, buf[256] = {0};
-    int          i, m, col_len, nch = 0, n_axis_x, n_axis_y, llmax;
+    char *       line_buf = nullptr, *line = nullptr, *str, buf[256] = { 0 };
+    int          i, m, col_len, nch                                  = 0, n_axis_x, n_axis_y, llmax;
     int          llalloc = 0;
     unsigned int r, g, b;
     double       u;
@@ -325,12 +329,12 @@ static void read_xpm_entry(FILE *in, t_matrix *mm)
     while (!bGetOnWithIt && (nullptr != fgetline(&line_buf, llmax, &llalloc, in)))
     {
         line = line_buf;
-        while (( line[0] != '\"' ) && ( line[0] != '\0' ))
+        while ((line[0] != '\"') && (line[0] != '\0'))
         {
             line++;
         }
 
-        if  (line[0] == '\"')
+        if (line[0] == '\"')
         {
             line2string(&line);
             sscanf(line, "%d %d %d %d", &(mm->nx), &(mm->ny), &(mm->nmap), &nch);
@@ -362,7 +366,7 @@ static void read_xpm_entry(FILE *in, t_matrix *mm)
     while ((m < mm->nmap) && (nullptr != fgetline(&line_buf, llmax, &llalloc, in)))
     {
         line = std::strchr(line_buf, '\"');
-        if  (line)
+        if (line)
         {
             line++;
             /* Read xpm color map entry */
@@ -376,7 +380,7 @@ static void read_xpm_entry(FILE *in, t_matrix *mm)
                 map[m].code.c2 = line[1];
             }
             line += nch;
-            str   = std::strchr(line, '#');
+            str = std::strchr(line, '#');
             if (str)
             {
                 str++;
@@ -427,7 +431,7 @@ static void read_xpm_entry(FILE *in, t_matrix *mm)
             m++;
         }
     }
-    if  (m != mm->nmap)
+    if (m != mm->nmap)
     {
         gmx_fatal(FARGS, "Number of read colors map entries (%d) does not match the number in the header (%d)", m, mm->nmap);
     }
@@ -592,7 +596,8 @@ real **matrix2real(t_matrix *in, real **out)
     {
         if ((map[i].desc == nullptr) || (sscanf(map[i].desc, "%lf", &tmp) != 1))
         {
-            fprintf(stderr, "Could not convert matrix to reals,\n"
+            fprintf(stderr,
+                    "Could not convert matrix to reals,\n"
                     "color map entry %d has a non-real description: \"%s\"\n",
                     i, map[i].desc);
             sfree(rmap);
@@ -625,12 +630,12 @@ real **matrix2real(t_matrix *in, real **out)
     return out;
 }
 
-static void write_xpm_header(FILE *out,
+static void write_xpm_header(FILE *      out,
                              const char *title, const char *legend,
                              const char *label_x, const char *label_y,
                              gmx_bool bDiscrete)
 {
-    fprintf(out,  "/* XPM */\n");
+    fprintf(out, "/* XPM */\n");
     try
     {
         gmx::BinaryInformationSettings settings;
@@ -641,11 +646,11 @@ static void write_xpm_header(FILE *out,
                                     settings);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    fprintf(out,  "/* This file can be converted to EPS by the GROMACS program xpm2ps */\n");
-    fprintf(out,  "/* title:   \"%s\" */\n", title);
-    fprintf(out,  "/* legend:  \"%s\" */\n", legend);
-    fprintf(out,  "/* x-label: \"%s\" */\n", label_x);
-    fprintf(out,  "/* y-label: \"%s\" */\n", label_y);
+    fprintf(out, "/* This file can be converted to EPS by the GROMACS program xpm2ps */\n");
+    fprintf(out, "/* title:   \"%s\" */\n", title);
+    fprintf(out, "/* legend:  \"%s\" */\n", legend);
+    fprintf(out, "/* x-label: \"%s\" */\n", label_x);
+    fprintf(out, "/* y-label: \"%s\" */\n", label_y);
     if (bDiscrete)
     {
         fprintf(out, "/* type:    \"Discrete\" */\n");
@@ -781,7 +786,6 @@ static void pr_discrete_cmap(FILE *out, int *nlevel, int i0)
                 i);
     }
 }
-
 
 
 static void write_xpm_map_split(FILE *out, int n_x, int n_y,

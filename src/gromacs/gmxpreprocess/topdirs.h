@@ -48,18 +48,18 @@ typedef struct tagDirStack
 
 int ifunc_index(directive d, int type);
 
-const char *dir2str (directive d);
+const char *dir2str(directive d);
 
-directive str2dir (char *dstr);
+directive str2dir(char *dstr);
 
-void DS_Init (DirStack **DS);
+void DS_Init(DirStack **DS);
 
-void DS_Done (DirStack **DS);
+void DS_Done(DirStack **DS);
 
-void DS_Push (DirStack **DS, directive d);
+void DS_Push(DirStack **DS, directive d);
 
-int  DS_Search (DirStack *DS, directive d);
+int DS_Search(DirStack *DS, directive d);
 
-int  DS_Check_Order (DirStack *DS, directive d);
+int DS_Check_Order(DirStack *DS, directive d);
 
 #endif

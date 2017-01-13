@@ -108,7 +108,7 @@ private:
 
 //! Smart pointer to manage an AnalysisDataLifetimeModule object.
 typedef std::shared_ptr<AnalysisDataLifetimeModule>
-    AnalysisDataLifetimeModulePointer;
+        AnalysisDataLifetimeModulePointer;
 
 } // namespace gmx
 

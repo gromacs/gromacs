@@ -55,7 +55,8 @@ struct t_topology;
 namespace gmx
 {
 
-template <typename T> class ConstArrayRef;
+template <typename T>
+class ConstArrayRef;
 
 class AnalysisDataPlotSettings;
 class ICommandLineOptionsModuleSettings;

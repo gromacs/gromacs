@@ -163,12 +163,13 @@ public:
 #endif
     }
 
-    SimpleInputData() : data_(1, false)
+    SimpleInputData()
+        : data_(1, false)
     {
         data_.setColumnCount(0, 3);
-        data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
-        data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
-        data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
+        data_.addFrameWithValues(1.0, 0.0, 1.0, 2.0);
+        data_.addFrameWithValues(2.0, 1.0, 1.0, 1.0);
+        data_.addFrameWithValues(3.0, 2.0, 0.0, 0.0);
     }
 
 private:
@@ -190,7 +191,8 @@ public:
 #endif
     }
 
-    DataSetsInputData() : data_(2, false)
+    DataSetsInputData()
+        : data_(2, false)
     {
         using gmx::test::AnalysisDataTestInputFrame;
         data_.setColumnCount(0, 3);
@@ -225,7 +227,8 @@ public:
 #endif
     }
 
-    MultipointInputData() : data_(1, true)
+    MultipointInputData()
+        : data_(1, true)
     {
         using gmx::test::AnalysisDataTestInputFrame;
         data_.setColumnCount(0, 3);
@@ -262,7 +265,8 @@ public:
 #endif
     }
 
-    MultipointDataSetsInputData() : data_(2, true)
+    MultipointDataSetsInputData()
+        : data_(2, true)
     {
         using gmx::test::AnalysisDataTestInputFrame;
         data_.setColumnCount(0, 3);
@@ -335,13 +339,14 @@ template <class InputDataType>
 class AnalysisDataCommonTest : public AnalysisDataTest
 {
 public:
-    AnalysisDataCommonTest() : AnalysisDataTest(InputDataType::get())
+    AnalysisDataCommonTest()
+        : AnalysisDataTest(InputDataType::get())
     {
     }
 };
 
 //! Test fixture for tests that are only applicable to simple data.
-typedef AnalysisDataCommonTest<SimpleInputData>     AnalysisDataSimpleTest;
+typedef AnalysisDataCommonTest<SimpleInputData> AnalysisDataSimpleTest;
 //! Test fixture for tests that are only applicable to multipoint data.
 typedef AnalysisDataCommonTest<MultipointInputData> AnalysisDataMultipointTest;
 //! List of input data types for tests applicable to all types of data.
@@ -349,7 +354,7 @@ typedef ::testing::Types<SimpleInputData,
                          DataSetsInputData,
                          MultipointInputData,
                          MultipointDataSetsInputData>
-    AllInputDataTypes;
+        AllInputDataTypes;
 TYPED_TEST_CASE(AnalysisDataCommonTest, AllInputDataTypes);
 
 /*
@@ -461,9 +466,9 @@ TYPED_TEST(AnalysisDataCommonTest, LimitedStorageWorks)
 TEST(DISABLED_AnalysisDataCommonTest, GenericTests)
 {
     ADD_FAILURE()
-    << "Tests for generic AnalysisData functionality require support for "
-    << "Google Test typed tests, which was not available when the tests "
-    << "were compiled.";
+            << "Tests for generic AnalysisData functionality require support for "
+            << "Google Test typed tests, which was not available when the tests "
+            << "were compiled.";
 }
 
 #endif

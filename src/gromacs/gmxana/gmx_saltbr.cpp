@@ -130,7 +130,7 @@ static real calc_dist(t_pbc *pbc, rvec x[], const t_block *cgs, int icg, int jcg
 
 int gmx_saltbr(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] plots the distance between all combination of charged groups",
         "as a function of time. The groups are combined in different ways.",
         "A minimum distance can be given (i.e. a cut-off), such that groups",
@@ -143,14 +143,12 @@ int gmx_saltbr(int argc, char *argv[])
     static gmx_bool bSep     = FALSE;
     static real     truncate = 1000.0;
     t_pargs         pa[]     = {
-        { "-t",   FALSE, etREAL, {&truncate},
-          "Groups that are never closer than this distance are not plotted" },
-        { "-sep", FALSE, etBOOL, {&bSep},
-          "Use separate files for each interaction (may be MANY)" }
+        { "-t", FALSE, etREAL, { &truncate }, "Groups that are never closer than this distance are not plotted" },
+        { "-sep", FALSE, etBOOL, { &bSep }, "Use separate files for each interaction (may be MANY)" }
     };
-    t_filenm        fnm[] = {
-        { efTRX, "-f",  nullptr, ffREAD },
-        { efTPR, nullptr,  nullptr, ffREAD },
+    t_filenm fnm[] = {
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPR, nullptr, nullptr, ffREAD },
     };
 #define NFILE asize(fnm)
 
@@ -165,7 +163,7 @@ int gmx_saltbr(int argc, char *argv[])
         "min-min.xvg",
         "plus-min.xvg"
     };
-    int                nset[3] = {0, 0, 0};
+    int nset[3] = { 0, 0, 0 };
 
     t_topology * top;
     int          ePBC;
@@ -215,7 +213,7 @@ int gmx_saltbr(int argc, char *argv[])
             {
                 srenew(cgdist[i][j], teller + 1);
                 cgdist[i][j][teller]
-                    = calc_dist(&pbc, x, &(top->cgs), cg[i].cg, cg[j].cg);
+                        = calc_dist(&pbc, x, &(top->cgs), cg[i].cg, cg[j].cg);
                 if (cgdist[i][j][teller] < truncate)
                 {
                     nWithin[i][j] = 1;
@@ -282,7 +280,7 @@ int gmx_saltbr(int argc, char *argv[])
 
                     if (nset[nnn] == 0)
                     {
-                        xvgr_legend(out[nnn], 1, (const char**)&buf, oenv);
+                        xvgr_legend(out[nnn], 1, (const char **)&buf, oenv);
                     }
                     else
                     {

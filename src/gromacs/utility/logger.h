@@ -51,7 +51,8 @@ namespace gmx
 
 struct LogEntry
 {
-    LogEntry() : asParagraph(false) {}
+    LogEntry()
+        : asParagraph(false) {}
 
     std::string text;
     bool        asParagraph;
@@ -115,7 +116,8 @@ class LogWriteHelper
 {
 public:
     //! Initializes a helper for writing to the given target.
-    explicit LogWriteHelper(ILogTarget *target) : target_(target) {}
+    explicit LogWriteHelper(ILogTarget *target)
+        : target_(target) {}
 
     // Should be explicit, once that works in CUDA.
     /*! \brief
@@ -155,7 +157,8 @@ class LogLevelHelper
 {
 public:
     //! Initializes a helper for writing to the given target.
-    explicit LogLevelHelper(ILogTarget *target) : target_(target) {}
+    explicit LogLevelHelper(ILogTarget *target)
+        : target_(target) {}
 
     // Both of the below should be explicit, once that works in CUDA.
     //! Returns whether the output for this log level goes anywhere.
@@ -221,8 +224,11 @@ public:
  *
  * \ingroup module_utility
  */
-#define GMX_LOG(logger) \
-    if (::gmx::LogWriteHelper helper = ::gmx::LogWriteHelper(logger)) { } else \
+#define GMX_LOG(logger)                                               \
+    if (::gmx::LogWriteHelper helper = ::gmx::LogWriteHelper(logger)) \
+    {                                                                 \
+    }                                                                 \
+    else                                                              \
         helper = ::gmx::LogEntryWriter()
 
 } // namespace gmx

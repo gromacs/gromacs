@@ -69,20 +69,20 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
                   int axis, gmx_bool bMicel, int micel[], int nmic,
                   const gmx_output_env_t *oenv)
 {
-    rvec *x0,            /* coordinates with pbc */
-          dipole,        /* dipole moment due to one molecules */
-          normal,
-          com;           /* center of mass of micel, with bMicel */
-    rvec *       dip;    /* sum of dipoles, unnormalized */
-    matrix       box;    /* box (3x3) */
+    rvec *x0,       /* coordinates with pbc */
+            dipole, /* dipole moment due to one molecules */
+            normal,
+            com;      /* center of mass of micel, with bMicel */
+    rvec *       dip; /* sum of dipoles, unnormalized */
+    matrix       box; /* box (3x3) */
     t_trxstatus *status;
-    real         t,      /* time from trajectory */
-    *sum,                /* sum of all cosines of dipoles, per slice */
-    *frame;              /* order over one frame */
-    int natoms,          /* nr. atoms in trj */
-        i, j, teller = 0,
-        slice = 0,       /* current slice number */
-    *count;              /* nr. of atoms in one slice */
+    real         t, /* time from trajectory */
+            *sum,   /* sum of all cosines of dipoles, per slice */
+            *frame; /* order over one frame */
+    int natoms,     /* nr. atoms in trj */
+            i, j, teller = 0,
+                  slice = 0, /* current slice number */
+            *count;          /* nr. of atoms in one slice */
     gmx_rmpbc_t gpbc = nullptr;
 
     if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0)
@@ -93,24 +93,30 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
     if (!*nslices)
     {
         *nslices = static_cast<int>(box[axis][axis] * 10); /* default value */
-
-
     }
     switch (axis)
     {
         case 0:
-            normal[0] = 1; normal[1] = 0; normal[2] = 0;
+            normal[0] = 1;
+            normal[1] = 0;
+            normal[2] = 0;
             break;
         case 1:
-            normal[0] = 0; normal[1] = 1; normal[2] = 0;
+            normal[0] = 0;
+            normal[1] = 1;
+            normal[2] = 0;
             break;
         case 2:
-            normal[0] = 0; normal[1] = 0; normal[2] = 1;
+            normal[0] = 0;
+            normal[1] = 0;
+            normal[2] = 1;
             break;
         default:
             gmx_fatal(FARGS, "No valid value for -axis-. Exiting.\n");
             /* make compiler happy */
-            normal[0] = 1; normal[1] = 0; normal[2] = 0;
+            normal[0] = 1;
+            normal[1] = 0;
+            normal[2] = 0;
     }
 
     clear_rvec(dipole);
@@ -146,13 +152,13 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
             {
                 if (x0[index[3 * i]][j] < 0)
                 {
-                    x0[index[3 * i]][j]     += box[j][j];
+                    x0[index[3 * i]][j] += box[j][j];
                     x0[index[3 * i + 1]][j] += box[j][j];
                     x0[index[3 * i + 2]][j] += box[j][j];
                 }
                 if (x0[index[3 * i]][j] > box[j][j])
                 {
-                    x0[index[3 * i]][j]     -= box[j][j];
+                    x0[index[3 * i]][j] -= box[j][j];
                     x0[index[3 * i + 1]][j] -= box[j][j];
                     x0[index[3 * i + 2]][j] -= box[j][j];
                 }
@@ -161,9 +167,9 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
             for (j = 0; j < DIM; j++)
             {
                 dipole[j]
-                    = x0[index[3 * i]][j] * top->atoms.atom[index[3 * i]].q
-                        + x0[index[3 * i + 1]][j] * top->atoms.atom[index[3 * i + 1]].q
-                        + x0[index[3 * i + 2]][j] * top->atoms.atom[index[3 * i + 2]].q;
+                        = x0[index[3 * i]][j] * top->atoms.atom[index[3 * i]].q
+                          + x0[index[3 * i + 1]][j] * top->atoms.atom[index[3 * i + 1]].q
+                          + x0[index[3 * i + 2]][j] * top->atoms.atom[index[3 * i + 2]].q;
             }
 
             /* now we have a dipole vector. Might as well safe it. Then the
@@ -176,10 +182,9 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
                 rvec_sub(com, x0[index[3 * i]], normal);             /* vector from Oxygen to COM */
                 slice = static_cast<int>(norm(normal) / (*slWidth)); /* spherical slice           */
 
-                sum[slice]   += iprod(dipole, normal) / (norm(dipole) * norm(normal));
+                sum[slice] += iprod(dipole, normal) / (norm(dipole) * norm(normal));
                 frame[slice] += iprod(dipole, normal) / (norm(dipole) * norm(normal));
                 count[slice]++;
-
             }
             else
             {
@@ -196,7 +201,7 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
                 {
                     rvec_add(dipole, dip[slice], dip[slice]);
                     /* Add dipole to total. mag[slice] is total dipole in axis direction */
-                    sum[slice]   += iprod(dipole, normal) / norm(dipole);
+                    sum[slice] += iprod(dipole, normal) / norm(dipole);
                     frame[slice] += iprod(dipole, normal) / norm(dipole);
                     /* increase count for that slice */
                     count[slice]++;
@@ -228,16 +233,16 @@ void calc_h2order(const char *fn, int index[], int ngx, rvec **slDipole,
 
     *slOrder  = sum; /* copy a pointer, I hope */
     *slDipole = dip;
-    sfree(x0);       /* free memory used by coordinate arrays */
+    sfree(x0); /* free memory used by coordinate arrays */
 }
 
 void h2order_plot(rvec dipole[], real order[], const char *afile,
                   int nslices, real slWidth, const gmx_output_env_t *oenv)
 {
-    FILE *ord;                    /* xvgr files with order parameters  */
-    int   slice;                  /* loop index     */
-    char  buf[256];               /* for xvgr title */
-    real  factor;                 /* conversion to Debye from electron*nm */
+    FILE *ord;      /* xvgr files with order parameters  */
+    int   slice;    /* loop index     */
+    char  buf[256]; /* for xvgr title */
+    real  factor;   /* conversion to Debye from electron*nm */
 
     /*  factor = 1e-9*1.60217733e-19/3.336e-30 */
     factor = 1.60217733 / 3.336e-2;
@@ -258,7 +263,7 @@ void h2order_plot(rvec dipole[], real order[], const char *afile,
 
 int gmx_h2order(int argc, char *argv[])
 {
-    const char *       desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes the orientation of water molecules with respect to the normal",
         "of the box. The program determines the average cosine of the angle",
         "between the dipole moment of water and an axis of the box. The box is",
@@ -268,17 +273,16 @@ int gmx_h2order(int argc, char *argv[])
         "dipole and the axis from the center of mass to the oxygen is calculated",
         "instead of the angle between the dipole and a box axis."
     };
-    static int         axis    = 2;           /* normal to memb. default z  */
+    static int         axis    = 2; /* normal to memb. default z  */
     static const char *axtitle = "Z";
-    static int         nslices = 0;           /* nr of slices defined       */
+    static int         nslices = 0; /* nr of slices defined       */
     t_pargs            pa[]    = {
-        { "-d",   FALSE, etSTR, {&axtitle},
-          "Take the normal on the membrane in direction X, Y or Z." },
-        { "-sl",  FALSE, etINT, {&nslices},
+        { "-d", FALSE, etSTR, { &axtitle }, "Take the normal on the membrane in direction X, Y or Z." },
+        { "-sl", FALSE, etINT, { &nslices },
           "Calculate order parameter as function of boxlength, dividing the box"
-          " in this number of slices."}
+          " in this number of slices." }
     };
-    const char *       bugs[] = {
+    const char *bugs[] = {
         "The program assigns whole water molecules to a slice, based on the first "
         "atom of three in the index file group. It assumes an order O,H,H. "
         "Name is not important, but the order is. If this demand is not met, "
@@ -286,24 +290,25 @@ int gmx_h2order(int argc, char *argv[])
     };
 
     gmx_output_env_t *oenv;
-    real *            slOrder,                /* av. cosine, per slice      */
-                      slWidth = 0.0;          /* width of a slice           */
+    real *            slOrder, /* av. cosine, per slice      */
+            slWidth = 0.0;     /* width of a slice           */
     rvec *slDipole;
-    char *grpname,                            /* groupnames                 */
-    *micname;
-    int ngx,                                  /* nr. of atomsin sol group   */
-        nmic = 0;                             /* nr. of atoms in micelle    */
-    t_topology *top;                          /* topology           */
+    char *grpname, /* groupnames                 */
+            *micname;
+    int ngx,          /* nr. of atomsin sol group   */
+            nmic = 0; /* nr. of atoms in micelle    */
+    t_topology *top;  /* topology           */
     int         ePBC;
-    int *       index,                        /* indices for solvent group  */
-    *micelle        = nullptr;
-    gmx_bool bMicel =  FALSE;                 /* think we're a micel        */
-    t_filenm fnm[]  = {                       /* files for g_order      */
-        { efTRX, "-f", nullptr,  ffREAD },    /* trajectory file            */
-        { efNDX, nullptr, nullptr,  ffREAD }, /* index file         */
-        { efNDX, "-nm", nullptr, ffOPTRD },   /* index with micelle atoms   */
-        { efTPR, nullptr, nullptr,  ffREAD }, /* topology file              */
-        { efXVG, "-o",  "order", ffWRITE },   /* xvgr output file       */
+    int *       index, /* indices for solvent group  */
+            *micelle = nullptr;
+    gmx_bool bMicel  = FALSE; /* think we're a micel        */
+    t_filenm fnm[]   = {
+        /* files for g_order      */
+        { efTRX, "-f", nullptr, ffREAD },    /* trajectory file            */
+        { efNDX, nullptr, nullptr, ffREAD }, /* index file         */
+        { efNDX, "-nm", nullptr, ffOPTRD },  /* index with micelle atoms   */
+        { efTPR, nullptr, nullptr, ffREAD }, /* topology file              */
+        { efXVG, "-o", "order", ffWRITE },   /* xvgr output file       */
     };
 
 #define NFILE asize(fnm)

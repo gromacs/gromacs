@@ -48,6 +48,6 @@ namespace gmx
 //! Test particle insertion.
 integrator_t do_tpi;
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDLIB_TPI_H

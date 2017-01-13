@@ -118,10 +118,10 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
     core_offset = (rot_width - core_width) / 2.0;
     for (bin = 1; bin <= multiplicity; bin++)
     {
-        low  = ((bin - 1) * rot_width ) + core_offset;
-        hi   = ((bin - 1) * rot_width ) + core_offset + core_width;
+        low = ((bin - 1) * rot_width) + core_offset;
+        hi  = ((bin - 1) * rot_width) + core_offset + core_width;
         low *= DEG2RAD;
-        hi  *= DEG2RAD;
+        hi *= DEG2RAD;
         if ((phi > low) && (phi < hi))
         {
             return bin;
@@ -154,7 +154,6 @@ void ana_dih_trans(const char *fn_trans, const char *fn_histo,
                       nangles, grpname, multiplicity, time, bRb, 0.5, oenv);
     sfree(dlist);
     sfree(multiplicity);
-
 }
 
 void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
@@ -171,8 +170,8 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
     int   cur_bin, new_bin;
     real  ttime;
     real *rot_occ[NROT];
-    int   (*calc_bin)(real, int, real);
-    real  dt;
+    int (*calc_bin)(real, int, real);
+    real dt;
 
     if (1 <= nframes)
     {
@@ -209,7 +208,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
     for (i = 0; (i < nangles); i++)
     {
 
-        /*#define OLDIE*/
+/*#define OLDIE*/
 #ifdef OLDIE
         mind = maxd = prev = dih[i][0];
 #else
@@ -234,11 +233,11 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
             }
 #else
             /* why is all this md rubbish periodic? Remove 360 degree periodicity */
-            if ( (dih[i][j] - prev) > M_PI)
+            if ((dih[i][j] - prev) > M_PI)
             {
                 dih[i][j] -= 2 * M_PI;
             }
-            else if ( (dih[i][j] - prev) < -M_PI)
+            else if ((dih[i][j] - prev) < -M_PI)
             {
                 dih[i][j] += 2 * M_PI;
             }
@@ -247,8 +246,8 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
 
             mind = std::min(mind, dih[i][j]);
             maxd = std::max(maxd, dih[i][j]);
-            if ( (maxd - mind) > 2 * M_PI / 3) /* or 120 degrees, assuming       */
-            {                                  /* multiplicity 3. Not so general.*/
+            if ((maxd - mind) > 2 * M_PI / 3) /* or 120 degrees, assuming       */
+            {                                 /* multiplicity 3. Not so general.*/
                 tr_f[j]++;
                 tr_h[i]++;
                 maxd = mind = dih[i][j]; /* get ready for next transition  */
@@ -277,9 +276,9 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
     {
         for (i = 0; (i < nlist); i++)
         {
-            if (((Dih  < edOmega) )
+            if (((Dih < edOmega))
                 || ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i]))))
-                || ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
+                || ((Dih > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
             {
                 /* grs debug  printf("Not OK? i %d j %d Dih %d \n", i, j, Dih) ; */
                 dlist[i].ntr[Dih] = tr_h[j];
@@ -341,11 +340,10 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
     {
         sfree(rot_occ[k]);
     }
-
 }
 
-void mk_multiplicity_lookup (int *multiplicity, int maxchi,
-                             int nlist, t_dlist dlist[], int nangles)
+void mk_multiplicity_lookup(int *multiplicity, int maxchi,
+                            int nlist, t_dlist dlist[], int nangles)
 {
     /* new by grs - for dihedral j (as in dih[j]) get multiplicity from dlist
      * and store in multiplicity[j]
@@ -361,9 +359,9 @@ void mk_multiplicity_lookup (int *multiplicity, int maxchi,
         {
             std::strncpy(name, dlist[i].name, 3);
             name[3] = '\0';
-            if (((Dih  < edOmega) )
+            if (((Dih < edOmega))
                 || ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i]))))
-                || ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
+                || ((Dih > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
             {
                 /* default - we will correct the rest below */
                 multiplicity[j] = 3;
@@ -377,16 +375,16 @@ void mk_multiplicity_lookup (int *multiplicity, int maxchi,
                 /* dihedrals to aromatic rings, COO, CONH2 or guanidinium are 2fold*/
                 if (Dih > edOmega && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1))
                 {
-                    if ( ((std::strstr(name, "PHE") != nullptr) && (Dih == edChi2))
-                         || ((std::strstr(name, "TYR") != nullptr) && (Dih == edChi2))
-                         || ((std::strstr(name, "PTR") != nullptr) && (Dih == edChi2))
-                         || ((std::strstr(name, "TRP") != nullptr) && (Dih == edChi2))
-                         || ((std::strstr(name, "HIS") != nullptr) && (Dih == edChi2))
-                         || ((std::strstr(name, "GLU") != nullptr) && (Dih == edChi3))
-                         || ((std::strstr(name, "ASP") != nullptr) && (Dih == edChi2))
-                         || ((std::strstr(name, "GLN") != nullptr) && (Dih == edChi3))
-                         || ((std::strstr(name, "ASN") != nullptr) && (Dih == edChi2))
-                         || ((std::strstr(name, "ARG") != nullptr) && (Dih == edChi4))  )
+                    if (((std::strstr(name, "PHE") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "TYR") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "PTR") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "TRP") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "HIS") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "GLU") != nullptr) && (Dih == edChi3))
+                        || ((std::strstr(name, "ASP") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "GLN") != nullptr) && (Dih == edChi3))
+                        || ((std::strstr(name, "ASN") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "ARG") != nullptr) && (Dih == edChi4)))
                     {
                         multiplicity[j] = 2;
                     }
@@ -405,11 +403,10 @@ void mk_multiplicity_lookup (int *multiplicity, int maxchi,
     {
         multiplicity[j] = 3;
     }
-
 }
 
-void mk_chi_lookup (int **lookup, int maxchi,
-                    int nlist, t_dlist dlist[])
+void mk_chi_lookup(int **lookup, int maxchi,
+                   int nlist, t_dlist dlist[])
 {
 
     /* by grs. should rewrite everything to use this. (but haven't,
@@ -426,9 +423,9 @@ void mk_chi_lookup (int **lookup, int maxchi,
         for (i = 0; (i < nlist); i++)
         {
             Chi = Dih - NONCHI;
-            if (((Dih  < edOmega) )
+            if (((Dih < edOmega))
                 || ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i]))))
-                || ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
+                || ((Dih > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
             {
                 /* grs debug  printf("Not OK? i %d j %d Dih %d \n", i, j, Dih) ; */
                 if (Dih > edOmega)
@@ -443,15 +440,14 @@ void mk_chi_lookup (int **lookup, int maxchi,
             }
         }
     }
-
 }
 
 
-void get_chi_product_traj (real **dih, int nframes, int nlist,
-                           int maxchi, t_dlist dlist[], real time[],
-                           int **lookup, int *multiplicity, gmx_bool bRb, gmx_bool bNormalize,
-                           real core_frac, gmx_bool bAll, const char *fnall,
-                           const gmx_output_env_t *oenv)
+void get_chi_product_traj(real **dih, int nframes, int nlist,
+                          int maxchi, t_dlist dlist[], real time[],
+                          int **lookup, int *multiplicity, gmx_bool bRb, gmx_bool bNormalize,
+                          real core_frac, gmx_bool bAll, const char *fnall,
+                          const gmx_output_env_t *oenv)
 {
 
     gmx_bool bRotZero, bHaveChi = FALSE;
@@ -618,7 +614,6 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
     sfree(chi_prtrj);
     xvgrclose(fpall);
     fprintf(stderr, "\n");
-
 }
 
 void calc_distribution_props(int nh, int histo[], real start,
@@ -651,25 +646,25 @@ void calc_distribution_props(int nh, int histo[], real start,
     tdc = 0, tds = 0;
     for (j = 0; (j < nh); j++)
     {
-        d    = invth * histo[j];
-        ang  = j * fac - start;
-        c1   = std::cos(ang);
-        dc   = d * c1;
-        ds   = d * std::sin(ang);
+        d   = invth * histo[j];
+        ang = j * fac - start;
+        c1  = std::cos(ang);
+        dc  = d * c1;
+        ds  = d * std::sin(ang);
         tdc += dc;
         tds += ds;
         for (i = 0; (i < nkkk); i++)
         {
-            c1            = std::cos(ang + kkk[i].offset);
-            c2            = c1 * c1;
-            Jc            = (kkk[i].A * c2 + kkk[i].B * c1 + kkk[i].C);
-            kkk[i].Jc    += histo[j] * Jc;
+            c1 = std::cos(ang + kkk[i].offset);
+            c2 = c1 * c1;
+            Jc = (kkk[i].A * c2 + kkk[i].B * c1 + kkk[i].C);
+            kkk[i].Jc += histo[j] * Jc;
             kkk[i].Jcsig += histo[j] * gmx::square(Jc);
         }
     }
     for (i = 0; (i < nkkk); i++)
     {
-        kkk[i].Jc   /= th;
+        kkk[i].Jc /= th;
         kkk[i].Jcsig = std::sqrt(kkk[i].Jcsig / th - gmx::square(kkk[i].Jc));
     }
     *S2 = tdc * tdc + tds * tds;
@@ -812,9 +807,9 @@ void read_ang_dih(const char *trj_fn,
                   int maxangstat, int angstat[],
                   int *nframes, real **time,
                   int isize, int index[],
-                  real **trans_frac,
-                  real **aver_angle,
-                  real *dih[],
+                  real **                 trans_frac,
+                  real **                 aver_angle,
+                  real *                  dih[],
                   const gmx_output_env_t *oenv)
 {
     struct t_pbc *pbc;
@@ -910,7 +905,7 @@ void read_ang_dih(const char *trj_fn,
             {
                 for (i = 0; (i < nangles); i++)
                 {
-                    real dd = angles[cur][i];
+                    real dd        = angles[cur][i];
                     angles[cur][i] = std::atan2(std::sin(dd), std::cos(dd));
                 }
             }
@@ -966,7 +961,7 @@ void read_ang_dih(const char *trj_fn,
             {
                 angind = 0;
             }
-            if ( (angind < 0) || (angind >= maxangstat) )
+            if ((angind < 0) || (angind >= maxangstat))
             {
                 /* this will never happen */
                 gmx_fatal(FARGS, "angle (%f) index out of range (0..%d) : %d\n",

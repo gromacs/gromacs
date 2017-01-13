@@ -145,7 +145,7 @@ class SelectionParserSymbolTable::Impl
 public:
     //! Smart pointer type for managing a SelectionParserSymbol.
     typedef std::unique_ptr<SelectionParserSymbol>
-        SymbolPointer;
+            SymbolPointer;
     //! Container type for the list of symbols.
     typedef std::map<std::string, SymbolPointer> SymbolMap;
 
@@ -187,8 +187,8 @@ void SelectionParserSymbolTable::Impl::addReservedSymbols()
     for (size_t i = 0; i < asize(sym_reserved); ++i)
     {
         SymbolPointer sym(new SelectionParserSymbol(
-                                  new SelectionParserSymbol::Impl(
-                                          SelectionParserSymbol::ReservedSymbol, sym_reserved[i])));
+                new SelectionParserSymbol::Impl(
+                        SelectionParserSymbol::ReservedSymbol, sym_reserved[i])));
         addSymbol(std::move(sym));
     }
 }
@@ -196,12 +196,12 @@ void SelectionParserSymbolTable::Impl::addReservedSymbols()
 void SelectionParserSymbolTable::Impl::addPositionSymbols()
 {
     const char *const *postypes
-        = gmx::PositionCalculationCollection::typeEnumValues;
+            = gmx::PositionCalculationCollection::typeEnumValues;
     for (int i = 0; postypes[i] != nullptr; ++i)
     {
         SymbolPointer sym(new SelectionParserSymbol(
-                                  new SelectionParserSymbol::Impl(
-                                          SelectionParserSymbol::PositionSymbol, postypes[i])));
+                new SelectionParserSymbol::Impl(
+                        SelectionParserSymbol::PositionSymbol, postypes[i])));
         addSymbol(std::move(sym));
     }
 }
@@ -220,7 +220,7 @@ class SelectionParserSymbolIterator::Impl
 public:
     //! Shorthand for the underlying iterator type.
     typedef SelectionParserSymbolTable::Impl::SymbolMap::const_iterator
-        IteratorType;
+            IteratorType;
 
     /*! \brief
      * Constructs an end iterator.
@@ -352,19 +352,19 @@ void SelectionParserSymbolTable::addVariable(const char *                       
         if (other->second->type() == SelectionParserSymbol::VariableSymbol)
         {
             GMX_THROW(InvalidInputError(
-                              formatString("Reassigning variable '%s' is not supported",
-                                           name)));
+                    formatString("Reassigning variable '%s' is not supported",
+                                 name)));
         }
         else
         {
             GMX_THROW(InvalidInputError(
-                              formatString("Variable name '%s' conflicts with a reserved keyword",
-                                           name)));
+                    formatString("Variable name '%s' conflicts with a reserved keyword",
+                                 name)));
         }
     }
     Impl::SymbolPointer sym(new SelectionParserSymbol(
-                                    new SelectionParserSymbol::Impl(
-                                            SelectionParserSymbol::VariableSymbol, name)));
+            new SelectionParserSymbol::Impl(
+                    SelectionParserSymbol::VariableSymbol, name)));
     sym->impl_->var_ = sel;
     impl_->addSymbol(std::move(sym));
 }
@@ -375,12 +375,12 @@ void SelectionParserSymbolTable::addMethod(const char *         name,
     if (impl_->symbols_.find(name) != impl_->symbols_.end())
     {
         GMX_THROW(APIError(
-                          formatString("Method name '%s' conflicts with another symbol",
-                                       name)));
+                formatString("Method name '%s' conflicts with another symbol",
+                             name)));
     }
     Impl::SymbolPointer sym(new SelectionParserSymbol(
-                                    new SelectionParserSymbol::Impl(
-                                            SelectionParserSymbol::MethodSymbol, name)));
+            new SelectionParserSymbol::Impl(
+                    SelectionParserSymbol::MethodSymbol, name)));
     sym->impl_->meth_ = method;
     impl_->addSymbol(std::move(sym));
 }

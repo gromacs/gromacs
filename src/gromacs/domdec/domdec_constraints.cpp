@@ -71,21 +71,21 @@
 struct gmx_domdec_constraints_t
 {
     //! @cond Doxygen_Suppress
-    int *molb_con_offset;         /**< Offset in the constraint array for each molblock */
-    int *molb_ncon_mol;           /**< The number of constraints per molecule for each molblock */
+    int *molb_con_offset; /**< Offset in the constraint array for each molblock */
+    int *molb_ncon_mol;   /**< The number of constraints per molecule for each molblock */
 
-    int ncon;                     /**< The fully local and conneced constraints */
+    int ncon; /**< The fully local and conneced constraints */
     /* The global constraint number, only required for clearing gc_req */
-    int *con_gl;                  /**< Global constraint indices for local constraints */
-    int *con_nlocat;              /**< Number of local atoms (2/1/0) for each constraint */
-    int  con_nalloc;              /**< Allocation size for \p con_gl and \p con_nlocat */
+    int *con_gl;     /**< Global constraint indices for local constraints */
+    int *con_nlocat; /**< Number of local atoms (2/1/0) for each constraint */
+    int  con_nalloc; /**< Allocation size for \p con_gl and \p con_nlocat */
 
-    char *      gc_req;           /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
-    gmx_hash_t *ga2la;            /**< Global to local communicated constraint atom only index */
+    char *      gc_req; /**< Boolean that tells if a global constraint index has been requested; note: size global #constraints */
+    gmx_hash_t *ga2la;  /**< Global to local communicated constraint atom only index */
 
     /* Multi-threading stuff */
-    int      nthread;           /**< Number of threads used for DD constraint setup */
-    t_ilist *ils;               /**< Constraint ilist working arrays, size \p nthread */
+    int      nthread; /**< Number of threads used for DD constraint setup */
+    t_ilist *ils;     /**< Constraint ilist working arrays, size \p nthread */
     //! @endcond
 };
 
@@ -139,12 +139,12 @@ void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
 /*! \brief Walks over the constraints out from the local atoms into the non-local atoms and adds them to a list */
 static void walk_out(int con, int con_offset, int a, int offset, int nrec,
                      int ncon1, const t_iatom *ia1, const t_iatom *ia2,
-                     const t_blocka *at2con,
+                     const t_blocka *   at2con,
                      const gmx_ga2la_t *ga2la, gmx_bool bHomeConnect,
                      gmx_domdec_constraints_t *dc,
                      gmx_domdec_specat_comm_t *dcc,
-                     t_ilist *il_local,
-                     ind_req_t *ireq)
+                     t_ilist *                 il_local,
+                     ind_req_t *               ireq)
 {
     int            a1_gl, a2_gl, a_loc, i, coni, b;
     const t_iatom *iap;
@@ -235,12 +235,12 @@ static void walk_out(int con, int con_offset, int a, int offset, int nrec,
 }
 
 /*! \brief Looks up SETTLE constraints for a range of charge-groups */
-static void atoms_to_settles(gmx_domdec_t *dd,
+static void atoms_to_settles(gmx_domdec_t *    dd,
                              const gmx_mtop_t *mtop,
-                             const int *cginfo,
-                             const int **at2settle_mt,
+                             const int *       cginfo,
+                             const int **      at2settle_mt,
                              int cg_start, int cg_end,
-                             t_ilist *ils_local,
+                             t_ilist *  ils_local,
                              ind_req_t *ireq)
 {
     gmx_ga2la_t *ga2la = dd->ga2la;
@@ -272,7 +272,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
                     for (int sa = 0; sa < nral; sa++)
                     {
                         int a_glsa = offset + ia1[settle * (1 + nral) + 1 + sa];
-                        a_gls[sa] = a_glsa;
+                        a_gls[sa]  = a_glsa;
                         if (ga2la_get_home(ga2la, a_glsa, &a_locs[sa]))
                         {
                             if (nlocal == 0 && a_gl == a_glsa)
@@ -322,11 +322,11 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 }
 
 /*! \brief Looks up constraint for the local atoms */
-static void atoms_to_constraints(gmx_domdec_t *dd,
+static void atoms_to_constraints(gmx_domdec_t *    dd,
                                  const gmx_mtop_t *mtop,
-                                 const int *cginfo,
+                                 const int *       cginfo,
                                  const t_blocka *at2con_mt, int nrec,
-                                 t_ilist *ilc_local,
+                                 t_ilist *  ilc_local,
                                  ind_req_t *ireq)
 {
     const t_blocka *at2con;
@@ -363,7 +363,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                  * that we use each constraint only once.
                  */
                 con_offset
-                    = dc->molb_con_offset[mb] + molnr * dc->molb_ncon_mol[mb];
+                        = dc->molb_con_offset[mb] + molnr * dc->molb_ncon_mol[mb];
 
                 /* The global atom number offset for this molecule */
                 offset = a_gl - a_mol;
@@ -400,8 +400,8 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                             }
                             b_lo                               = a_loc;
                             ilc_local->iatoms[ilc_local->nr++] = iap[0];
-                            ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? a    : b_lo);
-                            ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? b_lo : a   );
+                            ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? a : b_lo);
+                            ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? b_lo : a);
                             dc->ncon++;
                             nhome++;
                         }
@@ -434,7 +434,7 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
 
 int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
                               const struct gmx_mtop_t *mtop,
-                              const int *cginfo,
+                              const int *              cginfo,
                               gmx_constr_t constr, int nrec,
                               t_ilist *il_local)
 {
@@ -525,7 +525,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
                     /* Distribute the settle check+assignments over
                      * dc->nthread or dc->nthread-1 threads.
                      */
-                    cg0 = (dd->ncg_home * (thread - t0_set  )) / (dc->nthread - t0_set);
+                    cg0 = (dd->ncg_home * (thread - t0_set)) / (dc->nthread - t0_set);
                     cg1 = (dd->ncg_home * (thread - t0_set + 1)) / (dc->nthread - t0_set);
 
                     if (thread == t0_set)
@@ -598,10 +598,10 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
         int nral1;
 
         at_end
-            = setup_specat_communication(dd, ireq, dd->constraint_comm,
-                                         dd->constraints->ga2la,
-                                         at_start, 2,
-                                         "constraint", " or lincs-order");
+                = setup_specat_communication(dd, ireq, dd->constraint_comm,
+                                             dd->constraints->ga2la,
+                                             at_start, 2,
+                                             "constraint", " or lincs-order");
 
         /* Fill in the missing indices */
         ga2la_specat = dd->constraints->ga2la;
@@ -665,8 +665,8 @@ void init_domdec_constraints(gmx_domdec_t *    dd,
         molb                    = &mtop->molblock[mb];
         dc->molb_con_offset[mb] = ncon;
         dc->molb_ncon_mol[mb]
-            = mtop->moltype[molb->type].ilist[F_CONSTR].nr / 3
-                + mtop->moltype[molb->type].ilist[F_CONSTRNC].nr / 3;
+                = mtop->moltype[molb->type].ilist[F_CONSTR].nr / 3
+                  + mtop->moltype[molb->type].ilist[F_CONSTRNC].nr / 3;
         ncon += molb->nmol * dc->molb_ncon_mol[mb];
     }
 

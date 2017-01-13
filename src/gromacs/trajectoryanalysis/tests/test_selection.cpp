@@ -105,15 +105,12 @@ void SelectionTester::initOptions(IOptionsContainer *         options,
 
     settings->setHelpText(desc);
 
-    options->addOption(SelectionOption("select").storeVector(&selections_)
-                           .required().multiValue()
-                           .description("Selections to test"));
-    options->addOption(IntegerOption("pmax").store(&nmaxind_)
-                           .description("Maximum number of indices to print in lists (-1 = print all)"));
+    options->addOption(SelectionOption("select").storeVector(&selections_).required().multiValue().description("Selections to test"));
+    options->addOption(IntegerOption("pmax").store(&nmaxind_).description("Maximum number of indices to print in lists (-1 = print all)"));
 }
 
 void SelectionTester::initAnalysis(const TrajectoryAnalysisSettings & /*settings*/,
-                                   const TopologyInformation        & /*top*/)
+                                   const TopologyInformation & /*top*/)
 {
     printSelections();
 }
@@ -173,7 +170,6 @@ void SelectionTester::finishAnalysis(int /*nframes*/)
 void SelectionTester::writeOutput()
 {
 }
-
 }
 
 /*! \internal \brief

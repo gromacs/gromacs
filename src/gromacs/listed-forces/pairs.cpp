@@ -69,19 +69,20 @@
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 /*! \brief Issue a warning if a listed interaction is beyond a table limit */
-static void warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, real rlimit)
+static void warning_rlimit(const rvec *x, int ai, int aj, int *global_atom_index, real r, real rlimit)
 {
-    gmx_warning("Listed nonbonded interaction between particles %d and %d\n"
-                "at distance %.3f which is larger than the table limit %.3f nm.\n\n"
-                "This is likely either a 1,4 interaction, or a listed interaction inside\n"
-                "a smaller molecule you are decoupling during a free energy calculation.\n"
-                "Since interactions at distances beyond the table cannot be computed,\n"
-                "they are skipped until they are inside the table limit again. You will\n"
-                "only see this message once, even if it occurs for several interactions.\n\n"
-                "IMPORTANT: This should not happen in a stable simulation, so there is\n"
-                "probably something wrong with your system. Only change the table-extension\n"
-                "distance in the mdp file if you are really sure that is the reason.\n",
-                glatnr(global_atom_index, ai), glatnr(global_atom_index, aj), r, rlimit);
+    gmx_warning(
+            "Listed nonbonded interaction between particles %d and %d\n"
+            "at distance %.3f which is larger than the table limit %.3f nm.\n\n"
+            "This is likely either a 1,4 interaction, or a listed interaction inside\n"
+            "a smaller molecule you are decoupling during a free energy calculation.\n"
+            "Since interactions at distances beyond the table cannot be computed,\n"
+            "they are skipped until they are inside the table limit again. You will\n"
+            "only see this message once, even if it occurs for several interactions.\n\n"
+            "IMPORTANT: This should not happen in a stable simulation, so there is\n"
+            "probably something wrong with your system. Only change the table-extension\n"
+            "distance in the mdp file if you are really sure that is the reason.\n",
+            glatnr(global_atom_index, ai), glatnr(global_atom_index, aj), r, rlimit);
 
     if (debug)
     {
@@ -173,20 +174,20 @@ real free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
 
     if (sc_r_power == six)
     {
-        rpm2 = r2 * r2;             /* r4 */
-        rp   = rpm2 * r2;           /* r6 */
+        rpm2 = r2 * r2;   /* r4 */
+        rp   = rpm2 * r2; /* r6 */
     }
     else if (sc_r_power == fourtyeight)
     {
-        rp   = r2 * r2 * r2;         /* r6 */
-        rp   = rp * rp;              /* r12 */
-        rp   = rp * rp;              /* r24 */
-        rp   = rp * rp;              /* r48 */
-        rpm2 = rp / r2;              /* r46 */
+        rp   = r2 * r2 * r2; /* r6 */
+        rp   = rp * rp;      /* r12 */
+        rp   = rp * rp;      /* r24 */
+        rp   = rp * rp;      /* r48 */
+        rpm2 = rp / r2;      /* r46 */
     }
     else
     {
-        rp   = std::pow(r2, half * sc_r_power);            /* not currently supported as input, but can handle it */
+        rp   = std::pow(r2, half * sc_r_power); /* not currently supported as input, but can handle it */
         rpm2 = rp / r2;
     }
 
@@ -202,7 +203,7 @@ real free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
             sigma2[i] = std::cbrt(half * c12[i] / c6[i]);
             /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
                what data to store externally.  Can't be fixed without larger scale changes, so not 5.0 */
-            if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
+            if (sigma6[i] < sigma6_min) /* for disappearing coul and vdw with soft core at the same time */
             {
                 sigma6[i] = sigma6_min;
                 sigma2[i] = sigma2_min;
@@ -219,12 +220,12 @@ real free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
         }
         else if (sc_r_power == fourtyeight)
         {
-            sigma_pow[i] = sigma6[i] * sigma6[i];        /* sigma^12 */
-            sigma_pow[i] = sigma_pow[i] * sigma_pow[i];  /* sigma^24 */
-            sigma_pow[i] = sigma_pow[i] * sigma_pow[i];  /* sigma^48 */
+            sigma_pow[i] = sigma6[i] * sigma6[i];       /* sigma^12 */
+            sigma_pow[i] = sigma_pow[i] * sigma_pow[i]; /* sigma^24 */
+            sigma_pow[i] = sigma_pow[i] * sigma_pow[i]; /* sigma^48 */
         }
         else
-        {       /* not really supported as input, but in here for testing the general case*/
+        { /* not really supported as input, but in here for testing the general case*/
             sigma_pow[i] = std::pow(sigma2[i], sc_r_power / 2);
         }
     }
@@ -250,7 +251,7 @@ real free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
         vvdw[i]       = 0;
 
         /* Only spend time on A or B state if it is non-zero */
-        if ( (qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0) )
+        if ((qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0))
         {
             /* Coulomb */
             rpinv  = one / (alpha_coul_eff * lfac_coul[i] * sigma_pow[i] + rp);
@@ -294,14 +295,14 @@ real free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
             fscal_vdw[i] = -c6[i] * FF;
 
             /* Repulsion */
-            Y             = vftab[ntab + 8];
-            F             = vftab[ntab + 9];
-            Geps          = eps * vftab[ntab + 10];
-            Heps2         = eps2 * vftab[ntab + 11];
-            Fp            = F + Geps + Heps2;
-            VV            = Y + eps * Fp;
-            FF            = Fp + Geps + two * Heps2;
-            vvdw[i]      += c12[i] * VV;
+            Y     = vftab[ntab + 8];
+            F     = vftab[ntab + 9];
+            Geps  = eps * vftab[ntab + 10];
+            Heps2 = eps2 * vftab[ntab + 11];
+            Fp    = F + Geps + Heps2;
+            VV    = Y + eps * Fp;
+            FF    = Fp + Geps + two * Heps2;
+            vvdw[i] += c12[i] * VV;
             fscal_vdw[i] -= c12[i] * FF;
             fscal_vdw[i] *= r_vdw * rpinv * tabscale;
         }
@@ -316,16 +317,16 @@ real free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
     for (i = 0; i < 2; i++)
     {
         velecsum += LFC[i] * velec[i];
-        vvdwsum  += LFV[i] * vvdw[i];
+        vvdwsum += LFV[i] * vvdw[i];
 
         fscal += (LFC[i] * fscal_elec[i] + LFV[i] * fscal_vdw[i]) * rpm2;
 
         dvdl_coul += velec[i] * DLF[i] + LFC[i] * alpha_coul_eff * dlfac_coul[i] * fscal_elec[i] * sigma_pow[i];
-        dvdl_vdw  += vvdw[i] * DLF[i] + LFV[i] * alpha_vdw_eff * dlfac_vdw[i] * fscal_vdw[i] * sigma_pow[i];
+        dvdl_vdw += vvdw[i] * DLF[i] + LFV[i] * alpha_vdw_eff * dlfac_vdw[i] * fscal_vdw[i] * sigma_pow[i];
     }
 
     dvdl[efptCOUL] += dvdl_coul;
-    dvdl[efptVDW]  += dvdl_vdw;
+    dvdl[efptVDW] += dvdl_vdw;
 
     *velectot = velecsum;
     *vvdwtot  = vvdwsum;
@@ -339,7 +340,7 @@ static real do_pairs_general(int ftype, int nbonds,
                              const rvec x[], rvec4 f[], rvec fshift[],
                              const struct t_pbc *pbc, const struct t_graph *g,
                              real *lambda, real *dvdl,
-                             const t_mdatoms *md,
+                             const t_mdatoms * md,
                              const t_forcerec *fr, gmx_grppairener_t *grppener,
                              int *global_atom_index)
 {
@@ -413,7 +414,7 @@ static real do_pairs_general(int ftype, int nbonds,
                "Pair interaction kernels need a table with Coulomb, repulsion and dispersion entries");
 
     bFreeEnergy = FALSE;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         itype = iatoms[i++];
         ai    = iatoms[i++];
@@ -425,10 +426,10 @@ static real do_pairs_general(int ftype, int nbonds,
         {
             case F_LJ14:
                 bFreeEnergy
-                    = (fr->efep != efepNO
-                       && ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj]))
-                           || iparams[itype].lj14.c6A != iparams[itype].lj14.c6B
-                           || iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
+                        = (fr->efep != efepNO
+                           && ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj]))
+                               || iparams[itype].lj14.c6A != iparams[itype].lj14.c6B
+                               || iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
                 qq  = md->chargeA[ai] * md->chargeA[aj] * fr->epsfac * fr->fudgeQQ;
                 c6  = iparams[itype].lj14.c6A;
                 c12 = iparams[itype].lj14.c12A;
@@ -454,7 +455,7 @@ static real do_pairs_general(int ftype, int nbonds,
          * same factor, so when we use the original c6/c12 parameters from iparams[] they must
          * be scaled up.
          */
-        c6  *= 6.0;
+        c6 *= 6.0;
         c12 *= 12.0;
 
         /* Do we need to apply full periodic boundary conditions? */
@@ -502,7 +503,7 @@ static real do_pairs_general(int ftype, int nbonds,
         }
 
         energygrp_elec[gid] += velec;
-        energygrp_vdw[gid]  += vvdw;
+        energygrp_vdw[gid] += vvdw;
         svmul(fscal, dx, dx);
 
         /* Add the forces */
@@ -530,12 +531,12 @@ static real do_pairs_general(int ftype, int nbonds,
  */
 template <typename T, int pack_size,
           typename pbc_type>
-static void do_pairs_simple(int nbonds,
+static void do_pairs_simple(int           nbonds,
                             const t_iatom iatoms[], const t_iparams iparams[],
                             const rvec x[], rvec4 f[],
-                            const pbc_type pbc,
+                            const pbc_type   pbc,
                             const t_mdatoms *md,
-                            const real scale_factor)
+                            const real       scale_factor)
 {
     const int nfa1 = 1 + 2;
 
@@ -545,9 +546,12 @@ static void do_pairs_simple(int nbonds,
 
     const int align = 16;
     GMX_ASSERT(pack_size <= align, "align should be increased");
-    GMX_ALIGNED(int,  align)  ai[pack_size];
-    GMX_ALIGNED(int,  align)  aj[pack_size];
-    GMX_ALIGNED(real, align)  coeff[3 * pack_size];
+    GMX_ALIGNED(int, align)
+    ai[pack_size];
+    GMX_ALIGNED(int, align)
+    aj[pack_size];
+    GMX_ALIGNED(real, align)
+    coeff[3 * pack_size];
 
     /* nbonds is #pairs*nfa1, here we step pack_size pairs */
     for (int i = 0; i < nbonds; i += pack_size * nfa1)
@@ -559,8 +563,8 @@ static void do_pairs_simple(int nbonds,
         for (int s = 0; s < pack_size; s++)
         {
             int itype = iatoms[iu];
-            ai[s] = iatoms[iu + 1];
-            aj[s] = iatoms[iu + 2];
+            ai[s]     = iatoms[iu + 1];
+            aj[s]     = iatoms[iu + 2];
 
             if (i + s * nfa1 < nbonds)
             {
@@ -632,7 +636,7 @@ void do_pairs(int ftype, int nbonds,
               const rvec x[], rvec4 f[], rvec fshift[],
               const struct t_pbc *pbc, const struct t_graph *g,
               real *lambda, real *dvdl,
-              const t_mdatoms *md,
+              const t_mdatoms * md,
               const t_forcerec *fr,
               gmx_bool bCalcEnergyAndVirial, gmx_grppairener_t *grppener,
               int *global_atom_index)
@@ -641,7 +645,7 @@ void do_pairs(int ftype, int nbonds,
         && fr->vdwtype != evdwUSER && !EEL_USER(fr->eeltype)
         && !bCalcEnergyAndVirial && fr->efep == efepNO)
     {
-        /* We use a fast code-path for plain LJ 1-4 without FEP.
+/* We use a fast code-path for plain LJ 1-4 without FEP.
          *
          * TODO: Add support for energies (straightforward) and virial
          * in the SIMD template. For the virial it's inconvenient to store
@@ -650,7 +654,8 @@ void do_pairs(int ftype, int nbonds,
          * at once for the angles and dihedrals as well.
          */
 #if GMX_SIMD
-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) pbc_simd[9 * GMX_SIMD_REAL_WIDTH];
+        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+        pbc_simd[9 * GMX_SIMD_REAL_WIDTH];
         set_pbc_simd(pbc, pbc_simd);
 
         do_pairs_simple<SimdReal, GMX_SIMD_REAL_WIDTH,

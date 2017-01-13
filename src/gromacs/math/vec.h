@@ -411,16 +411,16 @@ static inline real cos_angle(const rvec a, const rvec b)
     ip = ipa = ipb = 0.0;
     for (m = 0; (m < DIM); m++) /* 18 */
     {
-        aa   = a[m];
-        bb   = b[m];
-        ip  += aa * bb;
+        aa = a[m];
+        bb = b[m];
+        ip += aa * bb;
         ipa += aa * aa;
         ipb += bb * bb;
     }
     ipab = ipa * ipb;
     if (ipab > 0)
     {
-        cosval = ip * gmx::invsqrt(ipab);  /*  7 */
+        cosval = ip * gmx::invsqrt(ipab); /*  7 */
     }
     else
     {
@@ -489,11 +489,11 @@ static inline void mmul_ur0(const matrix a, const matrix b, matrix dest)
     dest[XX][YY] = 0.0;
     dest[XX][ZZ] = 0.0;
     dest[YY][XX] = a[YY][XX] * b[XX][XX] + a[YY][YY] * b[YY][XX];
-    dest[YY][YY] =                     a[YY][YY] * b[YY][YY];
+    dest[YY][YY] = a[YY][YY] * b[YY][YY];
     dest[YY][ZZ] = 0.0;
     dest[ZZ][XX] = a[ZZ][XX] * b[XX][XX] + a[ZZ][YY] * b[YY][XX] + a[ZZ][ZZ] * b[ZZ][XX];
-    dest[ZZ][YY] =                     a[ZZ][YY] * b[YY][YY] + a[ZZ][ZZ] * b[ZZ][YY];
-    dest[ZZ][ZZ] =                                         a[ZZ][ZZ] * b[ZZ][ZZ];
+    dest[ZZ][YY] = a[ZZ][YY] * b[YY][YY] + a[ZZ][ZZ] * b[ZZ][YY];
+    dest[ZZ][ZZ] = a[ZZ][ZZ] * b[ZZ][ZZ];
 }
 
 static inline void mmul(const matrix a, const matrix b, matrix dest)
@@ -552,9 +552,9 @@ static inline void mtmul(const matrix a, const matrix b, matrix dest)
 
 static inline real det(const matrix a)
 {
-    return ( a[XX][XX] * (a[YY][YY] * a[ZZ][ZZ] - a[ZZ][YY] * a[YY][ZZ])
-             - a[YY][XX] * (a[XX][YY] * a[ZZ][ZZ] - a[ZZ][YY] * a[XX][ZZ])
-             + a[ZZ][XX] * (a[XX][YY] * a[YY][ZZ] - a[YY][YY] * a[XX][ZZ]));
+    return (a[XX][XX] * (a[YY][YY] * a[ZZ][ZZ] - a[ZZ][YY] * a[YY][ZZ])
+            - a[YY][XX] * (a[XX][YY] * a[ZZ][ZZ] - a[ZZ][YY] * a[XX][ZZ])
+            + a[ZZ][XX] * (a[XX][YY] * a[YY][ZZ] - a[YY][YY] * a[XX][ZZ]));
 }
 
 
@@ -615,8 +615,8 @@ static inline void mvmul_ur0(const matrix a, const rvec src, rvec dest)
 static inline void tmvmul_ur0(const matrix a, const rvec src, rvec dest)
 {
     dest[XX] = a[XX][XX] * src[XX] + a[YY][XX] * src[YY] + a[ZZ][XX] * src[ZZ];
-    dest[YY] =                   a[YY][YY] * src[YY] + a[ZZ][YY] * src[ZZ];
-    dest[ZZ] =                                     a[ZZ][ZZ] * src[ZZ];
+    dest[YY] = a[YY][YY] * src[YY] + a[ZZ][YY] * src[ZZ];
+    dest[ZZ] = a[ZZ][ZZ] * src[ZZ];
 }
 
 static inline void unitv(const rvec src, rvec dest)

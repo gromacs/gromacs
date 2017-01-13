@@ -86,8 +86,8 @@ public:
 
     virtual void dataStarted(AbstractAnalysisData *data);
     virtual bool parallelDataStarted(
-        AbstractAnalysisData *             data,
-        const AnalysisDataParallelOptions &options);
+            AbstractAnalysisData *             data,
+            const AnalysisDataParallelOptions &options);
     virtual void frameStarted(const AnalysisDataFrameHeader &frame);
     virtual void pointsAdded(const AnalysisDataPointSetRef &points);
     virtual void frameFinished(const AnalysisDataFrameHeader &header);

@@ -87,7 +87,7 @@
 
 #ifdef GMX_FAHCORE
 #define FULLINDIRECT 1
-#define USE_FAH_XDR  1
+#define USE_FAH_XDR 1
 #include "swindirect.h"
 #endif
 //! \endcond

@@ -78,12 +78,12 @@ const char *enx_block_id_name[] = {
 /* Stuff for reading pre 4.1 energy files */
 typedef struct
 {
-    gmx_bool  bOldFileOpen;      /* Is this an open old file? */
-    gmx_bool  bReadFirstStep;    /* Did we read the first step? */
-    int       first_step;        /* First step in the energy file */
-    int       step_prev;         /* Previous step */
-    int       nsum_prev;         /* Previous step sum length */
-    t_energy *ener_prev;         /* Previous energy sums */
+    gmx_bool  bOldFileOpen;   /* Is this an open old file? */
+    gmx_bool  bReadFirstStep; /* Did we read the first step? */
+    int       first_step;     /* First step in the energy file */
+    int       step_prev;      /* Previous step */
+    int       nsum_prev;      /* Previous step sum length */
+    t_energy *ener_prev;      /* Previous energy sums */
 } ener_old_t;
 
 struct ener_file
@@ -609,7 +609,7 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
 
     /* we now know what these should be, or we've already bailed out because
        of wrong precision */
-    if (*file_version == 1 && (fr->t < 0 || fr->t > 1e20 || fr->step < 0 ) )
+    if (*file_version == 1 && (fr->t < 0 || fr->t > 1e20 || fr->step < 0))
     {
         enx_warning("edr file with negative step number or unreasonable time (and without version number).");
         *bOK = FALSE;
@@ -675,8 +675,8 @@ static gmx_bool do_eheader(ener_file_t ef, int *file_version, t_enxframe *fr,
             /* in the new version files, the block header only contains
                the ID and the number of subblocks */
             int nsub = fr->block[b].nsub;
-            *bOK = *bOK && gmx_fio_do_int(ef->fio, fr->block[b].id);
-            *bOK = *bOK && gmx_fio_do_int(ef->fio, nsub);
+            *bOK     = *bOK && gmx_fio_do_int(ef->fio, fr->block[b].id);
+            *bOK     = *bOK && gmx_fio_do_int(ef->fio, nsub);
 
             fr->block[b].nsub = nsub;
             if (bRead)
@@ -818,7 +818,7 @@ ener_file_t open_enx(const char *fn, const char *mode)
         /* Now check whether this file is in single precision */
         if (!bWrongPrecision
             && ((fr->e_size && (fr->nre == nre)
-                 && (nre * 4 * (long int)sizeof(float) == fr->e_size)) ) )
+                 && (nre * 4 * (long int)sizeof(float) == fr->e_size))))
         {
             fprintf(stderr, "Opened %s as single precision energy file\n", fn);
             free_enxnms(nre, nms);
@@ -835,7 +835,7 @@ ener_file_t open_enx(const char *fn, const char *mode)
             }
 
             if (((fr->e_size && (fr->nre == nre)
-                  && (nre * 4 * (long int)sizeof(double) == fr->e_size)) ))
+                  && (nre * 4 * (long int)sizeof(double) == fr->e_size))))
             {
                 fprintf(stderr, "Opened %s as double precision energy file\n",
                         fn);
@@ -885,7 +885,7 @@ static void convert_full_sums(ener_old_t *ener_old, t_enxframe *fr)
         ns = 0;
         for (i = 0; i < fr->nre; i++)
         {
-            if (fr->ener[i].e    != 0)
+            if (fr->ener[i].e != 0)
             {
                 ne++;
             }
@@ -912,10 +912,10 @@ static void convert_full_sums(ener_old_t *ener_old, t_enxframe *fr)
             esum_all         = fr->ener[i].esum;
             eav_all          = fr->ener[i].eav;
             fr->ener[i].esum = esum_all - ener_old->ener_prev[i].esum;
-            fr->ener[i].eav  = eav_all  - ener_old->ener_prev[i].eav
-                - gmx::square(ener_old->ener_prev[i].esum / (nstep_all - fr->nsum)
-                              - esum_all / nstep_all)
-                * (nstep_all - fr->nsum) * nstep_all / (double)fr->nsum;
+            fr->ener[i].eav  = eav_all - ener_old->ener_prev[i].eav
+                              - gmx::square(ener_old->ener_prev[i].esum / (nstep_all - fr->nsum)
+                                            - esum_all / nstep_all)
+                                        * (nstep_all - fr->nsum) * nstep_all / (double)fr->nsum;
             ener_old->ener_prev[i].esum = esum_all;
             ener_old->ener_prev[i].eav  = eav_all;
         }
@@ -982,8 +982,8 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe *fr)
     }
     if (bRead)
     {
-        if ((ef->framenr <   20 || ef->framenr %   10 == 0)
-            && (ef->framenr <  200 || ef->framenr %  100 == 0)
+        if ((ef->framenr < 20 || ef->framenr % 10 == 0)
+            && (ef->framenr < 200 || ef->framenr % 100 == 0)
             && (ef->framenr < 2000 || ef->framenr % 1000 == 0))
         {
             fprintf(stderr, "\rReading energy frame %6d time %8.3f         ",
@@ -1195,7 +1195,7 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
         for (i = 0; i < npcoupl; i++)
         {
             state->boxv[ind0[i]][ind1[i]]
-                = find_energy(boxvel_nm[i], nre, enm, fr);
+                    = find_energy(boxvel_nm[i], nre, enm, fr);
         }
         fprintf(stderr, "\nREAD %d BOX VELOCITIES FROM %s\n\n", npcoupl, fn);
     }
@@ -1221,7 +1221,6 @@ void get_enx_state(const char *fn, real t, const gmx_groups_t *groups, t_inputre
                 sprintf(buf, "vXi%s-%s", cns, bufi);
                 state->nosehoover_vxi[i] = find_energy(buf, nre, enm, fr);
             }
-
         }
         fprintf(stderr, "\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n", state->ngtc, fn);
 
@@ -1421,7 +1420,7 @@ static void cmp_eblocks(t_enxframe *fr1, t_enxframe *fr2, real ftol, real abstol
             cmp_int(stdout, buf, -1, b1->nsub, b2->nsub);
             cmp_int(stdout, buf, -1, b1->id, b2->id);
 
-            if ( (b1->nsub == b2->nsub) && (b1->id == b2->id) )
+            if ((b1->nsub == b2->nsub) && (b1->id == b2->id))
             {
                 for (i = 0; i < b1->nsub; i++)
                 {

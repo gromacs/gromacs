@@ -77,10 +77,10 @@ namespace
  */
 void fillSingleQuadraticSplineTableData(const std::function<double(double)> &function,
                                         const std::function<double(double)> &derivative,
-                                        const std::pair<real, real>           &range,
-                                        double                                 spacing,
-                                        std::vector<real>                     *functionTableData,
-                                        std::vector<real>                     *derivativeTableData)
+                                        const std::pair<real, real> &range,
+                                        double             spacing,
+                                        std::vector<real> *functionTableData,
+                                        std::vector<real> *derivativeTableData)
 {
     std::size_t endIndex = range.second / spacing + 2;
 
@@ -111,9 +111,9 @@ void fillSingleQuadraticSplineTableData(const std::function<double(double)> &fun
             // Calculate third derivative term (2nd derivative of the derivative)
             // Make sure we stay in range. In practice this means we use one-sided
             // interpolation at the interval endpoints (indentical to an offset for 3-point formula)
-            const double h                    = std::pow( GMX_DOUBLE_EPS, 0.25 );
-            double       y                    = std::min( std::max(x, range.first + h), range.second - h);
-            double       thirdDerivativeValue = ( derivative(y + h) - 2.0 * derivative(y) + derivative(y - h) ) / ( h * h );
+            const double h                    = std::pow(GMX_DOUBLE_EPS, 0.25);
+            double       y                    = std::min(std::max(x, range.first + h), range.second - h);
+            double       thirdDerivativeValue = (derivative(y + h) - 2.0 * derivative(y) + derivative(y - h)) / (h * h);
 
             tmpDerivativeValue = derivative(x) - spacing * spacing * thirdDerivativeValue / 12.0;
 
@@ -135,8 +135,8 @@ void fillSingleQuadraticSplineTableData(const std::function<double(double)> &fun
             // we simply make a linear function from the last in-range value of the derivative.
             double lastIndexFunction   = (*functionTableData)[lastIndexInRange];
             double lastIndexDerivative = (*derivativeTableData)[lastIndexInRange];
-            (*functionTableData)[i]   = lastIndexFunction + lastIndexDerivative * (i - lastIndexInRange) * spacing;
-            (*derivativeTableData)[i] = lastIndexDerivative;
+            (*functionTableData)[i]    = lastIndexFunction + lastIndexDerivative * (i - lastIndexInRange) * spacing;
+            (*derivativeTableData)[i]  = lastIndexDerivative;
         }
     }
 }
@@ -154,11 +154,11 @@ void fillSingleQuadraticSplineTableData(const std::function<double(double)> &fun
  */
 void fillSingleQuadraticSplineTableData(ConstArrayRef<double> function,
                                         ConstArrayRef<double> derivative,
-                                        double inputSpacing,
-                                        const std::pair<real, real>           &range,
-                                        double                                 spacing,
-                                        std::vector<real>                     *functionTableData,
-                                        std::vector<real>                     *derivativeTableData)
+                                        double                inputSpacing,
+                                        const std::pair<real, real> &range,
+                                        double             spacing,
+                                        std::vector<real> *functionTableData,
+                                        std::vector<real> *derivativeTableData)
 {
     std::size_t endIndex = range.second / spacing + 2;
 
@@ -193,7 +193,7 @@ void fillSingleQuadraticSplineTableData(ConstArrayRef<double> function,
 
             // Linear interpolation of input derivative and third derivative
             double thirdDerivativeValue = (1.0 - inputEps) * thirdDerivative[inputIndex] + inputEps * thirdDerivative[inputIndex + 1];
-            double derivativeValue      = (1.0 - inputEps) *      derivative[inputIndex] + inputEps *      derivative[inputIndex + 1];
+            double derivativeValue      = (1.0 - inputEps) * derivative[inputIndex] + inputEps * derivative[inputIndex + 1];
 
             // Quadratic interpolation for function value
             tmpFunctionValue   = function[inputIndex] + 0.5 * (derivative[inputIndex] + derivativeValue) * inputEps * inputSpacing;
@@ -217,8 +217,8 @@ void fillSingleQuadraticSplineTableData(ConstArrayRef<double> function,
             // we simply make a linear function from the last in-range value of the derivative.
             double lastIndexFunction   = (*functionTableData)[lastIndexInRange];
             double lastIndexDerivative = (*derivativeTableData)[lastIndexInRange];
-            (*functionTableData)[i]   = lastIndexFunction + lastIndexDerivative * (i - lastIndexInRange) * spacing;
-            (*derivativeTableData)[i] = lastIndexDerivative;
+            (*functionTableData)[i]    = lastIndexFunction + lastIndexDerivative * (i - lastIndexInRange) * spacing;
+            (*derivativeTableData)[i]  = lastIndexDerivative;
         }
     }
 }
@@ -250,7 +250,7 @@ void fillDdfzTableData(const std::vector<real> &functionTableData,
     {
         (*ddfzTableData)[4 * i] = derivativeTableData[i];
 
-        double nextDerivative = ( i < functionTableData.size() - 1 ) ? derivativeTableData[i + 1] : 0.0;
+        double nextDerivative = (i < functionTableData.size() - 1) ? derivativeTableData[i + 1] : 0.0;
 
         (*ddfzTableData)[4 * i + 1] = nextDerivative - derivativeTableData[i];
         (*ddfzTableData)[4 * i + 2] = functionTableData[i];
@@ -258,17 +258,17 @@ void fillDdfzTableData(const std::vector<real> &functionTableData,
     }
 }
 
-}   // namespace anonymous
-
+} // namespace anonymous
 
 
 const real
-QuadraticSplineTable::defaultTolerance = 10.0 * GMX_FLOAT_EPS;
+        QuadraticSplineTable::defaultTolerance
+        = 10.0 * GMX_FLOAT_EPS;
 
 
 QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<AnalyticalSplineTableInput> analyticalInputList,
-                                           const std::pair<real, real>                        &range,
-                                           real                                                tolerance)
+                                           const std::pair<real, real> &range,
+                                           real tolerance)
     : numFuncInTable_(analyticalInputList.size()), range_(range)
 {
     // Sanity check on input values
@@ -356,8 +356,8 @@ QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<AnalyticalSplin
 
 
 QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<NumericalSplineTableInput> numericalInputList,
-                                           const std::pair<real, real>                       &range,
-                                           real                                               tolerance)
+                                           const std::pair<real, real> &range,
+                                           real tolerance)
     : numFuncInTable_(numericalInputList.size()), range_(range)
 {
     // Sanity check on input values

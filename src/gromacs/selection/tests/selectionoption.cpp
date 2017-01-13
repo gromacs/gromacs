@@ -128,7 +128,7 @@ TEST_F(SelectionOptionTest, HandlesDynamicSelectionWhenStaticRequired)
     gmx::Selection sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").store(&sel).onlyStatic()));
+            SelectionOption("sel").store(&sel).onlyStatic()));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -145,7 +145,7 @@ TEST_F(SelectionOptionTest, HandlesNonAtomicSelectionWhenAtomsRequired)
     gmx::Selection sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").store(&sel).onlyAtoms()));
+            SelectionOption("sel").store(&sel).onlyAtoms()));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -165,7 +165,7 @@ TEST_F(SelectionOptionTest, ChecksForSortedAtomsWhenRequired)
     gmx::Selection sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").store(&sel).onlySortedAtoms()));
+            SelectionOption("sel").store(&sel).onlySortedAtoms()));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -185,7 +185,7 @@ TEST_F(SelectionOptionTest, ChecksEmptySelections)
     gmx::Selection sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").store(&sel)));
+            SelectionOption("sel").store(&sel)));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -204,7 +204,7 @@ TEST_F(SelectionOptionTest, ChecksEmptyDelayedSelections)
     gmx::Selection sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").store(&sel)));
+            SelectionOption("sel").store(&sel)));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -240,7 +240,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelections)
     gmx::Selection sel[2];
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").store(sel).valueCount(2)));
+            SelectionOption("sel").store(sel).valueCount(2)));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -256,8 +256,7 @@ TEST_F(SelectionOptionTest, HandlesDefaultSelectionText)
 {
     gmx::Selection sel;
     using gmx::SelectionOption;
-    options_.addOption(SelectionOption("sel").store(&sel)
-                           .defaultSelectionText("all"));
+    options_.addOption(SelectionOption("sel").store(&sel).defaultSelectionText("all"));
 
     EXPECT_NO_THROW_GMX(options_.finish());
 
@@ -275,7 +274,7 @@ TEST_F(SelectionOptionTest, HandlesAdjuster)
     gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
-                SelectionOption("sel").storeVector(&sel).multiValue());
+            SelectionOption("sel").storeVector(&sel).multiValue());
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -294,7 +293,7 @@ TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
     gmx::Selection sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
-                SelectionOption("sel").store(&sel));
+            SelectionOption("sel").store(&sel));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -312,7 +311,7 @@ TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
     gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
-                SelectionOption("sel").storeVector(&sel).multiValue());
+            SelectionOption("sel").storeVector(&sel).multiValue());
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -331,7 +330,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
     gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
-                SelectionOption("sel").storeVector(&sel).multiValue());
+            SelectionOption("sel").storeVector(&sel).multiValue());
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -349,7 +348,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedRequiredSelection)
     gmx::Selection sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").store(&sel).required()));
+            SelectionOption("sel").store(&sel).required()));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -365,8 +364,7 @@ TEST_F(SelectionOptionTest, HandlesTooFewDelayedRequiredSelections)
     gmx::Selection sel[2];
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").store(sel).required()
-                                    .valueCount(2)));
+            SelectionOption("sel").store(sel).required().valueCount(2)));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -398,7 +396,7 @@ TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
     gmx::SelectionList sel;
     using gmx::SelectionOption;
     gmx::SelectionOptionInfo *info = options_.addOption(
-                SelectionOption("sel").storeVector(&sel).valueCount(3));
+            SelectionOption("sel").storeVector(&sel).valueCount(3));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -433,10 +431,9 @@ TEST_F(SelectionFileOptionTest, HandlesSingleSelectionOptionFromFile)
     gmx::SelectionList reqsel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").storeVector(&sel).multiValue()));
+            SelectionOption("sel").storeVector(&sel).multiValue()));
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("reqsel").storeVector(&reqsel)
-                                    .multiValue().required()));
+            SelectionOption("reqsel").storeVector(&reqsel).multiValue().required()));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -462,9 +459,9 @@ TEST_F(SelectionFileOptionTest, HandlesTwoSeparateSelectionOptions)
     gmx::SelectionList sel2;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel1").storeVector(&sel1).multiValue()));
+            SelectionOption("sel1").storeVector(&sel1).multiValue()));
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel2").storeVector(&sel2).multiValue()));
+            SelectionOption("sel2").storeVector(&sel2).multiValue()));
 
     gmx::OptionsAssigner assigner(&options_);
     std::string          value(TestFileManager::getInputFilePath("selfile.dat"));
@@ -498,9 +495,9 @@ TEST_F(SelectionFileOptionTest, HandlesTwoSelectionOptionsFromSingleFile)
     gmx::SelectionList sel2;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel1").storeVector(&sel1)));
+            SelectionOption("sel1").storeVector(&sel1)));
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel2").storeVector(&sel2)));
+            SelectionOption("sel2").storeVector(&sel2)));
 
     gmx::OptionsAssigner assigner(&options_);
     std::string          value(TestFileManager::getInputFilePath("selfile.dat"));
@@ -529,11 +526,9 @@ TEST_F(SelectionFileOptionTest, HandlesRequiredOptionFromFile)
     gmx::SelectionList optsel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").storeVector(&sel)
-                                    .multiValue().required()));
+            SelectionOption("sel").storeVector(&sel).multiValue().required()));
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("optsel").storeVector(&optsel)
-                                    .multiValue()));
+            SelectionOption("optsel").storeVector(&optsel).multiValue()));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -562,11 +557,9 @@ TEST_F(SelectionFileOptionTest, HandlesRequiredOptionFromFileWithOtherOptionSet)
     gmx::SelectionList sel2;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel1").storeVector(&sel1)
-                                    .multiValue().required()));
+            SelectionOption("sel1").storeVector(&sel1).multiValue().required()));
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel2").storeVector(&sel2)
-                                    .multiValue().required()));
+            SelectionOption("sel2").storeVector(&sel2).multiValue().required()));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -594,9 +587,9 @@ TEST_F(SelectionFileOptionTest, HandlesTwoRequiredOptionsFromSingleFile)
     gmx::SelectionList sel2;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel1").storeVector(&sel1).required()));
+            SelectionOption("sel1").storeVector(&sel1).required()));
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel2").storeVector(&sel2).required()));
+            SelectionOption("sel2").storeVector(&sel2).required()));
 
     gmx::OptionsAssigner assigner(&options_);
     std::string          value(TestFileManager::getInputFilePath("selfile.dat"));
@@ -620,7 +613,7 @@ TEST_F(SelectionFileOptionTest, GivesErrorWithNoFile)
     gmx::SelectionList sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").storeVector(&sel).multiValue()));
+            SelectionOption("sel").storeVector(&sel).multiValue()));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -638,7 +631,7 @@ TEST_F(SelectionFileOptionTest, GivesErrorWithNonExistentFile)
     gmx::SelectionList sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").storeVector(&sel).multiValue()));
+            SelectionOption("sel").storeVector(&sel).multiValue()));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -660,7 +653,7 @@ TEST_F(SelectionFileOptionTest, GivesErrorWithMultipleFiles)
     gmx::SelectionList sel;
     using gmx::SelectionOption;
     ASSERT_NO_THROW_GMX(options_.addOption(
-                                SelectionOption("sel").storeVector(&sel).multiValue()));
+            SelectionOption("sel").storeVector(&sel).multiValue()));
 
     gmx::OptionsAssigner assigner(&options_);
     EXPECT_NO_THROW_GMX(assigner.start());

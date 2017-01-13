@@ -71,7 +71,8 @@ class IKeyValueTreeTransformRules
 public:
     virtual KeyValueTreeTransformRuleBuilder addRule() = 0;
 
-protected: ~IKeyValueTreeTransformRules();
+protected:
+    ~IKeyValueTreeTransformRules();
 };
 
 class IKeyValueTreeBackMapping
@@ -86,7 +87,7 @@ public:
 class KeyValueTreeTransformResult
 {
 public:
-    KeyValueTreeObject object() { return std::move(object_); }
+    KeyValueTreeObject              object() { return std::move(object_); }
     const IKeyValueTreeBackMapping &backMapping() const { return *mapping_; }
 
 private:
@@ -148,8 +149,7 @@ public:
         void transformWith(std::function<ToType(const FromType &)> transform)
         {
             builder_->addTransformToVariant(
-                    [transform] (const Variant &value)
-                    {
+                    [transform](const Variant &value) {
                         return Variant::create<ToType>(transform(value.cast<FromType>()));
                     });
         }
@@ -167,8 +167,7 @@ public:
         void transformWith(std::function<void(KeyValueTreeObjectBuilder *, const FromType &)> transform)
         {
             builder_->addTransformToObject(
-                    [transform] (KeyValueTreeObjectBuilder *builder, const Variant &value)
-                    {
+                    [transform](KeyValueTreeObjectBuilder *builder, const Variant &value) {
                         transform(builder, value.cast<FromType>());
                     });
         }
@@ -198,7 +197,7 @@ public:
     };
 
     explicit KeyValueTreeTransformRuleBuilder(internal::KeyValueTreeTransformerImpl *impl);
-    KeyValueTreeTransformRuleBuilder(KeyValueTreeTransformRuleBuilder &&)            = default;
+    KeyValueTreeTransformRuleBuilder(KeyValueTreeTransformRuleBuilder &&) = default;
     KeyValueTreeTransformRuleBuilder &operator=(KeyValueTreeTransformRuleBuilder &&) = default;
     ~KeyValueTreeTransformRuleBuilder();
 

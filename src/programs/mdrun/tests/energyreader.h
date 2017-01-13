@@ -134,6 +134,7 @@ public:
      * \param[in] energyFile             Open energy file object to manage, and from which to read frames */
     explicit EnergyFrameReader(const std::map<std::string, int> &indicesOfEnergyFields,
                                ener_file *energyFile);
+
 private:
     //! Convert energy field name to its index within a t_enxframe from this file.
     std::map<std::string, int> indicesOfEnergyFields_;
@@ -179,6 +180,7 @@ public:
     const real &at(const std::string &name) const;
     //! Constructor
     EnergyFrame();
+
 private:
     //! Container for energy values, indexed by name
     std::map<std::string, real> values_;

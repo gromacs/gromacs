@@ -342,7 +342,7 @@ std::string removeExtraNewlinesRst(const std::string &text)
 
 //! \}
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * HelpLinks::Impl
@@ -371,7 +371,8 @@ public:
     typedef std::vector<LinkItem> LinkList;
 
     //! Initializes empty links with the given format.
-    explicit Impl(HelpOutputFormat format) : format_(format)
+    explicit Impl(HelpOutputFormat format)
+        : format_(format)
     {
     }
 
@@ -385,7 +386,8 @@ public:
  * HelpLinks
  */
 
-HelpLinks::HelpLinks(HelpOutputFormat format) : impl_(new Impl(format))
+HelpLinks::HelpLinks(HelpOutputFormat format)
+    : impl_(new Impl(format))
 {
 }
 
@@ -543,7 +545,7 @@ std::string HelpWriterContext::Impl::replaceLinks(const std::string &input) cons
     if (state_->links_ != nullptr)
     {
         HelpLinks::Impl::LinkList::const_iterator link;
-        for (link  = state_->links_->impl_->links_.begin();
+        for (link = state_->links_->impl_->links_.begin();
              link != state_->links_->impl_->links_.end(); ++link)
         {
             result = replaceAllWords(result, link->linkName, link->replacement);
@@ -567,8 +569,8 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
         {
             const int baseFirstLineIndent = wrapper->settings().firstLineIndent();
             const int baseIndent          = wrapper->settings().indent();
-            result = repall(result, sandrTty);
-            result = replaceLinks(result);
+            result                        = repall(result, sandrTty);
+            result                        = replaceLinks(result);
             std::string paragraph;
             paragraph.reserve(result.length());
             RstParagraphIterator iter(result);
@@ -693,7 +695,7 @@ void HelpWriterContext::writeTitle(const std::string &title) const
             break;
         default:
             GMX_THROW(NotImplementedError(
-                              "This output format is not implemented"));
+                    "This output format is not implemented"));
     }
     file.ensureEmptyLine();
 }
@@ -744,7 +746,7 @@ void HelpWriterContext::writeOptionItem(const std::string &name,
             settings.setIndent(11);
             settings.setLineLength(78);
             std::string formattedDescription
-                = substituteMarkupAndWrapToString(settings, description);
+                    = substituteMarkupAndWrapToString(settings, description);
             file.writeLine(formatter.formatRow());
             file.writeLine(formattedDescription);
             break;
@@ -772,7 +774,7 @@ void HelpWriterContext::writeOptionItem(const std::string &name,
         }
         default:
             GMX_THROW(NotImplementedError(
-                              "This output format is not implemented"));
+                    "This output format is not implemented"));
     }
 }
 

@@ -116,9 +116,9 @@ typedef struct
 // Struct for derivatives of a non-bonded interaction potential
 typedef struct
 {
-    real md1;  // -V' at the cutoff
-    real d2;   //  V'' at the cutoff
-    real md3;  // -V''' at the cutoff
+    real md1; // -V' at the cutoff
+    real d2;  //  V'' at the cutoff
+    real md3; // -V''' at the cutoff
 } pot_derivatives_t;
 
 void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
@@ -165,17 +165,17 @@ void verletbuf_get_list_setup(gmx_bool gmx_unused     bSIMD,
 static gmx_bool atom_nonbonded_kinetic_prop_equal(const atom_nonbonded_kinetic_prop_t *prop1,
                                                   const atom_nonbonded_kinetic_prop_t *prop2)
 {
-    return (prop1->mass     == prop2->mass
-            && prop1->type     == prop2->type
-            && prop1->q        == prop2->q
-            && prop1->bConstr  == prop2->bConstr
+    return (prop1->mass == prop2->mass
+            && prop1->type == prop2->type
+            && prop1->q == prop2->q
+            && prop1->bConstr == prop2->bConstr
             && prop1->con_mass == prop2->con_mass
-            && prop1->con_len  == prop2->con_len);
+            && prop1->con_len == prop2->con_len);
 }
 
 static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
                    const atom_nonbonded_kinetic_prop_t *prop,
-                   int nmol)
+                   int                                  nmol)
 {
     verletbuf_atomtype_t *att;
     int                   natt, i;
@@ -577,7 +577,7 @@ static void approx_2dof(real s2, real x, real *shift, real *scale)
     er = std::erfc(x / std::sqrt(2 * s2));
 
     *shift = -x + std::sqrt(2 * s2 / M_PI) * ex / er;
-    *scale = 0.5*M_PI*std::exp(ex * ex / (M_PI * er * er)) * er;
+    *scale = 0.5 * M_PI * std::exp(ex * ex / (M_PI * er * er)) * er;
 }
 
 // Returns an (over)estimate of the energy drift for a single atom pair,
@@ -585,7 +585,7 @@ static void approx_2dof(real s2, real x, real *shift, real *scale)
 static real energyDriftAtomPair(const atom_nonbonded_kinetic_prop_t *prop_i,
                                 const atom_nonbonded_kinetic_prop_t *prop_j,
                                 real s2, real s2i_2d, real s2j_2d,
-                                real r_buffer,
+                                real                     r_buffer,
                                 const pot_derivatives_t *der)
 {
     // For relatively small arguments erfc() is so small that if will be 0.0
@@ -622,7 +622,7 @@ static real energyDriftAtomPair(const atom_nonbonded_kinetic_prop_t *prop_i,
             real sh, sc;
 
             approx_2dof(s2i_2d, r_buffer * s2i_2d / s2, &sh, &sc);
-            rsh    += sh;
+            rsh += sh;
             sc_fac *= sc;
         }
         if (prop_j->bConstr)
@@ -630,7 +630,7 @@ static real energyDriftAtomPair(const atom_nonbonded_kinetic_prop_t *prop_i,
             real sh, sc;
 
             approx_2dof(s2j_2d, r_buffer * s2j_2d / s2, &sh, &sc);
-            rsh    += sh;
+            rsh += sh;
             sc_fac *= sc;
         }
 
@@ -652,18 +652,18 @@ static real energyDriftAtomPair(const atom_nonbonded_kinetic_prop_t *prop_i,
     real rsh2 = rsh * rsh;
 
     real pot1 = sc_fac
-        * der->md1 / 2 * ((rsh2 + s2) * c_erfc - rsh * s * c_exp);
+                * der->md1 / 2 * ((rsh2 + s2) * c_erfc - rsh * s * c_exp);
     real pot2 = sc_fac
-        * der->d2 / 6 * (s * (rsh2 + 2 * s2) * c_exp - rsh * (rsh2 + 3 * s2) * c_erfc);
+                * der->d2 / 6 * (s * (rsh2 + 2 * s2) * c_exp - rsh * (rsh2 + 3 * s2) * c_erfc);
     real pot3 = sc_fac
-        * der->md3 / 24 * ((rsh2 * rsh2 + 6 * rsh2 * s2 + 3 * s2 * s2) * c_erfc - rsh * s * (rsh2 + 5 * s2) * c_exp);
+                * der->md3 / 24 * ((rsh2 * rsh2 + 6 * rsh2 * s2 + 3 * s2 * s2) * c_erfc - rsh * s * (rsh2 + 5 * s2) * c_exp);
 
     return pot1 + pot2 + pot3;
 }
 
 static real energyDrift(const verletbuf_atomtype_t *att, int natt,
-                        const gmx_ffparams_t *ffp,
-                        real kT_fac,
+                        const gmx_ffparams_t *   ffp,
+                        real                     kT_fac,
                         const pot_derivatives_t *ljDisp,
                         const pot_derivatives_t *ljRep,
                         const pot_derivatives_t *elec,
@@ -702,7 +702,7 @@ static real energyDrift(const verletbuf_atomtype_t *att, int natt,
             real              c12 = ffp->iparams[prop_i->type * ffp->atnr + prop_j->type].lj.c12;
             pot_derivatives_t lj;
             lj.md1 = c6 * ljDisp->md1 + c12 * ljRep->md1;
-            lj.d2  = c6 * ljDisp->d2  + c12 * ljRep->d2;
+            lj.d2  = c6 * ljDisp->d2 + c12 * ljRep->d2;
             lj.md3 = c6 * ljDisp->md3 + c12 * ljRep->md3;
 
             real pot_lj = energyDriftAtomPair(prop_i, prop_j,
@@ -737,7 +737,7 @@ static real energyDrift(const verletbuf_atomtype_t *att, int natt,
             /* We need the line density to get the energy drift of the system.
              * The effective average r^2 is close to (rlist+sigma)^2.
              */
-            pot *= 4*M_PI*gmx::square(rlist + std::sqrt(s2)) / boxvol;
+            pot *= 4 * M_PI * gmx::square(rlist + std::sqrt(s2)) / boxvol;
 
             /* Add the unsigned drift to avoid cancellation of errors */
             drift_tot += std::abs(pot);
@@ -784,11 +784,7 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
              * The surface around a tetrahedron is too complex for a full
              * analytical solution, so we use a Taylor expansion.
              */
-            area_rel = (1.0 + 1 / M_PI * (6 * std::acos(1 / std::sqrt(3)) * d
-                                          + std::sqrt(3) * d * d * (1.0
-                                                                    + 5.0 / 18.0 * d * d
-                                                                    + 7.0 / 45.0 * d * d * d * d
-                                                                    + 83.0 / 756.0 * d * d * d * d * d * d)));
+            area_rel = (1.0 + 1 / M_PI * (6 * std::acos(1 / std::sqrt(3)) * d + std::sqrt(3) * d * d * (1.0 + 5.0 / 18.0 * d * d + 7.0 / 45.0 * d * d * d * d + 83.0 / 756.0 * d * d * d * d * d * d)));
             break;
         default:
             gmx_incons("surface_frac called with unsupported cluster_size");
@@ -810,7 +806,7 @@ static real md3_force_switch(real p, real rswitch, real rc)
     real md3_pot, md3_sw;
 
     a = -((p + 4) * rc - (p + 1) * rswitch) / (pow(rc, p + 2) * gmx::square(rc - rswitch));
-    b =  ((p + 3) * rc - (p + 1) * rswitch) / (pow(rc, p + 2) * gmx::power3(rc - rswitch));
+    b = ((p + 3) * rc - (p + 1) * rswitch) / (pow(rc, p + 2) * gmx::power3(rc - rswitch));
 
     md3_pot = (p + 2) * (p + 1) * p * pow(rc, p + 3);
     md3_sw  = 2 * a + 6 * b * (rc - rswitch);
@@ -819,11 +815,11 @@ static real md3_force_switch(real p, real rswitch, real rc)
 }
 
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
-                             const t_inputrec *ir,
-                             real reference_temperature,
+                             const t_inputrec *            ir,
+                             real                          reference_temperature,
                              const verletbuf_list_setup_t *list_setup,
-                             int *n_nonlin_vsite,
-                             real *rlist)
+                             int *                         n_nonlin_vsite,
+                             real *                        rlist)
 {
     double resolution;
     char * env;
@@ -930,14 +926,14 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
             case eintmodNONE:
             case eintmodPOTSHIFT:
                 /* -dV/dr of -r^-6 and r^-reppow */
-                ljDisp.md1 =     -6 * std::pow(ir->rvdw, -7.0);
+                ljDisp.md1 = -6 * std::pow(ir->rvdw, -7.0);
                 ljRep.md1  = repPow * std::pow(ir->rvdw, -(repPow + 1));
                 /* The contribution of the higher derivatives is negligible */
                 break;
             case eintmodFORCESWITCH:
                 /* At the cut-off: V=V'=V''=0, so we use only V''' */
-                ljDisp.md3 = -md3_force_switch(6.0,    ir->rvdw_switch, ir->rvdw);
-                ljRep.md3  =  md3_force_switch(repPow, ir->rvdw_switch, ir->rvdw);
+                ljDisp.md3 = -md3_force_switch(6.0, ir->rvdw_switch, ir->rvdw);
+                ljRep.md3  = md3_force_switch(repPow, ir->rvdw_switch, ir->rvdw);
                 break;
             case eintmodPOTSWITCH:
                 /* At the cut-off: V=V'=V''=0.
@@ -947,8 +943,8 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                 sw_range = ir->rvdw - ir->rvdw_switch;
                 md3_pswf = 60.0 / gmx::power3(sw_range);
 
-                ljDisp.md3 = -std::pow(ir->rvdw, -6.0   ) * md3_pswf;
-                ljRep.md3  =  std::pow(ir->rvdw, -repPow) * md3_pswf;
+                ljDisp.md3 = -std::pow(ir->rvdw, -6.0) * md3_pswf;
+                ljRep.md3  = std::pow(ir->rvdw, -repPow) * md3_pswf;
                 break;
             default:
                 gmx_incons("Unimplemented VdW modifier");
@@ -992,7 +988,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
             eps_rf = ir->epsilon_rf / ir->epsilon_r;
             if (eps_rf != 0)
             {
-                k_rf = (eps_rf - ir->epsilon_r) / ( gmx::power3(ir->rcoulomb) * (2 * eps_rf + ir->epsilon_r) );
+                k_rf = (eps_rf - ir->epsilon_r) / (gmx::power3(ir->rcoulomb) * (2 * eps_rf + ir->epsilon_r));
             }
             else
             {
@@ -1108,10 +1104,10 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
          */
         /* We don't have a formula for 8 (yet), use 4 which is conservative */
         nb_clust_frac_pairs_not_in_list_at_cutoff
-            = surface_frac(std::min(list_setup->cluster_size_i, 4),
-                           particle_distance, rl)
-                * surface_frac(std::min(list_setup->cluster_size_j, 4),
-                               particle_distance, rl);
+                = surface_frac(std::min(list_setup->cluster_size_i, 4),
+                               particle_distance, rl)
+                  * surface_frac(std::min(list_setup->cluster_size_j, 4),
+                                 particle_distance, rl);
         drift *= nb_clust_frac_pairs_not_in_list_at_cutoff;
 
         /* Convert the drift to drift per unit time per atom */

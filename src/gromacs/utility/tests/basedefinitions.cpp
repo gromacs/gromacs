@@ -54,9 +54,12 @@ namespace gmx
 
 TEST(BasedefinitionsTest, GmxAlignedDeclaresAlignedVariable)
 {
-    GMX_ALIGNED(real, 2)  r1;
-    GMX_ALIGNED(real, 4)  r2;
-    GMX_ALIGNED(real, 8)  r3;
+    GMX_ALIGNED(real, 2)
+    r1;
+    GMX_ALIGNED(real, 4)
+    r2;
+    GMX_ALIGNED(real, 8)
+    r3;
 
     std::uint64_t addr1 = reinterpret_cast<std::uint64_t>(&r1);
     std::uint64_t addr2 = reinterpret_cast<std::uint64_t>(&r2);
@@ -66,9 +69,12 @@ TEST(BasedefinitionsTest, GmxAlignedDeclaresAlignedVariable)
     EXPECT_EQ(0, addr2 % 4);
     EXPECT_EQ(0, addr3 % 8);
 
-    GMX_ALIGNED(int, 2)   i1;
-    GMX_ALIGNED(int, 4)   i2;
-    GMX_ALIGNED(int, 8)   i3;
+    GMX_ALIGNED(int, 2)
+    i1;
+    GMX_ALIGNED(int, 4)
+    i2;
+    GMX_ALIGNED(int, 8)
+    i3;
 
     addr1 = reinterpret_cast<std::uint64_t>(&i1);
     addr2 = reinterpret_cast<std::uint64_t>(&i2);
@@ -78,5 +84,4 @@ TEST(BasedefinitionsTest, GmxAlignedDeclaresAlignedVariable)
     EXPECT_EQ(0, addr2 % 4);
     EXPECT_EQ(0, addr3 % 8);
 }
-
 }

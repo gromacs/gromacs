@@ -85,7 +85,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
     /* We add 2 for the header */
     nste = div_nsteps(2 + nsteps, ir->nstenergy);
 
-    cio  = 80 * natoms;
+    cio = 80 * natoms;
     cio += (nstx + nstf + nstv) * sizeof(real) * (3.0 * natoms);
     cio += nstxtc * (14 * 4 + nxtcatoms * 5.0); /* roughly 5 bytes per atom */
     cio += nstlog * (nrener * 16 * 2.0);        /* 16 bytes per energy term plus header */
@@ -111,7 +111,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
             nchars = 8 + ndhdl * 8 + ndh * 10; /* time data ~8 chars/entry, dH data ~10 chars/entry */
             if (ir->expandedvals->elmcmove > elmcmoveNO)
             {
-                nchars += 5;   /* alchemical state */
+                nchars += 5; /* alchemical state */
             }
 
             if (ir->fepvals->edHdLPrintEnergy != edHdLPrintEnergyNO)
@@ -141,7 +141,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
             {
                 /* as histograms: dh_hist_size ints per histogram */
                 cio += div_nsteps(nsteps, ir->nstenergy)
-                    * sizeof(int) * ir->fepvals->dh_hist_size * ndh;
+                       * sizeof(int) * ir->fepvals->dh_hist_size * ndh;
             }
         }
     }

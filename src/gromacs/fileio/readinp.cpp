@@ -73,7 +73,7 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
 
     in = gmx_ffopen(fn, "r");
 
-    nin = lc  = 0;
+    nin = lc = 0;
     do
     {
         ptr = fgets2(buf, STRLEN - 1, in);
@@ -500,7 +500,7 @@ int get_eeenum(int *ninp, t_inpfile **inp, const char *name, const char **defs,
         n += sprintf(buf, "Invalid enum '%s' for variable %s, using '%s'\n",
                      (*inp)[ii].value, name, defs[0]);
         n += sprintf(buf + n, "Next time use one of:");
-        j  = 0;
+        j = 0;
         while (defs[j])
         {
             n += sprintf(buf + n, " '%s'", defs[j]);

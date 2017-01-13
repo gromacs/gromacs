@@ -143,8 +143,8 @@ void csettle(gmx_settledata_t    settled,          /* The SETTLE structure */
 
 void settle_proj(gmx_settledata_t settled, int econq,
                  int nsettle, t_iatom iatoms[],
-                 const struct t_pbc *pbc,   /* PBC data pointer, can be NULL  */
-                 rvec x[],
+                 const struct t_pbc *pbc, /* PBC data pointer, can be NULL  */
+                 rvec                x[],
                  rvec *der, rvec *derp,
                  int CalcVirAtomEnd, tensor vir_r_m_dder);
 /* Analytical algorithm to subtract the components of derivatives
@@ -161,12 +161,12 @@ void crattle(int iatom[], int ncon, int *nnit, int maxnit,
              real invmass[], real tt[], real lagr[], int *nerror, real invdt);
 
 gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
-                   gmx_constr_t constr,
-                   t_idef *idef,
-                   t_inputrec *ir,
+                   gmx_constr_t      constr,
+                   t_idef *          idef,
+                   t_inputrec *      ir,
                    struct t_commrec *cr,
                    gmx_int64_t step, int delta_step,
-                   real step_scaling,
+                   real       step_scaling,
                    t_mdatoms *md,
                    rvec *x, rvec *xprime, rvec *min_proj,
                    gmx_bool bMolPBC, matrix box,
@@ -204,7 +204,7 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
  *
  */
 
-gmx_constr_t init_constraints(FILE *log,
+gmx_constr_t init_constraints(FILE *            log,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
                               gmx_edsam_t ed, t_state *state,
                               struct t_commrec *cr);
@@ -234,7 +234,7 @@ const t_blocka *atom2constraints_moltype(gmx_constr_t constr);
 const int **atom2settle_moltype(gmx_constr_t constr);
 /* Returns the an array of atom to settle for the moltypes */
 
-#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr) + (con) * 3 : (iatom_constrnc) + (con - nconstr) * 3)
+#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr) + (con)*3 : (iatom_constrnc) + (con - nconstr) * 3)
 /* Macro for getting the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints
  * are concatenated.
@@ -280,8 +280,8 @@ real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir);
 
 gmx_bool
 constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
-                t_inputrec *ir,
-                gmx_int64_t step,
+                t_inputrec *    ir,
+                gmx_int64_t     step,
                 gmx_lincsdata_t lincsd, t_mdatoms *md,
                 struct t_commrec *cr,
                 rvec *x, rvec *xprime, rvec *min_proj,
@@ -289,7 +289,7 @@ constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
                 real lambda, real *dvdlambda,
                 real invdt, rvec *v,
                 gmx_bool bCalcVir, tensor vir_r_m_dr,
-                int econ,
+                int     econ,
                 t_nrnb *nrnb,
                 int maxwarn, int *warncount);
 /* Returns if the constraining succeeded */

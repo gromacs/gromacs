@@ -83,7 +83,7 @@ void nbnxn_free_aligned(void *ptr)
 void nbnxn_realloc_void(void **ptr,
                         int nbytes_copy, int nbytes_new,
                         nbnxn_alloc_t *ma,
-                        nbnxn_free_t  *mf)
+                        nbnxn_free_t * mf)
 {
     void *ptr_new;
 
@@ -153,7 +153,7 @@ void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat, int n)
 
 /* Initializes an nbnxn_atomdata_output_t data structure */
 static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
-                                       int nb_kernel_type,
+                                       int                      nb_kernel_type,
                                        int nenergrp, int stride,
                                        nbnxn_alloc_t *ma)
 {
@@ -161,15 +161,15 @@ static void nbnxn_atomdata_output_init(nbnxn_atomdata_output_t *out,
     ma((void **)&out->fshift, SHIFTS * DIM * sizeof(*out->fshift));
     out->nV = nenergrp * nenergrp;
     ma((void **)&out->Vvdw, out->nV * sizeof(*out->Vvdw));
-    ma((void **)&out->Vc, out->nV * sizeof(*out->Vc  ));
+    ma((void **)&out->Vc, out->nV * sizeof(*out->Vc));
 
     if (nb_kernel_type == nbnxnk4xN_SIMD_4xN
         || nb_kernel_type == nbnxnk4xN_SIMD_2xNN)
     {
         int cj_size = nbnxn_kernel_to_cluster_j_size(nb_kernel_type);
-        out->nVS = nenergrp * nenergrp * stride * (cj_size >> 1) * cj_size;
+        out->nVS    = nenergrp * nenergrp * stride * (cj_size >> 1) * cj_size;
         ma((void **)&out->VSvdw, out->nVS * sizeof(*out->VSvdw));
-        ma((void **)&out->VSc, out->nVS * sizeof(*out->VSc  ));
+        ma((void **)&out->VSc, out->nVS * sizeof(*out->VSc));
     }
     else
     {
@@ -231,7 +231,7 @@ static void clear_nbat_real(int na, int nbatFormat, real *xnb, int a0)
                 if (c == c_packX4)
                 {
                     j += (DIM - 1) * c_packX4;
-                    c  = 0;
+                    c = 0;
                 }
             }
             break;
@@ -248,7 +248,7 @@ static void clear_nbat_real(int na, int nbatFormat, real *xnb, int a0)
                 if (c == c_packX8)
                 {
                     j += (DIM - 1) * c_packX8;
-                    c  = 0;
+                    c = 0;
                 }
             }
             break;
@@ -322,7 +322,7 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                 if (c == c_packX4)
                 {
                     j += (DIM - 1) * c_packX4;
-                    c  = 0;
+                    c = 0;
                 }
             }
             /* Complete the partially filled last cell with zeros */
@@ -336,7 +336,7 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                 if (c == c_packX4)
                 {
                     j += (DIM - 1) * c_packX4;
-                    c  = 0;
+                    c = 0;
                 }
             }
             break;
@@ -353,7 +353,7 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                 if (c == c_packX8)
                 {
                     j += (DIM - 1) * c_packX8;
-                    c  = 0;
+                    c = 0;
                 }
             }
             /* Complete the partially filled last cell with zeros */
@@ -367,7 +367,7 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                 if (c == c_packX8)
                 {
                     j += (DIM - 1) * c_packX8;
-                    c  = 0;
+                    c = 0;
                 }
             }
             break;
@@ -420,7 +420,7 @@ static void set_lj_parameter_data(nbnxn_atomdata_t *nbat, gmx_bool bSIMD)
             for (int i = 0; i < nt; i++)
             {
                 /* Store the sqrt of the diagonal from the nbfp matrix */
-                nbat->nbfp_comb[i * 2  ]   = std::sqrt(nbat->nbfp[(i * nt + i) * 2  ]);
+                nbat->nbfp_comb[i * 2]     = std::sqrt(nbat->nbfp[(i * nt + i) * 2]);
                 nbat->nbfp_comb[i * 2 + 1] = std::sqrt(nbat->nbfp[(i * nt + i) * 2 + 1]);
             }
             break;
@@ -428,19 +428,19 @@ static void set_lj_parameter_data(nbnxn_atomdata_t *nbat, gmx_bool bSIMD)
             for (int i = 0; i < nt; i++)
             {
                 /* Get 6*C6 and 12*C12 from the diagonal of the nbfp matrix */
-                c6  = nbat->nbfp[(i * nt + i) * 2  ];
+                c6  = nbat->nbfp[(i * nt + i) * 2];
                 c12 = nbat->nbfp[(i * nt + i) * 2 + 1];
                 if (c6 > 0 && c12 > 0)
                 {
                     /* We store 0.5*2^1/6*sigma and sqrt(4*3*eps),
                      * so we get 6*C6 and 12*C12 after combining.
                      */
-                    nbat->nbfp_comb[i * 2  ]   = 0.5 * gmx::sixthroot(c12 / c6);
+                    nbat->nbfp_comb[i * 2]     = 0.5 * gmx::sixthroot(c12 / c6);
                     nbat->nbfp_comb[i * 2 + 1] = std::sqrt(c6 * c6 / c12);
                 }
                 else
                 {
-                    nbat->nbfp_comb[i * 2  ]   = 0;
+                    nbat->nbfp_comb[i * 2]     = 0;
                     nbat->nbfp_comb[i * 2 + 1] = 0;
                 }
             }
@@ -492,14 +492,14 @@ static void nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
      */
     simd_excl_size = NBNXN_CPU_CLUSTER_I_SIZE * simd_width;
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
-    snew_aligned(nbat->simd_exclusion_filter64, simd_excl_size,   NBNXN_MEM_ALIGN);
+    snew_aligned(nbat->simd_exclusion_filter64, simd_excl_size, NBNXN_MEM_ALIGN);
 #else
-    snew_aligned(nbat->simd_exclusion_filter, simd_excl_size,   NBNXN_MEM_ALIGN);
+    snew_aligned(nbat->simd_exclusion_filter, simd_excl_size, NBNXN_MEM_ALIGN);
 #endif
 
     for (int j = 0; j < simd_excl_size; j++)
     {
-        /* Set the consecutive bits for masking pair exclusions */
+/* Set the consecutive bits for masking pair exclusions */
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
         nbat->simd_exclusion_filter64[j] = (1U << j);
 #else
@@ -521,9 +521,9 @@ static void nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
     // Matching code exists in set_ci_top_excls() to generate indices into this array.
     // Those indices are used in the kernels.
 
-    simd_excl_size = NBNXN_CPU_CLUSTER_I_SIZE * NBNXN_CPU_CLUSTER_I_SIZE;
-    const real simdFalse =  0.0;
-    const real simdTrue  =  1.0;
+    simd_excl_size       = NBNXN_CPU_CLUSTER_I_SIZE * NBNXN_CPU_CLUSTER_I_SIZE;
+    const real simdFalse = 0.0;
+    const real simdTrue  = 1.0;
     real *     simd_interaction_array;
 
     snew_aligned(simd_interaction_array, simd_excl_size * GMX_SIMD_REAL_WIDTH, NBNXN_MEM_ALIGN);
@@ -541,15 +541,15 @@ static void nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat)
 #endif
 
 /* Initializes an nbnxn_atomdata_t data structure */
-void nbnxn_atomdata_init(FILE *fp,
+void nbnxn_atomdata_init(FILE *            fp,
                          nbnxn_atomdata_t *nbat,
-                         int nb_kernel_type,
-                         int enbnxninitcombrule,
+                         int               nb_kernel_type,
+                         int               enbnxninitcombrule,
                          int ntype, const real *nbfp,
-                         int n_energygroups,
-                         int nout,
+                         int            n_energygroups,
+                         int            nout,
                          nbnxn_alloc_t *alloc,
-                         nbnxn_free_t  *free)
+                         nbnxn_free_t * free)
 {
     int      nth;
     real     c6, c12, tol;
@@ -602,16 +602,16 @@ void nbnxn_atomdata_init(FILE *fp,
      */
     for (int i = 0; i < ntype; i++)
     {
-        c6  = nbfp[(i * ntype + i) * 2  ] / 6.0;
+        c6  = nbfp[(i * ntype + i) * 2] / 6.0;
         c12 = nbfp[(i * ntype + i) * 2 + 1] / 12.0;
         if (c6 > 0 && c12 > 0)
         {
-            nbat->nbfp_comb[i * 2  ]   = gmx::sixthroot(c12 / c6);
+            nbat->nbfp_comb[i * 2]     = gmx::sixthroot(c12 / c6);
             nbat->nbfp_comb[i * 2 + 1] = 0.25 * c6 * c6 / c12;
         }
         else if (c6 == 0 && c12 == 0)
         {
-            nbat->nbfp_comb[i * 2  ]   = 0;
+            nbat->nbfp_comb[i * 2]     = 0;
             nbat->nbfp_comb[i * 2 + 1] = 0;
         }
         else
@@ -630,31 +630,31 @@ void nbnxn_atomdata_init(FILE *fp,
                 /* fr->nbfp has been updated, so that array too now stores c6/c12 including
                  * the 6.0/12.0 prefactors to save 2 flops in the most common case (force-only).
                  */
-                c6                                        = nbfp[(i * ntype + j) * 2  ];
+                c6                                        = nbfp[(i * ntype + j) * 2];
                 c12                                       = nbfp[(i * ntype + j) * 2 + 1];
-                nbat->nbfp[(i * nbat->ntype + j) * 2  ]   = c6;
+                nbat->nbfp[(i * nbat->ntype + j) * 2]     = c6;
                 nbat->nbfp[(i * nbat->ntype + j) * 2 + 1] = c12;
 
                 /* Compare 6*C6 and 12*C12 for geometric cobination rule */
                 bCombGeom = bCombGeom
-                    && gmx_within_tol(c6 * c6, nbfp[(i * ntype + i) * 2  ] * nbfp[(j * ntype + j) * 2  ], tol)
-                    && gmx_within_tol(c12 * c12, nbfp[(i * ntype + i) * 2 + 1] * nbfp[(j * ntype + j) * 2 + 1], tol);
+                            && gmx_within_tol(c6 * c6, nbfp[(i * ntype + i) * 2] * nbfp[(j * ntype + j) * 2], tol)
+                            && gmx_within_tol(c12 * c12, nbfp[(i * ntype + i) * 2 + 1] * nbfp[(j * ntype + j) * 2 + 1], tol);
 
                 /* Compare C6 and C12 for Lorentz-Berthelot combination rule */
-                c6     /= 6.0;
-                c12    /= 12.0;
+                c6 /= 6.0;
+                c12 /= 12.0;
                 bCombLB = bCombLB
-                    && ((c6 == 0 && c12 == 0
-                         && (nbat->nbfp_comb[i * 2 + 1] == 0 || nbat->nbfp_comb[j * 2 + 1] == 0))
-                        || (c6 > 0 && c12 > 0
-                            && gmx_within_tol(gmx::sixthroot(c12 / c6),
-                                              0.5 * (nbat->nbfp_comb[i * 2] + nbat->nbfp_comb[j * 2]), tol)
-                            && gmx_within_tol(0.25 * c6 * c6 / c12, std::sqrt(nbat->nbfp_comb[i * 2 + 1] * nbat->nbfp_comb[j * 2 + 1]), tol)));
+                          && ((c6 == 0 && c12 == 0
+                               && (nbat->nbfp_comb[i * 2 + 1] == 0 || nbat->nbfp_comb[j * 2 + 1] == 0))
+                              || (c6 > 0 && c12 > 0
+                                  && gmx_within_tol(gmx::sixthroot(c12 / c6),
+                                                    0.5 * (nbat->nbfp_comb[i * 2] + nbat->nbfp_comb[j * 2]), tol)
+                                  && gmx_within_tol(0.25 * c6 * c6 / c12, std::sqrt(nbat->nbfp_comb[i * 2 + 1] * nbat->nbfp_comb[j * 2 + 1]), tol)));
             }
             else
             {
                 /* Add zero parameters for the additional dummy atom type */
-                nbat->nbfp[(i * nbat->ntype + j) * 2  ]   = 0;
+                nbat->nbfp[(i * nbat->ntype + j) * 2]     = 0;
                 nbat->nbfp[(i * nbat->ntype + j) * 2 + 1] = 0;
             }
         }
@@ -843,8 +843,8 @@ static void copy_lj_to_nbat_lj_comb(const real *ljparam_type,
     {
         for (int k = 0; k < packSize; k++)
         {
-            int i = is + k;
-            ljparam_at[is * 2            + k] = ljparam_type[type[i] * 2    ];
+            int i                             = is + k;
+            ljparam_at[is * 2 + k]            = ljparam_type[type[i] * 2];
             ljparam_at[is * 2 + packSize + k] = ljparam_type[type[i] * 2 + 1];
         }
     }
@@ -858,7 +858,7 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t *   nbat,
 {
     for (int g = 0; g < ngrid; g++)
     {
-        const nbnxn_grid_t * grid = &nbs->grid[g];
+        const nbnxn_grid_t *grid = &nbs->grid[g];
 
         /* Loop over all columns and copy and fill */
         for (int i = 0; i < grid->ncx * grid->ncy; i++)
@@ -881,7 +881,7 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t *   nbat,
     {
         for (int g = 0; g < ngrid; g++)
         {
-            const nbnxn_grid_t * grid = &nbs->grid[g];
+            const nbnxn_grid_t *grid = &nbs->grid[g];
 
             /* Loop over all columns and copy and fill */
             for (int i = 0; i < grid->ncx * grid->ncy; i++)
@@ -926,7 +926,7 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t *   nbat,
 
     for (int g = 0; g < ngrid; g++)
     {
-        const nbnxn_grid_t * grid = &nbs->grid[g];
+        const nbnxn_grid_t *grid = &nbs->grid[g];
 
         /* Loop over all columns and copy and fill */
         for (int cxy = 0; cxy < grid->ncx * grid->ncy; cxy++)
@@ -995,7 +995,7 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t *   nbat,
 
     for (int g = 0; g < ngrid; g++)
     {
-        const nbnxn_grid_t * grid = &nbs->grid[g];
+        const nbnxn_grid_t *grid = &nbs->grid[g];
         if (grid->bSimple)
         {
             nsubc = 1;
@@ -1072,7 +1072,7 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t *   nbat,
 
     for (int g = 0; g < ngrid; g++)
     {
-        const nbnxn_grid_t * grid = &nbs->grid[g];
+        const nbnxn_grid_t *grid = &nbs->grid[g];
 
         /* Loop over all columns and copy and fill */
         for (int i = 0; i < grid->ncx * grid->ncy; i++)
@@ -1179,7 +1179,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
 
                 grid = &nbs->grid[g];
 
-                cxy0 = (grid->ncx * grid->ncy * th   + nth - 1) / nth;
+                cxy0 = (grid->ncx * grid->ncy * th + nth - 1) / nth;
                 cxy1 = (grid->ncx * grid->ncy * (th + 1) + nth - 1) / nth;
 
                 for (int cxy = cxy0; cxy < cxy1; cxy++)
@@ -1192,7 +1192,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
                     if (g == 0 && FillLocal)
                     {
                         na_fill
-                            = (grid->cxy_ind[cxy + 1] - grid->cxy_ind[cxy]) * grid->na_sc;
+                                = (grid->cxy_ind[cxy + 1] - grid->cxy_ind[cxy]) * grid->na_sc;
                     }
                     else
                     {
@@ -1211,7 +1211,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const nbnxn_search_t nbs,
     }
 }
 
-static void nbnxn_atomdata_clear_reals(real * gmx_restrict dest,
+static void nbnxn_atomdata_clear_reals(real *gmx_restrict dest,
                                        int i0, int i1)
 {
     for (int i = i0; i < i1; i++)
@@ -1220,10 +1220,10 @@ static void nbnxn_atomdata_clear_reals(real * gmx_restrict dest,
     }
 }
 
-static void nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
-                                        gmx_bool bDestSet,
-                                        real ** gmx_restrict src,
-                                        int nsrc,
+static void nbnxn_atomdata_reduce_reals(real *gmx_restrict dest,
+                                        gmx_bool           bDestSet,
+                                        real **gmx_restrict src,
+                                        int                 nsrc,
                                         int i0, int i1)
 {
     if (bDestSet)
@@ -1251,14 +1251,14 @@ static void nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
     }
 }
 
-static void nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
+static void nbnxn_atomdata_reduce_reals_simd(real gmx_unused *gmx_restrict dest,
                                              gmx_bool gmx_unused bDestSet,
-                                             real gmx_unused ** gmx_restrict src,
+                                             real gmx_unused **gmx_restrict src,
                                              int gmx_unused nsrc,
                                              int gmx_unused i0, int gmx_unused i1)
 {
 #if GMX_SIMD
-/* The SIMD width here is actually independent of that in the kernels,
+    /* The SIMD width here is actually independent of that in the kernels,
  * but we use the same width for simplicity (usually optimal anyhow).
  */
     SimdReal dest_SSE, src_SSE;
@@ -1293,10 +1293,10 @@ static void nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest
 }
 
 /* Add part of the force array(s) from nbnxn_atomdata_t to f */
-static void nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
-                                                const nbnxn_atomdata_t *nbat,
+static void nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t     nbs,
+                                                const nbnxn_atomdata_t * nbat,
                                                 nbnxn_atomdata_output_t *out,
-                                                int nfa,
+                                                int                      nfa,
                                                 int a0, int a1,
                                                 rvec *f)
 {
@@ -1450,14 +1450,14 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                     if (sync_th < nth) /* otherwise nothing to sync index[1] will be >=nout */
                     {
                         /* wait on the thread which computed input data in previous step */
-                        while (tMPI_Atomic_get((volatile tMPI_Atomic_t*)&(nbat->syncStep[sync_th])) < group_size / 2)
+                        while (tMPI_Atomic_get((volatile tMPI_Atomic_t *)&(nbat->syncStep[sync_th])) < group_size / 2)
                         {
                             gmx_pause();
                         }
                         /* guarantee that no later load happens before wait loop is finisehd */
                         tMPI_Atomic_memory_barrier();
                     }
-#else               /* TMPI_ATOMICS */
+#else /* TMPI_ATOMICS */
 #pragma omp barrier
 #endif
                 }
@@ -1500,12 +1500,12 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
                     }
 
                     /* Calculate the cell-block range for our thread */
-                    b0 = (flags->nflag * group_pos   ) / group_size;
+                    b0 = (flags->nflag * group_pos) / group_size;
                     b1 = (flags->nflag * (group_pos + 1)) / group_size;
 
                     for (b = b0; b < b1; b++)
                     {
-                        i0 =  b   * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
+                        i0 = b * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
                         i1 = (b + 1) * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
 
                         if (bitmask_is_set(flags->flag[b], index[1]) || group_size > 2)
@@ -1515,10 +1515,9 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(const nbnxn_atomdata_t *nb
 #else
                             nbnxn_atomdata_reduce_reals
 #endif
-                                (nbat->out[index[0]].f,
-                                bitmask_is_set(flags->flag[b], index[0]) || group_size > 2,
-                                &(nbat->out[index[1]].f), 1, i0, i1);
-
+                                    (nbat->out[index[0]].f,
+                                     bitmask_is_set(flags->flag[b], index[0]) || group_size > 2,
+                                     &(nbat->out[index[1]].f), 1, i0, i1);
                         }
                         else if (!bitmask_is_set(flags->flag[b], index[0]))
                         {
@@ -1549,12 +1548,12 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(const nbnxn_atomdata_t *nba
             flags = &nbat->buffer_flags;
 
             /* Calculate the cell-block range for our thread */
-            int b0 = (flags->nflag * th   ) / nth;
+            int b0 = (flags->nflag * th) / nth;
             int b1 = (flags->nflag * (th + 1)) / nth;
 
             for (int b = b0; b < b1; b++)
             {
-                int i0 =  b   * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
+                int i0 = b * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
                 int i1 = (b + 1) * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
 
                 nfptr = 0;
@@ -1572,10 +1571,10 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(const nbnxn_atomdata_t *nba
 #else
                     nbnxn_atomdata_reduce_reals
 #endif
-                        (nbat->out[0].f,
-                        bitmask_is_set(flags->flag[b], 0),
-                        fptr, nfptr,
-                        i0, i1);
+                            (nbat->out[0].f,
+                             bitmask_is_set(flags->flag[b], 0),
+                             fptr, nfptr,
+                             i0, i1);
                 }
                 else if (!bitmask_is_set(flags->flag[b], 0))
                 {
@@ -1657,7 +1656,7 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec *                  fshift)
 {
-    const nbnxn_atomdata_output_t * out = nbat->out;
+    const nbnxn_atomdata_output_t *out = nbat->out;
 
     for (int s = 0; s < SHIFTS; s++)
     {

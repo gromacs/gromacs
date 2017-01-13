@@ -170,7 +170,7 @@ gmx_bool dd_bonded_molpbc(const gmx_domdec_t *dd, int ePBC);
  */
 gmx_bool change_dd_cutoff(struct t_commrec *cr,
                           t_state *state, const t_inputrec *ir,
-                          real cutoff_req );
+                          real cutoff_req);
 
 /*! \brief Limit DLB to preserve the option of returning to the current cut-off.
  *
@@ -220,7 +220,12 @@ void dd_collect_state(struct gmx_domdec_t *dd,
 /*! \brief Cycle counter indices used internally in the domain decomposition */
 enum
 {
-    ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclWaitGPU, ddCyclPME, ddCyclNr
+    ddCyclStep,
+    ddCyclPPduringPME,
+    ddCyclF,
+    ddCyclWaitGPU,
+    ddCyclPME,
+    ddCyclNr
 };
 
 /*! \brief Add the wallcycle count to the DD counter */
@@ -313,13 +318,13 @@ int *dd_constraints_nlocalatoms(struct gmx_domdec_t *dd);
 
 /*! \brief Print error output when interactions are missing */
 void dd_print_missing_interactions(FILE *fplog, struct t_commrec *cr,
-                                   int local_count,
-                                   const gmx_mtop_t *top_global,
+                                   int                   local_count,
+                                   const gmx_mtop_t *    top_global,
                                    const gmx_localtop_t *top_local,
-                                   t_state *state_local);
+                                   t_state *             state_local);
 
 /*! \brief Generate and store the reverse topology */
-void dd_make_reverse_top(FILE *fplog,
+void dd_make_reverse_top(FILE *        fplog,
                          gmx_domdec_t *dd, const gmx_mtop_t *mtop,
                          const gmx_vsite_t *vsite,
                          const t_inputrec *ir, gmx_bool bBCheck);
@@ -331,9 +336,9 @@ void dd_make_local_cgs(struct gmx_domdec_t *dd, t_block *lcgs);
 void dd_make_local_top(struct gmx_domdec_t *dd, struct gmx_domdec_zones_t *zones,
                        int npbcdim, matrix box,
                        rvec cellsize_min, ivec npulse,
-                       t_forcerec *fr,
-                       rvec *cgcm_or_x,
-                       gmx_vsite_t *vsite,
+                       t_forcerec *      fr,
+                       rvec *            cgcm_or_x,
+                       gmx_vsite_t *     vsite,
                        const gmx_mtop_t *top, gmx_localtop_t *ltop);
 
 /*! \brief Sort ltop->ilist when we are doing free energy. */
@@ -364,7 +369,7 @@ void dd_bonded_cg_distance(FILE *fplog, const gmx_mtop_t *mtop,
  */
 void write_dd_pdb(const char *fn, gmx_int64_t step, const char *title,
                   const gmx_mtop_t *mtop,
-                  t_commrec *cr,
+                  t_commrec *       cr,
                   int natoms, rvec x[], matrix box);
 
 
@@ -378,12 +383,12 @@ real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox);
  *
  * On the master node returns the actual cellsize limit used.
  */
-real dd_choose_grid(FILE *fplog,
+real dd_choose_grid(FILE *     fplog,
                     t_commrec *cr, gmx_domdec_t *dd,
                     const t_inputrec *ir,
                     const gmx_mtop_t *mtop,
                     matrix box, const gmx_ddbox_t *ddbox,
-                    int nPmeRanks,
+                    int      nPmeRanks,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
                     gmx_bool bInterCGBondeds);

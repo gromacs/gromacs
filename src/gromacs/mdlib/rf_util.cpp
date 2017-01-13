@@ -183,7 +183,7 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
                         {
                             rvec_sub(x[i], x[k], dx);
                         }
-                        v     = ek * norm2(dx) - ec;
+                        v = ek * norm2(dx) - ec;
                         ener += qqL * v;
                         svmul(-2 * qqL * ek, dx, df);
                         rvec_inc(f[i], df);
@@ -195,7 +195,7 @@ real RF_excl_correction(const t_forcerec *fr, t_graph *g,
                 }
             }
         }
-        ener       += -0.5 * ec * (L1 * q2sumA + lambda * q2sumB);
+        ener += -0.5 * ec * (L1 * q2sumA + lambda * q2sumB);
         *dvdlambda += -0.5 * ec * (q2sumB - q2sumA);
     }
 
@@ -222,8 +222,10 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
             /* Consistency check */
             if (Temp <= 0.0)
             {
-                gmx_fatal(FARGS, "Temperature is %f while using"
-                          " Generalized Reaction Field\n", Temp);
+                gmx_fatal(FARGS,
+                          "Temperature is %f while using"
+                          " Generalized Reaction Field\n",
+                          Temp);
             }
             /* Ionic strength (only needed for eelGRF */
             I      = 0.5 * zsq / vol;
@@ -256,7 +258,8 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
             if (eel == eelGRF)
             {
                 please_cite(fplog, "Tironi95a");
-                fprintf(fplog, "%s:\n"
+                fprintf(fplog,
+                        "%s:\n"
                         "epsRF = %10g, I   = %10g, volume = %10g, kappa  = %10g\n"
                         "rc    = %10g, krf = %10g, crf    = %10g, epsfac = %10g\n",
                         eel_names[eel], eps_rf, I, vol, *kappa, Rc, *krf, *crf,
@@ -264,7 +267,8 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
             }
             else
             {
-                fprintf(fplog, "%s:\n"
+                fprintf(fplog,
+                        "%s:\n"
                         "epsRF = %g, rc = %g, krf = %g, crf = %g, epsfac = %g\n",
                         eel_names[eel], eps_rf, Rc, *krf, *crf, ONE_4PI_EPS0 / eps_r);
             }
@@ -275,7 +279,7 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf, real Rc, real Tem
     }
 }
 
-void init_generalized_rf(FILE *fplog,
+void init_generalized_rf(FILE *            fplog,
                          const gmx_mtop_t *mtop, const t_inputrec *ir,
                          t_forcerec *fr)
 {
@@ -310,7 +314,7 @@ void init_generalized_rf(FILE *fplog,
     for (i = 0; (i < ir->opts.ngtc); i++)
     {
         nrdf += ir->opts.nrdf[i];
-        T    += (ir->opts.nrdf[i] * ir->opts.ref_t[i]);
+        T += (ir->opts.nrdf[i] * ir->opts.ref_t[i]);
     }
     if (nrdf == 0)
     {

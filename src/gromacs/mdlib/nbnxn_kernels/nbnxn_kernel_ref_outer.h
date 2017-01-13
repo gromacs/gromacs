@@ -33,15 +33,15 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLI NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ NBNXN_CPU_CLUSTER_I_SIZE
 
 /* We could use nbat->xstride and nbat->fstride, but macros might be faster */
-#define X_STRIDE   3
-#define F_STRIDE   3
+#define X_STRIDE 3
+#define F_STRIDE 3
 /* Local i-atom buffer strides */
-#define XI_STRIDE  3
-#define FI_STRIDE  3
+#define XI_STRIDE 3
+#define FI_STRIDE 3
 
 
 /* All functionality defines are set here, except for:
@@ -53,13 +53,13 @@
 #define CALC_SHIFTFORCES
 
 #ifdef CALC_COUL_RF
-#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecRF ## ljt ## feg ## _ref
+#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecRF##ljt##feg##_ref
 #endif
 #ifdef CALC_COUL_TAB
 #ifndef VDW_CUTOFF_CHECK
-#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecQSTab ## ljt ## feg ## _ref
+#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecQSTab##ljt##feg##_ref
 #else
-#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecQSTabTwinCut ## ljt ## feg ## _ref
+#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecQSTabTwinCut##ljt##feg##_ref
 #endif
 #endif
 
@@ -81,31 +81,31 @@
 
 static void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME(_F)
+        NBK_FUNC_NAME(_F)
 #else
 #ifndef ENERGY_GROUPS
-NBK_FUNC_NAME(_VF)
+        NBK_FUNC_NAME(_VF)
 #else
-NBK_FUNC_NAME(_VgrpF)
+        NBK_FUNC_NAME(_VgrpF)
 #endif
 #endif
 #undef NBK_FUNC_NAME
 #undef NBK_FUNC_NAME2
-(const nbnxn_pairlist_t     * nbl,
- const nbnxn_atomdata_t     * nbat,
- const interaction_const_t  * ic,
- rvec                       * shift_vec,
- real                       * f
+                (const nbnxn_pairlist_t *   nbl,
+                 const nbnxn_atomdata_t *   nbat,
+                 const interaction_const_t *ic,
+                 rvec *                     shift_vec,
+                 real *                     f
 #ifdef CALC_SHIFTFORCES
- ,
- real                       * fshift
+                 ,
+                 real *fshift
 #endif
 #ifdef CALC_ENERGIES
- ,
- real                       * Vvdw,
- real                       * Vc
+                 ,
+                 real *Vvdw,
+                 real *Vc
 #endif
-)
+                 )
 {
     const nbnxn_ci_t *nbln;
     const nbnxn_cj_t *l_cj;
@@ -134,8 +134,8 @@ NBK_FUNC_NAME(_VgrpF)
 
     real Vvdw_ci, Vc_ci;
 #else
-    int egp_mask;
-    int egp_sh_i[UNROLLI];
+    int         egp_mask;
+    int         egp_sh_i[UNROLLI];
 #endif
 #endif
 #ifdef LJ_POT_SWITCH
@@ -163,7 +163,7 @@ NBK_FUNC_NAME(_VgrpF)
 #if !GMX_DOUBLE
     const real *tab_coul_FDV0;
 #else
-    const real *           tab_coul_F;
+    const real *tab_coul_F;
     const real gmx_unused *tab_coul_V;
 #endif
 #endif
@@ -206,8 +206,8 @@ NBK_FUNC_NAME(_VgrpF)
 #if !GMX_DOUBLE
     tab_coul_FDV0 = ic->tabq_coul_FDV0;
 #else
-    tab_coul_F = ic->tabq_coul_F;
-    tab_coul_V = ic->tabq_coul_V;
+    tab_coul_F           = ic->tabq_coul_F;
+    tab_coul_V           = ic->tabq_coul_V;
 #endif
 #endif
 
@@ -321,7 +321,7 @@ NBK_FUNC_NAME(_VgrpF)
                 }
             }
         }
-#endif  /* CALC_ENERGIES */
+#endif /* CALC_ENERGIES */
 
         cjind = cjind0;
         while (cjind < cjind1 && nbl->cj[cjind].excl != 0xffff)
@@ -396,7 +396,7 @@ NBK_FUNC_NAME(_VgrpF)
 #ifdef CALC_ENERGIES
 #ifndef ENERGY_GROUPS
         *Vvdw += Vvdw_ci;
-        *Vc   += Vc_ci;
+        *Vc += Vc_ci;
 #endif
 #endif
     }

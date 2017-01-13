@@ -67,25 +67,24 @@ class CpuInfo
 {
 
 public:
-
     /*! \brief Amount of cpu information present (incremental) */
     enum class SupportLevel
     {
-    None,                          //!< No cpu information whatsoever. Sorry.
-    Name,                          //!< Only vendor and/or brand is set
-    Features,                      //!< Some features are set
-    LogicalProcessorInfo           //!< Everything includling logical processor information
+        None,                //!< No cpu information whatsoever. Sorry.
+        Name,                //!< Only vendor and/or brand is set
+        Features,            //!< Some features are set
+        LogicalProcessorInfo //!< Everything includling logical processor information
     };
 
     /*! \brief Processor/system vendors */
     enum class Vendor
     {
-    Unknown,              //!< Unidentified
-    Intel,                //!< GenuineIntel
-    Amd,                  //!< AuthenticAMD
-    Fujitsu,              //!< Only works on Linux (parsed from /proc/cpuinfo)
-    Ibm,                  //!< Only works on Linux (parsed from /proc/cpuinfo)
-    Arm,                  //!< Only works on Linux (parsed from /proc/cpuinfo)
+        Unknown, //!< Unidentified
+        Intel,   //!< GenuineIntel
+        Amd,     //!< AuthenticAMD
+        Fujitsu, //!< Only works on Linux (parsed from /proc/cpuinfo)
+        Ibm,     //!< Only works on Linux (parsed from /proc/cpuinfo)
+        Arm,     //!< Only works on Linux (parsed from /proc/cpuinfo)
     };
 
     /*! \brief List of CPU features
@@ -96,63 +95,63 @@ public:
      */
     enum class Feature
     {
-    X86_Aes,                 //!< x86 advanced encryption standard accel.
-    X86_Apic,                //!< APIC support
-    X86_Avx,                 //!< Advanced vector extensions
-    X86_Avx2,                //!< AVX2 including gather support (not used yet)
-    X86_Avx512F,             //!< Foundation AVX-512 instructions
-    X86_Avx512PF,            //!< Extended gather/scatter for AVX-512
-    X86_Avx512ER,            //!< AVX-512 exponential and recpirocal extensions
-    X86_Avx512CD,            //!< Memory conflict-detection for AVX-512
-    X86_Avx512BW,            //!< AVX-512 byte and word instructions
-    X86_Avx512VL,            //!< AVX-512 vector length extensions
-    X86_Clfsh,               //!< Supports CLFLUSH instruction
-    X86_Cmov,                //!< Conditional move insn support
-    X86_Cx8,                 //!< Supports CMPXCHG8B (8-byte compare-exchange)
-    X86_Cx16,                //!< Supports CMPXCHG16B (16-byte compare-exchg)
-    X86_F16C,                //!< Supports 16-bit FP conversion instructions
-    X86_Fma,                 //!< Fused-multiply add support (mainly for AVX)
-    X86_Fma4,                //!< 4-operand FMA, only on AMD for now
-    X86_Hle,                 //!< Hardware lock elision
-    X86_Htt,                 //!< Hyper-Threading supported (but maybe not enabled)
-    X86_Lahf,                //!< LAHF/SAHF support in 64 bits
-    X86_MisalignSse,         //!< Support for misaligned SSE data instructions
-    X86_Mmx,                 //!< MMX registers and instructions
-    X86_Msr,                 //!< Supports Intel model-specific-registers
-    X86_NonstopTsc,          //!< Invariant TSC (constant rate in ACPI states)
-    X86_Pcid,                //!< Process context identifier support
-    X86_Pclmuldq,            //!< Carry-less 64-bit multiplication supported
-    X86_Pdcm,                //!< Perfmon and Debug Capability
-    X86_PDPE1GB,             //!< Support for 1GB pages
-    X86_Popcnt,              //!< Supports the POPCNT (population count) insn
-    X86_Pse,                 //!< Supports 4MB-pages (page size extension)
-    X86_Rdrnd,               //!< RDRAND high-quality hardware random numbers
-    X86_Rdtscp,              //!< Serializing rdtscp instruction available
-    X86_Rtm,                 //!< Restricted transactional memory
-    X86_Sha,                 //!< Intel SHA extensions
-    X86_Sse2,                //!< SSE 2
-    X86_Sse3,                //!< SSE 3
-    X86_Sse4A,               //!< SSE 4A
-    X86_Sse4_1,              //!< SSE 4.1
-    X86_Sse4_2,              //!< SSE 4.2
-    X86_Ssse3,               //!< Supplemental SSE3
-    X86_Tdt,                 //!< TSC deadline timer
-    X86_X2Apic,              //!< Extended xAPIC Support
-    X86_Xop,                 //!< AMD extended instructions, only AMD for now
-    Arm_Neon,                //!< 32-bit ARM NEON
-    Arm_NeonAsimd,           //!< 64-bit ARM AArch64 Advanced SIMD
-    Ibm_Qpx,                 //!< IBM QPX SIMD (BlueGene/Q and later)
-    Ibm_Vmx,                 //!< IBM VMX SIMD (Altivec on Power6 and later)
-    Ibm_Vsx,                 //!< IBM VSX SIMD (Power7 and later)
-    Fujitsu_HpcAce           //!< Fujitsu Sparc64 HPC-ACE
+        X86_Aes,         //!< x86 advanced encryption standard accel.
+        X86_Apic,        //!< APIC support
+        X86_Avx,         //!< Advanced vector extensions
+        X86_Avx2,        //!< AVX2 including gather support (not used yet)
+        X86_Avx512F,     //!< Foundation AVX-512 instructions
+        X86_Avx512PF,    //!< Extended gather/scatter for AVX-512
+        X86_Avx512ER,    //!< AVX-512 exponential and recpirocal extensions
+        X86_Avx512CD,    //!< Memory conflict-detection for AVX-512
+        X86_Avx512BW,    //!< AVX-512 byte and word instructions
+        X86_Avx512VL,    //!< AVX-512 vector length extensions
+        X86_Clfsh,       //!< Supports CLFLUSH instruction
+        X86_Cmov,        //!< Conditional move insn support
+        X86_Cx8,         //!< Supports CMPXCHG8B (8-byte compare-exchange)
+        X86_Cx16,        //!< Supports CMPXCHG16B (16-byte compare-exchg)
+        X86_F16C,        //!< Supports 16-bit FP conversion instructions
+        X86_Fma,         //!< Fused-multiply add support (mainly for AVX)
+        X86_Fma4,        //!< 4-operand FMA, only on AMD for now
+        X86_Hle,         //!< Hardware lock elision
+        X86_Htt,         //!< Hyper-Threading supported (but maybe not enabled)
+        X86_Lahf,        //!< LAHF/SAHF support in 64 bits
+        X86_MisalignSse, //!< Support for misaligned SSE data instructions
+        X86_Mmx,         //!< MMX registers and instructions
+        X86_Msr,         //!< Supports Intel model-specific-registers
+        X86_NonstopTsc,  //!< Invariant TSC (constant rate in ACPI states)
+        X86_Pcid,        //!< Process context identifier support
+        X86_Pclmuldq,    //!< Carry-less 64-bit multiplication supported
+        X86_Pdcm,        //!< Perfmon and Debug Capability
+        X86_PDPE1GB,     //!< Support for 1GB pages
+        X86_Popcnt,      //!< Supports the POPCNT (population count) insn
+        X86_Pse,         //!< Supports 4MB-pages (page size extension)
+        X86_Rdrnd,       //!< RDRAND high-quality hardware random numbers
+        X86_Rdtscp,      //!< Serializing rdtscp instruction available
+        X86_Rtm,         //!< Restricted transactional memory
+        X86_Sha,         //!< Intel SHA extensions
+        X86_Sse2,        //!< SSE 2
+        X86_Sse3,        //!< SSE 3
+        X86_Sse4A,       //!< SSE 4A
+        X86_Sse4_1,      //!< SSE 4.1
+        X86_Sse4_2,      //!< SSE 4.2
+        X86_Ssse3,       //!< Supplemental SSE3
+        X86_Tdt,         //!< TSC deadline timer
+        X86_X2Apic,      //!< Extended xAPIC Support
+        X86_Xop,         //!< AMD extended instructions, only AMD for now
+        Arm_Neon,        //!< 32-bit ARM NEON
+        Arm_NeonAsimd,   //!< 64-bit ARM AArch64 Advanced SIMD
+        Ibm_Qpx,         //!< IBM QPX SIMD (BlueGene/Q and later)
+        Ibm_Vmx,         //!< IBM VMX SIMD (Altivec on Power6 and later)
+        Ibm_Vsx,         //!< IBM VSX SIMD (Power7 and later)
+        Fujitsu_HpcAce   //!< Fujitsu Sparc64 HPC-ACE
     };
 
     /*! \libinternal \brief Entry with basic information for a single logical processor */
     struct LogicalProcessor
     {
-        int socketRankInMachine;     //!< Relative rank of the current socket in the system
-        int coreRankInSocket;        //!< Relative rank of the current core in its socket
-        int hwThreadRankInCore;      //!< Relative rank of logical processor in its core
+        int socketRankInMachine; //!< Relative rank of the current socket in the system
+        int coreRankInSocket;    //!< Relative rank of the current core in its socket
+        int hwThreadRankInCore;  //!< Relative rank of logical processor in its core
     };
 
 public:
@@ -257,17 +256,17 @@ public:
 private:
     CpuInfo();
 
-    SupportLevel                                supportLevel_;           //!< Available cpuinfo information
-    Vendor                                      vendor_;                 //!<  Value of vendor for current cpu
-    std::string                                 brandString_;            //!<  Text description of cpu
-    int                                         family_;                 //!<  Major version of current cpu
-    int                                         model_;                  //!<  Middle version of current cpu
-    int                                         stepping_;               //!<  Minor version of current cpu
-    std::set<Feature>                           features_;               //!< Set of features supported on this cpu
-    std::vector<LogicalProcessor>               logicalProcessors_;      //!< Simple logical processor topology
-    static const std::map<Vendor, std::string>  s_vendorStrings_;        //!< Text description of each vendor
-    static const std::map<Feature, std::string> s_featureStrings_;       //!< Text description of each feature
-};                                                                       // class CpuInfo
+    SupportLevel                  supportLevel_;                   //!< Available cpuinfo information
+    Vendor                        vendor_;                         //!<  Value of vendor for current cpu
+    std::string                   brandString_;                    //!<  Text description of cpu
+    int                           family_;                         //!<  Major version of current cpu
+    int                           model_;                          //!<  Middle version of current cpu
+    int                           stepping_;                       //!<  Minor version of current cpu
+    std::set<Feature>             features_;                       //!< Set of features supported on this cpu
+    std::vector<LogicalProcessor> logicalProcessors_;              //!< Simple logical processor topology
+    static const std::map<Vendor, std::string>  s_vendorStrings_;  //!< Text description of each vendor
+    static const std::map<Feature, std::string> s_featureStrings_; //!< Text description of each feature
+};                                                                 // class CpuInfo
 
 /*! \brief Return true if the CPU is an Intel x86 Nehalem
  *
@@ -275,9 +274,8 @@ private:
  *
  * \returns  True if running on Nehalem CPU
  */
-bool
-cpuIsX86Nehalem(const CpuInfo &cpuInfo);
+bool cpuIsX86Nehalem(const CpuInfo &cpuInfo);
 
-}                                                                        // namespace gmx
+} // namespace gmx
 
-#endif                                                                   // GMX_HARDWARE_CPUINFO_H
+#endif // GMX_HARDWARE_CPUINFO_H

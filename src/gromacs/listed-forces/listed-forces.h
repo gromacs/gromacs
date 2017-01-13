@@ -99,9 +99,9 @@ ftype_is_bonded_potential(int ftype);
  *
  * Note that pbc_full is used only for position restraints, and is
  * not initialized if there are none. */
-void calc_listed(const t_commrec *cr,
+void calc_listed(const t_commrec *     cr,
                  struct gmx_wallcycle *wcycle,
-                 const t_idef *idef,
+                 const t_idef *        idef,
                  const rvec x[], history_t *hist,
                  rvec f[], t_forcerec *fr,
                  const struct t_pbc *pbc, const struct t_pbc *pbc_full,
@@ -115,36 +115,35 @@ void calc_listed(const t_commrec *cr,
  * for the perturbed interactions.
  *
  * The shift forces in fr are not affected. */
-void calc_listed_lambda(const t_idef *idef,
-                        const rvec x[],
-                        t_forcerec *fr,
+void calc_listed_lambda(const t_idef *      idef,
+                        const rvec          x[],
+                        t_forcerec *        fr,
                         const struct t_pbc *pbc, const struct t_graph *g,
                         gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
-                        real *lambda,
+                        real *           lambda,
                         const t_mdatoms *md,
                         struct t_fcdata *fcd, int *global_atom_index);
 
 /*! \brief Do all aspects of energy and force calculations for mdrun
  * on the set of listed interactions */
-void
-do_force_listed(struct gmx_wallcycle *wcycle,
-                matrix                box,
-                const t_lambda *      fepvals,
-                const t_commrec *     cr,
-                const t_idef *        idef,
-                const rvec            x[],
-                history_t *           hist,
-                rvec                  f[],
-                t_forcerec *          fr,
-                const struct t_pbc *  pbc,
-                const struct t_graph *graph,
-                gmx_enerdata_t *      enerd,
-                t_nrnb *              nrnb,
-                real *                lambda,
-                const t_mdatoms *     md,
-                struct t_fcdata *     fcd,
-                int *                 global_atom_index,
-                int                   flags);
+void do_force_listed(struct gmx_wallcycle *wcycle,
+                     matrix                box,
+                     const t_lambda *      fepvals,
+                     const t_commrec *     cr,
+                     const t_idef *        idef,
+                     const rvec            x[],
+                     history_t *           hist,
+                     rvec                  f[],
+                     t_forcerec *          fr,
+                     const struct t_pbc *  pbc,
+                     const struct t_graph *graph,
+                     gmx_enerdata_t *      enerd,
+                     t_nrnb *              nrnb,
+                     real *                lambda,
+                     const t_mdatoms *     md,
+                     struct t_fcdata *     fcd,
+                     int *                 global_atom_index,
+                     int                   flags);
 
 #ifdef __cplusplus
 }

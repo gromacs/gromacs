@@ -326,8 +326,8 @@ private:
 
 void SynopsisFormatter::start(const char *name)
 {
-    currentLength_ = std::strlen(name) + 1;
-    indent_        = std::min(currentLength_, 13);
+    currentLength_   = std::strlen(name) + 1;
+    indent_          = std::min(currentLength_, 13);
     TextWriter &file = context_.outputFile();
     switch (context_.outputFormat())
     {
@@ -338,7 +338,7 @@ void SynopsisFormatter::start(const char *name)
         case eHelpOutputFormat_Rst:
             bFormatted_ = true;
             lineLength_ = 74;
-            indent_    += 4;
+            indent_ += 4;
             file.writeLine(".. parsed-literal::");
             file.writeLine();
             file.writeString("    ");
@@ -360,7 +360,7 @@ void SynopsisFormatter::formatOption(const OptionInfo &option)
     formatOptionNameAndValue(option, &name, &value);
     int         totalLength = name.length() + 4;
     std::string fullOptionText
-        = formatString(" [%s-%s", bFormatted_ ? ":strong:`" : "", name.c_str());
+            = formatString(" [%s-%s", bFormatted_ ? ":strong:`" : "", name.c_str());
     if (!value.empty())
     {
         fullOptionText.append(bFormatted_ ? "` :emphasis:`" : " ");
@@ -461,7 +461,7 @@ void OptionsListFormatter::formatOption(const OptionInfo &option)
     if (fileOption != nullptr)
     {
         const bool bAbbrev = (context_.outputFormat() == eHelpOutputFormat_Console);
-        info = fileOptionFlagsAsString(*fileOption, bAbbrev);
+        info               = fileOptionFlagsAsString(*fileOption, bAbbrev);
     }
     std::string description(descriptionWithOptionDetails(common_, option));
     context_.writeOptionItem("-" + name, value, defaultValue, info, description);
@@ -469,7 +469,7 @@ void OptionsListFormatter::formatOption(const OptionInfo &option)
 
 //! \}
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * CommandLineHelpWriter::Impl

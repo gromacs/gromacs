@@ -48,49 +48,49 @@ namespace gmx
 static inline SimdFloat gmx_simdcall fma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+        vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               vnegq_f32(vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+        vnegq_f32(vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
     };
 }
 
 static inline SimdFloat gmx_simdcall fnma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+        vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fnms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               vnegq_f32(vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+        vnegq_f32(vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
     };
 }
 
 static inline SimdFloat gmx_simdcall round(SimdFloat x)
 {
     return {
-               vrndnq_f32(x.simdInternal_)
+        vrndnq_f32(x.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall trunc(SimdFloat x)
 {
     return {
-               vrndq_f32(x.simdInternal_)
+        vrndq_f32(x.simdInternal_)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall cvtR2I(SimdFloat a)
 {
     return {
-               vcvtnq_s32_f32(a.simdInternal_)
+        vcvtnq_s32_f32(a.simdInternal_)
     };
 }
 
@@ -107,11 +107,11 @@ static inline bool gmx_simdcall anyTrue(SimdFIBool a)
 static inline float gmx_simdcall reduce(SimdFloat a)
 {
     float32x4_t b = a.simdInternal_;
-    b = vpaddq_f32(b, b);
-    b = vpaddq_f32(b, b);
+    b             = vpaddq_f32(b, b);
+    b             = vpaddq_f32(b, b);
     return vgetq_lane_f32(b, 0);
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_FLOAT_H

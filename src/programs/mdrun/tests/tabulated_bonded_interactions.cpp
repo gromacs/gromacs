@@ -57,7 +57,8 @@ namespace test
 {
 
 //! Format string for building a configurable .top file
-const char *g_butaneTopFileFormatString = "\
+const char *g_butaneTopFileFormatString =
+        "\
 [ defaults ]\n\
 ; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ\n\
   1		1		no		1.0	1.0\n\
@@ -123,7 +124,8 @@ public:
 // This test ensures that a normal non-tabulated bond interaction works
 TEST_F(BondedInteractionsTest, NormalBondWorks)
 {
-    setupGrompp("[ bonds ]\n\
+    setupGrompp(
+            "[ bonds ]\n\
 ;  ai    aj funct           c0           c1\n\
     1     2     1 1.530000e-01 3.347000e+05");
     EXPECT_EQ(0, runner_.callGrompp());
@@ -136,7 +138,8 @@ TEST_F(BondedInteractionsTest, NormalBondWorks)
 // This test ensures that a normal abulated bond interaction works
 TEST_F(BondedInteractionsTest, TabulatedBondWorks)
 {
-    setupGrompp("[ bonds ]\n\
+    setupGrompp(
+            "[ bonds ]\n\
 ;  ai    aj funct  n     k\n\
     1     2     8  0  1000");
     EXPECT_EQ(0, runner_.callGrompp());
@@ -151,7 +154,8 @@ TEST_F(BondedInteractionsTest, TabulatedBondWorks)
 // This test ensures that a normal non-tabulated angle interaction works
 TEST_F(BondedInteractionsTest, NormalAngleWorks)
 {
-    setupGrompp("[ angles ]\n\
+    setupGrompp(
+            "[ angles ]\n\
 ;  ai    aj    ak funct           c0           c1\n\
     1     2     3     1 1.110000e+02 4.602000e+02");
     EXPECT_EQ(0, runner_.callGrompp());
@@ -164,7 +168,8 @@ TEST_F(BondedInteractionsTest, NormalAngleWorks)
 // This test ensures that a tabulated angle interaction works
 TEST_F(BondedInteractionsTest, TabulatedAngleWorks)
 {
-    setupGrompp("[ angles ]\n\
+    setupGrompp(
+            "[ angles ]\n\
 ;  ai    aj    ak funct  n     k\n\
     1     2     3     8  0  1000");
     EXPECT_EQ(0, runner_.callGrompp());
@@ -179,7 +184,8 @@ TEST_F(BondedInteractionsTest, TabulatedAngleWorks)
 // This test ensures that a normal non-tabulated dihedral interaction works
 TEST_F(BondedInteractionsTest, NormalDihedralWorks)
 {
-    setupGrompp("[ dihedrals ]\n \
+    setupGrompp(
+            "[ dihedrals ]\n \
 ;  ai    aj    ak    al funct     c0     c1     c2      c3     c4      c5\n\
     1     2     3     4     3 9.2789 12.156 -13.12 -3.0597  26.24 -31.495");
     EXPECT_EQ(0, runner_.callGrompp());
@@ -192,7 +198,8 @@ TEST_F(BondedInteractionsTest, NormalDihedralWorks)
 // This test ensures that a tabulated dihedral interaction works
 TEST_F(BondedInteractionsTest, TabulatedDihedralWorks)
 {
-    setupGrompp("[ dihedrals ]\n\
+    setupGrompp(
+            "[ dihedrals ]\n\
 ;  ai    aj    ak    al funct   n     k\n\
     1     2     3     4     8   0  1000");
     EXPECT_EQ(0, runner_.callGrompp());

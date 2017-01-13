@@ -71,10 +71,10 @@ TEST_P(ReplicaExchangeEnsembleTest, ExitsNormally)
    the same way / at all, if we would try to duplicate less code. */
 #if GMX_LIB_MPI
 INSTANTIATE_TEST_CASE_P(WithDifferentControlVariables, ReplicaExchangeEnsembleTest,
-                            ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
+                        ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
 #else
 INSTANTIATE_TEST_CASE_P(DISABLED_WithDifferentControlVariables, ReplicaExchangeEnsembleTest,
-                            ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
+                        ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
 #endif
 
 //! Convenience typedef

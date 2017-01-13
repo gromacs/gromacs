@@ -51,11 +51,10 @@
 #include "gromacs/utility/smalloc.h"
 
 /* Just a number to identify our file type */
-#define GMX_MTXIO_MAGIC_NUMBER  0x34ce8fd2
+#define GMX_MTXIO_MAGIC_NUMBER 0x34ce8fd2
 
-#define GMX_MTXIO_FULL_MATRIX     0
-#define GMX_MTXIO_SPARSE_MATRIX   1
-
+#define GMX_MTXIO_FULL_MATRIX 0
+#define GMX_MTXIO_SPARSE_MATRIX 1
 
 
 /* Matrix file format definition:
@@ -79,11 +78,11 @@
  *         Each entry consists of an integer column index and floating-point data value.
  */
 
-void gmx_mtxio_write(const char *         filename,
-                     int                  nrow,
-                     int                  ncol,
-                     real *               full_matrix,
-                     gmx_sparsematrix_t * sparse_matrix)
+void gmx_mtxio_write(const char *        filename,
+                     int                 nrow,
+                     int                 ncol,
+                     real *              full_matrix,
+                     gmx_sparsematrix_t *sparse_matrix)
 {
     t_fileio *fio;
     int       i, j, prec;
@@ -151,11 +150,11 @@ void gmx_mtxio_write(const char *         filename,
 }
 
 
-void gmx_mtxio_read (const char *          filename,
-                     int *                 nrow,
-                     int *                 ncol,
-                     real **               full_matrix,
-                     gmx_sparsematrix_t ** sparse_matrix)
+void gmx_mtxio_read(const char *         filename,
+                    int *                nrow,
+                    int *                ncol,
+                    real **              full_matrix,
+                    gmx_sparsematrix_t **sparse_matrix)
 {
     t_fileio *fio;
     int       i, j, prec;

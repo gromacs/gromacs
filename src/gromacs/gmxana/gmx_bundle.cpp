@@ -192,7 +192,7 @@ static void dump_axes(t_trxstatus *status, t_trxframe *fr, t_atoms *outat,
 
 int gmx_bundle(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] analyzes bundles of axes. The axes can be for instance",
         "helix axes. The program reads two index groups and divides both",
         "of them in [TT]-na[tt] parts. The centers of mass of these parts",
@@ -218,23 +218,21 @@ int gmx_bundle(int argc, char *argv[])
     static int      n    = 0;
     static gmx_bool bZ   = FALSE;
     t_pargs         pa[] = {
-        { "-na", FALSE, etINT, {&n},
-          "Number of axes" },
-        { "-z", FALSE, etBOOL, {&bZ},
-          "Use the [IT]z[it]-axis as reference instead of the average axis" }
+        { "-na", FALSE, etINT, { &n }, "Number of axes" },
+        { "-z", FALSE, etBOOL, { &bZ }, "Use the [IT]z[it]-axis as reference instead of the average axis" }
     };
-    FILE *          flen, *fdist, *fz, *ftilt, *ftiltr, *ftiltl;
-    FILE *          fkink = nullptr, *fkinkr = nullptr, *fkinkl = nullptr;
-    t_trxstatus *   status;
-    t_trxstatus *   fpdb;
-    t_topology      top;
-    int             ePBC;
-    rvec *          xtop;
-    matrix          box;
-    t_trxframe      fr;
-    t_atoms         outatoms;
-    real            t, comp;
-    char *          grpname[MAX_ENDS];
+    FILE *       flen, *fdist, *fz, *ftilt, *ftiltr, *ftiltl;
+    FILE *       fkink = nullptr, *fkinkr = nullptr, *fkinkl = nullptr;
+    t_trxstatus *status;
+    t_trxstatus *fpdb;
+    t_topology   top;
+    int          ePBC;
+    rvec *       xtop;
+    matrix       box;
+    t_trxframe   fr;
+    t_atoms      outatoms;
+    real         t, comp;
+    char *       grpname[MAX_ENDS];
     /* FIXME: The constness should not be cast away */
     char *            anm = (char *)"CA", *rnm = (char *)"GLY";
     int               i, gnx[MAX_ENDS];
@@ -272,7 +270,7 @@ int gmx_bundle(int argc, char *argv[])
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, TRUE);
 
     bKink = opt2bSet("-ok", NFILE, fnm) || opt2bSet("-okr", NFILE, fnm)
-        || opt2bSet("-okl", NFILE, fnm);
+            || opt2bSet("-okl", NFILE, fnm);
     if (bKink)
     {
         bun.nend = 3;
@@ -382,10 +380,10 @@ int gmx_bundle(int argc, char *argv[])
             fprintf(ftilt, " %6g", RAD2DEG * acos(bun.dir[i][ZZ]));
             comp = bun.mid[i][XX] * bun.dir[i][XX] + bun.mid[i][YY] * bun.dir[i][YY];
             fprintf(ftiltr, " %6g", RAD2DEG
-                    * std::asin(comp / std::hypot(comp, bun.dir[i][ZZ])));
+                                            * std::asin(comp / std::hypot(comp, bun.dir[i][ZZ])));
             comp = bun.mid[i][YY] * bun.dir[i][XX] - bun.mid[i][XX] * bun.dir[i][YY];
             fprintf(ftiltl, " %6g", RAD2DEG
-                    * std::asin(comp / std::hypot(comp, bun.dir[i][ZZ])));
+                                            * std::asin(comp / std::hypot(comp, bun.dir[i][ZZ])));
             if (bKink)
             {
                 rvec_sub(bun.end[0][i], bun.end[2][i], va);

@@ -63,24 +63,23 @@ namespace gmx
 
 const std::string &simdString(SimdType s)
 {
-    static const std::map<SimdType, std::string> name =
-    {
-        { SimdType::None,           "None"            },
-        { SimdType::Reference,      "Reference"       },
-        { SimdType::Generic,        "Generic"         },
-        { SimdType::X86_Sse2,       "SSE2"            },
-        { SimdType::X86_Sse4_1,     "SSE4.1"          },
-        { SimdType::X86_Avx128Fma,  "AVX_128_FMA"     },
-        { SimdType::X86_Avx,        "AVX_256"         },
-        { SimdType::X86_Avx2,       "AVX2_256"        },
-        { SimdType::X86_Avx512,     "AVX_512"         },
-        { SimdType::X86_Avx512Knl,  "AVX_512_KNL"     },
-        { SimdType::X86_Mic,        "X86_MIC"         },
-        { SimdType::Arm_Neon,       "ARM_NEON"        },
-        { SimdType::Arm_NeonAsimd,  "ARM_NEON_ASIMD"  },
-        { SimdType::Ibm_Qpx,        "IBM_QPX"         },
-        { SimdType::Ibm_Vmx,        "IBM_VMX"         },
-        { SimdType::Ibm_Vsx,        "IBM_VSX"         },
+    static const std::map<SimdType, std::string> name = {
+        { SimdType::None, "None" },
+        { SimdType::Reference, "Reference" },
+        { SimdType::Generic, "Generic" },
+        { SimdType::X86_Sse2, "SSE2" },
+        { SimdType::X86_Sse4_1, "SSE4.1" },
+        { SimdType::X86_Avx128Fma, "AVX_128_FMA" },
+        { SimdType::X86_Avx, "AVX_256" },
+        { SimdType::X86_Avx2, "AVX2_256" },
+        { SimdType::X86_Avx512, "AVX_512" },
+        { SimdType::X86_Avx512Knl, "AVX_512_KNL" },
+        { SimdType::X86_Mic, "X86_MIC" },
+        { SimdType::Arm_Neon, "ARM_NEON" },
+        { SimdType::Arm_NeonAsimd, "ARM_NEON_ASIMD" },
+        { SimdType::Ibm_Qpx, "IBM_QPX" },
+        { SimdType::Ibm_Vmx, "IBM_VMX" },
+        { SimdType::Ibm_Vsx, "IBM_VSX" },
         { SimdType::Fujitsu_HpcAce, "Fujitsu HPC-ACE" }
     };
 
@@ -234,7 +233,8 @@ bool simdCheck(gmx::SimdType wanted,
     // AVX128Fma, but they will work fine with AVX too. Thus, make an exception for this.
     if (compiled > wanted && !(compiled == SimdType::X86_Avx && wanted == SimdType::X86_Avx128Fma))
     {
-        fprintf(stderr, "Warning: SIMD instructions newer than hardware. Program will likely crash.\n"
+        fprintf(stderr,
+                "Warning: SIMD instructions newer than hardware. Program will likely crash.\n"
                 "SIMD instructions most likely to fit this hardware: %s\n"
                 "SIMD instructions selected at GROMACS compile time: %s\n\n",
                 simdString(wanted).c_str(),
@@ -246,7 +246,8 @@ bool simdCheck(gmx::SimdType wanted,
 
         if (log != nullptr)
         {
-            fprintf(log, "\nBinary not matching hardware - you might be losing performance.\n"
+            fprintf(log,
+                    "\nBinary not matching hardware - you might be losing performance.\n"
                     "SIMD instructions most likely to fit this hardware: %s\n"
                     "SIMD instructions selected at GROMACS compile time: %s\n\n",
                     simdString(wanted).c_str(),
@@ -263,5 +264,4 @@ bool simdCheck(gmx::SimdType wanted,
 }
 
 /*! \endcond */
-
 }

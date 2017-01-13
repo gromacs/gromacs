@@ -104,7 +104,7 @@ void TestOptionsRegistry::initOptions(IOptionsContainer *options)
     }
 }
 
-}       // namespace
+} // namespace
 
 void registerTestOptions(const char *name, TestOptionsProvider *provider)
 {

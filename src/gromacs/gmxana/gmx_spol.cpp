@@ -156,7 +156,7 @@ int gmx_spol(int argc, char *argv[])
     t_trxstatus *status;
     int          nrefat, natoms, nf, ntot;
     real         t;
-    rvec *       x, xref, trial, dx = {0}, dip, dir;
+    rvec *       x, xref, trial, dx = { 0 }, dip, dir;
     matrix       box;
 
     FILE *      fp;
@@ -195,23 +195,21 @@ int gmx_spol(int argc, char *argv[])
     gmx_output_env_t *oenv;
     static gmx_bool   bCom   = FALSE;
     static int        srefat = 1;
-    static real       rmin   = 0.0, rmax = 0.32, refdip = 0, bw = 0.01;
-    t_pargs           pa[]   = {
-        { "-com",  FALSE, etBOOL,  {&bCom},
-          "Use the center of mass as the reference position" },
-        { "-refat",  FALSE, etINT, {&srefat},
-          "The reference atom of the solvent molecule" },
-        { "-rmin",  FALSE, etREAL, {&rmin}, "Maximum distance (nm)" },
-        { "-rmax",  FALSE, etREAL, {&rmax}, "Maximum distance (nm)" },
-        { "-dip",   FALSE, etREAL, {&refdip}, "The average dipole (D)" },
-        { "-bw",    FALSE, etREAL, {&bw}, "The bin width" }
+    static real       rmin = 0.0, rmax = 0.32, refdip = 0, bw = 0.01;
+    t_pargs           pa[] = {
+        { "-com", FALSE, etBOOL, { &bCom }, "Use the center of mass as the reference position" },
+        { "-refat", FALSE, etINT, { &srefat }, "The reference atom of the solvent molecule" },
+        { "-rmin", FALSE, etREAL, { &rmin }, "Maximum distance (nm)" },
+        { "-rmax", FALSE, etREAL, { &rmax }, "Maximum distance (nm)" },
+        { "-dip", FALSE, etREAL, { &refdip }, "The average dipole (D)" },
+        { "-bw", FALSE, etREAL, { &bw }, "The bin width" }
     };
 
     t_filenm fnm[] = {
-        { efTRX, nullptr,  nullptr,  ffREAD },
-        { efTPR, nullptr,  nullptr,  ffREAD },
-        { efNDX, nullptr,  nullptr,  ffOPTRD },
-        { efXVG, nullptr,  "scdist",  ffWRITE }
+        { efTRX, nullptr, nullptr, ffREAD },
+        { efTPR, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, nullptr, "scdist", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -340,12 +338,12 @@ int gmx_spol(int argc, char *argv[])
                 unitv(dir, dir);
 
                 svmul(ENM2DEBYE, dip, dip);
-                dip2   = norm2(dip);
-                sdip  += std::sqrt(dip2);
+                dip2 = norm2(dip);
+                sdip += std::sqrt(dip2);
                 sdip2 += dip2;
                 for (d = 0; d < DIM; d++)
                 {
-                    sinp  += dx[d] * dip[d];
+                    sinp += dx[d] * dip[d];
                     sdinp += dx[d] * (dip[d] - refdip * dir[d]);
                 }
 
@@ -366,9 +364,9 @@ int gmx_spol(int argc, char *argv[])
             rmax, static_cast<real>(ntot) / nf);
     if (ntot > 0)
     {
-        sdip  /= ntot;
+        sdip /= ntot;
         sdip2 /= ntot;
-        sinp  /= ntot;
+        sinp /= ntot;
         sdinp /= ntot;
         fprintf(stderr, "Average dipole:                               %f (D), std.dev. %f\n",
                 sdip, std::sqrt(sdip2 - gmx::square(sdip)));

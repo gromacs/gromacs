@@ -69,27 +69,27 @@ typedef struct
 struct gmx_domdec_specat_comm_t
 {
     /* The number of indices to receive during the setup */
-    int nreq[DIM][2][2];               /**< The nr. of atoms requested, per DIM, direction and direct/indirect */
+    int nreq[DIM][2][2]; /**< The nr. of atoms requested, per DIM, direction and direct/indirect */
     /* The atoms to send */
     gmx_specatsend_t spas[DIM][2];     /**< The communication setup per DIM, direction */
     gmx_bool *       bSendAtom;        /**< Work buffer that tells if spec.atoms should be sent */
     int              bSendAtom_nalloc; /**< Allocation size of \p bSendAtom */
     /* Send buffers */
-    int * ibuf;                        /**< Integer send buffer */
-    int   ibuf_nalloc;                 /**< Allocation size of \p ibuf */
-    rvec *vbuf;                        /**< rvec send buffer */
-    int   vbuf_nalloc;                 /**< Allocation size of \p vbuf */
-    rvec *vbuf2;                       /**< rvec send buffer */
-    int   vbuf2_nalloc;                /**< Allocation size of \p vbuf2 */
+    int * ibuf;         /**< Integer send buffer */
+    int   ibuf_nalloc;  /**< Allocation size of \p ibuf */
+    rvec *vbuf;         /**< rvec send buffer */
+    int   vbuf_nalloc;  /**< Allocation size of \p vbuf */
+    rvec *vbuf2;        /**< rvec send buffer */
+    int   vbuf2_nalloc; /**< Allocation size of \p vbuf2 */
     /* The range in the local buffer(s) for received atoms */
-    int at_start;                      /**< Start index of received atoms */
-    int at_end;                        /**< End index of received atoms */
+    int at_start; /**< Start index of received atoms */
+    int at_end;   /**< End index of received atoms */
 
     /* The atom indices we need from the surrounding cells.
      * We can gather the indices over nthread threads.
      */
-    int        nthread;                /**< Number of threads used for spec.atom communication */
-    ind_req_t *ireq;                   /**< Index request buffer per thread, allocation size \p nthread */
+    int        nthread; /**< Number of threads used for spec.atom communication */
+    ind_req_t *ireq;    /**< Index request buffer per thread, allocation size \p nthread */
 };
 
 /*! \brief Communicates the force for special atoms, the shift forces are reduced with \p fshift != NULL */
@@ -107,7 +107,7 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
  */
 void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
                       matrix box,
-                      rvec *x0,
+                      rvec * x0,
                       rvec *x1, gmx_bool bX1IsCoord);
 
 /*! \brief Sets up the communication for special atoms

@@ -65,23 +65,23 @@ class SimulationSignaller;
  */
 
 /* we are computing the kinetic energy from average velocities */
-#define CGLO_EKINAVEVEL     (1 << 2)
+#define CGLO_EKINAVEVEL (1 << 2)
 /* we are removing the center of mass momenta */
-#define CGLO_STOPCM         (1 << 3)
+#define CGLO_STOPCM (1 << 3)
 /* bGStat is defined in do_md */
-#define CGLO_GSTAT          (1 << 4)
+#define CGLO_GSTAT (1 << 4)
 /* Sum the energy terms in global computation */
-#define CGLO_ENERGY         (1 << 6)
+#define CGLO_ENERGY (1 << 6)
 /* Sum the kinetic energy terms in global computation */
-#define CGLO_TEMPERATURE    (1 << 7)
+#define CGLO_TEMPERATURE (1 << 7)
 /* Sum the kinetic energy terms in global computation */
-#define CGLO_PRESSURE       (1 << 8)
+#define CGLO_PRESSURE (1 << 8)
 /* Sum the constraint term in global computation */
-#define CGLO_CONSTRAINT     (1 << 9)
+#define CGLO_CONSTRAINT (1 << 9)
 /* Reading ekin from the trajectory */
-#define CGLO_READEKIN       (1 << 10)
+#define CGLO_READEKIN (1 << 10)
 /* we need to reset the ekin rescaling factor here */
-#define CGLO_SCALEEKIN      (1 << 11)
+#define CGLO_SCALEEKIN (1 << 11)
 /* After a new DD partitioning, we need to set a flag to schedule
  * global reduction of the total number of bonded interactions that
  * will be computed, to check none are missing. */

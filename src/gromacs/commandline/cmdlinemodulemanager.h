@@ -63,7 +63,7 @@ class IFileOutputRedirector;
 
 //! Smart pointer type for managing a ICommandLineModule.
 typedef std::unique_ptr<ICommandLineModule>
-    CommandLineModulePointer;
+        CommandLineModulePointer;
 
 /*! \libinternal \brief
  * Implements a wrapper command-line interface for multiple modules.
@@ -172,7 +172,7 @@ public:
      * This allows specifying, e.g., a different default nice level.
      */
     static int runAsMainCMainWithSettings(int argc, char *argv[],
-                                          CMainFunction mainFunction,
+                                          CMainFunction        mainFunction,
                                           InitSettingsFunction settingsFunction);
 
     /*! \brief
@@ -283,7 +283,7 @@ public:
      * This allows specifying, e.g., a different default nice level.
      */
     void addModuleCMainWithSettings(const char *name, const char *shortDescription,
-                                    CMainFunction mainFunction,
+                                    CMainFunction        mainFunction,
                                     InitSettingsFunction settingsFunction);
     /*! \brief
      * Registers a module of a certain type to this manager.
@@ -368,7 +368,8 @@ public:
     typedef CommandLineModuleGroupData Impl;
 
     //! Creates a new group (only called by CommandLineModuleManager).
-    explicit CommandLineModuleGroup(Impl *impl) : impl_(impl) {}
+    explicit CommandLineModuleGroup(Impl *impl)
+        : impl_(impl) {}
     //! \endcond
 
     /*! \brief

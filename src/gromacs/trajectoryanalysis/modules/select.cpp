@@ -118,7 +118,8 @@ private:
     {
         GroupInfo(const std::string &name, bool bDynamic)
             : name(name), bDynamic(bDynamic)
-        { }
+        {
+        }
 
         std::string name;
         bool        bDynamic;
@@ -420,47 +421,22 @@ void Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings 
 
     settings->setHelpText(desc);
 
-    options->addOption(FileNameOption("os").filetype(eftPlot).outputFile()
-                           .store(&fnSize_).defaultBasename("size")
-                           .description("Number of positions in each selection"));
-    options->addOption(FileNameOption("oc").filetype(eftPlot).outputFile()
-                           .store(&fnFrac_).defaultBasename("cfrac")
-                           .description("Covered fraction for each selection"));
-    options->addOption(FileNameOption("oi").filetype(eftGenericData).outputFile()
-                           .store(&fnIndex_).defaultBasename("index")
-                           .description("Indices selected by each selection"));
-    options->addOption(FileNameOption("on").filetype(eftIndex).outputFile()
-                           .store(&fnNdx_).defaultBasename("index")
-                           .description("Index file from the selection"));
-    options->addOption(FileNameOption("om").filetype(eftPlot).outputFile()
-                           .store(&fnMask_).defaultBasename("mask")
-                           .description("Mask for selected positions"));
-    options->addOption(FileNameOption("of").filetype(eftPlot).outputFile()
-                           .store(&fnOccupancy_).defaultBasename("occupancy")
-                           .description("Occupied fraction for selected positions"));
-    options->addOption(FileNameOption("ofpdb").filetype(eftPDB).outputFile()
-                           .store(&fnPDB_).defaultBasename("occupancy")
-                           .description("PDB file with occupied fraction for selected positions"));
-    options->addOption(FileNameOption("olt").filetype(eftPlot).outputFile()
-                           .store(&fnLifetime_).defaultBasename("lifetime")
-                           .description("Lifetime histogram"));
+    options->addOption(FileNameOption("os").filetype(eftPlot).outputFile().store(&fnSize_).defaultBasename("size").description("Number of positions in each selection"));
+    options->addOption(FileNameOption("oc").filetype(eftPlot).outputFile().store(&fnFrac_).defaultBasename("cfrac").description("Covered fraction for each selection"));
+    options->addOption(FileNameOption("oi").filetype(eftGenericData).outputFile().store(&fnIndex_).defaultBasename("index").description("Indices selected by each selection"));
+    options->addOption(FileNameOption("on").filetype(eftIndex).outputFile().store(&fnNdx_).defaultBasename("index").description("Index file from the selection"));
+    options->addOption(FileNameOption("om").filetype(eftPlot).outputFile().store(&fnMask_).defaultBasename("mask").description("Mask for selected positions"));
+    options->addOption(FileNameOption("of").filetype(eftPlot).outputFile().store(&fnOccupancy_).defaultBasename("occupancy").description("Occupied fraction for selected positions"));
+    options->addOption(FileNameOption("ofpdb").filetype(eftPDB).outputFile().store(&fnPDB_).defaultBasename("occupancy").description("PDB file with occupied fraction for selected positions"));
+    options->addOption(FileNameOption("olt").filetype(eftPlot).outputFile().store(&fnLifetime_).defaultBasename("lifetime").description("Lifetime histogram"));
 
-    options->addOption(SelectionOption("select").storeVector(&sel_)
-                           .required().multiValue()
-                           .description("Selections to analyze"));
+    options->addOption(SelectionOption("select").storeVector(&sel_).required().multiValue().description("Selections to analyze"));
 
-    options->addOption(BooleanOption("norm").store(&bTotNorm_)
-                           .description("Normalize by total number of positions with -os"));
-    options->addOption(BooleanOption("cfnorm").store(&bFracNorm_)
-                           .description("Normalize by covered fraction with -os"));
-    options->addOption(EnumOption<ResidueNumbering>("resnr").store(&resNumberType_)
-                           .enumValue(cResNumberEnum)
-                           .description("Residue number output type with -oi and -on"));
-    options->addOption(EnumOption<PdbAtomsSelection>("pdbatoms").store(&pdbAtoms_)
-                           .enumValue(cPDBAtomsEnum)
-                           .description("Atoms to write with -ofpdb"));
-    options->addOption(BooleanOption("cumlt").store(&bCumulativeLifetimes_)
-                           .description("Cumulate subintervals of longer intervals in -olt"));
+    options->addOption(BooleanOption("norm").store(&bTotNorm_).description("Normalize by total number of positions with -os"));
+    options->addOption(BooleanOption("cfnorm").store(&bFracNorm_).description("Normalize by covered fraction with -os"));
+    options->addOption(EnumOption<ResidueNumbering>("resnr").store(&resNumberType_).enumValue(cResNumberEnum).description("Residue number output type with -oi and -on"));
+    options->addOption(EnumOption<PdbAtomsSelection>("pdbatoms").store(&pdbAtoms_).enumValue(cPDBAtomsEnum).description("Atoms to write with -ofpdb"));
+    options->addOption(BooleanOption("cumlt").store(&bCumulativeLifetimes_).description("Cumulate subintervals of longer intervals in -olt"));
 }
 
 void Select::optionsFinished(TrajectoryAnalysisSettings *settings)
@@ -694,7 +670,7 @@ void Select::writeOutput()
             for (int i = 0; i < sel_[g].posCount(); ++i)
             {
                 ConstArrayRef<int> atomIndices
-                    = sel_[g].position(i).atomIndices();
+                        = sel_[g].position(i).atomIndices();
                 ConstArrayRef<int>::const_iterator ai;
                 for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
                 {
@@ -758,11 +734,11 @@ void Select::writeOutput()
     }
 }
 
-}       // namespace
+} // namespace
 
 const char SelectInfo::name[] = "select";
 const char SelectInfo::shortDescription[]
-    = "Print general information about selections";
+        = "Print general information about selections";
 
 TrajectoryAnalysisModulePointer SelectInfo::create()
 {

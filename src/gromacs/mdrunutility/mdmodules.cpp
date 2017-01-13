@@ -46,7 +46,8 @@ namespace gmx
 class MDModules::Impl
 {
 public:
-    Impl() : ir_(nullptr)
+    Impl()
+        : ir_(nullptr)
     {
     }
     ~Impl()
@@ -75,7 +76,8 @@ public:
     t_inputrec *                        ir_;
 };
 
-MDModules::MDModules() : impl_(new Impl)
+MDModules::MDModules()
+    : impl_(new Impl)
 {
 }
 

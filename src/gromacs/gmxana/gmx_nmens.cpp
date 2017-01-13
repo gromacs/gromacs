@@ -71,18 +71,13 @@ int gmx_nmens(int argc, char *argv[])
         "normal modes are the translational and rotational degrees of freedom."
     };
     static int  nstruct = 100, first = 7, last = -1, seed = 0;
-    static real temp    = 300.0;
-    t_pargs     pa[]    = {
-        { "-temp",  FALSE, etREAL, {&temp},
-          "Temperature in Kelvin" },
-        { "-seed", FALSE, etINT, {&seed},
-          "Random seed (0 means generate)" },
-        { "-num", FALSE, etINT, {&nstruct},
-          "Number of structures to generate" },
-        { "-first", FALSE, etINT, {&first},
-          "First eigenvector to use (-1 is select)" },
-        { "-last",  FALSE, etINT, {&last},
-          "Last eigenvector to use (-1 is till the last)" }
+    static real temp = 300.0;
+    t_pargs     pa[] = {
+        { "-temp", FALSE, etREAL, { &temp }, "Temperature in Kelvin" },
+        { "-seed", FALSE, etINT, { &seed }, "Random seed (0 means generate)" },
+        { "-num", FALSE, etINT, { &nstruct }, "Number of structures to generate" },
+        { "-first", FALSE, etINT, { &first }, "First eigenvector to use (-1 is select)" },
+        { "-last", FALSE, etINT, { &last }, "Last eigenvector to use (-1 is till the last)" }
     };
 #define NPA asize(pa)
 
@@ -111,11 +106,11 @@ int gmx_nmens(int argc, char *argv[])
 
 
     t_filenm fnm[] = {
-        { efTRN, "-v",    "eigenvec",    ffREAD  },
-        { efXVG, "-e",    "eigenval",    ffREAD  },
-        { efTPS, nullptr,    nullptr,          ffREAD },
-        { efNDX, nullptr,    nullptr,          ffOPTRD },
-        { efTRO, "-o",    "ensemble",    ffWRITE }
+        { efTRN, "-v", "eigenvec", ffREAD },
+        { efXVG, "-e", "eigenval", ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efTRO, "-o", "ensemble", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -247,11 +242,11 @@ int gmx_nmens(int argc, char *argv[])
             jran = (jran * ia + ic) & im;
             jr   = jran;
             jran = (jran * ia + ic) & im;
-            jr  += jran;
+            jr += jran;
             jran = (jran * ia + ic) & im;
-            jr  += jran;
+            jr += jran;
             jran = (jran * ia + ic) & im;
-            jr  += jran;
+            jr += jran;
             disp = rfac * jr - rhalf;
 
             for (i = 0; i < natoms; i++)

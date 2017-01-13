@@ -70,7 +70,7 @@ class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSetting
 {
 public:
     explicit CommandLineOptionsModuleSettings(
-        OptionsBehaviorCollection *behaviors)
+            OptionsBehaviorCollection *behaviors)
         : behaviors_(*behaviors)
     {
     }
@@ -159,8 +159,8 @@ void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) 
     CommandLineOptionsModuleSettings settings(&behaviors);
     module->initOptions(&options, &settings);
     CommandLineHelpWriter(options)
-        .setHelpText(settings.helpText())
-        .writeHelp(context);
+            .setHelpText(settings.helpText())
+            .writeHelp(context);
 }
 
 void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
@@ -183,7 +183,7 @@ void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
     behaviors.optionsFinished();
 }
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * ICommandLineOptionsModuleSettings

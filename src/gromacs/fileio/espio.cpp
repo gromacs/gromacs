@@ -156,7 +156,14 @@ static int check_close_parenthesis(FILE *fp, int r,
 
 enum
 {
-    espID, espPOS, espTYPE, espQ, espV, espF, espMOLECULE, espNR
+    espID,
+    espPOS,
+    espTYPE,
+    espQ,
+    espV,
+    espF,
+    espMOLECULE,
+    espNR
 };
 static const char *const esp_prop[espNR] = {
     "id", "pos", "type", "q", "v", "f",
@@ -196,8 +203,8 @@ void gmx_espresso_read_conf(const char *infile,
         if (level == 1 && std::strcmp(word, "particles") == 0 && !bFoundParticles)
         {
             bFoundParticles = TRUE;
-            level          += check_open_parenthesis(fp, r, infile, "particles");
-            nprop           = 0;
+            level += check_open_parenthesis(fp, r, infile, "particles");
+            nprop = 0;
             while (level == 2 && (r = get_espresso_word(fp, word)))
             {
                 bFoundProp = FALSE;
@@ -292,7 +299,7 @@ void gmx_espresso_read_conf(const char *infile,
                                     || atoms->resinfo[atoms->atom[i - 1].resind].nr != molnr)
                                 {
                                     atoms->atom[i].resind
-                                                                                   = (i == 0 ? 0 : atoms->atom[i - 1].resind + 1);
+                                            = (i == 0 ? 0 : atoms->atom[i - 1].resind + 1);
                                     atoms->resinfo[atoms->atom[i].resind].nr       = molnr;
                                     atoms->resinfo[atoms->atom[i].resind].ic       = ' ';
                                     atoms->resinfo[atoms->atom[i].resind].chainid  = ' ';
@@ -313,7 +320,7 @@ void gmx_espresso_read_conf(const char *infile,
                         if (i == 0 || atoms->atom[i].resind != atoms->atom[i - 1].resind)
                         {
                             atoms->resinfo[atoms->atom[i].resind].name
-                                = put_symtab(symtab, "MOL");
+                                    = put_symtab(symtab, "MOL");
                         }
                     }
                     else
@@ -350,7 +357,7 @@ void gmx_espresso_read_conf(const char *infile,
         else if (level == 1 && std::strcmp(word, "variable") == 0 && !bFoundVariable)
         {
             bFoundVariable = TRUE;
-            level         += check_open_parenthesis(fp, r, infile, "variable");
+            level += check_open_parenthesis(fp, r, infile, "variable");
             while (level == 2 && (r = get_espresso_word(fp, word)))
             {
                 if (level == 2 && std::strcmp(word, "box_l") == 0)
@@ -402,7 +409,7 @@ int get_espresso_coordnum(const char *infile)
         if (level == 1 && strcmp(word, "particles") == 0 && !bFoundParticles)
         {
             bFoundParticles = TRUE;
-            level          += check_open_parenthesis(fp, r, infile, "particles");
+            level += check_open_parenthesis(fp, r, infile, "particles");
             while (level > 0 && (r = get_espresso_word(fp, word)))
             {
                 if (r == 2)

@@ -104,7 +104,7 @@ static t_complex conjugate(t_complex c)
 {
     t_complex d;
 
-    d.re =  c.re;
+    d.re = c.re;
     d.im = -c.im;
 
     return d;
@@ -117,7 +117,6 @@ static real cabs2(t_complex c)
 
     return abs2;
 }
-
 
 
 static t_complex cdiv(t_complex teller, t_complex noemer)

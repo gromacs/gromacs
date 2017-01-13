@@ -74,7 +74,7 @@ void cross_corr(int n, real f[], real g[], real corr[]);
  * \param[in] g 2D array of second function to crosscorrelate
  * \param[out] corr 2D array of the cross correlations
  */
-void many_cross_corr(int nFunc, int * nData, real ** f, real ** g, real ** corr);
+void many_cross_corr(int nFunc, int *nData, real **f, real **g, real **corr);
 
 #ifdef __cplusplus
 }

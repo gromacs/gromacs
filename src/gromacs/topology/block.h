@@ -55,24 +55,24 @@ extern "C" {
    of O(Natoms) in size.  */
 typedef struct t_block
 {
-    int  nr;               /* The number of blocks          */
-    int *index;            /* Array of indices (dim: nr+1)  */
-    int  nalloc_index;     /* The allocation size for index */
+    int  nr;           /* The number of blocks          */
+    int *index;        /* Array of indices (dim: nr+1)  */
+    int  nalloc_index; /* The allocation size for index */
 } t_block;
 
 typedef struct t_blocka
 {
-    int  nr;        /* The number of blocks              */
-    int *index;     /* Array of indices in a (dim: nr+1) */
-    int  nra;       /* The number of atoms               */
-    int *a;         /* Array of atom numbers in each group  */
+    int  nr;    /* The number of blocks              */
+    int *index; /* Array of indices in a (dim: nr+1) */
+    int  nra;   /* The number of atoms               */
+    int *a;     /* Array of atom numbers in each group  */
     /* (dim: nra)                           */
     /* Block i (0<=i<nr) runs from          */
     /* index[i] to index[i+1]-1. There will */
     /* allways be an extra entry in index   */
     /* to terminate the table               */
-    int nalloc_index;           /* The allocation size for index        */
-    int nalloc_a;               /* The allocation size for a            */
+    int nalloc_index; /* The allocation size for index        */
+    int nalloc_a;     /* The allocation size for a            */
 } t_blocka;
 
 void init_block(t_block *block);

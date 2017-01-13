@@ -325,7 +325,7 @@ static int idcomp(const void *a, const void *b)
     }
     else
     {
-        return (int) (pa->a[2] - pb->a[2]);
+        return (int)(pa->a[2] - pb->a[2]);
     }
 }
 
@@ -338,8 +338,12 @@ static void sort_id(int nr, t_param ps[])
     {
         if (ps[i].a[3] < ps[i].a[0])
         {
-            tmp = ps[i].a[3]; ps[i].a[3] = ps[i].a[0]; ps[i].a[0] = tmp;
-            tmp = ps[i].a[2]; ps[i].a[2] = ps[i].a[1]; ps[i].a[1] = tmp;
+            tmp        = ps[i].a[3];
+            ps[i].a[3] = ps[i].a[0];
+            ps[i].a[0] = tmp;
+            tmp        = ps[i].a[2];
+            ps[i].a[2] = ps[i].a[1];
+            ps[i].a[1] = tmp;
         }
     }
     /* Now sort it */
@@ -614,10 +618,10 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
             {
                 anm = hbexcl->b[e].a[0];
                 i1  = search_atom(anm, astart, atoms,
-                                  "exclusion", bAllowMissing);
+                                 "exclusion", bAllowMissing);
                 anm = hbexcl->b[e].a[1];
                 i2  = search_atom(anm, astart, atoms,
-                                  "exclusion", bAllowMissing);
+                                 "exclusion", bAllowMissing);
                 if (i1 != -1 && i2 != -1)
                 {
                     if (i1 > i2)
@@ -732,8 +736,8 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
         for (i = 0; (i < nnb->nr); i++)
         {
             /* For all particles */
-            excl      = &excls[i];
-            n         = excl->nr;
+            excl = &excls[i];
+            n    = excl->nr;
             excl->nr += nnb->nrexcl[i][N];
             srenew(excl->e, excl->nr);
             for (j = 0; (j < nnb->nrexcl[i][N]); j++)
@@ -912,9 +916,9 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                             for (m = 0; m < 2; m++)
                                             {
                                                 bFound = (bFound
-                                                          || ((strcmp(anm[3 * m],  hbdih->b[n].ai()) == 0)
-                                                              && (strcmp(anm[1 + m],  hbdih->b[n].aj()) == 0)
-                                                              && (strcmp(anm[2 - m],  hbdih->b[n].ak()) == 0)
+                                                          || ((strcmp(anm[3 * m], hbdih->b[n].ai()) == 0)
+                                                              && (strcmp(anm[1 + m], hbdih->b[n].aj()) == 0)
+                                                              && (strcmp(anm[2 - m], hbdih->b[n].ak()) == 0)
                                                               && (strcmp(anm[3 - 3 * m], hbdih->b[n].al()) == 0)));
                                             }
                                             if (bFound)

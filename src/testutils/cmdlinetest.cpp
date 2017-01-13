@@ -171,7 +171,7 @@ std::string value2string(T value)
     return ss.str();
 }
 
-}       // namespace
+} // namespace
 
 void CommandLine::addOption(const char *name, const char *value)
 {
@@ -268,7 +268,7 @@ public:
         TextBlockMatcherPointer matcher;
     };
 
-    typedef std::vector<OutputFileInfo>        OutputFileList;
+    typedef std::vector<OutputFileInfo> OutputFileList;
 
     explicit Impl(TestFileManager *fileManager)
         : fileManager_(*fileManager)
@@ -325,7 +325,7 @@ void CommandLineTestHelper::setInputFileContents(
 {
     GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
-                formatString("%d.%s", args->argc(), extension));
+            formatString("%d.%s", args->argc(), extension));
     TextWriter::writeFileFromString(fullFilename, contents);
     args->addOption(option, fullFilename);
 }
@@ -336,7 +336,7 @@ void CommandLineTestHelper::setInputFileContents(
 {
     GMX_ASSERT(extension[0] != '.', "Extension should not contain a dot");
     std::string fullFilename = impl_->fileManager_.getTemporaryFilePath(
-                formatString("%d.%s", args->argc(), extension));
+            formatString("%d.%s", args->argc(), extension));
     TextWriter                                  file(fullFilename);
     ConstArrayRef<const char *>::const_iterator i;
     for (i = contents.begin(); i != contents.end(); ++i)
@@ -388,7 +388,8 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
 class CommandLineTestBase::Impl
 {
 public:
-    Impl() : helper_(&tempFiles_)
+    Impl()
+        : helper_(&tempFiles_)
     {
         cmdline_.append("module");
     }

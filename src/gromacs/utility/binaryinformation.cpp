@@ -100,7 +100,7 @@ void printCentered(FILE *fp, int width, const char *text)
 
 void printCopyright(FILE *fp)
 {
-    static const char * const Contributors[] = {
+    static const char *const Contributors[] = {
         "Emile Apol",
         "Rossen Apostolov",
         "Herman J.C. Berendsen",
@@ -133,14 +133,14 @@ void printCopyright(FILE *fp)
         "Christian Wennberg",
         "Maarten Wolf"
     };
-    static const char * const CopyrightText[] = {
+    static const char *const CopyrightText[] = {
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
         "Copyright (c) 2001-2015, The GROMACS development team at",
         "Uppsala University, Stockholm University and",
         "the Royal Institute of Technology, Sweden.",
         "check out http://www.gromacs.org for more information."
     };
-    static const char * const LicenseText[] = {
+    static const char *const LicenseText[] = {
         "GROMACS is free software; you can redistribute it and/or modify it",
         "under the terms of the GNU Lesser General Public License",
         "as published by the Free Software Foundation; either version 2.1",
@@ -159,7 +159,7 @@ void printCopyright(FILE *fp)
 
     printCentered(fp, 78, "GROMACS is written by:");
     fprintf(fp, "\n");
-    for (int i = 0; i < NCONTRIBUTORS; )
+    for (int i = 0; i < NCONTRIBUTORS;)
     {
         for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
         {
@@ -194,17 +194,17 @@ const char *getFftDescriptionString()
 {
 // Define the FFT description string
 #if GMX_FFT_FFTW3
-#  if GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS
     // Don't buy trouble
     return "fftw3";
-#  else
-    // Use the version string provided by libfftw3
-#    if GMX_DOUBLE
+#else
+// Use the version string provided by libfftw3
+#if GMX_DOUBLE
     return fftw_version;
-#    else
+#else
     return fftwf_version;
-#    endif
-#  endif
+#endif
+#endif
 #endif
 #if GMX_FFT_MKL
     return "Intel MKL";
@@ -345,9 +345,9 @@ void printBinaryInformation(FILE *                           fp,
     // Gromacs binary or some other binary that is calling Gromacs; we
     // could then print "%s is part of GROMACS" or some alternative text.
     std::string title
-        = formatString(":-) GROMACS - %s, %s%s (-:", name, gmx_version(), precisionString);
+            = formatString(":-) GROMACS - %s, %s%s (-:", name, gmx_version(), precisionString);
     const int indent
-        = centeringOffset(78 - std::strlen(prefix) - std::strlen(suffix), title.length()) + 1;
+            = centeringOffset(78 - std::strlen(prefix) - std::strlen(suffix), title.length()) + 1;
     fprintf(fp, "%s%*c%s%s\n", prefix, indent, ' ', title.c_str(), suffix);
     fprintf(fp, "%s%s\n", prefix, suffix);
     if (settings.bCopyright_)

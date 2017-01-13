@@ -50,16 +50,15 @@
 
 class CorrelationDataSet
 {
-double ** tempValues_;
+    double **tempValues_;
 
-int    nrLines_;
-int    nrColumns_;
-double startTime_;
-double endTime_;
-double dt_;
+    int    nrLines_;
+    int    nrColumns_;
+    double startTime_;
+    double endTime_;
+    double dt_;
 
 public:
-
     /*! \brief
      * Constructor
      * \param[in] fileName containing function to test. *.xvg

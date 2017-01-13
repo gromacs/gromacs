@@ -98,7 +98,7 @@ static bool MWCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
     return false;
 }
 
-void set_def (t_molwin *mw, int ePBC, matrix box)
+void set_def(t_molwin *mw, int ePBC, matrix box)
 {
     mw->bShowHydrogen = true;
     mw->bond_type     = eBFat;
@@ -124,7 +124,7 @@ t_molwin *init_mw(t_x11 *x11, Window Parent,
     x11->RegisterCallback(x11, mw->wd.self, Parent, MWCallBack, mw);
     x11->SetInputMask(x11, mw->wd.self,
                       ExposureMask | StructureNotifyMask
-                      | ButtonPressMask);
+                              | ButtonPressMask);
     return mw;
 }
 
@@ -150,7 +150,7 @@ void set_bond_type(t_x11 *x11, t_molwin *mw, int bt)
     }
 }
 
-void set_box_type (t_x11 *x11, t_molwin *mw, int bt)
+void set_box_type(t_x11 *x11, t_molwin *mw, int bt)
 {
 #ifdef DEBUG
     std::fprintf(stderr, "mw->boxtype = %d, bt = %d\n", mw->boxtype, bt);
@@ -201,7 +201,6 @@ static void draw_atom(Display *disp, Window w, GC gc,
     {
         XDrawLine(disp, w, gc, xi - 1, yi, xi + 1, yi);
     }
-
 }
 
 /* Global variables */
@@ -213,8 +212,8 @@ static void my_init_pbc(matrix box)
 
     for (i = 0; (i < DIM); i++)
     {
-        gl_fbox[i]  =  box[i][i];
-        gl_hbox[i]  =  gl_fbox[i] * 0.5;
+        gl_fbox[i]  = box[i][i];
+        gl_hbox[i]  = gl_fbox[i] * 0.5;
         gl_mhbox[i] = -gl_hbox[i];
     }
 }
@@ -433,14 +432,11 @@ static void v4_to_iv2(vec4 x4, iv2 v2, int x0, int y0, real sx, real sy)
 static void draw_box(t_x11 *x11, Window w, t_3dview *view, matrix box,
                      int x0, int y0, real sx, real sy, int boxtype)
 {
-    rvec        rect_tri[8] =  {
-        { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 0, 1, 0 },
-        { 0, 0, 1 }, { 1, 0, 1 }, { 1, 1, 1 }, { 0, 1, 1 }
+    rvec rect_tri[8] = {
+        { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 0, 1 }, { 1, 1, 1 }, { 0, 1, 1 }
     };
-    int         tr_bonds[12][2] = {
-        { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 },
-        { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 },
-        { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 }
+    int tr_bonds[12][2] = {
+        { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 }, { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 }, { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 }
     };
     static int *edge = nullptr;
     int         i, j, k, i0, i1;
@@ -579,7 +575,7 @@ void draw_mol(t_x11 *x11, t_manager *man)
     }
     set_sizes(man);
 
-    z_fill (man, man->zz);
+    z_fill(man, man->zz);
 
     /* Start drawing */
     XClearWindow(x11->disp, win->self);

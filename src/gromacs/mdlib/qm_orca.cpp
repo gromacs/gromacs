@@ -249,22 +249,25 @@ void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
     fprintf(out, "\n");
 
     fclose(out);
-}  /* write_orca_input */
+} /* write_orca_input */
 
 real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
                       t_QMrec *qm, t_MMrec *mm)
 {
     int
-        i, j, atnum;
+            i,
+            j, atnum;
     char
-        buf[300], orca_xyzFilename[300], orca_pcgradFilename[300], orca_engradFilename[300];
+            buf[300],
+            orca_xyzFilename[300], orca_pcgradFilename[300], orca_engradFilename[300];
     real
-        QMener;
+            QMener;
     FILE
-    *   xyz, *pcgrad, *engrad;
+            *xyz,
+            *pcgrad, *engrad;
     int k;
     t_QMMMrec
-    * QMMMrec;
+            *QMMMrec;
     QMMMrec = fr->qr;
     /* in case of an optimization, the coordinates are printed in the
      * xyz file, the energy and gradients for the QM part are stored in the engrad file
@@ -407,21 +410,21 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
             {
                 gmx_fatal(FARGS, "Unexpected end of ORCA output");
             }
-    #if GMX_DOUBLE
+#if GMX_DOUBLE
             sscanf(buf, "%lf%lf%lf\n",
                    &MMgrad[i][XX],
                    &MMgrad[i][YY],
                    &MMgrad[i][ZZ]);
-    #else
+#else
             sscanf(buf, "%f%f%f\n",
                    &MMgrad[i][XX],
                    &MMgrad[i][YY],
                    &MMgrad[i][ZZ]);
-    #endif
+#endif
         }
         fclose(pcgrad);
     }
-    return(QMener);
+    return (QMener);
 }
 
 void do_orca(char *orca_dir, char *basename)
@@ -432,7 +435,7 @@ void do_orca(char *orca_dir, char *basename)
      * environment.
      */
     char
-        buf[100];
+            buf[100];
     sprintf(buf, "%s/%s %s.inp >> %s.out",
             orca_dir,
             "orca",
@@ -450,15 +453,18 @@ real call_orca(t_forcerec *fr,
 {
     /* normal orca jobs */
     static int
-        step = 0;
+            step
+            = 0;
     int
-        i, j;
+            i,
+            j;
     real
-        QMener;
+            QMener;
     rvec
-    * QMgrad, *MMgrad;
+            *QMgrad,
+            *MMgrad;
     char
-    * exe;
+            *exe;
 
     snew(exe, 30);
     sprintf(exe, "%s", "orca");
@@ -489,7 +495,7 @@ real call_orca(t_forcerec *fr,
     QMener = QMener * HARTREE2KJ * AVOGADRO;
     step++;
     free(exe);
-    return(QMener);
+    return (QMener);
 } /* call_orca */
 
 /* end of orca sub routines */

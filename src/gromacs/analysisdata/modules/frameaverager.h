@@ -75,7 +75,8 @@ class AnalysisDataPointSetRef;
 class AnalysisDataFrameAverager
 {
 public:
-    AnalysisDataFrameAverager() : bFinished_(false) {}
+    AnalysisDataFrameAverager()
+        : bFinished_(false) {}
 
     /*! \brief
      * Returns the number of columns in this averager.
@@ -165,7 +166,8 @@ public:
 private:
     struct AverageItem
     {
-        AverageItem() : average(0.0), squaredSum(0.0), samples(0) {}
+        AverageItem()
+            : average(0.0), squaredSum(0.0), samples(0) {}
 
         //! Average of the values so far.
         double average;

@@ -78,7 +78,7 @@ public:
     std::map<std::type_index, ExceptionInfoPointer> infos_;
 };
 
-}    // namespace internal
+} // namespace internal
 
 namespace
 {
@@ -143,7 +143,7 @@ private:
  * \ingroup module_utility
  */
 typedef ExceptionInfo<struct ExceptionInfoMessage_, ErrorMessage>
-    ExceptionInfoMessage;
+        ExceptionInfoMessage;
 
 ErrorMessage::ErrorMessage(const std::string &text)
     : text_(text)
@@ -169,9 +169,9 @@ ErrorMessage ErrorMessage::prependContext(const std::string &context) const
  * \ingroup module_utility
  */
 typedef ExceptionInfo<struct ExceptionInfoNestedExceptions_, internal::NestedExceptionList>
-    ExceptionInfoNestedExceptions;
+        ExceptionInfoNestedExceptions;
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * GromacsException
@@ -313,7 +313,8 @@ public:
      * \param[in] indent       Suggested number of spaces to indent the output.
      */
     virtual void writeErrNoInfo(int errorNumber, const char *funcName,
-                                int indent) = 0;
+                                int indent)
+            = 0;
 };
 
 /*! \brief
@@ -326,7 +327,8 @@ class MessageWriterFileNoThrow : public IMessageWriter
 {
 public:
     //! Initializes a writer that writes to the given file handle.
-    explicit MessageWriterFileNoThrow(FILE *fp) : fp_(fp) {}
+    explicit MessageWriterFileNoThrow(FILE *fp)
+        : fp_(fp) {}
 
     virtual void writeLine(const char *text, int indent)
     {
@@ -355,7 +357,8 @@ class MessageWriterTextWriter : public IMessageWriter
 {
 public:
     //! Initializes a writer that writes to the given stream.
-    explicit MessageWriterTextWriter(TextWriter *writer) : writer_(writer)
+    explicit MessageWriterTextWriter(TextWriter *writer)
+        : writer_(writer)
     {
     }
 
@@ -412,7 +415,8 @@ public:
         if (funcName != nullptr)
         {
             writeLine(formatString("(call to %s() returned error code %d)",
-                                   funcName, errorNumber).c_str(),
+                                   funcName, errorNumber)
+                              .c_str(),
                       indent);
         }
     }
@@ -433,7 +437,7 @@ private:
  *
  * Does not throw unless the writer throws.
  */
-void formatExceptionMessageInternal(IMessageWriter *writer,
+void formatExceptionMessageInternal(IMessageWriter *      writer,
                                     const std::exception &ex, int indent)
 {
     const GromacsException *gmxEx = dynamic_cast<const GromacsException *>(&ex);
@@ -474,8 +478,8 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
         const int *errorNumber = gmxEx->getInfo<ExceptionInfoErrno>();
         if (errorNumber != nullptr && *errorNumber != 0)
         {
-            const char * const *funcName
-                = gmxEx->getInfo<ExceptionInfoApiFunction>();
+            const char *const *funcName
+                    = gmxEx->getInfo<ExceptionInfoApiFunction>();
             writer->writeErrNoInfo(*errorNumber,
                                    funcName != nullptr ? *funcName : nullptr,
                                    (indent + 1) * 2);
@@ -483,7 +487,7 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
         }
 
         const internal::NestedExceptionList *nested
-            = gmxEx->getInfo<ExceptionInfoNestedExceptions>();
+                = gmxEx->getInfo<ExceptionInfoNestedExceptions>();
         if (nested != nullptr)
         {
             internal::NestedExceptionList::const_iterator ni;
@@ -509,7 +513,7 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
 
 //! \}
 
-}   // namespace
+} // namespace
 
 void printFatalErrorMessage(FILE *fp, const std::exception &ex)
 {

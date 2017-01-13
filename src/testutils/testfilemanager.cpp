@@ -121,8 +121,8 @@ static bool g_bDeleteFilesAfterTest = true;
 GMX_TEST_OPTIONS(TestFileManagerOptions, options)
 {
     options->addOption(BooleanOption("delete-temporary-files")
-                           .store(&g_bDeleteFilesAfterTest)
-                           .description("At the end of each test case, delete temporary and output files"));
+                               .store(&g_bDeleteFilesAfterTest)
+                               .description("At the end of each test case, delete temporary and output files"));
 }
 //! \endcond
 
@@ -161,8 +161,8 @@ std::string TestFileManager::getTemporaryFilePath(const char *suffix)
      * get cleaned up (by default) at the end of all tests.
      */
     std::string filename
-        = Path::join(getOutputTempDirectory(),
-                     getTestSpecificFileName(suffix));
+            = Path::join(getOutputTempDirectory(),
+                         getTestSpecificFileName(suffix));
     impl_->files_.insert(filename);
     return filename;
 }
@@ -175,9 +175,9 @@ std::string TestFileManager::getTemporaryFilePath(const std::string &suffix)
 std::string TestFileManager::getTestSpecificFileNameRoot()
 {
     const ::testing::TestInfo *test_info
-        = ::testing::UnitTest::GetInstance()->current_test_info();
+            = ::testing::UnitTest::GetInstance()->current_test_info();
     std::string filenameRoot = std::string(test_info->test_case_name())
-        + "_" + test_info->name();
+                               + "_" + test_info->name();
     std::replace(filenameRoot.begin(), filenameRoot.end(), '/', '_');
     return filenameRoot;
 }

@@ -63,7 +63,7 @@ class TextWriter;
 //! Output format for ShellCompletionWriter.
 enum ShellCompletionFormat
 {
-    eShellCompletionFormat_Bash         //!< Shell completions for bash.
+    eShellCompletionFormat_Bash //!< Shell completions for bash.
 };
 
 //! \}

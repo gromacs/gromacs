@@ -185,7 +185,7 @@ void walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t walltime_acco
 
 double gmx_gettime()
 {
-    /* Use clock_gettime only if we know linking the C run-time
+/* Use clock_gettime only if we know linking the C run-time
        library will work (which is not trivial on e.g. Crays), and its
        headers claim sufficient support for POSIX (ie not Mac and
        Windows), and it isn't BG/Q (whose compute node kernel only
@@ -221,7 +221,7 @@ double gmx_gettime()
 
 static double gmx_gettime_per_thread()
 {
-    /* Use clock_gettime only if we know linking the C run-time
+/* Use clock_gettime only if we know linking the C run-time
        library will work (which is not trivial on e.g. Crays), and its
        headers claim sufficient support for POSIX (ie not Mac and
        Windows), and it isn't BG/Q (whose compute node kernel only

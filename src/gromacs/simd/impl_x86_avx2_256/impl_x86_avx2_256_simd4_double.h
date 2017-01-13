@@ -48,31 +48,31 @@ namespace gmx
 static inline Simd4Double gmx_simdcall fma(Simd4Double a, Simd4Double b, Simd4Double c)
 {
     return {
-               _mm256_fmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall fms(Simd4Double a, Simd4Double b, Simd4Double c)
 {
     return {
-               _mm256_fmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall fnma(Simd4Double a, Simd4Double b, Simd4Double c)
 {
     return {
-               _mm256_fnmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fnmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall fnms(Simd4Double a, Simd4Double b, Simd4Double c)
 {
     return {
-               _mm256_fnmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fnmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H

@@ -73,7 +73,7 @@
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/txtdump.h"
 
-#define TPX_TAG_RELEASE  "release"
+#define TPX_TAG_RELEASE "release"
 
 /*! \brief Tag string for the file format written to run input files
  * written by this version of the code.
@@ -151,7 +151,6 @@ static const int tpx_generation = 26;
 static const int tpx_incompatible_version = 30; // GMX3.2 has version 31
 
 
-
 /* Struct used to maintain tpx compatibility when function types are added */
 typedef struct
 {
@@ -165,45 +164,49 @@ typedef struct
  * 2. ascending file version number
  */
 static const t_ftupd ftupd[] = {
-    { 34, F_FENEBONDS         },
-    { 43, F_TABBONDS          },
-    { 43, F_TABBONDSNC        },
-    { 70, F_RESTRBONDS        },
+    { 34, F_FENEBONDS },
+    { 43, F_TABBONDS },
+    { 43, F_TABBONDSNC },
+    { 70, F_RESTRBONDS },
     { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRANGLES },
-    { 76, F_LINEAR_ANGLES     },
-    { 34, F_QUARTIC_ANGLES    },
-    { 43, F_TABANGLES         },
+    { 76, F_LINEAR_ANGLES },
+    { 34, F_QUARTIC_ANGLES },
+    { 43, F_TABANGLES },
     { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRDIHS },
     { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_CBTDIHS },
-    { 43, F_TABDIHS           },
-    { 65, F_CMAP              },
-    { 60, F_GB12              },
-    { 61, F_GB13              },
-    { 61, F_GB14              },
-    { 72, F_GBPOL             },
-    { 72, F_NPSOLVATION       },
-    { 41, F_LJC14_Q           },
-    { 41, F_LJC_PAIRS_NB      },
+    { 43, F_TABDIHS },
+    { 65, F_CMAP },
+    { 60, F_GB12 },
+    { 61, F_GB13 },
+    { 61, F_GB14 },
+    { 72, F_GBPOL },
+    { 72, F_NPSOLVATION },
+    { 41, F_LJC14_Q },
+    { 41, F_LJC_PAIRS_NB },
     { 32, F_BHAM_LR_NOLONGERUSED },
-    { 32, F_RF_EXCL           },
-    { 32, F_COUL_RECIP        },
-    { 93, F_LJ_RECIP          },
-    { 46, F_DPD               },
-    { 36, F_THOLE_POL         },
-    { 90, F_FBPOSRES          },
-    { 49, F_VSITE4FDN         },
-    { 50, F_VSITEN            },
-    { 46, F_COM_PULL          },
-    { 46, F_ECONSERVED        },
-    { 69, F_VTEMP_NOLONGERUSED},
-    { 66, F_PDISPCORR         },
-    { 54, F_DVDL_CONSTR       },
-    { 76, F_ANHARM_POL        },
-    { 79, F_DVDL_COUL         },
-    { 79, F_DVDL_VDW,         },
-    { 79, F_DVDL_BONDED,      },
-    { 79, F_DVDL_RESTRAINT    },
-    { 79, F_DVDL_TEMPERATURE  },
+    { 32, F_RF_EXCL },
+    { 32, F_COUL_RECIP },
+    { 93, F_LJ_RECIP },
+    { 46, F_DPD },
+    { 36, F_THOLE_POL },
+    { 90, F_FBPOSRES },
+    { 49, F_VSITE4FDN },
+    { 50, F_VSITEN },
+    { 46, F_COM_PULL },
+    { 46, F_ECONSERVED },
+    { 69, F_VTEMP_NOLONGERUSED },
+    { 66, F_PDISPCORR },
+    { 54, F_DVDL_CONSTR },
+    { 76, F_ANHARM_POL },
+    { 79, F_DVDL_COUL },
+    {
+            79, F_DVDL_VDW,
+    },
+    {
+            79, F_DVDL_BONDED,
+    },
+    { 79, F_DVDL_RESTRAINT },
+    { 79, F_DVDL_TEMPERATURE },
 };
 #define NFTUPD asize(ftupd)
 
@@ -275,7 +278,7 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd,
 {
     if (file_version >= tpxv_PullCoordNGroup)
     {
-        gmx_fio_do_int(fio,  pcrd->eType);
+        gmx_fio_do_int(fio, pcrd->eType);
         if (file_version >= tpxv_PullExternalPotential)
         {
             if (pcrd->eType == epullEXTERNAL)
@@ -308,8 +311,8 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd,
          * changing the tpx version. This requires checks when printing the
          * geometry string and a check and fatal_error in init_pull.
          */
-        gmx_fio_do_int(fio,  pcrd->eGeom);
-        gmx_fio_do_int(fio,  pcrd->ngroup);
+        gmx_fio_do_int(fio, pcrd->eGeom);
+        gmx_fio_do_int(fio, pcrd->ngroup);
         if (pcrd->ngroup <= c_pullCoordNgroupMax)
         {
             gmx_fio_ndo_int(fio, pcrd->group, pcrd->ngroup);
@@ -338,8 +341,8 @@ static void do_pull_coord(t_fileio *fio, t_pull_coord *pcrd,
         if (file_version >= tpxv_PullCoordTypeGeom)
         {
             pcrd->ngroup = (pcrd->eGeom == epullgDIRRELATIVE ? 4 : 2);
-            gmx_fio_do_int(fio,  pcrd->eType);
-            gmx_fio_do_int(fio,  pcrd->eGeom);
+            gmx_fio_do_int(fio, pcrd->eType);
+            gmx_fio_do_int(fio, pcrd->eGeom);
             if (pcrd->ngroup == 4)
             {
                 gmx_fio_do_int(fio, pcrd->group[2]);
@@ -530,7 +533,7 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
                         if (g != efptFEP)
                         {
                             fepvals->all_lambda[g][h]
-                                = fepvals->all_lambda[efptFEP][h];
+                                    = fepvals->all_lambda[efptFEP][h];
                         }
                     }
                 }
@@ -625,8 +628,8 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     if ((file_version >= 83 && file_version < 90) || file_version >= 92)
     {
         gmx_fio_do_int(fio, fepvals->lambda_neighbors);
-        if ( (fepvals->lambda_neighbors >= 0) && (fepvals->init_fep_state >= 0)
-             && (fepvals->init_lambda < 0) )
+        if ((fepvals->lambda_neighbors >= 0) && (fepvals->init_fep_state >= 0)
+            && (fepvals->init_lambda < 0))
         {
             fepvals->lambda_start_n = (fepvals->init_fep_state
                                        - fepvals->lambda_neighbors);
@@ -634,7 +637,8 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
                                       + fepvals->lambda_neighbors + 1);
             if (fepvals->lambda_start_n < 0)
             {
-                fepvals->lambda_start_n = 0;;
+                fepvals->lambda_start_n = 0;
+                ;
             }
             if (fepvals->lambda_stop_n >= fepvals->n_lambda)
             {
@@ -831,11 +835,13 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
     /* Enums for better readability of the code */
     enum
     {
-        eCompA = 0, eCompB
+        eCompA = 0,
+        eCompB
     };
     enum
     {
-        eChannel0 = 0, eChannel1
+        eChannel0 = 0,
+        eChannel1
     };
 
 
@@ -873,11 +879,11 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
         swap->ngrp = 5;
         snew(swap->grp, swap->ngrp);
 
-        swap->grp[eGrpSplit0 ].molname = gmx_strdup("split0" );  // group 0: split0
-        swap->grp[eGrpSplit1 ].molname = gmx_strdup("split1" );  // group 1: split1
-        swap->grp[eGrpSolvent].molname = gmx_strdup("solvent");  // group 2: solvent
-        swap->grp[3          ].molname = gmx_strdup("anions" );  // group 3: anions
-        swap->grp[4          ].molname = gmx_strdup("cations");  // group 4: cations
+        swap->grp[eGrpSplit0].molname  = gmx_strdup("split0");  // group 0: split0
+        swap->grp[eGrpSplit1].molname  = gmx_strdup("split1");  // group 1: split1
+        swap->grp[eGrpSolvent].molname = gmx_strdup("solvent"); // group 2: solvent
+        swap->grp[3].molname           = gmx_strdup("anions");  // group 3: anions
+        swap->grp[4].molname           = gmx_strdup("cations"); // group 4: cations
 
         gmx_fio_do_int(fio, swap->grp[3].nat);
         gmx_fio_do_int(fio, swap->grp[eGrpSolvent].nat);
@@ -898,7 +904,7 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
         // The order[] array keeps compatibility with older .tpr files
         // by reading in the groups in the classic order
         {
-            const int order[4] = {3, eGrpSolvent, eGrpSplit0, eGrpSplit1 };
+            const int order[4] = { 3, eGrpSolvent, eGrpSplit0, eGrpSplit1 };
 
             for (int ig = 0; ig < 4; ig++)
             {
@@ -913,14 +919,13 @@ static void do_swapcoords_tpx(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead,
             gmx_fio_do_int(fio, swap->grp[3].nmolReq[j]); // group 3 = anions
             gmx_fio_do_int(fio, swap->grp[4].nmolReq[j]); // group 4 = cations
         }
-    }                                                     /* End support reading older CompEl .tpr files */
+    } /* End support reading older CompEl .tpr files */
 
     if (file_version >= tpxv_CompElWithSwapLayerOffset)
     {
         gmx_fio_do_real(fio, swap->bulkOffset[eCompA]);
         gmx_fio_do_real(fio, swap->bulkOffset[eCompB]);
     }
-
 }
 
 
@@ -1205,7 +1210,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
                 ir->sa_surface_tension = 0.0054 * 100 * CAL2JOULE;
             }
         }
-
     }
     else
     {
@@ -1551,15 +1555,15 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
 
     if (bRead)
     {
-        snew(ir->opts.nrdf,   ir->opts.ngtc);
-        snew(ir->opts.ref_t,  ir->opts.ngtc);
+        snew(ir->opts.nrdf, ir->opts.ngtc);
+        snew(ir->opts.ref_t, ir->opts.ngtc);
         snew(ir->opts.annealing, ir->opts.ngtc);
         snew(ir->opts.anneal_npoints, ir->opts.ngtc);
         snew(ir->opts.anneal_time, ir->opts.ngtc);
         snew(ir->opts.anneal_temp, ir->opts.ngtc);
-        snew(ir->opts.tau_t,  ir->opts.ngtc);
+        snew(ir->opts.tau_t, ir->opts.ngtc);
         snew(ir->opts.nFreeze, ir->opts.ngfrz);
-        snew(ir->opts.acc,    ir->opts.ngacc);
+        snew(ir->opts.acc, ir->opts.ngacc);
         snew(ir->opts.egp_flags, ir->opts.ngener * ir->opts.ngener);
     }
     if (ir->opts.ngtc > 0)
@@ -1655,18 +1659,18 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_int(fio, ir->opts.ngQM);
         if (bRead)
         {
-            snew(ir->opts.QMmethod,    ir->opts.ngQM);
-            snew(ir->opts.QMbasis,     ir->opts.ngQM);
-            snew(ir->opts.QMcharge,    ir->opts.ngQM);
-            snew(ir->opts.QMmult,      ir->opts.ngQM);
-            snew(ir->opts.bSH,         ir->opts.ngQM);
+            snew(ir->opts.QMmethod, ir->opts.ngQM);
+            snew(ir->opts.QMbasis, ir->opts.ngQM);
+            snew(ir->opts.QMcharge, ir->opts.ngQM);
+            snew(ir->opts.QMmult, ir->opts.ngQM);
+            snew(ir->opts.bSH, ir->opts.ngQM);
             snew(ir->opts.CASorbitals, ir->opts.ngQM);
             snew(ir->opts.CASelectrons, ir->opts.ngQM);
-            snew(ir->opts.SAon,        ir->opts.ngQM);
-            snew(ir->opts.SAoff,       ir->opts.ngQM);
-            snew(ir->opts.SAsteps,     ir->opts.ngQM);
-            snew(ir->opts.bOPT,        ir->opts.ngQM);
-            snew(ir->opts.bTS,         ir->opts.ngQM);
+            snew(ir->opts.SAon, ir->opts.ngQM);
+            snew(ir->opts.SAoff, ir->opts.ngQM);
+            snew(ir->opts.SAsteps, ir->opts.ngQM);
+            snew(ir->opts.bOPT, ir->opts.ngQM);
+            snew(ir->opts.bTS, ir->opts.ngQM);
         }
         if (ir->opts.ngQM > 0)
         {
@@ -2214,35 +2218,79 @@ static void do_blocka(t_fileio *fio, t_blocka *block, gmx_bool bRead,
  */
 static const char *atomicnumber_to_element(int atomicnumber)
 {
-    const char * p;
+    const char *p;
 
     /* This does not have to be complete, so we only include elements likely
      * to occur in PDB files.
      */
     switch (atomicnumber)
     {
-        case 1:  p = "H";  break;
-        case 5:  p = "B";  break;
-        case 6:  p = "C";  break;
-        case 7:  p = "N";  break;
-        case 8:  p = "O";  break;
-        case 9:  p = "F";  break;
-        case 11: p = "Na"; break;
-        case 12: p = "Mg"; break;
-        case 15: p = "P";  break;
-        case 16: p = "S";  break;
-        case 17: p = "Cl"; break;
-        case 18: p = "Ar"; break;
-        case 19: p = "K";  break;
-        case 20: p = "Ca"; break;
-        case 25: p = "Mn"; break;
-        case 26: p = "Fe"; break;
-        case 28: p = "Ni"; break;
-        case 29: p = "Cu"; break;
-        case 30: p = "Zn"; break;
-        case 35: p = "Br"; break;
-        case 47: p = "Ag"; break;
-        default: p = "";   break;
+        case 1:
+            p = "H";
+            break;
+        case 5:
+            p = "B";
+            break;
+        case 6:
+            p = "C";
+            break;
+        case 7:
+            p = "N";
+            break;
+        case 8:
+            p = "O";
+            break;
+        case 9:
+            p = "F";
+            break;
+        case 11:
+            p = "Na";
+            break;
+        case 12:
+            p = "Mg";
+            break;
+        case 15:
+            p = "P";
+            break;
+        case 16:
+            p = "S";
+            break;
+        case 17:
+            p = "Cl";
+            break;
+        case 18:
+            p = "Ar";
+            break;
+        case 19:
+            p = "K";
+            break;
+        case 20:
+            p = "Ca";
+            break;
+        case 25:
+            p = "Mn";
+            break;
+        case 26:
+            p = "Fe";
+            break;
+        case 28:
+            p = "Ni";
+            break;
+        case 29:
+            p = "Cu";
+            break;
+        case 30:
+            p = "Zn";
+            break;
+        case 35:
+            p = "Br";
+            break;
+        case 47:
+            p = "Ag";
+            break;
+        default:
+            p = "";
+            break;
     }
     return p;
 }
@@ -2385,7 +2433,7 @@ static void do_resinfo(t_fileio *fio, int n, t_resinfo *ri, gmx_bool bRead,
 }
 
 static void do_atoms(t_fileio *fio, t_atoms *atoms, gmx_bool bRead, t_symtab *symtab,
-                     int file_version,
+                     int           file_version,
                      gmx_groups_t *groups)
 {
     int i;
@@ -2539,7 +2587,7 @@ static void do_symtab(t_fileio *fio, t_symtab *symtab, gmx_bool bRead)
             {
                 gmx_fio_do_string(fio, symbuf->buf[i]);
             }
-            nr    -= i;
+            nr -= i;
             symbuf = symbuf->next;
         }
         if (nr != 0)
@@ -2629,7 +2677,6 @@ static void do_molblock(t_fileio *fio, gmx_molblock_t *molb, gmx_bool bRead)
         }
         gmx_fio_ndo_rvec(fio, molb->posres_xB, molb->nposres_xB);
     }
-
 }
 
 static t_block mtop_mols(gmx_mtop_t *mtop)
@@ -2864,11 +2911,11 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         mtop->bIntermolecularInteractions = FALSE;
     }
 
-    do_atomtypes (fio, &(mtop->atomtypes), bRead, file_version);
+    do_atomtypes(fio, &(mtop->atomtypes), bRead, file_version);
 
     if (file_version < 57)
     {
-        do_idef (fio, &mtop->ffparams, &mtop->moltype[0], bRead, file_version);
+        do_idef(fio, &mtop->ffparams, &mtop->moltype[0], bRead, file_version);
         mtop->natoms = mtop->moltype[0].atoms.nr;
     }
 
@@ -2943,8 +2990,8 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
     int      precision;
     int      idum = 0;
     real     rdum = 0;
-    int      fileVersion;     /* Version number of the code that wrote the file */
-    int      fileGeneration;  /* Generation version number of the code that wrote the file */
+    int      fileVersion;    /* Version number of the code that wrote the file */
+    int      fileGeneration; /* Generation version number of the code that wrote the file */
 
     /* XDR binary topology file */
     precision = sizeof(real);
@@ -2953,7 +3000,8 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
         gmx_fio_do_string(fio, buf);
         if (std::strncmp(buf, "VERSION", 7))
         {
-            gmx_fatal(FARGS, "Can not read file %s,\n"
+            gmx_fatal(FARGS,
+                      "Can not read file %s,\n"
                       "             this file is from a GROMACS version which is older than 2.0\n"
                       "             Make a new one with grompp or use a gro or pdb file, if possible",
                       gmx_fio_getname(fio));
@@ -2962,7 +3010,8 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
         bDouble = (precision == sizeof(double));
         if ((precision != sizeof(float)) && !bDouble)
         {
-            gmx_fatal(FARGS, "Unknown precision in file %s: real is %d bytes "
+            gmx_fatal(FARGS,
+                      "Unknown precision in file %s: real is %d bytes "
                       "instead of %d or %d",
                       gmx_fio_getname(fio), precision, sizeof(float), sizeof(double));
         }
@@ -3089,8 +3138,8 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         tpx.ngtc      = state->ngtc;
         tpx.fep_state = state->fep_state;
         tpx.lambda    = state->lambda[efptFEP];
-        tpx.bIr       = (ir       != nullptr);
-        tpx.bTop      = (mtop     != nullptr);
+        tpx.bIr       = (ir != nullptr);
+        tpx.bTop      = (mtop != nullptr);
         tpx.bX        = (state->flags & (1 << estX));
         tpx.bV        = (state->flags & (1 << estV));
         tpx.bF        = FALSE;
@@ -3126,7 +3175,9 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         v = as_rvec_array(state->v.data());
     }
 
-#define do_test(fio, b, p) if (bRead && (p != NULL) && !b) gmx_fatal(FARGS, "No %s in %s",#p, gmx_fio_getname(fio))
+#define do_test(fio, b, p)          \
+    if (bRead && (p != NULL) && !b) \
+    gmx_fatal(FARGS, "No %s in %s", #p, gmx_fio_getname(fio))
 
     do_test(fio, tpx.bBox, state->box);
     if (tpx.bBox)
@@ -3309,7 +3360,7 @@ void read_tpxheader(const char *fn, t_tpxheader *tpx, gmx_bool TopOnlyOK)
     close_tpx(fio);
 }
 
-void write_tpx_state(const char *fn,
+void write_tpx_state(const char *      fn,
                      const t_inputrec *ir, const t_state *state, const gmx_mtop_t *mtop)
 {
     t_fileio *fio;
@@ -3337,7 +3388,7 @@ int read_tpx(const char *fn,
              rvec *x, rvec *v, gmx_mtop_t *mtop)
 {
     t_fileio *fio;
-    t_state   state {};
+    t_state   state{};
     int       ePBC;
 
     fio  = open_tpx(fn, "r");

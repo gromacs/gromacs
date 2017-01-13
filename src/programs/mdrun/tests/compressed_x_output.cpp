@@ -58,7 +58,7 @@ namespace
 
 //! Test fixture for mdrun -x
 class MdrunCompressedXOutputTest : public gmx::test::MdrunTestFixture,
-                                   public testing::WithParamInterface<const char*>
+                                   public testing::WithParamInterface<const char *>
 {
 };
 
@@ -68,9 +68,10 @@ typedef MdrunCompressedXOutputTest MdrunCompressedXOutput;
 /* This test tests a few ways that mdrun can write a compressed trajectory. */
 TEST_P(MdrunCompressedXOutput, ExitsNormally)
 {
-    std::string mdpFile("cutoff-scheme = Group\n"
-                        "nsteps = 1\n"
-                        "nstxout-compressed = 1\n");
+    std::string mdpFile(
+            "cutoff-scheme = Group\n"
+            "nsteps = 1\n"
+            "nstxout-compressed = 1\n");
     std::string compressedXGrpsLine = GetParam();
     mdpFile += compressedXGrpsLine;
     runner_.useStringAsMdpFile(mdpFile.c_str());
@@ -87,20 +88,18 @@ TEST_P(MdrunCompressedXOutput, ExitsNormally)
 }
 
 INSTANTIATE_TEST_CASE_P(WithDifferentOutputGroupSettings, MdrunCompressedXOutput,
-                            ::testing::Values
-                            ( // Test writing the whole system via
-                              // the default behaviour
-                            "",
+                        ::testing::Values( // Test writing the whole system via
+                                           // the default behaviour
+                                "",
 
-                            // Test writing the whole system
-                            // explicitly
-                            "compressed-x-grps = System\n",
+                                // Test writing the whole system
+                                // explicitly
+                                "compressed-x-grps = System\n",
 
-                            // Test writing only part of the system.
-                            // It would be nice to check that this test
-                            // writes 3 atoms and the others write 6, but
-                            // that's not yet easy.
-                            "compressed-x-grps = SecondWaterMolecule\n"
-                            ));
+                                // Test writing only part of the system.
+                                // It would be nice to check that this test
+                                // writes 3 atoms and the others write 6, but
+                                // that's not yet easy.
+                                "compressed-x-grps = SecondWaterMolecule\n"));
 
 } // namespace

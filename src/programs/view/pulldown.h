@@ -87,4 +87,4 @@ extern int pd_width(t_pulldown *pd);
 extern int pd_height(t_pulldown *pd);
 /* Return the height of the window */
 
-#endif  /* _pulldown_h */
+#endif /* _pulldown_h */

@@ -184,4 +184,4 @@ real **mk_matrix(int nx, int ny, gmx_bool b1D);
 
 void done_matrix(int nx, real ***m);
 
-#endif  /* GMX_FILEIO_MATIO_H */
+#endif /* GMX_FILEIO_MATIO_H */

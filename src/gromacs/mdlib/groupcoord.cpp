@@ -49,18 +49,17 @@
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 
-
 /* Select the indices of the group's atoms which are local and store them in
  * anrs_loc[0..nr_loc]. The indices are saved in coll_ind[] for later reduction
  * in communicate_group_positions()
  */
 void dd_make_local_group_indices(gmx_ga2la_t *ga2la,
-                                 const int    nr,             /* IN:  Total number of atoms in the group */
-                                 int          anrs[],         /* IN:  Global atom numbers of the groups atoms */
-                                 int *        nr_loc,         /* OUT: Number of group atoms found locally */
-                                 int *        anrs_loc[],     /* OUT: Local atom numbers of the group  */
-                                 int *        nalloc_loc,     /* IN+OUT: Allocation size of anrs_loc */
-                                 int          coll_ind[])     /* OUT (opt): Where is this position found in the collective array? */
+                                 const int    nr,         /* IN:  Total number of atoms in the group */
+                                 int          anrs[],     /* IN:  Global atom numbers of the groups atoms */
+                                 int *        nr_loc,     /* OUT: Number of group atoms found locally */
+                                 int *        anrs_loc[], /* OUT: Local atom numbers of the group  */
+                                 int *        nalloc_loc, /* IN+OUT: Allocation size of anrs_loc */
+                                 int          coll_ind[]) /* OUT (opt): Where is this position found in the collective array? */
 {
     int i, ii;
     int localnr;
@@ -105,10 +104,10 @@ void dd_make_local_group_indices(gmx_ga2la_t *ga2la,
 static void get_shifts_group(
         int    npbcdim,
         matrix box,
-        rvec * xcoll,      /* IN:  Collective set of positions [0..nr] */
-        int    nr,         /* IN:  Total number of atoms in the group */
-        rvec * xcoll_old,  /* IN:  Positions from the last time step [0...nr] */
-        ivec * shifts)     /* OUT: Shifts for xcoll */
+        rvec * xcoll,     /* IN:  Collective set of positions [0..nr] */
+        int    nr,        /* IN:  Total number of atoms in the group */
+        rvec * xcoll_old, /* IN:  Positions from the last time step [0...nr] */
+        ivec * shifts)    /* OUT: Shifts for xcoll */
 {
     int  i, m, d;
     rvec dx;
@@ -154,9 +153,9 @@ static void get_shifts_group(
 
 static void shift_positions_group(
         matrix box,
-        rvec   x[],      /* The positions [0..nr] */
-        ivec * is,       /* The shifts [0..nr] */
-        int    nr)       /* The number of positions and shifts */
+        rvec   x[], /* The positions [0..nr] */
+        ivec * is,  /* The shifts [0..nr] */
+        int    nr)  /* The number of positions and shifts */
 {
     int i, tx, ty, tz;
 
@@ -320,8 +319,7 @@ extern void get_center(rvec x[], real weight[], const int nr, rvec rcenter)
     }
     else
     {
-        denom = nr;        /* Divide by the number of atoms */
-
+        denom = nr; /* Divide by the number of atoms */
     }
     dsvmul(1.0 / denom, dcenter, dcenter);
 
@@ -373,8 +371,7 @@ extern void get_center_comm(
     }
     else
     {
-        denom = 1.0 / nr_group;   /* Divide by the number of atoms to get the geometrical center */
-
+        denom = 1.0 / nr_group; /* Divide by the number of atoms to get the geometrical center */
     }
     center[XX] = dsumvec[XX] * denom;
     center[YY] = dsumvec[YY] * denom;

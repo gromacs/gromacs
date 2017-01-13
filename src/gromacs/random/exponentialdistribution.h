@@ -105,8 +105,8 @@ public:
     /*! \brief Exponential distribution parameters */
     class param_type
     {
-    /*! \brief The lambda/decay parameter */
-    result_type lambda_;
+        /*! \brief The lambda/decay parameter */
+        result_type lambda_;
 
     public:
         /*! \brief Reference back to the distribution class */
@@ -139,7 +139,6 @@ public:
     };
 
 public:
-
     /*! \brief Construct new distribution with given floating-point parameter.
      *
      * \param lambda   lambda/decay parameter
@@ -152,7 +151,8 @@ public:
      *
      * \param param  Parameter class as defined inside gmx::ExponentialDistribution.
      */
-    explicit ExponentialDistribution(const param_type &param) : param_(param) {}
+    explicit ExponentialDistribution(const param_type &param)
+        : param_(param) {}
 
     /*! \brief Flush all internal saved values  */
     void reset() {}
@@ -164,7 +164,10 @@ public:
      *  \param  g     Random engine
      */
     template <class Rng>
-    result_type operator()(Rng &g) { return (*this)(g, param_); }
+    result_type operator()(Rng &g)
+    {
+        return (*this)(g, param_);
+    }
 
     /*! \brief Return value from exponential distribution with given parameters
      *
@@ -178,7 +181,8 @@ public:
     {
         return -std::log(result_type(1)
                          - generateCanonical<result_type,
-                                             std::numeric_limits<result_type>::digits>(g)) / param.lambda();
+                                             std::numeric_limits<result_type>::digits>(g))
+               / param.lambda();
     }
 
     /*! \brief Return the lambda parameter of the exponential distribution */
@@ -198,14 +202,18 @@ public:
      * \param  x     Instance to compare with.
      */
     bool operator==(const ExponentialDistribution &x) const
-    { return param_ == x.param_; }
+    {
+        return param_ == x.param_;
+    }
 
     /*! \brief True if two exponential distributions will produce different values.
      *
      * \param  x     Instance to compare with.
      */
     bool operator!=(const ExponentialDistribution &x) const
-    { return !operator==(x); }
+    {
+        return !operator==(x);
+    }
 
 private:
     /*! \brief Internal value for parameters, can be overridden at generation time. */
@@ -214,6 +222,6 @@ private:
     GMX_DISALLOW_COPY_AND_ASSIGN(ExponentialDistribution);
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MATH_RANDOM_H

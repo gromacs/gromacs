@@ -46,5 +46,4 @@
 #include "impl_x86_avx_512_util_float.h"
 
 
-
 #endif // GMX_SIMD_IMPL_X86_AVX_512_H

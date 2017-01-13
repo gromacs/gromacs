@@ -96,7 +96,8 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
     *bDMA = (head.lambda > 0.5);
     if ((head.t <= -0.01) || (head.t >= 0.01))
     {
-        fprintf(stderr, "WARNING: %s does not start with t=0, which should be the "
+        fprintf(stderr,
+                "WARNING: %s does not start with t=0, which should be the "
                 "average structure. This might not be a eigenvector file. "
                 "Some things might go wrong.\n",
                 file);
@@ -155,10 +156,10 @@ void write_eigenvectors(const char *trrname, int natoms, const real mat[],
     clear_mat(zerobox);
     snew(x, natoms);
 
-    fprintf (stderr,
-             "\nWriting %saverage structure & eigenvectors %d--%d to %s\n",
-             (WriteXref == eWXR_YES) ? "reference, " : "",
-             begin, end, trrname);
+    fprintf(stderr,
+            "\nWriting %saverage structure & eigenvectors %d--%d to %s\n",
+            (WriteXref == eWXR_YES) ? "reference, " : "",
+            begin, end, trrname);
 
     trrout = gmx_trr_open(trrname, "w");
     if (WriteXref == eWXR_YES)

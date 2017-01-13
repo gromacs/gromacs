@@ -65,7 +65,7 @@ void nblock_bc(const t_commrec *cr, int numElements, T *data)
 }
 //! Convenience wrapper for allocation with snew of vectors that need allocation on non-master ranks.
 template <typename T>
-void snew_bc(const t_commrec *cr, T * &data, int numElements)
+void snew_bc(const t_commrec *cr, T *&data, int numElements)
 {
     if (!MASTER(cr))
     {

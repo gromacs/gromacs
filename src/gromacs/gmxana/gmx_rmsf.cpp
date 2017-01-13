@@ -127,7 +127,7 @@ static void average_residues(double f[], double **U, int uind,
     for (i = 0; i < isize; i++)
     {
         av += w_rls[index[i]] * (f != nullptr ? f[i] : U[i][uind]);
-        m  += w_rls[index[i]];
+        m += w_rls[index[i]];
         if (i + 1 == isize
             || atoms->atom[index[i]].resind != atoms->atom[index[i + 1]].resind)
         {
@@ -195,7 +195,7 @@ void print_dir(FILE *fp, real *Uaver)
 
 int gmx_rmsf(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes the root mean square fluctuation (RMSF, i.e. standard ",
         "deviation) of atomic positions in the trajectory (supplied with [TT]-f[tt])",
         "after (optionally) fitting to a reference frame (supplied with [TT]-s[tt]).[PAR]",
@@ -220,18 +220,15 @@ int gmx_rmsf(int argc, char *argv[])
         "This shows the directions in which the atoms fluctuate the most and",
         "the least."
     };
-    static gmx_bool bRes    = FALSE, bAniso = FALSE, bFit = TRUE;
+    static gmx_bool bRes = FALSE, bAniso = FALSE, bFit = TRUE;
     t_pargs         pargs[] = {
-        { "-res", FALSE, etBOOL, {&bRes},
-          "Calculate averages for each residue" },
-        { "-aniso", FALSE, etBOOL, {&bAniso},
-          "Compute anisotropic termperature factors" },
-        { "-fit", FALSE, etBOOL, {&bFit},
-          "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." }
+        { "-res", FALSE, etBOOL, { &bRes }, "Calculate averages for each residue" },
+        { "-aniso", FALSE, etBOOL, { &bAniso }, "Compute anisotropic termperature factors" },
+        { "-fit", FALSE, etBOOL, { &bFit }, "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." }
     };
-    int             natom;
-    int             i, m, teller = 0;
-    real            t, *w_rls;
+    int  natom;
+    int  i, m, teller = 0;
+    real t, *w_rls;
 
     t_topology top;
     int        ePBC;
@@ -242,7 +239,7 @@ int gmx_rmsf(int argc, char *argv[])
     t_trxstatus *status;
     const char * label;
 
-    FILE *      fp;               /* the graphics file */
+    FILE *      fp; /* the graphics file */
     const char *devfn, *dirfn;
     int         resind;
 
@@ -266,16 +263,16 @@ int gmx_rmsf(int argc, char *argv[])
     const char *leg[2] = { "MD", "X-Ray" };
 
     t_filenm fnm[] = {
-        { efTRX, "-f",  nullptr,     ffREAD  },
-        { efTPS, nullptr,  nullptr,     ffREAD  },
-        { efNDX, nullptr,  nullptr,     ffOPTRD },
-        { efPDB, "-q",  nullptr,     ffOPTRD },
-        { efPDB, "-oq", "bfac",   ffOPTWR },
-        { efPDB, "-ox", "xaver",  ffOPTWR },
-        { efXVG, "-o",  "rmsf",   ffWRITE },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efPDB, "-q", nullptr, ffOPTRD },
+        { efPDB, "-oq", "bfac", ffOPTWR },
+        { efPDB, "-ox", "xaver", ffOPTWR },
+        { efXVG, "-o", "rmsf", ffWRITE },
         { efXVG, "-od", "rmsdev", ffOPTWR },
         { efXVG, "-oc", "correl", ffOPTWR },
-        { efLOG, "-dir", "rmsf",  ffOPTWR }
+        { efLOG, "-dir", "rmsf", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -419,7 +416,7 @@ int gmx_rmsf(int argc, char *argv[])
             for (m = 0; m < DIM; m++)
             {
                 U[i][d * DIM + m] = U[i][d * DIM + m] * invcount
-                    - xav[i * DIM + d] * xav[i * DIM + m];
+                                    - xav[i * DIM + d] * xav[i * DIM + m];
                 Uaver[3 * d + m] += top.atoms.atom[index[i]].m * U[i][d * DIM + m];
             }
         }
@@ -486,7 +483,7 @@ int gmx_rmsf(int argc, char *argv[])
     {
         bfac = 8.0 * M_PI * M_PI / 3.0 * 100;
         fp   = xvgropen(ftp2fn(efXVG, NFILE, fnm), "B-Factors",
-                        label, "(A\\b\\S\\So\\N\\S2\\N)", oenv);
+                      label, "(A\\b\\S\\So\\N\\S2\\N)", oenv);
         xvgr_legend(fp, 2, leg, oenv);
         for (i = 0; (i < isize); i++)
         {

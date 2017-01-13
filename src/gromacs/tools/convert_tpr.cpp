@@ -61,7 +61,9 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
+#define RANGECHK(i, n) \
+    if ((i) >= (n))    \
+    gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
 
 static gmx_bool *bKeepIt(int gnx, int natoms, int index[])
 {
@@ -358,25 +360,21 @@ int gmx_convert_tpr(int argc, char *argv[])
     char              buf[200], buf2[200];
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
-        { efTPR, nullptr,  nullptr,    ffREAD  },
-        { efNDX, nullptr,  nullptr,    ffOPTRD },
-        { efTPR, "-o",  "tprout", ffWRITE }
+        { efTPR, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efTPR, "-o", "tprout", ffWRITE }
     };
 #define NFILE asize(fnm)
 
     /* Command line options */
     static int      nsteps_req_int = 0;
-    static real     extend_t       = 0.0, until_t = 0.0;
-    static gmx_bool bZeroQ         = FALSE;
-    static t_pargs  pa[]           = {
-        { "-extend",        FALSE, etREAL, {&extend_t},
-          "Extend runtime by this amount (ps)" },
-        { "-until",         FALSE, etREAL, {&until_t},
-          "Extend runtime until this ending time (ps)" },
-        { "-nsteps",        FALSE, etINT,  {&nsteps_req_int},
-          "Change the number of steps" },
-        { "-zeroq",         FALSE, etBOOL, {&bZeroQ},
-          "Set the charges of a group (from the index) to zero" }
+    static real     extend_t = 0.0, until_t = 0.0;
+    static gmx_bool bZeroQ = FALSE;
+    static t_pargs  pa[]   = {
+        { "-extend", FALSE, etREAL, { &extend_t }, "Extend runtime by this amount (ps)" },
+        { "-until", FALSE, etREAL, { &until_t }, "Extend runtime until this ending time (ps)" },
+        { "-nsteps", FALSE, etINT, { &nsteps_req_int }, "Change the number of steps" },
+        { "-zeroq", FALSE, etBOOL, { &bZeroQ }, "Set the charges of a group (from the index) to zero" }
     };
 
     /* Parse the command line */
@@ -458,8 +456,10 @@ int gmx_convert_tpr(int argc, char *argv[])
             }
             if (bSel)
             {
-                fprintf(stderr, "Will write subset %s of original tpx containing %d "
-                        "atoms\n", grpname, gnx);
+                fprintf(stderr,
+                        "Will write subset %s of original tpx containing %d "
+                        "atoms\n",
+                        grpname, gnx);
                 reduce_topology_x(gnx, index, &mtop, as_rvec_array(state.x.data()), as_rvec_array(state.v.data()));
                 state.natoms = gnx;
             }
@@ -475,7 +475,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         }
 
         state_t = ir->init_t + ir->init_step * ir->delta_t;
-        sprintf(buf,   "Writing statusfile with starting step %s%s and length %s%s steps...\n", "%10", GMX_PRId64, "%10", GMX_PRId64);
+        sprintf(buf, "Writing statusfile with starting step %s%s and length %s%s steps...\n", "%10", GMX_PRId64, "%10", GMX_PRId64);
         fprintf(stderr, buf, ir->init_step, ir->nsteps);
         fprintf(stderr, "                                 time %10.3f and length %10.3f ps\n",
                 state_t, ir->nsteps * ir->delta_t);

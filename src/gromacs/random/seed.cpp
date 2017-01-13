@@ -58,5 +58,4 @@ gmx_uint64_t makeRandomSeed()
 
     return result;
 }
-
 }

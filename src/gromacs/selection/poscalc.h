@@ -68,7 +68,7 @@
  * Without the flag, center-of-geometry positions are calculated.
  * Does not have any effect if the calculation type is \ref POS_ATOM.
  */
-#define POS_MASS        1
+#define POS_MASS 1
 /*! \brief
  * Calculate positions for the same atoms in residues/molecules.
  *
@@ -81,7 +81,7 @@
  * Has no effect unless \ref POS_DYNAMIC is set or if the calculation type
  * is not \ref POS_RES of \ref POS_MOL.
  */
-#define POS_COMPLMAX    2
+#define POS_COMPLMAX 2
 /*! \brief
  * Calculate positions for whole residues/molecules.
  *
@@ -91,39 +91,38 @@
  *
  * Has no effect unless the calculation type is \ref POS_RES or \ref POS_MOL.
  */
-#define POS_COMPLWHOLE  4
+#define POS_COMPLWHOLE 4
 /*! \brief
  * Enable handling of changing calculation groups.
  *
  * Can be used for static calculations as well, but implies a small
  * performance penalty.
  */
-#define POS_DYNAMIC     16
+#define POS_DYNAMIC 16
 /*! \brief
  * Update \c gmx_ana_pos_t::m dynamically for an otherwise static
  * calculation.
  *
  * Has effect only if \ref POS_DYNAMIC is not set.
  */
-#define POS_MASKONLY    32
+#define POS_MASKONLY 32
 /*! \brief
  * Calculate velocities of the positions.
  */
-#define POS_VELOCITIES  64
+#define POS_VELOCITIES 64
 /*! \brief
  * Calculate forces on the positions.
  */
-#define POS_FORCES      128
+#define POS_FORCES 128
 /*@}*/
 
 /** Specifies the type of positions to be calculated. */
-typedef enum
-{
-    POS_ATOM,    /**< Copy atomic coordinates. */
-    POS_RES,     /**< Calculate center for each residue. */
-    POS_MOL,     /**< Calculate center for each molecule. */
-    POS_ALL,     /**< Calculate center for the whole group. */
-    POS_ALL_PBC  /**< Calculate center for the whole group with PBC. */
+typedef enum {
+    POS_ATOM,   /**< Copy atomic coordinates. */
+    POS_RES,    /**< Calculate center for each residue. */
+    POS_MOL,    /**< Calculate center for each molecule. */
+    POS_ALL,    /**< Calculate center for the whole group. */
+    POS_ALL_PBC /**< Calculate center for the whole group with PBC. */
 } e_poscalc_t;
 
 /** Data structure for position calculation. */
@@ -181,9 +180,9 @@ public:
     //! Describes what topology information is needed for position calculation.
     enum class RequiredTopologyInfo
     {
-    None,                      //!< No topology is needed.
-    Topology,                  //!< Topology is needed (residue/molecule info).
-    TopologyAndMasses          //!< Masses are needed.
+        None,             //!< No topology is needed.
+        Topology,         //!< Topology is needed (residue/molecule info).
+        TopologyAndMasses //!< Masses are needed.
     };
 
     /*! \brief
@@ -194,7 +193,7 @@ public:
      * The array contains a NULL pointer after the last item to indicate
      * the end of the list.
      */
-    static const char * const typeEnumValues[];
+    static const char *const typeEnumValues[];
 
     /*! \brief
      * Converts a string to parameters for createCalculationFromEnum().
@@ -350,17 +349,13 @@ private:
 } // namespace gmx
 
 /** Sets the flags for position calculation. */
-void
-gmx_ana_poscalc_set_flags(gmx_ana_poscalc_t *pc, int flags);
+void gmx_ana_poscalc_set_flags(gmx_ana_poscalc_t *pc, int flags);
 /** Sets the maximum possible input index group for position calculation. */
-void
-gmx_ana_poscalc_set_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g);
+void gmx_ana_poscalc_set_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g);
 /** Initializes positions for position calculation output. */
-void
-gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p);
+void gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p);
 /** Frees the memory allocated for position calculation. */
-void
-gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc);
+void gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc);
 /*! \brief
  * Returns true if the position calculation requires topology information.
  *
@@ -372,9 +367,8 @@ gmx::PositionCalculationCollection::RequiredTopologyInfo
 gmx_ana_poscalc_required_topology_info(gmx_ana_poscalc_t *pc);
 
 /** Updates a single COM/COG structure for a frame. */
-void
-gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc,
-                       gmx_ana_pos_t *p, gmx_ana_index_t *g,
-                       t_trxframe *fr, const t_pbc *pbc);
+void gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc,
+                            gmx_ana_pos_t *p, gmx_ana_index_t *g,
+                            t_trxframe *fr, const t_pbc *pbc);
 
 #endif

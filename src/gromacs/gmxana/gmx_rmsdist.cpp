@@ -101,14 +101,14 @@ static void calc_dist_tot(int nind, int index[], rvec x[],
         for (j = i + 1; (j < nind); j++)
         {
             pbc_dx(&pbc, xi, x[index[j]], dx);
-            temp2        = norm2(dx);
-            temp         = std::sqrt(temp2);
-            d[i][j]      = temp;
-            dtot[i][j]  += temp;
+            temp2   = norm2(dx);
+            temp    = std::sqrt(temp2);
+            d[i][j] = temp;
+            dtot[i][j] += temp;
             dtot2[i][j] += temp2;
             if (bNMR)
             {
-                temp1_3        = 1.0 / (temp * temp2);
+                temp1_3 = 1.0 / (temp * temp2);
                 dtot1_3[i][j] += temp1_3;
                 dtot1_6[i][j] += temp1_3 * temp1_3;
             }
@@ -259,9 +259,9 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
         /* find first atom */
         for (j = 0; equiv[i][j].set && !bFound; j++)
         {
-            bFound = ( equiv[i][j].rnr == rnr1
-                       && std::strcmp(equiv[i][j].rname, rname1) == 0
-                       && std::strcmp(equiv[i][j].aname, aname1) == 0 );
+            bFound = (equiv[i][j].rnr == rnr1
+                      && std::strcmp(equiv[i][j].rname, rname1) == 0
+                      && std::strcmp(equiv[i][j].aname, aname1) == 0);
         }
         if (bFound)
         {
@@ -269,9 +269,9 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
             bFound = FALSE;
             for (j = 0; equiv[i][j].set && !bFound; j++)
             {
-                bFound = ( equiv[i][j].rnr == rnr2
-                           && std::strcmp(equiv[i][j].rname, rname2) == 0
-                           && std::strcmp(equiv[i][j].aname, aname2) == 0 );
+                bFound = (equiv[i][j].rnr == rnr2
+                          && std::strcmp(equiv[i][j].rname, rname2) == 0
+                          && std::strcmp(equiv[i][j].aname, aname2) == 0);
             }
         }
     }
@@ -283,7 +283,7 @@ static gmx_bool is_equiv(int neq, t_equiv **equiv, char **nname,
     return bFound;
 }
 
-static int analyze_noe_equivalent(const char *eq_fn,
+static int analyze_noe_equivalent(const char *   eq_fn,
                                   const t_atoms *atoms, int isize, int *index,
                                   gmx_bool bSumH,
                                   int *noe_index, t_noe_gr *noe_gr)
@@ -322,9 +322,9 @@ static int analyze_noe_equivalent(const char *eq_fn,
                     rnri = atoms->atom[index[i]].resind;
                     rnrj = atoms->atom[index[j]].resind;
                     bEquiv
-                        = is_equiv(neq, equiv, &nnm[i],
-                                   rnri, *atoms->resinfo[rnri].name, *atoms->atomname[index[i]],
-                                   rnrj, *atoms->resinfo[rnrj].name, *atoms->atomname[index[j]]);
+                            = is_equiv(neq, equiv, &nnm[i],
+                                       rnri, *atoms->resinfo[rnri].name, *atoms->atomname[index[i]],
+                                       rnrj, *atoms->resinfo[rnrj].name, *atoms->atomname[index[j]]);
                     if (nnm[i] && bEquiv)
                     {
                         nnm[j] = gmx_strdup(nnm[i]);
@@ -356,8 +356,8 @@ static int analyze_noe_equivalent(const char *eq_fn,
                     {
                         anmj   = *atoms->atomname[index[i + j]];
                         anmjl  = std::strlen(anmj);
-                        bMatch = bMatch && ( anmil == anmjl && anmj[anmjl - 1] == Hnum[j]
-                                             && std::strncmp(anmi, anmj, anmil - 1) == 0 );
+                        bMatch = bMatch && (anmil == anmjl && anmj[anmjl - 1] == Hnum[j]
+                                            && std::strncmp(anmi, anmj, anmil - 1) == 0);
                     }
                 }
                 /* set index for this atom */
@@ -559,12 +559,14 @@ static void write_noe(FILE *fp, int gnr, t_noe **noe, t_noe_gr *noe_gr, real rma
     {
         if (MINI > rmax)
         {
-            fprintf(stdout, "NOTE: no 1/r^%d averaged distances found below %g, "
-                    "smallest was %g\n", i, rmax, MINI );
+            fprintf(stdout,
+                    "NOTE: no 1/r^%d averaged distances found below %g, "
+                    "smallest was %g\n",
+                    i, rmax, MINI);
         }
         else
         {
-            fprintf(stdout, "Smallest 1/r^%d averaged distance was %g\n", i, MINI );
+            fprintf(stdout, "Smallest 1/r^%d averaged distance was %g\n", i, MINI);
         }
     }
 #undef MINI
@@ -572,13 +574,13 @@ static void write_noe(FILE *fp, int gnr, t_noe **noe, t_noe_gr *noe_gr, real rma
 
 static void calc_rms(int nind, int nframes,
                      real **dtot, real **dtot2,
-                     real **rmsmat,  real *rmsmax,
+                     real **rmsmat, real *rmsmax,
                      real **rmscmat, real *rmscmax,
                      real **meanmat, real *meanmax)
 {
     int  i, j;
     real mean, mean2, rms, rmsc;
-/* N.B. dtot and dtot2 contain the total distance and the total squared
+    /* N.B. dtot and dtot2 contain the total distance and the total squared
  * distance respectively, BUT they return RMS and the scaled RMS resp.
  */
 
@@ -598,7 +600,7 @@ static void calc_rms(int nind, int nframes,
             {
                 *meanmax = mean;
             }
-            if (rms  > *rmsmax)
+            if (rms > *rmsmax)
             {
                 *rmsmax = rms;
             }
@@ -607,7 +609,7 @@ static void calc_rms(int nind, int nframes,
                 *rmscmax = rmsc;
             }
             meanmat[i][j] = meanmat[j][i] = mean;
-            rmsmat[i][j]  = rmsmat[j][i] = rms;
+            rmsmat[i][j] = rmsmat[j][i] = rms;
             rmscmat[i][j] = rmscmat[j][i] = rmsc;
         }
     }
@@ -623,7 +625,7 @@ real rms_diff(int natom, real **d, real **d_r)
     {
         for (j = i + 1; (j < natom); j++)
         {
-            r   = d[i][j] - d_r[i][j];
+            r = d[i][j] - d_r[i][j];
             r2 += r * r;
         }
     }
@@ -687,28 +689,24 @@ int gmx_rmsdist(int argc, char *argv[])
     static gmx_bool   bPBC     = TRUE;
     gmx_output_env_t *oenv;
 
-    t_pargs  pa[] = {
-        { "-nlevels",   FALSE, etINT,  {&nlevels},
-          "Discretize RMS in this number of levels" },
-        { "-max",   FALSE, etREAL, {&scalemax},
-          "Maximum level in matrices" },
-        { "-sumh",  FALSE, etBOOL, {&bSumH},
-          "Average distance over equivalent hydrogens" },
-        { "-pbc",   FALSE, etBOOL, {&bPBC},
-          "Use periodic boundary conditions when computing distances" }
+    t_pargs pa[] = {
+        { "-nlevels", FALSE, etINT, { &nlevels }, "Discretize RMS in this number of levels" },
+        { "-max", FALSE, etREAL, { &scalemax }, "Maximum level in matrices" },
+        { "-sumh", FALSE, etBOOL, { &bSumH }, "Average distance over equivalent hydrogens" },
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "Use periodic boundary conditions when computing distances" }
     };
     t_filenm fnm[] = {
-        { efTRX, "-f",   nullptr,       ffREAD },
-        { efTPS, nullptr,   nullptr,       ffREAD },
-        { efNDX, nullptr,   nullptr,       ffOPTRD },
-        { efDAT, "-equiv", "equiv",   ffOPTRD },
-        { efXVG, nullptr,   "distrmsd", ffWRITE },
-        { efXPM, "-rms", "rmsdist",  ffOPTWR },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efDAT, "-equiv", "equiv", ffOPTRD },
+        { efXVG, nullptr, "distrmsd", ffWRITE },
+        { efXPM, "-rms", "rmsdist", ffOPTWR },
         { efXPM, "-scl", "rmsscale", ffOPTWR },
-        { efXPM, "-mean", "rmsmean",  ffOPTWR },
-        { efXPM, "-nmr3", "nmr3",     ffOPTWR },
-        { efXPM, "-nmr6", "nmr6",     ffOPTWR },
-        { efDAT, "-noe", "noe",     ffOPTWR },
+        { efXPM, "-mean", "rmsmean", ffOPTWR },
+        { efXPM, "-nmr3", "nmr3", ffOPTWR },
+        { efXPM, "-nmr6", "nmr6", ffOPTWR },
+        { efDAT, "-noe", "noe", ffOPTWR },
     };
 #define NFILE asize(fnm)
 
@@ -733,8 +731,10 @@ int gmx_rmsdist(int argc, char *argv[])
     if (bNOE && scalemax < 0)
     {
         scalemax = 0.6;
-        fprintf(stderr, "WARNING: using -noe without -max "
-                "makes no sense, setting -max to %g\n\n", scalemax);
+        fprintf(stderr,
+                "WARNING: using -noe without -max "
+                "makes no sense, setting -max to %g\n\n",
+                scalemax);
     }
 
     /* get topology and index */

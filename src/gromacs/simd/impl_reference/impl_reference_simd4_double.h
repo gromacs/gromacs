@@ -200,12 +200,10 @@ static inline Simd4Double gmx_simdcall operator&(Simd4Double a, Simd4Double b)
 {
     Simd4Double res;
 
-    union
-    {
+    union {
         double       r;
         std::int64_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -230,12 +228,10 @@ static inline Simd4Double gmx_simdcall andNot(Simd4Double a, Simd4Double b)
 {
     Simd4Double res;
 
-    union
-    {
+    union {
         double       r;
         std::int64_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -260,12 +256,10 @@ static inline Simd4Double gmx_simdcall operator|(Simd4Double a, Simd4Double b)
 {
     Simd4Double res;
 
-    union
-    {
+    union {
         double       r;
         std::int64_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -289,12 +283,10 @@ static inline Simd4Double gmx_simdcall operator^(Simd4Double a, Simd4Double b)
 {
     Simd4Double res;
 
-    union
-    {
+    union {
         double       r;
         std::int64_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -542,10 +534,9 @@ static inline Simd4Double gmx_simdcall trunc(Simd4Double a)
  */
 static inline double gmx_simdcall dotProduct(Simd4Double a, Simd4Double b)
 {
-    return
-        (a.simdInternal_[0] * b.simdInternal_[0]
-         + a.simdInternal_[1] * b.simdInternal_[1]
-         + a.simdInternal_[2] * b.simdInternal_[2]);
+    return (a.simdInternal_[0] * b.simdInternal_[0]
+            + a.simdInternal_[1] * b.simdInternal_[1]
+            + a.simdInternal_[2] * b.simdInternal_[2]);
 }
 
 /*! \brief SIMD4 double transpose
@@ -555,13 +546,13 @@ static inline double gmx_simdcall dotProduct(Simd4Double a, Simd4Double b)
  * \param[in,out] v2  Row 2 on input, column 2 on output
  * \param[in,out] v3  Row 3 on input, column 3 on output
  */
-static inline void gmx_simdcall transpose(Simd4Double * v0, Simd4Double * v1,
-                                          Simd4Double * v2, Simd4Double * v3)
+static inline void gmx_simdcall transpose(Simd4Double *v0, Simd4Double *v1,
+                                          Simd4Double *v2, Simd4Double *v3)
 {
-    Simd4Double t0 = *v0;
-    Simd4Double t1 = *v1;
-    Simd4Double t2 = *v2;
-    Simd4Double t3 = *v3;
+    Simd4Double t0       = *v0;
+    Simd4Double t1       = *v1;
+    Simd4Double t2       = *v2;
+    Simd4Double t3       = *v3;
     v0->simdInternal_[0] = t0.simdInternal_[0];
     v0->simdInternal_[1] = t1.simdInternal_[0];
     v0->simdInternal_[2] = t2.simdInternal_[0];
@@ -785,6 +776,6 @@ static inline double gmx_simdcall reduce(Simd4Double a)
 
 //! \endcond
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_REFERENCE_SIMD4_DOUBLE_H

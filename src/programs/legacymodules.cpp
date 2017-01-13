@@ -90,7 +90,7 @@ public:
     virtual void init(gmx::CommandLineModuleSettings * /*settings*/)
     {
     }
-    virtual int run(int /*argc*/, char * /*argv*/[])
+    virtual int run(int /*argc*/, char * /*argv*/ [])
     {
         printMessage();
         return 0;
@@ -127,7 +127,7 @@ void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
  * \param[in] name             Name for the new module.
  * \param[in] shortDescription One-line description for the new module.
  */
-void registerModule(gmx::CommandLineModuleManager *manager,
+void registerModule(gmx::CommandLineModuleManager *              manager,
                     gmx::CommandLineModuleManager::CMainFunction mainFunction,
                     const char *name, const char *shortDescription)
 {
@@ -143,7 +143,7 @@ void registerModule(gmx::CommandLineModuleManager *manager,
  * \param[in] name             Name for the new module.
  * \param[in] shortDescription One-line description for the new module.
  */
-void registerModuleNoNice(gmx::CommandLineModuleManager *manager,
+void registerModuleNoNice(gmx::CommandLineModuleManager *              manager,
                           gmx::CommandLineModuleManager::CMainFunction mainFunction,
                           const char *name, const char *shortDescription)
 {
@@ -360,7 +360,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
 
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Generating topologies and coordinates");
+                = manager->addModuleGroup("Generating topologies and coordinates");
         group.addModuleWithDescription("editconf", "Edit the box and write subgroups");
         group.addModule("x2top");
         group.addModule("solvate");
@@ -372,27 +372,27 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Running a simulation");
+                = manager->addModuleGroup("Running a simulation");
         group.addModule("grompp");
         group.addModule("mdrun");
         group.addModule("convert-tpr");
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Viewing trajectories");
+                = manager->addModuleGroup("Viewing trajectories");
         group.addModule("nmtraj");
         group.addModule("view");
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Processing energies");
+                = manager->addModuleGroup("Processing energies");
         group.addModule("enemat");
         group.addModule("energy");
         group.addModuleWithDescription("mdrun", "(Re)calculate energies for trajectory frames with -rerun");
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Converting files");
+                = manager->addModuleGroup("Converting files");
         group.addModule("editconf");
         group.addModule("eneconv");
         group.addModule("sigeps");
@@ -402,7 +402,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Tools");
+                = manager->addModuleGroup("Tools");
         group.addModule("analyze");
         group.addModule("dyndom");
         group.addModule("filter");
@@ -423,7 +423,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Distances between structures");
+                = manager->addModuleGroup("Distances between structures");
         group.addModule("cluster");
         group.addModule("confrms");
         group.addModule("rms");
@@ -431,7 +431,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Distances in structures over time");
+                = manager->addModuleGroup("Distances in structures over time");
         group.addModule("mindist");
         group.addModule("mdmat");
         group.addModule("polystat");
@@ -439,7 +439,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Mass distribution properties over time");
+                = manager->addModuleGroup("Mass distribution properties over time");
         group.addModule("gyrate");
         group.addModule("msd");
         group.addModule("polystat");
@@ -453,13 +453,13 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Analyzing bonded interactions");
+                = manager->addModuleGroup("Analyzing bonded interactions");
         group.addModule("angle");
         group.addModule("mk_angndx");
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Structural properties");
+                = manager->addModuleGroup("Structural properties");
         group.addModule("anadock");
         group.addModule("bundle");
         group.addModule("clustsize");
@@ -474,7 +474,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Kinetic properties");
+                = manager->addModuleGroup("Kinetic properties");
         group.addModule("bar");
         group.addModule("current");
         group.addModule("dos");
@@ -487,7 +487,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Electrostatic properties");
+                = manager->addModuleGroup("Electrostatic properties");
         group.addModule("current");
         group.addModule("dielectric");
         group.addModule("dipoles");
@@ -497,7 +497,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Protein-specific analysis");
+                = manager->addModuleGroup("Protein-specific analysis");
         group.addModule("do_dssp");
         group.addModule("chi");
         group.addModule("helix");
@@ -507,7 +507,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Interfaces");
+                = manager->addModuleGroup("Interfaces");
         group.addModule("bundle");
         group.addModule("density");
         group.addModule("densmap");
@@ -519,14 +519,14 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Covariance analysis");
+                = manager->addModuleGroup("Covariance analysis");
         group.addModuleWithDescription("anaeig", "Analyze the eigenvectors");
         group.addModule("covar");
         group.addModule("make_edi");
     }
     {
         gmx::CommandLineModuleGroup group
-            = manager->addModuleGroup("Normal modes");
+                = manager->addModuleGroup("Normal modes");
         group.addModuleWithDescription("anaeig", "Analyze the normal modes");
         group.addModule("nmeig");
         group.addModule("nmtraj");

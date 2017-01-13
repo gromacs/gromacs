@@ -147,7 +147,7 @@ static void rot_conf(t_atoms *atoms, const rvec x[], const rvec v[], real trans,
 
 int gmx_dyndom(int argc, char *argv[])
 {
-    const char *      desc[] = {
+    const char *desc[] = {
         "[THISMODULE] reads a [REF].pdb[ref] file output from DynDom",
         "(http://www.cmp.uea.ac.uk/dyndom/).",
         "It reads the coordinates, the coordinates of the rotation axis,",
@@ -167,26 +167,19 @@ int gmx_dyndom(int argc, char *argv[])
         "inspection, and energy minimization may be necessary to",
         "validate the structure."
     };
-    static real       trans0 = 0;
-    static rvec       head   = { 0, 0, 0 };
-    static rvec       tail   = { 0, 0, 0 };
-    static real       angle0 = 0, angle1 = 0, maxangle = 0;
-    static int        label  = 0, nframes = 11;
-    t_pargs           pa[]   = {
-        { "-firstangle",    FALSE, etREAL, {&angle0},
-          "Angle of rotation about rotation vector" },
-        { "-lastangle",    FALSE, etREAL, {&angle1},
-          "Angle of rotation about rotation vector" },
-        { "-nframe",   FALSE, etINT,  {&nframes},
-          "Number of steps on the pathway" },
-        { "-maxangle", FALSE, etREAL, {&maxangle},
-          "DymDom dtermined angle of rotation about rotation vector" },
-        { "-trans",    FALSE, etREAL, {&trans0},
-          "Translation (Angstrom) along rotation vector (see DynDom info file)" },
-        { "-head",     FALSE, etRVEC, {head},
-          "First atom of the arrow vector" },
-        { "-tail",     FALSE, etRVEC, {tail},
-          "Last atom of the arrow vector" }
+    static real trans0 = 0;
+    static rvec head   = { 0, 0, 0 };
+    static rvec tail   = { 0, 0, 0 };
+    static real angle0 = 0, angle1 = 0, maxangle = 0;
+    static int  label = 0, nframes = 11;
+    t_pargs     pa[] = {
+        { "-firstangle", FALSE, etREAL, { &angle0 }, "Angle of rotation about rotation vector" },
+        { "-lastangle", FALSE, etREAL, { &angle1 }, "Angle of rotation about rotation vector" },
+        { "-nframe", FALSE, etINT, { &nframes }, "Number of steps on the pathway" },
+        { "-maxangle", FALSE, etREAL, { &maxangle }, "DymDom dtermined angle of rotation about rotation vector" },
+        { "-trans", FALSE, etREAL, { &trans0 }, "Translation (Angstrom) along rotation vector (see DynDom info file)" },
+        { "-head", FALSE, etRVEC, { head }, "First atom of the arrow vector" },
+        { "-tail", FALSE, etRVEC, { tail }, "Last atom of the arrow vector" }
     };
     int               i, j, natoms, isize;
     t_trxstatus *     status;
@@ -198,7 +191,7 @@ int gmx_dyndom(int argc, char *argv[])
     gmx_output_env_t *oenv;
 
     t_filenm fnm[] = {
-        { efPDB, "-f", "dyndom",  ffREAD },
+        { efPDB, "-f", "dyndom", ffREAD },
         { efTRO, "-o", "rotated", ffWRITE },
         { efNDX, "-n", "domains", ffREAD }
     };

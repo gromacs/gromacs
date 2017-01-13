@@ -151,7 +151,7 @@ gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const ch
     return gnsf;
 }
 
-gmx_sans_t *gmx_sans_init (const t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf)
+gmx_sans_t *gmx_sans_init(const t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf)
 {
     gmx_sans_t *gsans = nullptr;
     int         i, j;
@@ -189,7 +189,7 @@ gmx_sans_t *gmx_sans_init (const t_topology *top, gmx_neutron_atomic_structurefa
     return gsans;
 }
 
-gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
+gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram(
         gmx_sans_t * gsans,
         rvec *       x,
         matrix       box,
@@ -252,12 +252,12 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
             snew(tgr[i], pr->grn);
             trng[i].seed(rng());
         }
-        #pragma omp parallel shared(tgr,trng,mc) private(tid,i,j)
+#pragma omp parallel shared(tgr, trng, mc) private(tid, i, j)
         {
             gmx::UniformIntDistribution<int> tdist(0, isize - 1);
             tid = gmx_omp_get_thread_num();
-            /* now starting parallel threads */
-            #pragma omp for
+/* now starting parallel threads */
+#pragma omp for
             for (mc = 0; mc < mc_max; mc++)
             {
                 try
@@ -310,11 +310,11 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
         {
             snew(tgr[i], pr->grn);
         }
-        #pragma omp parallel shared(tgr) private(tid,i,j)
+#pragma omp parallel shared(tgr) private(tid, i, j)
         {
             tid = gmx_omp_get_thread_num();
-            /* starting parallel threads */
-            #pragma omp for
+/* starting parallel threads */
+#pragma omp for
             for (i = 0; i < isize; i++)
             {
                 try
@@ -367,7 +367,7 @@ gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram (
     return pr;
 }
 
-gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step)
+gmx_static_structurefactor_t *convert_histogram_to_intensity_curve(gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step)
 {
     gmx_static_structurefactor_t *sq = nullptr;
     int                           i, j;

@@ -83,7 +83,7 @@ void registerModule(CommandLineModuleManager *manager,
     group.addModule(ModuleInfo::name);
 }
 
-}   // namespace
+} // namespace
 
 //! \cond libapi
 void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)

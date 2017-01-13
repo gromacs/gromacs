@@ -179,7 +179,7 @@ private:
 
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
 typedef std::unique_ptr<TrajectoryAnalysisModuleData>
-    TrajectoryAnalysisModuleDataPointer;
+        TrajectoryAnalysisModuleDataPointer;
 
 /*! \brief
  * Base class for trajectory analysis modules.
@@ -250,7 +250,8 @@ public:
      * optionsFinished().
      */
     virtual void initOptions(IOptionsContainer *         options,
-                             TrajectoryAnalysisSettings *settings) = 0;
+                             TrajectoryAnalysisSettings *settings)
+            = 0;
     /*! \brief
      * Called after all option values have been set.
      *
@@ -280,7 +281,8 @@ public:
      * analyzeFrame() are always a subset of the selections provided here.
      */
     virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                              const TopologyInformation &       top) = 0;
+                              const TopologyInformation &       top)
+            = 0;
     /*! \brief
      * Performs additional initialization after reading the first frame.
      *
@@ -318,8 +320,8 @@ public:
      * \see TrajectoryAnalysisModuleData
      */
     virtual TrajectoryAnalysisModuleDataPointer startFrames(
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &        selections);
+            const AnalysisDataParallelOptions &opt,
+            const SelectionCollection &        selections);
     /*! \brief
      * Analyzes a single frame.
      *
@@ -344,7 +346,8 @@ public:
      * designed to be thread-safe.
      */
     virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                              TrajectoryAnalysisModuleData *pdata) = 0;
+                              TrajectoryAnalysisModuleData *pdata)
+            = 0;
     /*! \brief
      * Finishes the analysis of frames.
      *
@@ -497,7 +500,7 @@ private:
 
 //! Smart pointer to manage a TrajectoryAnalysisModule.
 typedef std::unique_ptr<TrajectoryAnalysisModule>
-    TrajectoryAnalysisModulePointer;
+        TrajectoryAnalysisModulePointer;
 
 } // namespace gmx
 

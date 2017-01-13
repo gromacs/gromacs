@@ -336,7 +336,7 @@ static void chk_bonds(t_idef *idef, int ePBC, rvec *x, matrix box, real tol)
     {
         if ((interaction_function[ftype].flags & IF_CHEMBOND) == IF_CHEMBOND)
         {
-            for (k = 0; (k < idef->il[ftype].nr); )
+            for (k = 0; (k < idef->il[ftype].nr);)
             {
                 type = idef->il[ftype].iatoms[k++];
                 ai   = idef->il[ftype].iatoms[k++];
@@ -403,7 +403,7 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
 
     printf("Checking file %s\n", fn);
 
-    j      =  0;
+    j      = 0;
     old_t2 = -2.0;
     old_t1 = -1.0;
 
@@ -453,7 +453,7 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
         if (j >= 2)
         {
             if (fabs((fr.time - old_t1) - (old_t1 - old_t2))
-                > 0.1 * (fabs(fr.time - old_t1) + fabs(old_t1 - old_t2)) )
+                > 0.1 * (fabs(fr.time - old_t1) + fabs(old_t1 - old_t2)))
             {
                 bShowTimestep = FALSE;
                 fprintf(stderr, "%sTimesteps at t=%g don't match (%g, %g)\n",
@@ -482,8 +482,16 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
         old_t1 = fr.time;
         j++;
         new_natoms = fr.natoms;
-#define INC(s, n, f, l, item) if (s.item != 0) { if (n.item == 0) { first.item = fr.time; } last.item = fr.time; n.item++; \
-}
+#define INC(s, n, f, l, item)     \
+    if (s.item != 0)              \
+    {                             \
+        if (n.item == 0)          \
+        {                         \
+            first.item = fr.time; \
+        }                         \
+        last.item = fr.time;      \
+        n.item++;                 \
+    }
         INC(fr, count, first, last, bStep);
         INC(fr, count, first, last, bTime);
         INC(fr, count, first, last, bLambda);
@@ -504,14 +512,21 @@ void chk_trj(const gmx_output_env_t *oenv, const char *fn, const char *tpr, real
         fprintf(stderr, " Timestep (ps)");
     }
     fprintf(stderr, "\n");
-#define PRINTITEM(label, item) fprintf(stderr, "%-10s  %6d", label, count.item); if ((bShowTimestep) && (count.item > 1)) {fprintf(stderr, "    %g\n", (last.item - first.item) / (count.item - 1)); }else fprintf(stderr, "\n")
-    PRINTITEM ( "Step",       bStep );
-    PRINTITEM ( "Time",       bTime );
-    PRINTITEM ( "Lambda",     bLambda );
-    PRINTITEM ( "Coords",     bX );
-    PRINTITEM ( "Velocities", bV );
-    PRINTITEM ( "Forces",     bF );
-    PRINTITEM ( "Box",        bBox );
+#define PRINTITEM(label, item)                                                    \
+    fprintf(stderr, "%-10s  %6d", label, count.item);                             \
+    if ((bShowTimestep) && (count.item > 1))                                      \
+    {                                                                             \
+        fprintf(stderr, "    %g\n", (last.item - first.item) / (count.item - 1)); \
+    }                                                                             \
+    else                                                                          \
+        fprintf(stderr, "\n")
+    PRINTITEM("Step", bStep);
+    PRINTITEM("Time", bTime);
+    PRINTITEM("Lambda", bLambda);
+    PRINTITEM("Coords", bX);
+    PRINTITEM("Velocities", bV);
+    PRINTITEM("Forces", bF);
+    PRINTITEM("Box", bBox);
 }
 
 void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
@@ -574,10 +589,12 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
         temp1 = (2.0 * ekin) / (natom * DIM * BOLTZ);
         temp2 = (2.0 * ekin) / (natom * (DIM - 1) * BOLTZ);
         fprintf(stderr, "Kinetic energy: %g (kJ/mol)\n", ekin);
-        fprintf(stderr, "Assuming the number of degrees of freedom to be "
+        fprintf(stderr,
+                "Assuming the number of degrees of freedom to be "
                 "Natoms * %d or Natoms * %d,\n"
                 "the velocities correspond to a temperature of the system\n"
-                "of %g K or %g K respectively.\n\n", DIM, DIM - 1, temp1, temp2);
+                "of %g K or %g K respectively.\n\n",
+                DIM, DIM - 1, temp1, temp2);
     }
 
     /* check coordinates */
@@ -632,8 +649,8 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
                 }
                 r2    = iprod(dx, dx);
                 dist2 = gmx::square(atom_vdw[i] + atom_vdw[j]);
-                if ( (r2 <= dist2 * bonlo2)
-                     || ( (r2 >= dist2 * bonhi2) && (r2 <= dist2 * vdwfac2) ) )
+                if ((r2 <= dist2 * bonlo2)
+                    || ((r2 >= dist2 * bonhi2) && (r2 <= dist2 * vdwfac2)))
                 {
                     if (bFirst)
                     {
@@ -652,7 +669,7 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
                             *(atoms->resinfo[atoms->atom[j].resind].name),
                             atoms->resinfo[atoms->atom[j].resind].nr,
                             atom_vdw[j],
-                            std::sqrt(r2) );
+                            std::sqrt(r2));
                 }
             }
         }
@@ -684,7 +701,8 @@ void chk_tps(const char *fn, real vdw_fac, real bon_lo, real bon_hi)
                         {
                             fprintf(stderr, "%g ", box[j][j]);
                         }
-                        fprintf(stderr, "):\n"
+                        fprintf(stderr,
+                                "):\n"
                                 "(These may occur often and are normally not a problem)\n"
                                 "%5s %4s %8s %5s  %s\n",
                                 "atom#", "name", "residue", "r_vdw", "coordinate");
@@ -776,7 +794,7 @@ void chk_enx(const char *fn)
         if (fnr >= 2)
         {
             if (fabs((fr->t - old_t1) - (old_t1 - old_t2))
-                > 0.1 * (fabs(fr->t - old_t1) + fabs(old_t1 - old_t2)) )
+                > 0.1 * (fabs(fr->t - old_t1) + fabs(old_t1 - old_t2)))
             {
                 bShowTStep = FALSE;
                 fprintf(stderr, "\nTimesteps at t=%g don't match (%g, %g)\n",
@@ -839,16 +857,16 @@ int gmx_check(int argc, char *argv[])
         "In case the [TT]-m[tt] flag is given a LaTeX file will be written",
         "consisting of a rough outline for a methods section for a paper."
     };
-    t_filenm    fnm[] = {
-        { efTRX, "-f",  nullptr, ffOPTRD },
-        { efTRX, "-f2",  nullptr, ffOPTRD },
+    t_filenm fnm[] = {
+        { efTRX, "-f", nullptr, ffOPTRD },
+        { efTRX, "-f2", nullptr, ffOPTRD },
         { efTPR, "-s1", "top1", ffOPTRD },
         { efTPR, "-s2", "top2", ffOPTRD },
-        { efTPS, "-c",  nullptr, ffOPTRD },
-        { efEDR, "-e",  nullptr, ffOPTRD },
+        { efTPS, "-c", nullptr, ffOPTRD },
+        { efEDR, "-e", nullptr, ffOPTRD },
         { efEDR, "-e2", "ener2", ffOPTRD },
-        { efNDX, "-n",  nullptr, ffOPTRD },
-        { efTEX, "-m",  nullptr, ffOPTWR }
+        { efNDX, "-n", nullptr, ffOPTRD },
+        { efTEX, "-m", nullptr, ffOPTWR }
     };
 #define NFILE asize(fnm)
     const char *fn1 = nullptr, *fn2 = nullptr, *tex = nullptr;
@@ -863,22 +881,14 @@ int gmx_check(int argc, char *argv[])
     static gmx_bool   bCompAB  = FALSE;
     static char *     lastener = nullptr;
     static t_pargs    pa[]     = {
-        { "-vdwfac", FALSE, etREAL, {&vdw_fac},
-          "Fraction of sum of VdW radii used as warning cutoff" },
-        { "-bonlo",  FALSE, etREAL, {&bon_lo},
-          "Min. fract. of sum of VdW radii for bonded atoms" },
-        { "-bonhi",  FALSE, etREAL, {&bon_hi},
-          "Max. fract. of sum of VdW radii for bonded atoms" },
-        { "-rmsd",   FALSE, etBOOL, {&bRMSD},
-          "Print RMSD for x, v and f" },
-        { "-tol",    FALSE, etREAL, {&ftol},
-          "Relative tolerance for comparing real values defined as [MATH]2*(a-b)/([MAG]a[mag]+[MAG]b[mag])[math]" },
-        { "-abstol",    FALSE, etREAL, {&abstol},
-          "Absolute tolerance, useful when sums are close to zero." },
-        { "-ab",     FALSE, etBOOL, {&bCompAB},
-          "Compare the A and B topology from one file" },
-        { "-lastener", FALSE, etSTR,  {&lastener},
-          "Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure." }
+        { "-vdwfac", FALSE, etREAL, { &vdw_fac }, "Fraction of sum of VdW radii used as warning cutoff" },
+        { "-bonlo", FALSE, etREAL, { &bon_lo }, "Min. fract. of sum of VdW radii for bonded atoms" },
+        { "-bonhi", FALSE, etREAL, { &bon_hi }, "Max. fract. of sum of VdW radii for bonded atoms" },
+        { "-rmsd", FALSE, etBOOL, { &bRMSD }, "Print RMSD for x, v and f" },
+        { "-tol", FALSE, etREAL, { &ftol }, "Relative tolerance for comparing real values defined as [MATH]2*(a-b)/([MAG]a[mag]+[MAG]b[mag])[math]" },
+        { "-abstol", FALSE, etREAL, { &abstol }, "Absolute tolerance, useful when sums are close to zero." },
+        { "-ab", FALSE, etBOOL, { &bCompAB }, "Compare the A and B topology from one file" },
+        { "-lastener", FALSE, etSTR, { &lastener }, "Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure." }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
@@ -923,7 +933,8 @@ int gmx_check(int argc, char *argv[])
     }
     else if ((fn1 && !opt2fn_null("-f", NFILE, fnm)) || (!fn1 && fn2))
     {
-        fprintf(stderr, "Please give me TWO run input (.tpr) files\n"
+        fprintf(stderr,
+                "Please give me TWO run input (.tpr) files\n"
                 "or specify the -m flag to generate a methods.tex file\n");
     }
 

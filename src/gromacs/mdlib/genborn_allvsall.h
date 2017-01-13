@@ -44,30 +44,27 @@ struct gmx_localtop_t;
 struct t_forcerec;
 struct t_mdatoms;
 
-int
-genborn_allvsall_calc_still_radii(struct t_forcerec * fr,
-                                  t_mdatoms *         mdatoms,
-                                  gmx_genborn_t *     born,
-                                  gmx_localtop_t *    top,
-                                  real *              x,
-                                  void *              work);
+int genborn_allvsall_calc_still_radii(struct t_forcerec *fr,
+                                      t_mdatoms *        mdatoms,
+                                      gmx_genborn_t *    born,
+                                      gmx_localtop_t *   top,
+                                      real *             x,
+                                      void *             work);
 
-int
-genborn_allvsall_calc_hct_obc_radii(struct t_forcerec * fr,
-                                    t_mdatoms *         mdatoms,
-                                    gmx_genborn_t *     born,
-                                    int                 gb_algorithm,
-                                    gmx_localtop_t *    top,
-                                    real *              x,
-                                    void *              work);
+int genborn_allvsall_calc_hct_obc_radii(struct t_forcerec *fr,
+                                        t_mdatoms *        mdatoms,
+                                        gmx_genborn_t *    born,
+                                        int                gb_algorithm,
+                                        gmx_localtop_t *   top,
+                                        real *             x,
+                                        void *             work);
 
-int
-genborn_allvsall_calc_chainrule(struct t_forcerec * fr,
-                                t_mdatoms *         mdatoms,
-                                gmx_genborn_t *     born,
-                                real *              x,
-                                real *              f,
-                                int                 gb_algorithm,
-                                void *              work);
+int genborn_allvsall_calc_chainrule(struct t_forcerec *fr,
+                                    t_mdatoms *        mdatoms,
+                                    gmx_genborn_t *    born,
+                                    real *             x,
+                                    real *             f,
+                                    int                gb_algorithm,
+                                    void *             work);
 
 #endif

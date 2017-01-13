@@ -148,9 +148,9 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
             npair = mtop->ffparams.iparams[type].disres.npair;
             if (np == npair)
             {
-                dd->nres  += (ir->eDisre == edrEnsemble ? 1 : nmol);
+                dd->nres += (ir->eDisre == edrEnsemble ? 1 : nmol);
                 dd->npair += nmol * npair;
-                np         = 0;
+                np = 0;
 
                 type_min = std::min(type_min, type);
                 type_max = std::max(type_max, type);
@@ -182,10 +182,10 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
     {
         hist = &state->hist;
         /* Set the "history lack" factor to 1 */
-        state->flags     |= (1 << estDISRE_INITF);
+        state->flags |= (1 << estDISRE_INITF);
         hist->disre_initf = 1.0;
         /* Allocate space for the r^-3 time averages */
-        state->flags     |= (1 << estDISRE_RM3TAV);
+        state->flags |= (1 << estDISRE_RM3TAV);
         hist->ndisrepairs = dd->npair;
         snew(hist->disre_rm3tav, hist->ndisrepairs);
     }
@@ -357,7 +357,7 @@ void calc_disres_R_6(const t_commrec *cr,
          * the same restraint get assigned to the same thread, so we could
          * run this loop thread-parallel.
          */
-        Rt_6[res]   += rt_3 * rt_3;
+        Rt_6[res] += rt_3 * rt_3;
         Rtav_6[res] += rm3tav[pair] * rm3tav[pair];
     }
 
@@ -373,8 +373,8 @@ void calc_disres_R_6(const t_commrec *cr,
 
         for (int res = 0; res < dd->nres; res++)
         {
-            Rtl_6[res]   = Rt_6[res];
-            Rt_6[res]   *= invn;
+            Rtl_6[res] = Rt_6[res];
+            Rt_6[res] *= invn;
             Rtav_6[res] *= invn;
         }
 
@@ -445,10 +445,10 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
     {
         int type  = forceatoms[fa];
         int npair = ip[type].disres.npair;
-        up1 = ip[type].disres.up1;
-        up2 = ip[type].disres.up2;
-        low = ip[type].disres.low;
-        k0  = smooth_fc * ip[type].disres.kfac;
+        up1       = ip[type].disres.up1;
+        up2       = ip[type].disres.up2;
+        low       = ip[type].disres.low;
+        k0        = smooth_fc * ip[type].disres.kfac;
 
         int res = type - dd->type_min;
 
@@ -492,10 +492,10 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             /* NOTE:
              * there is no real potential when time averaging is applied
              */
-            vtot += 0.5*k0*gmx::square(tav_viol) * pairFac;
+            vtot += 0.5 * k0 * gmx::square(tav_viol) * pairFac;
             if (!bMixed)
             {
-                f_scal   = -k0 * tav_viol;
+                f_scal = -k0 * tav_viol;
                 violtot += fabs(tav_viol) * pairFac;
             }
             else
@@ -530,7 +530,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 {
                     mixed_viol = std::sqrt(tav_viol * instant_viol);
                     f_scal     = -k0 * mixed_viol;
-                    violtot   += mixed_viol * pairFac;
+                    violtot += mixed_viol * pairFac;
                 }
             }
         }
@@ -548,7 +548,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 }
                 else
                 {
-                    f_scal            /= 2 * mixed_viol;
+                    f_scal /= 2 * mixed_viol;
                     tav_viol_Rtav7     = tav_viol * Rtav / Rtav_6[res];
                     instant_viol_Rtav7 = instant_viol * Rt / Rt_6[res];
                 }
@@ -556,7 +556,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             else
             {
                 f_scal /= npair;
-                f_scal  = std::max(f_scal, fmax_scal);
+                f_scal = std::max(f_scal, fmax_scal);
             }
 
             /* Exert the force ... */
@@ -586,7 +586,7 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                 else
                 {
                     weight_rt_1 *= tav_viol_Rtav7 * std::pow(dd->rm3tav[pair], seven_three)
-                        + instant_viol_Rtav7 / (dd->rt[pair] * gmx::power6(dd->rt[pair]));
+                                   + instant_viol_Rtav7 / (dd->rt[pair] * gmx::power6(dd->rt[pair]));
                 }
             }
 
@@ -602,9 +602,9 @@ real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             {
                 fij = fk_scal * dx[m];
 
-                f[ai][m]           += fij;
-                f[aj][m]           -= fij;
-                fshift[ki][m]      += fij;
+                f[ai][m] += fij;
+                f[aj][m] -= fij;
+                fshift[ki][m] += fij;
                 fshift[CENTRAL][m] -= fij;
             }
         }

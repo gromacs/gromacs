@@ -70,13 +70,13 @@ TEST_F(Simd4VectorOperationsTest, norm2)
     GMX_EXPECT_SIMD4_REAL_NEAR(simdR2, norm2(simdX, simdY, simdZ));
 }
 
-#endif      // GMX_SIMD4_HAVE_REAL
+#endif // GMX_SIMD4_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace
+} // namespace
 
 #endif // GMX_SIMD

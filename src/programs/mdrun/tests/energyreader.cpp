@@ -89,10 +89,10 @@ EnergyFrameReaderPtr openEnergyFileToReadFields(const std::string &             
         {
             const char *name           = energyNames[i].name;
             auto        requiredEnergy = std::find_if(std::begin(namesOfRequiredEnergyFields),
-                                                      std::end(namesOfRequiredEnergyFields),
-                                                      [name](const std::string &n){
-                                                          return 0 == n.compare(name);
-                                                      });
+                                               std::end(namesOfRequiredEnergyFields),
+                                               [name](const std::string &n) {
+                                                   return 0 == n.compare(name);
+                                               });
             if (requiredEnergy != namesOfRequiredEnergyFields.end())
             {
                 indicesOfEnergyFields[name] = i;
@@ -184,8 +184,8 @@ EnergyFrame EnergyFrameReader::frame()
 
     // The probe filled enxframe_ with new data, so now we use that data to fill energyFrame
     t_enxframe *enxframe = enxframeGuard_.get();
-    energyFrame.time_ = enxframe->t;
-    energyFrame.step_ = enxframe->step;
+    energyFrame.time_    = enxframe->t;
+    energyFrame.step_    = enxframe->step;
     for (auto &index : indicesOfEnergyFields_)
     {
         if (index.second >= enxframe->nre)
@@ -205,7 +205,8 @@ EnergyFrame EnergyFrameReader::frame()
 
 // === EnergyFrame ===
 
-EnergyFrame::EnergyFrame() : values_(), step_(), time_() {};
+EnergyFrame::EnergyFrame()
+    : values_(), step_(), time_(){};
 
 std::string EnergyFrame::getFrameName() const
 {
@@ -236,7 +237,7 @@ void compareFrames(const std::pair<EnergyFrame, EnergyFrame> &frames,
             auto energyFieldInReference = referenceIt->second;
             auto energyFieldInTest      = testIt->second;
             EXPECT_REAL_EQ_TOL(energyFieldInReference, energyFieldInTest, tolerance)
-            << referenceIt->first << " didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
+                    << referenceIt->first << " didn't match between reference run " << reference.getFrameName() << " and test run " << test.getFrameName();
         }
     }
 }

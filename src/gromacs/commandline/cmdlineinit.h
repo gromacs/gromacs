@@ -182,8 +182,7 @@ int runCommandLineModule(int argc, char *argv[],
 
 } // namespace gmx
 
-extern "C"
-{
+extern "C" {
 #endif
 
 /*! \brief

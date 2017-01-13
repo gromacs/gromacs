@@ -128,49 +128,49 @@ typedef struct
 
 /** Array of selection methods defined in the library. */
 static const t_register_method smtable_def[] = {
-    {nullptr,         &sm_cog},
-    {nullptr,         &sm_com},
+    { nullptr, &sm_cog },
+    { nullptr, &sm_com },
 
-    {nullptr,         &sm_all},
-    {nullptr,         &sm_none},
-    {nullptr,         &sm_atomnr},
-    {nullptr,         &sm_resnr},
-    {"resid",      &sm_resnr},
-    {nullptr,         &sm_resindex},
-    {"residue",    &sm_resindex},
-    {nullptr,         &sm_molindex},
-    {"mol",        &sm_molindex},
-    {"molecule",   &sm_molindex},
-    {nullptr,         &sm_atomname},
-    {"name",       &sm_atomname},
-    {nullptr,         &sm_pdbatomname},
-    {"pdbname",    &sm_pdbatomname},
-    {nullptr,         &sm_atomtype},
-    {"type",       &sm_atomtype},
-    {nullptr,         &sm_resname},
-    {nullptr,         &sm_insertcode},
-    {nullptr,         &sm_chain},
-    {nullptr,         &sm_mass},
-    {nullptr,         &sm_charge},
-    {nullptr,         &sm_altloc},
-    {nullptr,         &sm_occupancy},
-    {nullptr,         &sm_betafactor},
-    {"beta",       &sm_betafactor},
-    {nullptr,         &sm_x},
-    {nullptr,         &sm_y},
-    {nullptr,         &sm_z},
+    { nullptr, &sm_all },
+    { nullptr, &sm_none },
+    { nullptr, &sm_atomnr },
+    { nullptr, &sm_resnr },
+    { "resid", &sm_resnr },
+    { nullptr, &sm_resindex },
+    { "residue", &sm_resindex },
+    { nullptr, &sm_molindex },
+    { "mol", &sm_molindex },
+    { "molecule", &sm_molindex },
+    { nullptr, &sm_atomname },
+    { "name", &sm_atomname },
+    { nullptr, &sm_pdbatomname },
+    { "pdbname", &sm_pdbatomname },
+    { nullptr, &sm_atomtype },
+    { "type", &sm_atomtype },
+    { nullptr, &sm_resname },
+    { nullptr, &sm_insertcode },
+    { nullptr, &sm_chain },
+    { nullptr, &sm_mass },
+    { nullptr, &sm_charge },
+    { nullptr, &sm_altloc },
+    { nullptr, &sm_occupancy },
+    { nullptr, &sm_betafactor },
+    { "beta", &sm_betafactor },
+    { nullptr, &sm_x },
+    { nullptr, &sm_y },
+    { nullptr, &sm_z },
 
-    {nullptr,         &sm_distance},
-    {"dist",       &sm_distance},
-    {nullptr,         &sm_mindistance},
-    {"mindist",    &sm_mindistance},
-    {nullptr,         &sm_within},
-    {nullptr,         &sm_insolidangle},
-    {nullptr,         &sm_same},
+    { nullptr, &sm_distance },
+    { "dist", &sm_distance },
+    { nullptr, &sm_mindistance },
+    { "mindist", &sm_mindistance },
+    { nullptr, &sm_within },
+    { nullptr, &sm_insolidangle },
+    { nullptr, &sm_same },
 
-    {nullptr,         &sm_merge},
-    {nullptr,         &sm_plus},
-    {nullptr,         &sm_permute},
+    { nullptr, &sm_merge },
+    { nullptr, &sm_plus },
+    { nullptr, &sm_permute },
 };
 
 /*! \brief
@@ -395,12 +395,12 @@ static bool check_params(FILE *fp, const char *name, int nparams, gmx_ana_selpar
     } /* End of parameter loop */
       /* Check parameters of existing methods */
     gmx::SelectionParserSymbolIterator symbol
-        = symtab.beginIterator(gmx::SelectionParserSymbol::MethodSymbol);
+            = symtab.beginIterator(gmx::SelectionParserSymbol::MethodSymbol);
     while (symbol != symtab.endIterator())
     {
         gmx_ana_selmethod_t *method = symbol->methodValue();
         gmx_ana_selparam_t * param
-            = gmx_ana_selmethod_find_param(name, method);
+                = gmx_ana_selmethod_find_param(name, method);
         if (param)
         {
             report_param_error(fp, method->name, param->name, "error: name conflicts with another method or a keyword");

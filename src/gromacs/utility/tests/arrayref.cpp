@@ -76,28 +76,27 @@ TEST(EmptyConstArrayRefTest, IsEmpty)
 #ifdef GTEST_HAS_TYPED_TEST
 
 //! Define the types that end up being available as TypeParam in the test cases for both kinds of ArrayRef
-typedef ::testing::Types<
-        ArrayRef<char>,
-        ArrayRef<unsigned char>,
-        ArrayRef<int>,
-        ArrayRef<unsigned int>,
-        ArrayRef<long>,
-        ArrayRef<unsigned long>,
-        ArrayRef<gmx_int64_t>,
-        ArrayRef<gmx_uint64_t>,
-        ArrayRef<float>,
-        ArrayRef<double>,
-        ConstArrayRef<char>,
-        ConstArrayRef<unsigned char>,
-        ConstArrayRef<int>,
-        ConstArrayRef<unsigned int>,
-        ConstArrayRef<long>,
-        ConstArrayRef<unsigned long>,
-        ConstArrayRef<gmx_int64_t>,
-        ConstArrayRef<gmx_uint64_t>,
-        ConstArrayRef<float>,
-        ConstArrayRef<double>
-        > ArrayRefTypes;
+typedef ::testing::Types<ArrayRef<char>,
+                         ArrayRef<unsigned char>,
+                         ArrayRef<int>,
+                         ArrayRef<unsigned int>,
+                         ArrayRef<long>,
+                         ArrayRef<unsigned long>,
+                         ArrayRef<gmx_int64_t>,
+                         ArrayRef<gmx_uint64_t>,
+                         ArrayRef<float>,
+                         ArrayRef<double>,
+                         ConstArrayRef<char>,
+                         ConstArrayRef<unsigned char>,
+                         ConstArrayRef<int>,
+                         ConstArrayRef<unsigned int>,
+                         ConstArrayRef<long>,
+                         ConstArrayRef<unsigned long>,
+                         ConstArrayRef<gmx_int64_t>,
+                         ConstArrayRef<gmx_uint64_t>,
+                         ConstArrayRef<float>,
+                         ConstArrayRef<double>>
+        ArrayRefTypes;
 
 /*! \brief Permit all the tests to run on all kinds of ArrayRefs
  *
@@ -107,7 +106,7 @@ template <typename TypeParam>
 class ArrayRefTest : public ::testing::Test
 {
 public:
-    typedef TypeParam ArrayRefType;
+    typedef TypeParam                         ArrayRefType;
     typedef typename ArrayRefType::value_type ValueType;
 
     /*! \brief Run the same tests all the time
@@ -140,13 +139,13 @@ TYPED_TEST_CASE(ArrayRefTest, ArrayRefTypes);
    incomplete and can't match the types to actual functions. So,
    declaring locals is the only choice available, so we need macros to
    avoid duplication. Lovely. */
-#define DEFINE_ARRAY(a, aSize)                                  \
-    typename TestFixture::ValueType (a)[] = {                   \
-        static_cast<typename TestFixture::ValueType>(1.2),      \
-        static_cast<typename TestFixture::ValueType>(2.4),      \
-        static_cast<typename TestFixture::ValueType>(3.1)       \
-    };                                                          \
-    size_t (aSize) = sizeof((a)) / sizeof(typename TestFixture::ValueType);
+#define DEFINE_ARRAY(a, aSize)                             \
+    typename TestFixture::ValueType(a)[] = {               \
+        static_cast<typename TestFixture::ValueType>(1.2), \
+        static_cast<typename TestFixture::ValueType>(2.4), \
+        static_cast<typename TestFixture::ValueType>(3.1)  \
+    };                                                     \
+    size_t(aSize) = sizeof((a)) / sizeof(typename TestFixture::ValueType);
 
 TYPED_TEST(ArrayRefTest, MakeWithAssignmentWorks)
 {
@@ -173,7 +172,7 @@ TYPED_TEST(ArrayRefTest, MakeFromPointersWorks)
 {
     DEFINE_ARRAY(a, aSize);
     typename TestFixture::ArrayRefType arrayRef
-        = TestFixture::ArrayRefType::fromPointers(a, a + aSize);
+            = TestFixture::ArrayRefType::fromPointers(a, a + aSize);
     this->runTests(a, aSize, a, arrayRef);
 }
 
@@ -181,7 +180,7 @@ TYPED_TEST(ArrayRefTest, MakeFromArrayWorks)
 {
     DEFINE_ARRAY(a, aSize);
     typename TestFixture::ArrayRefType arrayRef
-        = TestFixture::ArrayRefType::fromArray(a, aSize);
+            = TestFixture::ArrayRefType::fromArray(a, aSize);
     this->runTests(a, aSize, a, arrayRef);
 }
 
@@ -197,8 +196,8 @@ TYPED_TEST(ArrayRefTest, MakeFromVectorWorks)
 {
     DEFINE_ARRAY(a, aSize);
     std::vector<typename TestFixture::ValueType> v(a, a + aSize);
-    typename TestFixture::ArrayRefType arrayRef
-        = TestFixture::ArrayRefType::fromVector(v.begin(), v.end());
+    typename TestFixture::ArrayRefType           arrayRef
+            = TestFixture::ArrayRefType::fromVector(v.begin(), v.end());
     this->runTests(a, v.size(), v.data(), arrayRef);
 }
 
@@ -206,9 +205,9 @@ TYPED_TEST(ArrayRefTest, MakeFromVectorWorks)
 template <typename T>
 struct Helper
 {
-    public:
-        T   a[3];
-        int size;
+public:
+    T   a[3];
+    int size;
 };
 
 /*! \brief Test of the case actually used in mdrun signalling
@@ -233,7 +232,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromStructFieldWithTemplateConstructorWorks)
     this->runTests(h.a, h.size, h.a, arrayRef);
 }
 
-#else   // GTEST_HAS_TYPED_TEST
+#else // GTEST_HAS_TYPED_TEST
 
 /* A dummy test that at least signals that something is missing if one runs the
  * unit test executable itself.
@@ -241,13 +240,13 @@ TYPED_TEST(ArrayRefTest, ConstructFromStructFieldWithTemplateConstructorWorks)
 TEST(DISABLED_ArrayRefTest, GenericTests)
 {
     ADD_FAILURE()
-    << "Tests for generic ArrayRef functionality require support for "
-    << "Google Test typed tests, which was not available when the tests "
-    << "were compiled.";
+            << "Tests for generic ArrayRef functionality require support for "
+            << "Google Test typed tests, which was not available when the tests "
+            << "were compiled.";
 }
 
 #endif // GTEST_HAS_TYPED_TEST
 
-}      // namespace
+} // namespace
 
-}      // namespace
+} // namespace

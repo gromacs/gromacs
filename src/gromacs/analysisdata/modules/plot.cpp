@@ -94,9 +94,7 @@ void AnalysisDataPlotSettings::setSelectionCollection(const SelectionCollection 
 
 void AnalysisDataPlotSettings::initOptions(IOptionsContainer *options)
 {
-    options->addOption(EnumIntOption("xvg").enumValue(g_plotFormats)
-                           .store(&plotFormat_)
-                           .description("Plot formatting"));
+    options->addOption(EnumIntOption("xvg").enumValue(g_plotFormats).store(&plotFormat_).description("Plot formatting"));
 }
 
 
@@ -253,7 +251,7 @@ void AbstractPlotModule::setYLabel(const char *label)
 }
 
 
-void AbstractPlotModule::setLegend(int nsets, const char * const *setname)
+void AbstractPlotModule::setLegend(int nsets, const char *const *setname)
 {
     impl_->legend_.reserve(impl_->legend_.size() + nsets);
     for (int i = 0; i < nsets; ++i)
@@ -278,7 +276,7 @@ void AbstractPlotModule::appendLegend(const std::string &setname)
 void AbstractPlotModule::setXFormat(int width, int precision, char format)
 {
     GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
-                       && width <= 99 && precision <= 99,
+                               && width <= 99 && precision <= 99,
                        "Invalid width or precision");
     GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr,
                        "Invalid format specifier");
@@ -289,7 +287,7 @@ void AbstractPlotModule::setXFormat(int width, int precision, char format)
 void AbstractPlotModule::setYFormat(int width, int precision, char format)
 {
     GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
-                       && width <= 99 && precision <= 99,
+                               && width <= 99 && precision <= 99,
                        "Invalid width or precision");
     GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr,
                        "Invalid format specifier");
@@ -315,11 +313,11 @@ void AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
         else
         {
             time_unit_t time_unit
-                = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
+                    = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
             xvg_format_t xvg_format
-                = (impl_->settings_.plotFormat() > 0
-                   ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
-                   : exvgNONE);
+                    = (impl_->settings_.plotFormat() > 0
+                               ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
+                               : exvgNONE);
             gmx_output_env_t *oenv;
             output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0);
             const unique_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
@@ -327,7 +325,7 @@ void AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
                                   impl_->xlabel_.c_str(), impl_->ylabel_.c_str(),
                                   oenv);
             const SelectionCollection *selections
-                = impl_->settings_.selectionCollection();
+                    = impl_->settings_.selectionCollection();
             if (selections != nullptr && output_env_get_xvg_format(oenv) != exvgNONE)
             {
                 selections->printXvgrInfo(impl_->fp_);

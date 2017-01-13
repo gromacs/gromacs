@@ -51,8 +51,7 @@
 
 int gmx_dyecoupl(int argc, char *argv[])
 {
-    const char *desc[] =
-    {
+    const char *desc[] = {
         "[THISMODULE] extracts dye dynamics from trajectory files.",
         "Currently, R and kappa^2 between dyes is extracted for (F)RET",
         "simulations with assumed dipolar coupling as in the Foerster equation.",
@@ -76,17 +75,15 @@ int gmx_dyecoupl(int argc, char *argv[])
     gmx_output_env_t *oenv;
     real              R0 = -1;
 
-    t_pargs pa[] =
-    {
+    t_pargs pa[] = {
         { "-pbcdist", FALSE, etBOOL, { &bPBCdist }, "Distance R based on PBC" },
         { "-norm", FALSE, etBOOL, { &bNormHist }, "Normalize histograms" },
-        { "-bins", FALSE, etINT, {&histbins}, "# of histogram bins" },
-        { "-R0", FALSE, etREAL, {&R0}, "Foerster radius including kappa^2=2/3 in nm" }
+        { "-bins", FALSE, etINT, { &histbins }, "# of histogram bins" },
+        { "-R0", FALSE, etREAL, { &R0 }, "Foerster radius including kappa^2=2/3 in nm" }
     };
 #define NPA asize(pa)
 
-    t_filenm fnm[] =
-    {
+    t_filenm fnm[] = {
         { efTRX, "-f", nullptr, ffREAD },
         { efNDX, nullptr, nullptr, ffREAD },
         { efXVG, "-ot", "rkappa", ffOPTWR },
@@ -116,7 +113,7 @@ int gmx_dyecoupl(int argc, char *argv[])
     int ePBC = -1;
 
     real *   rvalues = nullptr, *kappa2values = nullptr, *rhist = nullptr, *khist = nullptr;
-    t_pbc *  pbc     = nullptr;
+    t_pbc *  pbc = nullptr;
     int      i, bin;
     FILE *   rkfp = nullptr, *rhfp = nullptr, *khfp = nullptr, *datfp = nullptr, *iefp = nullptr;
     gmx_bool bRKout, bRhistout, bKhistout, bDatout, bInstEffout, grident;
@@ -127,7 +124,7 @@ int gmx_dyecoupl(int argc, char *argv[])
     const char *ieleg[1] = { "E\\sRET\\N(t)" };
 
     real R, kappa2, insteff, Rs = 0., kappa2s = 0., insteffs = 0., rmax, rmin, kmin = 0., kmax = 4.,
-         rrange, krange, rincr, kincr, Rfrac;
+                             rrange, krange, rincr, kincr, Rfrac;
     int rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
@@ -303,13 +300,13 @@ int gmx_dyecoupl(int argc, char *argv[])
                 }
 
                 unitv(dist, distnorm);
-                R       = norm(dist);
-                kappa2  = iprod(donvec, accvec) - 3. * (iprod(donvec, distnorm) * iprod(distnorm, accvec));
+                R      = norm(dist);
+                kappa2 = iprod(donvec, accvec) - 3. * (iprod(donvec, distnorm) * iprod(distnorm, accvec));
                 kappa2 *= kappa2;
                 if (R0 > 0)
                 {
-                    Rfrac     = R / R0;
-                    insteff   = 1 / (1 + (Rfrac * Rfrac * Rfrac * Rfrac * Rfrac * Rfrac) * 2 / 3 / kappa2);
+                    Rfrac   = R / R0;
+                    insteff = 1 / (1 + (Rfrac * Rfrac * Rfrac * Rfrac * Rfrac * Rfrac) * 2 / 3 / kappa2);
                     insteffs += insteff;
 
                     if (bInstEffout)
@@ -319,7 +316,7 @@ int gmx_dyecoupl(int argc, char *argv[])
                 }
 
 
-                Rs      += R;
+                Rs += R;
                 kappa2s += kappa2;
                 rkcount++;
 
@@ -396,7 +393,7 @@ int gmx_dyecoupl(int argc, char *argv[])
 
                 for (i = 1; i < rkcount; i++)
                 {
-                    bin         = static_cast<int>((rvalues[i] - rmin) / rincr);
+                    bin = static_cast<int>((rvalues[i] - rmin) / rincr);
                     rhist[bin] += 1;
                 }
                 if (bNormHist)
@@ -430,7 +427,7 @@ int gmx_dyecoupl(int argc, char *argv[])
 
                 for (i = 1; i < rkcount; i++)
                 {
-                    bin         = static_cast<int>((kappa2values[i] - kmin) / kincr);
+                    bin = static_cast<int>((kappa2values[i] - kmin) / kincr);
                     khist[bin] += 1;
                 }
                 if (bNormHist)

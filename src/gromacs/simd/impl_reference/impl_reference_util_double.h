@@ -101,7 +101,7 @@ namespace gmx
  * \note You should NOT scale offsets before calling this routine; it is
  *       done internally by using the alignment template parameter instead.
  */
-template <int align>
+template <int      align>
 static inline void gmx_simdcall gatherLoadTranspose(const double *     base,
                                                     const std::int32_t offset[],
                                                     SimdDouble *       v0,
@@ -148,7 +148,7 @@ static inline void gmx_simdcall gatherLoadTranspose(const double *     base,
  * \note You should NOT scale offsets before calling this routine; it is
  *       done internally by using the alignment template parameter instead.
  */
-template <int align>
+template <int      align>
 static inline void gmx_simdcall gatherLoadTranspose(const double *     base,
                                                     const std::int32_t offset[],
                                                     SimdDouble *       v0,
@@ -215,7 +215,7 @@ static const int c_simdBestPairAlignmentDouble = 2;
  *       starting at the last offset. If you use the Gromacs aligned memory
  *       allocation routines this will always be the case.
  */
-template <int align>
+template <int      align>
 static inline void gmx_simdcall gatherLoadUTranspose(const double *     base,
                                                      const std::int32_t offset[],
                                                      SimdDouble *       v0,
@@ -267,7 +267,7 @@ static inline void gmx_simdcall gatherLoadUTranspose(const double *     base,
  *       load the data from memory. On the architectures we have tested this
  *       is faster even when a SIMD integer datatype is present.
  */
-template <int align>
+template <int      align>
 static inline void gmx_simdcall transposeScatterStoreU(double *           base,
                                                        const std::int32_t offset[],
                                                        SimdDouble         v0,
@@ -326,7 +326,7 @@ static inline void gmx_simdcall transposeScatterStoreU(double *           base,
  *       starting at the last offset. If you use the Gromacs aligned memory
  *       allocation routines this will always be the case.
  */
-template <int align>
+template <int      align>
 static inline void gmx_simdcall transposeScatterIncrU(double *           base,
                                                       const std::int32_t offset[],
                                                       SimdDouble         v0,
@@ -338,7 +338,7 @@ static inline void gmx_simdcall transposeScatterIncrU(double *           base,
 
     for (std::size_t i = 0; i < v0.simdInternal_.size(); i++)
     {
-        base[align * offset[i]]     += v0.simdInternal_[i];
+        base[align * offset[i]] += v0.simdInternal_[i];
         base[align * offset[i] + 1] += v1.simdInternal_[i];
         base[align * offset[i] + 2] += v2.simdInternal_[i];
     }
@@ -384,7 +384,7 @@ static inline void gmx_simdcall transposeScatterIncrU(double *           base,
  *       starting at the last offset. If you use the Gromacs aligned memory
  *       allocation routines this will always be the case.
  */
-template <int align>
+template <int      align>
 static inline void gmx_simdcall transposeScatterDecrU(double *           base,
                                                       const std::int32_t offset[],
                                                       SimdDouble         v0,
@@ -396,7 +396,7 @@ static inline void gmx_simdcall transposeScatterDecrU(double *           base,
 
     for (std::size_t i = 0; i < v0.simdInternal_.size(); i++)
     {
-        base[align * offset[i]]     -= v0.simdInternal_[i];
+        base[align * offset[i]] -= v0.simdInternal_[i];
         base[align * offset[i] + 1] -= v1.simdInternal_[i];
         base[align * offset[i] + 2] -= v2.simdInternal_[i];
     }
@@ -423,10 +423,10 @@ static inline void gmx_simdcall transposeScatterDecrU(double *           base,
  * first, second and third pair of SIMD variables, and store the three
  * results back into a suitable vector-format array.
  */
-static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble   scalar,
-                                                        SimdDouble * triplets0,
-                                                        SimdDouble * triplets1,
-                                                        SimdDouble * triplets2)
+static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble  scalar,
+                                                        SimdDouble *triplets0,
+                                                        SimdDouble *triplets1,
+                                                        SimdDouble *triplets2)
 {
     for (std::size_t i = 0; i < scalar.simdInternal_.size(); i++)
     {
@@ -463,13 +463,13 @@ static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble   scalar,
  *       a SIMD offset index, since the result of the  real-to-integer conversion
  *       is present in a SIMD register just before calling this routine.
  */
-template <int align>
-static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * base,
-                                                             SimdDInt32     offset,
-                                                             SimdDouble *   v0,
-                                                             SimdDouble *   v1,
-                                                             SimdDouble *   v2,
-                                                             SimdDouble *   v3)
+template <int      align>
+static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double *base,
+                                                             SimdDInt32    offset,
+                                                             SimdDouble *  v0,
+                                                             SimdDouble *  v1,
+                                                             SimdDouble *  v2,
+                                                             SimdDouble *  v3)
 {
     // Base pointer must be aligned to the smaller of 4 elements and double SIMD width
     assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4) * sizeof(double)) == 0);
@@ -510,11 +510,11 @@ static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * base
  *       a SIMD offset index, since the result of the  real-to-integer conversion
  *       is present in a SIMD register just before calling this routine.
  */
-template <int align>
-static inline void gmx_simdcall gatherLoadUBySimdIntTranspose(const double * base,
-                                                              SimdDInt32     offset,
-                                                              SimdDouble *   v0,
-                                                              SimdDouble *   v1)
+template <int      align>
+static inline void gmx_simdcall gatherLoadUBySimdIntTranspose(const double *base,
+                                                              SimdDInt32    offset,
+                                                              SimdDouble *  v0,
+                                                              SimdDouble *  v1)
 {
     for (std::size_t i = 0; i < v0->simdInternal_.size(); i++)
     {
@@ -547,11 +547,11 @@ static inline void gmx_simdcall gatherLoadUBySimdIntTranspose(const double * bas
  *       a SIMD offset index, since the result of the  real-to-integer conversion
  *       is present in a SIMD register just before calling this routine.
  */
-template <int align>
-static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * base,
-                                                             SimdDInt32     offset,
-                                                             SimdDouble *   v0,
-                                                             SimdDouble *   v1)
+template <int      align>
+static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double *base,
+                                                             SimdDInt32    offset,
+                                                             SimdDouble *  v0,
+                                                             SimdDouble *  v1)
 {
     // Base pointer must be aligned to the smaller of 2 elements and double SIMD width
     assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 2) * sizeof(double)) == 0);
@@ -636,8 +636,8 @@ static inline double gmx_simdcall reduceIncr4ReturnSum(double *   m,
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-static inline SimdDouble gmx_simdcall loadDualHsimd(const double * m0,
-                                                    const double * m1)
+static inline SimdDouble gmx_simdcall loadDualHsimd(const double *m0,
+                                                    const double *m1)
 {
     SimdDouble a;
 
@@ -661,7 +661,7 @@ static inline SimdDouble gmx_simdcall loadDualHsimd(const double * m0,
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-static inline SimdDouble gmx_simdcall loadDuplicateHsimd(const double * m)
+static inline SimdDouble gmx_simdcall loadDuplicateHsimd(const double *m)
 {
     SimdDouble a;
 
@@ -689,7 +689,7 @@ static inline SimdDouble gmx_simdcall loadDuplicateHsimd(const double * m)
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-static inline SimdDouble gmx_simdcall load1DualHsimd(const double * m)
+static inline SimdDouble gmx_simdcall load1DualHsimd(const double *m)
 {
     SimdDouble a;
 
@@ -816,12 +816,12 @@ static inline void gmx_simdcall decrHsimd(double *   m,
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-template <int align>
-static inline void gmx_simdcall gatherLoadTransposeHsimd(const double * base0,
-                                                         const double * base1,
-                                                         std::int32_t   offset[],
-                                                         SimdDouble *   v0,
-                                                         SimdDouble *   v1)
+template <int      align>
+static inline void gmx_simdcall gatherLoadTransposeHsimd(const double *base0,
+                                                         const double *base1,
+                                                         std::int32_t  offset[],
+                                                         SimdDouble *  v0,
+                                                         SimdDouble *  v1)
 {
     // Offset list must be aligned for half SIMD DINT32 width
     assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH / 2 * sizeof(std::int32_t)) == 0);
@@ -891,6 +891,6 @@ static inline double gmx_simdcall reduceIncr4ReturnSumHsimd(double *   m,
 /*! \} */
 /*! \endcond */
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_REFERENCE_UTIL_DOUBLE_H

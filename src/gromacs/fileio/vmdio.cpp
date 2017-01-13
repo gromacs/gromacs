@@ -121,7 +121,6 @@ typedef int (*regfunc)(void *, vmdplugin_register_cb);
 typedef int (*finifunc)(void);
 
 
-
 static int register_cb(void *v, vmdplugin_t *p)
 {
     const char *     key       = p->name;
@@ -143,7 +142,7 @@ static int load_sharedlibrary_plugins(const char *fullpath, gmx_vmdplugin_t *vmd
     {
         if (debug)
         {
-            fprintf(debug, "\nUnable to open dynamic library %s.\n%s\n",  fullpath, vmddlerror());         /*only to debug because of stdc++ erros */
+            fprintf(debug, "\nUnable to open dynamic library %s.\n%s\n", fullpath, vmddlerror()); /*only to debug because of stdc++ erros */
         }
         return 0;
     }
@@ -195,10 +194,10 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
         snew(ts.velocities, fr->natoms * 3);
     }
 #else
-    ts.coords = (float*)fr->x;
+    ts.coords = (float *)fr->x;
     if (fr->bV)
     {
-        ts.velocities = (float*)fr->v;
+        ts.velocities = (float *)fr->v;
     }
 #endif
 
@@ -245,8 +244,12 @@ gmx_bool read_next_vmd_frame(gmx_vmdplugin_t *vmdplugin, t_trxframe *fr)
 
     fr->bX   = 1;
     fr->bBox = 1;
-    vec[0]   = .1 * ts.A; vec[1] = .1 * ts.B; vec[2] = .1 * ts.C;
-    angle[0] = ts.alpha; angle[1] = ts.beta; angle[2] = ts.gamma;
+    vec[0]   = .1 * ts.A;
+    vec[1]   = .1 * ts.B;
+    vec[2]   = .1 * ts.C;
+    angle[0] = ts.alpha;
+    angle[1] = ts.beta;
+    angle[2] = ts.gamma;
     matrix_convert(fr->box, vec, angle);
     if (vmdplugin->api->abiversion > 10)
     {
@@ -352,7 +355,7 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
         char filename[GMX_PATH_MAX];
         sprintf(filename, "%s\\%s", pathenv, ffd.cFileName);
         ret |= load_sharedlibrary_plugins(filename, vmdplugin);
-    } while (FindNextFile(hFind, &ffd )  != 0 && vmdplugin->api == NULL);
+    } while (FindNextFile(hFind, &ffd) != 0 && vmdplugin->api == NULL);
     FindClose(hFind);
 #endif
 
@@ -386,7 +389,6 @@ static int load_vmd_library(const char *fn, gmx_vmdplugin_t *vmdplugin)
     printf("\nUsing VMD plugin: %s (%s)\n", vmdplugin->api->name, vmdplugin->api->prettyname);
 
     return 1;
-
 }
 
 int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxframe *fr)
@@ -417,13 +419,13 @@ int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxfram
     }
     else if (fr->natoms == MOLFILE_NUMATOMS_NONE)
     {
-        fprintf(stderr, "\nNo atoms found by VMD plugin in file %s.\n", fn );
+        fprintf(stderr, "\nNo atoms found by VMD plugin in file %s.\n", fn);
         return 0;
     }
-    else if (fr->natoms < 1)     /*should not be reached*/
+    else if (fr->natoms < 1) /*should not be reached*/
     {
         fprintf(stderr, "\nUnknown number of atoms %d for VMD plugin opening file %s.\n",
-                fr->natoms, fn );
+                fr->natoms, fn);
         return 0;
     }
 
@@ -448,5 +450,4 @@ int read_first_vmd_frame(const char *fn, gmx_vmdplugin_t **vmdpluginp, t_trxfram
                 "\nEither way, GROMACS cannot tell whether the trajectory has velocities.\n");
     }
     return 1;
-
 }

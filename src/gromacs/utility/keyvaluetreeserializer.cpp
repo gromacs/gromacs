@@ -68,12 +68,12 @@ private:
         DeserializerFunction deserialize;
     };
 
-    static Mutex                                         s_initMutex;
+    static Mutex s_initMutex;
     static std::map<std::type_index, Serializer>         s_serializers;
     static std::map<unsigned char, DeserializerFunction> s_deserializers;
 };
 
-Mutex                                                          ValueSerializer::s_initMutex;
+Mutex ValueSerializer::s_initMutex;
 std::map<std::type_index, ValueSerializer::Serializer>         ValueSerializer::s_serializers;
 std::map<unsigned char, ValueSerializer::DeserializerFunction> ValueSerializer::s_deserializers;
 
@@ -204,9 +204,12 @@ void serializeValueType(const KeyValueTreeValue &value, ISerializer *serializer)
     SerializationTraits<T>::serialize(value.cast<T>(), serializer);
 }
 
-#define SERIALIZER(tag, type) \
-    { std::type_index(typeid(type)), \
-      { tag, &serializeValueType<type>, &SerializationTraits<type>::deserialize } \
+#define SERIALIZER(tag, type)                                                       \
+    {                                                                               \
+        std::type_index(typeid(type)),                                              \
+        {                                                                           \
+            tag, &serializeValueType<type>, &SerializationTraits<type>::deserialize \
+        }                                                                           \
     }
 
 // static
@@ -253,7 +256,7 @@ KeyValueTreeValue ValueSerializer::deserialize(ISerializer *serializer)
     return builder.build();
 }
 
-}   // namespace
+} // namespace
 
 //! \cond libapi
 void serializeKeyValueTree(const KeyValueTreeObject &root, ISerializer *serializer)

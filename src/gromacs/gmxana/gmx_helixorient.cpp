@@ -134,14 +134,12 @@ int gmx_helixorient(int argc, char *argv[])
     gmx_output_env_t *oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
-    static  gmx_bool bSC          = FALSE;
-    static gmx_bool  bIncremental = FALSE;
+    static gmx_bool bSC          = FALSE;
+    static gmx_bool bIncremental = FALSE;
 
     static t_pargs pa[] = {
-        { "-sidechain",      FALSE, etBOOL, {&bSC},
-          "Calculate sidechain directions relative to helix axis too." },
-        { "-incremental",        FALSE, etBOOL, {&bIncremental},
-          "Calculate incremental rather than total rotation/tilt." },
+        { "-sidechain", FALSE, etBOOL, { &bSC }, "Calculate sidechain directions relative to helix axis too." },
+        { "-incremental", FALSE, etBOOL, { &bIncremental }, "Calculate incremental rather than total rotation/tilt." },
     };
 #define NPA asize(pa)
 
@@ -149,14 +147,14 @@ int gmx_helixorient(int argc, char *argv[])
         { efTPR, nullptr, nullptr, ffREAD },
         { efTRX, "-f", nullptr, ffREAD },
         { efNDX, nullptr, nullptr, ffOPTRD },
-        { efDAT, "-oaxis",    "helixaxis", ffWRITE },
-        { efDAT, "-ocenter",  "center", ffWRITE },
-        { efXVG, "-orise",    "rise", ffWRITE },
-        { efXVG, "-oradius",  "radius", ffWRITE },
-        { efXVG, "-otwist",   "twist", ffWRITE },
+        { efDAT, "-oaxis", "helixaxis", ffWRITE },
+        { efDAT, "-ocenter", "center", ffWRITE },
+        { efXVG, "-orise", "rise", ffWRITE },
+        { efXVG, "-oradius", "radius", ffWRITE },
+        { efXVG, "-otwist", "twist", ffWRITE },
         { efXVG, "-obending", "bending", ffWRITE },
-        { efXVG, "-otilt",    "tilt", ffWRITE },
-        { efXVG, "-orot",     "rotation", ffWRITE }
+        { efXVG, "-otilt", "tilt", ffWRITE },
+        { efXVG, "-orot", "rotation", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -212,7 +210,6 @@ int gmx_helixorient(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Number of sidechain atoms (%d) != number of CA atoms (%d)", iSC, iCA);
         }
-
     }
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
@@ -282,8 +279,8 @@ int gmx_helixorient(int argc, char *argv[])
             svmul(1.0 / norm(helixaxis[i]), helixaxis[i], helixaxis[i]);
 
             tmp       = cos_angle(diff13[i], diff24[i]);
-            twist[i]  = 180.0 / M_PI * std::acos( tmp );
-            radius[i] = std::sqrt( norm(diff13[i]) * norm(diff24[i]) ) / (2.0 * (1.0 - tmp) );
+            twist[i]  = 180.0 / M_PI * std::acos(tmp);
+            radius[i] = std::sqrt(norm(diff13[i]) * norm(diff24[i])) / (2.0 * (1.0 - tmp));
             rise[i]   = std::abs(iprod(r23[i], helixaxis[i]));
 
             svmul(radius[i] / norm(diff13[i]), diff13[i], v1);
@@ -304,12 +301,12 @@ int gmx_helixorient(int argc, char *argv[])
             residueradius[i]  = 0.5 * (radius[i - 2] + radius[i - 1]);
             residuetwist[i]   = 0.5 * (twist[i - 2] + twist[i - 1]);
             residuerise[i]    = 0.5 * (rise[i - 2] + rise[i - 1]);
-            residuebending[i] = 180.0 / M_PI * std::acos( cos_angle(helixaxis[i - 2], helixaxis[i - 1]) );
+            residuebending[i] = 180.0 / M_PI * std::acos(cos_angle(helixaxis[i - 2], helixaxis[i - 1]));
         }
-        residueradius[iCA - 2]  = radius[iCA - 4];
-        residuetwist[iCA - 2]   = twist[iCA - 4];
-        residuerise[iCA - 2]    = rise[iCA - 4];
-        residueradius[iCA - 1]  = residuetwist[iCA - 1] = residuerise[iCA - 1] = 0;
+        residueradius[iCA - 2] = radius[iCA - 4];
+        residuetwist[iCA - 2]  = twist[iCA - 4];
+        residuerise[iCA - 2]   = rise[iCA - 4];
+        residueradius[iCA - 1] = residuetwist[iCA - 1] = residuerise[iCA - 1] = 0;
         residuebending[iCA - 2] = residuebending[iCA - 1] = 0;
 
         clear_rvec(residueorigin[0]);
@@ -356,7 +353,7 @@ int gmx_helixorient(int argc, char *argv[])
             }
             else
             {
-                rvec_sub( bSC ? x_SC[i] : x_CA[i], residueorigin[i], residuevector[i]);
+                rvec_sub(bSC ? x_SC[i] : x_CA[i], residueorigin[i], residuevector[i]);
                 svmul(1.0 / norm(residuevector[i]), residuevector[i], residuevector[i]);
                 cprod(residuehelixaxis[i], residuevector[i], axis3[i]);
                 fprintf(fpaxis, "%15.12g %15.12g %15.12g       ", residuehelixaxis[i][0], residuehelixaxis[i][1], residuehelixaxis[i][2]);
@@ -443,7 +440,6 @@ int gmx_helixorient(int argc, char *argv[])
                     fprintf(fptheta1, "%15.12g  ", theta1);
                     fprintf(fptheta2, "%15.12g  ", theta2);
                     fprintf(fptheta3, "%15.12g  ", theta3);
-
                 }
                 fprintf(fptilt, "%15.12g  ", tilt);
                 fprintf(fprotation, "%15.12g  ", rotation);

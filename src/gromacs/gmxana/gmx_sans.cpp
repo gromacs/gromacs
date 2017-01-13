@@ -59,7 +59,7 @@
 
 int gmx_sans(int argc, char *argv[])
 {
-    const char *        desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes SANS spectra using Debye formula.",
         "It currently uses topology file (since it need to assigne element for each atom).",
         "[PAR]",
@@ -78,8 +78,8 @@ int gmx_sans(int argc, char *argv[])
     };
     static gmx_bool     bPBC     = TRUE;
     static gmx_bool     bNORM    = FALSE;
-    static real         binwidth = 0.2, grid = 0.05;  /* bins shouldn't be smaller then smallest bond (~0.1nm) length */
-    static real         start_q  = 0.0, end_q = 2.0, q_step = 0.01;
+    static real         binwidth = 0.2, grid = 0.05; /* bins shouldn't be smaller then smallest bond (~0.1nm) length */
+    static real         start_q = 0.0, end_q = 2.0, q_step = 0.01;
     static real         mcover   = -1;
     static unsigned int seed     = 0;
     static int          nthreads = -1;
@@ -92,30 +92,19 @@ int gmx_sans(int argc, char *argv[])
 
 #define NPA asize(pa)
 
-    t_pargs                              pa[] = {
-        { "-bin", FALSE, etREAL, {&binwidth},
-          "[HIDDEN]Binwidth (nm)" },
-        { "-mode", FALSE, etENUM, {emode},
-          "Mode for sans spectra calculation" },
-        { "-mcover", FALSE, etREAL, {&mcover},
-          "Monte-Carlo coverage should be -1(default) or (0,1]"},
-        { "-method", FALSE, etENUM, {emethod},
-          "[HIDDEN]Method for sans spectra calculation" },
-        { "-pbc", FALSE, etBOOL, {&bPBC},
-          "Use periodic boundary conditions for computing distances" },
-        { "-grid", FALSE, etREAL, {&grid},
-          "[HIDDEN]Grid spacing (in nm) for FFTs" },
-        {"-startq", FALSE, etREAL, {&start_q},
-         "Starting q (1/nm) "},
-        {"-endq", FALSE, etREAL, {&end_q},
-         "Ending q (1/nm)"},
-        { "-qstep", FALSE, etREAL, {&q_step},
-          "Stepping in q (1/nm)"},
-        { "-seed",     FALSE, etINT,  {&seed},
-          "Random seed for Monte-Carlo"},
+    t_pargs pa[] = {
+        { "-bin", FALSE, etREAL, { &binwidth }, "[HIDDEN]Binwidth (nm)" },
+        { "-mode", FALSE, etENUM, { emode }, "Mode for sans spectra calculation" },
+        { "-mcover", FALSE, etREAL, { &mcover }, "Monte-Carlo coverage should be -1(default) or (0,1]" },
+        { "-method", FALSE, etENUM, { emethod }, "[HIDDEN]Method for sans spectra calculation" },
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "Use periodic boundary conditions for computing distances" },
+        { "-grid", FALSE, etREAL, { &grid }, "[HIDDEN]Grid spacing (in nm) for FFTs" },
+        { "-startq", FALSE, etREAL, { &start_q }, "Starting q (1/nm) " },
+        { "-endq", FALSE, etREAL, { &end_q }, "Ending q (1/nm)" },
+        { "-qstep", FALSE, etREAL, { &q_step }, "Stepping in q (1/nm)" },
+        { "-seed", FALSE, etINT, { &seed }, "Random seed for Monte-Carlo" },
 #if GMX_OPENMP
-        { "-nt",  FALSE, etINT, {&nthreads},
-          "Number of threads to start"},
+        { "-nt", FALSE, etINT, { &nthreads }, "Number of threads to start" },
 #endif
     };
     FILE *                               fp;
@@ -144,14 +133,14 @@ int gmx_sans(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     t_filenm fnm[] = {
-        { efTPR,  "-s",       nullptr,       ffREAD },
-        { efTRX,  "-f",       nullptr,       ffREAD },
-        { efNDX,  nullptr,       nullptr,       ffOPTRD },
-        { efDAT,  "-d",       "nsfactor", ffOPTRD },
-        { efXVG,  "-pr",      "pr",       ffWRITE },
-        { efXVG,  "-sq",       "sq",      ffWRITE },
-        { efXVG,  "-prframe", "prframe",  ffOPTWR },
-        { efXVG,  "-sqframe", "sqframe",  ffOPTWR }
+        { efTPR, "-s", nullptr, ffREAD },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efDAT, "-d", "nsfactor", ffOPTRD },
+        { efXVG, "-pr", "pr", ffWRITE },
+        { efXVG, "-sq", "sq", ffWRITE },
+        { efXVG, "-prframe", "prframe", ffOPTWR },
+        { efXVG, "-sqframe", "sqframe", ffOPTWR }
     };
 
     nthreads = gmx_omp_get_max_threads();
@@ -283,7 +272,7 @@ int gmx_sans(int argc, char *argv[])
         for (i = 0; i < prframecurrent->grn; i++)
         {
             pr->gr[i] += prframecurrent->gr[i];
-            pr->r[i]   = prframecurrent->r[i];
+            pr->r[i] = prframecurrent->r[i];
         }
         /* normalize histo */
         normalize_probability(prframecurrent->grn, prframecurrent->gr);

@@ -209,7 +209,7 @@ void pull_constraint(struct pull_t *pull, t_mdatoms *md, struct t_pbc *pbc,
  * \param pull           The pull group.
  * \param md             All atoms.
  */
-void dd_make_local_pull_groups(t_commrec *cr,
+void dd_make_local_pull_groups(t_commrec *    cr,
                                struct pull_t *pull, t_mdatoms *md);
 
 

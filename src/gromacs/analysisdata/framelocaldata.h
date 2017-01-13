@@ -132,10 +132,10 @@ public:
     {
         GMX_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
                    "Invalid data set index");
-        const int firstIndex = (*dataSetIndices_)[dataSet];
-        const int lastIndex  = (*dataSetIndices_)[dataSet + 1];
-        typename ValueArray::iterator begin = values_->begin() + firstIndex;
-        typename ValueArray::iterator end   = values_->begin() + lastIndex;
+        const int                     firstIndex = (*dataSetIndices_)[dataSet];
+        const int                     lastIndex  = (*dataSetIndices_)[dataSet + 1];
+        typename ValueArray::iterator begin      = values_->begin() + firstIndex;
+        typename ValueArray::iterator end        = values_->begin() + lastIndex;
         return DataSetHandle(arrayRefFromVector<ValueType>(begin, end));
     }
     //! Accesses a single value in the frame.
@@ -145,7 +145,7 @@ public:
                    "Invalid data set index");
         const int firstIndex = (*dataSetIndices_)[dataSet];
         GMX_ASSERT(column >= 0
-                   && column < (*dataSetIndices_)[dataSet + 1] - firstIndex,
+                           && column < (*dataSetIndices_)[dataSet + 1] - firstIndex,
                    "Invalid column index");
         return (*values_)[firstIndex + column];
     }

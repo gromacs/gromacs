@@ -71,8 +71,7 @@ int g_numThreads = 1;
 //! \cond
 GMX_TEST_OPTIONS(ThreadMpiTestOptions, options)
 {
-    options->addOption(IntegerOption("ntmpi").store(&g_numThreads)
-                           .description("Number of thread-MPI threads/ranks for the test"));
+    options->addOption(IntegerOption("ntmpi").store(&g_numThreads).description("Number of thread-MPI threads/ranks for the test"));
 }
 //! \endcond
 
@@ -98,14 +97,15 @@ bool startThreads(std::function<void()> *testBody)
 class InTestGuard
 {
 public:
-    explicit InTestGuard(bool *inTest) : inTest_(inTest) { *inTest = true; }
+    explicit InTestGuard(bool *inTest)
+        : inTest_(inTest) { *inTest = true; }
     ~InTestGuard() { *inTest_ = false; }
 
 private:
     bool *inTest_;
 };
 
-}       // namespace
+} // namespace
 
 //! \cond internal
 bool threadMpiTestRunner(std::function<void()> testBody)
@@ -118,8 +118,8 @@ bool threadMpiTestRunner(std::function<void()> testBody)
     }
 #if GMX_THREAD_MPI && !GTEST_IS_THREADSAFE
     ADD_FAILURE()
-    << "Google Test is not thread safe on this platform. "
-    << "Cannot run multi-rank tests with thread-MPI.";
+            << "Google Test is not thread safe on this platform. "
+            << "Cannot run multi-rank tests with thread-MPI.";
 #else
     InTestGuard guard(&inTest);
     if (!startThreads(&testBody))

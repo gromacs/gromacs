@@ -70,7 +70,8 @@ private:
 class LogTargetFormatter : public ILogTarget
 {
 public:
-    explicit LogTargetFormatter(TextOutputStream *stream) : writer_(stream) {}
+    explicit LogTargetFormatter(TextOutputStream *stream)
+        : writer_(stream) {}
 
     virtual void writeEntry(const LogEntry &entry);
 
@@ -104,9 +105,9 @@ public:
     {
     }
 
-    MDLogger                                        logger_;
-    std::vector<std::unique_ptr<TextOutputStream> > streams_;
-    std::vector<std::unique_ptr<ILogTarget> >       targets_;
+    MDLogger                                       logger_;
+    std::vector<std::unique_ptr<TextOutputStream>> streams_;
+    std::vector<std::unique_ptr<ILogTarget>>       targets_;
 };
 
 /********************************************************************
@@ -141,9 +142,9 @@ LoggerOwner::~LoggerOwner()
 class LoggerBuilder::Impl
 {
 public:
-    std::vector<std::unique_ptr<TextOutputStream> > streams_;
-    std::vector<std::unique_ptr<ILogTarget> >       targets_;
-    std::vector<ILogTarget *>                       loggerTargets_[MDLogger::LogLevelCount];
+    std::vector<std::unique_ptr<TextOutputStream>> streams_;
+    std::vector<std::unique_ptr<ILogTarget>>       targets_;
+    std::vector<ILogTarget *>                      loggerTargets_[MDLogger::LogLevelCount];
 };
 
 /********************************************************************
@@ -182,7 +183,7 @@ LoggerOwner LoggerBuilder::build()
     for (int i = 0; i < MDLogger::LogLevelCount; ++i)
     {
         auto &levelTargets = impl_->loggerTargets_[i];
-        loggerTargets[i] = nullptr;
+        loggerTargets[i]   = nullptr;
         if (!levelTargets.empty())
         {
             if (levelTargets.size() == 1)

@@ -79,10 +79,10 @@ namespace gmx
  */
 enum SelectionStringMatchType
 {
-    eStringMatchType_Auto,              //!< Deduce from the string.
-    eStringMatchType_Exact,             //!< Match as a literal string.
-    eStringMatchType_Wildcard,          //!< Match using ? and * as wildcards.
-    eStringMatchType_RegularExpression  //!< Match using regular expressions.
+    eStringMatchType_Auto,             //!< Deduce from the string.
+    eStringMatchType_Exact,            //!< Match as a literal string.
+    eStringMatchType_Wildcard,         //!< Match using ? and * as wildcards.
+    eStringMatchType_RegularExpression //!< Match using regular expressions.
 };
 /*! \endcond */
 
@@ -90,10 +90,10 @@ class SelectionParserValue;
 
 //! Container for a list of SelectionParserValue objects.
 typedef std::list<SelectionParserValue>
-    SelectionParserValueList;
+        SelectionParserValueList;
 //! Smart pointer type for managing a SelectionParserValueList.
 typedef std::unique_ptr<SelectionParserValueList>
-    SelectionParserValueListPointer;
+        SelectionParserValueListPointer;
 
 /*! \internal
  * \brief
@@ -238,8 +238,7 @@ public:
     //! String value for \a type ::STR_VALUE.
     std::string str;
     //! The actual value if \a expr is NULL and \a type is not ::STR_VALUE.
-    union
-    {
+    union {
         //! The integer value/range (\a type ::INT_VALUE).
         struct
         {
@@ -247,7 +246,7 @@ public:
             int i1;
             //! End of the range; equals \a i1 for a single integer.
             int i2;
-        }                   i;
+        } i;
         //! The real value/range (\a type ::REAL_VALUE).
         struct
         {
@@ -255,10 +254,10 @@ public:
             real r1;
             //! End of the range; equals \a r1 for a single number.
             real r2;
-        }                   r;
+        } r;
         //! The position value (\a type ::POS_VALUE).
         rvec x;
-    }                       u;
+    } u;
 
 private:
     /*! \brief
@@ -283,10 +282,10 @@ class SelectionParserParameter;
 
 //! Container for a list of SelectionParserParameter objects.
 typedef std::list<SelectionParserParameter>
-    SelectionParserParameterList;
+        SelectionParserParameterList;
 //! Smart pointer type for managing a SelectionParserParameterList.
 typedef std::unique_ptr<SelectionParserParameterList>
-    SelectionParserParameterListPointer;
+        SelectionParserParameterListPointer;
 
 /*! \internal \brief
  * Describes a parsed method parameter.
@@ -433,8 +432,7 @@ public:
  * If this function returns false, then Bison immediately aborts the parsing
  * so that the caller can rethrow the exception.
  */
-bool
-_gmx_selparser_handle_exception(void *scanner, std::exception *ex);
+bool _gmx_selparser_handle_exception(void *scanner, std::exception *ex);
 /*! \brief
  * Handles errors in the selection parser.
  *
@@ -456,27 +454,23 @@ _gmx_selparser_handle_exception(void *scanner, std::exception *ex);
  * Any exceptions thrown from this method are again caught by Bison and result
  * in termination of the parsing; the caller can then rethrow them.
  */
-bool
-_gmx_selparser_handle_error(void *scanner);
+bool _gmx_selparser_handle_error(void *scanner);
 
 /** Propagates the flags for selection elements. */
-void
-_gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel);
+void _gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel);
 
 /** Initializes the method parameter data of \ref SEL_EXPRESSION and
  * \ref SEL_MODIFIER elements. */
-void
-_gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer &sel,
-                                void *                                  scanner);
+void _gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer &sel,
+                                     void *                                  scanner);
 /** Initializes the method for a \ref SEL_EXPRESSION selection element. */
-void
-_gmx_selelem_set_method(const gmx::SelectionTreeElementPointer &sel,
-                        struct gmx_ana_selmethod_t *method, void *scanner);
+void _gmx_selelem_set_method(const gmx::SelectionTreeElementPointer &sel,
+                             struct gmx_ana_selmethod_t *method, void *scanner);
 
 /* An opaque pointer. */
 #ifndef YY_TYPEDEF_YY_SCANNER_T
 #define YY_TYPEDEF_YY_SCANNER_T
-typedef void* yyscan_t;
+typedef void *yyscan_t;
 #endif
 /** \brief Creates a gmx::SelectionTreeElement for arithmetic expression evaluation.
  *
@@ -500,23 +494,23 @@ _gmx_sel_init_comparison(const gmx::SelectionTreeElementPointer &left,
                          const char *cmpop, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a keyword expression from the parsed data. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_keyword(struct gmx_ana_selmethod_t *method,
+_gmx_sel_init_keyword(struct gmx_ana_selmethod_t *         method,
                       gmx::SelectionParserValueListPointer args,
                       const char *rpost, void *scanner);
 /** Creates a gmx::SelectionTreeElement for string-matching keyword expression. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_keyword_strmatch(struct gmx_ana_selmethod_t *method,
-                               gmx::SelectionStringMatchType matchType,
+_gmx_sel_init_keyword_strmatch(struct gmx_ana_selmethod_t *         method,
+                               gmx::SelectionStringMatchType        matchType,
                                gmx::SelectionParserValueListPointer args,
                                const char *rpost, void *scanner);
 /** Creates a gmx::SelectionTreeElement for "keyword of" expression. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_keyword_of(struct gmx_ana_selmethod_t *method,
+_gmx_sel_init_keyword_of(struct gmx_ana_selmethod_t *            method,
                          const gmx::SelectionTreeElementPointer &group,
                          const char *rpost, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a method expression from the parsed data. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_method(struct gmx_ana_selmethod_t *method,
+_gmx_sel_init_method(struct gmx_ana_selmethod_t *             method,
                      gmx::SelectionParserParameterListPointer params,
                      const char *rpost, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a modifier expression from the parsed data. */
@@ -560,15 +554,13 @@ _gmx_sel_append_selection(const gmx::SelectionTreeElementPointer &sel,
                           gmx::SelectionTreeElementPointer        last,
                           void *                                  scanner);
 /** Check whether the parser should finish. */
-bool
-_gmx_sel_parser_should_finish(void *scanner);
+bool _gmx_sel_parser_should_finish(void *scanner);
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */
-void
-_gmx_sel_parse_params(const gmx::SelectionParserParameterList &params,
-                      int nparam, struct gmx_ana_selparam_t *param,
-                      const gmx::SelectionTreeElementPointer &root,
-                      void *scanner);
+void _gmx_sel_parse_params(const gmx::SelectionParserParameterList &params,
+                           int nparam, struct gmx_ana_selparam_t *param,
+                           const gmx::SelectionTreeElementPointer &root,
+                           void *                                  scanner);
 
 #endif

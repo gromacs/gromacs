@@ -55,7 +55,7 @@
 
 
 /*! \brief Returns the MPI rank of the domain decomposition master rank */
-#define DDMASTERRANK(dd)   (dd->masterrank)
+#define DDMASTERRANK(dd) (dd->masterrank)
 
 
 void dd_sendrecv_int(const struct gmx_domdec_t gmx_unused *dd,
@@ -78,13 +78,13 @@ void dd_sendrecv_int(const struct gmx_domdec_t gmx_unused *dd,
     }
     else if (n_s)
     {
-        MPI_Send(    buf_s, n_s * sizeof(int), MPI_BYTE, rank_s, 0,
-                     dd->mpi_comm_all);
+        MPI_Send(buf_s, n_s * sizeof(int), MPI_BYTE, rank_s, 0,
+                 dd->mpi_comm_all);
     }
     else if (n_r)
     {
-        MPI_Recv(    buf_r, n_r * sizeof(int), MPI_BYTE, rank_r, 0,
-                     dd->mpi_comm_all, &stat);
+        MPI_Recv(buf_r, n_r * sizeof(int), MPI_BYTE, rank_r, 0,
+                 dd->mpi_comm_all, &stat);
     }
 
 #endif
@@ -110,13 +110,13 @@ void dd_sendrecv_real(const struct gmx_domdec_t gmx_unused *dd,
     }
     else if (n_s)
     {
-        MPI_Send(    buf_s, n_s * sizeof(real), MPI_BYTE, rank_s, 0,
-                     dd->mpi_comm_all);
+        MPI_Send(buf_s, n_s * sizeof(real), MPI_BYTE, rank_s, 0,
+                 dd->mpi_comm_all);
     }
     else if (n_r)
     {
-        MPI_Recv(    buf_r, n_r * sizeof(real), MPI_BYTE, rank_r, 0,
-                     dd->mpi_comm_all, &stat);
+        MPI_Recv(buf_r, n_r * sizeof(real), MPI_BYTE, rank_r, 0,
+                 dd->mpi_comm_all, &stat);
     }
 
 #endif
@@ -142,13 +142,13 @@ void dd_sendrecv_rvec(const struct gmx_domdec_t gmx_unused *dd,
     }
     else if (n_s)
     {
-        MPI_Send(    buf_s[0], n_s * sizeof(rvec), MPI_BYTE, rank_s, 0,
-                     dd->mpi_comm_all);
+        MPI_Send(buf_s[0], n_s * sizeof(rvec), MPI_BYTE, rank_s, 0,
+                 dd->mpi_comm_all);
     }
     else if (n_r)
     {
-        MPI_Recv(    buf_r[0], n_r * sizeof(rvec), MPI_BYTE, rank_r, 0,
-                     dd->mpi_comm_all, &stat);
+        MPI_Recv(buf_r[0], n_r * sizeof(rvec), MPI_BYTE, rank_r, 0,
+                 dd->mpi_comm_all, &stat);
     }
 
 #endif

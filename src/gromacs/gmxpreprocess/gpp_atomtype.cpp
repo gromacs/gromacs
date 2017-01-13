@@ -55,17 +55,17 @@
 
 typedef struct gpp_atomtype
 {
-    int      nr;                   /* The number of atomtypes		*/
-    t_atom * atom;                 /* Array of atoms			*/
-    char *** atomname;             /* Names of the atomtypes		*/
-    t_param *nb;                   /* Nonbonded force default params	*/
-    int *    bondatomtype;         /* The bond_atomtype for each atomtype  */
-    real *   radius;               /* Radius for GBSA stuff                */
-    real *   vol;                  /* Effective volume for GBSA            */
-    real *   surftens;             /* Surface tension with water, for GBSA */
-    real *   gb_radius;            /* Radius for Still model               */
-    real *   S_hct;                /* Overlap factor for HCT model         */
-    int *    atomnumber;           /* Atomic number, used for QM/MM        */
+    int      nr;           /* The number of atomtypes		*/
+    t_atom * atom;         /* Array of atoms			*/
+    char *** atomname;     /* Names of the atomtypes		*/
+    t_param *nb;           /* Nonbonded force default params	*/
+    int *    bondatomtype; /* The bond_atomtype for each atomtype  */
+    real *   radius;       /* Radius for GBSA stuff                */
+    real *   vol;          /* Effective volume for GBSA            */
+    real *   surftens;     /* Surface tension with water, for GBSA */
+    real *   gb_radius;    /* Radius for Still model               */
+    real *   S_hct;        /* Overlap factor for HCT model         */
+    int *    atomnumber;   /* Atomic number, used for QM/MM        */
 } t_gpp_atomtype;
 
 int get_atomtype_type(const char *str, gpp_atomtype_t ga)
@@ -257,7 +257,7 @@ int set_atomtype_gbparam(gpp_atomtype_t ga, int i,
                          real radius, real vol, real surftens,
                          real gb_radius, real S_hct)
 {
-    if ( (i < 0) || (i >= ga->nr))
+    if ((i < 0) || (i >= ga->nr))
     {
         return NOTSET;
     }
@@ -274,7 +274,7 @@ int set_atomtype_gbparam(gpp_atomtype_t ga, int i,
 
 int set_atomtype(int nt, gpp_atomtype_t ga, t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
-                 int bondatomtype,
+                 int  bondatomtype,
                  real radius, real vol, real surftens, int atomnumber,
                  real gb_radius, real S_hct)
 {
@@ -299,7 +299,7 @@ int set_atomtype(int nt, gpp_atomtype_t ga, t_symtab *tab,
 
 int add_atomtype(gpp_atomtype_t ga, t_symtab *tab,
                  t_atom *a, const char *name, t_param *nb,
-                 int bondatomtype,
+                 int  bondatomtype,
                  real radius, real vol, real surftens, int atomnumber,
                  real gb_radius, real S_hct)
 {
@@ -339,15 +339,15 @@ int add_atomtype(gpp_atomtype_t ga, t_symtab *tab,
     }
 }
 
-void print_at (FILE * out, gpp_atomtype_t ga)
+void print_at(FILE *out, gpp_atomtype_t ga)
 {
     int      i;
     t_atom * atom = ga->atom;
     t_param *nb   = ga->nb;
 
-    fprintf (out, "[ %s ]\n", dir2str(d_atomtypes));
-    fprintf (out, "; %6s  %8s  %8s  %8s  %12s  %12s\n",
-             "type", "mass", "charge", "particle", "c6", "c12");
+    fprintf(out, "[ %s ]\n", dir2str(d_atomtypes));
+    fprintf(out, "; %6s  %8s  %8s  %8s  %12s  %12s\n",
+            "type", "mass", "charge", "particle", "c6", "c12");
     for (i = 0; (i < ga->nr); i++)
     {
         fprintf(out, "%8s  %8.3f  %8.3f  %8s  %12e  %12e\n",
@@ -355,7 +355,7 @@ void print_at (FILE * out, gpp_atomtype_t ga)
                 nb[i].c0(), nb[i].c1());
     }
 
-    fprintf (out, "\n");
+    fprintf(out, "\n");
 }
 
 void done_atomtype(gpp_atomtype_t ga)
@@ -375,7 +375,7 @@ void done_atomtype(gpp_atomtype_t ga)
 }
 
 static int search_atomtypes(gpp_atomtype_t ga, int *n, int typelist[],
-                            int thistype,
+                            int     thistype,
                             t_param param[], int ftype)
 {
     int      i, nn, nrfp, j, k, ntype, tli;
@@ -407,12 +407,12 @@ static int search_atomtypes(gpp_atomtype_t ga, int *n, int typelist[],
             /* Check radius, volume, surftens */
             tli    = typelist[i];
             bFound = bFound
-                && (get_atomtype_radius(tli, ga) == get_atomtype_radius(thistype, ga))
-                && (get_atomtype_vol(tli, ga) == get_atomtype_vol(thistype, ga))
-                && (get_atomtype_surftens(tli, ga) == get_atomtype_surftens(thistype, ga))
-                && (get_atomtype_atomnumber(tli, ga) == get_atomtype_atomnumber(thistype, ga))
-                && (get_atomtype_gb_radius(tli, ga) == get_atomtype_gb_radius(thistype, ga))
-                && (get_atomtype_S_hct(tli, ga) == get_atomtype_S_hct(thistype, ga));
+                     && (get_atomtype_radius(tli, ga) == get_atomtype_radius(thistype, ga))
+                     && (get_atomtype_vol(tli, ga) == get_atomtype_vol(thistype, ga))
+                     && (get_atomtype_surftens(tli, ga) == get_atomtype_surftens(thistype, ga))
+                     && (get_atomtype_atomnumber(tli, ga) == get_atomtype_atomnumber(thistype, ga))
+                     && (get_atomtype_gb_radius(tli, ga) == get_atomtype_gb_radius(thistype, ga))
+                     && (get_atomtype_S_hct(tli, ga) == get_atomtype_S_hct(thistype, ga));
         }
         if (bFound)
         {
@@ -439,7 +439,7 @@ static int search_atomtypes(gpp_atomtype_t ga, int *n, int typelist[],
 }
 
 void renum_atype(t_params plist[], gmx_mtop_t *mtop,
-                 int *wall_atomtype,
+                 int *          wall_atomtype,
                  gpp_atomtype_t ga, gmx_bool bVerbose)
 {
     int      i, j, k, l, molt, mi, mj, nat, nrfp, ftype, ntype;
@@ -495,11 +495,11 @@ void renum_atype(t_params plist[], gmx_mtop_t *mtop,
         for (i = 0; (i < atoms->nr); i++)
         {
             atoms->atom[i].type
-                = search_atomtypes(ga, &nat, typelist, atoms->atom[i].type,
-                                   plist[ftype].param, ftype);
+                    = search_atomtypes(ga, &nat, typelist, atoms->atom[i].type,
+                                       plist[ftype].param, ftype);
             atoms->atom[i].typeB
-                = search_atomtypes(ga, &nat, typelist, atoms->atom[i].typeB,
-                                   plist[ftype].param, ftype);
+                    = search_atomtypes(ga, &nat, typelist, atoms->atom[i].typeB,
+                                       plist[ftype].param, ftype);
         }
     }
 

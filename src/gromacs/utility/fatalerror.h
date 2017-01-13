@@ -83,14 +83,12 @@ void gmx_init_debug(const int dbglevel, const char *dbgfile);
 gmx_bool bDebugMode(void);
 
 /** Implementation for where(). */
-void
-_where(const char *file, int line);
+void _where(const char *file, int line);
 /** Prints filename and line to stdlog. */
 #define where() _where(__FILE__, __LINE__)
 
 /** Sets the log file for printing error messages. */
-void
-gmx_fatal_set_log_file(FILE *fp);
+void gmx_fatal_set_log_file(FILE *fp);
 
 /** Function pointer type for fatal error handler callback. */
 typedef void (*gmx_error_handler_t)(const char *title, const char *msg, const char *file, int line);
@@ -204,14 +202,14 @@ gmx_noreturn void _gmx_error(const char *key, const char *msg, const char *file,
  * recognized strings.
  */
 /*! \{ */
-#define gmx_call(msg)   gmx_error("call", msg)
-#define gmx_comm(msg)   gmx_error("comm", msg)
-#define gmx_file(msg)   gmx_error("file", msg)
-#define gmx_impl(msg)   gmx_error("impl", msg)
+#define gmx_call(msg) gmx_error("call", msg)
+#define gmx_comm(msg) gmx_error("comm", msg)
+#define gmx_file(msg) gmx_error("file", msg)
+#define gmx_impl(msg) gmx_error("impl", msg)
 #define gmx_incons(msg) gmx_error("incons", msg)
-#define gmx_input(msg)  gmx_error("input", msg)
-#define gmx_mem(msg)    gmx_error("mem", msg)
-#define gmx_open(fn)    gmx_error("open", fn)
+#define gmx_input(msg) gmx_error("input", msg)
+#define gmx_mem(msg) gmx_error("mem", msg)
+#define gmx_open(fn) gmx_error("open", fn)
 /*! \} */
 
 /*! \brief
@@ -229,14 +227,14 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
  * If \p n is not in range [n_min, n_max), a fatal error is raised.
  * \p n_min is inclusive, but \p n_max is not.
  */
-#define range_check_mesg(n, n_min, n_max, str) _range_check(n, n_min, n_max, str,#n, __FILE__, __LINE__)
+#define range_check_mesg(n, n_min, n_max, str) _range_check(n, n_min, n_max, str, #n, __FILE__, __LINE__)
 
 /*! \brief
  * Checks that a variable is within a range.
  *
  * This works as range_check_mesg(), but with a default error message.
  */
-#define range_check(n, n_min, n_max) _range_check(n, n_min, n_max, NULL,#n, __FILE__, __LINE__)
+#define range_check(n, n_min, n_max) _range_check(n, n_min, n_max, NULL, #n, __FILE__, __LINE__)
 
 /*! \brief
  * Prints a warning message to stderr.

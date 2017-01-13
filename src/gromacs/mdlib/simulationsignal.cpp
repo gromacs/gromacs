@@ -72,8 +72,9 @@ SimulationSignaller::SimulationSignaller(SimulationSignals *signals,
     : signals_(signals), cr_(cr),
       doInterSim_(doInterSim),
       doIntraSim_(doInterSim || doIntraSim),
-      mpiBuffer_ {}
-{}
+      mpiBuffer_{}
+{
+}
 
 gmx::ArrayRef<real>
 SimulationSignaller::getCommunicationBuffer()

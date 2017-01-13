@@ -57,6 +57,6 @@ integrator_t do_lbfgs;
 //! Normal mode analysis
 integrator_t do_nm;
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDLIB_MINIMIZE_H

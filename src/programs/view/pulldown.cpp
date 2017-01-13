@@ -105,7 +105,7 @@ t_pulldown *init_pd(t_x11 *x11, Window Parent, int width,
     for (i = 1; (i <= nmenu); i++)
     {
         pd->xpos[i] = 20 + pd->xpos[i - 1]
-            + XTextWidth(x11->font, title[i - 1], std::strlen(title[i - 1]));
+                      + XTextWidth(x11->font, title[i - 1], std::strlen(title[i - 1]));
     }
     if (pd->xpos[nmenu] > width)
     {
@@ -119,7 +119,7 @@ t_pulldown *init_pd(t_x11 *x11, Window Parent, int width,
                                       pd->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, pd->wd.self, Parent, PDCallBack, pd);
     x11->SetInputMask(x11, pd->wd.self, ExposureMask | ButtonPressMask
-                      | OwnerGrabButtonMask | ButtonReleaseMask);
+                                                | OwnerGrabButtonMask | ButtonReleaseMask);
     XMapWindow(x11->disp, pd->wd.self);
 
     for (i = 0; (i < nmenu); i++)

@@ -42,13 +42,25 @@
 
 enum
 {
-    IDROTX, IDROTY, IDROTZ, IDTRANSX, IDTRANSY, IDTRANSZ, IDZOOM, IDBUTNR,
-    IDREWIND, IDSTEP, IDFF, IDSTOP_ANI, IDNR,
-    IDDRAWMOL, IDLABEL
+    IDROTX,
+    IDROTY,
+    IDROTZ,
+    IDTRANSX,
+    IDTRANSY,
+    IDTRANSZ,
+    IDZOOM,
+    IDBUTNR,
+    IDREWIND,
+    IDSTEP,
+    IDFF,
+    IDSTOP_ANI,
+    IDNR,
+    IDDRAWMOL,
+    IDLABEL
 };
 
-#define AIR      3            /* extra space between child windows */
-#define BORDER  1
+#define AIR 3 /* extra space between child windows */
+#define BORDER 1
 
 #define EnterLeave (EnterWindowMask | LeaveWindowMask)
 

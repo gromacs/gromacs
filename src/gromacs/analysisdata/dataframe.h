@@ -74,7 +74,8 @@ public:
     /*! \brief
      * Constructs an unset value.
      */
-    AnalysisDataValue() : value_(0.0), error_(0.0) {}
+    AnalysisDataValue()
+        : value_(0.0), error_(0.0) {}
     /*! \brief
      * Constructs a value object with the given value.
      *
@@ -159,9 +160,9 @@ private:
     //! Possible flags for \a flags_.
     enum Flag
     {
-        efSet      = 1 << 0,     //!< Value has been set.
-        efErrorSet = 1 << 1,     //!< Error estimate has been set.
-        efPresent  = 1 << 2      //!< Value is set as present.
+        efSet      = 1 << 0, //!< Value has been set.
+        efErrorSet = 1 << 1, //!< Error estimate has been set.
+        efPresent  = 1 << 2  //!< Value is set as present.
     };
 
     //! Value for this value.
@@ -300,10 +301,10 @@ public:
         : valueOffset_(valueOffset), valueCount_(valueCount),
           dataSetIndex_(dataSetIndex), firstColumn_(firstColumn)
     {
-        GMX_ASSERT(valueOffset  >= 0, "Negative value offsets are invalid");
-        GMX_ASSERT(valueCount   >= 0, "Negative value counts are invalid");
+        GMX_ASSERT(valueOffset >= 0, "Negative value offsets are invalid");
+        GMX_ASSERT(valueCount >= 0, "Negative value counts are invalid");
         GMX_ASSERT(dataSetIndex >= 0, "Negative data set indices are invalid");
-        GMX_ASSERT(firstColumn  >= 0, "Negative column indices are invalid");
+        GMX_ASSERT(firstColumn >= 0, "Negative column indices are invalid");
     }
 
     //! Returns the offset of the first value in the referenced value array.

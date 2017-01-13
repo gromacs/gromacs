@@ -64,7 +64,8 @@ struct t_inputrec;
 
 enum
 {
-    GMX_SUM_GRID_FORWARD, GMX_SUM_GRID_BACKWARD
+    GMX_SUM_GRID_FORWARD,
+    GMX_SUM_GRID_BACKWARD
 };
 
 /*! \brief Initialize \p pmedata
@@ -90,14 +91,14 @@ int gmx_pme_destroy(struct gmx_pme_t **pmedata);
  *
  * These can be combined with bitwise-OR if more than one thing is required.
  */
-#define GMX_PME_SPREAD        (1 << 0)
-#define GMX_PME_SOLVE         (1 << 1)
-#define GMX_PME_CALC_F        (1 << 2)
+#define GMX_PME_SPREAD (1 << 0)
+#define GMX_PME_SOLVE (1 << 1)
+#define GMX_PME_CALC_F (1 << 2)
 #define GMX_PME_CALC_ENER_VIR (1 << 3)
 /* This forces the grid to be backtransformed even without GMX_PME_CALC_F */
-#define GMX_PME_CALC_POT      (1 << 4)
+#define GMX_PME_CALC_POT (1 << 4)
 
-#define GMX_PME_DO_ALL_F  (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
+#define GMX_PME_DO_ALL_F (GMX_PME_SPREAD | GMX_PME_SOLVE | GMX_PME_CALC_F)
 //@}
 
 /*! \brief Do a PME calculation for the long range electrostatics and/or LJ.
@@ -108,24 +109,24 @@ int gmx_pme_destroy(struct gmx_pme_t **pmedata);
  * \return 0 indicates all well, non zero is an error code.
  */
 int gmx_pme_do(struct gmx_pme_t *pme,
-               int start,       int homenr,
-               rvec x[],        rvec f[],
-               real chargeA[],  real chargeB[],
-               real c6A[],      real c6B[],
-               real sigmaA[],   real sigmaB[],
-               matrix box,      t_commrec *cr,
-               int  maxshift_x, int maxshift_y,
-               t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
-               matrix vir_q,    matrix vir_lj,
-               real *energy_q,  real *energy_lj,
-               real lambda_q,   real lambda_lj,
+               int start, int homenr,
+               rvec x[], rvec f[],
+               real chargeA[], real chargeB[],
+               real c6A[], real c6B[],
+               real sigmaA[], real sigmaB[],
+               matrix box, t_commrec *cr,
+               int maxshift_x, int maxshift_y,
+               t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+               matrix vir_q, matrix vir_lj,
+               real *energy_q, real *energy_lj,
+               real lambda_q, real lambda_lj,
                real *dvdlambda_q, real *dvdlambda_lj,
                int flags);
 
 /*! \brief Called on the nodes that do PME exclusively (as slaves) */
 int gmx_pmeonly(struct gmx_pme_t *pme,
-                struct t_commrec *cr,     t_nrnb *mynrnb,
-                gmx_wallcycle_t wcycle,
+                struct t_commrec *cr, t_nrnb *mynrnb,
+                gmx_wallcycle_t           wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 real ewaldcoeff_q, real ewaldcoeff_lj,
                 t_inputrec *ir);
@@ -141,7 +142,7 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
 void gmx_pme_calc_energy(struct gmx_pme_t *pme, int n, rvec *x, real *q, real *V);
 
 /*! \brief Send the charges and maxshift to out PME-only node. */
-void gmx_pme_send_parameters(struct t_commrec *cr,
+void gmx_pme_send_parameters(struct t_commrec *         cr,
                              const interaction_const_t *ic,
                              gmx_bool bFreeEnergy_q, gmx_bool bFreeEnergy_lj,
                              real *chargeA, real *chargeB,
@@ -152,7 +153,7 @@ void gmx_pme_send_parameters(struct t_commrec *cr,
 /*! \brief Send the coordinates to our PME-only node and request a PME calculation */
 void gmx_pme_send_coordinates(struct t_commrec *cr, matrix box, rvec *x,
                               real lambda_q, real lambda_lj,
-                              gmx_bool bEnerVir,
+                              gmx_bool    bEnerVir,
                               gmx_int64_t step);
 
 /*! \brief Tell our PME-only node to finish */

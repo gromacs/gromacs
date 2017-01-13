@@ -54,13 +54,13 @@ int CheckWin(Window win, const char *file, int line)
         const char *s;
     } t_winerr;
     t_winerr winerr[] = {
-        { BadAlloc,  "Bad Alloc" },
-        { BadColor,  "Bad Color" },
-        { BadCursor, "Bad Cursor"},
-        { BadMatch,  "Bad Match" },
-        { BadPixmap, "Bad Pixmap"},
-        { BadValue,  "Bad Value" },
-        { BadWindow, "Bad Window"}
+        { BadAlloc, "Bad Alloc" },
+        { BadColor, "Bad Color" },
+        { BadCursor, "Bad Cursor" },
+        { BadMatch, "Bad Match" },
+        { BadPixmap, "Bad Pixmap" },
+        { BadValue, "Bad Value" },
+        { BadWindow, "Bad Window" }
     };
 #define NERR (sizeof(winerr) / sizeof(winerr[0]))
     unsigned int i;
@@ -210,7 +210,9 @@ void XDrawRoundRect(Display *disp, Window win, GC gc,
                     int x, int y, int w, int h)
 {
 #define RAD (OFFS_X / 2)
-#define SetPoint(pn, x0, y0) pn.x = x0; pn.y = y0
+#define SetPoint(pn, x0, y0) \
+    pn.x = x0;               \
+    pn.y = y0
 
     if ((w < 10) || (h < 10))
     {
@@ -317,13 +319,17 @@ bool GrabOK(FILE *out, int err)
         case GrabSuccess:
             return true;
         case GrabNotViewable:
-            std::fprintf(out, "GrabNotViewable\n"); break;
+            std::fprintf(out, "GrabNotViewable\n");
+            break;
         case AlreadyGrabbed:
-            std::fprintf(out, "AlreadyGrabbed\n"); break;
+            std::fprintf(out, "AlreadyGrabbed\n");
+            break;
         case GrabFrozen:
-            std::fprintf(out, "GrabFrozen\n"); break;
+            std::fprintf(out, "GrabFrozen\n");
+            break;
         case GrabInvalidTime:
-            std::fprintf(out, "GrabInvalidTime\n"); break;
+            std::fprintf(out, "GrabInvalidTime\n");
+            break;
         default:
             break;
     }

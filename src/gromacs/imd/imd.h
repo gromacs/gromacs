@@ -80,7 +80,7 @@ struct t_IMD;
 struct t_inputrec;
 struct t_state;
 
-static const char IMDstr[] = "IMD:";  /**< Tag output from the IMD module with this string. */
+static const char IMDstr[] = "IMD:"; /**< Tag output from the IMD module with this string. */
 
 /*! \brief Writes out the group of atoms selected for interactive manipulation.
  *
@@ -137,7 +137,7 @@ void dd_make_local_IMD_atoms(gmx_bool bIMD, gmx_domdec_t *dd, t_IMD *imd);
 void init_IMD(t_inputrec *ir, t_commrec *cr, gmx_mtop_t *top_global,
               FILE *fplog, int defnstimd, rvec x[],
               int nfile, const t_filenm fnm[], const gmx_output_env_t *oenv,
-              int imdport, unsigned long  Flags);
+              int imdport, unsigned long Flags);
 
 
 /*! \brief IMD required in this time step?

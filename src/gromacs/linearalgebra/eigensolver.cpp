@@ -46,21 +46,21 @@
 #include "gmx_arpack.h"
 #include "gmx_lapack.h"
 
-void eigensolver(real * a,
-                 int    n,
-                 int    index_lower,
-                 int    index_upper,
-                 real * eigenvalues,
-                 real * eigenvectors)
+void eigensolver(real *a,
+                 int   n,
+                 int   index_lower,
+                 int   index_upper,
+                 real *eigenvalues,
+                 real *eigenvectors)
 {
-    int *        isuppz;
-    int          lwork, liwork;
-    int          m, iw0, info;
-    real         w0, abstol;
-    int *        iwork;
-    real *       work;
-    real         vl, vu;
-    const char * jobz;
+    int *       isuppz;
+    int         lwork, liwork;
+    int         m, iw0, info;
+    real        w0, abstol;
+    int *       iwork;
+    real *      work;
+    real        vl, vu;
+    const char *jobz;
 
     if (index_lower < 0)
     {
@@ -90,17 +90,19 @@ void eigensolver(real * a,
     index_lower++;
     index_upper++;
 
-    /* Call LAPACK routine using fortran interface. Note that we use upper storage,
+/* Call LAPACK routine using fortran interface. Note that we use upper storage,
      * but this corresponds to lower storage ("L") in Fortran.
      */
 #if GMX_DOUBLE
-    F77_FUNC(dsyevr, DSYEVR) (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper,
-                              &abstol, &m, eigenvalues, eigenvectors, &n,
-                              isuppz, &w0, &lwork, &iw0, &liwork, &info);
+    F77_FUNC(dsyevr, DSYEVR)
+    (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper,
+     &abstol, &m, eigenvalues, eigenvectors, &n,
+     isuppz, &w0, &lwork, &iw0, &liwork, &info);
 #else
-    F77_FUNC(ssyevr, SSYEVR) (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper,
-                              &abstol, &m, eigenvalues, eigenvectors, &n,
-                              isuppz, &w0, &lwork, &iw0, &liwork, &info);
+    F77_FUNC(ssyevr, SSYEVR)
+    (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper,
+     &abstol, &m, eigenvalues, eigenvectors, &n,
+     isuppz, &w0, &lwork, &iw0, &liwork, &info);
 #endif
 
     if (info != 0)
@@ -118,13 +120,15 @@ void eigensolver(real * a,
     abstol = 0;
 
 #if GMX_DOUBLE
-    F77_FUNC(dsyevr, DSYEVR) (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper,
-                              &abstol, &m, eigenvalues, eigenvectors, &n,
-                              isuppz, work, &lwork, iwork, &liwork, &info);
+    F77_FUNC(dsyevr, DSYEVR)
+    (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper,
+     &abstol, &m, eigenvalues, eigenvectors, &n,
+     isuppz, work, &lwork, iwork, &liwork, &info);
 #else
-    F77_FUNC(ssyevr, SSYEVR) (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper,
-                              &abstol, &m, eigenvalues, eigenvectors, &n,
-                              isuppz, work, &lwork, iwork, &liwork, &info);
+    F77_FUNC(ssyevr, SSYEVR)
+    (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper,
+     &abstol, &m, eigenvalues, eigenvectors, &n,
+     isuppz, work, &lwork, iwork, &liwork, &info);
 #endif
 
     sfree(isuppz);
@@ -135,33 +139,32 @@ void eigensolver(real * a,
     {
         gmx_fatal(FARGS, "Internal errror in LAPACK diagonalization.");
     }
-
 }
 
 
 #ifdef GMX_MPI_NOT
-void sparse_parallel_eigensolver(gmx_sparsematrix_t * A,
-                                 int                  neig,
-                                 real *               eigenvalues,
-                                 real *               eigenvectors,
-                                 int                  maxiter)
+void sparse_parallel_eigensolver(gmx_sparsematrix_t *A,
+                                 int                 neig,
+                                 real *              eigenvalues,
+                                 real *              eigenvectors,
+                                 int                 maxiter)
 {
-    int    iwork[80];
-    int    iparam[11];
-    int    ipntr[11];
-    real * resid;
-    real * workd;
-    real * workl;
-    real * v;
-    int    n;
-    int    ido, info, lworkl, i, ncv, dovec;
-    real   abstol;
-    int *  select;
-    int    iter;
-    int    nnodes, rank;
+    int   iwork[80];
+    int   iparam[11];
+    int   ipntr[11];
+    real *resid;
+    real *workd;
+    real *workl;
+    real *v;
+    int   n;
+    int   ido, info, lworkl, i, ncv, dovec;
+    real  abstol;
+    int * select;
+    int   iter;
+    int   nnodes, rank;
 
-    MPI_Comm_size( MPI_COMM_WORLD, &nnodes );
-    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+    MPI_Comm_size(MPI_COMM_WORLD, &nnodes);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     if (eigenvectors != NULL)
     {
@@ -206,13 +209,15 @@ void sparse_parallel_eigensolver(gmx_sparsematrix_t * A,
     do
     {
 #if GMX_DOUBLE
-        F77_FUNC(pdsaupd, PDSAUPD) (&ido, "I", &n, "SA", &neig, &abstol,
-                                    resid, &ncv, v, &n, iparam, ipntr,
-                                    workd, iwork, workl, &lworkl, &info);
+        F77_FUNC(pdsaupd, PDSAUPD)
+        (&ido, "I", &n, "SA", &neig, &abstol,
+         resid, &ncv, v, &n, iparam, ipntr,
+         workd, iwork, workl, &lworkl, &info);
 #else
-        F77_FUNC(pssaupd, PSSAUPD) (&ido, "I", &n, "SA", &neig, &abstol,
-                                    resid, &ncv, v, &n, iparam, ipntr,
-                                    workd, iwork, workl, &lworkl, &info);
+        F77_FUNC(pssaupd, PSSAUPD)
+        (&ido, "I", &n, "SA", &neig, &abstol,
+         resid, &ncv, v, &n, iparam, ipntr,
+         workd, iwork, workl, &lworkl, &info);
 #endif
         if (ido == -1 || ido == 1)
         {
@@ -241,15 +246,17 @@ void sparse_parallel_eigensolver(gmx_sparsematrix_t * A,
     fprintf(stderr, "Calculating eigenvalues and eigenvectors...\n");
 
 #if GMX_DOUBLE
-    F77_FUNC(pdseupd, PDSEUPD) (&dovec, "A", select, eigenvalues, eigenvectors,
-                                &n, NULL, "I", &n, "SA", &neig, &abstol,
-                                resid, &ncv, v, &n, iparam, ipntr,
-                                workd, workl, &lworkl, &info);
+    F77_FUNC(pdseupd, PDSEUPD)
+    (&dovec, "A", select, eigenvalues, eigenvectors,
+     &n, NULL, "I", &n, "SA", &neig, &abstol,
+     resid, &ncv, v, &n, iparam, ipntr,
+     workd, workl, &lworkl, &info);
 #else
-    F77_FUNC(psseupd, PSSEUPD) (&dovec, "A", select, eigenvalues, eigenvectors,
-                                &n, NULL, "I", &n, "SA", &neig, &abstol,
-                                resid, &ncv, v, &n, iparam, ipntr,
-                                workd, workl, &lworkl, &info);
+    F77_FUNC(psseupd, PSSEUPD)
+    (&dovec, "A", select, eigenvalues, eigenvectors,
+     &n, NULL, "I", &n, "SA", &neig, &abstol,
+     resid, &ncv, v, &n, iparam, ipntr,
+     workd, workl, &lworkl, &info);
 #endif
 
     sfree(v);
@@ -261,27 +268,27 @@ void sparse_parallel_eigensolver(gmx_sparsematrix_t * A,
 #endif
 
 
-void sparse_eigensolver(gmx_sparsematrix_t * A,
-                        int                  neig,
-                        real *               eigenvalues,
-                        real *               eigenvectors,
-                        int                  maxiter)
+void sparse_eigensolver(gmx_sparsematrix_t *A,
+                        int                 neig,
+                        real *              eigenvalues,
+                        real *              eigenvectors,
+                        int                 maxiter)
 {
-    int    iwork[80];
-    int    iparam[11];
-    int    ipntr[11];
-    real * resid;
-    real * workd;
-    real * workl;
-    real * v;
-    int    n;
-    int    ido, info, lworkl, i, ncv, dovec;
-    real   abstol;
-    int *  select;
-    int    iter;
+    int   iwork[80];
+    int   iparam[11];
+    int   ipntr[11];
+    real *resid;
+    real *workd;
+    real *workl;
+    real *v;
+    int   n;
+    int   ido, info, lworkl, i, ncv, dovec;
+    real  abstol;
+    int * select;
+    int   iter;
 
 #ifdef GMX_MPI_NOT
-    MPI_Comm_size( MPI_COMM_WORLD, &n );
+    MPI_Comm_size(MPI_COMM_WORLD, &n);
     if (n > 1)
     {
         sparse_parallel_eigensolver(A, neig, eigenvalues, eigenvectors, maxiter);
@@ -332,13 +339,15 @@ void sparse_eigensolver(gmx_sparsematrix_t * A,
     do
     {
 #if GMX_DOUBLE
-        F77_FUNC(dsaupd, DSAUPD) (&ido, "I", &n, "SA", &neig, &abstol,
-                                  resid, &ncv, v, &n, iparam, ipntr,
-                                  workd, iwork, workl, &lworkl, &info);
+        F77_FUNC(dsaupd, DSAUPD)
+        (&ido, "I", &n, "SA", &neig, &abstol,
+         resid, &ncv, v, &n, iparam, ipntr,
+         workd, iwork, workl, &lworkl, &info);
 #else
-        F77_FUNC(ssaupd, SSAUPD) (&ido, "I", &n, "SA", &neig, &abstol,
-                                  resid, &ncv, v, &n, iparam, ipntr,
-                                  workd, iwork, workl, &lworkl, &info);
+        F77_FUNC(ssaupd, SSAUPD)
+        (&ido, "I", &n, "SA", &neig, &abstol,
+         resid, &ncv, v, &n, iparam, ipntr,
+         workd, iwork, workl, &lworkl, &info);
 #endif
         if (ido == -1 || ido == 1)
         {
@@ -367,15 +376,17 @@ void sparse_eigensolver(gmx_sparsematrix_t * A,
     fprintf(stderr, "Calculating eigenvalues and eigenvectors...\n");
 
 #if GMX_DOUBLE
-    F77_FUNC(dseupd, DSEUPD) (&dovec, "A", select, eigenvalues, eigenvectors,
-                              &n, nullptr, "I", &n, "SA", &neig, &abstol,
-                              resid, &ncv, v, &n, iparam, ipntr,
-                              workd, workl, &lworkl, &info);
+    F77_FUNC(dseupd, DSEUPD)
+    (&dovec, "A", select, eigenvalues, eigenvectors,
+     &n, nullptr, "I", &n, "SA", &neig, &abstol,
+     resid, &ncv, v, &n, iparam, ipntr,
+     workd, workl, &lworkl, &info);
 #else
-    F77_FUNC(sseupd, SSEUPD) (&dovec, "A", select, eigenvalues, eigenvectors,
-                              &n, nullptr, "I", &n, "SA", &neig, &abstol,
-                              resid, &ncv, v, &n, iparam, ipntr,
-                              workd, workl, &lworkl, &info);
+    F77_FUNC(sseupd, SSEUPD)
+    (&dovec, "A", select, eigenvalues, eigenvectors,
+     &n, nullptr, "I", &n, "SA", &neig, &abstol,
+     resid, &ncv, v, &n, iparam, ipntr,
+     workd, workl, &lworkl, &info);
 #endif
 
     sfree(v);

@@ -64,8 +64,8 @@
 typedef struct gmx_structurefactors
 {
     int  nratoms;
-    int *p;        /* proton number */
-    int *n;        /* neutron number */
+    int *p; /* proton number */
+    int *n; /* neutron number */
     /* Parameters for the Cromer Mann fit */
     real **a;      /* parameter a */
     real **b;      /* parameter b */
@@ -95,9 +95,9 @@ typedef struct structure_factor
 } structure_factor;
 
 
-extern int * create_indexed_atom_type (reduced_atom_t * atm, int size)
+extern int *create_indexed_atom_type(reduced_atom_t *atm, int size)
 {
-/*
+    /*
  * create an index of the atom types found in a  group
  * i.e.: for water index_atp[0]=type_number_of_O and
  *                 index_atp[1]=type_number_of_H
@@ -108,7 +108,7 @@ extern int * create_indexed_atom_type (reduced_atom_t * atm, int size)
 
     reduced_atom *att = (reduced_atom *)atm;
 
-    snew (index_atp, 1);
+    snew(index_atp, 1);
     i_tmp        = 1;
     index_atp[0] = att[0].t;
     for (i = 1; i < size; i++)
@@ -123,19 +123,18 @@ extern int * create_indexed_atom_type (reduced_atom_t * atm, int size)
         if (j == i_tmp) /* i.e. no indexed atom type is  == to atm[i].t */
         {
             i_tmp++;
-            srenew (index_atp, i_tmp * sizeof (int));
+            srenew(index_atp, i_tmp * sizeof(int));
             index_atp[i_tmp - 1] = att[i].t;
         }
     }
     i_tmp++;
-    srenew (index_atp, i_tmp * sizeof (int));
+    srenew(index_atp, i_tmp * sizeof(int));
     index_atp[i_tmp - 1] = 0;
     return index_atp;
 }
 
 
-
-extern t_complex *** rc_tensor_allocation(int x, int y, int z)
+extern t_complex ***rc_tensor_allocation(int x, int y, int z)
 {
     t_complex ***t;
     int          i, j;
@@ -161,9 +160,9 @@ extern t_complex *** rc_tensor_allocation(int x, int y, int z)
 }
 
 
-extern void compute_structure_factor (structure_factor_t * sft, matrix box,
-                                      reduced_atom_t * red, int isize, real start_q,
-                                      real end_q, int group, real **sf_table)
+extern void compute_structure_factor(structure_factor_t *sft, matrix box,
+                                     reduced_atom_t *red, int isize, real start_q,
+                                     real end_q, int group, real **sf_table)
 {
     structure_factor *sf   = (structure_factor *)sft;
     reduced_atom *    redt = (reduced_atom *)red;
@@ -182,10 +181,10 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
     maxky = static_cast<int>(end_q / k_factor[YY] + 0.5);
     maxkz = static_cast<int>(end_q / k_factor[ZZ] + 0.5);
 
-    snew (counter, sf->n_angles);
+    snew(counter, sf->n_angles);
 
     tmpSF = rc_tensor_allocation(maxkx, maxky, maxkz);
-/*
+    /*
  * The big loop...
  * compute real and imaginary part of the structure factor for every
  * (kx,ky,kz))
@@ -193,7 +192,7 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
     fprintf(stderr, "\n");
     for (i = 0; i < maxkx; i++)
     {
-        fprintf (stderr, "\rdone %3.1f%%     ", (100.0 * (i + 1)) / maxkx);
+        fprintf(stderr, "\rdone %3.1f%%     ", (100.0 * (i + 1)) / maxkx);
         fflush(stderr);
         kx = i * k_factor[XX];
         for (j = 0; j < maxky; j++)
@@ -204,7 +203,7 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
                 if (i != 0 || j != 0 || k != 0)
                 {
                     kz  = k * k_factor[ZZ];
-                    krr = std::sqrt (gmx::square(kx) + gmx::square(ky) + gmx::square(kz));
+                    krr = std::sqrt(gmx::square(kx) + gmx::square(ky) + gmx::square(kz));
                     if (krr >= start_q && krr <= end_q)
                     {
                         kr = static_cast<int>(krr / sf->ref_k + 0.5);
@@ -217,7 +216,7 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
                                 asf = sf_table[redt[p].t][kr];
 
                                 kdotx = kx * redt[p].x[XX]
-                                    + ky * redt[p].x[YY] + kz * redt[p].x[ZZ];
+                                        + ky * redt[p].x[YY] + kz * redt[p].x[ZZ];
 
                                 tmpSF[i][j][k].re += std::cos(kdotx) * asf;
                                 tmpSF[i][j][k].im += std::sin(kdotx) * asf;
@@ -227,8 +226,8 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
                 }
             }
         }
-    }               /* end loop on i */
-/*
+    } /* end loop on i */
+      /*
  *  compute the square modulus of the structure factor, averaging on the surface
  *  kx*kx + ky*ky + kz*kz = krr*krr
  *  note that this is correct only for a (on the macroscopic scale)
@@ -236,19 +235,24 @@ extern void compute_structure_factor (structure_factor_t * sft, matrix box,
  */
     for (i = 0; i < maxkx; i++)
     {
-        kx = i * k_factor[XX]; for (j = 0; j < maxky; j++)
+        kx = i * k_factor[XX];
+        for (j = 0; j < maxky; j++)
         {
-            ky = j * k_factor[YY]; for (k = 0; k < maxkz; k++)
+            ky = j * k_factor[YY];
+            for (k = 0; k < maxkz; k++)
             {
-                kz = k * k_factor[ZZ]; krr = std::sqrt (gmx::square(kx) + gmx::square(ky)
-                                                        + gmx::square(kz)); if (krr >= start_q && krr <= end_q)
+                kz  = k * k_factor[ZZ];
+                krr = std::sqrt(gmx::square(kx) + gmx::square(ky)
+                                + gmx::square(kz));
+                if (krr >= start_q && krr <= end_q)
                 {
                     kr = static_cast<int>(krr / sf->ref_k + 0.5);
                     if (kr < sf->n_angles && counter[kr] != 0)
                     {
                         sf->F[group][kr]
-                            += (gmx::square(tmpSF[i][j][k].re)
-                                + gmx::square(tmpSF[i][j][k].im)) / counter[kr];
+                                += (gmx::square(tmpSF[i][j][k].re)
+                                    + gmx::square(tmpSF[i][j][k].im))
+                                   / counter[kr];
                     }
                 }
             }
@@ -290,7 +294,8 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
     {
         i = line_no;
         if (sscanf(line, "%s %d %lf %lf %lf %lf %lf %lf %lf %lf %lf",
-                   atomn, &p, &a1, &a2, &a3, &a4, &b1, &b2, &b3, &b4, &c) == 11)
+                   atomn, &p, &a1, &a2, &a3, &a4, &b1, &b2, &b3, &b4, &c)
+            == 11)
         {
             gsf->atomnm[i] = gmx_strdup(atomn);
             gsf->p[i]      = p;
@@ -332,13 +337,12 @@ extern gmx_structurefactors_t *gmx_structurefactors_init(const char *datfn)
 
     fclose(fp);
 
-    return (gmx_structurefactors_t *) gsf;
-
+    return (gmx_structurefactors_t *)gsf;
 }
 
 
-extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, int * index,
-                             int isize, const t_topology * top, gmx_bool flag, gmx_structurefactors_t *gsf)
+extern void rearrange_atoms(reduced_atom_t *positions, t_trxframe *fr, int *index,
+                            int isize, const t_topology *top, gmx_bool flag, gmx_structurefactors_t *gsf)
 /* given the group's index, return the (continuous) array of atoms */
 {
     int i;
@@ -350,17 +354,17 @@ extern void rearrange_atoms (reduced_atom_t * positions, t_trxframe *fr, int * i
         for (i = 0; i < isize; i++)
         {
             pos[i].t
-                = return_atom_type (*(top->atoms.atomname[index[i]]), gsf);
+                    = return_atom_type(*(top->atoms.atomname[index[i]]), gsf);
         }
     }
     for (i = 0; i < isize; i++)
     {
-        copy_rvec (fr->x[index[i]], pos[i].x);
+        copy_rvec(fr->x[index[i]], pos[i].x);
     }
 }
 
 
-extern int return_atom_type (const char *name, gmx_structurefactors_t *gsf)
+extern int return_atom_type(const char *name, gmx_structurefactors_t *gsf)
 {
     typedef struct
     {
@@ -368,15 +372,13 @@ extern int return_atom_type (const char *name, gmx_structurefactors_t *gsf)
         int         nh;
     } t_united_h;
     t_united_h uh[] = {
-        { "CH1", 1 }, { "CH2", 2 }, { "CH3", 3 },
-        { "CS1", 1 }, { "CS2", 2 }, { "CS3", 3 },
-        { "CP1", 1 }, { "CP2", 2 }, { "CP3", 3 }
+        { "CH1", 1 }, { "CH2", 2 }, { "CH3", 3 }, { "CS1", 1 }, { "CS2", 2 }, { "CS3", 3 }, { "CP1", 1 }, { "CP2", 2 }, { "CP3", 3 }
     };
-    int        i, cnt = 0;
-    int *      tndx;
-    int        nrc;
-    int        fndx = 0;
-    int        NCMT;
+    int  i, cnt = 0;
+    int *tndx;
+    int  nrc;
+    int  fndx = 0;
+    int  NCMT;
 
     gmx_structurefactors *gsft = (gmx_structurefactors *)gsf;
 
@@ -394,7 +396,7 @@ extern int return_atom_type (const char *name, gmx_structurefactors_t *gsf)
 
     for (i = 0; (i < NCMT); i++)
     {
-        if (std::strncmp (name, gsft->atomnm[i], std::strlen(gsft->atomnm[i])) == 0)
+        if (std::strncmp(name, gsft->atomnm[i], std::strlen(gsft->atomnm[i])) == 0)
         {
             tndx[cnt] = i;
             cnt++;
@@ -430,7 +432,7 @@ extern int gmx_structurefactors_get_sf(gmx_structurefactors_t *gsf, int elem, re
     int                   success;
     int                   i;
     gmx_structurefactors *gsft = (gmx_structurefactors *)gsf;
-    success = 0;
+    success                    = 0;
 
     for (i = 0; i < 4; i++)
     {
@@ -443,11 +445,11 @@ extern int gmx_structurefactors_get_sf(gmx_structurefactors_t *gsf, int elem, re
     return success;
 }
 
-extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
-                                    const char* fnXVG, const char *fnTRX,
-                                    const char* fnDAT,
-                                    real start_q, real end_q,
-                                    real energy, int ng, const gmx_output_env_t *oenv)
+extern int do_scattering_intensity(const char *fnTPS, const char *fnNDX,
+                                   const char *fnXVG, const char *fnTRX,
+                                   const char *fnDAT,
+                                   real start_q, real end_q,
+                                   real energy, int ng, const gmx_output_env_t *oenv)
 {
     int               i, *isize, flags = TRX_READ_X, **index_atp;
     t_trxstatus *     status;
@@ -474,36 +476,36 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
 
     gmx_structurefactors_get_sf(gmx_sf, 0, a, b, &c);
 
-    snew (sf, 1);
+    snew(sf, 1);
     sf->energy = energy;
 
     /* Read the topology informations */
-    read_tps_conf (fnTPS, &top, &ePBC, &xtop, nullptr, box, TRUE);
-    sfree (xtop);
+    read_tps_conf(fnTPS, &top, &ePBC, &xtop, nullptr, box, TRUE);
+    sfree(xtop);
 
     /* groups stuff... */
-    snew (isize, ng);
-    snew (index, ng);
-    snew (grpname, ng);
+    snew(isize, ng);
+    snew(index, ng);
+    snew(grpname, ng);
 
-    fprintf (stderr, "\nSelect %d group%s\n", ng,
-             ng == 1 ? "" : "s");
+    fprintf(stderr, "\nSelect %d group%s\n", ng,
+            ng == 1 ? "" : "s");
     if (fnTPS)
     {
-        get_index (&top.atoms, fnNDX, ng, isize, index, grpname);
+        get_index(&top.atoms, fnNDX, ng, isize, index, grpname);
     }
     else
     {
-        rd_index (fnNDX, ng, isize, index, grpname);
+        rd_index(fnNDX, ng, isize, index, grpname);
     }
 
     /* The first time we read data is a little special */
-    read_first_frame (oenv, &status, fnTRX, &fr, flags);
+    read_first_frame(oenv, &status, fnTRX, &fr, flags);
 
     sf->total_n_atoms = fr.natoms;
 
-    snew (red, ng);
-    snew (index_atp, ng);
+    snew(red, ng);
+    snew(index_atp, ng);
 
     r_tmp = std::max(box[XX][XX], box[YY][YY]);
     r_tmp = std::max(box[ZZ][ZZ], r_tmp);
@@ -512,19 +514,19 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
     /* ref_k will be the reference momentum unit */
     sf->n_angles = static_cast<int>(end_q / sf->ref_k + 0.5);
 
-    snew (sf->F, ng);
+    snew(sf->F, ng);
     for (i = 0; i < ng; i++)
     {
-        snew (sf->F[i], sf->n_angles);
+        snew(sf->F[i], sf->n_angles);
     }
     for (i = 0; i < ng; i++)
     {
-        snew (red[i], isize[i]);
-        rearrange_atoms (red[i], &fr, index[i], isize[i], &top, TRUE, gmx_sf);
-        index_atp[i] = create_indexed_atom_type (red[i], isize[i]);
+        snew(red[i], isize[i]);
+        rearrange_atoms(red[i], &fr, index[i], isize[i], &top, TRUE, gmx_sf);
+        index_atp[i] = create_indexed_atom_type(red[i], isize[i]);
     }
 
-    sf_table = compute_scattering_factor_table (gmx_sf, (structure_factor_t *)sf);
+    sf_table = compute_scattering_factor_table(gmx_sf, (structure_factor_t *)sf);
 
 
     /* This is the main loop over frames */
@@ -534,14 +536,14 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
         sf->nSteps++;
         for (i = 0; i < ng; i++)
         {
-            rearrange_atoms (red[i], &fr, index[i], isize[i], &top, FALSE, gmx_sf);
+            rearrange_atoms(red[i], &fr, index[i], isize[i], &top, FALSE, gmx_sf);
 
-            compute_structure_factor ((structure_factor_t *)sf, box, red[i], isize[i],
-                                      start_q, end_q, i, sf_table);
+            compute_structure_factor((structure_factor_t *)sf, box, red[i], isize[i],
+                                     start_q, end_q, i, sf_table);
         }
-    } while (read_next_frame (oenv, status, &fr));
+    } while (read_next_frame(oenv, status, &fr));
 
-    save_data ((structure_factor_t *)sf, fnXVG, ng, start_q, end_q, oenv);
+    save_data((structure_factor_t *)sf, fnXVG, ng, start_q, end_q, oenv);
 
 
     sfree(a);
@@ -553,8 +555,8 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
 }
 
 
-extern void save_data (structure_factor_t *sft, const char *file, int ngrps,
-                       real start_q, real end_q, const gmx_output_env_t *oenv)
+extern void save_data(structure_factor_t *sft, const char *file, int ngrps,
+                      real start_q, real end_q, const gmx_output_env_t *oenv)
 {
 
     FILE *  fp;
@@ -563,17 +565,17 @@ extern void save_data (structure_factor_t *sft, const char *file, int ngrps,
 
     structure_factor *sf = (structure_factor *)sft;
 
-    fp = xvgropen (file, "Scattering Intensity", "q (1/nm)",
-                   "Intensity (a.u.)", oenv);
+    fp = xvgropen(file, "Scattering Intensity", "q (1/nm)",
+                  "Intensity (a.u.)", oenv);
 
-    snew (tmp, ngrps);
+    snew(tmp, ngrps);
 
     for (g = 0; g < ngrps; g++)
     {
         for (i = 0; i < sf->n_angles; i++)
         {
 
-/*
+            /*
  *          theta is half the angle between incoming and scattered vectors.
  *
  *          polar. fact. = 0.5*(1+cos^2(2*theta)) = 1 - 0.5 * sin^2(2*theta)
@@ -583,28 +585,28 @@ extern void save_data (structure_factor_t *sft, const char *file, int ngrps,
  */
             A                   = static_cast<double>(i * sf->ref_k) / (2.0 * sf->momentum);
             polarization_factor = 1 - 2.0 * gmx::square(A) * (1 - gmx::square(A));
-            sf->F[g][i]        *= polarization_factor;
+            sf->F[g][i] *= polarization_factor;
         }
     }
     for (i = 0; i < sf->n_angles; i++)
     {
         if (i * sf->ref_k >= start_q && i * sf->ref_k <= end_q)
         {
-            fprintf (fp, "%10.5f  ", i * sf->ref_k);
+            fprintf(fp, "%10.5f  ", i * sf->ref_k);
             for (g = 0; g < ngrps; g++)
             {
-                fprintf (fp, "  %10.5f ", (sf->F[g][i]) / ( sf->total_n_atoms
-                                                            * sf->nSteps));
+                fprintf(fp, "  %10.5f ", (sf->F[g][i]) / (sf->total_n_atoms
+                                                          * sf->nSteps));
             }
-            fprintf (fp, "\n");
+            fprintf(fp, "\n");
         }
     }
 
-    xvgrclose (fp);
+    xvgrclose(fp);
 }
 
 
-extern double CMSF (gmx_structurefactors_t *gsf, int type, int nh, double lambda, double sin_theta)
+extern double CMSF(gmx_structurefactors_t *gsf, int type, int nh, double lambda, double sin_theta)
 /*
  * return Cromer-Mann fit for the atomic scattering factor:
  * sin_theta is the sine of half the angle between incoming and scattered
@@ -631,8 +633,8 @@ extern double CMSF (gmx_structurefactors_t *gsf, int type, int nh, double lambda
      */
     if (nh > 0)
     {
-        tmp = (CMSF (gsf, return_atom_type ("C", gsf), 0, lambda, sin_theta)
-               + nh * CMSF (gsf, return_atom_type ("H", gsf), 0, lambda, sin_theta));
+        tmp = (CMSF(gsf, return_atom_type("C", gsf), 0, lambda, sin_theta)
+               + nh * CMSF(gsf, return_atom_type("H", gsf), 0, lambda, sin_theta));
     }
     /* all atom case */
     else
@@ -642,12 +644,11 @@ extern double CMSF (gmx_structurefactors_t *gsf, int type, int nh, double lambda
         tmp = c;
         for (i = 0; (i < 4); i++)
         {
-            tmp += a[i] * exp (-b[i] * k2);
+            tmp += a[i] * exp(-b[i] * k2);
         }
     }
     return tmp;
 }
-
 
 
 extern real **gmx_structurefactors_table(gmx_structurefactors_t *gsf, real momentum, real ref_k, real lambda, int n_angles)
@@ -663,10 +664,10 @@ extern real **gmx_structurefactors_table(gmx_structurefactors_t *gsf, real momen
     NCMT     = gsft->nratoms;
     nsftable = NCMT + 3;
 
-    snew (sf_table, nsftable);
+    snew(sf_table, nsftable);
     for (i = 0; (i < nsftable); i++)
     {
-        snew (sf_table[i], n_angles);
+        snew(sf_table[i], n_angles);
         for (j = 0; j < n_angles; j++)
         {
             q = static_cast<double>(j * ref_k);
@@ -675,11 +676,11 @@ extern real **gmx_structurefactors_table(gmx_structurefactors_t *gsf, real momen
             sin_theta = q / (2.0 * momentum);
             if (i < NCMT)
             {
-                sf_table[i][j] = CMSF (gsf, i, 0, lambda, sin_theta);
+                sf_table[i][j] = CMSF(gsf, i, 0, lambda, sin_theta);
             }
             else
             {
-                sf_table[i][j] = CMSF (gsf, i, i - NCMT + 1, lambda, sin_theta);
+                sf_table[i][j] = CMSF(gsf, i, i - NCMT + 1, lambda, sin_theta);
             }
         }
     }
@@ -691,7 +692,7 @@ extern void gmx_structurefactors_done(gmx_structurefactors_t *gsf)
 
     int                   i;
     gmx_structurefactors *sf;
-    sf = (gmx_structurefactors *) gsf;
+    sf = (gmx_structurefactors *)gsf;
 
     for (i = 0; i < sf->nratoms; i++)
     {
@@ -707,18 +708,17 @@ extern void gmx_structurefactors_done(gmx_structurefactors_t *gsf)
     sfree(sf->c);
 
     sfree(sf);
-
 }
 
-extern real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, structure_factor_t *sft)
+extern real **compute_scattering_factor_table(gmx_structurefactors_t *gsf, structure_factor_t *sft)
 {
-/*
+    /*
  *  this function build up a table of scattering factors for every atom
  *  type and for every scattering angle.
  */
 
-    double  hc = 1239.842;
-    real ** sf_table;
+    double hc = 1239.842;
+    real **sf_table;
 
     structure_factor *sf = (structure_factor *)sft;
 
@@ -726,7 +726,7 @@ extern real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, stru
     /* \hbar \omega \lambda = hc = 1239.842 eV * nm */
     sf->momentum = (static_cast<double>(2. * 1000.0 * M_PI * sf->energy) / hc);
     sf->lambda   = hc / (1000.0 * sf->energy);
-    fprintf (stderr, "\nwavelenght = %f nm\n", sf->lambda);
+    fprintf(stderr, "\nwavelenght = %f nm\n", sf->lambda);
 
     sf_table = gmx_structurefactors_table(gsf, sf->momentum, sf->ref_k, sf->lambda, sf->n_angles);
 

@@ -333,6 +333,6 @@ TEST(SimdScalarTest, cvtIB2B)
 /*! \} */
 /*! \endcond internal */
 
-}      // namespace anonymous
-}      // namespace test
-}      // namespace gmx
+} // namespace anonymous
+} // namespace test
+} // namespace gmx

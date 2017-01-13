@@ -67,9 +67,11 @@ class FlagsTemplate
 {
 public:
     //! Creates a flags object with no flags set.
-    FlagsTemplate() : flags_(0) {}
+    FlagsTemplate()
+        : flags_(0) {}
     //! Creates a flags object from a single flag.
-    FlagsTemplate(FlagType flag) : flags_(flag) {}
+    FlagsTemplate(FlagType flag)
+        : flags_(flag) {}
 
     /*! \brief
      * Tests if the given flag is set.
@@ -123,7 +125,8 @@ public:
 
 private:
     //! Creates a flags object with the given flags.
-    explicit FlagsTemplate(unsigned long flags) : flags_(flags) {}
+    explicit FlagsTemplate(unsigned long flags)
+        : flags_(flags) {}
 
     unsigned long flags_;
 };

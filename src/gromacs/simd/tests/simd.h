@@ -108,41 +108,41 @@ namespace test
  * them in a single place makes sure they are consistent.
  */
 #if GMX_SIMD_HAVE_REAL
-extern const SimdReal rSimd_1_2_3;     //!< Generic (different) fp values.
-extern const SimdReal rSimd_4_5_6;     //!< Generic (different) fp values.
-extern const SimdReal rSimd_7_8_9;     //!< Generic (different) fp values.
-extern const SimdReal rSimd_5_7_9;     //!< rSimd_1_2_3 + rSimd_4_5_6.
-extern const SimdReal rSimd_m1_m2_m3;  //!< Generic negative floating-point values.
-extern const SimdReal rSimd_3_1_4;     //!< Used to test min/max.
-extern const SimdReal rSimd_m3_m1_m4;  //!< negative rSimd_3_1_4.
-extern const SimdReal rSimd_2p25;      //!< Value that rounds down.
-extern const SimdReal rSimd_3p25;      //!< Value that rounds down.
-extern const SimdReal rSimd_3p75;      //!< Value that rounds up.
-extern const SimdReal rSimd_m2p25;     //!< Negative value that rounds up.
-extern const SimdReal rSimd_m3p25;     //!< Negative value that rounds up.
-extern const SimdReal rSimd_m3p75;     //!< Negative value that rounds down.
+extern const SimdReal rSimd_1_2_3;    //!< Generic (different) fp values.
+extern const SimdReal rSimd_4_5_6;    //!< Generic (different) fp values.
+extern const SimdReal rSimd_7_8_9;    //!< Generic (different) fp values.
+extern const SimdReal rSimd_5_7_9;    //!< rSimd_1_2_3 + rSimd_4_5_6.
+extern const SimdReal rSimd_m1_m2_m3; //!< Generic negative floating-point values.
+extern const SimdReal rSimd_3_1_4;    //!< Used to test min/max.
+extern const SimdReal rSimd_m3_m1_m4; //!< negative rSimd_3_1_4.
+extern const SimdReal rSimd_2p25;     //!< Value that rounds down.
+extern const SimdReal rSimd_3p25;     //!< Value that rounds down.
+extern const SimdReal rSimd_3p75;     //!< Value that rounds up.
+extern const SimdReal rSimd_m2p25;    //!< Negative value that rounds up.
+extern const SimdReal rSimd_m3p25;    //!< Negative value that rounds up.
+extern const SimdReal rSimd_m3p75;    //!< Negative value that rounds down.
 //! Three large floating-point values whose exponents are >32.
 extern const SimdReal rSimd_Exp;
-#    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
 extern const SimdReal rSimd_ExpDouble;
-#    endif
+#endif
 // Magic FP numbers corresponding to specific bit patterns
-extern const SimdReal rSimd_Bits1;       //!< Pattern F0 repeated to fill single/double.
-extern const SimdReal rSimd_Bits2;       //!< Pattern CC repeated to fill single/double.
-extern const SimdReal rSimd_Bits3;       //!< Pattern C0 repeated to fill single/double.
-extern const SimdReal rSimd_Bits4;       //!< Pattern 0C repeated to fill single/double.
-extern const SimdReal rSimd_Bits5;       //!< Pattern FC repeated to fill single/double.
-extern const SimdReal rSimd_Bits6;       //!< Pattern 3C repeated to fill single/double.
-#endif                                   // GMX_SIMD_HAVE_REAL
+extern const SimdReal rSimd_Bits1; //!< Pattern F0 repeated to fill single/double.
+extern const SimdReal rSimd_Bits2; //!< Pattern CC repeated to fill single/double.
+extern const SimdReal rSimd_Bits3; //!< Pattern C0 repeated to fill single/double.
+extern const SimdReal rSimd_Bits4; //!< Pattern 0C repeated to fill single/double.
+extern const SimdReal rSimd_Bits5; //!< Pattern FC repeated to fill single/double.
+extern const SimdReal rSimd_Bits6; //!< Pattern 3C repeated to fill single/double.
+#endif                             // GMX_SIMD_HAVE_REAL
 #if GMX_SIMD_HAVE_INT32_ARITHMETICS
-extern const SimdInt32 iSimd_1_2_3;      //!< Three generic ints.
-extern const SimdInt32 iSimd_4_5_6;      //!< Three generic ints.
-extern const SimdInt32 iSimd_7_8_9;      //!< Three generic ints.
-extern const SimdInt32 iSimd_5_7_9;      //!< iSimd_1_2_3 + iSimd_4_5_6.
-extern const SimdInt32 iSimd_1M_2M_3M;   //!< Term1 for 32bit add/sub.
-extern const SimdInt32 iSimd_4M_5M_6M;   //!< Term2 for 32bit add/sub.
-extern const SimdInt32 iSimd_5M_7M_9M;   //!< iSimd_1M_2M_3M + iSimd_4M_5M_6M.
+extern const SimdInt32 iSimd_1_2_3;    //!< Three generic ints.
+extern const SimdInt32 iSimd_4_5_6;    //!< Three generic ints.
+extern const SimdInt32 iSimd_7_8_9;    //!< Three generic ints.
+extern const SimdInt32 iSimd_5_7_9;    //!< iSimd_1_2_3 + iSimd_4_5_6.
+extern const SimdInt32 iSimd_1M_2M_3M; //!< Term1 for 32bit add/sub.
+extern const SimdInt32 iSimd_4M_5M_6M; //!< Term2 for 32bit add/sub.
+extern const SimdInt32 iSimd_5M_7M_9M; //!< iSimd_1M_2M_3M + iSimd_4M_5M_6M.
 #endif
 #if GMX_SIMD_HAVE_INT32_LOGICAL
 extern const SimdInt32 iSimd_0xF0F0F0F0; //!< Bitpattern to test integer logical operations.
@@ -176,8 +176,8 @@ public:
      */
 
 
-        ::testing::AssertionResult
-    compareSimdRealUlp(const char * refExpr, const char * tstExpr,
+    ::testing::AssertionResult
+    compareSimdRealUlp(const char *refExpr, const char *tstExpr,
                        const SimdReal ref, const SimdReal tst);
 
     /*! \brief Compare two real SIMD variables for exact equality.
@@ -193,7 +193,7 @@ public:
      * reference element.
      */
     ::testing::AssertionResult
-    compareSimdRealEq(const char * refExpr, const char * tstExpr,
+    compareSimdRealEq(const char *refExpr, const char *tstExpr,
                       const SimdReal ref, const SimdReal tst);
 
     /*! \brief Compare two 32-bit integer SIMD variables.
@@ -209,7 +209,7 @@ public:
      * in the SIMD variable tst is identical to the corresponding reference element.
      */
     ::testing::AssertionResult
-    compareSimdInt32(const char * refExpr, const char *  tstExpr,
+    compareSimdInt32(const char *refExpr, const char *tstExpr,
                      const SimdInt32 ref, const SimdInt32 tst);
 #endif
 };
@@ -226,7 +226,7 @@ std::vector<real> simdReal2Vector(const SimdReal simd);
  * If the vector is longer than SIMD width, only the first elements will be used.
  * If it is shorter, the contents will be repeated to fill the SIMD register.
  */
-SimdReal   vector2SimdReal(const std::vector<real> &v);
+SimdReal vector2SimdReal(const std::vector<real> &v);
 
 /*! \brief Set SIMD register contents from three real values.
  *
@@ -234,7 +234,7 @@ SimdReal   vector2SimdReal(const std::vector<real> &v);
  * SIMD width, so this way there will not be any simple repeated patterns e.g.
  * between the low/high 64/128/256 bits in the SIMD register, which could hide bugs.
  */
-SimdReal   setSimdRealFrom3R(real r0, real r1, real r2);
+SimdReal setSimdRealFrom3R(real r0, real r1, real r2);
 
 /*! \brief Set SIMD register contents from single real value.
  *
@@ -242,10 +242,10 @@ SimdReal   setSimdRealFrom3R(real r0, real r1, real r2);
  * operation as simdSet1(), but is implemented using only load/store
  * operations that have been tested separately in the bootstrapping tests.
  */
-SimdReal   setSimdRealFrom1R(real value);
+SimdReal setSimdRealFrom1R(real value);
 
 /*! \brief Test if a SIMD real is bitwise identical to reference SIMD value. */
-#define GMX_EXPECT_SIMD_REAL_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimdRealEq, ref, tst)
+#define GMX_EXPECT_SIMD_REAL_EQ(ref, tst) EXPECT_PRED_FORMAT2(compareSimdRealEq, ref, tst)
 
 /*! \brief Test if a SIMD real is within tolerance of reference SIMD value. */
 #define GMX_EXPECT_SIMD_REAL_NEAR(ref, tst) EXPECT_PRED_FORMAT2(compareSimdRealUlp, ref, tst)
@@ -254,14 +254,14 @@ SimdReal   setSimdRealFrom1R(real value);
  *
  * The returned vector will have the same length as the SIMD width.
  */
-std::vector<int>   simdInt2Vector(const SimdInt32 simd);
+std::vector<int> simdInt2Vector(const SimdInt32 simd);
 
 /*! \brief Return 32-bit integer SIMD value from std::vector<int>.
  *
  * If the vector is longer than SIMD width, only the first elements will be used.
  * If it is shorter, the contents will be repeated to fill the SIMD register.
  */
-SimdInt32   vector2SimdInt(const std::vector<int> &v);
+SimdInt32 vector2SimdInt(const std::vector<int> &v);
 
 /*! \brief Set SIMD register contents from three int values.
  *
@@ -269,7 +269,7 @@ SimdInt32   vector2SimdInt(const std::vector<int> &v);
  * SIMD width, so this way there will not be any simple repeated patterns e.g.
  * between the low/high 64/128/256 bits in the SIMD register, which could hide bugs.
  */
-SimdInt32   setSimdIntFrom3I(int i0, int i1, int i2);
+SimdInt32 setSimdIntFrom3I(int i0, int i1, int i2);
 
 /*! \brief Set SIMD register contents from single integer value.
  *
@@ -277,22 +277,22 @@ SimdInt32   setSimdIntFrom3I(int i0, int i1, int i2);
  * operation as simdSet1I(), but is implemented using only load/store
  * operations that have been tested separately in the bootstrapping tests.
  */
-SimdInt32   setSimdIntFrom1I(int value);
+SimdInt32 setSimdIntFrom1I(int value);
 
 /*! \brief Macro that checks SIMD integer expression against SIMD or reference int.
  *
  * If the reference argument is a scalar integer it will be expanded into
  * the width of the SIMD register and tested against all elements.
  */
-#define GMX_EXPECT_SIMD_INT_EQ(ref, tst)    EXPECT_PRED_FORMAT2(compareSimdInt32, ref, tst)
+#define GMX_EXPECT_SIMD_INT_EQ(ref, tst) EXPECT_PRED_FORMAT2(compareSimdInt32, ref, tst)
 
-#endif  // GMX_SIMD_HAVE_REAL
+#endif // GMX_SIMD_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace
 
 #endif // GMX_SIMD
 

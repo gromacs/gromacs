@@ -54,15 +54,22 @@ struct gmx_output_env_t;
    There are still legacy functions for the program name, and the command
    line, but the output_env versions are now preferred.*/
 
-typedef enum
-{
-    timeNULL, time_fs, time_ps, time_ns, time_us, time_ms, time_s
+typedef enum {
+    timeNULL,
+    time_fs,
+    time_ps,
+    time_ns,
+    time_us,
+    time_ms,
+    time_s
 } time_unit_t;
 /* the time units. For the time being, ps means no conversion. */
 
-typedef enum
-{
-    exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE
+typedef enum {
+    exvgNULL,
+    exvgXMGRACE,
+    exvgXMGR,
+    exvgNONE
 } xvg_format_t;
 /* the xvg output formattings */
 
@@ -118,7 +125,7 @@ namespace gmx
 class IProgramContext;
 } // namespace gmx
 
-void output_env_init(gmx_output_env_t **oenvp,
+void output_env_init(gmx_output_env_t **         oenvp,
                      const gmx::IProgramContext &context,
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity);

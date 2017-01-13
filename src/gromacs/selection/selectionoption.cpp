@@ -66,7 +66,7 @@ namespace gmx
 SelectionOptionStorage::SelectionOptionStorage(const SelectionOption & settings,
                                                SelectionOptionManager *manager)
     : MyBase(settings, OptionFlags() | efOption_NoDefaultValue
-             | efOption_DontCheckMinimumCount),
+                               | efOption_DontCheckMinimumCount),
       info_(this), manager_(*manager), defaultText_(settings.defaultText_),
       selectionFlags_(settings.selectionFlags_)
 {
@@ -274,7 +274,7 @@ AbstractOptionStorage *SelectionOption::createStorage(const OptionManagerContain
 SelectionFileOptionStorage::SelectionFileOptionStorage(
         const SelectionFileOption &settings, SelectionOptionManager *manager)
     : AbstractOptionStorage(settings, OptionFlags() | efOption_MultipleTimes
-                            | efOption_DontCheckMinimumCount),
+                                              | efOption_DontCheckMinimumCount),
       info_(this), manager_(*manager), bValueParsed_(false)
 {
     GMX_RELEASE_ASSERT(manager != nullptr,

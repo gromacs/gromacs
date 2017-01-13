@@ -68,7 +68,8 @@ class DataFileFinder::Impl
 public:
     static std::string getDefaultPath();
 
-    Impl() : envName_(nullptr), bEnvIsSet_(false) {}
+    Impl()
+        : envName_(nullptr), bEnvIsSet_(false) {}
 
     const char *             envName_;
     bool                     bEnvIsSet_;
@@ -78,11 +79,11 @@ public:
 std::string DataFileFinder::Impl::getDefaultPath()
 {
     const InstallationPrefixInfo installPrefix
-        = getProgramContext().installationPrefix();
+            = getProgramContext().installationPrefix();
     if (!isNullOrEmpty(installPrefix.path))
     {
         const char *const dataPath
-            = installPrefix.bSourceLayout ? "share" : DATA_INSTALL_DIR;
+                = installPrefix.bSourceLayout ? "share" : DATA_INSTALL_DIR;
         return Path::join(installPrefix.path, dataPath, "top");
     }
     return std::string();
@@ -107,7 +108,7 @@ void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
     {
         impl_.reset(new Impl());
     }
-    impl_->envName_ = envVarName;
+    impl_->envName_       = envVarName;
     const char *const lib = getenv(envVarName);
     if (!isNullOrEmpty(lib))
     {
@@ -205,7 +206,8 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
         {
             message.append(
                     formatString("\nYou can set additional directories to search "
-                                 "with the %s path variable.", envName));
+                                 "with the %s path variable.",
+                                 envName));
         }
         GMX_THROW(FileIOError(message));
     }
@@ -223,7 +225,7 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
     if (options.bCurrentDir_)
     {
         std::vector<std::string> files
-            = DirectoryEnumerator::enumerateFilesWithExtension(
+                = DirectoryEnumerator::enumerateFilesWithExtension(
                         ".", options.filename_, false);
         for (i = files.begin(); i != files.end(); ++i)
         {
@@ -236,7 +238,7 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
         for (j = impl_->searchPath_.begin(); j != impl_->searchPath_.end(); ++j)
         {
             std::vector<std::string> files
-                = DirectoryEnumerator::enumerateFilesWithExtension(
+                    = DirectoryEnumerator::enumerateFilesWithExtension(
                             j->c_str(), options.filename_, false);
             for (i = files.begin(); i != files.end(); ++i)
             {
@@ -248,7 +250,7 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
     if (!defaultPath.empty())
     {
         std::vector<std::string> files
-            = DirectoryEnumerator::enumerateFilesWithExtension(
+                = DirectoryEnumerator::enumerateFilesWithExtension(
                         defaultPath.c_str(), options.filename_, false);
         for (i = files.begin(); i != files.end(); ++i)
         {

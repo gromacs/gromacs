@@ -55,7 +55,7 @@ namespace
 
 TEST(SimdScalarUtilTest, gatherLoadTranspose)
 {
-    real         data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    real         data[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
     std::int32_t offset  = 1;
     real         v0, v1, v2, v3;
 
@@ -74,7 +74,7 @@ TEST(SimdScalarUtilTest, gatherLoadTranspose)
 
 TEST(SimdScalarUtilTest, gatherLoadUTranspose)
 {
-    real         data[6] = {1, 2, 3, 4, 5, 6};
+    real         data[6] = { 1, 2, 3, 4, 5, 6 };
     std::int32_t offset  = 1;
     real         v0, v1, v2;
 
@@ -87,7 +87,7 @@ TEST(SimdScalarUtilTest, gatherLoadUTranspose)
 
 TEST(SimdScalarUtilTest, transposeScatterStoreU)
 {
-    real         data[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+    real         data[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     std::int32_t offset  = 1;
     real         v0      = 1;
     real         v1      = 2;
@@ -108,7 +108,7 @@ TEST(SimdScalarUtilTest, transposeScatterStoreU)
 
 TEST(SimdScalarUtilTest, transposeScatterIncrU)
 {
-    real         data[9] = {10, 20, 30, 40, 50, 60, 70, 80, 90};
+    real         data[9] = { 10, 20, 30, 40, 50, 60, 70, 80, 90 };
     std::int32_t offset  = 1;
     real         v0      = 1;
     real         v1      = 2;
@@ -129,7 +129,7 @@ TEST(SimdScalarUtilTest, transposeScatterIncrU)
 
 TEST(SimdScalarUtilTest, transposeScatterDecrU)
 {
-    real         data[9] = {10, 20, 30, 40, 50, 60, 70, 80, 90};
+    real         data[9] = { 10, 20, 30, 40, 50, 60, 70, 80, 90 };
     std::int32_t offset  = 1;
     real         v0      = 1;
     real         v1      = 2;
@@ -163,7 +163,7 @@ TEST(SimdScalarTest, expandScalarsToTriplets)
 
 TEST(SimdScalarUtilTest, gatherLoadBySimdIntTranspose)
 {
-    real         data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    real         data[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
     std::int32_t offset  = 1;
     real         v0, v1, v2, v3;
 
@@ -182,7 +182,7 @@ TEST(SimdScalarUtilTest, gatherLoadBySimdIntTranspose)
 
 TEST(SimdScalarUtilTest, gatherLoadUBySimdIntTranspose)
 {
-    real         data[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    real         data[8] = { 1, 2, 3, 4, 5, 6, 7, 8 };
     std::int32_t offset  = 1;
     real         v0, v1;
 
@@ -194,7 +194,7 @@ TEST(SimdScalarUtilTest, gatherLoadUBySimdIntTranspose)
 
 TEST(SimdScalarUtilTest, reduceIncr4ReturnSum)
 {
-    real data[6] = {0, 0, 0, 0, 0, 0};
+    real data[6] = { 0, 0, 0, 0, 0, 0 };
     real v0      = 1;
     real v1      = 2;
     real v2      = 3;
@@ -216,6 +216,6 @@ TEST(SimdScalarUtilTest, reduceIncr4ReturnSum)
 /*! \} */
 /*! \endcond internal */
 
-}      // namespace anonymous
-}      // namespace test
-}      // namespace gmx
+} // namespace anonymous
+} // namespace test
+} // namespace gmx

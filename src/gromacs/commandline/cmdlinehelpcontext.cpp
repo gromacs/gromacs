@@ -63,7 +63,7 @@ namespace
  */
 const CommandLineHelpContext *g_globalContext = nullptr;
 
-}   // namespace
+} // namespace
 
 /*! \internal \brief
  * Private implementation class for CommandLineHelpContext.

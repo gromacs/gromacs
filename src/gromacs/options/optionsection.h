@@ -68,7 +68,8 @@ public:
     typedef OptionSectionHandle HandleType;
 
     //! Creates a section with the given name.
-    explicit OptionSection(const char *name) : AbstractOptionSection(name) {}
+    explicit OptionSection(const char *name)
+        : AbstractOptionSection(name) {}
 
 private:
     virtual IOptionSectionStorage *createStorage() const;

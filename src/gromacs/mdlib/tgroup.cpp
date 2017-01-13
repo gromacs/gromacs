@@ -226,7 +226,7 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
             }
             for (d = 0; (d < DIM); d++)
             {
-                mv                      = md->massT[n] * v[n][d];
+                mv = md->massT[n] * v[n][d];
                 ekind->grpstat[g].u[d] += mv;
             }
         }
@@ -236,7 +236,7 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
             for (d = 0; (d < DIM); d++)
             {
                 ekind->grpstat[g].u[d]
-                    /= (1 - lambda) * ekind->grpstat[g].mA + lambda * ekind->grpstat[g].mB;
+                        /= (1 - lambda) * ekind->grpstat[g].mA + lambda * ekind->grpstat[g].mB;
             }
         }
     }
@@ -287,7 +287,7 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
                     for (m = 0; (m < DIM); m++)
                     {
                         tcstat->ekinf[j][m]
-                            = 0.5 * (tcstat->ekinh[j][m] * tcstat->ekinscaleh_nhc + tcstat->ekinh_old[j][m]);
+                                = 0.5 * (tcstat->ekinh[j][m] * tcstat->ekinscaleh_nhc + tcstat->ekinh_old[j][m]);
                     }
                 }
             }
@@ -311,7 +311,7 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
             tcstat->T  = 0;
             tcstat->Th = 0;
         }
-        T    += nd * tcstat->T;
+        T += nd * tcstat->T;
         nrdf += nd;
     }
     if (nrdf > 0)

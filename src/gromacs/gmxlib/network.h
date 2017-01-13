@@ -106,11 +106,11 @@ void gmx_sumd_sim(int nr, double r[], const struct gmx_multisim_t *ms);
 /* Calculate the sum over the simulations of an array of doubles */
 
 #if GMX_DOUBLE
-#define gmx_sum       gmx_sumd
-#define gmx_sum_sim   gmx_sumd_sim
+#define gmx_sum gmx_sumd
+#define gmx_sum_sim gmx_sumd_sim
 #else
-#define gmx_sum       gmx_sumf
-#define gmx_sum_sim   gmx_sumf_sim
+#define gmx_sum gmx_sumf
+#define gmx_sum_sim gmx_sumf_sim
 #endif
 
 const char *opt2fn_master(const char *opt, int nfile,
@@ -118,10 +118,9 @@ const char *opt2fn_master(const char *opt, int nfile,
 /* Return the filename belonging to cmd-line option opt, or NULL when
  * no such option or not running on master */
 
-void
-gmx_fatal_collective(int f_errno, const char *file, int line,
-                     MPI_Comm comm, gmx_bool bMaster,
-                     const char *fmt, ...);
+void gmx_fatal_collective(int f_errno, const char *file, int line,
+                          MPI_Comm comm, gmx_bool bMaster,
+                          const char *fmt, ...);
 /* As gmx_fatal declared in utility/fatalerror.h,
  * but only the master process prints the error message.
  * This should only be called one of the following two situations:

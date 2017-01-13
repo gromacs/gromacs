@@ -83,25 +83,25 @@ TEST_F(SimdIntegerTest, set)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(1), SimdInt32(1));
 }
-#endif      // GMX_SIMD_HAVE_REAL
+#endif // GMX_SIMD_HAVE_REAL
 
 #if GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, add)
 {
-    GMX_EXPECT_SIMD_INT_EQ(iSimd_5_7_9, iSimd_1_2_3 + iSimd_4_5_6 );         // short add
+    GMX_EXPECT_SIMD_INT_EQ(iSimd_5_7_9, iSimd_1_2_3 + iSimd_4_5_6);          // short add
     GMX_EXPECT_SIMD_INT_EQ(iSimd_5M_7M_9M, iSimd_1M_2M_3M + iSimd_4M_5M_6M); // 32 bit add
 }
 
 TEST_F(SimdIntegerTest, sub)
 {
-    GMX_EXPECT_SIMD_INT_EQ(iSimd_1_2_3, iSimd_5_7_9 - iSimd_4_5_6 );          // short sub
-    GMX_EXPECT_SIMD_INT_EQ(iSimd_1M_2M_3M, iSimd_5M_7M_9M - iSimd_4M_5M_6M ); // 32 bit sub
+    GMX_EXPECT_SIMD_INT_EQ(iSimd_1_2_3, iSimd_5_7_9 - iSimd_4_5_6);          // short sub
+    GMX_EXPECT_SIMD_INT_EQ(iSimd_1M_2M_3M, iSimd_5M_7M_9M - iSimd_4M_5M_6M); // 32 bit sub
 }
 
 TEST_F(SimdIntegerTest, mul)
 {
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(4, 10, 18), iSimd_1_2_3 * iSimd_4_5_6);            // 2*3=6 (short mul)
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(268435456), SimdInt32(16384) * SimdInt32(16384) ); // 16384*16384 = 268435456 (long mul)
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(4, 10, 18), iSimd_1_2_3 * iSimd_4_5_6);           // 2*3=6 (short mul)
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(268435456), SimdInt32(16384) * SimdInt32(16384)); // 16384*16384 = 268435456 (long mul)
 }
 
 TEST_F(SimdIntegerTest, slli)
@@ -113,7 +113,7 @@ TEST_F(SimdIntegerTest, srli)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(4), SimdInt32(4194304) >> 20); // 4194304 >> 20 = 4
 }
-#endif                                                                     // GMX_SIMD_HAVE_INT32_ARITHMETICS
+#endif // GMX_SIMD_HAVE_INT32_ARITHMETICS
 
 #if GMX_SIMD_HAVE_INT32_LOGICAL
 TEST_F(SimdIntegerTest, and)
@@ -135,12 +135,13 @@ TEST_F(SimdIntegerTest, xor)
 {
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0x3C3C3C3C), iSimd_0xF0F0F0F0 ^ iSimd_0xCCCCCCCC);
 }
-#endif      // GMX_SIMD_HAVE_INT32_LOGICAL
+#endif // GMX_SIMD_HAVE_INT32_LOGICAL
 
 #if GMX_SIMD_HAVE_INT32_EXTRACT
 TEST_F(SimdIntegerTest, extract)
 {
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)  idata[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    idata[GMX_SIMD_REAL_WIDTH];
     SimdInt32 simd;
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -176,7 +177,7 @@ TEST_F(SimdIntegerTest, extract)
     EXPECT_EQ(8, extracted_int);
 #endif
 }
-#endif      // GMX_SIMD_HAVE_INT32_EXTRACT
+#endif // GMX_SIMD_HAVE_INT32_EXTRACT
 
 #if GMX_SIMD_HAVE_REAL
 TEST_F(SimdIntegerTest, cvtR2I)
@@ -236,7 +237,7 @@ TEST_F(SimdIntegerTest, cvtI2R)
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(102448689), cvtI2R(SimdInt32(102448689)));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-102448689), cvtI2R(SimdInt32(-102448689)));
 }
-#endif      // GMX_SIMD_HAVE_REAL
+#endif // GMX_SIMD_HAVE_REAL
 
 #if GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, cmpEqAndSelectMask)
@@ -300,30 +301,29 @@ TEST_F(SimdIntegerTest, blend)
     SimdIBool lt = (iSimd_5_7_9 < iSimd_7_8_9);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(4, 5, 3), blend(iSimd_1_2_3, iSimd_4_5_6, lt));
 }
-#endif      // GMX_SIMD_HAVE_INT32_ARITHMETICS
+#endif // GMX_SIMD_HAVE_INT32_ARITHMETICS
 
 #if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS
 TEST_F(SimdIntegerTest, cvtB2IB)
 {
-    SimdBool  eq  = (rSimd_5_7_9 == setSimdRealFrom3R(5, 0, 0));   // eq should be T,F,F
+    SimdBool  eq  = (rSimd_5_7_9 == setSimdRealFrom3R(5, 0, 0)); // eq should be T,F,F
     SimdIBool eqi = cvtB2IB(eq);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(1, 0, 0), selectByMask(iSimd_1_2_3, eqi));
-
 }
 
 TEST_F(SimdIntegerTest, cvtIB2B)
 {
-    SimdIBool eqi = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0));   // eq should be T,F,F
+    SimdIBool eqi = (iSimd_5_7_9 == setSimdIntFrom3I(5, 0, 0)); // eq should be T,F,F
     SimdBool  eq  = cvtIB2B(eqi);
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(1.0, 0, 0), selectByMask(rSimd_1_2_3, eq));
 }
-#endif      // GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS
+#endif // GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace
+} // namespace
 
 #endif // GMX_SIMD

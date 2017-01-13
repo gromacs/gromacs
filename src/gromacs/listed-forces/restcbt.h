@@ -78,7 +78,7 @@
 
 
 void compute_factors_restangles(int type, const t_iparams forceparams[],
-                                rvec delta_ante,  rvec delta_post,
+                                rvec delta_ante, rvec delta_post,
                                 real *prefactor, real *ratio_ante, real *ratio_post, real *v);
 
 
@@ -118,7 +118,7 @@ void compute_factors_restangles(int type, const t_iparams forceparams[],
  *  \param[out] v                                contribution to energy  (see formula above)
  */
 
-void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
+void compute_factors_restrdihs(int type, const t_iparams forceparams[],
                                rvec delta_ante, rvec delta_crnt, rvec delta_post,
                                real *factor_phi_ai_ante, real *factor_phi_ai_crnt, real *factor_phi_ai_post,
                                real *factor_phi_aj_ante, real *factor_phi_aj_crnt, real *factor_phi_aj_post,
@@ -164,11 +164,11 @@ void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
  *  \param[out] v                                contribution to energy (see formula above)
  */
 
-void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
+void compute_factors_cbtdihs(int type, const t_iparams forceparams[],
                              rvec delta_ante, rvec delta_crnt, rvec delta_post,
                              rvec f_phi_ai, rvec f_phi_aj, rvec f_phi_ak, rvec f_phi_al,
                              rvec f_theta_ante_ai, rvec f_theta_ante_aj, rvec f_theta_ante_ak,
                              rvec f_theta_post_aj, rvec f_theta_post_ak, rvec f_theta_post_al,
-                             real * v);
+                             real *v);
 
 #endif

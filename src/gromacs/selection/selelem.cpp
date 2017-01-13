@@ -71,15 +71,33 @@ const char *_gmx_selelem_type_str(const gmx::SelectionTreeElement &sel)
     const char *p = nullptr;
     switch (sel.type)
     {
-        case SEL_CONST:      p = "CONST";    break;
-        case SEL_EXPRESSION: p = "EXPR";     break;
-        case SEL_BOOLEAN:    p = "BOOL";     break;
-        case SEL_ARITHMETIC: p = "ARITH";    break;
-        case SEL_ROOT:       p = "ROOT";     break;
-        case SEL_SUBEXPR:    p = "SUBEXPR";  break;
-        case SEL_SUBEXPRREF: p = "REF";      break;
-        case SEL_GROUPREF:   p = "GROUPREF"; break;
-        case SEL_MODIFIER:   p = "MODIFIER"; break;
+        case SEL_CONST:
+            p = "CONST";
+            break;
+        case SEL_EXPRESSION:
+            p = "EXPR";
+            break;
+        case SEL_BOOLEAN:
+            p = "BOOL";
+            break;
+        case SEL_ARITHMETIC:
+            p = "ARITH";
+            break;
+        case SEL_ROOT:
+            p = "ROOT";
+            break;
+        case SEL_SUBEXPR:
+            p = "SUBEXPR";
+            break;
+        case SEL_SUBEXPRREF:
+            p = "REF";
+            break;
+        case SEL_GROUPREF:
+            p = "GROUPREF";
+            break;
+        case SEL_MODIFIER:
+            p = "MODIFIER";
+            break;
             // No default clause so we intentionally get compiler errors
             // if new selection choices are added later.
     }
@@ -98,12 +116,24 @@ const char *_gmx_sel_value_type_str(const gmx_ana_selvalue_t *val)
     const char *p = nullptr;
     switch (val->type)
     {
-        case NO_VALUE:       p = "NONE";  break;
-        case INT_VALUE:      p = "INT";   break;
-        case REAL_VALUE:     p = "REAL";  break;
-        case STR_VALUE:      p = "STR";   break;
-        case POS_VALUE:      p = "VEC";   break;
-        case GROUP_VALUE:    p = "GROUP"; break;
+        case NO_VALUE:
+            p = "NONE";
+            break;
+        case INT_VALUE:
+            p = "INT";
+            break;
+        case REAL_VALUE:
+            p = "REAL";
+            break;
+        case STR_VALUE:
+            p = "STR";
+            break;
+        case POS_VALUE:
+            p = "VEC";
+            break;
+        case GROUP_VALUE:
+            p = "GROUP";
+            break;
             // No default clause so we intentionally get compiler errors
             // if new selection choices are added later.
     }
@@ -116,10 +146,18 @@ const char *_gmx_selelem_boolean_type_str(const gmx::SelectionTreeElement &sel)
     const char *p = nullptr;
     switch (sel.u.boolt)
     {
-        case BOOL_NOT:  p = "NOT"; break;
-        case BOOL_AND:  p = "AND"; break;
-        case BOOL_OR:   p = "OR";  break;
-        case BOOL_XOR:  p = "XOR"; break;
+        case BOOL_NOT:
+            p = "NOT";
+            break;
+        case BOOL_AND:
+            p = "AND";
+            break;
+        case BOOL_OR:
+            p = "OR";
+            break;
+        case BOOL_XOR:
+            p = "XOR";
+            break;
             // No default clause so we intentionally get compiler errors
             // if new selection choices are added later.
     }
@@ -337,10 +375,10 @@ SelectionTopologyProperties SelectionTreeElement::requiredTopologyProperties() c
         if (u.expr.pc != nullptr)
         {
             auto requiredTopologyInfo = gmx_ana_poscalc_required_topology_info(u.expr.pc);
-            needsTop = needsTop
-                || (requiredTopologyInfo != PositionCalculationCollection::RequiredTopologyInfo::None);
+            needsTop                  = needsTop
+                       || (requiredTopologyInfo != PositionCalculationCollection::RequiredTopologyInfo::None);
             needsMasses = needsMasses
-                || (requiredTopologyInfo == PositionCalculationCollection::RequiredTopologyInfo::TopologyAndMasses);
+                          || (requiredTopologyInfo == PositionCalculationCollection::RequiredTopologyInfo::TopologyAndMasses);
         }
         if (needsTop)
         {
@@ -364,11 +402,11 @@ void SelectionTreeElement::checkUnsortedAtoms(
         bool bUnsortedAllowed, ExceptionInitializer *errors) const
 {
     const bool bUnsortedSupported
-        = (type == SEL_CONST && v.type == GROUP_VALUE)
-            || type == SEL_ROOT || type == SEL_SUBEXPR || type == SEL_SUBEXPRREF
-            // TODO: Consolidate.
-            || type == SEL_MODIFIER
-            || (type == SEL_EXPRESSION && (u.expr.method->flags & SMETH_ALLOW_UNSORTED));
+            = (type == SEL_CONST && v.type == GROUP_VALUE)
+              || type == SEL_ROOT || type == SEL_SUBEXPR || type == SEL_SUBEXPRREF
+              // TODO: Consolidate.
+              || type == SEL_MODIFIER
+              || (type == SEL_EXPRESSION && (u.expr.method->flags & SMETH_ALLOW_UNSORTED));
 
     // TODO: For some complicated selections, this may result in the same
     // index group reference being flagged as an error multiple times for the
@@ -388,11 +426,11 @@ void SelectionTreeElement::checkUnsortedAtoms(
         && type == SEL_CONST && v.type == GROUP_VALUE)
     {
         std::string message = formatString(
-                    "Group '%s' cannot be used in selections except "
-                    "as a full value of the selection, "
-                    "because atom indices in it are not sorted and/or "
-                    "it contains duplicate atoms.",
-                    name().c_str());
+                "Group '%s' cannot be used in selections except "
+                "as a full value of the selection, "
+                "because atom indices in it are not sorted and/or "
+                "it contains duplicate atoms.",
+                name().c_str());
         errors->addNested(InconsistentInputError(message));
     }
 }
@@ -423,8 +461,8 @@ void SelectionTreeElement::resolveIndexGroupReference(
     if (grps == nullptr)
     {
         std::string message = formatString(
-                    "Cannot match '%s', because index groups are not available.",
-                    name().c_str());
+                "Cannot match '%s', because index groups are not available.",
+                name().c_str());
         GMX_THROW(InconsistentInputError(message));
     }
 
@@ -435,8 +473,8 @@ void SelectionTreeElement::resolveIndexGroupReference(
         if (!gmx_ana_indexgrps_find(&foundGroup, &foundName, grps, u.gref.name))
         {
             std::string message = formatString(
-                        "Cannot match '%s', because no such index group can be found.",
-                        name().c_str());
+                    "Cannot match '%s', because no such index group can be found.",
+                    name().c_str());
             GMX_THROW(InconsistentInputError(message));
         }
     }
@@ -445,8 +483,8 @@ void SelectionTreeElement::resolveIndexGroupReference(
         if (!gmx_ana_indexgrps_extract(&foundGroup, &foundName, grps, u.gref.id))
         {
             std::string message = formatString(
-                        "Cannot match '%s', because no such index group can be found.",
-                        name().c_str());
+                    "Cannot match '%s', because no such index group can be found.",
+                    name().c_str());
             GMX_THROW(InconsistentInputError(message));
         }
     }
@@ -475,10 +513,10 @@ void SelectionTreeElement::checkIndexGroup(int natoms)
     if (!gmx_ana_index_check_range(&u.cgrp, natoms))
     {
         std::string message = formatString(
-                    "Group '%s' cannot be used in selections, because it "
-                    "contains negative atom indices and/or references atoms "
-                    "not present (largest allowed atom index is %d).",
-                    name().c_str(), natoms);
+                "Group '%s' cannot be used in selections, because it "
+                "contains negative atom indices and/or references atoms "
+                "not present (largest allowed atom index is %d).",
+                name().c_str(), natoms);
         GMX_THROW(InconsistentInputError(message));
     }
 }

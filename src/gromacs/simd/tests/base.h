@@ -101,30 +101,35 @@ public:
      * conservative so it works with (inverse) square root, division,
      * exponentials, logarithms, and error functions.
      */
-    SimdBaseTest() :
+    SimdBaseTest()
+        :
 #if GMX_DOUBLE
-        ulpTol_((1LL << (2 + std::numeric_limits<double>::digits - GMX_SIMD_ACCURACY_BITS_DOUBLE))),
+          ulpTol_((1LL << (2 + std::numeric_limits<double>::digits - GMX_SIMD_ACCURACY_BITS_DOUBLE))),
 #else
-        ulpTol_((1LL << (2 + std::numeric_limits<float>::digits - GMX_SIMD_ACCURACY_BITS_SINGLE))),
+          ulpTol_((1LL << (2 + std::numeric_limits<float>::digits - GMX_SIMD_ACCURACY_BITS_SINGLE))),
 #endif
-        absTol_(0), range_(std::pair<real, real>(1, 10))
+          absTol_(0), range_(std::pair<real, real>(1, 10))
     {
     }
 
     /*! \brief Adjust ulp tolerance from the default 10 (float) or 255 (double). */
-    void setUlpTol(std::int64_t newTol)   { ulpTol_ = newTol; }
+    void setUlpTol(std::int64_t newTol) { ulpTol_ = newTol; }
 
     /*! \brief Adjust the absolute tolerance from the default 0.
      *
      * If values are closer than the absolute tolerance, the test will pass
      * no matter what their ulp difference is.
      */
-    void setAbsTol(real newTol)          { absTol_ = newTol; }
+    void setAbsTol(real newTol) { absTol_ = newTol; }
 
     /*! \brief Change math function testing range from the default [1,10]. */
-    void setRange(real low, real high) { range_.first = low; range_.second = high; }
+    void setRange(real low, real high)
+    {
+        range_.first  = low;
+        range_.second = high;
+    }
 
-    static int s_nPoints;         //!< Number of test points to use, settable on command line.
+    static int s_nPoints; //!< Number of test points to use, settable on command line.
 
     /*! \brief Compare two std::vector<real> for approximate equality.
      *
@@ -140,7 +145,7 @@ public:
      * reference elements.
      */
     ::testing::AssertionResult
-    compareVectorRealUlp(const char * refExpr,  const char * tstExpr,
+    compareVectorRealUlp(const char *refExpr, const char *tstExpr,
                          const std::vector<real> &ref, const std::vector<real> &tst);
 
     /*! \brief Compare std::vectors for exact equality.
@@ -159,8 +164,9 @@ public:
      * in the vector test variable is within the class tolerances of the corresponding
      * reference elements.
      */
-    template <typename T> ::testing::AssertionResult compareVectorEq(const char * refExpr,  const char * tstExpr,
-                                                                     const std::vector<T> &ref, const std::vector<T> &tst)
+    template <typename T>
+    ::testing::AssertionResult compareVectorEq(const char *refExpr, const char *tstExpr,
+                                               const std::vector<T> &ref, const std::vector<T> &tst)
     {
         if (ref == tst)
         {
@@ -176,12 +182,12 @@ public:
     }
 
 protected:
-    std::int64_t          ulpTol_;            //!< Current tolerance in units-in-last-position.
-    real                  absTol_;            //!< Current absolute tolerance.
-    std::pair<real, real> range_;             //!< Range for math function tests.
+    std::int64_t ulpTol_;         //!< Current tolerance in units-in-last-position.
+    real         absTol_;         //!< Current absolute tolerance.
+    std::pair<real, real> range_; //!< Range for math function tests.
 };
 
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace
 
 #endif // GMX_SIMD_TESTS_BASE_H

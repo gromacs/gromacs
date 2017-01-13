@@ -71,7 +71,7 @@ void calc_principal_axes(const t_topology *top,
 
 int gmx_principal(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] calculates the three principal axes of inertia for a group",
         "of atoms. NOTE: Old versions of GROMACS wrote the output data in a",
         "strange transposed way. As of GROMACS 5.0, the output file paxis1.dat",
@@ -81,8 +81,8 @@ int gmx_principal(int argc, char *argv[])
     };
     static gmx_bool foo = FALSE;
 
-    t_pargs      pa[] = {
-        { "-foo",      FALSE, etBOOL, {&foo}, "Dummy option to avoid empty array" }
+    t_pargs pa[] = {
+        { "-foo", FALSE, etBOOL, { &foo }, "Dummy option to avoid empty array" }
     };
     t_trxstatus *status;
     t_topology   top;
@@ -105,13 +105,13 @@ int gmx_principal(int argc, char *argv[])
     char **           legend;
 
     t_filenm fnm[] = {
-        { efTRX, "-f",   nullptr,       ffREAD },
-        { efTPS, nullptr,   nullptr,       ffREAD },
-        { efNDX, nullptr,   nullptr,       ffOPTRD },
-        { efXVG, "-a1",  "paxis1",   ffWRITE },
-        { efXVG, "-a2",  "paxis2",   ffWRITE },
-        { efXVG, "-a3",  "paxis3",   ffWRITE },
-        { efXVG, "-om",  "moi",      ffWRITE }
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, "-a1", "paxis1", ffWRITE },
+        { efXVG, "-a2", "paxis2", ffWRITE },
+        { efXVG, "-a3", "paxis3", ffWRITE },
+        { efXVG, "-om", "moi", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -172,7 +172,7 @@ int gmx_principal(int argc, char *argv[])
         fprintf(axis1, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][XX], axes[XX][YY], axes[XX][ZZ]);
         fprintf(axis2, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[YY][XX], axes[YY][YY], axes[YY][ZZ]);
         fprintf(axis3, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[ZZ][XX], axes[ZZ][YY], axes[ZZ][ZZ]);
-        fprintf(fmoi,  "%15.10f     %15.10f  %15.10f  %15.10f\n", t, moi[XX], moi[YY], moi[ZZ]);
+        fprintf(fmoi, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, moi[XX], moi[YY], moi[ZZ]);
     } while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);

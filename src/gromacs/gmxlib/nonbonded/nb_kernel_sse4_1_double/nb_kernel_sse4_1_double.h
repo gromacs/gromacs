@@ -43,11 +43,11 @@ extern "C" {
 
 /* List of kernels for this architecture with metadata about them */
 extern nb_kernel_info_t
-    kernellist_sse4_1_double[];
+        kernellist_sse4_1_double[];
 
 /* Length of kernellist_c */
 extern int
-    kernellist_sse4_1_double_size;
+        kernellist_sse4_1_double_size;
 
 #ifdef __cplusplus
 }

@@ -149,8 +149,8 @@ static real search_e_diss(int n2m, t_2morse t2m[], char *ai, char *aj)
              */
             nii = nequal(t2m[i].ai, ai);
             njj = nequal(t2m[i].aj, aj);
-            if (((nii >  nbstii) && (njj >= nbstjj))
-                || ((nii >= nbstii) && (njj >  nbstjj)))
+            if (((nii > nbstii) && (njj >= nbstjj))
+                || ((nii >= nbstii) && (njj > nbstjj)))
             {
                 if ((nii > 0) && (njj > 0))
                 {
@@ -164,8 +164,8 @@ static real search_e_diss(int n2m, t_2morse t2m[], char *ai, char *aj)
                 /* Swap ai and aj (at least in counting the number of equal chars) */
                 nii = nequal(t2m[i].ai, aj);
                 njj = nequal(t2m[i].aj, ai);
-                if (((nii >  nbstii) && (njj >= nbstjj))
-                    || ((nii >= nbstii) && (njj >  nbstjj)))
+                if (((nii > nbstii) && (njj >= nbstjj))
+                    || ((nii >= nbstii) && (njj > nbstjj)))
                 {
                     if ((nii > 0) && (njj > 0))
                     {
@@ -243,9 +243,9 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
                     ni = mols[i].plist[bb].param[j].ai();
                     nj = mols[i].plist[bb].param[j].aj();
                     edis
-                        = search_e_diss(n2m, t2m,
-                                        get_atomtype_name(mols[i].atoms.atom[ni].type, atype),
-                                        get_atomtype_name(mols[i].atoms.atom[nj].type, atype));
+                            = search_e_diss(n2m, t2m,
+                                            get_atomtype_name(mols[i].atoms.atom[ni].type, atype),
+                                            get_atomtype_name(mols[i].atoms.atom[nj].type, atype));
                     if (edis != 0)
                     {
                         bRemoveHarm[j]                             = TRUE;
@@ -271,12 +271,12 @@ void convert_harmonics(int nrmols, t_molinfo mols[], gpp_atomtype_t atype)
                         for (k = 0; (k < MAXATOMLIST); k++)
                         {
                             mols[i].plist[bb].param[last].a[k]
-                                = mols[i].plist[bb].param[j].a[k];
+                                    = mols[i].plist[bb].param[j].a[k];
                         }
                         for (k = 0; (k < MAXFORCEPARAM); k++)
                         {
                             mols[i].plist[bb].param[last].c[k]
-                                = mols[i].plist[bb].param[j].c[k];
+                                    = mols[i].plist[bb].param[j].c[k];
                         }
                         last++;
                     }

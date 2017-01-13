@@ -150,7 +150,7 @@ static void get_dih(t_xrama *xr, const t_atoms *atoms)
     int    i;
     size_t j;
 
-    for (i = 0; (i < atoms->nr); )
+    for (i = 0; (i < atoms->nr);)
     {
         found = i;
         for (j = 0; (j < NPP); j++)
@@ -201,7 +201,7 @@ static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
     t_dih *  dd, key;
 
     ia = idef->il[F_PDIHS].iatoms;
-    for (i = 0; (i < idef->il[F_PDIHS].nr); )
+    for (i = 0; (i < idef->il[F_PDIHS].nr);)
     {
         ft    = ia[0];
         ftype = idef->functype[ft];
@@ -221,7 +221,7 @@ static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
             dd->phi0 = idef->iparams[ft].pdihs.phiA;
         }
 
-        i  += nra + 1;
+        i += nra + 1;
         ia += nra + 1;
     }
     /* Fill in defaults for values not in the topology */
@@ -237,7 +237,6 @@ static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
         }
     }
 }
-
 
 
 t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,

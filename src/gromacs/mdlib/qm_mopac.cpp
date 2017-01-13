@@ -60,13 +60,12 @@
 
 /* mopac interface routines */
 void
-    F77_FUNC(domldt, DOMLDT) (int *nrqmat, int labels[], char keywords[]);
+        F77_FUNC(domldt, DOMLDT)(int *nrqmat, int labels[], char keywords[]);
 
 void
-    F77_FUNC(domop, DOMOP) (int *nrqmat, double qmcrd[], int *nrmmat,
-                            double mmchrg[], double mmcrd[], double qmgrad[],
-                            double mmgrad[], double *energy, double qmcharges[]);
-
+        F77_FUNC(domop, DOMOP)(int *nrqmat, double qmcrd[], int *nrmmat,
+                               double mmchrg[], double mmcrd[], double qmgrad[],
+                               double mmgrad[], double *energy, double qmcharges[]);
 
 
 void init_mopac(t_QMrec *qm)
@@ -78,11 +77,11 @@ void init_mopac(t_QMrec *qm)
      * used instead.
      */
     char
-    * keywords;
+            *keywords;
 
     snew(keywords, 240);
 
-    if (!qm->bSH)  /* if rerun then grad should not be done! */
+    if (!qm->bSH) /* if rerun then grad should not be done! */
     {
         sprintf(keywords, "PRECISE GEO-OK CHARGE=%d GRAD MMOK ANALYT %s\n",
                 qm->QMcharge,
@@ -95,7 +94,8 @@ void init_mopac(t_QMrec *qm)
                 eQMmethod_names[qm->QMmethod],
                 qm->CASorbitals, qm->CASelectrons / 2);
     }
-    F77_FUNC(domldt, DOMLDT) (&qm->nrQMatoms, qm->atomicnumberQM, keywords);
+    F77_FUNC(domldt, DOMLDT)
+    (&qm->nrQMatoms, qm->atomicnumberQM, keywords);
     fprintf(stderr, "keywords are: %s\n", keywords);
     free(keywords);
 
@@ -107,12 +107,16 @@ real call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
      */
     double /* always double as the MOPAC routines are always compiled in
               double precission! */
-    * qmcrd = NULL, *qmchrg = NULL, *mmcrd = NULL, *mmchrg = NULL,
-    *qmgrad, *mmgrad = NULL, energy;
+            *qmcrd
+            = NULL,
+            *qmchrg = NULL, *mmcrd = NULL, *mmchrg = NULL,
+            *qmgrad, *mmgrad = NULL, energy;
     int
-        i, j;
+            i,
+            j;
     real
-        QMener = 0.0;
+            QMener
+            = 0.0;
     snew(qmcrd, 3 * (qm->nrQMatoms));
     snew(qmgrad, 3 * (qm->nrQMatoms));
     /* copy the data from qr into the arrays that are going to be used
@@ -131,7 +135,8 @@ real call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
          * conceptual problems with semi-empirical QM in combination with
          * point charges that we need to solve first....
          */
-        gmx_fatal(FARGS, "At present only ONIOM is allowed in combination"
+        gmx_fatal(FARGS,
+                  "At present only ONIOM is allowed in combination"
                   " with MOPAC QM subroutines\n");
     }
     else
@@ -140,8 +145,9 @@ real call_mopac(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
          */
 
         snew(qmchrg, qm->nrQMatoms);
-        F77_FUNC(domop, DOMOP) (&qm->nrQMatoms, qmcrd, &mm->nrMMatoms,
-                                mmchrg, mmcrd, qmgrad, mmgrad, &energy, qmchrg);
+        F77_FUNC(domop, DOMOP)
+        (&qm->nrQMatoms, qmcrd, &mm->nrMMatoms,
+         mmchrg, mmcrd, qmgrad, mmgrad, &energy, qmchrg);
         /* add the gradients to the f[] array, and also to the fshift[].
          * the mopac gradients are in kCal/angstrom.
          */
@@ -170,12 +176,16 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 
     double /* always double as the MOPAC routines are always compiled in
               double precission! */
-    * qmcrd = NULL, *qmchrg = NULL, *mmcrd = NULL, *mmchrg = NULL,
-    *qmgrad, *mmgrad = NULL, energy;
+            *qmcrd
+            = NULL,
+            *qmchrg = NULL, *mmcrd = NULL, *mmchrg = NULL,
+            *qmgrad, *mmgrad = NULL, energy;
     int
-        i, j;
+            i,
+            j;
     real
-        QMener = 0.0;
+            QMener
+            = 0.0;
 
     snew(qmcrd, 3 * (qm->nrQMatoms));
     snew(qmgrad, 3 * (qm->nrQMatoms));
@@ -203,8 +213,9 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
          */
         snew(qmchrg, qm->nrQMatoms);
 
-        F77_FUNC(domop, DOMOP) (&qm->nrQMatoms, qmcrd, &mm->nrMMatoms,
-                                mmchrg, mmcrd, qmgrad, mmgrad, &energy, qmchrg);
+        F77_FUNC(domop, DOMOP)
+        (&qm->nrQMatoms, qmcrd, &mm->nrMMatoms,
+         mmchrg, mmcrd, qmgrad, mmgrad, &energy, qmchrg);
         /* add the gradients to the f[] array, and also to the fshift[].
          * the mopac gradients are in kCal/angstrom.
          */
@@ -225,5 +236,5 @@ real call_mopac_SH(t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 
 #else
 int
-    gmx_qmmm_mopac_empty;
+        gmx_qmmm_mopac_empty;
 #endif

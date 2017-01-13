@@ -37,50 +37,50 @@
 #define GMX_SIMD_IMPL_X86_AVX_128_FMA_DEFINITIONS_H
 
 // Capability definitions for AVX-128-FMA
-#define GMX_SIMD                                1
-#define GMX_SIMD_HAVE_FLOAT                     1
-#define GMX_SIMD_HAVE_DOUBLE                    1
-#define GMX_SIMD_HAVE_LOADU                     1
-#define GMX_SIMD_HAVE_STOREU                    1
-#define GMX_SIMD_HAVE_LOGICAL                   1
-#define GMX_SIMD_HAVE_FMA                       1
-#define GMX_SIMD_HAVE_FINT32_EXTRACT            1
-#define GMX_SIMD_HAVE_FINT32_LOGICAL            1
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS        1
-#define GMX_SIMD_HAVE_DINT32_EXTRACT            1
-#define GMX_SIMD_HAVE_DINT32_LOGICAL            1
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS        1
-#define GMX_SIMD_HAVE_NATIVE_COPYSIGN_FLOAT     0
-#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_FLOAT   0
-#define GMX_SIMD_HAVE_NATIVE_RCP_ITER_FLOAT     0
-#define GMX_SIMD_HAVE_NATIVE_LOG_FLOAT          0
-#define GMX_SIMD_HAVE_NATIVE_EXP2_FLOAT         0
-#define GMX_SIMD_HAVE_NATIVE_EXP_FLOAT          0
-#define GMX_SIMD_HAVE_NATIVE_COPYSIGN_DOUBLE    0
-#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_DOUBLE  0
-#define GMX_SIMD_HAVE_NATIVE_RCP_ITER_DOUBLE    0
-#define GMX_SIMD_HAVE_NATIVE_LOG_DOUBLE         0
-#define GMX_SIMD_HAVE_NATIVE_EXP2_DOUBLE        0
-#define GMX_SIMD_HAVE_NATIVE_EXP_DOUBLE         0
+#define GMX_SIMD 1
+#define GMX_SIMD_HAVE_FLOAT 1
+#define GMX_SIMD_HAVE_DOUBLE 1
+#define GMX_SIMD_HAVE_LOADU 1
+#define GMX_SIMD_HAVE_STOREU 1
+#define GMX_SIMD_HAVE_LOGICAL 1
+#define GMX_SIMD_HAVE_FMA 1
+#define GMX_SIMD_HAVE_FINT32_EXTRACT 1
+#define GMX_SIMD_HAVE_FINT32_LOGICAL 1
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS 1
+#define GMX_SIMD_HAVE_DINT32_EXTRACT 1
+#define GMX_SIMD_HAVE_DINT32_LOGICAL 1
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS 1
+#define GMX_SIMD_HAVE_NATIVE_COPYSIGN_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_RCP_ITER_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_LOG_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_EXP2_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_EXP_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_COPYSIGN_DOUBLE 0
+#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_DOUBLE 0
+#define GMX_SIMD_HAVE_NATIVE_RCP_ITER_DOUBLE 0
+#define GMX_SIMD_HAVE_NATIVE_LOG_DOUBLE 0
+#define GMX_SIMD_HAVE_NATIVE_EXP2_DOUBLE 0
+#define GMX_SIMD_HAVE_NATIVE_EXP_DOUBLE 0
 
-#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT   1
-#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE  1
-#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT          0  // No need for half-simd, width is 4
-#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE         0  // No need for half-simd, width is 2
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT 1
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE 1
+#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT 0  // No need for half-simd, width is 4
+#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE 0 // No need for half-simd, width is 2
 
-#define GMX_SIMD4_HAVE_FLOAT                    1
-#define GMX_SIMD4_HAVE_DOUBLE                   1  // Uses 256-bit avx for SIMD4-double
+#define GMX_SIMD4_HAVE_FLOAT 1
+#define GMX_SIMD4_HAVE_DOUBLE 1 // Uses 256-bit avx for SIMD4-double
 
 // Implementation details
-#define GMX_SIMD_FLOAT_WIDTH                    4
-#define GMX_SIMD_DOUBLE_WIDTH                   2
-#define GMX_SIMD_FINT32_WIDTH                   4
-#define GMX_SIMD_DINT32_WIDTH                   2
-#define GMX_SIMD4_WIDTH                         4
-#define GMX_SIMD_RSQRT_BITS                    11
-#define GMX_SIMD_RCP_BITS                      11
+#define GMX_SIMD_FLOAT_WIDTH 4
+#define GMX_SIMD_DOUBLE_WIDTH 2
+#define GMX_SIMD_FINT32_WIDTH 4
+#define GMX_SIMD_DINT32_WIDTH 2
+#define GMX_SIMD4_WIDTH 4
+#define GMX_SIMD_RSQRT_BITS 11
+#define GMX_SIMD_RCP_BITS 11
 
-#define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), (mask))
-#define gmx_mm_maskstore_ps(mem, mask, x)   _mm_maskstore_ps((mem), (mask), (x))
+#define gmx_mm_maskload_ps(mem, mask) _mm_maskload_ps((mem), (mask))
+#define gmx_mm_maskstore_ps(mem, mask, x) _mm_maskstore_ps((mem), (mask), (x))
 
-#endif  // GMX_SIMD_IMPL_X86_AVX_128_FMA_DEFINITIONS_H
+#endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_DEFINITIONS_H

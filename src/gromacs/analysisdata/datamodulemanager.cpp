@@ -88,10 +88,10 @@ public:
     //! Describes the current state of the notification methods.
     enum State
     {
-        eNotStarted,     //!< Initial state (nothing called).
-        eInData,         //!< notifyDataStart() called, no frame in progress.
-        eInFrame,        //!< notifyFrameStart() called, but notifyFrameFinish() not.
-        eFinished        //!< notifyDataFinish() called.
+        eNotStarted, //!< Initial state (nothing called).
+        eInData,     //!< notifyDataStart() called, no frame in progress.
+        eInFrame,    //!< notifyFrameStart() called, but notifyFrameFinish() not.
+        eFinished    //!< notifyDataFinish() called.
     };
 
     Impl();
@@ -229,7 +229,7 @@ void AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData *data,
                        "Cannot apply a modules in mid-frame");
     module->dataStarted(data);
     const bool bCheckMissing = bAllowMissing_
-        && !(module->flags() & IAnalysisDataModule::efAllowMissing);
+                               && !(module->flags() & IAnalysisDataModule::efAllowMissing);
     for (int i = 0; i < data->frameCount(); ++i)
     {
         AnalysisDataFrameRef frame = data->getDataFrame(i);

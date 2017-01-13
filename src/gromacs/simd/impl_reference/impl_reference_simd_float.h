@@ -266,7 +266,7 @@ static inline SimdFloat gmx_simdcall setZeroF()
  * \param m Pointer to memory, aligned to (float) integer SIMD width.
  * \return SIMD integer variable.
  */
-static inline SimdFInt32 gmx_simdcall simdLoadFI(const std::int32_t * m)
+static inline SimdFInt32 gmx_simdcall simdLoadFI(const std::int32_t *m)
 {
     SimdFInt32 a;
 
@@ -281,7 +281,7 @@ static inline SimdFInt32 gmx_simdcall simdLoadFI(const std::int32_t * m)
  * \param m Memory aligned to (float) integer SIMD width.
  * \param a SIMD variable to store.
  */
-static inline void gmx_simdcall store(std::int32_t * m, SimdFInt32 a)
+static inline void gmx_simdcall store(std::int32_t *m, SimdFInt32 a)
 {
     assert(std::size_t(m) % (a.simdInternal_.size() * sizeof(std::int32_t)) == 0);
 
@@ -312,7 +312,7 @@ static inline SimdFInt32 gmx_simdcall simdLoadUFI(const std::int32_t *m)
  * \param m Memory pointer, no alignment requirements.
  * \param a SIMD variable to store.
  */
-static inline void gmx_simdcall storeU(std::int32_t * m, SimdFInt32 a)
+static inline void gmx_simdcall storeU(std::int32_t *m, SimdFInt32 a)
 {
     std::copy(a.simdInternal_.begin(), a.simdInternal_.end(), m);
 }
@@ -337,7 +337,7 @@ static inline SimdFInt32 gmx_simdcall setZeroFI()
  * \param  a     SIMD variable from which to extract value.
  * \return Single integer from position index in SIMD variable.
  */
-template <int index>
+template <int              index>
 static inline std::int32_t gmx_simdcall extract(SimdFInt32 a)
 {
     return a.simdInternal_[index];
@@ -361,12 +361,10 @@ static inline SimdFloat gmx_simdcall operator&(SimdFloat a, SimdFloat b)
 {
     SimdFloat res;
 
-    union
-    {
+    union {
         float        r;
         std::int32_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -390,12 +388,10 @@ static inline SimdFloat gmx_simdcall andNot(SimdFloat a, SimdFloat b)
 {
     SimdFloat res;
 
-    union
-    {
+    union {
         float        r;
         std::int32_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -419,12 +415,10 @@ static inline SimdFloat gmx_simdcall operator|(SimdFloat a, SimdFloat b)
 {
     SimdFloat res;
 
-    union
-    {
+    union {
         float        r;
         std::int32_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -448,12 +442,10 @@ static inline SimdFloat gmx_simdcall operator^(SimdFloat a, SimdFloat b)
 {
     SimdFloat res;
 
-    union
-    {
+    union {
         float        r;
         std::int32_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -813,7 +805,7 @@ static inline SimdFloat gmx_simdcall trunc(SimdFloat a)
  * \param[out]  exponent  Returned exponent of value, integer SIMD format.
  * \return      Fraction of value, floating-point SIMD format.
  */
-static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32 * exponent)
+static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32 *exponent)
 {
     SimdFloat fraction;
 
@@ -951,8 +943,7 @@ static inline SimdFBool gmx_simdcall testBits(SimdFloat a)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        union
-        {
+        union {
             std::uint32_t i;
             float         f;
         } conv;
@@ -1547,6 +1538,6 @@ static inline SimdFBool gmx_simdcall cvtIB2B(SimdFIBool a)
 /*! \} */
 /*! \endcond */
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_REFERENCE_SIMD_FLOAT_H

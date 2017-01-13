@@ -207,7 +207,7 @@ private:
 namespace internal
 {
 class AnalysisDataHandleImpl;
-}   // namespace internal
+} // namespace internal
 
 /*! \brief
  * Handle for inserting data into AnalysisData.

@@ -54,7 +54,7 @@
 #include <limits>
 
 #if GMX_NATIVE_WINDOWS
-#    include <intrin.h> // _BitScanReverse, _BitScanReverse64
+#include <intrin.h> // _BitScanReverse, _BitScanReverse64
 #endif
 
 #include "gromacs/math/utilities.h"
@@ -82,25 +82,22 @@ unsigned int log2I(std::uint32_t n)
     // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLogLookup
 
     static const std::array<char, 256>
-    log2TableByte =
-    {{
-         0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-         4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-         5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-         5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
-     }};
+            log2TableByte = { { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+                                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                                5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+                                5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+                                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+                                7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7 } };
 
     unsigned int result;
     unsigned int tmp1, tmp2;
@@ -169,8 +166,8 @@ std::int64_t greatestCommonDivisor(std::int64_t p,
     while (q != 0)
     {
         std::int64_t tmp = q;
-        q = p % q;
-        p = tmp;
+        q                = p % q;
+        p                = tmp;
     }
     return p;
 }
@@ -202,7 +199,7 @@ double erfinv(double x)
         double z = x * x;
         double P = (((-0.140543331 * z + 0.914624893) * z - 1.645349621) * z + 0.886226899);
         double Q = ((((0.012229801 * z - 0.329097515) * z + 1.442710462) * z - 2.118377725) * z + 1.0);
-        res = x * P / Q;
+        res      = x * P / Q;
     }
     else
     {
@@ -210,12 +207,12 @@ double erfinv(double x)
         double z = std::sqrt(-std::log((1.0 - std::abs(x)) / 2.0));
         double P = ((1.641345311 * z + 3.429567803) * z - 1.624906493) * z - 1.970840454;
         double Q = (1.637067800 * z + 3.543889200) * z + 1.0;
-        res = std::copysign(1.0, x) * P / Q;
+        res      = std::copysign(1.0, x) * P / Q;
     }
 
     // Double precision requires two N-R iterations
-    res = res - (std::erf(res) - x) / ( (2.0 / std::sqrt(M_PI)) * std::exp(-res * res));
-    res = res - (std::erf(res) - x) / ( (2.0 / std::sqrt(M_PI)) * std::exp(-res * res));
+    res = res - (std::erf(res) - x) / ((2.0 / std::sqrt(M_PI)) * std::exp(-res * res));
+    res = res - (std::erf(res) - x) / ((2.0 / std::sqrt(M_PI)) * std::exp(-res * res));
 
     return res;
 }
@@ -247,7 +244,7 @@ float erfinv(float x)
         float z = x * x;
         float P = (((-0.140543331f * z + 0.914624893f) * z - 1.645349621f) * z + 0.886226899f);
         float Q = ((((0.012229801f * z - 0.329097515f) * z + 1.442710462f) * z - 2.118377725f) * z + 1.0f);
-        res = x * P / Q;
+        res     = x * P / Q;
     }
     else
     {
@@ -255,11 +252,11 @@ float erfinv(float x)
         float z = std::sqrt(-std::log((1.0 - std::abs(x)) / 2.0f));
         float P = ((1.641345311f * z + 3.429567803f) * z - 1.624906493f) * z - 1.970840454f;
         float Q = (1.637067800f * z + 3.543889200f) * z + 1.0f;
-        res = std::copysign(1.0f, x) * P / Q;
+        res     = std::copysign(1.0f, x) * P / Q;
     }
 
     // Single N-R iteration sufficient for single precision
-    res = res - (std::erf(res) - x) / ( (2.0f / std::sqrt(M_PI)) * std::exp(-res * res));
+    res = res - (std::erf(res) - x) / ((2.0f / std::sqrt(M_PI)) * std::exp(-res * res));
 
     return res;
 }

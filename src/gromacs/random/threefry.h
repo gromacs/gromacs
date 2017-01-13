@@ -98,7 +98,7 @@ namespace internal
 // part of std::arrays.
 
 struct
-highBitCounter
+        highBitCounter
 {
     /*! \brief Clear highBits higest bits of ctr, return false if they were non-zero.
      *
@@ -112,7 +112,7 @@ highBitCounter
      *  \param         ctr       Reference to counter to check and clear.
      */
     template <class UIntType, std::size_t words, unsigned int highBits>
-    static bool checkAndClear(std::array<UIntType, words> * ctr)
+    static bool checkAndClear(std::array<UIntType, words> *ctr)
     {
         const std::size_t bitsPerWord = std::numeric_limits<UIntType>::digits;
         const std::size_t bitsTotal   = bitsPerWord * words;
@@ -136,7 +136,7 @@ highBitCounter
         }
         if (highBits > 0 && (*ctr)[lastWordIdx] >= lastWordOne)
         {
-            isClear              = false;
+            isClear = false;
             (*ctr)[lastWordIdx] &= mask;
         }
         return isClear;
@@ -155,7 +155,7 @@ highBitCounter
      *  of internal counter bits that fits in the total counter.
      */
     template <class UIntType, std::size_t words, unsigned int highBits>
-    static void increment(std::array<UIntType, words> * ctr)
+    static void increment(std::array<UIntType, words> *ctr)
     {
         const std::size_t bitsPerWord = std::numeric_limits<UIntType>::digits;
         const std::size_t bitsTotal   = bitsPerWord * words;
@@ -210,7 +210,7 @@ highBitCounter
             (*ctr)[i]++;
             if ((*ctr)[i])
             {
-                return;     // No carry means we are done
+                return; // No carry means we are done
             }
         }
         (*ctr)[lastWordIdx] += lastWordOne;
@@ -235,7 +235,7 @@ highBitCounter
      *  of internal counter bits that fits in the total counter.
      */
     template <class UIntType, std::size_t words, unsigned int highBits>
-    static void increment(std::array<UIntType, words> * ctr, UIntType addend)
+    static void increment(std::array<UIntType, words> *ctr, UIntType addend)
     {
         const std::size_t bitsPerWord = std::numeric_limits<UIntType>::digits;
         const std::size_t bitsTotal   = bitsPerWord * words;
@@ -255,7 +255,7 @@ highBitCounter
         for (unsigned int i = words - 1; i > lastWordIdx; --i)
         {
             (*ctr)[i] += addend;
-            addend     = ((*ctr)[i] < addend);   // 1 is the carry!
+            addend = ((*ctr)[i] < addend); // 1 is the carry!
             if (addend == 0)
             {
                 return;
@@ -325,22 +325,21 @@ highBitCounter
 template <unsigned int rounds, unsigned int internalCounterBits>
 class ThreeFry2x64General
 {
-// While this class will formally work with any value for rounds, there is
-// no reason to go lower than 13, and this might help catch some typos.
-// If we find a reason to use lower values in the future, or if you simply
-// want to test, this assert can safely be removed.
-static_assert(rounds >= 13, "You should not use less than 13 encryption rounds for ThreeFry2x64.");
+    // While this class will formally work with any value for rounds, there is
+    // no reason to go lower than 13, and this might help catch some typos.
+    // If we find a reason to use lower values in the future, or if you simply
+    // want to test, this assert can safely be removed.
+    static_assert(rounds >= 13, "You should not use less than 13 encryption rounds for ThreeFry2x64.");
 
 public:
     // result_type must be lower case to be compatible with C++11 standard library
 
     /*! \brief Integer type for output. */
-    typedef gmx_uint64_t                    result_type;
+    typedef gmx_uint64_t result_type;
     /*! \brief Use array for counter & key states so it is allocated on the stack */
-    typedef std::array<result_type, 2>      counter_type;
+    typedef std::array<result_type, 2> counter_type;
 
 private:
-
     /*! \brief Rotate value left by specified number of bits
      *
      *  \param i    Value to rotate (result_type, which should be 64-bit).
@@ -368,7 +367,7 @@ private:
     counter_type generateBlock(const counter_type &key,
                                const counter_type &ctr)
     {
-        const unsigned int rotations[] = {16, 42, 12, 31, 16, 32, 24, 21};
+        const unsigned int rotations[] = { 16, 42, 12, 31, 16, 32, 24, 21 };
         counter_type       x           = ctr;
 
         result_type ks[3] = { 0x0, 0x0, 0x1bd11bdaa9fc1a22 };
@@ -380,40 +379,151 @@ private:
 
         if (rounds > 0)
         {
-            ks[0] = key[0]; ks[2] ^= key[0]; x[0] = x[0] + key[0];
-            ks[1] = key[1]; ks[2] ^= key[1]; x[1] = x[1] + key[1];
-            x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0];
+            ks[0] = key[0];
+            ks[2] ^= key[0];
+            x[0]  = x[0] + key[0];
+            ks[1] = key[1];
+            ks[2] ^= key[1];
+            x[1] = x[1] + key[1];
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 16);
+            x[1] ^= x[0];
         }
-        if (rounds > 1)  { x[0] += x[1]; x[1] = rotLeft(x[1], 42); x[1] ^= x[0]; }
-        if (rounds > 2)  { x[0] += x[1]; x[1] = rotLeft(x[1], 12); x[1] ^= x[0]; }
-        if (rounds > 3)  { x[0] += x[1]; x[1] = rotLeft(x[1], 31); x[1] ^= x[0]; x[0] += ks[1]; x[1] += ks[2] + 1; }
-        if (rounds > 4)  { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
-        if (rounds > 5)  { x[0] += x[1]; x[1] = rotLeft(x[1], 32); x[1] ^= x[0]; }
-        if (rounds > 6)  { x[0] += x[1]; x[1] = rotLeft(x[1], 24); x[1] ^= x[0]; }
-        if (rounds > 7)  { x[0] += x[1]; x[1] = rotLeft(x[1], 21); x[1] ^= x[0]; x[0] += ks[2]; x[1] += ks[0] + 2; }
-        if (rounds > 8)  { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
-        if (rounds > 9)  { x[0] += x[1]; x[1] = rotLeft(x[1], 42); x[1] ^= x[0]; }
-        if (rounds > 10) { x[0] += x[1]; x[1] = rotLeft(x[1], 12); x[1] ^= x[0]; }
-        if (rounds > 11) { x[0] += x[1]; x[1] = rotLeft(x[1], 31); x[1] ^= x[0]; x[0] += ks[0]; x[1] += ks[1] + 3; }
-        if (rounds > 12) { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
-        if (rounds > 13) { x[0] += x[1]; x[1] = rotLeft(x[1], 32); x[1] ^= x[0]; }
-        if (rounds > 14) { x[0] += x[1]; x[1] = rotLeft(x[1], 24); x[1] ^= x[0]; }
-        if (rounds > 15) { x[0] += x[1]; x[1] = rotLeft(x[1], 21); x[1] ^= x[0]; x[0] += ks[1]; x[1] += ks[2] + 4; }
-        if (rounds > 16) { x[0] += x[1]; x[1] = rotLeft(x[1], 16); x[1] ^= x[0]; }
-        if (rounds > 17) { x[0] += x[1]; x[1] = rotLeft(x[1], 42); x[1] ^= x[0]; }
-        if (rounds > 18) { x[0] += x[1]; x[1] = rotLeft(x[1], 12); x[1] ^= x[0]; }
-        if (rounds > 19) { x[0] += x[1]; x[1] = rotLeft(x[1], 31); x[1] ^= x[0]; x[0] += ks[2]; x[1] += ks[0] + 5; }
+        if (rounds > 1)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 42);
+            x[1] ^= x[0];
+        }
+        if (rounds > 2)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 12);
+            x[1] ^= x[0];
+        }
+        if (rounds > 3)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 31);
+            x[1] ^= x[0];
+            x[0] += ks[1];
+            x[1] += ks[2] + 1;
+        }
+        if (rounds > 4)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 16);
+            x[1] ^= x[0];
+        }
+        if (rounds > 5)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 32);
+            x[1] ^= x[0];
+        }
+        if (rounds > 6)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 24);
+            x[1] ^= x[0];
+        }
+        if (rounds > 7)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 21);
+            x[1] ^= x[0];
+            x[0] += ks[2];
+            x[1] += ks[0] + 2;
+        }
+        if (rounds > 8)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 16);
+            x[1] ^= x[0];
+        }
+        if (rounds > 9)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 42);
+            x[1] ^= x[0];
+        }
+        if (rounds > 10)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 12);
+            x[1] ^= x[0];
+        }
+        if (rounds > 11)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 31);
+            x[1] ^= x[0];
+            x[0] += ks[0];
+            x[1] += ks[1] + 3;
+        }
+        if (rounds > 12)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 16);
+            x[1] ^= x[0];
+        }
+        if (rounds > 13)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 32);
+            x[1] ^= x[0];
+        }
+        if (rounds > 14)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 24);
+            x[1] ^= x[0];
+        }
+        if (rounds > 15)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 21);
+            x[1] ^= x[0];
+            x[0] += ks[1];
+            x[1] += ks[2] + 4;
+        }
+        if (rounds > 16)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 16);
+            x[1] ^= x[0];
+        }
+        if (rounds > 17)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 42);
+            x[1] ^= x[0];
+        }
+        if (rounds > 18)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 12);
+            x[1] ^= x[0];
+        }
+        if (rounds > 19)
+        {
+            x[0] += x[1];
+            x[1] = rotLeft(x[1], 31);
+            x[1] ^= x[0];
+            x[0] += ks[2];
+            x[1] += ks[0] + 5;
+        }
 
         for (unsigned int r = 20; r < rounds; r++)
         {
             x[0] += x[1];
-            x[1]  = rotLeft(x[1], rotations[r % 8]);
+            x[1] = rotLeft(x[1], rotations[r % 8]);
             x[1] ^= x[0];
-            if (( (r + 1) & 3 ) == 0)
+            if (((r + 1) & 3) == 0)
             {
                 unsigned int r4 = (r + 1) >> 2;
-                x[0] += ks[ r4 % 3 ];
-                x[1] += ks[ (r4 + 1) % 3 ] + r4;
+                x[0] += ks[r4 % 3];
+                x[1] += ks[(r4 + 1) % 3] + r4;
             }
         }
         return x;
@@ -422,11 +532,13 @@ private:
 public:
     //! \brief Smallest value that can be returned from random engine.
     static gmx_constexpr
-    result_type min() { return std::numeric_limits<result_type>::min(); }
+            result_type
+            min() { return std::numeric_limits<result_type>::min(); }
 
     //! \brief Largest value that can be returned from random engine.
     static gmx_constexpr
-    result_type max() { return std::numeric_limits<result_type>::max(); }
+            result_type
+            max() { return std::numeric_limits<result_type>::max(); }
 
     /*! \brief Construct random engine with 2x64 key values
      *
@@ -509,9 +621,9 @@ public:
      */
     void seed(gmx_uint64_t key0, gmx_uint64_t key1)
     {
-        const unsigned int internalCounterBitsBits = (internalCounterBits > 0) ? ( StaticLog2<internalCounterBits>::value + 1 ) : 0;
+        const unsigned int internalCounterBitsBits = (internalCounterBits > 0) ? (StaticLog2<internalCounterBits>::value + 1) : 0;
 
-        key_ = {{key0, key1}};
+        key_ = { { key0, key1 } };
 
         if (internalCounterBits > 0)
         {
@@ -538,7 +650,7 @@ public:
     void restart(gmx_uint64_t ctr0 = 0, gmx_uint64_t ctr1 = 0)
     {
 
-        counter_ = {{ctr0, ctr1}};
+        counter_ = { { ctr0, ctr1 } };
         if (!internal::highBitCounter::checkAndClear<result_type, 2, internalCounterBits>(&counter_))
         {
             GMX_THROW(InternalError("High bits of counter are reserved for the internal stream counter."));
@@ -580,7 +692,7 @@ public:
     void discard(gmx_uint64_t n)
     {
         index_ += n % c_resultsPerCounter_;
-        n      /= c_resultsPerCounter_;
+        n /= c_resultsPerCounter_;
 
         if (index_ > c_resultsPerCounter_)
         {
@@ -622,7 +734,6 @@ public:
     bool operator!=(const ThreeFry2x64General<rounds, internalCounterBits> &x) const { return !operator==(x); }
 
 private:
-
     /*! \brief Number of results returned for each invocation of the block generation */
     static const unsigned int c_resultsPerCounter_ = static_cast<unsigned int>(sizeof(counter_type) / sizeof(result_type));
 
@@ -679,7 +790,8 @@ public:
      *  \throws InternalError if the high bits needed to encode the number of counter
      *          bits are nonzero.
      */
-    ThreeFry2x64(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) : ThreeFry2x64General<20, internalCounterBits>(key0, domain) {}
+    ThreeFry2x64(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
+        : ThreeFry2x64General<20, internalCounterBits>(key0, domain) {}
 
     /*! \brief Construct random engine from 2x64-bit unsigned integers, 20 rounds
      *
@@ -694,7 +806,8 @@ public:
      *  \throws InternalError if the high bits needed to encode the number of counter
      *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
      */
-    ThreeFry2x64(gmx_uint64_t key0, gmx_uint64_t key1) : ThreeFry2x64General<20, internalCounterBits>(key0, key1) {}
+    ThreeFry2x64(gmx_uint64_t key0, gmx_uint64_t key1)
+        : ThreeFry2x64General<20, internalCounterBits>(key0, key1) {}
 };
 
 /*! \brief ThreeFry2x64 random engine with 13 iteractions.
@@ -727,7 +840,8 @@ public:
      *  \throws InternalError if the high bits needed to encode the number of counter
      *          bits are nonzero.
      */
-    ThreeFry2x64Fast(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other) : ThreeFry2x64General<13, internalCounterBits>(key0, domain) {}
+    ThreeFry2x64Fast(gmx_uint64_t key0 = 0, RandomDomain domain = RandomDomain::Other)
+        : ThreeFry2x64General<13, internalCounterBits>(key0, domain) {}
 
     /*! \brief Construct ThreeFry random engine from 2x64-bit unsigned integers, 13 rounds.
      *
@@ -742,9 +856,9 @@ public:
      *  \throws InternalError if the high bits needed to encode the number of counter
      *          bits are nonzero. To test arbitrary values, use 0 internal counter bits.
      */
-    ThreeFry2x64Fast(gmx_uint64_t key0, gmx_uint64_t key1) : ThreeFry2x64General<13, internalCounterBits>(key0, key1) {}
+    ThreeFry2x64Fast(gmx_uint64_t key0, gmx_uint64_t key1)
+        : ThreeFry2x64General<13, internalCounterBits>(key0, key1) {}
 };
-
 
 
 /*! \brief Default fast and accurate random engine in Gromacs
@@ -753,8 +867,8 @@ public:
  *  gmx::RandomDomain::Other stream, and can be initialized with a single
  *  seed argument without having to remember empty template angle brackets.
  */
-typedef ThreeFry2x64Fast<>                  DefaultRandomEngine;
+typedef ThreeFry2x64Fast<> DefaultRandomEngine;
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_RANDOM_THREEFRY_H

@@ -215,10 +215,10 @@ static void copy_B_from_A(int ftype, double *c)
     }
 }
 
-void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
-              char *line, int nb_funct,
-              t_nbparam ***nbparam, t_nbparam ***pair,
-              warninp_t wi)
+void push_at(t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
+             char *line, int nb_funct,
+             t_nbparam ***nbparam, t_nbparam ***pair,
+             warninp_t wi)
 {
     typedef struct
     {
@@ -226,11 +226,11 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
         int         ptype;
     } t_xlate;
     t_xlate xl[eptNR] = {
-        { "A",   eptAtom },
-        { "N",   eptNucleus },
-        { "S",   eptShell },
-        { "B",   eptBond },
-        { "V",   eptVSite },
+        { "A", eptAtom },
+        { "N", eptNucleus },
+        { "S", eptShell },
+        { "B", eptBond },
+        { "V", eptVSite },
     };
 
     int      nr, i, nfields, j, pt, nfp0 = -1;
@@ -239,7 +239,7 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     double   m, q;
     double   c[MAXFORCEPARAM];
     double   radius, vol, surftens, gb_radius, S_hct;
-    char     tmpfield[12][100];   /* Max 12 fields of width 100 */
+    char     tmpfield[12][100]; /* Max 12 fields of width 100 */
     char     errbuf[STRLEN];
     t_atom * atom;
     t_param *param;
@@ -291,19 +291,19 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
         return;
     }
 
-    if ( (strlen(tmpfield[5]) == 1) && isalpha(tmpfield[5][0]) )
+    if ((strlen(tmpfield[5]) == 1) && isalpha(tmpfield[5][0]))
     {
         have_bonded_type   = TRUE;
         have_atomic_number = TRUE;
     }
-    else if ( (strlen(tmpfield[3]) == 1) && isalpha(tmpfield[3][0]) )
+    else if ((strlen(tmpfield[3]) == 1) && isalpha(tmpfield[3][0]))
     {
         have_bonded_type   = FALSE;
         have_atomic_number = FALSE;
     }
     else
     {
-        have_bonded_type   = ( isalpha(tmpfield[1][0]) != 0 );
+        have_bonded_type   = (isalpha(tmpfield[1][0]) != 0);
         have_atomic_number = !have_bonded_type;
     }
 
@@ -517,7 +517,8 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
         sprintf(errbuf, "Overriding atomtype %s", type);
         warning(wi, errbuf);
         if ((nr = set_atomtype(nr, at, symtab, atom, type, param, batype_nr,
-                               radius, vol, surftens, atomnr, gb_radius, S_hct)) == NOTSET)
+                               radius, vol, surftens, atomnr, gb_radius, S_hct))
+            == NOTSET)
         {
             sprintf(errbuf, "Replacing atomtype %s failed", type);
             warning_error_and_exit(wi, errbuf, FARGS);
@@ -525,7 +526,8 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     }
     else if ((add_atomtype(at, symtab, atom, type, param,
                            batype_nr, radius, vol,
-                           surftens, atomnr, gb_radius, S_hct)) == NOTSET)
+                           surftens, atomnr, gb_radius, S_hct))
+             == NOTSET)
     {
         sprintf(errbuf, "Adding atomtype %s failed", type);
         warning_error_and_exit(wi, errbuf, FARGS);
@@ -539,13 +541,13 @@ void push_at (t_symtab *symtab, gpp_atomtype_t at, t_bond_atomtype bat,
     sfree(param);
 }
 
-static void push_bondtype(t_params * bt,
-                          t_param *  b,
-                          int        nral,
-                          int        ftype,
-                          gmx_bool   bAllowRepeat,
-                          char *     line,
-                          warninp_t  wi)
+static void push_bondtype(t_params *bt,
+                          t_param * b,
+                          int       nral,
+                          int       ftype,
+                          gmx_bool  bAllowRepeat,
+                          char *    line,
+                          warninp_t wi)
 {
     int      i, j;
     gmx_bool bTest, bFound, bCont, bId;
@@ -609,8 +611,8 @@ static void push_bondtype(t_params * bt,
                         sprintf(errbuf, "Overriding %s parameters.%s",
                                 interaction_function[ftype].longname,
                                 (ftype == F_PDIHS)
-                                ? "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
-                                : "");
+                                        ? "\nUse dihedraltype 9 to allow several multiplicity terms. Only consecutive lines are combined. Non-consective lines overwrite each other."
+                                        : "");
                         warning(wi, errbuf);
                         fprintf(stderr, "  old:                                         ");
                         for (j = 0; (j < nrfp); j++)
@@ -632,11 +634,11 @@ static void push_bondtype(t_params * bt,
     if (!bFound)
     {
         /* alloc */
-        pr_alloc (2, bt);
+        pr_alloc(2, bt);
 
         /* fill the arrays up and down */
-        memcpy(bt->param[bt->nr].c,  b->c, sizeof(b->c));
-        memcpy(bt->param[bt->nr].a,  b->a, sizeof(b->a));
+        memcpy(bt->param[bt->nr].c, b->c, sizeof(b->c));
+        memcpy(bt->param[bt->nr].a, b->a, sizeof(b->a));
         memcpy(bt->param[bt->nr + 1].c, b->c, sizeof(b->c));
 
         /* The definitions of linear angles depend on the order of atoms,
@@ -659,7 +661,7 @@ static void push_bondtype(t_params * bt,
 }
 
 void push_bt(directive d, t_params bt[], int nral,
-             gpp_atomtype_t at,
+             gpp_atomtype_t  at,
              t_bond_atomtype bat, char *line,
              warninp_t wi)
 {
@@ -697,7 +699,8 @@ void push_bt(directive d, t_params bt[], int nral,
 
     /* Make format string (nral ints+functype) */
     if ((nn = sscanf(line, formal[nral],
-                     alc[0], alc[1], alc[2], alc[3], alc[4], alc[5])) != nral + 1)
+                     alc[0], alc[1], alc[2], alc[3], alc[4], alc[5]))
+        != nral + 1)
     {
         sprintf(errbuf, "Not enough atomtypes (%d instead of %d)", nn - 1, nral);
         warning_error(wi, errbuf);
@@ -755,7 +758,7 @@ void push_bt(directive d, t_params bt[], int nral,
     {
         p.c[i] = c[i];
     }
-    push_bondtype (&(bt[ftype]), &p, nral, ftype, FALSE, line, wi);
+    push_bondtype(&(bt[ftype]), &p, nral, ftype, FALSE, line, wi);
 }
 
 
@@ -795,13 +798,13 @@ void push_dihedraltype(directive d, t_params bt[],
         "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
         "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
     };
-    int         i, ft, ftype, nn, nrfp, nrfpA, nral;
-    char        f1[STRLEN];
-    char        alc[MAXATOMLIST + 1][20];
-    double      c[MAXFORCEPARAM];
-    t_param     p;
-    gmx_bool    bAllowRepeat;
-    char        errbuf[STRLEN];
+    int      i, ft, ftype, nn, nrfp, nrfpA, nral;
+    char     f1[STRLEN];
+    char     alc[MAXATOMLIST + 1][20];
+    double   c[MAXFORCEPARAM];
+    t_param  p;
+    gmx_bool bAllowRepeat;
+    char     errbuf[STRLEN];
 
     /* This routine accepts dihedraltypes defined from either 2 or 4 atoms.
      *
@@ -925,7 +928,7 @@ void push_dihedraltype(directive d, t_params bt[],
     /* Always use 4 atoms here, since we created two wildcard atoms
      * if there wasn't of them 4 already.
      */
-    push_bondtype (&(bt[ftype]), &p, 4, ftype, bAllowRepeat, line, wi);
+    push_bondtype(&(bt[ftype]), &p, 4, ftype, bAllowRepeat, line, wi);
 }
 
 
@@ -946,7 +949,7 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     gmx_bool    bId;
     char        errbuf[STRLEN];
 
-    if (sscanf (pline, "%s%s%d", a0, a1, &f) != 3)
+    if (sscanf(pline, "%s%s%d", a0, a1, &f) != 3)
     {
         too_few(wi);
         return;
@@ -1018,12 +1021,12 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     }
 
     /* Put the parameters in the matrix */
-    if ((ai = get_atomtype_type (a0, atype)) == NOTSET)
+    if ((ai = get_atomtype_type(a0, atype)) == NOTSET)
     {
         sprintf(errbuf, "Atomtype %s not found", a0);
         warning_error_and_exit(wi, errbuf, FARGS);
     }
-    if ((aj = get_atomtype_type (a1, atype)) == NOTSET)
+    if ((aj = get_atomtype_type(a1, atype)) == NOTSET)
     {
         sprintf(errbuf, "Atomtype %s not found", a1);
         warning_error_and_exit(wi, errbuf, FARGS);
@@ -1056,15 +1059,15 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
     }
 }
 
-void push_gb_params (gpp_atomtype_t at, char *line,
-                     warninp_t wi)
+void push_gb_params(gpp_atomtype_t at, char *line,
+                    warninp_t wi)
 {
     int    atype;
     double radius, vol, surftens, gb_radius, S_hct;
     char   atypename[STRLEN];
     char   errbuf[STRLEN];
 
-    if ( (sscanf(line, "%s%lf%lf%lf%lf%lf", atypename, &radius, &vol, &surftens, &gb_radius, &S_hct)) != 6)
+    if ((sscanf(line, "%s%lf%lf%lf%lf%lf", atypename, &radius, &vol, &surftens, &gb_radius, &S_hct)) != 6)
     {
         sprintf(errbuf, "Too few gb parameters for type %s\n", atypename);
         warning(wi, errbuf);
@@ -1139,8 +1142,8 @@ void push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
         {
             sl++;
         }
-        nn                                             = sscanf(line + start + sl, " %s ", s);
-        sl                                            += strlen(s);
+        nn = sscanf(line + start + sl, " %s ", s);
+        sl += strlen(s);
         bt[F_CMAP].cmap[i + (bt[F_CMAP].ncmap) - nrfp] = strtod(s, nullptr);
 
         if (nn == 1)
@@ -1152,7 +1155,6 @@ void push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
             sprintf(errbuf, "Error in reading cmap parameter for angle %s %s %s %s %s", alc[0], alc[1], alc[2], alc[3], alc[4]);
             warning_error(wi, errbuf);
         }
-
     }
 
     /* Check do that we got the number of parameters we expected */
@@ -1224,7 +1226,7 @@ void push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
     }
 
     /* Push the bond to the bondlist */
-    push_bondtype (&(bt[ftype]), &p, nral, ftype, FALSE, line, wi);
+    push_bondtype(&(bt[ftype]), &p, nral, ftype, FALSE, line, wi);
 }
 
 
@@ -1270,7 +1272,7 @@ static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
     }
     if (nr == 0 || strcmp(resname, *at->resinfo[resind].name) != 0
         || resnr != at->resinfo[resind].nr
-        || ric   != at->resinfo[resind].ic)
+        || ric != at->resinfo[resind].ic)
     {
         if (nr == 0)
         {
@@ -1320,7 +1322,7 @@ void push_cg(t_block *block, int *lastindex, int index, int a)
 {
     if (debug)
     {
-        fprintf (debug, "Index %d, Atom %d\n", index, a);
+        fprintf(debug, "Index %d, Atom %d\n", index, a);
     }
 
     if (((block->nr) && (*lastindex != index)) || (!block->nr))
@@ -1340,7 +1342,7 @@ void push_atom(t_symtab *symtab, t_block *cgs,
     int  nr, ptype;
     int  cgnumber, atomnr, type, typeB, nscan;
     char id[STRLEN], ctype[STRLEN], ctypeB[STRLEN],
-         resnumberic[STRLEN], resname[STRLEN], name[STRLEN], check[STRLEN];
+            resnumberic[STRLEN], resname[STRLEN], name[STRLEN], check[STRLEN];
     double m, q, mb, qb;
     real   m0, q0, mB, qB;
     char   errbuf[STRLEN];
@@ -1350,13 +1352,14 @@ void push_atom(t_symtab *symtab, t_block *cgs,
 
     /* Fixed parameters */
     if (sscanf(line, "%s%s%s%s%s%d",
-               id, ctype, resnumberic, resname, name, &cgnumber) != 6)
+               id, ctype, resnumberic, resname, name, &cgnumber)
+        != 6)
     {
         too_few(wi);
         return;
     }
     sscanf(id, "%d", &atomnr);
-    if ((type  = get_atomtype_type(ctype, atype)) == NOTSET)
+    if ((type = get_atomtype_type(ctype, atype)) == NOTSET)
     {
         sprintf(errbuf, "Atomtype %s not found", ctype);
         warning_error_and_exit(wi, errbuf, FARGS);
@@ -1501,7 +1504,8 @@ static gmx_bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
             if (bB)
             {
                 for (j = 0; ((j < nral)
-                             && (at->atom[p->a[j]].typeB == pi->a[j])); j++)
+                             && (at->atom[p->a[j]].typeB == pi->a[j]));
+                     j++)
                 {
                     ;
                 }
@@ -1509,7 +1513,8 @@ static gmx_bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
             else
             {
                 for (j = 0; ((j < nral)
-                             && (at->atom[p->a[j]].type == pi->a[j])); j++)
+                             && (at->atom[p->a[j]].type == pi->a[j]));
+                     j++)
                 {
                     ;
                 }
@@ -1568,16 +1573,15 @@ static gmx_bool default_cmap_params(t_params bondtype[],
     {
         if (bB)
         {
-
         }
         else
         {
             if (
-                (get_atomtype_batype(at->atom[p->a[0]].type, atype) == bondtype[F_CMAP].cmap_types[i])
-                && (get_atomtype_batype(at->atom[p->a[1]].type, atype) == bondtype[F_CMAP].cmap_types[i + 1])
-                && (get_atomtype_batype(at->atom[p->a[2]].type, atype) == bondtype[F_CMAP].cmap_types[i + 2])
-                && (get_atomtype_batype(at->atom[p->a[3]].type, atype) == bondtype[F_CMAP].cmap_types[i + 3])
-                && (get_atomtype_batype(at->atom[p->a[4]].type, atype) == bondtype[F_CMAP].cmap_types[i + 4]))
+                    (get_atomtype_batype(at->atom[p->a[0]].type, atype) == bondtype[F_CMAP].cmap_types[i])
+                    && (get_atomtype_batype(at->atom[p->a[1]].type, atype) == bondtype[F_CMAP].cmap_types[i + 1])
+                    && (get_atomtype_batype(at->atom[p->a[2]].type, atype) == bondtype[F_CMAP].cmap_types[i + 2])
+                    && (get_atomtype_batype(at->atom[p->a[3]].type, atype) == bondtype[F_CMAP].cmap_types[i + 3])
+                    && (get_atomtype_batype(at->atom[p->a[4]].type, atype) == bondtype[F_CMAP].cmap_types[i + 4]))
             {
                 /* Found cmap torsion */
                 bFound       = TRUE;
@@ -1613,11 +1617,10 @@ static int natom_match(t_param *pi,
         && (pi->ak() == -1 || get_atomtype_batype(type_k, atype) == pi->ak())
         && (pi->al() == -1 || get_atomtype_batype(type_l, atype) == pi->al()))
     {
-        return
-            (pi->ai() == -1 ? 0 : 1)
-            + (pi->aj() == -1 ? 0 : 1)
-            + (pi->ak() == -1 ? 0 : 1)
-            + (pi->al() == -1 ? 0 : 1);
+        return (pi->ai() == -1 ? 0 : 1)
+               + (pi->aj() == -1 ? 0 : 1)
+               + (pi->ak() == -1 ? 0 : 1)
+               + (pi->al() == -1 ? 0 : 1);
     }
     else
     {
@@ -1629,7 +1632,7 @@ static gmx_bool default_params(int ftype, t_params bt[],
                                t_atoms *at, gpp_atomtype_t atype,
                                t_param *p, gmx_bool bB,
                                t_param **param_def,
-                               int *nparam_def)
+                               int *     nparam_def)
 {
     int      nparam_found;
     gmx_bool bFound, bSame;
@@ -1705,7 +1708,7 @@ static gmx_bool default_params(int ftype, t_params bt[],
             }
         }
     }
-    else   /* Not a dihedral */
+    else /* Not a dihedral */
     {
         int i, j;
 
@@ -1715,7 +1718,8 @@ static gmx_bool default_params(int ftype, t_params bt[],
             if (bB)
             {
                 for (j = 0; ((j < nral)
-                             && (get_atomtype_batype(at->atom[p->a[j]].typeB, atype) == pi->a[j])); j++)
+                             && (get_atomtype_batype(at->atom[p->a[j]].typeB, atype) == pi->a[j]));
+                     j++)
                 {
                     ;
                 }
@@ -1723,7 +1727,8 @@ static gmx_bool default_params(int ftype, t_params bt[],
             else
             {
                 for (j = 0; ((j < nral)
-                             && (get_atomtype_batype(at->atom[p->a[j]].type, atype) == pi->a[j])); j++)
+                             && (get_atomtype_batype(at->atom[p->a[j]].type, atype) == pi->a[j]));
+                     j++)
                 {
                     ;
                 }
@@ -1741,7 +1746,6 @@ static gmx_bool default_params(int ftype, t_params bt[],
 
     return bFound;
 }
-
 
 
 void push_bond(directive d, t_params bondtype[], t_params bond[],
@@ -1845,7 +1849,8 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
     {
         if (aa[i] < 1 || aa[i] > at->nr)
         {
-            sprintf(errbuf, "Atom index (%d) in %s out of bounds (1-%d).\n"
+            sprintf(errbuf,
+                    "Atom index (%d) in %s out of bounds (1-%d).\n"
                     "This probably means that you have inserted topology section \"%s\"\n"
                     "in a part belonging to a different molecule than you intended to.\n"
                     "In that case move the \"%s\" section to the right molecule.",
@@ -2071,8 +2076,10 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
 
                 if (bPert)
                 {
-                    sprintf(errbuf, "No default %s types for perturbed atoms, "
-                            "using normal values", interaction_function[ftype].longname);
+                    sprintf(errbuf,
+                            "No default %s types for perturbed atoms, "
+                            "using normal values",
+                            interaction_function[ftype].longname);
                     warning(wi, errbuf);
                 }
             }
@@ -2114,7 +2121,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
     }
 
     /* Put the values in the appropriate arrays */
-    add_param_to_list (&bond[ftype], &param);
+    add_param_to_list(&bond[ftype], &param);
 
     /* Push additional torsions from FF for ftype==9 if we have them.
      * We have already checked that the A/B states do not differ in this case,
@@ -2132,7 +2139,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
                 param.c[j] = param_defA->c[j];
             }
             /* And push the next term for this torsion */
-            add_param_to_list (&bond[ftype], &param);
+            add_param_to_list(&bond[ftype], &param);
         }
     }
 }
@@ -2141,8 +2148,7 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
                t_atoms *at, gpp_atomtype_t atype, char *line,
                warninp_t wi)
 {
-    const char *aaformat[MAXATOMLIST + 1] =
-    {
+    const char *aaformat[MAXATOMLIST + 1] = {
         "%d",
         "%d%d",
         "%d%d%d",
@@ -2181,7 +2187,8 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
     {
         if (aa[i] < 1 || aa[i] > at->nr)
         {
-            sprintf(errbuf, "Atom index (%d) in %s out of bounds (1-%d).\n"
+            sprintf(errbuf,
+                    "Atom index (%d) in %s out of bounds (1-%d).\n"
                     "This probably means that you have inserted topology section \"%s\"\n"
                     "in a part belonging to a different molecule than you intended to.\n"
                     "In that case move the \"%s\" section to the right molecule.",
@@ -2229,7 +2236,6 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
 }
 
 
-
 void push_vsitesn(directive d, t_params bond[],
                   t_atoms *at, char *line,
                   warninp_t wi)
@@ -2251,8 +2257,8 @@ void push_vsitesn(directive d, t_params bond[],
         param.c[j] = 0.0;
     }
 
-    ptr  = line;
-    ret  = sscanf(ptr, "%d%n", &a, &n);
+    ptr = line;
+    ret = sscanf(ptr, "%d%n", &a, &n);
     ptr += n;
     if (ret == 0)
     {
@@ -2264,14 +2270,14 @@ void push_vsitesn(directive d, t_params bond[],
     param.a[0] = a - 1;
 
     sscanf(ptr, "%d%n", &type, &n);
-    ptr  += n;
+    ptr += n;
     ftype = ifunc_index(d, type);
 
     weight_tot = 0;
     nj         = 0;
     do
     {
-        ret  = sscanf(ptr, "%d%n", &a, &n);
+        ret = sscanf(ptr, "%d%n", &a, &n);
         ptr += n;
         if (ret > 0)
         {
@@ -2295,7 +2301,7 @@ void push_vsitesn(directive d, t_params bond[],
                 case 3:
                     weight[nj] = -1;
                     ret        = sscanf(ptr, "%lf%n", &(weight[nj]), &n);
-                    ptr       += n;
+                    ptr += n;
                     if (weight[nj] < 0)
                     {
                         sprintf(errbuf, "No weight or negative weight found for vsiten constructing atom %d (atom index %d)",
@@ -2330,7 +2336,7 @@ void push_vsitesn(directive d, t_params bond[],
         param.c[0] = nj;
         param.c[1] = weight[j] / weight_tot;
         /* Put the values in the appropriate arrays */
-        add_param_to_list (&bond[ftype], &param);
+        add_param_to_list(&bond[ftype], &param);
     }
 
     sfree(atc);
@@ -2338,7 +2344,7 @@ void push_vsitesn(directive d, t_params bond[],
 }
 
 void push_mol(int nrmols, t_molinfo mols[], char *pline, int *whichmol,
-              int *nrcopies,
+              int *     nrcopies,
               warninp_t wi)
 {
     char type[STRLEN];
@@ -2517,7 +2523,7 @@ void b2_to_b(t_block2 *b2, t_blocka *b)
 
 static int icomp(const void *v1, const void *v2)
 {
-    return (*((int *) v1)) - (*((int *) v2));
+    return (*((int *)v1)) - (*((int *)v2));
 }
 
 void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi)
@@ -2563,7 +2569,7 @@ void merge_excl(t_blocka *excl, t_block2 *b2, warninp_t wi)
                 }
             }
             b2->nra[i] = k;
-            nra       += b2->nra[i];
+            nra += b2->nra[i];
         }
     }
     excl->nra = nra;

@@ -105,7 +105,7 @@ public:
      * CommandLineModuleManager::runAsMainCMain().
      */
     CMainCommandLineModule(const char *name, const char *shortDescription,
-                           CMainFunction mainFunction,
+                           CMainFunction        mainFunction,
                            InitSettingsFunction settingsFunction)
         : name_(name), shortDescription_(shortDescription),
           mainFunction_(mainFunction), settingsFunction_(settingsFunction)
@@ -146,7 +146,7 @@ private:
 
 //! \}
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * CommandLineCommonOptionsHolder
@@ -167,27 +167,17 @@ CommandLineCommonOptionsHolder::~CommandLineCommonOptionsHolder()
 
 void CommandLineCommonOptionsHolder::initOptions()
 {
-    options_.addOption(BooleanOption("h").store(&bHelp_)
-                           .description("Print help and quit"));
-    options_.addOption(BooleanOption("hidden").store(&bHidden_)
-                           .hidden()
-                           .description("Show hidden options in help"));
-    options_.addOption(BooleanOption("quiet").store(&bQuiet_)
-                           .description("Do not print common startup info or quotes"));
-    options_.addOption(BooleanOption("version").store(&bVersion_)
-                           .description("Print extended version information and quit"));
-    options_.addOption(BooleanOption("copyright").store(&bCopyright_)
-                           .description("Print copyright information on startup"));
-    options_.addOption(IntegerOption("nice").store(&niceLevel_).storeIsSet(&bNiceSet_)
-                           .description("Set the nicelevel (default depends on command)"));
-    options_.addOption(BooleanOption("backup").store(&bBackup_)
-                           .description("Write backups if output files exist"));
-    options_.addOption(BooleanOption("fpexcept").store(&bFpexcept_)
-                           .hidden().description("Enable floating-point exceptions"));
-    options_.addOption(IntegerOption("debug").store(&debugLevel_)
-                           .hidden().defaultValueIfSet(1)
-                           .description("Write file with debug information, "
-                                        "1: short (default), 2: also x and f"));
+    options_.addOption(BooleanOption("h").store(&bHelp_).description("Print help and quit"));
+    options_.addOption(BooleanOption("hidden").store(&bHidden_).hidden().description("Show hidden options in help"));
+    options_.addOption(BooleanOption("quiet").store(&bQuiet_).description("Do not print common startup info or quotes"));
+    options_.addOption(BooleanOption("version").store(&bVersion_).description("Print extended version information and quit"));
+    options_.addOption(BooleanOption("copyright").store(&bCopyright_).description("Print copyright information on startup"));
+    options_.addOption(IntegerOption("nice").store(&niceLevel_).storeIsSet(&bNiceSet_).description("Set the nicelevel (default depends on command)"));
+    options_.addOption(BooleanOption("backup").store(&bBackup_).description("Write backups if output files exist"));
+    options_.addOption(BooleanOption("fpexcept").store(&bFpexcept_).hidden().description("Enable floating-point exceptions"));
+    options_.addOption(IntegerOption("debug").store(&debugLevel_).hidden().defaultValueIfSet(1).description(
+            "Write file with debug information, "
+            "1: short (default), 2: also x and f"));
 }
 
 bool CommandLineCommonOptionsHolder::finishOptions()
@@ -372,18 +362,18 @@ ICommandLineModule *CommandLineModuleManager::Impl::processCommonOptions(
         if (argcForWrapper > 1)
         {
             CommandLineParser(optionsHolder->options())
-                .parse(&argcForWrapper, *argv);
+                    .parse(&argcForWrapper, *argv);
         }
         // If no action requested and there is a module specified, process it.
         if (argcForWrapper < *argc && !optionsHolder->shouldIgnoreActualModule())
         {
             const char *                         moduleName = (*argv)[argcForWrapper];
             CommandLineModuleMap::const_iterator moduleIter
-                = findModuleByName(moduleName);
+                    = findModuleByName(moduleName);
             if (moduleIter == modules_.end())
             {
                 std::string message
-                    = formatString("'%s' is not a GROMACS command.", moduleName);
+                        = formatString("'%s' is not a GROMACS command.", moduleName);
                 GMX_THROW(InvalidInputError(message));
             }
             module = moduleIter->second.get();
@@ -403,7 +393,8 @@ ICommandLineModule *CommandLineModuleManager::Impl::processCommonOptions(
         // TODO: It could be nicer to only recognize -h/-hidden if module is not
         // null.
         CommandLineParser(optionsHolder->options())
-            .skipUnknown(true).parse(argc, *argv);
+                .skipUnknown(true)
+                .parse(argc, *argv);
     }
     if (!optionsHolder->finishOptions())
     {

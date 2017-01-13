@@ -61,7 +61,7 @@
  *
  * This flag is set automatically, and should not be set by the user.
  */
-#define SPAR_SET      1
+#define SPAR_SET 1
 /*! \brief
  * If not set, an error is reported if the parameter is not specified by the
  * user.
@@ -76,7 +76,7 @@
  * The flag is cleared before sel_initfunc() if the value provided is actually
  * static.
  */
-#define SPAR_DYNAMIC  4
+#define SPAR_DYNAMIC 4
 /*! \brief
  * If set, the parameter value is parsed into sorted ranges.
  *
@@ -91,7 +91,7 @@
  * ranges. \p gmx_ana_selparam_t::nval should be 1 or \ref SPAR_VARNUM should be
  * specified; other values would lead to unpredictable behavior.
  */
-#define SPAR_RANGES   8
+#define SPAR_RANGES 8
 /*! \brief
  * If set, the parameter can have any number of values.
  *
@@ -108,7 +108,7 @@
  *
  * Cannot be combined with \ref GROUP_VALUE parameters.
  */
-#define SPAR_VARNUM   16
+#define SPAR_VARNUM 16
 /*! \brief
  * If set, the parameter can have a separate value for each atom.
  *
@@ -117,7 +117,7 @@
  *
  * Cannot be combined with \ref POS_VALUE or \ref GROUP_VALUE parameters.
  */
-#define SPAR_ATOMVAL  32
+#define SPAR_ATOMVAL 32
 /*! \brief
  * If set, the parameter takes one of a set of predefined strings.
  *
@@ -134,7 +134,7 @@
  * array for multiple instances of the same method is automatically taken care
  * of.
  */
-#define SPAR_ENUMVAL  128
+#define SPAR_ENUMVAL 128
 /*@}*/
 
 /*! \internal \brief

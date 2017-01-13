@@ -293,8 +293,8 @@ public:
                               const TopologyInformation &       top);
 
     virtual TrajectoryAnalysisModuleDataPointer startFrames(
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &        selections);
+            const AnalysisDataParallelOptions &opt,
+            const SelectionCollection &        selections);
     virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                               TrajectoryAnalysisModuleData *pdata);
 
@@ -445,49 +445,29 @@ void Sasa::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *s
 
     settings->setHelpText(desc);
 
-    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
-                           .store(&fnArea_).defaultBasename("area")
-                           .description("Total area as a function of time"));
-    options->addOption(FileNameOption("odg").filetype(eftPlot).outputFile()
-                           .store(&fnDGSolv_).defaultBasename("dgsolv")
-                           .description("Estimated solvation free energy as a function of time"));
-    options->addOption(FileNameOption("or").filetype(eftPlot).outputFile()
-                           .store(&fnResidueArea_).defaultBasename("resarea")
-                           .description("Average area per residue"));
-    options->addOption(FileNameOption("oa").filetype(eftPlot).outputFile()
-                           .store(&fnAtomArea_).defaultBasename("atomarea")
-                           .description("Average area per atom"));
-    options->addOption(FileNameOption("tv").filetype(eftPlot).outputFile()
-                           .store(&fnVolume_).defaultBasename("volume")
-                           .description("Total volume and density as a function of time"));
-    options->addOption(FileNameOption("q").filetype(eftPDB).outputFile()
-                           .store(&fnConnolly_).defaultBasename("connolly")
-                           .description("PDB file for Connolly surface"));
+    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required().store(&fnArea_).defaultBasename("area").description("Total area as a function of time"));
+    options->addOption(FileNameOption("odg").filetype(eftPlot).outputFile().store(&fnDGSolv_).defaultBasename("dgsolv").description("Estimated solvation free energy as a function of time"));
+    options->addOption(FileNameOption("or").filetype(eftPlot).outputFile().store(&fnResidueArea_).defaultBasename("resarea").description("Average area per residue"));
+    options->addOption(FileNameOption("oa").filetype(eftPlot).outputFile().store(&fnAtomArea_).defaultBasename("atomarea").description("Average area per atom"));
+    options->addOption(FileNameOption("tv").filetype(eftPlot).outputFile().store(&fnVolume_).defaultBasename("volume").description("Total volume and density as a function of time"));
+    options->addOption(FileNameOption("q").filetype(eftPDB).outputFile().store(&fnConnolly_).defaultBasename("connolly").description("PDB file for Connolly surface"));
     //options->addOption(FileNameOption("i").filetype(eftITP).outputFile()
     //                       .store(&fnRestraints_).defaultBasename("surfat")
     //                       .description("Topology file for position restraings on surface atoms"));
 
 
-    options->addOption(DoubleOption("probe").store(&solsize_)
-                           .description("Radius of the solvent probe (nm)"));
-    options->addOption(IntegerOption("ndots").store(&ndots_)
-                           .description("Number of dots per sphere, more dots means more accuracy"));
+    options->addOption(DoubleOption("probe").store(&solsize_).description("Radius of the solvent probe (nm)"));
+    options->addOption(IntegerOption("ndots").store(&ndots_).description("Number of dots per sphere, more dots means more accuracy"));
     //options->addOption(DoubleOption("minarea").store(&minarea_)
     //                       .description("The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file (see help)"));
-    options->addOption(BooleanOption("prot").store(&bIncludeSolute_)
-                           .description("Output the protein to the Connolly [REF].pdb[ref] file too"));
-    options->addOption(DoubleOption("dgs").store(&dgsDefault_)
-                           .description("Default value for solvation free energy per area (kJ/mol/nm^2)"));
+    options->addOption(BooleanOption("prot").store(&bIncludeSolute_).description("Output the protein to the Connolly [REF].pdb[ref] file too"));
+    options->addOption(DoubleOption("dgs").store(&dgsDefault_).description("Default value for solvation free energy per area (kJ/mol/nm^2)"));
 
     // Selections must select atoms for the VdW radii lookup to work.
     // The calculation group uses dynamicMask() so that the coordinates
     // match a static array of VdW radii.
-    options->addOption(SelectionOption("surface").store(&surfaceSel_)
-                           .required().onlySortedAtoms().dynamicMask()
-                           .description("Surface calculation selection"));
-    options->addOption(SelectionOption("output").storeVector(&outputSel_)
-                           .onlySortedAtoms().multiValue()
-                           .description("Output selection(s)"));
+    options->addOption(SelectionOption("surface").store(&surfaceSel_).required().onlySortedAtoms().dynamicMask().description("Surface calculation selection"));
+    options->addOption(SelectionOption("output").storeVector(&outputSel_).onlySortedAtoms().multiValue().description("Output selection(s)"));
 
     // Atom names etc. are required for the VdW radii lookup.
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
@@ -497,11 +477,11 @@ void Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
                         const TopologyInformation &       top)
 {
     const t_atoms &atoms = top.topology()->atoms;
-    top_ = top.topology();
+    top_                 = top.topology();
 
     //bITP   = opt2bSet("-i", nfile, fnm);
     const bool bResAt
-        = !fnResidueArea_.empty() || !fnAtomArea_.empty(); // || bITP;
+            = !fnResidueArea_.empty() || !fnAtomArea_.empty(); // || bITP;
     const bool bDGsol = !fnDGSolv_.empty();
 
     if (solsize_ < 0)
@@ -605,10 +585,11 @@ void Sasa::initAnalysis(const TrajectoryAnalysisSettings &settings,
             if (j == surfaceSel_.posCount() || outputIndices[i] != atomIndices[j])
             {
                 const std::string message
-                    = formatString("Output selection '%s' is not a subset of "
-                                   "the surface selection (atom %d is the first "
-                                   "atom not in the surface selection)",
-                                   outputSel_[g].name(), outputIndices[i] + 1);
+                        = formatString(
+                                "Output selection '%s' is not a subset of "
+                                "the surface selection (atom %d is the first "
+                                "atom not in the surface selection)",
+                                outputSel_[g].name(), outputIndices[i] + 1);
                 GMX_THROW(InconsistentInputError(message));
             }
             outputSel_[g].setOriginalId(i, j);
@@ -744,9 +725,9 @@ public:
      * `residueCount` will be zero if per-residue data is not being
      * calculated.
      */
-    SasaModuleData(TrajectoryAnalysisModule *module,
+    SasaModuleData(TrajectoryAnalysisModule *         module,
                    const AnalysisDataParallelOptions &opt,
-                   const SelectionCollection &selections,
+                   const SelectionCollection &        selections,
                    int atomCount, int residueCount)
         : TrajectoryAnalysisModuleData(module, opt, selections)
     {
@@ -1056,11 +1037,11 @@ void Sasa::writeOutput()
 
 //! \}
 
-}       // namespace
+} // namespace
 
 const char SasaInfo::name[] = "sasa";
 const char SasaInfo::shortDescription[]
-    = "Compute solvent accessible surface area";
+        = "Compute solvent accessible surface area";
 
 TrajectoryAnalysisModulePointer SasaInfo::create()
 {

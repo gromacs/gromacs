@@ -72,7 +72,11 @@
 
 enum
 {
-    euSel, euRect, euTric, euCompact, euNR
+    euSel,
+    euRect,
+    euTric,
+    euCompact,
+    euNR
 };
 
 
@@ -318,8 +322,10 @@ static void put_molecule_com_in_box(int unitcell_enum, int ecenter,
         {
             if (debug)
             {
-                fprintf(debug, "\nShifting position of molecule %d "
-                        "by %8.3f  %8.3f  %8.3f\n", i + 1,
+                fprintf(debug,
+                        "\nShifting position of molecule %d "
+                        "by %8.3f  %8.3f  %8.3f\n",
+                        i + 1,
                         shift[XX], shift[YY], shift[ZZ]);
             }
             for (j = mols->index[i]; (j < mols->index[i + 1] && j < natoms); j++)
@@ -373,8 +379,10 @@ static void put_residue_com_in_box(int unitcell_enum, int ecenter,
             {
                 if (debug)
                 {
-                    fprintf(debug, "\nShifting position of residue %d (atoms %d-%d) "
-                            "by %g,%g,%g\n", atom[res_start].resind + 1,
+                    fprintf(debug,
+                            "\nShifting position of residue %d (atoms %d-%d) "
+                            "by %g,%g,%g\n",
+                            atom[res_start].resind + 1,
                             res_start + 1, res_end + 1, shift[XX], shift[YY], shift[ZZ]);
                 }
                 for (j = res_start; j < res_end; j++)
@@ -515,7 +523,8 @@ void do_trunc(const char *fn, real t0)
         }
         if (bStop)
         {
-            fprintf(stderr, "Do you REALLY want to truncate this trajectory (%s) at:\n"
+            fprintf(stderr,
+                    "Do you REALLY want to truncate this trajectory (%s) at:\n"
                     "frame %d, time %g, bytes %ld ??? (type YES if so)\n",
                     fn, j, t, (long int)fpos);
             if (1 != scanf("%s", yesno))
@@ -740,122 +749,96 @@ int gmx_trjconv(int argc, char *argv[])
         epWhole,
         epNR
     };
-    const char *pbc_opt[epNR + 1] =
-    {
+    const char *pbc_opt[epNR + 1] = {
         nullptr, "none", "mol", "res", "atom", "nojump", "cluster", "whole",
         nullptr
     };
 
     int         unitcell_enum;
-    const char *unitcell_opt[euNR + 1] =
-    { nullptr, "rect", "tric", "compact", nullptr };
+    const char *unitcell_opt[euNR + 1] = { nullptr, "rect", "tric", "compact", nullptr };
 
     enum
     {
-        ecSel, ecTric, ecRect, ecZero, ecNR
+        ecSel,
+        ecTric,
+        ecRect,
+        ecZero,
+        ecNR
     };
-    const char *center_opt[ecNR + 1] =
-    { nullptr, "tric", "rect", "zero", nullptr };
-    int ecenter;
+    const char *center_opt[ecNR + 1] = { nullptr, "tric", "rect", "zero", nullptr };
+    int         ecenter;
 
     int fit_enum;
     enum
     {
-        efSel, efNone, efFit, efFitXY, efReset, efResetXY, efPFit, efNR
+        efSel,
+        efNone,
+        efFit,
+        efFitXY,
+        efReset,
+        efResetXY,
+        efPFit,
+        efNR
     };
-    const char *fit[efNR + 1] =
-    {
+    const char *fit[efNR + 1] = {
         nullptr, "none", "rot+trans", "rotxy+transxy", "translation", "transxy",
         "progressive", nullptr
     };
 
-    static gmx_bool bSeparate    = FALSE, bVels = TRUE, bForce = FALSE, bCONECT = FALSE;
-    static gmx_bool bCenter      = FALSE;
-    static int      skip_nr      = 1, ndec = 3, nzero = 0;
-    static real     tzero        = 0, delta_t = 0, timestep = 0, ttrunc = -1, tdump = -1, split_t = 0;
-    static rvec     newbox       = {0, 0, 0}, shift = {0, 0, 0}, trans = {0, 0, 0};
+    static gmx_bool bSeparate = FALSE, bVels = TRUE, bForce = FALSE, bCONECT = FALSE;
+    static gmx_bool bCenter = FALSE;
+    static int      skip_nr = 1, ndec = 3, nzero = 0;
+    static real     tzero = 0, delta_t = 0, timestep = 0, ttrunc = -1, tdump = -1, split_t = 0;
+    static rvec     newbox = { 0, 0, 0 }, shift = { 0, 0, 0 }, trans = { 0, 0, 0 };
     static char *   exec_command = nullptr;
-    static real     dropunder    = 0, dropover = 0;
-    static gmx_bool bRound       = FALSE;
+    static real     dropunder = 0, dropover = 0;
+    static gmx_bool bRound = FALSE;
 
     t_pargs
-        pa[] =
-    {
-        { "-skip", FALSE, etINT,
-          { &skip_nr }, "Only write every nr-th frame" },
-        { "-dt", FALSE, etTIME,
-          { &delta_t },
-          "Only write frame when t MOD dt = first time (%t)" },
-        { "-round", FALSE, etBOOL,
-          { &bRound }, "Round measurements to nearest picosecond"},
-        { "-dump", FALSE, etTIME,
-          { &tdump }, "Dump frame nearest specified time (%t)" },
-        { "-t0", FALSE, etTIME,
-          { &tzero },
-          "Starting time (%t) (default: don't change)" },
-        { "-timestep", FALSE, etTIME,
-          { &timestep },
-          "Change time step between input frames (%t)" },
-        { "-pbc", FALSE, etENUM,
-          { pbc_opt },
-          "PBC treatment (see help text for full description)" },
-        { "-ur", FALSE, etENUM,
-          { unitcell_opt }, "Unit-cell representation" },
-        { "-center", FALSE, etBOOL,
-          { &bCenter }, "Center atoms in box" },
-        { "-boxcenter", FALSE, etENUM,
-          { center_opt }, "Center for -pbc and -center" },
-        { "-box", FALSE, etRVEC,
-          { newbox },
-          "Size for new cubic box (default: read from input)" },
-        { "-trans", FALSE, etRVEC,
-          { trans },
-          "All coordinates will be translated by trans. This "
-          "can advantageously be combined with -pbc mol -ur "
-          "compact." },
-        { "-shift", FALSE, etRVEC,
-          { shift },
-          "All coordinates will be shifted by framenr*shift" },
-        { "-fit", FALSE, etENUM,
-          { fit },
-          "Fit molecule to ref structure in the structure file" },
-        { "-ndec", FALSE, etINT,
-          { &ndec },
-          "Precision for .xtc and .gro writing in number of "
-          "decimal places" },
-        { "-vel", FALSE, etBOOL,
-          { &bVels }, "Read and write velocities if possible" },
-        { "-force", FALSE, etBOOL,
-          { &bForce }, "Read and write forces if possible" },
-        { "-trunc", FALSE, etTIME,
-          { &ttrunc },
-          "Truncate input trajectory file after this time (%t)" },
-        { "-exec", FALSE, etSTR,
-          { &exec_command },
-          "Execute command for every output frame with the "
-          "frame number as argument" },
-        { "-split", FALSE, etTIME,
-          { &split_t },
-          "Start writing new file when t MOD split = first "
-          "time (%t)" },
-        { "-sep", FALSE, etBOOL,
-          { &bSeparate },
-          "Write each frame to a separate .gro, .g96 or .pdb "
-          "file" },
-        { "-nzero", FALSE, etINT,
-          { &nzero },
-          "If the -sep flag is set, use these many digits "
-          "for the file numbers and prepend zeros as needed" },
-        { "-dropunder", FALSE, etREAL,
-          { &dropunder }, "Drop all frames below this value" },
-        { "-dropover", FALSE, etREAL,
-          { &dropover }, "Drop all frames above this value" },
-        { "-conect", FALSE, etBOOL,
-          { &bCONECT },
-          "Add conect records when writing [REF].pdb[ref] files. Useful "
-          "for visualization of non-standard molecules, e.g. "
-          "coarse grained ones" }
-    };
+            pa[]
+            = {
+                { "-skip", FALSE, etINT, { &skip_nr }, "Only write every nr-th frame" },
+                { "-dt", FALSE, etTIME, { &delta_t }, "Only write frame when t MOD dt = first time (%t)" },
+                { "-round", FALSE, etBOOL, { &bRound }, "Round measurements to nearest picosecond" },
+                { "-dump", FALSE, etTIME, { &tdump }, "Dump frame nearest specified time (%t)" },
+                { "-t0", FALSE, etTIME, { &tzero }, "Starting time (%t) (default: don't change)" },
+                { "-timestep", FALSE, etTIME, { &timestep }, "Change time step between input frames (%t)" },
+                { "-pbc", FALSE, etENUM, { pbc_opt }, "PBC treatment (see help text for full description)" },
+                { "-ur", FALSE, etENUM, { unitcell_opt }, "Unit-cell representation" },
+                { "-center", FALSE, etBOOL, { &bCenter }, "Center atoms in box" },
+                { "-boxcenter", FALSE, etENUM, { center_opt }, "Center for -pbc and -center" },
+                { "-box", FALSE, etRVEC, { newbox }, "Size for new cubic box (default: read from input)" },
+                { "-trans", FALSE, etRVEC, { trans },
+                  "All coordinates will be translated by trans. This "
+                  "can advantageously be combined with -pbc mol -ur "
+                  "compact." },
+                { "-shift", FALSE, etRVEC, { shift }, "All coordinates will be shifted by framenr*shift" },
+                { "-fit", FALSE, etENUM, { fit }, "Fit molecule to ref structure in the structure file" },
+                { "-ndec", FALSE, etINT, { &ndec },
+                  "Precision for .xtc and .gro writing in number of "
+                  "decimal places" },
+                { "-vel", FALSE, etBOOL, { &bVels }, "Read and write velocities if possible" },
+                { "-force", FALSE, etBOOL, { &bForce }, "Read and write forces if possible" },
+                { "-trunc", FALSE, etTIME, { &ttrunc }, "Truncate input trajectory file after this time (%t)" },
+                { "-exec", FALSE, etSTR, { &exec_command },
+                  "Execute command for every output frame with the "
+                  "frame number as argument" },
+                { "-split", FALSE, etTIME, { &split_t },
+                  "Start writing new file when t MOD split = first "
+                  "time (%t)" },
+                { "-sep", FALSE, etBOOL, { &bSeparate },
+                  "Write each frame to a separate .gro, .g96 or .pdb "
+                  "file" },
+                { "-nzero", FALSE, etINT, { &nzero },
+                  "If the -sep flag is set, use these many digits "
+                  "for the file numbers and prepend zeros as needed" },
+                { "-dropunder", FALSE, etREAL, { &dropunder }, "Drop all frames below this value" },
+                { "-dropover", FALSE, etREAL, { &dropover }, "Drop all frames above this value" },
+                { "-conect", FALSE, etBOOL, { &bCONECT },
+                  "Add conect records when writing [REF].pdb[ref] files. Useful "
+                  "for visualization of non-standard molecules, e.g. "
+                  "coarse grained ones" }
+              };
 #define NPA asize(pa)
 
     FILE *       out    = nullptr;
@@ -864,7 +847,7 @@ int gmx_trjconv(int argc, char *argv[])
     int          file_nr;
     t_trxframe   fr, frout;
     int          flags;
-    rvec *       xmem  = nullptr, *vmem = nullptr, *fmem = nullptr;
+    rvec *       xmem = nullptr, *vmem = nullptr, *fmem = nullptr;
     rvec *       xp    = nullptr, x_shift, hbox;
     real *       w_rls = nullptr;
     int          m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
@@ -887,7 +870,7 @@ int gmx_trjconv(int argc, char *argv[])
     int *             clust_status_id = nullptr;
     int               ntrxopen        = 0;
     int *             nfwritten       = nullptr;
-    int               ndrop           = 0, ncol, drop0 = 0, drop1 = 0, dropuse = 0;
+    int               ndrop = 0, ncol, drop0 = 0, drop1 = 0, dropuse = 0;
     double **         dropval;
     real              tshift = 0, t0 = -1, dt = 0.001, prec;
     gmx_bool          bFit, bPFit, bReset;
@@ -907,19 +890,19 @@ int gmx_trjconv(int argc, char *argv[])
     gmx_output_env_t *oenv;
 
     t_filenm fnm[] = {
-        { efTRX, "-f",   nullptr,      ffREAD  },
-        { efTRO, "-o",   nullptr,      ffWRITE },
-        { efTPS, nullptr,   nullptr,      ffOPTRD },
-        { efNDX, nullptr,   nullptr,      ffOPTRD },
-        { efNDX, "-fr",  "frames",  ffOPTRD },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTRO, "-o", nullptr, ffWRITE },
+        { efTPS, nullptr, nullptr, ffOPTRD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efNDX, "-fr", "frames", ffOPTRD },
         { efNDX, "-sub", "cluster", ffOPTRD },
-        { efXVG, "-drop", "drop",    ffOPTRD }
+        { efXVG, "-drop", "drop", ffOPTRD }
     };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW
-                           | PCA_TIME_UNIT,
+                                   | PCA_TIME_UNIT,
                            NFILE, fnm, NPA, pa, asize(desc), desc,
                            0, nullptr, &oenv))
     {
@@ -970,11 +953,11 @@ int gmx_trjconv(int argc, char *argv[])
         /* set and check option dependencies */
         if (bPFit)
         {
-            bFit = TRUE;        /* for pfit, fit *must* be set */
+            bFit = TRUE; /* for pfit, fit *must* be set */
         }
         if (bFit)
         {
-            bReset = TRUE;       /* for fit, reset *must* be set */
+            bReset = TRUE; /* for fit, reset *must* be set */
         }
         nfitdim = 0;
         if (bFit || bReset)
@@ -985,7 +968,7 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (bSetUR)
         {
-            if (!(bPBCcomRes || bPBCcomMol ||  bPBCcomAtom))
+            if (!(bPBCcomRes || bPBCcomMol || bPBCcomAtom))
             {
                 fprintf(stderr,
                         "WARNING: Option for unitcell representation (-ur %s)\n"
@@ -996,7 +979,8 @@ int gmx_trjconv(int argc, char *argv[])
         }
         if (bFit && bPBC)
         {
-            gmx_fatal(FARGS, "PBC condition treatment does not work together with rotational fit.\n"
+            gmx_fatal(FARGS,
+                      "PBC condition treatment does not work together with rotational fit.\n"
                       "Please do the PBC condition treatment first and then run trjconv in a second step\n"
                       "for the rotational fit.\n"
                       "First doing the rotational fit and then doing the PBC treatment gives incorrect\n"
@@ -1015,7 +999,7 @@ int gmx_trjconv(int argc, char *argv[])
 
         /* Determine output type */
         out_file = opt2fn("-o", NFILE, fnm);
-        int ftp = fn2ftp(out_file);
+        int ftp  = fn2ftp(out_file);
         fprintf(stderr, "Will write %s: %s\n", ftp2ext(ftp), ftp2desc(ftp));
         bNeedPrec = (ftp == efXTC || ftp == efGRO);
         int ftpin = fn2ftp(in_file);
@@ -1024,8 +1008,8 @@ int gmx_trjconv(int argc, char *argv[])
             /* check if velocities are possible in input and output files */
             bVels = (ftp == efTRR || ftp == efGRO
                      || ftp == efG96 || ftp == efTNG)
-                && (ftpin == efTRR || ftpin == efGRO
-                    || ftpin == efG96 || ftpin == efTNG || ftpin == efCPT);
+                    && (ftpin == efTRR || ftpin == efGRO
+                        || ftpin == efG96 || ftpin == efTNG || ftpin == efCPT);
         }
         if (bSeparate || bSplit)
         {
@@ -1045,7 +1029,8 @@ int gmx_trjconv(int argc, char *argv[])
             {
                 /* It seems likely that other trajectory file types
                  * could work here. */
-                gmx_fatal(FARGS, "Can only use the sub option with output file types "
+                gmx_fatal(FARGS,
+                          "Can only use the sub option with output file types "
                           "xtc and trr");
             }
             clust = cluster_index(nullptr, opt2fn("-sub", NFILE, fnm));
@@ -1055,16 +1040,18 @@ int gmx_trjconv(int argc, char *argv[])
              */
             if (0 && (clust->clust->nr > FOPEN_MAX - 4))
             {
-                gmx_fatal(FARGS, "Can not open enough (%d) files to write all the"
+                gmx_fatal(FARGS,
+                          "Can not open enough (%d) files to write all the"
                           " trajectories.\ntry splitting the index file in %d parts.\n"
                           "FOPEN_MAX = %d",
                           clust->clust->nr, 1 + clust->clust->nr / FOPEN_MAX, FOPEN_MAX);
             }
-            gmx_warning("The -sub option could require as many open output files as there are\n"
-                        "index groups in the file (%d). If you get I/O errors opening new files,\n"
-                        "try reducing the number of index groups in the file, and perhaps\n"
-                        "using trjconv -sub several times on different chunks of your index file.\n",
-                        clust->clust->nr);
+            gmx_warning(
+                    "The -sub option could require as many open output files as there are\n"
+                    "index groups in the file (%d). If you get I/O errors opening new files,\n"
+                    "try reducing the number of index groups in the file, and perhaps\n"
+                    "using trjconv -sub several times on different chunks of your index file.\n",
+                    clust->clust->nr);
 
             snew(clust_status, clust->clust->nr);
             snew(clust_status_id, clust->clust->nr);
@@ -1321,7 +1308,8 @@ int gmx_trjconv(int argc, char *argv[])
                         gmx_fatal(FARGS,
                                   "Index[%d] %d is larger than the number of atoms in the\n"
                                   "trajectory file (%d). There is a mismatch in the contents\n"
-                                  "of your -f, -s and/or -n files.", i, index[i] + 1, natoms);
+                                  "of your -f, -s and/or -n files.",
+                                  i, index[i] + 1, natoms);
                     }
                     bCopy = bCopy || (i != index[i]);
                 }
@@ -1353,7 +1341,7 @@ int gmx_trjconv(int argc, char *argv[])
                 case efGRO:
                 case efG96:
                 case efPDB:
-                    if (( !bSeparate && !bSplit ) && !bSubTraj)
+                    if ((!bSeparate && !bSplit) && !bSubTraj)
                     {
                         out = gmx_ffopen(out_file, filemode);
                     }
@@ -1376,10 +1364,10 @@ int gmx_trjconv(int argc, char *argv[])
             }
 
             /* Start the big loop over frames */
-            file_nr  =  0;
-            frame    =  0;
-            outframe =  0;
-            model_nr =  0;
+            file_nr  = 0;
+            frame    = 0;
+            outframe = 0;
+            model_nr = 0;
             bDTset   = FALSE;
 
             /* Main loop over frames */
@@ -1546,7 +1534,7 @@ int gmx_trjconv(int argc, char *argv[])
                 }
 
                 bWriteFrame
-                    = ( ( !bTDump && !frindex && frame % skip_nr == 0 ) || bDumpFrame );
+                        = ((!bTDump && !frindex && frame % skip_nr == 0) || bDumpFrame);
 
                 if (bWriteFrame && (bDropUnder || bDropOver))
                 {
@@ -1586,8 +1574,7 @@ int gmx_trjconv(int argc, char *argv[])
                     {
                         frout_time = tzero + frame * timestep;
                     }
-                    else
-                    if (bSetTime)
+                    else if (bSetTime)
                     {
                         frout_time += tshift;
                     }
@@ -1617,7 +1604,7 @@ int gmx_trjconv(int argc, char *argv[])
                     if (bDoIt || bTDump)
                     {
                         /* print sometimes */
-                        if ( ((outframe % SKIP) == 0) || (outframe < SKIP) )
+                        if (((outframe % SKIP) == 0) || (outframe < SKIP))
                         {
                             fprintf(stderr, " ->  frame %6d time %8.3f      \r",
                                     outframe, output_env_conv_time(oenv, frout_time));
@@ -1776,7 +1763,9 @@ int gmx_trjconv(int argc, char *argv[])
                                         }
                                         else if (clust_status_id[my_clust] == -2)
                                         {
-                                            gmx_fatal(FARGS, "File %s.xtc should still be open (%d open .xtc files)\n" "in order to write frame %d. my_clust = %d",
+                                            gmx_fatal(FARGS,
+                                                      "File %s.xtc should still be open (%d open .xtc files)\n"
+                                                      "in order to write frame %d. my_clust = %d",
                                                       clust->grpname[my_clust], ntrxopen, frame,
                                                       my_clust);
                                         }
@@ -1891,8 +1880,10 @@ int gmx_trjconv(int argc, char *argv[])
 
         if (!bHaveFirstFrame || (bTDump && !bDumpFrame))
         {
-            fprintf(stderr, "\nWARNING no output, "
-                    "last frame read at t=%g\n", fr.time);
+            fprintf(stderr,
+                    "\nWARNING no output, "
+                    "last frame read at t=%g\n",
+                    fr.time);
         }
         fprintf(stderr, "\n");
 

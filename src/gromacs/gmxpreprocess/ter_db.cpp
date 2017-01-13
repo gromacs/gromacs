@@ -55,9 +55,9 @@
 
 /* use bonded types definitions in hackblock.h */
 #define ekwRepl ebtsNR + 1
-#define ekwAdd  ebtsNR + 2
-#define ekwDel  ebtsNR + 3
-#define ekwNR   3
+#define ekwAdd ebtsNR + 2
+#define ekwDel ebtsNR + 3
+#define ekwNR 3
 const char *kw_names[ekwNR] = {
     "replace", "add", "delete"
 };
@@ -296,9 +296,11 @@ static void read_ter_db_file(char *fn,
         {
             if (nb < 0)
             {
-                gmx_fatal(FARGS, "reading termini database: "
+                gmx_fatal(FARGS,
+                          "reading termini database: "
                           "directive expected before line:\n%s\n"
-                          "This might be a file in an old format.", line);
+                          "This might be a file in an old format.",
+                          line);
             }
             /* this is not a header, so it must be data */
             if (kwnr >= ebtsNR)
@@ -324,8 +326,10 @@ static void read_ter_db_file(char *fn,
                 {
                     if (sscanf(line, "%s%n", buf, &n) != 1)
                     {
-                        gmx_fatal(FARGS, "Reading Termini Database '%s': "
-                                  "expected atom name on line\n%s", fn, line);
+                        gmx_fatal(FARGS,
+                                  "Reading Termini Database '%s': "
+                                  "expected atom name on line\n%s",
+                                  fn, line);
                     }
                     tb[nb].hack[nh].oname = gmx_strdup(buf);
                     /* we only replace or delete one atom at a time */
@@ -388,8 +392,10 @@ static void read_ter_db_file(char *fn,
             }
             else
             {
-                gmx_fatal(FARGS, "Reading Termini Database: Expecting a header at line\n"
-                          "%s", line);
+                gmx_fatal(FARGS,
+                          "Reading Termini Database: Expecting a header at line\n"
+                          "%s",
+                          line);
             }
         }
         get_a_line(in, line, STRLEN);
@@ -438,7 +444,7 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
                          int nb, t_hackblock tb[],
                          const char *resname,
                          const char *rtpname,
-                         int *nret)
+                         int *       nret)
 {
     // TODO Four years later, no force fields have ever used this, so decide status of this feature
     /* Since some force fields (e.g. OPLS) needs different

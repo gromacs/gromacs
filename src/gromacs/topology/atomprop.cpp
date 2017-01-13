@@ -74,11 +74,13 @@ typedef struct gmx_atomprop
 } gmx_atomprop;
 
 
-
 /* NOTFOUND should be smallest, others larger in increasing priority */
 enum
 {
-    NOTFOUND = -4, WILDCARD, WILDPROT, PROTEIN
+    NOTFOUND = -4,
+    WILDCARD,
+    WILDPROT,
+    PROTEIN
 };
 
 /* return number of matching characters,
@@ -88,7 +90,7 @@ static int dbcmp_len(char *search, char *database)
     int i;
 
     i = 0;
-    while (search[i] && database[i] && (search[i] == database[i]) )
+    while (search[i] && database[i] && (search[i] == database[i]))
     {
         i++;
     }
@@ -118,8 +120,8 @@ static int get_prop_index(aprop_t *ap, gmx_residuetype_t *restype,
         rlen = dbcmp_len(resnm, ap->resnm[i]);
         if (rlen == NOTFOUND)
         {
-            if ( (strcmp(ap->resnm[i], "*") == 0)
-                 || (strcmp(ap->resnm[i], "???") == 0) )
+            if ((strcmp(ap->resnm[i], "*") == 0)
+                || (strcmp(ap->resnm[i], "???") == 0))
             {
                 rlen = WILDCARD;
             }
@@ -129,10 +131,10 @@ static int get_prop_index(aprop_t *ap, gmx_residuetype_t *restype,
             }
         }
         alen = dbcmp_len(atomnm, ap->atomnm[i]);
-        if ( (alen > NOTFOUND) && (rlen > NOTFOUND))
+        if ((alen > NOTFOUND) && (rlen > NOTFOUND))
         {
-            if ( ( (alen > malen) && (rlen >= mrlen))
-                 || ( (rlen > mrlen) && (alen >= malen) ) )
+            if (((alen > malen) && (rlen >= mrlen))
+                || ((rlen > mrlen) && (alen >= malen)))
             {
                 malen = alen;
                 mrlen = rlen;
@@ -201,7 +203,8 @@ static void add_prop(aprop_t *ap, gmx_residuetype_t *restype,
         }
         else
         {
-            fprintf(stderr, "Warning double different entries %s %s %g and %g on line %d in file %s\n"
+            fprintf(stderr,
+                    "Warning double different entries %s %s %g and %g on line %d in file %s\n"
                     "Using last entry (%g)\n",
                     resnm, atomnm, p, ap->value[j], line, ap->db, p);
             ap->value[j] = p;
@@ -216,7 +219,7 @@ static void add_prop(aprop_t *ap, gmx_residuetype_t *restype,
 
 static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 {
-    gmx_atomprop *ap2 = (gmx_atomprop*) aps;
+    gmx_atomprop *ap2 = (gmx_atomprop *)aps;
     FILE *        fp;
     char          line[STRLEN], resnm[32], atomnm[32];
     double        pp;
@@ -250,9 +253,9 @@ static void read_prop(gmx_atomprop_t aps, int eprop, double factor)
 
 static void set_prop(gmx_atomprop_t aps, int eprop)
 {
-    gmx_atomprop *ap2          = (gmx_atomprop*) aps;
+    gmx_atomprop *ap2          = (gmx_atomprop *)aps;
     const char *  fns[epropNR] = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
-    double        fac[epropNR] = { 1.0,    1.0,  418.4, 1.0, 1.0 };
+    double        fac[epropNR] = { 1.0, 1.0, 418.4, 1.0, 1.0 };
     double        def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
     aprop_t *     ap;
 
@@ -268,7 +271,7 @@ static void set_prop(gmx_atomprop_t aps, int eprop)
             fprintf(debug, "Entries in %s: %d\n", ap->db, ap->nprop);
         }
 
-        if ( ( (!aps->bWarned) && (eprop == epropMass) ) || (eprop == epropVDW))
+        if (((!aps->bWarned) && (eprop == epropMass)) || (eprop == epropVDW))
         {
             printf("\n"
                    "WARNING: Masses and atomic (Van der Waals) radii will be guessed\n"
@@ -317,7 +320,7 @@ static void destroy_prop(aprop_t *ap)
 
 void gmx_atomprop_destroy(gmx_atomprop_t aps)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = (gmx_atomprop *)aps;
     int           p;
 
     if (aps == nullptr)
@@ -352,7 +355,7 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
                             int eprop, const char *resnm, const char *atomnm,
                             real *value)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = (gmx_atomprop *)aps;
     int           j;
 #define MAXQ 32
     char     atomname[MAXQ], resname[MAXQ];
@@ -406,7 +409,7 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
 
 char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = (gmx_atomprop *)aps;
     int           i;
 
     set_prop(aps, epropElement);
@@ -422,7 +425,7 @@ char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber)
 
 int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *elem)
 {
-    gmx_atomprop *ap = (gmx_atomprop*) aps;
+    gmx_atomprop *ap = (gmx_atomprop *)aps;
     int           i;
 
     set_prop(aps, epropElement);

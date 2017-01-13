@@ -74,9 +74,9 @@ bool g_showExpectedExceptions = false;
 GMX_TEST_OPTIONS(ExceptionOptions, options)
 {
     options->addOption(BooleanOption("show-error-messages")
-                           .store(&g_showExpectedExceptions)
-                           .description("Show error messages from expected "
-                                        "exceptions"));
+                               .store(&g_showExpectedExceptions)
+                               .description("Show error messages from expected "
+                                            "exceptions"));
 }
 //! \endcond
 }
@@ -95,7 +95,7 @@ void processExpectedException(const std::exception &ex)
 }
 //! \endcond
 
-}       // namespace internal
+} // namespace internal
 
 namespace
 {
@@ -144,9 +144,9 @@ gmx_uint64_t calculateUlpDifference(const FloatingPoint<FloatType> &value1,
                                     const FloatingPoint<FloatType> &value2)
 {
     typename FloatingPoint<FloatType>::Bits biased1
-        = floatingPointToBiasedInteger(value1);
+            = floatingPointToBiasedInteger(value1);
     typename FloatingPoint<FloatType>::Bits biased2
-        = floatingPointToBiasedInteger(value2);
+            = floatingPointToBiasedInteger(value2);
     return biased1 > biased2 ? biased1 - biased2 : biased2 - biased1;
 }
 
@@ -186,7 +186,7 @@ gmx_uint64_t relativeToleranceToUlp(FloatType tolerance)
 //! \}
 //! \}
 
-}       // namespace
+} // namespace
 
 /********************************************************************
  * FloatingPointDifference
@@ -259,7 +259,7 @@ bool FloatingPointTolerance::isWithin(
     }
 
     const double absoluteTolerance
-        = difference.isDouble() ? doubleAbsoluteTolerance_ : singleAbsoluteTolerance_;
+            = difference.isDouble() ? doubleAbsoluteTolerance_ : singleAbsoluteTolerance_;
     if (difference.asAbsolute() < absoluteTolerance)
     {
         return true;
@@ -269,7 +269,7 @@ bool FloatingPointTolerance::isWithin(
     // the numbers are identical, even if the term magnitude is 0, which seems
     // a reasonable thing to do...
     const double relativeTolerance
-        = difference.isDouble() ? doubleRelativeTolerance_ : singleRelativeTolerance_;
+            = difference.isDouble() ? doubleRelativeTolerance_ : singleRelativeTolerance_;
 
     if (difference.asAbsolute() <= relativeTolerance * difference.termMagnitude())
     {
@@ -277,7 +277,7 @@ bool FloatingPointTolerance::isWithin(
     }
 
     const gmx_uint64_t ulpTolerance
-        = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
+            = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
     if (ulpTolerance < GMX_UINT64_MAX && difference.asUlps() <= ulpTolerance)
     {
         return true;
@@ -290,11 +290,11 @@ std::string FloatingPointTolerance::toString(const FloatingPointDifference &diff
 {
     std::string  result;
     const double absoluteTolerance
-        = difference.isDouble() ? doubleAbsoluteTolerance_ : singleAbsoluteTolerance_;
+            = difference.isDouble() ? doubleAbsoluteTolerance_ : singleAbsoluteTolerance_;
     const double relativeTolerance
-        = difference.isDouble() ? doubleRelativeTolerance_ : singleRelativeTolerance_;
+            = difference.isDouble() ? doubleRelativeTolerance_ : singleRelativeTolerance_;
     const gmx_uint64_t ulpTolerance
-        = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
+            = difference.isDouble() ? doubleUlpTolerance_ : singleUlpTolerance_;
 
     if (absoluteTolerance > 0.0)
     {

@@ -100,11 +100,11 @@ static gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm 
  * the log file is opened. */
 static void read_checkpoint_data(const char *filename, int *simulation_part,
                                  t_commrec *cr,
-                                 gmx_bool bTryToAppendFiles,
+                                 gmx_bool   bTryToAppendFiles,
                                  int nfile, const t_filenm fnm[],
                                  const char *part_suffix,
-                                 gmx_bool *bAddPart,
-                                 gmx_bool *bDoAppendFiles)
+                                 gmx_bool *  bAddPart,
+                                 gmx_bool *  bDoAppendFiles)
 {
     t_fileio *           fp;
     int                  nfiles;
@@ -116,7 +116,7 @@ static void read_checkpoint_data(const char *filename, int *simulation_part,
 
     if (SIMMASTER(cr))
     {
-        if (!gmx_fexist(filename) || (!(fp = gmx_fio_open(filename, "r")) ))
+        if (!gmx_fexist(filename) || (!(fp = gmx_fio_open(filename, "r"))))
         {
             *simulation_part = 0;
             fprintf(stderr, "Warning: No checkpoint file found with -cpi option. Assuming this is a new run.\n\n");

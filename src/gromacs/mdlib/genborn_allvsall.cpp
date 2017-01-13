@@ -56,10 +56,9 @@
 
 typedef struct
 {
-    int *  jindex_gb;
-    int ** exclusion_mask_gb;
-}
-gmx_allvsallgb2_data_t;
+    int * jindex_gb;
+    int **exclusion_mask_gb;
+} gmx_allvsallgb2_data_t;
 
 static int calc_maxoffset(int i, int natoms)
 {
@@ -112,12 +111,12 @@ static int calc_maxoffset(int i, int natoms)
     return maxoffset;
 }
 
-static void setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t * aadata,
-                                            t_ilist *                ilist,
-                                            int                      natoms,
-                                            gmx_bool                 bInclude12,
-                                            gmx_bool                 bInclude13,
-                                            gmx_bool                 bInclude14)
+static void setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t *aadata,
+                                            t_ilist *               ilist,
+                                            int                     natoms,
+                                            gmx_bool                bInclude12,
+                                            gmx_bool                bInclude13,
+                                            gmx_bool                bInclude14)
 {
     int i, j, k;
     int a1, a2;
@@ -323,12 +322,12 @@ static void setup_gb_exclusions_and_indices(gmx_allvsallgb2_data_t * aadata,
 }
 
 
-static void genborn_allvsall_setup(gmx_allvsallgb2_data_t ** p_aadata,
-                                   t_ilist *                 ilist,
-                                   int                       natoms,
-                                   gmx_bool                  bInclude12,
-                                   gmx_bool                  bInclude13,
-                                   gmx_bool                  bInclude14)
+static void genborn_allvsall_setup(gmx_allvsallgb2_data_t **p_aadata,
+                                   t_ilist *                ilist,
+                                   int                      natoms,
+                                   gmx_bool                 bInclude12,
+                                   gmx_bool                 bInclude13,
+                                   gmx_bool                 bInclude14)
 {
     gmx_allvsallgb2_data_t *aadata;
 
@@ -339,13 +338,12 @@ static void genborn_allvsall_setup(gmx_allvsallgb2_data_t ** p_aadata,
 }
 
 
-
-int genborn_allvsall_calc_still_radii(t_forcerec *     fr,
-                                      t_mdatoms *      mdatoms,
-                                      gmx_genborn_t *  born,
-                                      gmx_localtop_t * top,
-                                      real *           x,
-                                      void *           work)
+int genborn_allvsall_calc_still_radii(t_forcerec *    fr,
+                                      t_mdatoms *     mdatoms,
+                                      gmx_genborn_t * born,
+                                      gmx_localtop_t *top,
+                                      real *          x,
+                                      void *          work)
 {
     gmx_allvsallgb2_data_t *aadata;
     int                     natoms;
@@ -453,7 +451,7 @@ int genborn_allvsall_calc_still_radii(t_forcerec *     fr,
                     term  = 0.5 * (1.0 - cosq);
                     ccf   = term * term;
                     sinq  = 1.0 - cosq * cosq;
-                    dccf  = 2.0*term*sinq*gmx::invsqrt(sinq) * theta;
+                    dccf  = 2.0 * term * sinq * gmx::invsqrt(sinq) * theta;
                 }
 
                 prod = STILL_P4 * vaj;
@@ -461,14 +459,13 @@ int genborn_allvsall_calc_still_radii(t_forcerec *     fr,
                 icf6 = (4 * ccf - dccf) * idr6;
 
                 born->gpol_still_work[k] += prod_ai * icf4;
-                gpi                       = gpi + prod * icf4;
+                gpi = gpi + prod * icf4;
 
                 /* Save ai->aj and aj->ai chain rule terms */
                 fr->dadx[n++] = prod * icf6;
                 fr->dadx[n++] = prod_ai * icf6;
 
                 /* 27 flops, plus one cos(x) - estimate at 20 flops  => 47 */
-
             }
         }
 
@@ -513,7 +510,7 @@ int genborn_allvsall_calc_still_radii(t_forcerec *     fr,
                 term  = 0.5 * (1.0 - cosq);
                 ccf   = term * term;
                 sinq  = 1.0 - cosq * cosq;
-                dccf  = 2.0*term*sinq*gmx::invsqrt(sinq) * theta;
+                dccf  = 2.0 * term * sinq * gmx::invsqrt(sinq) * theta;
             }
 
             prod = STILL_P4 * vaj;
@@ -521,7 +518,7 @@ int genborn_allvsall_calc_still_radii(t_forcerec *     fr,
             icf6 = (4 * ccf - dccf) * idr6;
 
             born->gpol_still_work[k] += prod_ai * icf4;
-            gpi                       = gpi + prod * icf4;
+            gpi = gpi + prod * icf4;
 
             /* Save ai->aj and aj->ai chain rule terms */
             fr->dadx[n++] = prod * icf6;
@@ -548,14 +545,13 @@ int genborn_allvsall_calc_still_radii(t_forcerec *     fr,
 }
 
 
-
-int genborn_allvsall_calc_hct_obc_radii(t_forcerec *     fr,
-                                        t_mdatoms *      mdatoms,
-                                        gmx_genborn_t *  born,
-                                        int              gb_algorithm,
-                                        gmx_localtop_t * top,
-                                        real *           x,
-                                        void *           work)
+int genborn_allvsall_calc_hct_obc_radii(t_forcerec *    fr,
+                                        t_mdatoms *     mdatoms,
+                                        gmx_genborn_t * born,
+                                        int             gb_algorithm,
+                                        gmx_localtop_t *top,
+                                        real *          x,
+                                        void *          work)
 {
     gmx_allvsallgb2_data_t *aadata;
     int                     natoms;
@@ -662,9 +658,9 @@ int genborn_allvsall_calc_hct_obc_radii(t_forcerec *     fr,
                     }
 
                     uij  = 1.0 / (dr + sk);
-                    lij2 = lij  * lij;
+                    lij2 = lij * lij;
                     lij3 = lij2 * lij;
-                    uij2 = uij  * uij;
+                    uij2 = uij * uij;
                     uij3 = uij2 * uij;
 
                     diff2 = uij2 - lij2;
@@ -710,17 +706,17 @@ int genborn_allvsall_calc_hct_obc_radii(t_forcerec *     fr,
                         dlij = 0.0;
                     }
 
-                    lij2 = lij  * lij;
+                    lij2 = lij * lij;
                     lij3 = lij2 * lij;
 
                     uij  = 1.0 / (dr + sk_ai);
-                    uij2 = uij  * uij;
+                    uij2 = uij * uij;
                     uij3 = uij2 * uij;
 
                     diff2 = uij2 - lij2;
 
                     lij_inv  = gmx::invsqrt(lij2);
-                    sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
+                    sk2      = sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
                     sk2_rinv = sk2 * rinv;
                     prod     = 0.25 * sk2_rinv;
 
@@ -748,7 +744,6 @@ int genborn_allvsall_calc_hct_obc_radii(t_forcerec *     fr,
                 }
                 fr->dadx[n++] = dadxi;
                 fr->dadx[n++] = dadxj;
-
             }
         }
 
@@ -789,9 +784,9 @@ int genborn_allvsall_calc_hct_obc_radii(t_forcerec *     fr,
                 }
 
                 uij  = 1.0 / (dr + sk);
-                lij2 = lij  * lij;
+                lij2 = lij * lij;
                 lij3 = lij2 * lij;
-                uij2 = uij  * uij;
+                uij2 = uij * uij;
                 uij3 = uij2 * uij;
 
                 diff2 = uij2 - lij2;
@@ -837,17 +832,17 @@ int genborn_allvsall_calc_hct_obc_radii(t_forcerec *     fr,
                     dlij = 0.0;
                 }
 
-                lij2 = lij  * lij;
+                lij2 = lij * lij;
                 lij3 = lij2 * lij;
 
                 uij  = 1.0 / (dr + sk_ai);
-                uij2 = uij  * uij;
+                uij2 = uij * uij;
                 uij3 = uij2 * uij;
 
                 diff2 = uij2 - lij2;
 
                 lij_inv  = gmx::invsqrt(lij2);
-                sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
+                sk2      = sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
                 sk2_rinv = sk2 * rinv;
                 prod     = 0.25 * sk2_rinv;
 
@@ -897,7 +892,6 @@ int genborn_allvsall_calc_hct_obc_radii(t_forcerec *     fr,
                 fr->invsqrta[i] = gmx::invsqrt(born->bRad[i]);
             }
         }
-
     }
     else
     {
@@ -912,7 +906,7 @@ int genborn_allvsall_calc_hct_obc_radii(t_forcerec *     fr,
                 rai      = rai - doffset;
                 rai_inv  = 1.0 / rai;
                 sum_ai   = rai * born->gpol_hct_work[i];
-                sum_ai2  = sum_ai  * sum_ai;
+                sum_ai2  = sum_ai * sum_ai;
                 sum_ai3  = sum_ai2 * sum_ai;
 
                 tsum          = tanh(born->obc_alpha * sum_ai - born->obc_beta * sum_ai2 + born->obc_gamma * sum_ai3);
@@ -930,16 +924,13 @@ int genborn_allvsall_calc_hct_obc_radii(t_forcerec *     fr,
 }
 
 
-
-
-
-int genborn_allvsall_calc_chainrule(t_forcerec *    fr,
-                                    t_mdatoms *     mdatoms,
-                                    gmx_genborn_t * born,
-                                    real *          x,
-                                    real *          f,
-                                    int             gb_algorithm,
-                                    void *          work)
+int genborn_allvsall_calc_chainrule(t_forcerec *   fr,
+                                    t_mdatoms *    mdatoms,
+                                    gmx_genborn_t *born,
+                                    real *         x,
+                                    real *         f,
+                                    int            gb_algorithm,
+                                    void *         work)
 {
     gmx_allvsallgb2_data_t *aadata;
     int                     natoms;
@@ -949,14 +940,14 @@ int genborn_allvsall_calc_chainrule(t_forcerec *    fr,
     int                     idx;
     int *                   mask;
 
-    real   ix, iy, iz;
-    real   fix, fiy, fiz;
-    real   jx, jy, jz;
-    real   dx, dy, dz;
-    real   tx, ty, tz;
-    real   rbai, rbaj, fgb, fgb_ai, rbi;
-    real * rb;
-    real * dadx;
+    real  ix, iy, iz;
+    real  fix, fiy, fiz;
+    real  jx, jy, jz;
+    real  dx, dy, dz;
+    real  tx, ty, tz;
+    real  rbai, rbaj, fgb, fgb_ai, rbi;
+    real *rb;
+    real *dadx;
 
     natoms = mdatoms->nr;
     ni0    = 0;

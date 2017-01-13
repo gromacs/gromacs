@@ -64,8 +64,8 @@ class Simd4MathTest : public Simd4Test
 {
 public:
     ::testing::AssertionResult
-                             compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
-                                                      real refFunc(real x),     Simd4Real gmx_simdcall simd4Func(Simd4Real x));
+    compareSimd4MathFunction(const char *refFuncExpr, const char *simd4FuncExpr,
+                             real refFunc(real x), Simd4Real gmx_simdcall simd4Func(Simd4Real x));
 };
 
 /*! \brief Test approximate equality of SIMD4 vs reference version of a function.
@@ -88,8 +88,8 @@ public:
  * the SimdBaseTest class. You should not never call this function directly,
  * but use the macro GMX_EXPECT_SIMD4_FUNC_NEAR(refFunc,tstFunc) instead.
  */
-::testing::AssertionResult Simd4MathTest::compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
-                                                                   real refFunc(real x),     Simd4Real gmx_simdcall simd4Func(Simd4Real x))
+::testing::AssertionResult Simd4MathTest::compareSimd4MathFunction(const char *refFuncExpr, const char *simd4FuncExpr,
+                                                                   real refFunc(real x), Simd4Real gmx_simdcall simd4Func(Simd4Real x))
 {
     std::vector<real> vx(GMX_SIMD4_WIDTH);
     std::vector<real> vref(GMX_SIMD4_WIDTH);
@@ -102,17 +102,17 @@ public:
     int               i, iter;
     int               niter   = s_nPoints / GMX_SIMD4_WIDTH;
     int               npoints = niter * GMX_SIMD4_WIDTH;
-#    if GMX_DOUBLE
-    union
-    {
-        double r; std::int64_t i;
+#if GMX_DOUBLE
+    union {
+        double       r;
+        std::int64_t i;
     } conv0, conv1;
-#    else
-    union
-    {
-        float r; std::int32_t i;
+#else
+    union {
+        float        r;
+        std::int32_t i;
     } conv0, conv1;
-#    endif
+#endif
 
     maxUlpDiff = 0;
     dx         = (range_.second - range_.first) / npoints;
@@ -128,8 +128,8 @@ public:
 
         for (i = 0, eq = true, signOk = true; i < GMX_SIMD4_WIDTH && eq == true; i++)
         {
-            eq     = eq && ( fabs(vref[i] - vtst[i]) < absTol_ );
-            signOk = signOk && ( vref[i] * vtst[i] >= 0 );
+            eq     = eq && (fabs(vref[i] - vtst[i]) < absTol_);
+            signOk = signOk && (vref[i] * vtst[i] >= 0);
         }
         if (eq == true)
         {
@@ -216,14 +216,14 @@ TEST_F(Simd4MathTest, invsqrtSingleaccuracy)
     GMX_EXPECT_SIMD4_FUNC_NEAR(refInvsqrt, invsqrtSingleAccuracy);
 }
 
-}      // namespace
+} // namespace
 
 #endif // GMX_SIMD4_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace
 
 #endif // GMX_SIMD

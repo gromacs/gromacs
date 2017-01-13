@@ -113,7 +113,7 @@ int multisim_min(const gmx_multisim_t *ms, int nmin, int n)
     bEqual = TRUE;
     for (s = 0; s < ms->nsim; s++)
     {
-        bPos   = bPos   && (buf[s] > 0);
+        bPos   = bPos && (buf[s] > 0);
         bEqual = bEqual && (buf[s] == buf[0]);
     }
     if (bPos)
@@ -161,7 +161,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
     tensor   corr_vir, corr_pres;
     gmx_bool bEner, bPres, bTemp;
     gmx_bool bStopCM, bGStat,
-             bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
+            bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
     real prescorr, enercorr, dvdlcorr, dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
@@ -215,7 +215,6 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
              * so signal that we still have to do it.
              */
             *bSumEkinhOld = TRUE;
-
         }
         else
         {
@@ -269,7 +268,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
          */
         enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin,
                                        bEkinAveVel, bScaleEkin);
-        enerd->dvdl_lin[efptMASS] = (double) dvdl_ekin;
+        enerd->dvdl_lin[efptMASS] = (double)dvdl_ekin;
 
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }
@@ -284,8 +283,8 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
 
     if (bEner)
     {
-        enerd->term[F_DISPCORR]  = enercorr;
-        enerd->term[F_EPOT]     += enercorr;
+        enerd->term[F_DISPCORR] = enercorr;
+        enerd->term[F_EPOT] += enercorr;
         enerd->term[F_DVDL_VDW] += dvdlcorr;
     }
 
@@ -309,7 +308,7 @@ void compute_globals(FILE *fplog, gmx_global_stat *gstat, t_commrec *cr, t_input
         m_add(total_vir, corr_vir, total_vir);
         m_add(pres, corr_pres, pres);
         enerd->term[F_PDISPCORR] = prescorr;
-        enerd->term[F_PRES]     += prescorr;
+        enerd->term[F_PRES] += prescorr;
     }
 }
 
@@ -323,8 +322,7 @@ static void check_nst_param(const gmx::MDLogger &mdlog,
     {
         /* Round up to the next multiple of nst */
         *p = ((*p) / nst + 1) * nst;
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "NOTE: %s changes %s to %d", desc_nst, desc_p, *p);
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("NOTE: %s changes %s to %d", desc_nst, desc_p, *p);
     }
 }
 
@@ -361,7 +359,7 @@ void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
                 for (i = 0; i < efptNR; i++)
                 {
                     state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state])
-                        + frac * (fepvals->all_lambda[i][fep_state + 1] - fepvals->all_lambda[i][fep_state]);
+                                              + frac * (fepvals->all_lambda[i][fep_state + 1] - fepvals->all_lambda[i][fep_state]);
                 }
             }
         }
@@ -389,7 +387,7 @@ void set_current_lambdas(gmx_int64_t step, t_lambda *fepvals, gmx_bool bRerunMD,
                 for (i = 0; i < efptNR; i++)
                 {
                     state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state])
-                        + frac * (fepvals->all_lambda[i][fep_state + 1] - fepvals->all_lambda[i][fep_state]);
+                                              + frac * (fepvals->all_lambda[i][fep_state + 1] - fepvals->all_lambda[i][fep_state]);
                 }
             }
             else
@@ -500,9 +498,7 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
             && nstglobalcomm > ir->nstlist && nstglobalcomm % ir->nstlist != 0)
         {
             nstglobalcomm = (nstglobalcomm / ir->nstlist) * ir->nstlist;
-            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d",
-                    nstglobalcomm);
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("WARNING: nstglobalcomm is larger than nstlist, but not a multiple, setting it to %d", nstglobalcomm);
         }
         if (ir->nstcalcenergy > 0)
         {
@@ -529,14 +525,11 @@ int check_nstglobalcomm(const gmx::MDLogger &mdlog, int nstglobalcomm, t_inputre
 
     if (ir->comm_mode != ecmNO && ir->nstcomm < nstglobalcomm)
     {
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "WARNING: Changing nstcomm from %d to %d",
-                ir->nstcomm, nstglobalcomm);
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("WARNING: Changing nstcomm from %d to %d", ir->nstcomm, nstglobalcomm);
         ir->nstcomm = nstglobalcomm;
     }
 
-    GMX_LOG(mdlog.info).appendTextFormatted(
-            "Intra-simulation communication will occur every %d steps.\n", nstglobalcomm);
+    GMX_LOG(mdlog.info).appendTextFormatted("Intra-simulation communication will occur every %d steps.\n", nstglobalcomm);
     return nstglobalcomm;
 }
 
@@ -556,7 +549,6 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
     fr->v = vp;
 
     *bNotLastFrame = (fr->natoms >= 0);
-
 }
 
 void set_state_entries(t_state *state, const t_inputrec *ir)
@@ -601,12 +593,12 @@ void set_state_entries(t_state *state, const t_inputrec *ir)
         if (inputrecNptTrotter(ir) || (inputrecNphTrotter(ir)))
         {
             state->nnhpres = 1;
-            state->flags  |= (1 << estNHPRES_XI);
-            state->flags  |= (1 << estNHPRES_VXI);
-            state->flags  |= (1 << estSVIR_PREV);
-            state->flags  |= (1 << estFVIR_PREV);
-            state->flags  |= (1 << estVETA);
-            state->flags  |= (1 << estVOL0);
+            state->flags |= (1 << estNHPRES_XI);
+            state->flags |= (1 << estNHPRES_VXI);
+            state->flags |= (1 << estSVIR_PREV);
+            state->flags |= (1 << estFVIR_PREV);
+            state->flags |= (1 << estVETA);
+            state->flags |= (1 << estVOL0);
         }
     }
 

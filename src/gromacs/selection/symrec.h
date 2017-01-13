@@ -72,10 +72,10 @@ public:
     //! Defines the type of the symbol.
     enum SymbolType
     {
-        ReservedSymbol,         //!< The symbol is a reserved keyword.
-        VariableSymbol,         //!< The symbol is a variable.
-        MethodSymbol,           //!< The symbol is a selection method.
-        PositionSymbol          //!< The symbol is a position keyword.
+        ReservedSymbol, //!< The symbol is a reserved keyword.
+        VariableSymbol, //!< The symbol is a variable.
+        MethodSymbol,   //!< The symbol is a selection method.
+        PositionSymbol  //!< The symbol is a position keyword.
     };
 
     ~SelectionParserSymbol();
@@ -142,7 +142,7 @@ private:
  * \ingroup module_selection
  */
 class SelectionParserSymbolIterator
-    : public std::iterator<std::input_iterator_tag, const SelectionParserSymbol>
+        : public std::iterator<std::input_iterator_tag, const SelectionParserSymbol>
 {
 public:
     //! Creates an independent copy of an iterator.

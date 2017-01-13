@@ -77,13 +77,13 @@ static const double c_group_qljw_tab = 27.0;
 static const double c_group_qw = 21.0;
 
 /* Cost of a pair interaction in the "Verlet" cut-off scheme, QEXP is Ewald */
-static const double c_nbnxn_lj      =  2.5;
-static const double c_nbnxn_qrf_lj  =  2.9;
-static const double c_nbnxn_qrf     =  2.4;
-static const double c_nbnxn_qexp_lj =  4.2;
-static const double c_nbnxn_qexp    =  3.8;
+static const double c_nbnxn_lj      = 2.5;
+static const double c_nbnxn_qrf_lj  = 2.9;
+static const double c_nbnxn_qrf     = 2.4;
+static const double c_nbnxn_qexp_lj = 4.2;
+static const double c_nbnxn_qexp    = 3.8;
 /* Extra cost for expensive LJ interaction, e.g. pot-switch or LJ-PME */
-static const double c_nbnxn_ljexp_add =  1.0;
+static const double c_nbnxn_ljexp_add = 1.0;
 
 /* Cost of the different components of PME. */
 /* Cost of particle reordering and redistribution (no SIMD correction).
@@ -94,20 +94,20 @@ static const double c_pme_redist = 100.0;
 /* Cost of q spreading and force interpolation per charge. This part almost
  * doesn't accelerate with SIMD, so we don't use SIMD correction.
  */
-static const double c_pme_spread =   5.0;
+static const double c_pme_spread = 5.0;
 /* Cost of fft's, will be multiplied with 2 N log2(N) (no SIMD correction)
  * Without MPI the number is 2-3, depending on grid factors and thread count.
  * We take the high limit to be on the safe side and account for some MPI
  * communication cost, which will dominate at high parallelization.
  */
-static const double c_pme_fft =   3.0;
+static const double c_pme_fft = 3.0;
 /* Cost of pme_solve, will be multiplied with N */
-static const double c_pme_solve =   9.0;
+static const double c_pme_solve = 9.0;
 
 /* Cost of a bonded interaction divided by the number of distances calculations
  * required in one interaction. The actual cost is nearly propotional to this.
  */
-static const double c_bond =  25.0;
+static const double c_bond = 25.0;
 
 
 #if GMX_SIMD_HAVE_REAL
@@ -155,7 +155,7 @@ static double simd_cycle_factor(gmx_bool bUseSIMD)
         gmx_incons("gmx_cycle_factor() compiled without SIMD called with bUseSIMD=TRUE");
     }
     /* No SIMD, no speedup */
-    speedup = 1.0;
+    speedup                        = 1.0;
 #endif
 
     /* Return speed compared to the reference (Haswell).
@@ -177,7 +177,7 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
 #if GMX_SIMD_HAVE_REAL
     gmx_bool bSimdBondeds = TRUE;
 #else
-    gmx_bool bSimdBondeds = FALSE;
+    gmx_bool   bSimdBondeds        = FALSE;
 #endif
 
     bExcl = (ir->cutoff_scheme == ecutsGROUP && inputrecExclForces(ir)
@@ -244,15 +244,15 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     case F_PDIHS:
                     case F_RBDIHS:
                     case F_LJ14:
-                        nd_c    =      nonsimd_step_frac * (NRAL(ftype) - 1);
+                        nd_c    = nonsimd_step_frac * (NRAL(ftype) - 1);
                         nd_simd = (1 - nonsimd_step_frac) * (NRAL(ftype) - 1);
                         break;
                     default:
                         nd_c = NRAL(ftype) - 1;
                         break;
                 }
-                nbonds      = nmol * molt->ilist[ftype].nr / (1 + NRAL(ftype));
-                ndtot_c    += nbonds * nd_c;
+                nbonds = nmol * molt->ilist[ftype].nr / (1 + NRAL(ftype));
+                ndtot_c += nbonds * nd_c;
                 ndtot_simd += nbonds * nd_simd;
             }
         }
@@ -267,7 +267,7 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
         fprintf(debug, "nr. of distance calculations in bondeds: C %.1f SIMD %.1f\n", ndtot_c, ndtot_simd);
     }
 
-    if (ndistance_c    != nullptr)
+    if (ndistance_c != nullptr)
     {
         *ndistance_c = ndtot_c;
     }
@@ -280,7 +280,7 @@ void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
 static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
                           const matrix box,
                           int *nq_tot, int *nlj_tot,
-                          double *cost_pp,
+                          double *  cost_pp,
                           gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
 {
     t_atom *       atom;
@@ -303,7 +303,7 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
      */
     fq   = c_group_fq;
     fqlj = (bLJcut ? c_group_qlj_cut : c_group_qlj_tab);
-    flj  = (bLJcut ? c_group_lj_cut  : c_group_lj_tab);
+    flj  = (bLJcut ? c_group_lj_cut : c_group_lj_tab);
     /* Cost of 1 water with one Q/LJ atom */
     fqljw = (bLJcut ? c_group_qljw_cut : c_group_qljw_tab);
     /* Cost of 1 water with one Q atom or with 1/3 water (LJ negligible) */
@@ -333,7 +333,7 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
             while (a < molt->cgs.index[cg + 1])
             {
                 bQ  = (atom[a].q != 0 || atom[a].qB != 0);
-                bLJ = (iparams[(atnr + 1) * atom[a].type].lj.c6  != 0
+                bLJ = (iparams[(atnr + 1) * atom[a].type].lj.c6 != 0
                        || iparams[(atnr + 1) * atom[a].type].lj.c12 != 0);
                 if (atom[a].q != atom[a].qB)
                 {
@@ -344,10 +344,10 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     *bTypePerturbed = TRUE;
                 }
                 /* This if this atom fits into water optimization */
-                if (!((a == a0   &&  bQ &&  bLJ)
-                      || (a == a0 + 1 &&  bQ && !bLJ)
-                      || (a == a0 + 2 &&  bQ && !bLJ && atom[a].q == atom[a - 1].q)
-                      || (a == a0 + 3 && !bQ &&  bLJ)))
+                if (!((a == a0 && bQ && bLJ)
+                      || (a == a0 + 1 && bQ && !bLJ)
+                      || (a == a0 + 2 && bQ && !bLJ && atom[a].q == atom[a - 1].q)
+                      || (a == a0 + 3 && !bQ && bLJ)))
                 {
                     bWater = FALSE;
                 }
@@ -375,13 +375,13 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
             else
             {
                 nqlj += nmol * ncqlj;
-                nq   += nmol * ncq;
-                nlj  += nmol * nclj;
+                nq += nmol * ncq;
+                nlj += nmol * nclj;
             }
         }
     }
 
-    *nq_tot  = nq  + nqlj + nw * 3;
+    *nq_tot  = nq + nqlj + nw * 3;
     *nlj_tot = nlj + nqlj + nw;
 
     if (debug)
@@ -395,11 +395,11 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
      * (and TIP4P effectively has 3 interactions with (water) atoms)).
      */
     *cost_pp = 0.5 * (fqljw * nw * nqlj
-                      + fqw  * nw * (3 * nw + nq)
+                      + fqw * nw * (3 * nw + nq)
                       + fqlj * nqlj * nqlj
-                      + fq   * nq * (3 * nw + nqlj + nq)
-                      + flj  * nlj * (nw + nqlj + nlj))
-        * 4 / 3 * M_PI * ir->rlist * ir->rlist * ir->rlist / det(box);
+                      + fq * nq * (3 * nw + nqlj + nq)
+                      + flj * nlj * (nw + nqlj + nlj))
+               * 4 / 3 * M_PI * ir->rlist * ir->rlist * ir->rlist / det(box);
 
     *cost_pp *= simd_cycle_factor(bHaveSIMD);
 }
@@ -407,7 +407,7 @@ static void pp_group_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
 static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
                            const matrix box,
                            int *nq_tot, int *nlj_tot,
-                           double *cost_pp,
+                           double *  cost_pp,
                            gmx_bool *bChargePerturbed, gmx_bool *bTypePerturbed)
 {
     t_atom *       atom;
@@ -419,7 +419,7 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     double         c_qlj, c_q, c_lj;
     double         nppa;
     int            j_cluster_size;
-    /* Conversion factor for reference vs SIMD kernel performance.
+/* Conversion factor for reference vs SIMD kernel performance.
      * The factor is about right for SSE2/4, but should be 2 higher for AVX256.
      */
 #if GMX_DOUBLE
@@ -445,7 +445,7 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
         {
             if (atom[a].q != 0 || atom[a].qB != 0)
             {
-                if (iparams[(atnr + 1) * atom[a].type].lj.c6  != 0
+                if (iparams[(atnr + 1) * atom[a].type].lj.c6 != 0
                     || iparams[(atnr + 1) * atom[a].type].lj.c12 != 0)
                 {
                     nqlj += nmol;
@@ -471,14 +471,14 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
     *nq_tot  = nqlj + nq;
     *nlj_tot = nqlj + nlj;
 
-    /* Effective cut-off for cluster pair list of 4x4 or 4x8 atoms.
+/* Effective cut-off for cluster pair list of 4x4 or 4x8 atoms.
      * This choice should match the one of pick_nbnxn_kernel_cpu().
      * TODO: Make this function use pick_nbnxn_kernel_cpu().
      */
 #if GMX_SIMD_HAVE_REAL && ((GMX_SIMD_REAL_WIDTH == 8 && defined GMX_SIMD_HAVE_FMA) || GMX_SIMD_REAL_WIDTH > 8)
     j_cluster_size = 8;
 #else
-    j_cluster_size = 4;
+    j_cluster_size                 = 4;
 #endif
     r_eff = ir->rlist + nbnxn_get_rlist_effective_inc(j_cluster_size, mtop->natoms / det(box));
 
@@ -493,19 +493,19 @@ static void pp_verlet_load(const gmx_mtop_t *mtop, const t_inputrec *ir,
 
     /* Determine the cost per pair interaction */
     c_qlj = (bQRF ? c_nbnxn_qrf_lj : c_nbnxn_qexp_lj);
-    c_q   = (bQRF ? c_nbnxn_qrf    : c_nbnxn_qexp);
+    c_q   = (bQRF ? c_nbnxn_qrf : c_nbnxn_qexp);
     c_lj  = c_nbnxn_lj;
     if (ir->vdw_modifier == eintmodPOTSWITCH || EVDW_PME(ir->vdwtype))
     {
         c_qlj += c_nbnxn_ljexp_add;
-        c_lj  += c_nbnxn_ljexp_add;
+        c_lj += c_nbnxn_ljexp_add;
     }
     if (EVDW_PME(ir->vdwtype) && ir->ljpme_combination_rule == eljpmeLB)
     {
         /* We don't have LJ-PME LB comb. rule kernels, we use slow kernels */
         c_qlj *= nbnxn_refkernel_fac;
-        c_q   *= nbnxn_refkernel_fac;
-        c_lj  *= nbnxn_refkernel_fac;
+        c_q *= nbnxn_refkernel_fac;
+        c_lj *= nbnxn_refkernel_fac;
     }
 
     /* For the PP non-bonded cost it is (unrealistically) assumed
@@ -537,7 +537,7 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
      * so we need to scale the number of bonded interactions for which there
      * are only C implementations to the number of SIMD equivalents.
      */
-    cost_bond = c_bond * (ndistance_c   * simd_cycle_factor(FALSE)
+    cost_bond = c_bond * (ndistance_c * simd_cycle_factor(FALSE)
                           + ndistance_simd * simd_cycle_factor(bHaveSIMD));
 
     if (ir->cutoff_scheme == ecutsGROUP)
@@ -563,10 +563,10 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
         double grid = ir->nkx * ir->nky * ((ir->nkz + 1) / 2);
 
         int f = ((ir->efep != efepNO && bChargePerturbed) ? 2 : 1);
-        cost_redist +=   c_pme_redist * nq_tot;
+        cost_redist += c_pme_redist * nq_tot;
         cost_spread += f * c_pme_spread * nq_tot * gmx::power3(ir->pme_order);
-        cost_fft    += f * c_pme_fft * grid * std::log(grid) / std::log(2.0);
-        cost_solve  += f * c_pme_solve * grid * simd_cycle_factor(bHaveSIMD);
+        cost_fft += f * c_pme_fft * grid * std::log(grid) / std::log(2.0);
+        cost_solve += f * c_pme_solve * grid * simd_cycle_factor(bHaveSIMD);
     }
 
     if (EVDW_PME(ir->vdwtype))
@@ -579,10 +579,10 @@ float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
             /* LB combination rule: we have 7 mesh terms */
             f *= 7;
         }
-        cost_redist +=   c_pme_redist * nlj_tot;
+        cost_redist += c_pme_redist * nlj_tot;
         cost_spread += f * c_pme_spread * nlj_tot * gmx::power3(ir->pme_order);
-        cost_fft    += f * c_pme_fft * 2*grid*std::log(grid) / std::log(2.0);
-        cost_solve  += f * c_pme_solve * grid * simd_cycle_factor(bHaveSIMD);
+        cost_fft += f * c_pme_fft * 2 * grid * std::log(grid) / std::log(2.0);
+        cost_solve += f * c_pme_solve * grid * simd_cycle_factor(bHaveSIMD);
     }
 
     cost_pme = cost_redist + cost_spread + cost_fft + cost_solve;

@@ -103,8 +103,8 @@ private:
 
     //! Needed to read the members without otherwise unnecessary accessors.
     friend void printBinaryInformation(
-        FILE *fp, const IProgramContext &programContext,
-        const BinaryInformationSettings &settings);
+            FILE *fp, const IProgramContext &programContext,
+            const BinaryInformationSettings &settings);
 };
 
 /*! \brief
@@ -128,6 +128,6 @@ void printBinaryInformation(FILE *                           fp,
                             const IProgramContext &          programContext,
                             const BinaryInformationSettings &settings);
 
-}     // namespace gmx
+} // namespace gmx
 
 #endif

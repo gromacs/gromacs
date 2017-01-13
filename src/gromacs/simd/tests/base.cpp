@@ -58,12 +58,12 @@ namespace
 GMX_TEST_OPTIONS(SimdBaseTestOptions, options)
 {
     options->addOption(::gmx::IntegerOption("npoints")
-                           .store(&SimdBaseTest::s_nPoints)
-                           .description("Number of points to test for SIMD math functions"));
+                               .store(&SimdBaseTest::s_nPoints)
+                               .description("Number of points to test for SIMD math functions"));
 }
 /*! \endcond */
 
-}       // namespace
+} // namespace
 
 /*! \cond internal */
 /*! \addtogroup module_simd */
@@ -71,7 +71,7 @@ GMX_TEST_OPTIONS(SimdBaseTestOptions, options)
 
 int SimdBaseTest::s_nPoints = 10000;
 
-::testing::AssertionResult SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
+::testing::AssertionResult SimdBaseTest::compareVectorRealUlp(const char *refExpr, const char *tstExpr,
                                                               const std::vector<real> &ref, const std::vector<real> &tst)
 {
     std::vector<real>         absDiff(tst.size());
@@ -79,12 +79,13 @@ int SimdBaseTest::s_nPoints = 10000;
     bool                      allOk;
     size_t                    i;
 
-    union
-    {
+    union {
 #if GMX_DOUBLE
-        double r; std::int64_t i;
+        double       r;
+        std::int64_t i;
 #else
-        float r; std::int32_t i;
+        float        r;
+        std::int32_t i;
 #endif
     } conv0, conv1;
 
@@ -103,7 +104,7 @@ int SimdBaseTest::s_nPoints = 10000;
         ulpDiff[i] = llabs(conv0.i - conv1.i);
 
         /* Use strict smaller-than for absolute tolerance check, so we disable it with absTol_=0 */
-        allOk = allOk && ( ( absDiff[i] < absTol_ ) || ( ( ref[i] * tst[i] >= 0 ) && (ulpDiff[i] <= ulpTol_) ) );
+        allOk = allOk && ((absDiff[i] < absTol_) || ((ref[i] * tst[i] >= 0) && (ulpDiff[i] <= ulpTol_)));
     }
 
     if (allOk == true)
@@ -127,5 +128,5 @@ int SimdBaseTest::s_nPoints = 10000;
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace

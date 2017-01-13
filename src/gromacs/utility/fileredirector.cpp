@@ -100,7 +100,7 @@ public:
     }
 };
 
-}   // namespace
+} // namespace
 
 //! \cond libapi
 IFileInputRedirector &defaultFileInputRedirector()

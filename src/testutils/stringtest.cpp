@@ -71,8 +71,8 @@ GMX_TEST_OPTIONS(StringTestOptions, options)
 {
     options->addOption(
             BooleanOption("stdout")
-                .store(&g_bWriteToStdOut)
-                .description("Print the test string to stdout instead of checking against reference data"));
+                    .store(&g_bWriteToStdOut)
+                    .description("Print the test string to stdout instead of checking against reference data"));
 }
 //! \endcond
 

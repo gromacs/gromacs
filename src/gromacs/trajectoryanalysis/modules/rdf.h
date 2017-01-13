@@ -53,8 +53,8 @@ namespace analysismodules
 class RdfInfo
 {
 public:
-    static const char name[];
-    static const char shortDescription[];
+    static const char                      name[];
+    static const char                      shortDescription[];
     static TrajectoryAnalysisModulePointer create();
 };
 

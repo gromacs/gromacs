@@ -99,8 +99,10 @@ static int xtc_check(const char *str, gmx_bool bResult, const char *file, int li
     {
         if (debug)
         {
-            fprintf(debug, "\nXTC error: read/write of %s failed, "
-                    "source file %s, line %d\n", str, file, line);
+            fprintf(debug,
+                    "\nXTC error: read/write of %s failed, "
+                    "source file %s, line %d\n",
+                    str, file, line);
         }
         return 0;
     }
@@ -125,12 +127,12 @@ static int xtc_header(XDR *xd, int *magic, int *natoms, gmx_int64_t *step, real 
          * fix the fact that we used xdr_int for the step number,
          * which is defined to be signed and 32 bit. */
         int intStep = *step;
-        result = XTC_CHECK("step",   xdr_int(xd, &intStep)); /* frame number    */
-        *step  = intStep;
+        result      = XTC_CHECK("step", xdr_int(xd, &intStep)); /* frame number    */
+        *step       = intStep;
     }
     if (result)
     {
-        result = XTC_CHECK("time",   xdr_r2f(xd, time, bRead)); /* time */
+        result = XTC_CHECK("time", xdr_r2f(xd, time, bRead)); /* time */
     }
     *bOK = (result != 0);
 
@@ -197,7 +199,6 @@ static int xtc_coord(XDR *xd, int *natoms, rvec *box, rvec *x, real *prec, gmx_b
 }
 
 
-
 int write_xtc(t_fileio *fio,
               int natoms, gmx_int64_t step, real time,
               const rvec *box, const rvec *x, real prec)
@@ -260,7 +261,7 @@ int read_first_xtc(t_fileio *fio, int *natoms, gmx_int64_t *step, real *time,
     return *bOK;
 }
 
-int read_next_xtc(t_fileio* fio,
+int read_next_xtc(t_fileio *fio,
                   int natoms, gmx_int64_t *step, real *time,
                   matrix box, rvec *x, real *prec, gmx_bool *bOK)
 {

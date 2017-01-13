@@ -150,7 +150,7 @@ static int pdbf_comp(const void *a, const void *b)
     {
         if (bFreeSort)
         {
-            x = pa->efree   - pb->efree;
+            x = pa->efree - pb->efree;
         }
         else
         {
@@ -334,7 +334,7 @@ static void cluster_em_all(FILE *fp, int npdb, t_pdbfile *pdbf[],
 
 int gmx_anadock(int argc, char *argv[])
 {
-    const char *      desc[] = {
+    const char *desc[] = {
         "[THISMODULE] analyses the results of an Autodock run and clusters the",
         "structures together, based on distance or RMSD. The docked energy",
         "and free energy estimates are analysed, and for each cluster the",
@@ -343,23 +343,20 @@ int gmx_anadock(int argc, char *argv[])
         "using [gmx-cluster] and then sort the clusters on either lowest",
         "energy or average energy."
     };
-    t_filenm          fnm[] = {
-        { efPDB, "-f", nullptr,       ffREAD  },
+    t_filenm fnm[] = {
+        { efPDB, "-f", nullptr, ffREAD },
         { efXVG, "-od", "edocked", ffWRITE },
-        { efXVG, "-of", "efree",   ffWRITE },
-        { efLOG, "-g",  "anadock", ffWRITE }
+        { efXVG, "-of", "efree", ffWRITE },
+        { efLOG, "-g", "anadock", ffWRITE }
     };
     gmx_output_env_t *oenv;
 #define NFILE asize(fnm)
-    static gmx_bool bFree  = FALSE, bRMS = TRUE;
+    static gmx_bool bFree = FALSE, bRMS = TRUE;
     static real     cutoff = 0.2;
     t_pargs         pa[]   = {
-        { "-free",   FALSE, etBOOL, {&bFree},
-          "Use Free energy estimate from autodock for sorting the classes" },
-        { "-rms",    FALSE, etBOOL, {&bRMS},
-          "Cluster on RMS or distance" },
-        { "-cutoff", FALSE, etREAL, {&cutoff},
-          "Maximum RMSD/distance for belonging to the same cluster" }
+        { "-free", FALSE, etBOOL, { &bFree }, "Use Free energy estimate from autodock for sorting the classes" },
+        { "-rms", FALSE, etBOOL, { &bRMS }, "Cluster on RMS or distance" },
+        { "-cutoff", FALSE, etREAL, { &cutoff }, "Maximum RMSD/distance for belonging to the same cluster" }
     };
 #define NPA asize(pa)
 

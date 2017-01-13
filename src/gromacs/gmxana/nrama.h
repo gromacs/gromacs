@@ -89,4 +89,4 @@ gmx_bool new_data(t_xrama *xr);
 }
 #endif
 
-#endif  /* GMX_GMXANA_NRAMA_H */
+#endif /* GMX_GMXANA_NRAMA_H */

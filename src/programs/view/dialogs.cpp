@@ -124,7 +124,7 @@ static void hide_mb(t_gmx *gmx)
     }
 }
 
-static void MBCallback(t_x11 * /*x11*/, int dlg_mess, int /*item_id*/,
+static void MBCallback(t_x11 * /*x11*/, int  dlg_mess, int /*item_id*/,
                        char * /*set*/, void *data)
 {
     t_gmx *gmx;
@@ -206,7 +206,11 @@ static t_dlg *ni_mb(t_x11 *x11, t_gmx *gmx)
 
 enum
 {
-    eExE, eExGrom, eExPdb, eExConf, eExNR
+    eExE,
+    eExGrom,
+    eExPdb,
+    eExConf,
+    eExNR
 };
 
 static void ExportCB(t_x11 *x11, int dlg_mess, int item_id,
@@ -252,7 +256,13 @@ static void ExportCB(t_x11 *x11, int dlg_mess, int item_id,
 
 enum
 {
-    eg0, egTOPOL, egCONFIN, egPARAM, eg1, eg1PROC, eg32PROC
+    eg0,
+    egTOPOL,
+    egCONFIN,
+    egPARAM,
+    eg1,
+    eg1PROC,
+    eg32PROC
 };
 
 static void Extract(t_dlg *dlg, int ID, char *buf)
@@ -268,7 +278,12 @@ static void Extract(t_dlg *dlg, int ID, char *buf)
 
 enum bond_set
 {
-    ebShowH = 11, ebDPlus, ebRMPBC, ebCue, ebSkip, ebWait
+    ebShowH = 11,
+    ebDPlus,
+    ebRMPBC,
+    ebCue,
+    ebSkip,
+    ebWait
 };
 
 static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
@@ -414,7 +429,13 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
 
 enum
 {
-    esFUNCT = 1, esBSHOW, esINFIL, esINDEXFIL, esLSQ, esSHOW, esPLOTFIL
+    esFUNCT = 1,
+    esBSHOW,
+    esINFIL,
+    esINDEXFIL,
+    esLSQ,
+    esSHOW,
+    esPLOTFIL
 };
 
 static bool in_set(int i, int n, int set[])
@@ -430,22 +451,22 @@ static bool in_set(int i, int n, int set[])
     return false;
 }
 
-typedef t_dlg *t_mmb (t_x11 *x11, t_gmx *gmx);
+typedef t_dlg *t_mmb(t_x11 *x11, t_gmx *gmx);
 
 typedef struct
 {
-    const char  *dlgfile;
+    const char * dlgfile;
     DlgCallback *cb;
 } t_dlginit;
 
 void init_dlgs(t_x11 *x11, t_gmx *gmx)
 {
     static t_dlginit di[] = {
-        { "export.dlg",   ExportCB },
-        { "bonds.dlg",    BondsCB  }
+        { "export.dlg", ExportCB },
+        { "bonds.dlg", BondsCB }
     };
-    static t_mmb *mi[emNR] = { quit_mb,    help_mb,    about_mb,   ni_mb };
-    unsigned int i;
+    static t_mmb *mi[emNR] = { quit_mb, help_mb, about_mb, ni_mb };
+    unsigned int  i;
 
     snew(gmx->dlgs, edNR);
     for (i = 0; (i < asize(di)); i++)

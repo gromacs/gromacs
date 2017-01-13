@@ -80,7 +80,8 @@ static void yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
 
 //! Logic for computing the location of the output of Bison reduction.
 #define YYLLOC_DEFAULT(Current, Rhs, N)                          \
-    do {                                                         \
+    do                                                           \
+    {                                                            \
         if (N != 0)                                              \
         {                                                        \
             (Current).startIndex = YYRHSLOC(Rhs, 1).startIndex;  \
@@ -89,7 +90,7 @@ static void yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
         else                                                     \
         {                                                        \
             (Current).startIndex = (Current).endIndex            \
-                                 = YYRHSLOC(Rhs, 0).endIndex;                   \
+                    = YYRHSLOC(Rhs, 0).endIndex;                 \
         }                                                        \
         _gmx_sel_lexer_set_current_location(scanner, (Current)); \
     } while (0)
@@ -121,28 +122,29 @@ static void yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
  */
 //! Starts an action that may throw exceptions.
 #define BEGIN_ACTION \
-    try {
+    try              \
+    {
 //! Finishes an action that may throw exceptions.
-#define END_ACTION                                              \
-    }                                                           \
-    catch (std::exception &ex)                                  \
-    {                                                           \
-        if (_gmx_selparser_handle_exception(scanner, &ex))      \
-        {                                                       \
-            YYERROR;                                            \
-        }                                                       \
-        else                                                    \
-        {                                                       \
-            YYABORT;                                            \
-        }                                                       \
+#define END_ACTION                                         \
+    }                                                      \
+    catch (std::exception & ex)                            \
+    {                                                      \
+        if (_gmx_selparser_handle_exception(scanner, &ex)) \
+        {                                                  \
+            YYERROR;                                       \
+        }                                                  \
+        else                                               \
+        {                                                  \
+            YYABORT;                                       \
+        }                                                  \
     }
 //! Finishes an action that may throw exceptions and does not support resuming.
-#define END_ACTION_TOPLEVEL                                     \
-    }                                                           \
-    catch (const std::exception &)                              \
-    {                                                           \
+#define END_ACTION_TOPLEVEL                                              \
+    }                                                                    \
+    catch (const std::exception &)                                       \
+    {                                                                    \
         _gmx_sel_lexer_set_exception(scanner, std::current_exception()); \
-        YYABORT;                                                \
+        YYABORT;                                                         \
     }
 //!\}
 
@@ -163,8 +165,8 @@ static void yyerror(YYLTYPE *location, yyscan_t scanner, char const *s)
  * Does not throw for smart pointer types.  If used with types that may throw,
  * the order of operations should be such that it is exception-safe.
  */
-template <typename ValueType> static
-ValueType get(ValueType *src)
+template <typename ValueType>
+static ValueType get(ValueType *src)
 {
     GMX_RELEASE_ASSERT(src != nullptr, "Semantic value pointers should be non-NULL");
     const std::unique_ptr<ValueType> srcGuard(src);
@@ -183,8 +185,8 @@ ValueType get(ValueType *src)
  * This should be the last statement before ::END_ACTION, except for a
  * possible ::CHECK_SEL.
  */
-template <typename ValueType> static
-void set(ValueType * &dest, ValueType value)
+template <typename ValueType>
+static void set(ValueType *&dest, ValueType value)
 {
     dest = new ValueType(std::move(value));
 }
@@ -200,8 +202,8 @@ void set(ValueType * &dest, ValueType value)
  * This should be the last statement before ::END_ACTION, except for a
  * possible ::CHECK_SEL.
  */
-template <typename ValueType> static
-void set_empty(ValueType * &dest)
+template <typename ValueType>
+static void set_empty(ValueType *&dest)
 {
     dest = new ValueType;
 }
@@ -216,9 +218,10 @@ void set_empty(ValueType * &dest)
  * exceptions.
  */
 #define CHECK_SEL(sel) \
-    if (!*(sel)) { \
-        delete sel; \
-        YYERROR; \
+    if (!*(sel))       \
+    {                  \
+        delete sel;    \
+        YYERROR;       \
     }
 
 #endif

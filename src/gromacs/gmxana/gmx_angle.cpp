@@ -65,7 +65,7 @@ static void dump_dih_trr(int nframes, int nangles, real **dih, const char *fn,
     int              i, j, k, l, m, na;
     struct t_fileio *fio;
     rvec *           x;
-    matrix           box = {{2, 0, 0}, {0, 2, 0}, {0, 0, 2}};
+    matrix           box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
 
     na = (nangles * 2);
     if ((na % 3) != 0)
@@ -130,22 +130,16 @@ int gmx_g_angle(int argc, char *argv[])
         "records a histogram of the times between such transitions,",
         "assuming the input trajectory frames are equally spaced in time."
     };
-    static const char *opt[]    = { nullptr, "angle", "dihedral", "improper", "ryckaert-bellemans", nullptr };
-    static gmx_bool    bALL     = FALSE, bChandler = FALSE, bAverCorr = FALSE, bPBC = TRUE;
+    static const char *opt[] = { nullptr, "angle", "dihedral", "improper", "ryckaert-bellemans", nullptr };
+    static gmx_bool    bALL = FALSE, bChandler = FALSE, bAverCorr = FALSE, bPBC = TRUE;
     static real        binwidth = 1;
     t_pargs            pa[]     = {
-        { "-type", FALSE, etENUM, {opt},
-          "Type of angle to analyse" },
-        { "-all",    FALSE,  etBOOL, {&bALL},
-          "Plot all angles separately in the averages file, in the order of appearance in the index file." },
-        { "-binwidth", FALSE, etREAL, {&binwidth},
-          "binwidth (degrees) for calculating the distribution" },
-        { "-periodic", FALSE, etBOOL, {&bPBC},
-          "Print dihedral angles modulo 360 degrees" },
-        { "-chandler", FALSE,  etBOOL, {&bChandler},
-          "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 or phi > 60." },
-        { "-avercorr", FALSE,  etBOOL, {&bAverCorr},
-          "Average the correlation functions for the individual angles/dihedrals" }
+        { "-type", FALSE, etENUM, { opt }, "Type of angle to analyse" },
+        { "-all", FALSE, etBOOL, { &bALL }, "Plot all angles separately in the averages file, in the order of appearance in the index file." },
+        { "-binwidth", FALSE, etREAL, { &binwidth }, "binwidth (degrees) for calculating the distribution" },
+        { "-periodic", FALSE, etBOOL, { &bPBC }, "Print dihedral angles modulo 360 degrees" },
+        { "-chandler", FALSE, etBOOL, { &bChandler }, "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 or phi > 60." },
+        { "-avercorr", FALSE, etBOOL, { &bAverCorr }, "Average the correlation functions for the individual angles/dihedrals" }
     };
     static const char *bugs[] = {
         "Counting transitions only works for dihedrals with multiplicity 3"
@@ -161,24 +155,24 @@ int gmx_g_angle(int argc, char *argv[])
     int           nframes, maxangstat, mult, *angstat;
     int           i, j, nangles, first, last;
     gmx_bool      bAver, bRb, bPeriodic,
-                  bFrac,                    /* calculate fraction too?  */
-                  bTrans,                   /* worry about transtions too? */
-                  bCorr;                    /* correlation function ? */
-    real     aver, aver2, aversig;          /* fraction trans dihedrals */
+            bFrac,                 /* calculate fraction too?  */
+            bTrans,                /* worry about transtions too? */
+            bCorr;                 /* correlation function ? */
+    real     aver, aver2, aversig; /* fraction trans dihedrals */
     double   tfrac = 0;
     char     title[256];
-    real **  dih = nullptr;          /* mega array with all dih. angles at all times*/
+    real **  dih = nullptr; /* mega array with all dih. angles at all times*/
     real *   time, *trans_frac, *aver_angle;
     t_filenm fnm[] = {
-        { efTRX, "-f", nullptr,  ffREAD  },
-        { efNDX, nullptr, "angle",  ffREAD  },
-        { efXVG, "-od", "angdist",  ffWRITE },
-        { efXVG, "-ov", "angaver",  ffOPTWR },
-        { efXVG, "-of", "dihfrac",  ffOPTWR },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efNDX, nullptr, "angle", ffREAD },
+        { efXVG, "-od", "angdist", ffWRITE },
+        { efXVG, "-ov", "angaver", ffOPTWR },
+        { efXVG, "-of", "dihfrac", ffOPTWR },
         { efXVG, "-ot", "dihtrans", ffOPTWR },
-        { efXVG, "-oh", "trhisto",  ffOPTWR },
-        { efXVG, "-oc", "dihcorr",  ffOPTWR },
-        { efTRR, "-or", nullptr,       ffOPTWR }
+        { efXVG, "-oh", "trhisto", ffOPTWR },
+        { efXVG, "-oc", "dihcorr", ffOPTWR },
+        { efTRR, "-or", nullptr, ffOPTWR }
     };
 #define NFILE asize(fnm)
     int               npargs;
@@ -236,7 +230,8 @@ int gmx_g_angle(int argc, char *argv[])
     nangles = isize / mult;
     if ((isize % mult) != 0)
     {
-        gmx_fatal(FARGS, "number of index elements not multiple of %d, "
+        gmx_fatal(FARGS,
+                  "number of index elements not multiple of %d, "
                   "these can not be %s\n",
                   mult, (mult == 3) ? "angle triplets" : "dihedral quadruplets");
     }
@@ -260,15 +255,17 @@ int gmx_g_angle(int argc, char *argv[])
 
     if (bFrac && !bRb)
     {
-        fprintf(stderr, "Warning:"
+        fprintf(stderr,
+                "Warning:"
                 " calculating fractions as defined in this program\n"
                 "makes sense for Ryckaert Bellemans dihs. only. Ignoring -of\n\n");
         bFrac = FALSE;
     }
 
-    if ( (bTrans || bFrac || bCorr) && mult == 3)
+    if ((bTrans || bFrac || bCorr) && mult == 3)
     {
-        gmx_fatal(FARGS, "Can only do transition, fraction or correlation\n"
+        gmx_fatal(FARGS,
+                  "Can only do transition, fraction or correlation\n"
                   "on dihedrals. Select -d\n");
     }
 
@@ -276,7 +273,7 @@ int gmx_g_angle(int argc, char *argv[])
      * We need to know the nr of frames so we can allocate memory for an array
      * with all dihedral angles at all timesteps. Works for me.
      */
-    if (bTrans || bCorr  || bALL || opt2bSet("-or", NFILE, fnm))
+    if (bTrans || bCorr || bALL || opt2bSet("-or", NFILE, fnm))
     {
         snew(dih, nangles);
     }
@@ -414,11 +411,11 @@ int gmx_g_angle(int argc, char *argv[])
     aver = aver2 = 0;
     for (i = 0; (i < nframes); i++)
     {
-        aver  += RAD2DEG * aver_angle[i];
+        aver += RAD2DEG * aver_angle[i];
         aver2 += gmx::square(RAD2DEG * aver_angle[i]);
     }
-    aver   /= nframes;
-    aver2  /= nframes;
+    aver /= nframes;
+    aver2 /= nframes;
     aversig = std::sqrt(aver2 - gmx::square(aver));
     printf("Found points in the range from %d to %d (max %d)\n",
            first, last, maxangstat);

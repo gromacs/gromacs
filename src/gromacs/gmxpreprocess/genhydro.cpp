@@ -116,7 +116,8 @@ void dump_ab(FILE *out, int natom, int nab[], t_hack *ab[], gmx_bool bHeader)
     /* dump ab */
     if (bHeader)
     {
-        fprintf(out, "ADDBLOCK (t_hack) natom=%d\n"
+        fprintf(out,
+                "ADDBLOCK (t_hack) natom=%d\n"
                 "%4s %2s %-4s %-4s %2s %-4s %-4s %-4s %-4s %1s %s\n",
                 natom, "atom", "nr", "old", "new", "tp", "ai", "aj", "ak", "al", "a", "x");
     }
@@ -137,7 +138,7 @@ void dump_ab(FILE *out, int natom, int nab[], t_hack *ab[], gmx_bool bHeader)
 }
 
 static t_hackblock *get_hackblocks(t_atoms *pdba, int nah, t_hackblock ah[],
-                                   int nterpairs,
+                                   int           nterpairs,
                                    t_hackblock **ntdb, t_hackblock **ctdb,
                                    int *rN, int *rC)
 {
@@ -210,10 +211,10 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
         }
 
         if (!bIgnore
-            && ( ( ( hbr->hack[j].tp > 0 || hbr->hack[j].oname == nullptr )
-                   && strcmp(atomname, hbr->hack[j].ai()) == 0 )
-                 || ( hbr->hack[j].oname != nullptr
-                      && strcmp(atomname, hbr->hack[j].oname) == 0) ) )
+            && (((hbr->hack[j].tp > 0 || hbr->hack[j].oname == nullptr)
+                 && strcmp(atomname, hbr->hack[j].ai()) == 0)
+                || (hbr->hack[j].oname != nullptr
+                    && strcmp(atomname, hbr->hack[j].oname) == 0)))
         {
             /* now expand all hacks for this atom */
             if (debug)
@@ -227,9 +228,9 @@ static void expand_hackblocks_one(t_hackblock *hbr, char *atomname,
                 (*abi)[*nabi + k].bXSet = FALSE;
                 /* if we're adding (oname==NULL) and don't have a new name (nname)
                    yet, build it from atomname */
-                if ( (*abi)[*nabi + k].nname == nullptr)
+                if ((*abi)[*nabi + k].nname == nullptr)
                 {
-                    if ( (*abi)[*nabi + k].oname == nullptr)
+                    if ((*abi)[*nabi + k].oname == nullptr)
                     {
                         (*abi)[*nabi + k].nname    = gmx_strdup(atomname);
                         (*abi)[*nabi + k].nname[0] = 'H';
@@ -404,7 +405,8 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[],
                             bFoundAll = FALSE;
                             if (bCheckMissing)
                             {
-                                gmx_fatal(FARGS, "Atom %s not found in residue %s %d"
+                                gmx_fatal(FARGS,
+                                          "Atom %s not found in residue %s %d"
                                           ", rtp entry %s"
                                           " while adding hydrogens",
                                           ab[i][j].a[m],
@@ -584,7 +586,7 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
     for (i = 0; (i < natoms); i++)
     {
         /* check if this atom wasn't scheduled for deletion */
-        if (nab[i] == 0 || (ab[i][0].nname != nullptr) )
+        if (nab[i] == 0 || (ab[i][0].nname != nullptr))
         {
             if (newi >= natoms + nadd)
             {
@@ -667,8 +669,8 @@ static int add_h_low(t_atoms **pdbaptr, rvec *xptr[],
                             *newpdba->atomname[newi] = gmx_strdup(ab[i][j].nname);
                             if (ab[i][j].oname != nullptr && ab[i][j].atom) /* replace */
                             {                                               /*          newpdba->atom[newi].m    = ab[i][j].atom->m; */
-/*        newpdba->atom[newi].q    = ab[i][j].atom->q; */
-/*        newpdba->atom[newi].type = ab[i][j].atom->type; */
+                                                                            /*        newpdba->atom[newi].q    = ab[i][j].atom->q; */
+                                                                            /*        newpdba->atom[newi].type = ab[i][j].atom->type; */
                             }
                         }
                         if (ab[i][j].bXSet)

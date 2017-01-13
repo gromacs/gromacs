@@ -103,7 +103,7 @@ private:
 
 //! Smart pointer to manage an AnalysisDataDisplacementModule object.
 typedef std::shared_ptr<AnalysisDataDisplacementModule>
-    AnalysisDataDisplacementModulePointer;
+        AnalysisDataDisplacementModulePointer;
 
 } // namespace gmx
 

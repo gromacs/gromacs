@@ -62,7 +62,7 @@
 
 int gmx_covar(int argc, char *argv[])
 {
-    const char *      desc[] = {
+    const char *desc[] = {
         "[THISMODULE] calculates and diagonalizes the (mass-weighted)",
         "covariance matrix.",
         "All structures are fitted to the structure in the structure file.",
@@ -95,19 +95,14 @@ int gmx_covar(int argc, char *argv[])
         "should consider carefully whether a reduced set of atoms will meet",
         "your needs for lower costs."
     };
-    static gmx_bool   bFit = TRUE, bRef = FALSE, bM = FALSE, bPBC = TRUE;
-    static int        end  = -1;
-    t_pargs           pa[] = {
-        { "-fit",  FALSE, etBOOL, {&bFit},
-          "Fit to a reference structure"},
-        { "-ref",  FALSE, etBOOL, {&bRef},
-          "Use the deviation from the conformation in the structure file instead of from the average" },
-        { "-mwa",  FALSE, etBOOL, {&bM},
-          "Mass-weighted covariance analysis"},
-        { "-last",  FALSE, etINT, {&end},
-          "Last eigenvector to write away (-1 is till the last)" },
-        { "-pbc",  FALSE,  etBOOL, {&bPBC},
-          "Apply corrections for periodic boundary conditions" }
+    static gmx_bool bFit = TRUE, bRef = FALSE, bM = FALSE, bPBC = TRUE;
+    static int      end  = -1;
+    t_pargs         pa[] = {
+        { "-fit", FALSE, etBOOL, { &bFit }, "Fit to a reference structure" },
+        { "-ref", FALSE, etBOOL, { &bRef }, "Use the deviation from the conformation in the structure file instead of from the average" },
+        { "-mwa", FALSE, etBOOL, { &bM }, "Mass-weighted covariance analysis" },
+        { "-last", FALSE, etINT, { &end }, "Last eigenvector to write away (-1 is till the last)" },
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "Apply corrections for periodic boundary conditions" }
     };
     FILE *            out = nullptr; /* initialization makes all compilers happy */
     t_trxstatus *     status;
@@ -137,13 +132,13 @@ int gmx_covar(int argc, char *argv[])
     gmx_rmpbc_t       gpbc = nullptr;
 
     t_filenm fnm[] = {
-        { efTRX, "-f",  nullptr, ffREAD },
-        { efTPS, nullptr,  nullptr, ffREAD },
-        { efNDX, nullptr,  nullptr, ffOPTRD },
-        { efXVG, nullptr,  "eigenval", ffWRITE },
-        { efTRN, "-v",  "eigenvec", ffWRITE },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, nullptr, "eigenval", ffWRITE },
+        { efTRN, "-v", "eigenvec", ffWRITE },
         { efSTO, "-av", "average.pdb", ffWRITE },
-        { efLOG, nullptr,  "covar", ffWRITE },
+        { efLOG, nullptr, "covar", ffWRITE },
         { efDAT, "-ascii", "covar", ffOPTWR },
         { efXPM, "-xpm", "covar", ffOPTWR },
         { efXPM, "-xpma", "covara", ffOPTWR }
@@ -228,7 +223,8 @@ int gmx_covar(int argc, char *argv[])
         }
         if (!bDiffMass1)
         {
-            fprintf(stderr, "\n"
+            fprintf(stderr,
+                    "\n"
                     "Note: the fit and analysis group are identical,\n"
                     "      while the fit is mass weighted and the analysis is not.\n"
                     "      Making the fit non mass weighted.\n\n");
@@ -291,7 +287,7 @@ int gmx_covar(int argc, char *argv[])
     {
         for (d = 0; d < DIM; d++)
         {
-            xav[i][d]         *= inv_nframes;
+            xav[i][d] *= inv_nframes;
             xread[index[i]][d] = xav[i][d];
         }
     }
@@ -442,9 +438,15 @@ int gmx_covar(int argc, char *argv[])
         {
             axis[i] = i + 1;
         }
-        rlo.r   = 0; rlo.g = 0; rlo.b = 1;
-        rmi.r   = 1; rmi.g = 1; rmi.b = 1;
-        rhi.r   = 1; rhi.g = 0; rhi.b = 0;
+        rlo.r   = 0;
+        rlo.g   = 0;
+        rlo.b   = 1;
+        rmi.r   = 1;
+        rmi.g   = 1;
+        rmi.b   = 1;
+        rhi.r   = 1;
+        rhi.g   = 0;
+        rhi.b   = 0;
         out     = gmx_ffopen(xpmfile, "w");
         nlevels = 80;
         write_xpm3(out, 0, "Covariance", bM ? "u nm^2" : "nm^2",
@@ -489,9 +491,15 @@ int gmx_covar(int argc, char *argv[])
         {
             axis[i] = i + 1;
         }
-        rlo.r   = 0; rlo.g = 0; rlo.b = 1;
-        rmi.r   = 1; rmi.g = 1; rmi.b = 1;
-        rhi.r   = 1; rhi.g = 0; rhi.b = 0;
+        rlo.r   = 0;
+        rlo.g   = 0;
+        rlo.b   = 1;
+        rmi.r   = 1;
+        rmi.g   = 1;
+        rmi.b   = 1;
+        rhi.r   = 1;
+        rhi.g   = 0;
+        rhi.b   = 0;
         out     = gmx_ffopen(xpmafile, "w");
         nlevels = 80;
         write_xpm3(out, 0, "Covariance", bM ? "u nm^2" : "nm^2",
@@ -556,7 +564,7 @@ int gmx_covar(int argc, char *argv[])
                    "Eigenvector index", str, oenv);
     for (i = 0; (i < end); i++)
     {
-        fprintf (out, "%10d %g\n", static_cast<int>(i + 1), eigenvalues[ndim - 1 - i]);
+        fprintf(out, "%10d %g\n", static_cast<int>(i + 1), eigenvalues[ndim - 1 - i]);
     }
     xvgrclose(out);
 

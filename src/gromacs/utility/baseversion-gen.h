@@ -43,8 +43,7 @@
 #define GMX_UTILITY_BASEVERSION_GEN_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /*! \cond internal */

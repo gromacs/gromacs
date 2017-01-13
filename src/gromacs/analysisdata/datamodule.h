@@ -98,7 +98,7 @@ public:
         efAllowMultipleDataSets = 1 << 4
     };
 
-    virtual ~IAnalysisDataModule() {};
+    virtual ~IAnalysisDataModule(){};
 
     /*! \brief
      * Returns properties supported by the module.
@@ -169,8 +169,9 @@ public:
      * supported (or rather, accessing the requested storage doesn't work).
      */
     virtual bool parallelDataStarted(
-        AbstractAnalysisData *             data,
-        const AnalysisDataParallelOptions &options) = 0;
+            AbstractAnalysisData *             data,
+            const AnalysisDataParallelOptions &options)
+            = 0;
     /*! \brief
      * Called at the start of each data frame.
      *
@@ -252,8 +253,8 @@ public:
 
 private:
     virtual bool parallelDataStarted(
-        AbstractAnalysisData *             data,
-        const AnalysisDataParallelOptions &options);
+            AbstractAnalysisData *             data,
+            const AnalysisDataParallelOptions &options);
     virtual void frameFinishedSerial(int /*frameIndex*/) {}
 };
 
@@ -275,8 +276,9 @@ public:
     virtual int flags() const = 0;
 
     virtual bool parallelDataStarted(
-        AbstractAnalysisData *             data,
-        const AnalysisDataParallelOptions &options)                   = 0;
+            AbstractAnalysisData *             data,
+            const AnalysisDataParallelOptions &options)
+            = 0;
     virtual void frameStarted(const AnalysisDataFrameHeader &frame)   = 0;
     virtual void pointsAdded(const AnalysisDataPointSetRef &points)   = 0;
     virtual void frameFinished(const AnalysisDataFrameHeader &header) = 0;

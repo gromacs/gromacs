@@ -260,11 +260,9 @@ enum Group2Type
     Group2Type_SphereNormal
 };
 //! String values corresponding to Group1Type.
-const char *const cGroup1TypeEnum[] =
-{ "angle", "dihedral", "vector", "plane" };
+const char *const cGroup1TypeEnum[] = { "angle", "dihedral", "vector", "plane" };
 //! String values corresponding to Group2Type.
-const char *const cGroup2TypeEnum[] =
-{ "none", "vector", "plane", "t0", "z", "sphnorm" };
+const char *const cGroup2TypeEnum[] = { "none", "vector", "plane", "t0", "z", "sphnorm" };
 
 class Angle : public TrajectoryAnalysisModule
 {
@@ -305,10 +303,10 @@ private:
     AnalysisDataFrameAverageModulePointer    averageModule_;
     AnalysisDataSimpleHistogramModulePointer histogramModule_;
 
-    std::vector<int>                angleCount_;
-    int                             natoms1_;
-    int                             natoms2_;
-    std::vector<std::vector<RVec> > vt0_;
+    std::vector<int>               angleCount_;
+    int                            natoms1_;
+    int                            natoms2_;
+    std::vector<std::vector<RVec>> vt0_;
 
     // Copy and assign disallowed by base.
 };
@@ -382,33 +380,25 @@ void Angle::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *
 
     settings->setHelpText(desc);
 
-    options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile()
-                           .store(&fnAverage_).defaultBasename("angaver")
-                           .description("Average angles as a function of time"));
-    options->addOption(FileNameOption("oall").filetype(eftPlot).outputFile()
-                           .store(&fnAll_).defaultBasename("angles")
-                           .description("All angles as a function of time"));
-    options->addOption(FileNameOption("oh").filetype(eftPlot).outputFile()
-                           .store(&fnHistogram_).defaultBasename("anghist")
-                           .description("Histogram of the angles"));
+    options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile().store(&fnAverage_).defaultBasename("angaver").description("Average angles as a function of time"));
+    options->addOption(FileNameOption("oall").filetype(eftPlot).outputFile().store(&fnAll_).defaultBasename("angles").description("All angles as a function of time"));
+    options->addOption(FileNameOption("oh").filetype(eftPlot).outputFile().store(&fnHistogram_).defaultBasename("anghist").description("Histogram of the angles"));
 
-    options->addOption(EnumOption<Group1Type>("g1").enumValue(cGroup1TypeEnum)
-                           .store(&g1type_)
-                           .description("Type of analysis/first vector group"));
-    options->addOption(EnumOption<Group2Type>("g2").enumValue(cGroup2TypeEnum)
-                           .store(&g2type_)
-                           .description("Type of second vector group"));
-    options->addOption(DoubleOption("binw").store(&binWidth_)
-                           .description("Binwidth for -oh in degrees"));
+    options->addOption(EnumOption<Group1Type>("g1").enumValue(cGroup1TypeEnum).store(&g1type_).description("Type of analysis/first vector group"));
+    options->addOption(EnumOption<Group2Type>("g2").enumValue(cGroup2TypeEnum).store(&g2type_).description("Type of second vector group"));
+    options->addOption(DoubleOption("binw").store(&binWidth_).description("Binwidth for -oh in degrees"));
 
     sel1info_ = options->addOption(SelectionOption("group1")
-                                       .required().dynamicMask().storeVector(&sel1_)
-                                       .multiValue()
-                                       .description("First analysis/vector selection"));
+                                           .required()
+                                           .dynamicMask()
+                                           .storeVector(&sel1_)
+                                           .multiValue()
+                                           .description("First analysis/vector selection"));
     sel2info_ = options->addOption(SelectionOption("group2")
-                                       .dynamicMask().storeVector(&sel2_)
-                                       .multiValue()
-                                       .description("Second analysis/vector selection"));
+                                           .dynamicMask()
+                                           .storeVector(&sel2_)
+                                           .multiValue()
+                                           .description("Second analysis/vector selection"));
 }
 
 
@@ -418,38 +408,61 @@ void Angle::optionsFinished(TrajectoryAnalysisSettings * /* settings */)
 
     if (bSingle && g2type_ != Group2Type_None)
     {
-        GMX_THROW(InconsistentInputError("Cannot use a second group (-g2) with "
-                                         "-g1 angle or dihedral"));
+        GMX_THROW(InconsistentInputError(
+                "Cannot use a second group (-g2) with "
+                "-g1 angle or dihedral"));
     }
     if (bSingle && sel2info_->isSet())
     {
-        GMX_THROW(InconsistentInputError("Cannot provide a second selection "
-                                         "(-group2) with -g1 angle or dihedral"));
+        GMX_THROW(InconsistentInputError(
+                "Cannot provide a second selection "
+                "(-group2) with -g1 angle or dihedral"));
     }
     if (!bSingle && g2type_ == Group2Type_None)
     {
-        GMX_THROW(InconsistentInputError("Should specify a second group (-g2) "
-                                         "if the first group is not an angle or a dihedral"));
+        GMX_THROW(InconsistentInputError(
+                "Should specify a second group (-g2) "
+                "if the first group is not an angle or a dihedral"));
     }
 
     // Set up the number of positions per angle.
     switch (g1type_)
     {
-        case Group1Type_Angle:    natoms1_ = 3; break;
-        case Group1Type_Dihedral: natoms1_ = 4; break;
-        case Group1Type_Vector:   natoms1_ = 2; break;
-        case Group1Type_Plane:    natoms1_ = 3; break;
+        case Group1Type_Angle:
+            natoms1_ = 3;
+            break;
+        case Group1Type_Dihedral:
+            natoms1_ = 4;
+            break;
+        case Group1Type_Vector:
+            natoms1_ = 2;
+            break;
+        case Group1Type_Plane:
+            natoms1_ = 3;
+            break;
         default:
             GMX_THROW(InternalError("invalid -g1 value"));
     }
     switch (g2type_)
     {
-        case Group2Type_None:         natoms2_ = 0; break;
-        case Group2Type_Vector:       natoms2_ = 2; break;
-        case Group2Type_Plane:        natoms2_ = 3; break;
-        case Group2Type_TimeZero:     natoms2_ = 0; break;
-        case Group2Type_Z:            natoms2_ = 0; break;
-        case Group2Type_SphereNormal: natoms2_ = 1; break;
+        case Group2Type_None:
+            natoms2_ = 0;
+            break;
+        case Group2Type_Vector:
+            natoms2_ = 2;
+            break;
+        case Group2Type_Plane:
+            natoms2_ = 3;
+            break;
+        case Group2Type_TimeZero:
+            natoms2_ = 0;
+            break;
+        case Group2Type_Z:
+            natoms2_ = 0;
+            break;
+        case Group2Type_SphereNormal:
+            natoms2_ = 1;
+            break;
         default:
             GMX_THROW(InternalError("invalid -g2 value"));
     }
@@ -472,7 +485,7 @@ void Angle::initFromSelections(const SelectionList &sel1,
         && std::min(sel1.size(), sel2.size()) != 1)
     {
         GMX_THROW(InconsistentInputError(
-                          "-group1 and -group2 should specify the same number of selections"));
+                "-group1 and -group2 should specify the same number of selections"));
     }
 
     AnglePositionIterator iter1(sel1, natoms1_);
@@ -483,8 +496,8 @@ void Angle::initFromSelections(const SelectionList &sel1,
         if (natoms1_ > 1 && posCount1 % natoms1_ != 0)
         {
             GMX_THROW(InconsistentInputError(formatString(
-                                                     "Number of positions in selection %d in the first group not divisible by %d",
-                                                     static_cast<int>(g + 1), natoms1_)));
+                    "Number of positions in selection %d in the first group not divisible by %d",
+                    static_cast<int>(g + 1), natoms1_)));
         }
         const int angleCount1 = posCount1 / natoms1_;
         int       angleCount  = angleCount1;
@@ -495,22 +508,22 @@ void Angle::initFromSelections(const SelectionList &sel1,
             if (natoms2_ > 1 && posCount2 % natoms2_ != 0)
             {
                 GMX_THROW(InconsistentInputError(formatString(
-                                                         "Number of positions in selection %d in the second group not divisible by %d",
-                                                         static_cast<int>(g + 1), natoms2_)));
+                        "Number of positions in selection %d in the second group not divisible by %d",
+                        static_cast<int>(g + 1), natoms2_)));
             }
             if (g2type_ == Group2Type_SphereNormal && posCount2 != 1)
             {
                 GMX_THROW(InconsistentInputError(
-                                  "The second group should contain a single position with -g2 sphnorm"));
+                        "The second group should contain a single position with -g2 sphnorm"));
             }
 
             const int angleCount2 = posCount2 / natoms2_;
-            angleCount = std::max(angleCount1, angleCount2);
+            angleCount            = std::max(angleCount1, angleCount2);
             if (angleCount1 != angleCount2
                 && std::min(angleCount1, angleCount2) != 1)
             {
                 GMX_THROW(InconsistentInputError(
-                                  "Number of vectors defined by the two groups are not the same"));
+                        "Number of vectors defined by the two groups are not the same"));
             }
         }
         angleCount_.push_back(angleCount);
@@ -559,9 +572,10 @@ void Angle::checkSelections(const SelectionList &sel1,
                 if (!bOk)
                 {
                     std::string message
-                        = formatString("Dynamic selection %d does not select "
-                                       "a consistent set of angles over the frames",
-                                       static_cast<int>(g + 1));
+                            = formatString(
+                                    "Dynamic selection %d does not select "
+                                    "a consistent set of angles over the frames",
+                                    static_cast<int>(g + 1));
                     GMX_THROW(InconsistentInputError(message));
                 }
             }
@@ -571,7 +585,7 @@ void Angle::checkSelections(const SelectionList &sel1,
 
 
 void Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                         const TopologyInformation         & /* top */)
+                         const TopologyInformation & /* top */)
 {
     initFromSelections(sel1_, sel2_);
 
@@ -583,7 +597,8 @@ void Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     double histogramMin = (g1type_ == Group1Type_Dihedral ? -180.0 : 0);
     histogramModule_->init(histogramFromRange(histogramMin, 180.0)
-                               .binWidth(binWidth_).includeAll());
+                                   .binWidth(binWidth_)
+                                   .includeAll());
 
     if (g2type_ == Group2Type_TimeZero)
     {
@@ -737,7 +752,7 @@ void Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             // checkSelections() ensures that this reflects all the involved
             // positions.
             const bool bPresent
-                = iter1.currentValuesSelected() && iter2.currentValuesSelected();
+                    = iter1.currentValuesSelected() && iter2.currentValuesSelected();
             iter1.getCurrentPositions(x);
             switch (g1type_)
             {
@@ -777,7 +792,7 @@ void Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     }
                     cprod(dx[0], dx[1], v1);
                     cprod(dx[1], dx[2], v2);
-                    angle = gmx_angle(v1, v2);
+                    angle    = gmx_angle(v1, v2);
                     real ipr = iprod(dx[0], v2);
                     if (ipr < 0)
                     {
@@ -843,11 +858,11 @@ void Angle::writeOutput()
 {
 }
 
-}       // namespace
+} // namespace
 
 const char AngleInfo::name[] = "gangle";
 const char AngleInfo::shortDescription[]
-    = "Calculate angles";
+        = "Calculate angles";
 
 TrajectoryAnalysisModulePointer AngleInfo::create()
 {

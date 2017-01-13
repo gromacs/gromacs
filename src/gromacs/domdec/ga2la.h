@@ -55,17 +55,17 @@
 /*! \libinternal \brief Structure for the local atom info for a plain list */
 typedef struct
 {
-    int la;    /**< The local atom index */
-    int cell;  /**< The DD zone index for neighboring domains, zone+zone otherwise */
+    int la;   /**< The local atom index */
+    int cell; /**< The DD zone index for neighboring domains, zone+zone otherwise */
 } gmx_laa_t;
 
 /*! \libinternal \brief Structure for the local atom info for a hash table */
 typedef struct
 {
-    int ga;    /**< The global atom index */
-    int la;    /**< The local atom index */
-    int cell;  /**< The DD zone index for neighboring domains, zone+zone otherwise */
-    int next;  /**< Index in the list of the next element with the same hash, -1 if none */
+    int ga;   /**< The global atom index */
+    int la;   /**< The local atom index */
+    int cell; /**< The DD zone index for neighboring domains, zone+zone otherwise */
+    int next; /**< Index in the list of the next element with the same hash, -1 if none */
 } gmx_lal_t;
 
 /*! \libinternal \brief Structure for all global to local mapping information */

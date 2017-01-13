@@ -182,12 +182,14 @@ void do_four(const char *fn, const char *cn, int nx, real x[], real dy[],
         tmp[i].re = dy[i];
     }
     if ((fftcode = gmx_fft_init_1d_real(&fft, nnx,
-                                        GMX_FFT_FLAG_NONE)) != 0)
+                                        GMX_FFT_FLAG_NONE))
+        != 0)
     {
         gmx_fatal(FARGS, "gmx_fft_init_1d_real returned %d", fftcode);
     }
     if ((fftcode = gmx_fft_1d_real(fft, GMX_FFT_COMPLEX_TO_REAL,
-                                   (void *)tmp, (void *)tmp)) != 0)
+                                   (void *)tmp, (void *)tmp))
+        != 0)
     {
         gmx_fatal(FARGS, "gmx_fft_1d_real returned %d", fftcode);
     }
@@ -214,12 +216,12 @@ void do_four(const char *fn, const char *cn, int nx, real x[], real dy[],
         }
         else
         {
-            gw     = rcmul(fac, tmp[i]);
-            hw     = rcmul(2 * epsRF, gw);
+            gw = rcmul(fac, tmp[i]);
+            hw = rcmul(2 * epsRF, gw);
             hw.re += 1.0;
-            gw.re  = 1.0 - gw.re;
-            gw.im  = -gw.im;
-            kw     = cdiv(hw, gw);
+            gw.re = 1.0 - gw.re;
+            gw.im = -gw.im;
+            kw    = cdiv(hw, gw);
         }
         kw.im *= -1;
 
@@ -266,11 +268,11 @@ int gmx_dielectric(int argc, char *argv[])
         "For a pure exponential relaxation (Debye relaxation) the latter",
         "plot should be one half of a circle."
     };
-    t_filenm    fnm[] = {
-        { efXVG, "-f", "dipcorr", ffREAD  },
-        { efXVG, "-d", "deriv",  ffWRITE },
-        { efXVG, "-o", "epsw",   ffWRITE },
-        { efXVG, "-c", "cole",   ffWRITE }
+    t_filenm fnm[] = {
+        { efXVG, "-f", "dipcorr", ffREAD },
+        { efXVG, "-d", "deriv", ffWRITE },
+        { efXVG, "-o", "epsw", ffWRITE },
+        { efXVG, "-c", "cole", ffWRITE }
     };
 #define NFILE asize(fnm)
     gmx_output_env_t *oenv;
@@ -280,37 +282,24 @@ int gmx_dielectric(int argc, char *argv[])
     double **         yd;
     real **           y;
     const char *      legend[] = { "Correlation", "Std. Dev.", "Fit", "Combined", "Derivative" };
-    static int        fix      = 0, bX = 1, nsmooth = 3;
-    static real       tendInt  = 5.0, tbegin = 5.0, tend = 500.0;
-    static real       A        = 0.5, tau1 = 10.0, tau2 = 1.0, eps0 = 80, epsRF = 78.5, tail = 500.0;
+    static int        fix = 0, bX = 1, nsmooth = 3;
+    static real       tendInt = 5.0, tbegin = 5.0, tend = 500.0;
+    static real       A = 0.5, tau1 = 10.0, tau2 = 1.0, eps0 = 80, epsRF = 78.5, tail = 500.0;
     real              lambda;
     t_pargs           pa[] = {
-        { "-x1",  FALSE, etBOOL, {&bX},
-          "use first column as [IT]x[it]-axis rather than first data set" },
-        { "-eint", FALSE, etREAL, {&tendInt},
-          "Time to end the integration of the data and start to use the fit"},
-        { "-bfit", FALSE, etREAL, {&tbegin},
-          "Begin time of fit" },
-        { "-efit", FALSE, etREAL, {&tend},
-          "End time of fit" },
-        { "-tail", FALSE, etREAL, {&tail},
-          "Length of function including data and tail from fit" },
-        { "-A", FALSE, etREAL, {&A},
-          "Start value for fit parameter A" },
-        { "-tau1", FALSE, etREAL, {&tau1},
-          "Start value for fit parameter [GRK]tau[grk]1" },
-        { "-tau2", FALSE, etREAL, {&tau2},
-          "Start value for fit parameter [GRK]tau[grk]2" },
-        { "-eps0", FALSE, etREAL, {&eps0},
-          "[GRK]epsilon[grk]0 of your liquid" },
-        { "-epsRF", FALSE, etREAL, {&epsRF},
-          "[GRK]epsilon[grk] of the reaction field used in your simulation. A value of 0 means infinity." },
-        { "-fix", FALSE, etINT,  {&fix},
-          "Fix parameters at their start values, A (2), tau1 (1), or tau2 (4)" },
-        { "-ffn",    FALSE, etENUM, {s_ffn},
-          "Fit function" },
-        { "-nsmooth", FALSE, etINT, {&nsmooth},
-          "Number of points for smoothing" }
+        { "-x1", FALSE, etBOOL, { &bX }, "use first column as [IT]x[it]-axis rather than first data set" },
+        { "-eint", FALSE, etREAL, { &tendInt }, "Time to end the integration of the data and start to use the fit" },
+        { "-bfit", FALSE, etREAL, { &tbegin }, "Begin time of fit" },
+        { "-efit", FALSE, etREAL, { &tend }, "End time of fit" },
+        { "-tail", FALSE, etREAL, { &tail }, "Length of function including data and tail from fit" },
+        { "-A", FALSE, etREAL, { &A }, "Start value for fit parameter A" },
+        { "-tau1", FALSE, etREAL, { &tau1 }, "Start value for fit parameter [GRK]tau[grk]1" },
+        { "-tau2", FALSE, etREAL, { &tau2 }, "Start value for fit parameter [GRK]tau[grk]2" },
+        { "-eps0", FALSE, etREAL, { &eps0 }, "[GRK]epsilon[grk]0 of your liquid" },
+        { "-epsRF", FALSE, etREAL, { &epsRF }, "[GRK]epsilon[grk] of the reaction field used in your simulation. A value of 0 means infinity." },
+        { "-fix", FALSE, etINT, { &fix }, "Fix parameters at their start values, A (2), tau1 (1), or tau2 (4)" },
+        { "-ffn", FALSE, etENUM, { s_ffn }, "Fit function" },
+        { "-nsmooth", FALSE, etINT, { &nsmooth }, "Number of points for smoothing" }
     };
 
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,

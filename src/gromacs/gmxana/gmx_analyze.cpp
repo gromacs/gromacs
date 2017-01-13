@@ -63,7 +63,12 @@
 /* must correspond to char *avbar_opt[] declared in main() */
 enum
 {
-    avbarSEL, avbarNONE, avbarSTDDEV, avbarERROR, avbar90, avbarNR
+    avbarSEL,
+    avbarNONE,
+    avbarSTDDEV,
+    avbarERROR,
+    avbar90,
+    avbarNR
 };
 
 static void power_fit(int n, int nset, real **val, real *t)
@@ -130,7 +135,7 @@ static real cosine_content(int nhp, int n, real *y)
     for (i = 0; i < n; i++)
     {
         cosyint += std::cos(fac * i) * y[i];
-        yyint   += y[i] * y[i];
+        yyint += y[i] * y[i];
     }
 
     return 2 * cosyint * cosyint / (n * yyint);
@@ -336,8 +341,10 @@ static void average(const char *avfile, int avbar_opt,
             snew(tmp, nset);
             fprintf(fp, "@TYPE xydydy\n");
             edge = static_cast<int>(nset * 0.05 + 0.5);
-            fprintf(stdout, "Errorbars: discarding %d points on both sides: %d%%"
-                    " interval\n", edge, static_cast<int>(100 * (nset - 2 * edge) / nset + 0.5));
+            fprintf(stdout,
+                    "Errorbars: discarding %d points on both sides: %d%%"
+                    " interval\n",
+                    edge, static_cast<int>(100 * (nset - 2 * edge) / nset + 0.5));
         }
         else
         {
@@ -441,7 +448,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
                 (n - 1) * dt, n);
     }
     snew(leg, 2 * nset);
-    xvgr_legend(fp, 2 * nset, (const char**)leg, oenv);
+    xvgr_legend(fp, 2 * nset, (const char **)leg, oenv);
     sfree(leg);
 
     spacing = std::pow(2.0, 1.0 / resol);
@@ -480,7 +487,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
                 }
                 nbs++;
             }
-            nbr    *= spacing;
+            nbr *= spacing;
             prev_bs = bs;
         }
         if (sig[s] == 0)
@@ -516,7 +523,8 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
 
             if (ybs[0] > ybs[1])
             {
-                fprintf(stdout, "Data set %d has strange time correlations:\n"
+                fprintf(stdout,
+                        "Data set %d has strange time correlations:\n"
                         "the std. error using single points is larger than that of blocks of 2 points\n"
                         "The error estimate might be inaccurate, check the fit\n",
                         s + 1);
@@ -763,7 +771,7 @@ static void filter(real flen, int n, int nset, real **val, real dt)
     for (i = 1; i <= f; i++)
     {
         filt[i] = std::cos(M_PI * dt * i / flen);
-        sum    += 2 * filt[i];
+        sum += 2 * filt[i];
     }
     for (i = 0; i <= f; i++)
     {
@@ -784,7 +792,7 @@ static void filter(real flen, int n, int nset, real **val, real dt)
             }
             fluc += gmx::square(val[s][i] - vf);
         }
-        fluc    /= n - 2 * f;
+        fluc /= n - 2 * f;
         fluctot += fluc;
         fprintf(stdout, "Set %3d filtered fluctuation: %12.6e\n", s + 1, std::sqrt(fluc));
     }
@@ -853,24 +861,24 @@ static void do_fit(FILE *out, int n, gmx_bool bYdy,
             break;
         case effnEXP5:
             fitparm[0] = fitparm[2] = 0.5 * c1[0];
-            fitparm[1] = 10;
-            fitparm[3] = 40;
-            fitparm[4] = 0;
+            fitparm[1]              = 10;
+            fitparm[3]              = 40;
+            fitparm[4]              = 0;
             break;
         case effnEXP7:
             fitparm[0] = fitparm[2] = fitparm[4] = 0.33 * c1[0];
-            fitparm[1] = 1;
-            fitparm[3] = 10;
-            fitparm[5] = 100;
-            fitparm[6] = 0;
+            fitparm[1]                           = 1;
+            fitparm[3]                           = 10;
+            fitparm[5]                           = 100;
+            fitparm[6]                           = 0;
             break;
         case effnEXP9:
             fitparm[0] = fitparm[2] = fitparm[4] = fitparm[6] = 0.25 * c1[0];
-            fitparm[1] = 0.1;
-            fitparm[3] = 1;
-            fitparm[5] = 10;
-            fitparm[7] = 100;
-            fitparm[8] = 0;
+            fitparm[1]                                        = 0.1;
+            fitparm[3]                                        = 1;
+            fitparm[5]                                        = 10;
+            fitparm[7]                                        = 100;
+            fitparm[8]                                        = 0;
             break;
         default:
             fprintf(out, "Warning: don't know how to initialize the parameters\n");
@@ -886,7 +894,8 @@ static void do_fit(FILE *out, int n, gmx_bool bYdy,
     }
     if (do_lmfit(ny, c1, sig, 0, x0, tbeginfit, tendfit,
                  oenv, bDebugMode(), efitfn, fitparm, 0,
-                 fn_fitted) > 0)
+                 fn_fitted)
+        > 0)
     {
         for (i = 0; (i < nparm); i++)
         {
@@ -1032,12 +1041,12 @@ int gmx_analyze(int argc, char *argv[])
         "original data and the fitted function to a new data file. The fitting",
         "parameters are stored as comment in the output file."
     };
-    static real        tb         = -1, te = -1, frac = 0.5, filtlen = 0, binwidth = 0.1, aver_start = 0;
-    static gmx_bool    bHaveT     = TRUE, bDer = FALSE, bSubAv = TRUE, bAverCorr = FALSE, bXYdy = FALSE;
-    static gmx_bool    bEESEF     = FALSE, bEENLC = FALSE, bEeFitAc = FALSE, bPower = FALSE;
-    static gmx_bool    bIntegrate = FALSE, bRegression = FALSE, bLuzar = FALSE;
-    static int         nsets_in   = 1, d = 1, nb_min = 4, resol = 10;
-    static real        temp       = 298.15, fit_start = 1, fit_end = 60;
+    static real     tb = -1, te = -1, frac = 0.5, filtlen = 0, binwidth = 0.1, aver_start = 0;
+    static gmx_bool bHaveT = TRUE, bDer = FALSE, bSubAv = TRUE, bAverCorr = FALSE, bXYdy = FALSE;
+    static gmx_bool bEESEF = FALSE, bEENLC = FALSE, bEeFitAc = FALSE, bPower = FALSE;
+    static gmx_bool bIntegrate = FALSE, bRegression = FALSE, bLuzar = FALSE;
+    static int      nsets_in = 1, d = 1, nb_min = 4, resol = 10;
+    static real     temp = 298.15, fit_start = 1, fit_end = 60;
 
     /* must correspond to enum avbar* declared at beginning of file */
     static const char *avbar_opt[avbarNR + 1] = {
@@ -1045,60 +1054,37 @@ int gmx_analyze(int argc, char *argv[])
     };
 
     t_pargs pa[] = {
-        { "-time",    FALSE, etBOOL, {&bHaveT},
-          "Expect a time in the input" },
-        { "-b",       FALSE, etREAL, {&tb},
-          "First time to read from set" },
-        { "-e",       FALSE, etREAL, {&te},
-          "Last time to read from set" },
-        { "-n",       FALSE, etINT, {&nsets_in},
-          "Read this number of sets separated by &" },
-        { "-d",       FALSE, etBOOL, {&bDer},
-          "Use the derivative" },
-        { "-dp",      FALSE, etINT, {&d},
-          "HIDDENThe derivative is the difference over this number of points" },
-        { "-bw",      FALSE, etREAL, {&binwidth},
-          "Binwidth for the distribution" },
-        { "-errbar",  FALSE, etENUM, {avbar_opt},
-          "Error bars for [TT]-av[tt]" },
-        { "-integrate", FALSE, etBOOL, {&bIntegrate},
-          "Integrate data function(s) numerically using trapezium rule" },
-        { "-aver_start", FALSE, etREAL, {&aver_start},
-          "Start averaging the integral from here" },
-        { "-xydy",    FALSE, etBOOL, {&bXYdy},
-          "Interpret second data set as error in the y values for integrating" },
-        { "-regression", FALSE, etBOOL, {&bRegression},
-          "Perform a linear regression analysis on the data. If [TT]-xydy[tt] is set a second set will be interpreted as the error bar in the Y value. Otherwise, if multiple data sets are present a multilinear regression will be performed yielding the constant A that minimize [MATH][GRK]chi[grk]^2 = (y - A[SUB]0[sub] x[SUB]0[sub] - A[SUB]1[sub] x[SUB]1[sub] - ... - A[SUB]N[sub] x[SUB]N[sub])^2[math] where now Y is the first data set in the input file and x[SUB]i[sub] the others. Do read the information at the option [TT]-time[tt]." },
-        { "-luzar",   FALSE, etBOOL, {&bLuzar},
+        { "-time", FALSE, etBOOL, { &bHaveT }, "Expect a time in the input" },
+        { "-b", FALSE, etREAL, { &tb }, "First time to read from set" },
+        { "-e", FALSE, etREAL, { &te }, "Last time to read from set" },
+        { "-n", FALSE, etINT, { &nsets_in }, "Read this number of sets separated by &" },
+        { "-d", FALSE, etBOOL, { &bDer }, "Use the derivative" },
+        { "-dp", FALSE, etINT, { &d }, "HIDDENThe derivative is the difference over this number of points" },
+        { "-bw", FALSE, etREAL, { &binwidth }, "Binwidth for the distribution" },
+        { "-errbar", FALSE, etENUM, { avbar_opt }, "Error bars for [TT]-av[tt]" },
+        { "-integrate", FALSE, etBOOL, { &bIntegrate }, "Integrate data function(s) numerically using trapezium rule" },
+        { "-aver_start", FALSE, etREAL, { &aver_start }, "Start averaging the integral from here" },
+        { "-xydy", FALSE, etBOOL, { &bXYdy }, "Interpret second data set as error in the y values for integrating" },
+        { "-regression", FALSE, etBOOL, { &bRegression }, "Perform a linear regression analysis on the data. If [TT]-xydy[tt] is set a second set will be interpreted as the error bar in the Y value. Otherwise, if multiple data sets are present a multilinear regression will be performed yielding the constant A that minimize [MATH][GRK]chi[grk]^2 = (y - A[SUB]0[sub] x[SUB]0[sub] - A[SUB]1[sub] x[SUB]1[sub] - ... - A[SUB]N[sub] x[SUB]N[sub])^2[math] where now Y is the first data set in the input file and x[SUB]i[sub] the others. Do read the information at the option [TT]-time[tt]." },
+        { "-luzar", FALSE, etBOOL, { &bLuzar },
           "Do a Luzar and Chandler analysis on a correlation function and "
           "related as produced by [gmx-hbond]. When in addition the "
           "[TT]-xydy[tt] flag is given the second and fourth column will be "
           "interpreted as errors in c(t) and n(t)." },
-        { "-temp",    FALSE, etREAL, {&temp},
-          "Temperature for the Luzar hydrogen bonding kinetics analysis (K)" },
-        { "-fitstart", FALSE, etREAL, {&fit_start},
-          "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" },
-        { "-fitend", FALSE, etREAL, {&fit_end},
-          "Time (ps) where to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. Only with [TT]-gem[tt]" },
-        { "-nbmin",   FALSE, etINT, {&nb_min},
-          "HIDDENMinimum number of blocks for block averaging" },
-        { "-resol", FALSE, etINT, {&resol},
+        { "-temp", FALSE, etREAL, { &temp }, "Temperature for the Luzar hydrogen bonding kinetics analysis (K)" },
+        { "-fitstart", FALSE, etREAL, { &fit_start }, "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" },
+        { "-fitend", FALSE, etREAL, { &fit_end }, "Time (ps) where to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. Only with [TT]-gem[tt]" },
+        { "-nbmin", FALSE, etINT, { &nb_min }, "HIDDENMinimum number of blocks for block averaging" },
+        { "-resol", FALSE, etINT, { &resol },
           "HIDDENResolution for the block averaging, block size increases with"
           " a factor 2^(1/resol)" },
-        { "-eeexpfit", FALSE, etBOOL, {&bEESEF},
-          "HIDDENAlways use a single exponential fit for the error estimate" },
-        { "-eenlc", FALSE, etBOOL, {&bEENLC},
-          "HIDDENAllow a negative long-time correlation" },
-        { "-eefitac", FALSE, etBOOL, {&bEeFitAc},
-          "HIDDENAlso plot analytical block average using a autocorrelation fit" },
-        { "-filter",  FALSE, etREAL, {&filtlen},
-          "Print the high-frequency fluctuation after filtering with a cosine filter of this length" },
-        { "-power", FALSE, etBOOL, {&bPower},
-          "Fit data to: b t^a" },
-        { "-subav", FALSE, etBOOL, {&bSubAv},
-          "Subtract the average before autocorrelating" },
-        { "-oneacf", FALSE, etBOOL, {&bAverCorr},
-          "Calculate one ACF over all sets" },
+        { "-eeexpfit", FALSE, etBOOL, { &bEESEF }, "HIDDENAlways use a single exponential fit for the error estimate" },
+        { "-eenlc", FALSE, etBOOL, { &bEENLC }, "HIDDENAllow a negative long-time correlation" },
+        { "-eefitac", FALSE, etBOOL, { &bEeFitAc }, "HIDDENAlso plot analytical block average using a autocorrelation fit" },
+        { "-filter", FALSE, etREAL, { &filtlen }, "Print the high-frequency fluctuation after filtering with a cosine filter of this length" },
+        { "-power", FALSE, etBOOL, { &bPower }, "Fit data to: b t^a" },
+        { "-subav", FALSE, etBOOL, { &bSubAv }, "Subtract the average before autocorrelating" },
+        { "-oneacf", FALSE, etBOOL, { &bAverCorr }, "Calculate one ACF over all sets" },
     };
 #define NPA asize(pa)
 
@@ -1110,15 +1096,15 @@ int gmx_analyze(int argc, char *argv[])
     gmx_output_env_t *oenv;
 
     t_filenm fnm[] = {
-        { efXVG, "-f",    "graph",    ffREAD   },
-        { efXVG, "-ac",   "autocorr", ffOPTWR  },
-        { efXVG, "-msd",  "msd",      ffOPTWR  },
-        { efXVG, "-cc",   "coscont",  ffOPTWR  },
-        { efXVG, "-dist", "distr",    ffOPTWR  },
-        { efXVG, "-av",   "average",  ffOPTWR  },
-        { efXVG, "-ee",   "errest",   ffOPTWR  },
+        { efXVG, "-f", "graph", ffREAD },
+        { efXVG, "-ac", "autocorr", ffOPTWR },
+        { efXVG, "-msd", "msd", ffOPTWR },
+        { efXVG, "-cc", "coscont", ffOPTWR },
+        { efXVG, "-dist", "distr", ffOPTWR },
+        { efXVG, "-av", "average", ffOPTWR },
+        { efXVG, "-ee", "errest", ffOPTWR },
         { efXVG, "-fitted", "fitted", ffOPTWR },
-        { efLOG, "-g",    "fitlog",   ffOPTWR  }
+        { efLOG, "-g", "fitlog", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -1220,14 +1206,14 @@ int gmx_analyze(int argc, char *argv[])
         cum1 /= n;
         for (i = 0; (i < n); i++)
         {
-            db    = val[s][i] - cum1;
+            db = val[s][i] - cum1;
             cum2 += db * db;
             cum3 += db * db * db;
             cum4 += db * db * db * db;
         }
-        cum2  /= n;
-        cum3  /= n;
-        cum4  /= n;
+        cum2 /= n;
+        cum3 /= n;
+        cum4 /= n;
         av[s]  = cum1;
         sig[s] = std::sqrt(cum2);
         if (n > 1)

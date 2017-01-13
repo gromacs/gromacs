@@ -62,23 +62,27 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-const char *epbc_names[epbcNR + 1] =
-{
+const char *epbc_names[epbcNR + 1] = {
     "xyz", "no", "xy", "screw", nullptr
 };
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
 enum
 {
-    epbcdxRECTANGULAR = 1, epbcdxTRICLINIC,
-    epbcdx2D_RECT,       epbcdx2D_TRIC,
-    epbcdx1D_RECT,       epbcdx1D_TRIC,
-    epbcdxSCREW_RECT,    epbcdxSCREW_TRIC,
-    epbcdxNOPBC,         epbcdxUNSUPPORTED
+    epbcdxRECTANGULAR = 1,
+    epbcdxTRICLINIC,
+    epbcdx2D_RECT,
+    epbcdx2D_TRIC,
+    epbcdx1D_RECT,
+    epbcdx1D_TRIC,
+    epbcdxSCREW_RECT,
+    epbcdxSCREW_TRIC,
+    epbcdxNOPBC,
+    epbcdxUNSUPPORTED
 };
 
 //! Margin factor for error message
-#define BOX_MARGIN         1.0010
+#define BOX_MARGIN 1.0010
 //! Margin correction if the box is too skewed
 #define BOX_MARGIN_CORRECT 1.0005
 
@@ -88,11 +92,20 @@ int ePBC2npbcdim(int ePBC)
 
     switch (ePBC)
     {
-        case epbcXYZ:   npbcdim = 3; break;
-        case epbcXY:    npbcdim = 2; break;
-        case epbcSCREW: npbcdim = 3; break;
-        case epbcNONE:  npbcdim = 0; break;
-        default: gmx_fatal(FARGS, "Unknown ePBC=%d in ePBC2npbcdim", ePBC);
+        case epbcXYZ:
+            npbcdim = 3;
+            break;
+        case epbcXY:
+            npbcdim = 2;
+            break;
+        case epbcSCREW:
+            npbcdim = 3;
+            break;
+        case epbcNONE:
+            npbcdim = 0;
+            break;
+        default:
+            gmx_fatal(FARGS, "Unknown ePBC=%d in ePBC2npbcdim", ePBC);
     }
 
     return npbcdim;
@@ -176,7 +189,7 @@ void matrix_convert(matrix box, const rvec vec, const rvec angleInDegrees)
     box[YY][YY] = vec[YY] * sin(angle[ZZ]);
     box[ZZ][XX] = vec[ZZ] * cos(angle[YY]);
     box[ZZ][YY] = vec[ZZ]
-        * (cos(angle[XX]) - cos(angle[YY]) * cos(angle[ZZ])) / sin(angle[ZZ]);
+                  * (cos(angle[XX]) - cos(angle[YY]) * cos(angle[ZZ])) / sin(angle[ZZ]);
     box[ZZ][ZZ] = sqrt(gmx::square(vec[ZZ])
                        - box[ZZ][XX] * box[ZZ][XX] - box[ZZ][YY] * box[ZZ][YY]);
 }
@@ -235,7 +248,8 @@ int guess_ePBC(const matrix box)
     {
         if (!bWarnedGuess)
         {
-            fprintf(stderr, "WARNING: Unsupported box diagonal %f %f %f, "
+            fprintf(stderr,
+                    "WARNING: Unsupported box diagonal %f %f %f, "
                     "will not use periodic boundary conditions\n\n",
                     box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
             bWarnedGuess = TRUE;
@@ -376,17 +390,17 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
 
     for (int i = 0; (i < DIM); i++)
     {
-        pbc->fbox_diag[i]  =  box[i][i];
-        pbc->hbox_diag[i]  =  pbc->fbox_diag[i] * 0.5;
+        pbc->fbox_diag[i]  = box[i][i];
+        pbc->hbox_diag[i]  = pbc->fbox_diag[i] * 0.5;
         pbc->mhbox_diag[i] = -pbc->hbox_diag[i];
     }
 
     ptr = check_box(ePBC, box);
     if (ptr)
     {
-        fprintf(stderr,   "Warning: %s\n", ptr);
+        fprintf(stderr, "Warning: %s\n", ptr);
         pr_rvecs(stderr, 0, "         Box", box, DIM);
-        fprintf(stderr,   "         Can not fix pbc.\n\n");
+        fprintf(stderr, "         Can not fix pbc.\n\n");
         pbc->ePBCDX = epbcdxUNSUPPORTED;
     }
     else
@@ -540,7 +554,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
                                 {
                                     if (trial[d] < 0)
                                     {
-                                        pos[d] = std::min( pbc->hbox_diag[d], -trial[d]);
+                                        pos[d] = std::min(pbc->hbox_diag[d], -trial[d]);
                                     }
                                     else
                                     {
@@ -575,8 +589,10 @@ static void low_set_pbc(t_pbc *pbc, int ePBC,
                                     /* Accept this shift vector. */
                                     if (pbc->ntric_vec >= MAX_NTRICVEC)
                                     {
-                                        fprintf(stderr, "\nWARNING: Found more than %d triclinic correction vectors, ignoring some.\n"
-                                                "  There is probably something wrong with your box.\n", MAX_NTRICVEC);
+                                        fprintf(stderr,
+                                                "\nWARNING: Found more than %d triclinic correction vectors, ignoring some.\n"
+                                                "  There is probably something wrong with your box.\n",
+                                                MAX_NTRICVEC);
                                         pr_rvecs(stderr, 0, "         Box", box, DIM);
                                     }
                                     else
@@ -803,12 +819,12 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
             while (dx[XX] > pbc->hbox_diag[XX])
             {
                 dx[XX] -= pbc->fbox_diag[XX];
-                bRot    = !bRot;
+                bRot = !bRot;
             }
             while (dx[XX] <= pbc->mhbox_diag[XX])
             {
                 dx[XX] += pbc->fbox_diag[YY];
-                bRot    = !bRot;
+                bRot = !bRot;
             }
             if (bRot)
             {
@@ -855,12 +871,12 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx)
             {
                 if (dx[i] > pbc->hbox_diag[i])
                 {
-                    dx[i] -=  pbc->fbox_diag[i];
+                    dx[i] -= pbc->fbox_diag[i];
                     ishift[i]--;
                 }
                 else if (dx[i] <= pbc->mhbox_diag[i])
                 {
-                    dx[i] +=  pbc->fbox_diag[i];
+                    dx[i] += pbc->fbox_diag[i];
                     ishift[i]++;
                 }
             }
@@ -1200,12 +1216,12 @@ void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx)
             while (dx[XX] > pbc->hbox_diag[XX])
             {
                 dx[XX] -= pbc->fbox_diag[XX];
-                bRot    = !bRot;
+                bRot = !bRot;
             }
             while (dx[XX] <= pbc->mhbox_diag[XX])
             {
                 dx[XX] += pbc->fbox_diag[YY];
-                bRot    = !bRot;
+                bRot = !bRot;
             }
             if (bRot)
             {
@@ -1429,7 +1445,7 @@ int *compact_unitcell_edges()
         4, 17, 5, 11, 6, 23, 7, 13,
         8, 20, 10, 18, 12, 16, 14, 22
     };
-    int              e, i, j;
+    int e, i, j;
 
     snew(edge, NCUCEDGE * 2);
 

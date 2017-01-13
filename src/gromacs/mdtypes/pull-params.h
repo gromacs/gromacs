@@ -71,36 +71,36 @@ static const int c_pullCoordNgroupMax = 6;
 /*! \brief Struct that defines a pull coordinate */
 typedef struct
 {
-    int      eType;                        /**< The pull type: umbrella, constraint, ... */
-    char *   externalPotentialProvider;    /**< Name of the module providing the external potential, only used with eType==epullEXTERNAL */
-    int      eGeom;                        /**< The pull geometry */
-    int      ngroup;                       /**< The number of groups, depends on eGeom */
-    int      group[c_pullCoordNgroupMax];  /**< The pull groups: indices into the group arrays in pull_t and pull_params_t, ngroup indices are used */
-    ivec     dim;                          /**< Used to select components for constraint */
-    rvec     origin;                       /**< The origin for the absolute reference */
-    rvec     vec;                          /**< The pull vector, direction or position */
-    gmx_bool bStart;                       /**< Set init based on the initial structure */
-    real     init;                         /**< Initial reference displacement (nm) or (deg) */
-    real     rate;                         /**< Rate of motion (nm/ps) or (deg/ps) */
-    real     k;                            /**< Force constant (kJ/(mol nm^2) or kJ/(mol rad^2) for umbrella pull type, or kJ/(mol nm) or kJ/(mol rad) for constant force pull type */
-    real     kB;                           /**< Force constant for state B */
+    int      eType;                       /**< The pull type: umbrella, constraint, ... */
+    char *   externalPotentialProvider;   /**< Name of the module providing the external potential, only used with eType==epullEXTERNAL */
+    int      eGeom;                       /**< The pull geometry */
+    int      ngroup;                      /**< The number of groups, depends on eGeom */
+    int      group[c_pullCoordNgroupMax]; /**< The pull groups: indices into the group arrays in pull_t and pull_params_t, ngroup indices are used */
+    ivec     dim;                         /**< Used to select components for constraint */
+    rvec     origin;                      /**< The origin for the absolute reference */
+    rvec     vec;                         /**< The pull vector, direction or position */
+    gmx_bool bStart;                      /**< Set init based on the initial structure */
+    real     init;                        /**< Initial reference displacement (nm) or (deg) */
+    real     rate;                        /**< Rate of motion (nm/ps) or (deg/ps) */
+    real     k;                           /**< Force constant (kJ/(mol nm^2) or kJ/(mol rad^2) for umbrella pull type, or kJ/(mol nm) or kJ/(mol rad) for constant force pull type */
+    real     kB;                          /**< Force constant for state B */
 } t_pull_coord;
 
 /*! \brief Struct containing all pull parameters */
 typedef struct pull_params_t
 {
-    int      ngroup;               /**< Number of pull groups */
-    int      ncoord;               /**< Number of pull coordinates */
-    real     cylinder_r;           /**< Radius of cylinder for dynamic COM (nm) */
-    real     constr_tol;           /**< Absolute tolerance for constraints in (nm) */
-    gmx_bool bPrintCOM;            /**< Print coordinates of COM for each coord */
-    gmx_bool bPrintRefValue;       /**< Print the reference value for each coord */
-    gmx_bool bPrintComp;           /**< Print cartesian components for each coord with geometry=distance */
-    int      nstxout;              /**< Output interval for pull x */
-    int      nstfout;              /**< Output interval for pull f */
+    int      ngroup;         /**< Number of pull groups */
+    int      ncoord;         /**< Number of pull coordinates */
+    real     cylinder_r;     /**< Radius of cylinder for dynamic COM (nm) */
+    real     constr_tol;     /**< Absolute tolerance for constraints in (nm) */
+    gmx_bool bPrintCOM;      /**< Print coordinates of COM for each coord */
+    gmx_bool bPrintRefValue; /**< Print the reference value for each coord */
+    gmx_bool bPrintComp;     /**< Print cartesian components for each coord with geometry=distance */
+    int      nstxout;        /**< Output interval for pull x */
+    int      nstfout;        /**< Output interval for pull f */
 
-    t_pull_group *group;           /**< groups to pull/restrain/etc/ */
-    t_pull_coord *coord;           /**< the pull coordinates */
+    t_pull_group *group; /**< groups to pull/restrain/etc/ */
+    t_pull_coord *coord; /**< the pull coordinates */
 } pull_params_t;
 
 /*! \endcond */

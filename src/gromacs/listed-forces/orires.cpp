@@ -65,7 +65,7 @@
 // a user can't just do multi-sim with single-sim orientation restraints.
 
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
-                 rvec xref[],
+                 rvec              xref[],
                  const t_inputrec *ir,
                  const t_commrec *cr, t_oriresdata *od,
                  t_state *state)
@@ -151,9 +151,9 @@ void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
         od->edt_1 = 1.0 - od->edt;
 
         /* Extend the state with the orires history */
-        state->flags           |= (1 << estORIRE_INITF);
+        state->flags |= (1 << estORIRE_INITF);
         state->hist.orire_initf = 1;
-        state->flags           |= (1 << estORIRE_DTAV);
+        state->flags |= (1 << estORIRE_DTAV);
         state->hist.norire_Dtav = od->nr * 5;
         snew(state->hist.orire_Dtav, state->hist.norire_Dtav);
     }
@@ -533,12 +533,12 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         /* Correct corrfac and copy one half of T to the other half */
         for (i = 0; i < 5; i++)
         {
-            rhs[ex][i]  *= corrfac;
+            rhs[ex][i] *= corrfac;
             T[ex][i][i] *= gmx::square(corrfac);
             for (j = 0; j < i; j++)
             {
                 T[ex][i][j] *= gmx::square(corrfac);
-                T[ex][j][i]  = T[ex][i][j];
+                T[ex][j][i] = T[ex][i][j];
             }
         }
         m_inv_gen(T[ex], 5, T[ex]);
@@ -572,9 +572,9 @@ real calc_orires_dev(const gmx_multisim_t *ms,
         ex   = ip[type].orires.ex;
 
         od->otav[d] = two_thr
-            * corrfac * (S[ex][0][0] * Dtav[d][0] + S[ex][0][1] * Dtav[d][1]
-                         + S[ex][0][2] * Dtav[d][2] + S[ex][1][1] * Dtav[d][3]
-                         + S[ex][1][2] * Dtav[d][4]);
+                      * corrfac * (S[ex][0][0] * Dtav[d][0] + S[ex][0][1] * Dtav[d][1]
+                                   + S[ex][0][2] * Dtav[d][2] + S[ex][1][1] * Dtav[d][3]
+                                   + S[ex][1][2] * Dtav[d][4]);
         if (bTAV)
         {
             od->oins[d] = two_thr * (S[ex][0][0] * Dins[d][0] + S[ex][0][1] * Dins[d][1]
@@ -587,15 +587,15 @@ real calc_orires_dev(const gmx_multisim_t *ms,
              * for output to the energy file.
              */
             od->oinsl[d] = two_thr
-                * (S[ex][0][0] * Dinsl[d][0] + S[ex][0][1] * Dinsl[d][1]
-                   + S[ex][0][2] * Dinsl[d][2] + S[ex][1][1] * Dinsl[d][3]
-                   + S[ex][1][2] * Dinsl[d][4]);
+                           * (S[ex][0][0] * Dinsl[d][0] + S[ex][0][1] * Dinsl[d][1]
+                              + S[ex][0][2] * Dinsl[d][2] + S[ex][1][1] * Dinsl[d][3]
+                              + S[ex][1][2] * Dinsl[d][4]);
         }
 
         dev = od->otav[d] - ip[type].orires.obs;
 
         wsv2 += ip[type].orires.kfac * gmx::square(dev);
-        sw   += ip[type].orires.kfac;
+        sw += ip[type].orires.kfac;
 
         d++;
     }
@@ -668,7 +668,7 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             /* NOTE:
              * there is no real potential when time averaging is applied
              */
-            vtot += 0.5*fc*gmx::square(dev);
+            vtot += 0.5 * fc * gmx::square(dev);
 
             if (bTAV)
             {
@@ -697,7 +697,7 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             for (i = 0; i < DIM; i++)
             {
                 fij[i]
-                    = -pfac * dev * (4 * Sr[i] - 2 * (2 + power) * invr2 * iprod(Sr, r) * r[i]);
+                        = -pfac * dev * (4 * Sr[i] - 2 * (2 + power) * invr2 * iprod(Sr, r) * r[i]);
             }
 
             if (g)
@@ -708,9 +708,9 @@ real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
 
             for (i = 0; i < DIM; i++)
             {
-                f[ai][i]           += fij[i];
-                f[aj][i]           -= fij[i];
-                fshift[ki][i]      += fij[i];
+                f[ai][i] += fij[i];
+                f[aj][i] -= fij[i];
+                fshift[ki][i] += fij[i];
                 fshift[CENTRAL][i] -= fij[i];
             }
             d++;

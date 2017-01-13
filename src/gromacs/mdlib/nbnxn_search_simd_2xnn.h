@@ -36,13 +36,13 @@
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 #if GMX_SIMD_REAL_WIDTH >= 2 * NBNXN_CPU_CLUSTER_I_SIZE
-#define STRIDE_S  (GMX_SIMD_REAL_WIDTH / 2)
+#define STRIDE_S (GMX_SIMD_REAL_WIDTH / 2)
 #else
-#define STRIDE_S  NBNXN_CPU_CLUSTER_I_SIZE
+#define STRIDE_S NBNXN_CPU_CLUSTER_I_SIZE
 #endif
 
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
-static gmx_inline void icell_set_x_simd_2xnn(int ci,
+static gmx_inline void icell_set_x_simd_2xnn(int  ci,
                                              real shx, real shy, real shz,
                                              int gmx_unused stride, const real *x,
                                              nbnxn_list_work_t *work)
@@ -52,12 +52,12 @@ static gmx_inline void icell_set_x_simd_2xnn(int ci,
 
     ia = x_ind_ci_simd_2xnn(ci);
 
-    store(x_ci_simd + 0 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 0 * STRIDE_S + 0) + SimdReal(shx) );
-    store(x_ci_simd + 1 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 1 * STRIDE_S + 0) + SimdReal(shy) );
-    store(x_ci_simd + 2 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 2 * STRIDE_S + 0) + SimdReal(shz) );
-    store(x_ci_simd + 3 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 0 * STRIDE_S + 2) + SimdReal(shx) );
-    store(x_ci_simd + 4 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 1 * STRIDE_S + 2) + SimdReal(shy) );
-    store(x_ci_simd + 5 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 2 * STRIDE_S + 2) + SimdReal(shz) );
+    store(x_ci_simd + 0 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 0 * STRIDE_S + 0) + SimdReal(shx));
+    store(x_ci_simd + 1 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 1 * STRIDE_S + 0) + SimdReal(shy));
+    store(x_ci_simd + 2 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 2 * STRIDE_S + 0) + SimdReal(shz));
+    store(x_ci_simd + 3 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 0 * STRIDE_S + 2) + SimdReal(shx));
+    store(x_ci_simd + 4 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 1 * STRIDE_S + 2) + SimdReal(shy));
+    store(x_ci_simd + 5 * GMX_SIMD_REAL_WIDTH, load1DualHsimd(x + ia + 2 * STRIDE_S + 2) + SimdReal(shz));
 }
 
 /* SIMD code for making a pair list of cell ci vs cell cjf-cjl
@@ -66,9 +66,9 @@ static gmx_inline void icell_set_x_simd_2xnn(int ci,
  * This is an accelerated version of make_cluster_list_simple.
  */
 static gmx_inline void make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
-                                                   nbnxn_pairlist_t *nbl,
+                                                   nbnxn_pairlist_t *  nbl,
                                                    int ci, int cjf, int cjl,
-                                                   gmx_bool remove_sub_diag,
+                                                   gmx_bool    remove_sub_diag,
                                                    const real *x_j,
                                                    real rl2, float rbb2,
                                                    int *ndistc)

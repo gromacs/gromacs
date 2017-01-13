@@ -170,7 +170,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
                     if (!impl_->bSkipUnknown_)
                     {
                         std::string message
-                            = "Unknown command-line option " + std::string(arg);
+                                = "Unknown command-line option " + std::string(arg);
                         GMX_THROW(InvalidInputError(message));
                     }
                 }

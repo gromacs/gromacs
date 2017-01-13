@@ -67,23 +67,23 @@ namespace test
 /*! \{ */
 
 #if GMX_SIMD4_HAVE_REAL
-extern const Simd4Real rSimd4_1_2_3;     //!< Generic (different) fp values.
-extern const Simd4Real rSimd4_4_5_6;     //!< Generic (different) fp values.
-extern const Simd4Real rSimd4_7_8_9;     //!< Generic (different) fp values.
-extern const Simd4Real rSimd4_5_7_9;     //!< rSimd_1_2_3 + rSimd_4_5_6.
-extern const Simd4Real rSimd4_m1_m2_m3;  //!< Generic negative fp values.
-extern const Simd4Real rSimd4_3_1_4;     //!< Used to test min/max.
-extern const Simd4Real rSimd4_m3_m1_m4;  //!< negative rSimd_3_1_4.
-extern const Simd4Real rSimd4_2p25;      //!< Value that rounds down.
-extern const Simd4Real rSimd4_3p75;      //!< Value that rounds up.
-extern const Simd4Real rSimd4_m2p25;     //!< Negative value that rounds up.
-extern const Simd4Real rSimd4_m3p75;     //!< Negative value that rounds down.
+extern const Simd4Real rSimd4_1_2_3;    //!< Generic (different) fp values.
+extern const Simd4Real rSimd4_4_5_6;    //!< Generic (different) fp values.
+extern const Simd4Real rSimd4_7_8_9;    //!< Generic (different) fp values.
+extern const Simd4Real rSimd4_5_7_9;    //!< rSimd_1_2_3 + rSimd_4_5_6.
+extern const Simd4Real rSimd4_m1_m2_m3; //!< Generic negative fp values.
+extern const Simd4Real rSimd4_3_1_4;    //!< Used to test min/max.
+extern const Simd4Real rSimd4_m3_m1_m4; //!< negative rSimd_3_1_4.
+extern const Simd4Real rSimd4_2p25;     //!< Value that rounds down.
+extern const Simd4Real rSimd4_3p75;     //!< Value that rounds up.
+extern const Simd4Real rSimd4_m2p25;    //!< Negative value that rounds up.
+extern const Simd4Real rSimd4_m3p75;    //!< Negative value that rounds down.
 //! Three large floating-point values whose exponents are >32.
 extern const Simd4Real rSimd4_Exp;
-#    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
+#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
 extern const Simd4Real rSimd4_ExpDouble;
-#    endif
+#endif
 extern const Simd4Real rSimd4_Bits1; //!< Pattern F0 repeated to fill single/double.
 extern const Simd4Real rSimd4_Bits2; //!< Pattern CC repeated to fill single/double.
 extern const Simd4Real rSimd4_Bits3; //!< Pattern C0 repeated to fill single/double.
@@ -115,7 +115,7 @@ public:
      * reference element.
      */
     ::testing::AssertionResult
-    compareSimd4RealUlp(const char * refExpr, const char * tstExpr,
+    compareSimd4RealUlp(const char *refExpr, const char *tstExpr,
                         const Simd4Real ref, const Simd4Real tst);
 
     /*! \brief Compare two real SIMD4 variables for exact equality.
@@ -131,7 +131,7 @@ public:
      * reference element.
      */
     ::testing::AssertionResult
-    compareSimd4RealEq(const char * refExpr, const char * tstExpr,
+    compareSimd4RealEq(const char *refExpr, const char *tstExpr,
                        const Simd4Real ref, const Simd4Real tst);
 };
 
@@ -146,7 +146,7 @@ std::vector<real> simd4Real2Vector(const Simd4Real simd4);
  * If the vector is longer than SIMD4 width, only the first elements will be used.
  * If it is shorter, the contents will be repeated to fill the SIMD4 register.
  */
-Simd4Real   vector2Simd4Real(const std::vector<real> &v);
+Simd4Real vector2Simd4Real(const std::vector<real> &v);
 
 /*! \brief Set SIMD4 register contents from three real values.
  *
@@ -154,7 +154,7 @@ Simd4Real   vector2Simd4Real(const std::vector<real> &v);
  * is 4, but it simplifies the test organization when the SIMD and SIMD4 tests
  * are completely symmetric.
  */
-Simd4Real   setSimd4RealFrom3R(real r0, real r1, real r2);
+Simd4Real setSimd4RealFrom3R(real r0, real r1, real r2);
 
 /*! \brief Set SIMD4 register contents from single real value.
  *
@@ -162,21 +162,21 @@ Simd4Real   setSimd4RealFrom3R(real r0, real r1, real r2);
  * operation as simd4Set1(), but is implemented using only load/store
  * operations that have been tested separately in the bootstrapping tests.
  */
-Simd4Real   setSimd4RealFrom1R(real value);
+Simd4Real setSimd4RealFrom1R(real value);
 
 /*! \brief Test if a SIMD4 real is bitwise identical to reference SIMD4 value. */
-#define GMX_EXPECT_SIMD4_REAL_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimd4RealEq, ref, tst)
+#define GMX_EXPECT_SIMD4_REAL_EQ(ref, tst) EXPECT_PRED_FORMAT2(compareSimd4RealEq, ref, tst)
 
 /*! \brief Test if a SIMD4 real is within tolerance of reference SIMD4 value. */
 #define GMX_EXPECT_SIMD4_REAL_NEAR(ref, tst) EXPECT_PRED_FORMAT2(compareSimd4RealUlp, ref, tst)
 
-#endif  // GMX_SIMD4_HAVE_REAL
+#endif // GMX_SIMD4_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace
 
 #endif // GMX_SIMD
 

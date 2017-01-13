@@ -52,17 +52,17 @@
 #include "gromacs/utility/real.h"
 
 /*! \brief Flag to select user tables for make_tables */
-#define GMX_MAKETABLES_FORCEUSER  (1 << 0)
+#define GMX_MAKETABLES_FORCEUSER (1 << 0)
 /*! \brief Flag to only make 1,4 pair tables for make_tables */
-#define GMX_MAKETABLES_14ONLY     (1 << 1)
+#define GMX_MAKETABLES_14ONLY (1 << 1)
 
 /*! \brief Enumerated type to describe the interaction types in a table */
 enum
 {
-    etiCOUL,  //!< Coulomb
-    etiLJ6,   //!< Dispersion
-    etiLJ12,  //!< Repulsion
-    etiNR     //!< Total number of interaction types
+    etiCOUL, //!< Coulomb
+    etiLJ6,  //!< Dispersion
+    etiLJ12, //!< Repulsion
+    etiNR    //!< Total number of interaction types
 };
 
 /*! \brief Function pointer to calculate the grid contribution for coulomb/LJ
@@ -131,7 +131,7 @@ double v_lj_ewald_lr(double beta, double r);
  *
  * \return Pointer to inner loop table structure
  */
-t_forcetable *make_tables(FILE *fp,
+t_forcetable *make_tables(FILE *            fp,
                           const t_forcerec *fr,
                           const char *fn, real rtab, int flags);
 
@@ -157,4 +157,4 @@ t_forcetable *make_gb_table(const t_forcerec *fr);
 t_forcetable *makeDispersionCorrectionTable(FILE *fp, t_forcerec *fr,
                                             real rtab, const char *tabfn);
 
-#endif  /* GMX_TABLES_FORCETABLE_H */
+#endif /* GMX_TABLES_FORCETABLE_H */

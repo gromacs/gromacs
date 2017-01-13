@@ -88,7 +88,7 @@ public:
     typename SectionType::HandleType addSection(const SectionType &section)
     {
         internal::OptionSectionImpl *storage
-            = addSectionImpl(static_cast<const AbstractOptionSection &>(section));
+                = addSectionImpl(static_cast<const AbstractOptionSection &>(section));
         return typename SectionType::HandleType(storage);
     }
 
@@ -104,7 +104,8 @@ protected:
      * \returns   Pointer to the internal section representation object.
      */
     virtual internal::OptionSectionImpl *
-    addSectionImpl(const AbstractOptionSection &section) = 0;
+    addSectionImpl(const AbstractOptionSection &section)
+            = 0;
 
     GMX_DEFAULT_CONSTRUCTORS(IOptionsContainerWithSections);
 };

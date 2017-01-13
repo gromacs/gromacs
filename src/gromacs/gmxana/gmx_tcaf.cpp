@@ -62,16 +62,16 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#define NK  24
+#define NK 24
 #define NPK 4
 
-#define NKC  6
+#define NKC 6
 #define NKC0 4
 int kset_c[NKC + 1] = { 0, 3, 9, 13, 16, 19, NK };
 
-rvec v0[NK] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 0}, {1, -1, 0}, {1, 0, 1}, {1, 0, -1}, {0, 1, 1}, {0, 1, -1}, {1, 1, 1}, {1, 1, -1}, {1, -1, 1}, {-1, 1, 1}, {2, 0, 0}, {0, 2, 0}, {0, 0, 2}, {3, 0, 0}, {0, 3, 0}, {0, 0, 3}, {4, 0, 0}, {0, 4, 0}, {0, 0, 4}};
-rvec v1[NK] = {{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 0, 1}, {0, 0, 1}, {0, 1, 0}, {0, 1, 0}, {1, 0, 0}, {1, 0, 0}, {1, -1, 0}, {1, -1, 0}, {1, 0, -1}, { 0, 1, -1}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}};
-rvec v2[NK] = {{0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {1, -1, 0}, {1, 1, 0}, {1, 0, -1}, {1, 0, 1}, {0, 1, -1}, {0, 1, 1}, {1, 1, -2}, {1, 1, 2}, {1, 2, 1}, { 2, 1, 1}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 1, 0}};
+rvec v0[NK] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 0 }, { 1, -1, 0 }, { 1, 0, 1 }, { 1, 0, -1 }, { 0, 1, 1 }, { 0, 1, -1 }, { 1, 1, 1 }, { 1, 1, -1 }, { 1, -1, 1 }, { -1, 1, 1 }, { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 }, { 3, 0, 0 }, { 0, 3, 0 }, { 0, 0, 3 }, { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
+rvec v1[NK] = { { 0, 1, 0 }, { 0, 0, 1 }, { 1, 0, 0 }, { 0, 0, 1 }, { 0, 0, 1 }, { 0, 1, 0 }, { 0, 1, 0 }, { 1, 0, 0 }, { 1, 0, 0 }, { 1, -1, 0 }, { 1, -1, 0 }, { 1, 0, -1 }, { 0, 1, -1 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 0, 0 } };
+rvec v2[NK] = { { 0, 0, 1 }, { 1, 0, 0 }, { 0, 1, 0 }, { 1, -1, 0 }, { 1, 1, 0 }, { 1, 0, -1 }, { 1, 0, 1 }, { 0, 1, -1 }, { 0, 1, 1 }, { 1, 1, -2 }, { 1, 1, 2 }, { 1, 2, 1 }, { 2, 1, 1 }, { 0, 0, 1 }, { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 0, 0 }, { 0, 1, 0 } };
 
 static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
                          real rho, real wt, const char *fn_trans,
@@ -211,7 +211,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
         do_lmfit(ncorr, tcaf[k], sig, dt, nullptr, 0, ncorr * dt,
                  oenv, bDebugMode(), effnVAC, fitparms, 0, nullptr);
         eta = 1000 * fitparms[1] * rho
-            / (4 * fitparms[0] * PICO * norm2(kfac[k]) / (NANO * NANO));
+              / (4 * fitparms[0] * PICO * norm2(kfac[k]) / (NANO * NANO));
         fprintf(stdout, "k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
                 norm(kfac[k]), fitparms[0], eta);
         fprintf(fp_vk, "%6.3f %g\n", norm(kfac[k]), eta);
@@ -236,7 +236,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
             do_lmfit(ncorr, tcafc[k], sig, dt, nullptr, 0, ncorr * dt,
                      oenv, bDebugMode(), effnVAC, fitparms, 0, nullptr);
             eta = 1000 * fitparms[1] * rho
-                / (4 * fitparms[0] * PICO * norm2(kfac[kset_c[k]]) / (NANO * NANO));
+                  / (4 * fitparms[0] * PICO * norm2(kfac[kset_c[k]]) / (NANO * NANO));
             fprintf(stdout,
                     "k %6.3f  tau %6.3f  Omega %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
                     norm(kfac[kset_c[k]]), fitparms[0], fitparms[1], eta);
@@ -295,12 +295,9 @@ int gmx_tcaf(int argc, char *argv[])
     static gmx_bool bMol = FALSE, bK34 = FALSE;
     static real     wt   = 5;
     t_pargs         pa[] = {
-        { "-mol", FALSE, etBOOL, {&bMol},
-          "Calculate TCAF of molecules" },
-        { "-k34", FALSE, etBOOL, {&bK34},
-          "Also use k=(3,0,0) and k=(4,0,0)" },
-        { "-wt", FALSE, etREAL, {&wt},
-          "Exponential decay time for the TCAF fit weights" }
+        { "-mol", FALSE, etBOOL, { &bMol }, "Calculate TCAF of molecules" },
+        { "-k34", FALSE, etBOOL, { &bK34 }, "Also use k=(3,0,0) and k=(4,0,0)" },
+        { "-wt", FALSE, etREAL, { &wt }, "Exponential decay time for the TCAF fit weights" }
     };
 
     t_topology        top;
@@ -323,15 +320,15 @@ int gmx_tcaf(int argc, char *argv[])
 #define NHISTO 360
 
     t_filenm fnm[] = {
-        { efTRN, "-f",    nullptr,      ffREAD  },
-        { efTPS, nullptr,    nullptr,      ffOPTRD },
-        { efNDX, nullptr,    nullptr,      ffOPTRD },
-        { efXVG, "-ot",  "transcur", ffOPTWR },
-        { efXVG, "-oa",  "tcaf_all", ffWRITE },
-        { efXVG, "-o",   "tcaf",     ffWRITE },
-        { efXVG, "-of",  "tcaf_fit", ffWRITE },
-        { efXVG, "-oc",  "tcaf_cub", ffOPTWR },
-        { efXVG, "-ov",  "visc_k",   ffWRITE }
+        { efTRN, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffOPTRD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, "-ot", "transcur", ffOPTWR },
+        { efXVG, "-oa", "tcaf_all", ffWRITE },
+        { efXVG, "-o", "tcaf", ffWRITE },
+        { efXVG, "-of", "tcaf_fit", ffWRITE },
+        { efXVG, "-oc", "tcaf_cub", ffOPTWR },
+        { efXVG, "-ov", "visc_k", ffWRITE }
     };
 #define NFILE asize(fnm)
     int      npargs;
@@ -439,15 +436,15 @@ int gmx_tcaf(int argc, char *argv[])
                 mtot = 0;
                 for (j = 0; j < atndx[index[i] + 1] - atndx[index[i]]; j++)
                 {
-                    at          = atndx[index[i]] + j;
-                    m           = top.atoms.atom[at].m;
+                    at = atndx[index[i]] + j;
+                    m  = top.atoms.atom[at].m;
                     mv_mol[XX] += m * fr.v[at][XX];
                     mv_mol[YY] += m * fr.v[at][YY];
                     mv_mol[ZZ] += m * fr.v[at][ZZ];
                     cm_mol[XX] += m * fr.x[at][XX];
                     cm_mol[YY] += m * fr.x[at][YY];
                     cm_mol[ZZ] += m * fr.x[at][ZZ];
-                    mtot       += m;
+                    mtot += m;
                 }
                 svmul(1.0 / mtot, cm_mol, cm_mol);
             }
@@ -463,8 +460,8 @@ int gmx_tcaf(int argc, char *argv[])
             j = 0;
             for (k = 0; k < nk; k++)
             {
-                sx              = std::sin(iprod(kfac[k], cm_mol));
-                cx              = std::cos(iprod(kfac[k], cm_mol));
+                sx = std::sin(iprod(kfac[k], cm_mol));
+                cx = std::cos(iprod(kfac[k], cm_mol));
                 tc[j][nframes] += sx * iprod(v1[k], mv_mol);
                 j++;
                 tc[j][nframes] += cx * iprod(v1[k], mv_mol);

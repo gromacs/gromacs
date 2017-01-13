@@ -65,12 +65,11 @@
 typedef struct
 {
     /** Value for each atom to match. */
-    union
-    {
+    union {
         int *  i;
         char **s;
         void * ptr;
-    }                        val;
+    } val;
     /*! \brief
      * Number of values in the \p as array.
      *
@@ -79,12 +78,11 @@ typedef struct
      */
     int nas;
     /** Values to match against. */
-    union
-    {
+    union {
         int *  i;
         char **s;
         void * ptr;
-    }                        as;
+    } as;
     /*! \brief
      * Separate array for sorted \p as.s array.
      *
@@ -156,14 +154,14 @@ evaluate_same_str(const gmx::SelMethodEvalContext &context,
 
 /** Parameters for the \p same selection method. */
 static gmx_ana_selparam_t smparams_same_int[] = {
-    {nullptr, {INT_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_ATOMVAL},
-    {"as", {INT_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
+    { nullptr, { INT_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_ATOMVAL },
+    { "as", { INT_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_VARNUM },
 };
 
 /** Parameters for the \p same selection method. */
 static gmx_ana_selparam_t smparams_same_str[] = {
-    {nullptr, {STR_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_ATOMVAL},
-    {"as", {STR_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
+    { nullptr, { STR_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_ATOMVAL },
+    { "as", { STR_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_VARNUM },
 };
 
 /** Help text for the \p same selection method. */
@@ -180,18 +178,7 @@ static const char *const help_same[] = {
 
 /*! \internal \brief Selection method data for the \p same method. */
 gmx_ana_selmethod_t sm_same = {
-    "same", GROUP_VALUE, 0,
-    asize(smparams_same_int), smparams_same_int,
-    &init_data_same,
-    nullptr,
-    &init_same,
-    nullptr,
-    &free_data_same,
-    &init_frame_same_int,
-    &evaluate_same_int,
-    nullptr,
-    {"same KEYWORD as ATOM_EXPR",
-     "Extending selections", asize(help_same), help_same},
+    "same", GROUP_VALUE, 0, asize(smparams_same_int), smparams_same_int, &init_data_same, nullptr, &init_same, nullptr, &free_data_same, &init_frame_same_int, &evaluate_same_int, nullptr, { "same KEYWORD as ATOM_EXPR", "Extending selections", asize(help_same), help_same },
 };
 
 /*! \brief
@@ -202,17 +189,7 @@ gmx_ana_selmethod_t sm_same = {
  * with this method in cases where it is required.
  */
 static gmx_ana_selmethod_t sm_same_str = {
-    "same", GROUP_VALUE, SMETH_SINGLEVAL,
-    asize(smparams_same_str), smparams_same_str,
-    &init_data_same,
-    nullptr,
-    &init_same,
-    nullptr,
-    &free_data_same,
-    &init_frame_same_str,
-    &evaluate_same_str,
-    nullptr,
-    {nullptr, nullptr, 0, nullptr},
+    "same", GROUP_VALUE, SMETH_SINGLEVAL, asize(smparams_same_str), smparams_same_str, &init_data_same, nullptr, &init_same, nullptr, &free_data_same, &init_frame_same_str, &evaluate_same_str, nullptr, { nullptr, nullptr, 0, nullptr },
 };
 
 static void *init_data_same(int /* npar */, gmx_ana_selparam_t *param)
@@ -271,10 +248,10 @@ void _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **                       
          * the first parameter, evaluating the keyword in the group given by the
          * second parameter. */
         gmx::SelectionTreeElementPointer kwelem
-            = _gmx_sel_init_keyword_evaluator(kwmethod, child, scanner);
+                = _gmx_sel_init_keyword_evaluator(kwmethod, child, scanner);
         /* Replace the second parameter with one with a value from \p kwelem. */
         std::string pname = asparam->name();
-        *asparam = gmx::SelectionParserParameter::createFromExpression(pname, kwelem);
+        *asparam          = gmx::SelectionParserParameter::createFromExpression(pname, kwelem);
     }
 }
 
@@ -291,8 +268,8 @@ static void init_same(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selp
     if (!(param[0].flags & SPAR_ATOMVAL))
     {
         GMX_THROW(gmx::InvalidInputError(
-                          "The 'same' selection keyword combined with a "
-                          "non-keyword does not make sense"));
+                "The 'same' selection keyword combined with a "
+                "non-keyword does not make sense"));
     }
 }
 
@@ -381,7 +358,7 @@ static void evaluate_same_int(const gmx::SelMethodEvalContext & /*context*/,
     int                i, j;
 
     out->u.g->isize = 0;
-    i               = j = 0;
+    i = j = 0;
     while (j < g->isize)
     {
         if (d->bSorted)

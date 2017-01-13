@@ -63,7 +63,8 @@ namespace gmx
 class AnalysisDataAverageModule::Impl
 {
 public:
-    Impl() : bDataSets_(false) {}
+    Impl()
+        : bDataSets_(false) {}
 
     //! Averaging helper objects for each input data set.
     std::vector<AnalysisDataFrameAverager> averagers_;
@@ -249,7 +250,7 @@ void AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &
 {
     const int                 dataSet = points.dataSetIndex();
     AnalysisDataStorageFrame &frame
-        = impl_->storage_.currentFrame(points.frameIndex());
+            = impl_->storage_.currentFrame(points.frameIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
         if (points.present(i))
@@ -258,7 +259,7 @@ void AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &
             const real y     = points.y(i);
             const real delta = y - frame.value(dataSet);
             impl_->sampleCount_[dataSet] += 1;
-            frame.value(dataSet)         += delta / impl_->sampleCount_[dataSet];
+            frame.value(dataSet) += delta / impl_->sampleCount_[dataSet];
         }
     }
 }

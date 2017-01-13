@@ -213,7 +213,6 @@ void read_bfac(const char *fn, int *n_bfac, double **bfac_val, int **bfac_nr)
         sscanf(bfac_lines[i], "%d %lf", &(*bfac_nr)[i], &(*bfac_val)[i]);
         /*fprintf(stderr," nr %d val %g\n",(*bfac_nr)[i],(*bfac_val)[i]);*/
     }
-
 }
 
 void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
@@ -247,7 +246,8 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     {
         fprintf(stderr,
                 "Range of values for B-factors too large (min %g, max %g) "
-                "will scale down a factor 10\n", bfac_min, bfac_max);
+                "will scale down a factor 10\n",
+                bfac_min, bfac_max);
         for (i = 0; (i < n_bfac); i++)
         {
             bfac[i] /= 10;
@@ -259,7 +259,8 @@ void set_pdb_conf_bfac(int natoms, int nres, t_atoms *atoms, int n_bfac,
     {
         fprintf(stderr,
                 "Range of values for B-factors too small (min %g, max %g) "
-                "will scale up a factor 10\n", bfac_min, bfac_max);
+                "will scale up a factor 10\n",
+                bfac_min, bfac_max);
         for (i = 0; (i < n_bfac); i++)
         {
             bfac[i] *= 10;
@@ -331,7 +332,7 @@ void pdb_legend(FILE *out, int natoms, int nres, t_atoms *atoms, rvec x[])
                 "%-6s%5d  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                 "ATOM  ", natoms + 1 + i, "CA", "LEG", space, nres + 1, space,
                 (xmin + (i * 0.12)) * 10, ymin * 10, zmin * 10, 1.0, bfac_min
-                + ((i - 1.0) * (bfac_max - bfac_min) / 10));
+                                                                             + ((i - 1.0) * (bfac_max - bfac_min) / 10));
     }
 }
 
@@ -347,8 +348,8 @@ void visualize_images(const char *fn, int ePBC, matrix box)
     atoms.nr = nat;
     snew(img, nat);
     /* FIXME: Constness should not be cast away */
-    c   = (char *) "C";
-    ala = (char *) "ALA";
+    c   = (char *)"C";
+    ala = (char *)"ALA";
     for (i = 0; i < nat; i++)
     {
         atoms.atomname[i]        = &c;
@@ -371,8 +372,7 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
     rvec *vert, shift;
     int   nx, ny, nz, nbox, nat;
     int   i, j, x, y, z;
-    int   rectedge[24] =
-    {
+    int   rectedge[24] = {
         0, 1, 1, 3, 3, 2, 0, 2, 0, 4, 1, 5, 3, 7, 2, 6, 4, 5, 5, 7, 7, 6, 6,
         4
     };
@@ -398,8 +398,7 @@ void visualize_box(FILE *out, int a0, int r0, matrix box, rvec gridsize)
                 {
                     for (i = 0; i < DIM; i++)
                     {
-                        shift[i] = x * box[0][i] + y * box[1][i] + z
-                            * box[2][i];
+                        shift[i] = x * box[0][i] + y * box[1][i] + z * box[2][i];
                     }
                     for (i = 0; i < NCUCVERT; i++)
                     {
@@ -504,8 +503,7 @@ static void renum_resnr(t_atoms *atoms, int isize, const int *index,
 
 int gmx_editconf(int argc, char *argv[])
 {
-    const char *desc[] =
-    {
+    const char *desc[] = {
         "[THISMODULE] converts generic structure format to [REF].gro[ref], [TT].g96[tt]",
         "or [REF].pdb[ref].",
         "[PAR]",
@@ -594,106 +592,53 @@ int gmx_editconf(int argc, char *argv[])
         "",
         "where [TT]veclen[tt] is the size of the cubic box times [SQRT]3[sqrt]/2."
     };
-    const char *bugs[] =
-    {
+    const char *bugs[] = {
         "For complex molecules, the periodicity removal routine may break down, "
         "in that case you can use [gmx-trjconv]."
     };
     static real     dist  = 0.0;
     static gmx_bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW
-        = FALSE, bCONECT      = FALSE;
+                                                                    = FALSE,
+                    bCONECT = FALSE;
     static gmx_bool peratom = FALSE, bLegend = FALSE, bOrient = FALSE, bMead
-        = FALSE, bGrasp       = FALSE, bSig56 = FALSE;
-    static rvec scale   =
-    { 1, 1, 1 }, newbox =
-    { 0, 0, 0 }, newang =
-    { 90, 90, 90 };
-    static real rho          = 1000.0, rvdw = 0.12;
-    static rvec center       =
-    { 0, 0, 0 }, translation =
-    { 0, 0, 0 }, rotangles   =
-    { 0, 0, 0 }, aligncenter =
-    { 0, 0, 0 }, targetvec   =
-    { 0, 0, 0 };
-    static const char *btype[] =
-    { nullptr, "triclinic", "cubic", "dodecahedron", "octahedron", nullptr },
-    *label             = "A";
-    static rvec visbox =
-    { 0, 0, 0 };
-    static int resnr_start = -1;
+                                                                       = FALSE,
+                    bGrasp = FALSE, bSig56 = FALSE;
+    static rvec        scale = { 1, 1, 1 }, newbox = { 0, 0, 0 }, newang = { 90, 90, 90 };
+    static real        rho = 1000.0, rvdw = 0.12;
+    static rvec        center = { 0, 0, 0 }, translation = { 0, 0, 0 }, rotangles = { 0, 0, 0 }, aligncenter = { 0, 0, 0 }, targetvec = { 0, 0, 0 };
+    static const char *btype[] = { nullptr, "triclinic", "cubic", "dodecahedron", "octahedron", nullptr },
+                      *label   = "A";
+    static rvec visbox         = { 0, 0, 0 };
+    static int  resnr_start    = -1;
     t_pargs
-        pa[] =
-    {
-        { "-ndef", FALSE, etBOOL,
-          { &bNDEF }, "Choose output from default index groups" },
-        { "-visbox", FALSE, etRVEC,
-          { visbox },
-          "HIDDENVisualize a grid of boxes, -1 visualizes the 14 box images" },
-        { "-bt", FALSE, etENUM,
-          { btype }, "Box type for [TT]-box[tt] and [TT]-d[tt]" },
-        { "-box", FALSE, etRVEC,
-          { newbox }, "Box vector lengths (a,b,c)" },
-        { "-angles", FALSE, etRVEC,
-          { newang }, "Angles between the box vectors (bc,ac,ab)" },
-        { "-d", FALSE, etREAL,
-          { &dist }, "Distance between the solute and the box" },
-        { "-c", FALSE, etBOOL,
-          { &bCenter },
-          "Center molecule in box (implied by [TT]-box[tt] and [TT]-d[tt])" },
-        { "-center", FALSE, etRVEC,
-          { center }, "Coordinates of geometrical center" },
-        { "-aligncenter", FALSE, etRVEC,
-          { aligncenter }, "Center of rotation for alignment" },
-        { "-align", FALSE, etRVEC,
-          { targetvec },
-          "Align to target vector" },
-        { "-translate", FALSE, etRVEC,
-          { translation }, "Translation" },
-        { "-rotate", FALSE, etRVEC,
-          { rotangles },
-          "Rotation around the X, Y and Z axes in degrees" },
-        { "-princ", FALSE, etBOOL,
-          { &bOrient },
-          "Orient molecule(s) along their principal axes" },
-        { "-scale", FALSE, etRVEC,
-          { scale }, "Scaling factor" },
-        { "-density", FALSE, etREAL,
-          { &rho },
-          "Density (g/L) of the output box achieved by scaling" },
-        { "-pbc", FALSE, etBOOL,
-          { &bRMPBC },
-          "Remove the periodicity (make molecule whole again)" },
-        { "-resnr", FALSE, etINT,
-          { &resnr_start },
-          " Renumber residues starting from resnr" },
-        { "-grasp", FALSE, etBOOL,
-          { &bGrasp },
-          "Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field" },
-        {
-            "-rvdw", FALSE, etREAL,
-            { &rvdw },
-            "Default Van der Waals radius (in nm) if one can not be found in the database or if no parameters are present in the topology file"
-        },
-        { "-sig56", FALSE, etBOOL,
-          { &bSig56 },
-          "Use rmin/2 (minimum in the Van der Waals potential) rather than [GRK]sigma[grk]/2 " },
-        {
-            "-vdwread", FALSE, etBOOL,
-            { &bReadVDW },
-            "Read the Van der Waals radii from the file [TT]vdwradii.dat[tt] rather than computing the radii based on the force field"
-        },
-        { "-atom", FALSE, etBOOL,
-          { &peratom }, "Force B-factor attachment per atom" },
-        { "-legend", FALSE, etBOOL,
-          { &bLegend }, "Make B-factor legend" },
-        { "-label", FALSE, etSTR,
-          { &label }, "Add chain label for all residues" },
-        {
-            "-conect", FALSE, etBOOL,
-            { &bCONECT },
-            "Add CONECT records to a [REF].pdb[ref] file when written. Can only be done when a topology is present"
-        }
-    };
+            pa[]
+            = {
+                { "-ndef", FALSE, etBOOL, { &bNDEF }, "Choose output from default index groups" },
+                { "-visbox", FALSE, etRVEC, { visbox }, "HIDDENVisualize a grid of boxes, -1 visualizes the 14 box images" },
+                { "-bt", FALSE, etENUM, { btype }, "Box type for [TT]-box[tt] and [TT]-d[tt]" },
+                { "-box", FALSE, etRVEC, { newbox }, "Box vector lengths (a,b,c)" },
+                { "-angles", FALSE, etRVEC, { newang }, "Angles between the box vectors (bc,ac,ab)" },
+                { "-d", FALSE, etREAL, { &dist }, "Distance between the solute and the box" },
+                { "-c", FALSE, etBOOL, { &bCenter }, "Center molecule in box (implied by [TT]-box[tt] and [TT]-d[tt])" },
+                { "-center", FALSE, etRVEC, { center }, "Coordinates of geometrical center" },
+                { "-aligncenter", FALSE, etRVEC, { aligncenter }, "Center of rotation for alignment" },
+                { "-align", FALSE, etRVEC, { targetvec }, "Align to target vector" },
+                { "-translate", FALSE, etRVEC, { translation }, "Translation" },
+                { "-rotate", FALSE, etRVEC, { rotangles }, "Rotation around the X, Y and Z axes in degrees" },
+                { "-princ", FALSE, etBOOL, { &bOrient }, "Orient molecule(s) along their principal axes" },
+                { "-scale", FALSE, etRVEC, { scale }, "Scaling factor" },
+                { "-density", FALSE, etREAL, { &rho }, "Density (g/L) of the output box achieved by scaling" },
+                { "-pbc", FALSE, etBOOL, { &bRMPBC }, "Remove the periodicity (make molecule whole again)" },
+                { "-resnr", FALSE, etINT, { &resnr_start }, " Renumber residues starting from resnr" },
+                { "-grasp", FALSE, etBOOL, { &bGrasp }, "Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field" },
+                { "-rvdw", FALSE, etREAL, { &rvdw }, "Default Van der Waals radius (in nm) if one can not be found in the database or if no parameters are present in the topology file" },
+                { "-sig56", FALSE, etBOOL, { &bSig56 }, "Use rmin/2 (minimum in the Van der Waals potential) rather than [GRK]sigma[grk]/2 " },
+                { "-vdwread", FALSE, etBOOL, { &bReadVDW }, "Read the Van der Waals radii from the file [TT]vdwradii.dat[tt] rather than computing the radii based on the force field" },
+                { "-atom", FALSE, etBOOL, { &peratom }, "Force B-factor attachment per atom" },
+                { "-legend", FALSE, etBOOL, { &bLegend }, "Make B-factor legend" },
+                { "-label", FALSE, etSTR, { &label }, "Add chain label for all residues" },
+                { "-conect", FALSE, etBOOL, { &bCONECT }, "Add CONECT records to a [REF].pdb[ref] file when written. Can only be done when a topology is present" }
+              };
 #define NPA asize(pa)
 
     FILE *            out;
@@ -715,8 +660,7 @@ int gmx_editconf(int argc, char *argv[])
     gmx_atomprop_t    aps;
     gmx_conect        conect;
     gmx_output_env_t *oenv;
-    t_filenm          fnm[] =
-    {
+    t_filenm          fnm[] = {
         { efSTX, "-f", nullptr, ffREAD },
         { efNDX, "-n", nullptr, ffOPTRD },
         { efSTO, nullptr, nullptr, ffOPTWR },
@@ -779,12 +723,14 @@ int gmx_editconf(int argc, char *argv[])
     }
     if (bGrasp && (outftp != efPDB))
     {
-        gmx_fatal(FARGS, "Output file should be a .pdb file"
+        gmx_fatal(FARGS,
+                  "Output file should be a .pdb file"
                   " when using the -grasp option\n");
     }
     if ((bMead || bGrasp) && (fn2ftp(infile) != efTPR))
     {
-        gmx_fatal(FARGS, "Input file should be a .tpr file"
+        gmx_fatal(FARGS,
+                  "Input file should be a .tpr file"
                   " when using the -mead option\n");
     }
 
@@ -792,7 +738,7 @@ int gmx_editconf(int argc, char *argv[])
     snew(top_tmp, 1);
     read_tps_conf(infile, top_tmp, &ePBC, &x, &v, box, FALSE);
     t_atoms &atoms = top_tmp->atoms;
-    natom = atoms.nr;
+    natom          = atoms.nr;
     if (atoms.pdbinfo == nullptr)
     {
         snew(atoms.pdbinfo, atoms.nr);
@@ -939,11 +885,11 @@ int gmx_editconf(int argc, char *argv[])
                norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
         printf("    box angles  :%7.2f%7.2f%7.2f (degrees)\n",
                norm2(box[ZZ]) == 0 ? 0
-               : RAD2DEG*gmx_angle(box[YY], box[ZZ]),
+                                   : RAD2DEG * gmx_angle(box[YY], box[ZZ]),
                norm2(box[ZZ]) == 0 ? 0
-               : RAD2DEG * gmx_angle(box[XX], box[ZZ]),
+                                   : RAD2DEG * gmx_angle(box[XX], box[ZZ]),
                norm2(box[YY]) == 0 ? 0
-               : RAD2DEG * gmx_angle(box[XX], box[YY]));
+                                   : RAD2DEG * gmx_angle(box[XX], box[YY]));
         printf("    box volume  :%7.2f               (nm^3)\n", det(box));
     }
 
@@ -982,8 +928,10 @@ int gmx_editconf(int argc, char *argv[])
             fprintf(stderr, "Density of input %g (g/l)\n", dens);
             if (vol == 0 || mass == 0)
             {
-                gmx_fatal(FARGS, "Cannot scale density with "
-                          "zero mass (%g) or volume (%g)\n", mass, vol);
+                gmx_fatal(FARGS,
+                          "Cannot scale density with "
+                          "zero mass (%g) or volume (%g)\n",
+                          mass, vol);
             }
 
             scale[XX] = scale[YY] = scale[ZZ] = std::cbrt(dens / rho);
@@ -1023,7 +971,9 @@ int gmx_editconf(int argc, char *argv[])
 
         unitv(targetvec, targetvec);
         printf("Using %g %g %g as principal axis\n", trans[0][2], trans[1][2], trans[2][2]);
-        tmpvec[XX] = trans[0][2]; tmpvec[YY] = trans[1][2]; tmpvec[ZZ] = trans[2][2];
+        tmpvec[XX] = trans[0][2];
+        tmpvec[YY] = trans[1][2];
+        tmpvec[ZZ] = trans[2][2];
         calc_rotmatrix(tmpvec, targetvec, rotmatrix);
         /* rotmatrix finished */
 
@@ -1193,11 +1143,11 @@ int gmx_editconf(int argc, char *argv[])
                norm(box[XX]), norm(box[YY]), norm(box[ZZ]));
         printf("new box angles  :%7.2f%7.2f%7.2f (degrees)\n",
                norm2(box[ZZ]) == 0 ? 0
-               : RAD2DEG*gmx_angle(box[YY], box[ZZ]),
+                                   : RAD2DEG * gmx_angle(box[YY], box[ZZ]),
                norm2(box[ZZ]) == 0 ? 0
-               : RAD2DEG * gmx_angle(box[XX], box[ZZ]),
+                                   : RAD2DEG * gmx_angle(box[XX], box[ZZ]),
                norm2(box[YY]) == 0 ? 0
-               : RAD2DEG * gmx_angle(box[XX], box[YY]));
+                                   : RAD2DEG * gmx_angle(box[XX], box[YY]));
         printf("new box volume  :%7.2f               (nm^3)\n", det(box));
     }
 
@@ -1216,7 +1166,8 @@ int gmx_editconf(int argc, char *argv[])
             printf("\nWARNING: Your box is triclinic with non-orthogonal axes. In this case, the\n"
                    "distance from the solute to a box surface along the corresponding normal\n"
                    "vector might be somewhat smaller than your specified value %f.\n"
-                   "You can check the actual value with g_mindist -pi\n", dist);
+                   "You can check the actual value with g_mindist -pi\n",
+                   dist);
         }
         else if (!opt2parg_bSet("-bt", NPA, pa))
         {
@@ -1281,17 +1232,21 @@ int gmx_editconf(int argc, char *argv[])
             out = gmx_ffopen(outfile, "w");
             if (bMead)
             {
-                fprintf(out, "REMARK    "
+                fprintf(out,
+                        "REMARK    "
                         "The B-factors in this file hold atomic radii\n");
-                fprintf(out, "REMARK    "
+                fprintf(out,
+                        "REMARK    "
                         "The occupancy in this file hold atomic charges\n");
             }
             else if (bGrasp)
             {
                 fprintf(out, "GRASP PDB FILE\nFORMAT NUMBER=1\n");
-                fprintf(out, "REMARK    "
+                fprintf(out,
+                        "REMARK    "
                         "The B-factors in this file hold atomic charges\n");
-                fprintf(out, "REMARK    "
+                fprintf(out,
+                        "REMARK    "
                         "The occupancy in this file hold atomic radii\n");
             }
             else if (opt2bSet("-bf", NFILE, fnm))

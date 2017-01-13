@@ -48,11 +48,10 @@
 
 typedef struct
 {
-    real ** pvdwparam;
-    int *   jindex;
-    int **  exclusion_mask;
-}
-gmx_allvsall_data_t;
+    real **pvdwparam;
+    int *  jindex;
+    int ** exclusion_mask;
+} gmx_allvsall_data_t;
 
 static int calc_maxoffset(int i, int natoms)
 {
@@ -106,9 +105,9 @@ static int calc_maxoffset(int i, int natoms)
 }
 
 
-static void setup_exclusions_and_indices(gmx_allvsall_data_t * aadata,
-                                         t_blocka *            excl,
-                                         int                   natoms)
+static void setup_exclusions_and_indices(gmx_allvsall_data_t *aadata,
+                                         t_blocka *           excl,
+                                         int                  natoms)
 {
     int i, j, k;
     int nj0, nj1;
@@ -198,12 +197,12 @@ static void setup_exclusions_and_indices(gmx_allvsall_data_t * aadata,
 }
 
 
-static void setup_aadata(gmx_allvsall_data_t ** p_aadata,
-                         t_blocka *             excl,
-                         int                    natoms,
-                         int *                  type,
-                         int                    ntype,
-                         real *                 pvdwparam)
+static void setup_aadata(gmx_allvsall_data_t **p_aadata,
+                         t_blocka *            excl,
+                         int                   natoms,
+                         int *                 type,
+                         int                   ntype,
+                         real *                pvdwparam)
 {
     int                  i, j, idx;
     gmx_allvsall_data_t *aadata;
@@ -233,14 +232,13 @@ static void setup_aadata(gmx_allvsall_data_t ** p_aadata,
 }
 
 
-
-void nb_kernel_allvsallgb(t_nblist gmx_unused * nlist,
-                          rvec *                xx,
-                          rvec *                ff,
-                          t_forcerec *          fr,
-                          t_mdatoms *           mdatoms,
-                          nb_kernel_data_t *    kernel_data,
-                          t_nrnb *              nrnb)
+void nb_kernel_allvsallgb(t_nblist gmx_unused *nlist,
+                          rvec *               xx,
+                          rvec *               ff,
+                          t_forcerec *         fr,
+                          t_mdatoms *          mdatoms,
+                          nb_kernel_data_t *   kernel_data,
+                          t_nrnb *             nrnb)
 {
     gmx_allvsall_data_t *aadata;
     int                  natoms;
@@ -260,23 +258,23 @@ void nb_kernel_allvsallgb(t_nblist gmx_unused * nlist,
     real                 vgbtot, dvdasum;
     int                  nnn, n0;
 
-    real       ix, iy, iz, iq;
-    real       fix, fiy, fiz;
-    real       jx, jy, jz, qq;
-    real       dx, dy, dz;
-    real       tx, ty, tz;
-    real       rsq, rinv, rinvsq, rinvsix;
-    real       vcoul, vctot;
-    real       c6, c12, Vvdw6, Vvdw12, Vvdwtot;
-    real       fscal, dvdatmp, fijC, vgb;
-    real       Y, F, Fp, Geps, Heps2, VV, FF, eps, eps2, r, rt;
-    real       dvdaj, gbscale, isaprod, isai, isaj, gbtabscale;
-    real *     f;
-    real *     x;
-    t_blocka * excl;
-    real *     Vvdw;
-    real *     Vc;
-    real *     vpol;
+    real      ix, iy, iz, iq;
+    real      fix, fiy, fiz;
+    real      jx, jy, jz, qq;
+    real      dx, dy, dz;
+    real      tx, ty, tz;
+    real      rsq, rinv, rinvsq, rinvsix;
+    real      vcoul, vctot;
+    real      c6, c12, Vvdw6, Vvdw12, Vvdwtot;
+    real      fscal, dvdatmp, fijC, vgb;
+    real      Y, F, Fp, Geps, Heps2, VV, FF, eps, eps2, r, rt;
+    real      dvdaj, gbscale, isaprod, isai, isaj, gbtabscale;
+    real *    f;
+    real *    x;
+    t_blocka *excl;
+    real *    Vvdw;
+    real *    Vc;
+    real *    vpol;
 
     x          = xx[0];
     f          = ff[0];
@@ -414,7 +412,7 @@ void nb_kernel_allvsallgb(t_nblist gmx_unused * nlist,
                 fiz = fiz + tz;
 
                 /* Decrement j atom force */
-                f[3 * k]     = f[3 * k]   - tx;
+                f[3 * k]     = f[3 * k] - tx;
                 f[3 * k + 1] = f[3 * k + 1] - ty;
                 f[3 * k + 2] = f[3 * k + 2] - tz;
             }
@@ -495,14 +493,14 @@ void nb_kernel_allvsallgb(t_nblist gmx_unused * nlist,
             fiz = fiz + tz;
 
             /* Decrement j atom force */
-            f[3 * k]     = f[3 * k]   - tx;
+            f[3 * k]     = f[3 * k] - tx;
             f[3 * k + 1] = f[3 * k + 1] - ty;
             f[3 * k + 2] = f[3 * k + 2] - tz;
 
             /* Inner loop uses 38 flops/iteration */
         }
 
-        f[3 * i]     += fix;
+        f[3 * i] += fix;
         f[3 * i + 1] += fiy;
         f[3 * i + 2] += fiz;
 

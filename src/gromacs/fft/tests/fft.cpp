@@ -68,7 +68,8 @@ namespace
  * initializers, and we would not have to do so much useless copying
  * during the unit tests below.
  */
-const double inputdata[] = { //print ",\n".join([",".join(["%4s"%(random.randint(-99,99)/10.,) for i in range(25)]) for j in range(20)])
+const double inputdata[] = {
+    //print ",\n".join([",".join(["%4s"%(random.randint(-99,99)/10.,) for i in range(25)]) for j in range(20)])
     -3.5, 6.3, 1.2, 0.3, 1.1, -5.7, 5.8, -1.9, -6.3, -1.4, 7.4, 2.4, -9.9, -7.2, 5.4, 6.1, -1.9, -7.6, 1.4, -3.5, 0.7, 5.6, -4.2, -1.1, -4.4,
     -6.3, -7.2, 4.6, -3.0, -0.9, 7.2, 2.5, -3.6, 6.1, -3.2, -2.1, 6.5, -0.4, -9.0, 2.3, 8.4, 4.0, -5.2, -9.0, 4.7, -3.7, -2.0, -9.5, -3.9, -3.6,
     7.1, 0.8, -0.6, 5.2, -9.3, -4.5, 5.9, 2.2, -5.8, 5.0, 1.2, -0.1, 2.2, 0.2, -7.7, 1.9, -8.4, 4.4, 2.3, -2.9, 6.7, 2.7, 5.8, -3.6, 8.9,
@@ -118,7 +119,8 @@ public:
 class FFTTest : public BaseFFTTest
 {
 public:
-    FFTTest() : fft_(nullptr)
+    FFTTest()
+        : fft_(nullptr)
     {
     }
     ~FFTTest()
@@ -134,7 +136,8 @@ public:
 class ManyFFTTest : public BaseFFTTest
 {
 public:
-    ManyFFTTest() : fft_(nullptr)
+    ManyFFTTest()
+        : fft_(nullptr)
     {
     }
     ~ManyFFTTest()
@@ -152,13 +155,13 @@ public:
 
 class FFTTest1D : public FFTTest, public ::testing::WithParamInterface<int>
 {
-
 };
 
 class FFFTest3D : public BaseFFTTest
 {
 public:
-    FFFTest3D() : fft_(nullptr)
+    FFFTest3D()
+        : fft_(nullptr)
     {
     }
     ~FFFTest3D()
@@ -179,9 +182,9 @@ TEST_P(FFTTest1D, Complex)
 
     in_ = std::vector<real>(nx * 2);
     std::copy(inputdata, inputdata + nx * 2, in_.begin());
-    out_ = std::vector<real>(nx * 2);
-    real* in  = &in_[0];
-    real* out = &out_[0];
+    out_      = std::vector<real>(nx * 2);
+    real *in  = &in_[0];
+    real *out = &out_[0];
 
     gmx_fft_init_1d(&fft_, nx, flags_);
 
@@ -199,9 +202,9 @@ TEST_P(FFTTest1D, Real)
 
     in_ = std::vector<real>(cx * 2);
     std::copy(inputdata, inputdata + cx * 2, in_.begin());
-    out_ = std::vector<real>(cx * 2);
-    real* in  = &in_[0];
-    real* out = &out_[0];
+    out_      = std::vector<real>(cx * 2);
+    real *in  = &in_[0];
+    real *out = &out_[0];
 
     gmx_fft_init_1d_real(&fft_, rx, flags_);
 
@@ -222,9 +225,9 @@ TEST_F(ManyFFTTest, Complex1DLength48Multi5Test)
 
     in_ = std::vector<real>(nx * 2 * N);
     std::copy(inputdata, inputdata + nx * 2 * N, in_.begin());
-    out_ = std::vector<real>(nx * 2 * N);
-    real* in  = &in_[0];
-    real* out = &out_[0];
+    out_      = std::vector<real>(nx * 2 * N);
+    real *in  = &in_[0];
+    real *out = &out_[0];
 
     gmx_fft_init_many_1d(&fft_, nx, N, flags_);
 
@@ -242,9 +245,9 @@ TEST_F(ManyFFTTest, Real1DLength48Multi5Test)
 
     in_ = std::vector<real>(cx * 2 * N);
     std::copy(inputdata, inputdata + cx * 2 * N, in_.begin());
-    out_ = std::vector<real>(cx * 2 * N);
-    real* in  = &in_[0];
-    real* out = &out_[0];
+    out_      = std::vector<real>(cx * 2 * N);
+    real *in  = &in_[0];
+    real *out = &out_[0];
 
     gmx_fft_init_many_1d_real(&fft_, rx, N, flags_);
 
@@ -262,26 +265,26 @@ TEST_F(FFTTest, Real2DLength18_15Test)
 
     in_ = std::vector<real>(cx * 2 * ny);
     std::copy(inputdata, inputdata + cx * 2 * ny, in_.begin());
-    out_ = std::vector<real>(cx * 2 * ny);
-    real* in  = &in_[0];
-    real* out = &out_[0];
+    out_      = std::vector<real>(cx * 2 * ny);
+    real *in  = &in_[0];
+    real *out = &out_[0];
 
     gmx_fft_init_2d_real(&fft_, rx, ny, flags_);
 
     gmx_fft_2d_real(fft_, GMX_FFT_REAL_TO_COMPLEX, in, out);
     checker_.checkSequenceArray(cx * 2 * ny, out, "forward");
-//    known to be wrong for gmx_fft_mkl. And not used.
-//    gmx_fft_2d_real(_fft,GMX_FFT_COMPLEX_TO_REAL,in,out);
-//    _checker.checkSequenceArray(rx*ny, out, "backward");
+    //    known to be wrong for gmx_fft_mkl. And not used.
+    //    gmx_fft_2d_real(_fft,GMX_FFT_COMPLEX_TO_REAL,in,out);
+    //    _checker.checkSequenceArray(rx*ny, out, "backward");
 }
 
 //TODO: test with threads and more than 1 MPI ranks
 TEST_F(FFFTest3D, Real5_6_9)
 {
-    int        ndata[] = {5, 6, 9};
-    MPI_Comm   comm[]  = {MPI_COMM_NULL, MPI_COMM_NULL};
+    int        ndata[] = { 5, 6, 9 };
+    MPI_Comm   comm[]  = { MPI_COMM_NULL, MPI_COMM_NULL };
     real *     rdata;
-    t_complex* cdata;
+    t_complex *cdata;
     ivec       local_ndata, offset, rsize, csize, complex_order;
 
     gmx_parallel_3dfft_init(&fft_, ndata, &rdata, &cdata,
@@ -304,7 +307,7 @@ TEST_F(FFFTest3D, Real5_6_9)
     gmx_parallel_3dfft_execute(fft_, GMX_FFT_REAL_TO_COMPLEX, 0, nullptr);
     //TODO use std::complex and add checkComplex for it
     checker_.checkSequenceArray(size * 2,
-                                reinterpret_cast<real*>(cdata), "forward");
+                                reinterpret_cast<real *>(cdata), "forward");
 
     // Use std::copy to convert from double to real easily
     std::copy(inputdata, inputdata + sizeInReals, in_.begin());

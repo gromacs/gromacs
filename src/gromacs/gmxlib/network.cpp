@@ -255,7 +255,7 @@ void gmx_init_intranode_counters(t_commrec *cr)
     /* counters for PP+PME and PP-only processes on my physical node */
     int nrank_intranode, rank_intranode;
     int nrank_pp_intranode, rank_pp_intranode;
-    /* thread-MPI is not initialized when not running in parallel */
+/* thread-MPI is not initialized when not running in parallel */
 #if GMX_MPI && !GMX_THREAD_MPI
     int nrank_world, rank_world;
     int i, myhash, *hash, *hash_s, *hash_pp, *hash_pp_s;
@@ -267,15 +267,15 @@ void gmx_init_intranode_counters(t_commrec *cr)
     myhash = gmx_physicalnode_id_hash();
 
     /* We can't rely on MPI_IN_PLACE, so we need send and receive buffers */
-    snew(hash,   nrank_world);
+    snew(hash, nrank_world);
     snew(hash_s, nrank_world);
-    snew(hash_pp,   nrank_world);
+    snew(hash_pp, nrank_world);
     snew(hash_pp_s, nrank_world);
 
     hash_s[rank_world]    = myhash;
     hash_pp_s[rank_world] = (cr->duty & DUTY_PP) ? myhash : -1;
 
-    MPI_Allreduce(hash_s,    hash,    nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(hash_s, hash, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     MPI_Allreduce(hash_pp_s, hash_pp, nrank_world, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
 
     nrank_intranode    = 0;
@@ -324,7 +324,8 @@ void gmx_init_intranode_counters(t_commrec *cr)
         {
             sprintf(sbuf, "%s", (cr->duty & DUTY_PP) ? "PP" : "PME");
         }
-        fprintf(debug, "On %3s rank %d: nrank_intranode=%d, rank_intranode=%d, "
+        fprintf(debug,
+                "On %3s rank %d: nrank_intranode=%d, rank_intranode=%d, "
                 "nrank_pp_intranode=%d, rank_pp_intranode=%d\n",
                 sbuf, cr->sim_nodeid,
                 nrank_intranode, rank_intranode,
@@ -610,7 +611,6 @@ void gmx_sumli(int gmx_unused nr, gmx_int64_t gmx_unused r[], const t_commrec gm
 #endif
 #endif
 }
-
 
 
 #if GMX_MPI

@@ -96,35 +96,25 @@ int gmx_vanhove(int argc, char *argv[])
         "time can be reduced."
     };
     static int  fmmax = 0, ftmax = 0, nlev = 81, nr = 1, fshift = 0;
-    static real sbin  = 0, rmax = 2, rbin = 0.01, mmax = 0, rint = 0;
-    t_pargs     pa[]  = {
-        { "-sqrt",    FALSE, etREAL, {&sbin},
-          "Use [SQRT]t[sqrt] on the matrix axis which binspacing # in [SQRT]ps[sqrt]" },
-        { "-fm",      FALSE, etINT, {&fmmax},
-          "Number of frames in the matrix, 0 is plot all" },
-        { "-rmax",    FALSE, etREAL, {&rmax},
-          "Maximum r in the matrix (nm)" },
-        { "-rbin",    FALSE, etREAL, {&rbin},
-          "Binwidth in the matrix and for [TT]-or[tt] (nm)" },
-        { "-mmax",    FALSE, etREAL, {&mmax},
-          "Maximum density in the matrix, 0 is calculate (1/nm)" },
-        { "-nlevels", FALSE, etINT,  {&nlev},
-          "Number of levels in the matrix" },
-        { "-nr",      FALSE, etINT, {&nr},
-          "Number of curves for the [TT]-or[tt] output" },
-        { "-fr",      FALSE, etINT, {&fshift},
-          "Frame spacing for the [TT]-or[tt] output" },
-        { "-rt",      FALSE, etREAL, {&rint},
-          "Integration limit for the [TT]-ot[tt] output (nm)" },
-        { "-ft",      FALSE, etINT, {&ftmax},
-          "Number of frames in the [TT]-ot[tt] output, 0 is plot all" }
+    static real sbin = 0, rmax = 2, rbin = 0.01, mmax = 0, rint = 0;
+    t_pargs     pa[] = {
+        { "-sqrt", FALSE, etREAL, { &sbin }, "Use [SQRT]t[sqrt] on the matrix axis which binspacing # in [SQRT]ps[sqrt]" },
+        { "-fm", FALSE, etINT, { &fmmax }, "Number of frames in the matrix, 0 is plot all" },
+        { "-rmax", FALSE, etREAL, { &rmax }, "Maximum r in the matrix (nm)" },
+        { "-rbin", FALSE, etREAL, { &rbin }, "Binwidth in the matrix and for [TT]-or[tt] (nm)" },
+        { "-mmax", FALSE, etREAL, { &mmax }, "Maximum density in the matrix, 0 is calculate (1/nm)" },
+        { "-nlevels", FALSE, etINT, { &nlev }, "Number of levels in the matrix" },
+        { "-nr", FALSE, etINT, { &nr }, "Number of curves for the [TT]-or[tt] output" },
+        { "-fr", FALSE, etINT, { &fshift }, "Frame spacing for the [TT]-or[tt] output" },
+        { "-rt", FALSE, etREAL, { &rint }, "Integration limit for the [TT]-ot[tt] output (nm)" },
+        { "-ft", FALSE, etINT, { &ftmax }, "Number of frames in the [TT]-ot[tt] output, 0 is plot all" }
     };
 #define NPA asize(pa)
 
     t_filenm fnm[] = {
-        { efTRX, nullptr, nullptr,  ffREAD },
-        { efTPS, nullptr, nullptr,  ffREAD },
-        { efNDX, nullptr, nullptr,  ffOPTRD },
+        { efTRX, nullptr, nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
         { efXPM, "-om", "vanhove", ffOPTWR },
         { efXVG, "-or", "vanhove_r", ffOPTWR },
         { efXVG, "-ot", "vanhove_t", ffOPTWR }
@@ -146,9 +136,9 @@ int gmx_vanhove(int argc, char *argv[])
     real              invsbin = 0, matmax, normfac, dt, *tickx, *ticky;
     char              buf[STRLEN], **legend;
     real **           mat = nullptr;
-    int *             pt  = nullptr, **pr = nullptr, *mcount = nullptr, *tcount = nullptr, *rcount = nullptr;
+    int *             pt = nullptr, **pr = nullptr, *mcount = nullptr, *tcount = nullptr, *rcount = nullptr;
     FILE *            fp;
-    t_rgb             rlo = {1, 1, 1}, rhi = {0, 0, 0};
+    t_rgb             rlo = { 1, 1, 1 }, rhi = { 0, 0, 0 };
 
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
@@ -256,7 +246,7 @@ int gmx_vanhove(int argc, char *argv[])
         }
         rmax2 = gmx::square(nbin * rbin);
         /* Initialize time zero */
-        mat[0][0]  = nfr * isize;
+        mat[0][0] = nfr * isize;
         mcount[0] += nfr;
     }
     else
@@ -281,7 +271,7 @@ int gmx_vanhove(int argc, char *argv[])
         snew(pt, nfr);
         rint2 = rint * rint;
         /* Initialize time zero */
-        pt[0]      = nfr * isize;
+        pt[0] = nfr * isize;
         tcount[0] += nfr;
     }
     else
@@ -452,7 +442,7 @@ int gmx_vanhove(int argc, char *argv[])
             sprintf(buf, "%g ps", (fbin + 1) * fshift * dt);
             legend[fbin] = gmx_strdup(buf);
         }
-        xvgr_legend(fp, nr, (const char**)legend, oenv);
+        xvgr_legend(fp, nr, (const char **)legend, oenv);
         for (i = 0; i < nalloc; i++)
         {
             fprintf(fp, "%g", i * rbin);

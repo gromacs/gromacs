@@ -114,13 +114,13 @@ t_mdatoms *init_mdatoms(FILE *fp, const gmx_mtop_t *mtop, gmx_bool bFreeEnergy)
 
 void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
               int nindex, const int *index,
-              int homenr,
+              int        homenr,
               t_mdatoms *md)
 {
     gmx_bool            bLJPME;
     const t_grpopts *   opts;
     const gmx_groups_t *groups;
-    int                 nthreads gmx_unused;
+    int nthreads gmx_unused;
 
     bLJPME = EVDW_PME(ir->vdwtype);
 
@@ -372,7 +372,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
                 md->cTC[i] = groups->grpnr[egcTC][ag];
             }
             md->cENER[i]
-                = (groups->grpnr[egcENER] ? groups->grpnr[egcENER][ag] : 0);
+                    = (groups->grpnr[egcENER] ? groups->grpnr[egcENER][ag] : 0);
             if (md->cACC)
             {
                 md->cACC[i] = groups->grpnr[egcACC][ag];
@@ -428,7 +428,7 @@ void update_mdatoms(t_mdatoms *md, real lambda)
         /* Update masses of perturbed atoms for the change in lambda */
         // cppcheck-suppress unreadVariable
         int gmx_unused nthreads = gmx_omp_nthreads_get(emntDefault);
-#pragma omp parallel for num_threads(nthreads) schedule(static)
+#pragma omp            parallel for num_threads(nthreads) schedule(static)
         for (int i = 0; i < md->nr; i++)
         {
             if (md->bPerturbed[i])

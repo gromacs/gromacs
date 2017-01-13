@@ -114,7 +114,7 @@ void print_time(FILE *                    out,
                 gmx_walltime_accounting_t walltime_accounting,
                 gmx_int64_t               step,
                 t_inputrec *              ir,
-                t_commrec gmx_unused *    cr)
+                t_commrec gmx_unused *cr)
 {
     time_t finish;
     char   timebuf[STRLEN];
@@ -133,15 +133,15 @@ void print_time(FILE *                    out,
     if ((step >= ir->nstlist))
     {
         double seconds_since_epoch = gmx_gettime();
-        elapsed_seconds = seconds_since_epoch - walltime_accounting_get_start_time_stamp(walltime_accounting);
-        time_per_step   = elapsed_seconds / (step - ir->init_step + 1);
-        dt              = (ir->nsteps + ir->init_step - step) * time_per_step;
+        elapsed_seconds            = seconds_since_epoch - walltime_accounting_get_start_time_stamp(walltime_accounting);
+        time_per_step              = elapsed_seconds / (step - ir->init_step + 1);
+        dt                         = (ir->nsteps + ir->init_step - step) * time_per_step;
 
         if (ir->nsteps >= 0)
         {
             if (dt >= 300)
             {
-                finish = (time_t) (seconds_since_epoch + dt);
+                finish = (time_t)(seconds_since_epoch + dt);
                 gmx_ctime_r(&finish, timebuf, STRLEN);
                 sprintf(buf, "%s", timebuf);
                 buf[strlen(buf) - 1] = '\0';
@@ -181,7 +181,7 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
     {
         int    i;
         char   timebuf[STRLEN];
-        time_t temp_time = (time_t) the_time;
+        time_t temp_time = (time_t)the_time;
 
         gmx_ctime_r(&temp_time, timebuf, STRLEN);
         for (i = 0; timebuf[i] >= ' '; i++)
@@ -196,7 +196,7 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
 
 void print_start(FILE *fplog, t_commrec *cr,
                  gmx_walltime_accounting_t walltime_accounting,
-                 const char *name)
+                 const char *              name)
 {
     char buf[STRLEN];
 
@@ -213,7 +213,7 @@ static void sum_forces(rvec f[], const PaddedRVecVector *forceToAdd)
 
     // cppcheck-suppress unreadVariable
     int gmx_unused nt = gmx_omp_nthreads_get(emntDefault);
-#pragma omp parallel for num_threads(nt) schedule(static)
+#pragma omp        parallel for num_threads(nt) schedule(static)
     for (int i = 0; i < end; i++)
     {
         rvec_inc(f[i], fAdd[i]);
@@ -255,15 +255,15 @@ static void calc_virial(int start, int homenr, rvec x[], rvec f[],
     }
 }
 
-static void pull_potential_wrapper(t_commrec *cr,
+static void pull_potential_wrapper(t_commrec * cr,
                                    t_inputrec *ir,
                                    matrix box, rvec x[],
-                                   rvec f[],
-                                   tensor vir_force,
-                                   t_mdatoms *mdatoms,
+                                   rvec            f[],
+                                   tensor          vir_force,
+                                   t_mdatoms *     mdatoms,
                                    gmx_enerdata_t *enerd,
-                                   real *lambda,
-                                   double t,
+                                   real *          lambda,
+                                   double          t,
                                    gmx_wallcycle_t wcycle)
 {
     t_pbc pbc;
@@ -278,8 +278,8 @@ static void pull_potential_wrapper(t_commrec *cr,
     set_pbc(&pbc, ir->ePBC, box);
     dvdl = 0;
     enerd->term[F_COM_PULL]
-        += pull_potential(ir->pull_work, mdatoms, &pbc,
-                          cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
+            += pull_potential(ir->pull_work, mdatoms, &pbc,
+                              cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
     wallcycle_stop(wcycle, ewcPULLPOT);
 }
@@ -305,9 +305,9 @@ static void pme_receive_force_ener(t_commrec *     cr,
                       fr->vir_lj_recip, &e_lj, &dvdl_q, &dvdl_lj,
                       &cycles_seppme);
     enerd->term[F_COUL_RECIP] += e_q;
-    enerd->term[F_LJ_RECIP]   += e_lj;
+    enerd->term[F_LJ_RECIP] += e_lj;
     enerd->dvdl_lin[efptCOUL] += dvdl_q;
-    enerd->dvdl_lin[efptVDW]  += dvdl_lj;
+    enerd->dvdl_lin[efptVDW] += dvdl_lj;
 
     if (wcycle)
     {
@@ -347,15 +347,15 @@ static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
     }
 }
 
-static void post_process_forces(t_commrec *cr,
+static void post_process_forces(t_commrec * cr,
                                 gmx_int64_t step,
                                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                                 gmx_localtop_t *top,
                                 matrix box, rvec x[],
-                                rvec f[],
-                                tensor vir_force,
-                                t_mdatoms *mdatoms,
-                                t_graph *graph,
+                                rvec        f[],
+                                tensor      vir_force,
+                                t_mdatoms * mdatoms,
+                                t_graph *   graph,
                                 t_forcerec *fr, gmx_vsite_t *vsite,
                                 int flags)
 {
@@ -402,12 +402,12 @@ static void post_process_forces(t_commrec *cr,
     }
 }
 
-static void do_nb_verlet(t_forcerec *fr,
+static void do_nb_verlet(t_forcerec *         fr,
                          interaction_const_t *ic,
-                         gmx_enerdata_t *enerd,
+                         gmx_enerdata_t *     enerd,
                          int flags, int ilocality,
-                         int clearF,
-                         t_nrnb *nrnb,
+                         int             clearF,
+                         t_nrnb *        nrnb,
                          gmx_wallcycle_t wcycle)
 {
     int                       enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
@@ -445,8 +445,8 @@ static void do_nb_verlet(t_forcerec *fr,
                              fr->fshift[0],
                              enerd->grpp.ener[egCOULSR],
                              fr->bBHAM
-                             ? enerd->grpp.ener[egBHAMSR]
-                             : enerd->grpp.ener[egLJSR]);
+                                     ? enerd->grpp.ener[egBHAMSR]
+                                     : enerd->grpp.ener[egLJSR]);
             break;
 
         case nbnxnk4xN_SIMD_4xN:
@@ -459,8 +459,8 @@ static void do_nb_verlet(t_forcerec *fr,
                                   fr->fshift[0],
                                   enerd->grpp.ener[egCOULSR],
                                   fr->bBHAM
-                                  ? enerd->grpp.ener[egBHAMSR]
-                                  : enerd->grpp.ener[egLJSR]);
+                                          ? enerd->grpp.ener[egBHAMSR]
+                                          : enerd->grpp.ener[egLJSR]);
             break;
         case nbnxnk4xN_SIMD_2xNN:
             nbnxn_kernel_simd_2xnn(&nbvg->nbl_lists,
@@ -472,8 +472,8 @@ static void do_nb_verlet(t_forcerec *fr,
                                    fr->fshift[0],
                                    enerd->grpp.ener[egCOULSR],
                                    fr->bBHAM
-                                   ? enerd->grpp.ener[egBHAMSR]
-                                   : enerd->grpp.ener[egLJSR]);
+                                           ? enerd->grpp.ener[egBHAMSR]
+                                           : enerd->grpp.ener[egLJSR]);
             break;
 
         case nbnxnk8x8x8_GPU:
@@ -490,13 +490,12 @@ static void do_nb_verlet(t_forcerec *fr,
                                  fr->fshift[0],
                                  enerd->grpp.ener[egCOULSR],
                                  fr->bBHAM
-                                 ? enerd->grpp.ener[egBHAMSR]
-                                 : enerd->grpp.ener[egLJSR]);
+                                         ? enerd->grpp.ener[egBHAMSR]
+                                         : enerd->grpp.ener[egLJSR]);
             break;
 
         default:
             gmx_incons("Invalid nonbonded kernel type passed!");
-
     }
     if (!bUsingGpuKernels)
     {
@@ -521,7 +520,7 @@ static void do_nb_verlet(t_forcerec *fr,
     {
         /* In eNR_??? the nbnxn F+E kernels are always the F kernel + 1 */
         enr_nbnxn_kernel_ljc += 1;
-        enr_nbnxn_kernel_lj  += 1;
+        enr_nbnxn_kernel_lj += 1;
     }
 
     inc_nrnb(nrnb, enr_nbnxn_kernel_ljc,
@@ -618,12 +617,12 @@ static void do_nb_verlet_fep(nbnxn_pairlist_set_t *nbl_lists,
 
     if (fepvals->sc_alpha != 0)
     {
-        enerd->dvdl_nonlin[efptVDW]  += dvdl_nb[efptVDW];
+        enerd->dvdl_nonlin[efptVDW] += dvdl_nb[efptVDW];
         enerd->dvdl_nonlin[efptCOUL] += dvdl_nb[efptCOUL];
     }
     else
     {
-        enerd->dvdl_lin[efptVDW]  += dvdl_nb[efptVDW];
+        enerd->dvdl_lin[efptVDW] += dvdl_nb[efptVDW];
         enerd->dvdl_lin[efptCOUL] += dvdl_nb[efptCOUL];
     }
 
@@ -721,15 +720,15 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          gmx_groups_t gmx_unused *groups,
                          matrix box, rvec x[], history_t *hist,
                          PaddedRVecVector *force,
-                         tensor vir_force,
-                         t_mdatoms *mdatoms,
+                         tensor            vir_force,
+                         t_mdatoms *       mdatoms,
                          gmx_enerdata_t *enerd, t_fcdata *fcd,
                          real *lambda, t_graph *graph,
                          t_forcerec *fr, interaction_const_t *ic,
                          gmx_vsite_t *vsite, rvec mu_tot,
                          double t, gmx_edsam_t ed,
                          gmx_bool bBornRadii,
-                         int flags)
+                         int      flags)
 {
     int      cg1, i, j;
     double   mu[2 * DIM];
@@ -1067,8 +1066,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         for (j = 0; j < DIM; j++)
         {
             mu_tot[j]
-                = (1.0 - lambda[efptCOUL]) * fr->mu_tot[0][j]
-                    + lambda[efptCOUL] * fr->mu_tot[1][j];
+                    = (1.0 - lambda[efptCOUL]) * fr->mu_tot[0][j]
+                      + lambda[efptCOUL] * fr->mu_tot[1][j];
         }
     }
 
@@ -1257,9 +1256,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                        flags, eatNonlocal,
                                        enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                        fr->fshift);
-                cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
+                cycles_tmp = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
                 cycles_wait_gpu += cycles_tmp;
-                cycles_force    += cycles_tmp;
+                cycles_force += cycles_tmp;
             }
             else
             {
@@ -1344,7 +1343,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
              * have nothing to balance it with, so we can and should add
              * the time to the force time for load balancing.
              */
-            cycles_force    += cycles_wait_est;
+            cycles_force += cycles_wait_est;
             cycles_wait_gpu += cycles_wait_est;
 
             /* now clear the GPU outputs while we finish the step on the CPU */
@@ -1460,17 +1459,17 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                         t_inputrec *inputrec,
                         gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                         gmx_localtop_t *top,
-                        gmx_groups_t *groups,
+                        gmx_groups_t *  groups,
                         matrix box, rvec x[], history_t *hist,
                         PaddedRVecVector *force,
-                        tensor vir_force,
-                        t_mdatoms *mdatoms,
+                        tensor            vir_force,
+                        t_mdatoms *       mdatoms,
                         gmx_enerdata_t *enerd, t_fcdata *fcd,
                         real *lambda, t_graph *graph,
                         t_forcerec *fr, gmx_vsite_t *vsite, rvec mu_tot,
                         double t, gmx_edsam_t ed,
                         gmx_bool bBornRadii,
-                        int flags)
+                        int      flags)
 {
     int      cg0, cg1, i, j;
     double   mu[2 * DIM];
@@ -1615,7 +1614,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             for (j = 0; j < DIM; j++)
             {
                 mu_tot[j]
-                    = (1.0 - lambda[efptCOUL]) * fr->mu_tot[0][j] + lambda[efptCOUL] * fr->mu_tot[1][j];
+                        = (1.0 - lambda[efptCOUL]) * fr->mu_tot[0][j] + lambda[efptCOUL] * fr->mu_tot[1][j];
             }
         }
     }
@@ -1829,25 +1828,24 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             checkPotentialEnergyValidity(enerd);
         }
     }
-
 }
 
 void do_force(FILE *fplog, t_commrec *cr,
               t_inputrec *inputrec,
               gmx_int64_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
-              gmx_groups_t *groups,
+              gmx_groups_t *  groups,
               matrix box, PaddedRVecVector *coordinates, history_t *hist,
               PaddedRVecVector *force,
-              tensor vir_force,
-              t_mdatoms *mdatoms,
+              tensor            vir_force,
+              t_mdatoms *       mdatoms,
               gmx_enerdata_t *enerd, t_fcdata *fcd,
               std::vector<real> *lambda, t_graph *graph,
-              t_forcerec *fr,
+              t_forcerec * fr,
               gmx_vsite_t *vsite, rvec mu_tot,
               double t, gmx_edsam_t ed,
               gmx_bool bBornRadii,
-              int flags)
+              int      flags)
 {
     /* modify force flag if not doing nonbonded */
     if (!fr->bNonbonded)
@@ -2055,7 +2053,7 @@ static void integrate_table(real vdwtab[], real scale, int offstart, int rstart,
         h      = vdwtab[offset + 3];
 
         enersum += y0 * (ea / 3 + eb / 2 + ec) + f * (ea / 4 + eb / 3 + ec / 2) + g * (ea / 5 + eb / 4 + ec / 3) + h * (ea / 6 + eb / 5 + ec / 4);
-        virsum  +=  f * (pa / 4 + pb / 3 + pc / 2 + pd) + 2 * g * (pa / 5 + pb / 4 + pc / 3 + pd / 2) + 3 * h * (pa / 6 + pb / 5 + pc / 4 + pd / 3);
+        virsum += f * (pa / 4 + pb / 3 + pc / 2 + pd) + 2 * g * (pa / 5 + pb / 4 + pc / 3 + pd / 2) + 3 * h * (pa / 6 + pb / 5 + pc / 4 + pd / 3);
     }
     *enerout = 4.0 * M_PI * enersum * tabfactor;
     *virout  = 4.0 * M_PI * virsum * tabfactor;
@@ -2090,11 +2088,13 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
         {
             if (((fr->vdw_modifier == eintmodPOTSWITCH)
                  || (fr->vdw_modifier == eintmodFORCESWITCH)
-                 || (fr->vdwtype == evdwSWITCH)) && fr->rvdw_switch == 0)
+                 || (fr->vdwtype == evdwSWITCH))
+                && fr->rvdw_switch == 0)
             {
                 gmx_fatal(FARGS,
                           "With dispersion correction rvdw-switch can not be zero "
-                          "for vdw-type = %s", evdw_names[fr->vdwtype]);
+                          "for vdw-type = %s",
+                          evdw_names[fr->vdwtype]);
             }
 
             /* TODO This code depends on the logic in tables.c that
@@ -2139,12 +2139,12 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                  * for scaling-up c6/c12 with the derivative factors to save flops in analytical kernels.
                  */
                 fr->enershiftsix    = (real)(-1.0 / (rc3 * rc3)) - 6.0 * vdwtab[8 * ri0];
-                fr->enershifttwelve = (real)( 1.0 / (rc9 * rc3)) - 12.0 * vdwtab[8 * ri0 + 4];
+                fr->enershifttwelve = (real)(1.0 / (rc9 * rc3)) - 12.0 * vdwtab[8 * ri0 + 4];
             }
             else if (fr->vdw_modifier == eintmodPOTSHIFT)
             {
                 fr->enershiftsix    = (real)(-1.0 / (rc3 * rc3));
-                fr->enershifttwelve = (real)( 1.0 / (rc9 * rc3));
+                fr->enershifttwelve = (real)(1.0 / (rc9 * rc3));
             }
 
             /* Add the constant part from 0 to rvdw_switch.
@@ -2165,7 +2165,7 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
                 virsum  = 0;
                 integrate_table(vdwtab, scale, (i == 0 ? 0 : 4), ri0, ri1, &enersum, &virsum);
                 eners[i] -= enersum;
-                virs[i]  -= virsum;
+                virs[i] -= virsum;
             }
 
             /* Alright: Above we compensated by REMOVING the parts outside r0
@@ -2177,9 +2177,9 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
              * calculating the analytical dispersion correction.
              */
             eners[0] += -4.0 * M_PI / (3.0 * rc3);
-            eners[1] +=  4.0 * M_PI / (9.0 * rc9);
-            virs[0]  +=  8.0 * M_PI / rc3;
-            virs[1]  += -16.0 * M_PI / (3.0 * rc9);
+            eners[1] += 4.0 * M_PI / (9.0 * rc9);
+            virs[0] += 8.0 * M_PI / rc3;
+            virs[1] += -16.0 * M_PI / (3.0 * rc9);
         }
         else if (fr->vdwtype == evdwCUT
                  || EVDW_PME(fr->vdwtype)
@@ -2202,15 +2202,15 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             rc9 = rc3 * rc3 * rc3;
             /* Contribution beyond the cut-off */
             eners[0] += -4.0 * M_PI / (3.0 * rc3);
-            eners[1] +=  4.0 * M_PI / (9.0 * rc9);
+            eners[1] += 4.0 * M_PI / (9.0 * rc9);
             if (fr->vdw_modifier == eintmodPOTSHIFT)
             {
                 /* Contribution within the cut-off */
                 eners[0] += -4.0 * M_PI / (3.0 * rc3);
-                eners[1] +=  4.0 * M_PI / (3.0 * rc9);
+                eners[1] += 4.0 * M_PI / (3.0 * rc9);
             }
             /* Contribution beyond the cut-off */
-            virs[0] +=  8.0 * M_PI / rc3;
+            virs[0] += 8.0 * M_PI / rc3;
             virs[1] += -16.0 * M_PI / (3.0 * rc9);
         }
         else
@@ -2230,7 +2230,7 @@ void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr)
             fr->enershiftsix = gmx::power6(fr->ewaldcoeff_lj) / 6.0;
 
             eners[0] += -gmx::power3(std::sqrt(M_PI) * fr->ewaldcoeff_lj) / 3.0;
-            virs[0]  +=  gmx::power3(std::sqrt(M_PI) * fr->ewaldcoeff_lj);
+            virs[0] += gmx::power3(std::sqrt(M_PI) * fr->ewaldcoeff_lj);
         }
 
         fr->enerdiffsix    = eners[0];
@@ -2283,20 +2283,20 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
         }
         else
         {
-            avcsix    = (1 - lambda) * fr->avcsix[0]    + lambda * fr->avcsix[1];
+            avcsix    = (1 - lambda) * fr->avcsix[0] + lambda * fr->avcsix[1];
             avctwelve = (1 - lambda) * fr->avctwelve[0] + lambda * fr->avctwelve[1];
         }
 
-        enerdiff   = ninter * (dens * fr->enerdiffsix - fr->enershiftsix);
+        enerdiff = ninter * (dens * fr->enerdiffsix - fr->enershiftsix);
         *enercorr += avcsix * enerdiff;
-        dvdlambda  = 0.0;
+        dvdlambda = 0.0;
         if (ir->efep != efepNO)
         {
             dvdlambda += (fr->avcsix[1] - fr->avcsix[0]) * enerdiff;
         }
         if (bCorrAll)
         {
-            enerdiff   = ninter * (dens * fr->enerdifftwelve - fr->enershifttwelve);
+            enerdiff = ninter * (dens * fr->enerdifftwelve - fr->enershifttwelve);
             *enercorr += avctwelve * enerdiff;
             if (fr->efep != efepNO)
             {
@@ -2317,7 +2317,7 @@ void calc_dispcorr(t_inputrec *ir, t_forcerec *fr,
             for (m = 0; m < DIM; m++)
             {
                 virial[m][m] += svir;
-                pres[m][m]   += spres;
+                pres[m][m] += spres;
             }
             *prescorr += spres;
         }
@@ -2454,7 +2454,7 @@ void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[])
         {
             int offset, len;
 
-            offset = (natoms * t    ) / nth;
+            offset = (natoms * t) / nth;
             len    = (natoms * (t + 1)) / nth - offset;
             put_atoms_in_box(ePBC, box, len, x + offset);
         }
@@ -2467,12 +2467,12 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
-                nonbonded_verlet_t *nbv,
-                gmx_bool bWriteStat)
+                nonbonded_verlet_t *      nbv,
+                gmx_bool                  bWriteStat)
 {
     t_nrnb *nrnb_tot = nullptr;
     double  delta_t  = 0;
-    double  nbfs     = 0, mflop = 0;
+    double  nbfs = 0, mflop = 0;
     double  elapsed_time,
             elapsed_time_over_all_ranks,
             elapsed_time_over_all_threads,
@@ -2538,7 +2538,7 @@ void finish_run(FILE *fplog, const gmx::MDLogger &mdlog, t_commrec *cr,
 
     if (SIMMASTER(cr))
     {
-        struct gmx_wallclock_gpu_t* gputimes = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : nullptr;
+        struct gmx_wallclock_gpu_t *gputimes = use_GPU(nbv) ? nbnxn_gpu_get_timings(nbv->gpu_nbv) : nullptr;
 
         wallcycle_print(fplog, mdlog, cr->nnodes, cr->npmenodes, nthreads_pp, nthreads_pme,
                         elapsed_time_over_all_ranks,
@@ -2577,7 +2577,7 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, std:
     }
 
     t_lambda *fep = ir->fepvals;
-    *fep_state = fep->init_fep_state;    /* this might overwrite the checkpoint
+    *fep_state    = fep->init_fep_state; /* this might overwrite the checkpoint
                                             if checkpoint is set -- a kludge is in for now
                                             to prevent this.*/
 
@@ -2629,7 +2629,7 @@ extern void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, std:
 }
 
 
-void init_md(FILE *fplog,
+void init_md(FILE *     fplog,
              t_commrec *cr, t_inputrec *ir, const gmx_output_env_t *oenv,
              double *t, double *t0,
              std::vector<real> *lambda, int *fep_state, double *lam0,
@@ -2644,7 +2644,7 @@ void init_md(FILE *fplog,
     int i;
 
     /* Initial values */
-    *t = *t0       = ir->init_t;
+    *t = *t0 = ir->init_t;
 
     *bSimAnn = FALSE;
     for (i = 0; i < ir->opts.ngtc; i++)

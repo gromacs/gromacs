@@ -55,7 +55,7 @@
 
 int gmx_genpr(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] produces an #include file for a topology containing",
         "a list of atom numbers and three force constants for the",
         "[IT]x[it]-, [IT]y[it]-, and [IT]z[it]-direction based on",
@@ -80,7 +80,7 @@ int gmx_genpr(int argc, char *argv[])
         "maintain the overall conformation of a protein without tieing it to",
         "a specific position (as with position restraints)."
     };
-    static rvec     fc           = {1000.0, 1000.0, 1000.0};
+    static rvec     fc           = { 1000.0, 1000.0, 1000.0 };
     static real     freeze_level = 0.0;
     static real     disre_dist   = 0.1;
     static real     disre_frac   = 0.0;
@@ -90,22 +90,14 @@ int gmx_genpr(int argc, char *argv[])
     static real     cutoff       = -1.0;
 
     t_pargs pa[] = {
-        { "-fc", FALSE, etRVEC, {fc},
-          "Force constants (kJ/mol nm^2)" },
-        { "-freeze", FALSE, etREAL, {&freeze_level},
-          "If the [TT]-of[tt] option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here" },
-        { "-disre", FALSE, etBOOL, {&bDisre},
-          "Generate a distance restraint matrix for all the atoms in index" },
-        { "-disre_dist", FALSE, etREAL, {&disre_dist},
-          "Distance range around the actual distance for generating distance restraints" },
-        { "-disre_frac", FALSE, etREAL, {&disre_frac},
-          "Fraction of distance to be used as interval rather than a fixed distance. If the fraction of the distance that you specify here is less than the distance given in the previous option, that one is used instead." },
-        { "-disre_up2", FALSE, etREAL, {&disre_up2},
-          "Distance between upper bound for distance restraints, and the distance at which the force becomes constant (see manual)" },
-        { "-cutoff", FALSE, etREAL, {&cutoff},
-          "Only generate distance restraints for atoms pairs within cutoff (nm)" },
-        { "-constr", FALSE, etBOOL, {&bConstr},
-          "Generate a constraint matrix rather than distance restraints. Constraints of type 2 will be generated that do generate exclusions." }
+        { "-fc", FALSE, etRVEC, { fc }, "Force constants (kJ/mol nm^2)" },
+        { "-freeze", FALSE, etREAL, { &freeze_level }, "If the [TT]-of[tt] option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here" },
+        { "-disre", FALSE, etBOOL, { &bDisre }, "Generate a distance restraint matrix for all the atoms in index" },
+        { "-disre_dist", FALSE, etREAL, { &disre_dist }, "Distance range around the actual distance for generating distance restraints" },
+        { "-disre_frac", FALSE, etREAL, { &disre_frac }, "Fraction of distance to be used as interval rather than a fixed distance. If the fraction of the distance that you specify here is less than the distance given in the previous option, that one is used instead." },
+        { "-disre_up2", FALSE, etREAL, { &disre_up2 }, "Distance between upper bound for distance restraints, and the distance at which the force becomes constant (see manual)" },
+        { "-cutoff", FALSE, etREAL, { &cutoff }, "Only generate distance restraints for atoms pairs within cutoff (nm)" },
+        { "-constr", FALSE, etBOOL, { &bConstr }, "Generate a constraint matrix rather than distance restraints. Constraints of type 2 will be generated that do generate exclusions." }
     };
 #define npargs asize(pa)
 
@@ -123,10 +115,10 @@ int gmx_genpr(int argc, char *argv[])
     rvec              dx, *x = nullptr, *v = nullptr;
 
     t_filenm fnm[] = {
-        { efSTX, "-f",  nullptr,    ffREAD },
-        { efNDX, "-n",  nullptr,    ffOPTRD },
-        { efITP, "-o",  "posre", ffWRITE },
-        { efNDX, "-of", "freeze",    ffOPTWR }
+        { efSTX, "-f", nullptr, ffREAD },
+        { efNDX, "-n", nullptr, ffOPTRD },
+        { efITP, "-o", "posre", ffWRITE },
+        { efNDX, "-of", "freeze", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -141,7 +133,7 @@ int gmx_genpr(int argc, char *argv[])
     xfn     = opt2fn_null("-f", NFILE, fnm);
     nfn     = opt2fn_null("-n", NFILE, fnm);
 
-    if (( nfn == nullptr ) && ( xfn == nullptr))
+    if ((nfn == nullptr) && (xfn == nullptr))
     {
         gmx_fatal(FARGS, "no index file and no structure file supplied");
     }

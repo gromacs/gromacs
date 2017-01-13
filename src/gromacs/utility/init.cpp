@@ -84,7 +84,7 @@ void init(int *argc, char ***argv)
 #ifdef GMX_FAHCORE
         fah_MPI_Init(argc, argv);
 #else
-#    if GMX_OPENMP
+#if GMX_OPENMP
         /* Formally we need to use MPI_Init_thread and ask for MPI_THREAD_FUNNELED
          * level of thread support when using OpenMP. However, in practice we
          * have never seen any problems with just using MPI_Init(), and some MPI
@@ -111,9 +111,9 @@ void init(int *argc, char ***argv)
             gmx_warning("GROMACS was compiled with OpenMP support, but there is no thread support in the MPI library. Keep your fingers crossed.");
             MPI_Init(argc, argv);
         }
-#    else
+#else
         MPI_Init(argc, argv);
-#    endif
+#endif
 #endif
     }
     // Bump the counter to record this initialization event

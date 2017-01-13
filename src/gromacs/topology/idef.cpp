@@ -202,7 +202,7 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
             fprintf(fp, "pos0=(%15.8e,%15.8e,%15.8e), geometry=%d, r=%15.8e, k=%15.8e\n",
                     iparams->fbposres.pos0[XX], iparams->fbposres.pos0[YY],
                     iparams->fbposres.pos0[ZZ], iparams->fbposres.geom,
-                    iparams->fbposres.r,        iparams->fbposres.k);
+                    iparams->fbposres.r, iparams->fbposres.k);
             break;
         case F_RBDIHS:
             for (int i = 0; i < NR_RBDIHS; i++)
@@ -281,14 +281,14 @@ void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams)
         case F_CMAP:
             fprintf(fp, "cmapA=%1d, cmapB=%1d\n", iparams->cmap.cmapA, iparams->cmap.cmapB);
             break;
-        case  F_RESTRANGLES:
+        case F_RESTRANGLES:
             pr_harm(fp, iparams, "ktheta", "costheta0");
             break;
-        case  F_RESTRDIHS:
+        case F_RESTRDIHS:
             fprintf(fp, "phiA=%15.8e, cpA=%15.8e",
                     iparams->pdihs.phiA, iparams->pdihs.cpA);
             break;
-        case  F_CBTDIHS:
+        case F_CBTDIHS:
             fprintf(fp, "kphi=%15.8e", iparams->cbtdihs.cbtcA[0]);
             for (int i = 1; i < NR_CBTDIHS; i++)
             {
@@ -320,7 +320,7 @@ void pr_ilist(FILE *fp, int indent, const char *title,
             pr_indent(fp, indent);
             fprintf(fp, "iatoms:\n");
             iatoms = ilist->iatoms;
-            for (i = j = 0; i < ilist->nr; )
+            for (i = j = 0; i < ilist->nr;)
             {
                 pr_indent(fp, indent + INDENT);
                 type  = *(iatoms++);
@@ -338,7 +338,7 @@ void pr_ilist(FILE *fp, int indent, const char *title,
                 if (bShowParameters)
                 {
                     fprintf(fp, "  ");
-                    pr_iparams(fp, ftype,  &iparams[type]);
+                    pr_iparams(fp, ftype, &iparams[type]);
                 }
                 fprintf(fp, "\n");
                 i += 1 + interaction_function[ftype].nratoms;
@@ -369,7 +369,7 @@ static void pr_cmap(FILE *fp, int indent, const char *title,
 
             for (j = 0; j < nelem; j++)
             {
-                if ( (j % cmap_grid->grid_spacing) == 0)
+                if ((j % cmap_grid->grid_spacing) == 0)
                 {
                     fprintf(fp, "%8.1f\n", idx);
                     idx += dx;
@@ -383,12 +383,11 @@ static void pr_cmap(FILE *fp, int indent, const char *title,
             fprintf(fp, "\n");
         }
     }
-
 }
 
 void pr_ffparams(FILE *fp, int indent, const char *title,
                  const gmx_ffparams_t *ffparams,
-                 gmx_bool bShowNumbers)
+                 gmx_bool              bShowNumbers)
 {
     int i;
 

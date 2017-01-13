@@ -128,11 +128,11 @@ void principal_comp(int n, const int index[], t_atom atom[], rvec x[],
     }
     for (i = 0; (i < n); i++)
     {
-        ai           = index[i];
-        mm           = atom[ai].m;
-        rx           = x[ai][XX];
-        ry           = x[ai][YY];
-        rz           = x[ai][ZZ];
+        ai = index[i];
+        mm = atom[ai].m;
+        rx = x[ai][XX];
+        ry = x[ai][YY];
+        rz = x[ai][ZZ];
         inten[0][0] += mm * (gmx::square(ry) + gmx::square(rz));
         inten[1][1] += mm * (gmx::square(rx) + gmx::square(rz));
         inten[2][2] += mm * (gmx::square(rx) + gmx::square(ry));
@@ -161,15 +161,25 @@ void principal_comp(int n, const int index[], t_atom atom[], rvec x[],
     ptrans("jacobi", ev, dd, e);
 #endif
 
-    /* Sort eigenvalues in ascending order */
-#define SWAPPER(i)          \
-    if (std::abs(dd[i + 1]) < std::abs(dd[i])) {    \
-        temp = dd[i];         \
-        for (j = 0; (j < NDIM); j++) { tvec[j] = ev[j][i]; } \
-        dd[i] = dd[i + 1];          \
-        for (j = 0; (j < NDIM); j++) { ev[j][i] = ev[j][i + 1]; }        \
-        dd[i + 1] = temp;           \
-        for (j = 0; (j < NDIM); j++) { ev[j][i + 1] = tvec[j]; }         \
+/* Sort eigenvalues in ascending order */
+#define SWAPPER(i)                             \
+    if (std::abs(dd[i + 1]) < std::abs(dd[i])) \
+    {                                          \
+        temp = dd[i];                          \
+        for (j = 0; (j < NDIM); j++)           \
+        {                                      \
+            tvec[j] = ev[j][i];                \
+        }                                      \
+        dd[i] = dd[i + 1];                     \
+        for (j = 0; (j < NDIM); j++)           \
+        {                                      \
+            ev[j][i] = ev[j][i + 1];           \
+        }                                      \
+        dd[i + 1] = temp;                      \
+        for (j = 0; (j < NDIM); j++)           \
+        {                                      \
+            ev[j][i + 1] = tvec[j];            \
+        }                                      \
     }
     SWAPPER(0)
     SWAPPER(1)

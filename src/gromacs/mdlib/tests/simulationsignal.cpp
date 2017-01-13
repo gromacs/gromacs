@@ -66,7 +66,8 @@ class SignalTest : public ::testing::Test
 {
 public:
     //! Constructor
-    SignalTest() : signals_ {}
+    SignalTest()
+        : signals_{}
     {
         signals_[0].sig = 1;
         signals_[1].sig = -1;

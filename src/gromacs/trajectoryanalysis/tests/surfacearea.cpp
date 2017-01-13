@@ -326,9 +326,9 @@ TEST_F(SurfaceAreaTest, Computes100PointsWithRectangularPBC)
     box_[YY][YY] = 10.0;
     box_[ZZ][ZZ] = 10.0;
     generateRandomPositions(100);
-    box_[XX][XX] = 20.0;
-    box_[YY][YY] = 20.0;
-    box_[ZZ][ZZ] = 20.0;
+    box_[XX][XX]    = 20.0;
+    box_[YY][YY]    = 20.0;
+    box_[ZZ][ZZ]    = 20.0;
     const int flags = FLAG_ATOM_AREA | FLAG_VOLUME | FLAG_DOTS;
     ASSERT_NO_FATAL_FAILURE(calculate(24, flags, true));
     checkReference(&checker, "100Points", false);

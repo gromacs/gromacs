@@ -107,16 +107,16 @@
  */
 typedef struct
 {
-    gmx_int32_t tstep;     /**< time step                                     */
-    float       T_abs;     /**< absolute temperature                          */
-    float       E_tot;     /**< total energy                                  */
-    float       E_pot;     /**< potential energy                              */
-    float       E_vdw;     /**< van der Waals energy                          */
-    float       E_coul;    /**< Coulomb interaction energy                    */
-    float       E_bond;    /**< bonds energy                                  */
-    float       E_angle;   /**< angles energy                                 */
-    float       E_dihe;    /**< dihedrals energy                              */
-    float       E_impr;    /**< improper dihedrals energy                     */
+    gmx_int32_t tstep;   /**< time step                                     */
+    float       T_abs;   /**< absolute temperature                          */
+    float       E_tot;   /**< total energy                                  */
+    float       E_pot;   /**< potential energy                              */
+    float       E_vdw;   /**< van der Waals energy                          */
+    float       E_coul;  /**< Coulomb interaction energy                    */
+    float       E_bond;  /**< bonds energy                                  */
+    float       E_angle; /**< angles energy                                 */
+    float       E_dihe;  /**< dihedrals energy                              */
+    float       E_impr;  /**< improper dihedrals energy                     */
 } IMDEnergyBlock;
 
 
@@ -127,8 +127,8 @@ typedef struct
  */
 typedef struct
 {
-    gmx_int32_t type;      /**< Type of IMD message, see IMDType_t above      */
-    gmx_int32_t length;    /**< Length                                        */
+    gmx_int32_t type;   /**< Type of IMD message, see IMDType_t above      */
+    gmx_int32_t length; /**< Length                                        */
 } IMDHeader;
 
 
@@ -139,62 +139,62 @@ typedef struct
  */
 typedef struct t_gmx_IMD
 {
-    FILE *outf;                      /**< Output file for IMD data, mainly forces.    */
+    FILE *outf; /**< Output file for IMD data, mainly forces.    */
 
-    int   nat;                       /**< Number of atoms that can be pulled via IMD. */
-    int   nat_loc;                   /**< Part of the atoms that are local.           */
-    int * ind;                       /**< Global indices of the IMD atoms.            */
-    int * ind_loc;                   /**< Local indices of the IMD atoms.             */
-    int   nalloc_loc;                /**< Allocation size for ind_loc.                */
-    rvec *xa;                        /**< Positions for all IMD atoms assembled on
+    int   nat;        /**< Number of atoms that can be pulled via IMD. */
+    int   nat_loc;    /**< Part of the atoms that are local.           */
+    int * ind;        /**< Global indices of the IMD atoms.            */
+    int * ind_loc;    /**< Local indices of the IMD atoms.             */
+    int   nalloc_loc; /**< Allocation size for ind_loc.                */
+    rvec *xa;         /**< Positions for all IMD atoms assembled on
                                           the master node.                            */
-    ivec *xa_shifts;                 /**< Shifts for all IMD atoms, to make
+    ivec *xa_shifts;  /**< Shifts for all IMD atoms, to make
                                           molecule(s) whole.                          */
-    ivec *xa_eshifts;                /**< Extra shifts since last DD step.            */
-    rvec *xa_old;                    /**< Old positions for all IMD atoms on master.  */
-    int * xa_ind;                    /**< Position of each local atom in the
+    ivec *xa_eshifts; /**< Extra shifts since last DD step.            */
+    rvec *xa_old;     /**< Old positions for all IMD atoms on master.  */
+    int * xa_ind;     /**< Position of each local atom in the
                                           collective array.                           */
 
-    int nstimd;                      /**< Global IMD frequency, known to all nodes.   */
-    int nstimd_new;                  /**< New frequency from IMD client, master only. */
-    int nstimd_def;                  /**< Default IMD frequency when disconnected.    */
+    int nstimd;     /**< Global IMD frequency, known to all nodes.   */
+    int nstimd_new; /**< New frequency from IMD client, master only. */
+    int nstimd_def; /**< Default IMD frequency when disconnected.    */
 
-    int        port;                 /**< Port to use for network socket.             */
-    IMDSocket *socket;               /**< The IMD socket on the master node.          */
-    IMDSocket *clientsocket;         /**< The IMD socket on the client.               */
-    int        length;               /**< Length we got with last header.             */
+    int        port;         /**< Port to use for network socket.             */
+    IMDSocket *socket;       /**< The IMD socket on the master node.          */
+    IMDSocket *clientsocket; /**< The IMD socket on the client.               */
+    int        length;       /**< Length we got with last header.             */
 
-    gmx_bool bWConnect;              /**< Shall we block and wait for connection?     */
-    gmx_bool bTerminated;            /**< Set if MD is terminated.                    */
-    gmx_bool bTerminatable;          /**< Set if MD can be terminated.                */
-    gmx_bool bConnected;             /**< Set if connection is present.               */
-    gmx_bool bNewForces;             /**< Set if we received new forces.              */
-    gmx_bool bForceActivated;        /**< Set if pulling from VMD is allowed.         */
+    gmx_bool bWConnect;       /**< Shall we block and wait for connection?     */
+    gmx_bool bTerminated;     /**< Set if MD is terminated.                    */
+    gmx_bool bTerminatable;   /**< Set if MD can be terminated.                */
+    gmx_bool bConnected;      /**< Set if connection is present.               */
+    gmx_bool bNewForces;      /**< Set if we received new forces.              */
+    gmx_bool bForceActivated; /**< Set if pulling from VMD is allowed.         */
 
-    IMDEnergyBlock *energies;        /**< Pointer to energies we send back.           */
+    IMDEnergyBlock *energies; /**< Pointer to energies we send back.           */
 
-    gmx_int32_t  vmd_nforces;        /**< Number of VMD forces.                       */
-    gmx_int32_t *vmd_f_ind;          /**< VMD forces indices.                         */
-    float *      vmd_forces;         /**< The VMD forces flat in memory.              */
-    int          nforces;            /**< Number of actual MD forces;
+    gmx_int32_t  vmd_nforces; /**< Number of VMD forces.                       */
+    gmx_int32_t *vmd_f_ind;   /**< VMD forces indices.                         */
+    float *      vmd_forces;  /**< The VMD forces flat in memory.              */
+    int          nforces;     /**< Number of actual MD forces;
                                           this gets communicated to the clients.      */
-    int * f_ind;                     /**< Force indices.                              */
-    rvec *f;                         /**< The IMD pulling forces.                     */
+    int *        f_ind;       /**< Force indices.                              */
+    rvec *       f;           /**< The IMD pulling forces.                     */
 
-    char *forcesendbuf;              /**< Buffer for force sending.                   */
-    char *coordsendbuf;              /**< Buffer for coordinate sending.              */
-    char *energysendbuf;             /**< Send buffer for energies.                   */
-    rvec *sendxbuf;                  /**< Buffer to make molecules whole before
+    char *forcesendbuf;  /**< Buffer for force sending.                   */
+    char *coordsendbuf;  /**< Buffer for coordinate sending.              */
+    char *energysendbuf; /**< Send buffer for energies.                   */
+    rvec *sendxbuf;      /**< Buffer to make molecules whole before
                                           sending.                                    */
 
-    t_block mols;                    /**< Molecules block in IMD group.               */
+    t_block mols; /**< Molecules block in IMD group.               */
 
     /* The next block is used on the master node only to reduce the output
      * without sacrificing information. If any of these values changes,
      * we need to write output */
-    int   old_nforces;           /**< Old value for nforces.                      */
-    int * old_f_ind;             /**< Old values for force indices.               */
-    rvec *old_forces;            /**< Old values for IMD pulling forces.          */
+    int   old_nforces; /**< Old value for nforces.                      */
+    int * old_f_ind;   /**< Old values for force indices.               */
+    rvec *old_forces;  /**< Old values for IMD pulling forces.          */
 
 } t_gmx_IMD_setup;
 
@@ -204,19 +204,18 @@ typedef struct t_gmx_IMD
  *
  * We use the same records as the NAMD/VMD IMD implementation.
  */
-typedef enum IMDType_t
-{
-    IMD_DISCONNECT,      /**< client disconnect                               */
-    IMD_ENERGIES,        /**< energy data                                     */
-    IMD_FCOORDS,         /**< atomic coordinates                              */
-    IMD_GO,              /**< start command for the simulation                */
-    IMD_HANDSHAKE,       /**< handshake to determine little/big endianness    */
-    IMD_KILL,            /**< terminates the simulation                       */
-    IMD_MDCOMM,          /**< force data                                      */
-    IMD_PAUSE,           /**< pauses the simulation                           */
-    IMD_TRATE,           /**< sets the IMD transmission and processing rate   */
-    IMD_IOERROR,         /**< I/O error                                       */
-    IMD_NR               /**< number of entries                               */
+typedef enum IMDType_t {
+    IMD_DISCONNECT, /**< client disconnect                               */
+    IMD_ENERGIES,   /**< energy data                                     */
+    IMD_FCOORDS,    /**< atomic coordinates                              */
+    IMD_GO,         /**< start command for the simulation                */
+    IMD_HANDSHAKE,  /**< handshake to determine little/big endianness    */
+    IMD_KILL,       /**< terminates the simulation                       */
+    IMD_MDCOMM,     /**< force data                                      */
+    IMD_PAUSE,      /**< pauses the simulation                           */
+    IMD_TRATE,      /**< sets the IMD transmission and processing rate   */
+    IMD_IOERROR,    /**< I/O error                                       */
+    IMD_NR          /**< number of entries                               */
 } IMDMessageType;
 
 
@@ -272,7 +271,7 @@ static gmx_int32_t gmx_ntohl(gmx_int32_t src)
 static void fill_header(IMDHeader *header, IMDMessageType type, gmx_int32_t length)
 {
     /* We (ab-)use htonl network function for the correct endianness */
-    header->type   = gmx_htonl((gmx_int32_t) type);
+    header->type   = gmx_htonl((gmx_int32_t)type);
     header->length = gmx_htonl(length);
 }
 
@@ -316,7 +315,7 @@ static gmx_int32_t imd_read_multiple(IMDSocket *socket, char *datptr, gmx_int32_
             break;
         }
         leftcount -= countread;
-        datptr    += countread;
+        datptr += countread;
     } /* end while */
 
     /* return nr of bytes read */
@@ -345,7 +344,7 @@ static gmx_int32_t imd_write_multiple(IMDSocket *socket, const char *datptr, gmx
             }
         }
         leftcount -= countwritten;
-        datptr    += countwritten;
+        datptr += countwritten;
     } /* end while */
 
     return towrite - leftcount;
@@ -361,7 +360,7 @@ static int imd_handshake(IMDSocket *socket)
     fill_header(&header, IMD_HANDSHAKE, 1);
     header.length = IMDVERSION; /* client wants unswapped version */
 
-    return (imd_write_multiple(socket, (char *) &header, HEADERSIZE) != HEADERSIZE);
+    return (imd_write_multiple(socket, (char *)&header, HEADERSIZE) != HEADERSIZE);
 }
 
 
@@ -372,7 +371,7 @@ static int imd_send_energies(IMDSocket *socket, const IMDEnergyBlock *energies, 
 
 
     recsize = HEADERSIZE + sizeof(IMDEnergyBlock);
-    fill_header((IMDHeader *) buffer, IMD_ENERGIES, 1);
+    fill_header((IMDHeader *)buffer, IMD_ENERGIES, 1);
     memcpy(buffer + HEADERSIZE, energies, sizeof(IMDEnergyBlock));
 
     return (imd_write_multiple(socket, buffer, recsize) != recsize);
@@ -385,14 +384,14 @@ static IMDMessageType imd_recv_header(IMDSocket *socket, gmx_int32_t *length)
     IMDHeader header;
 
 
-    if (imd_read_multiple(socket, (char *) &header, HEADERSIZE) != HEADERSIZE)
+    if (imd_read_multiple(socket, (char *)&header, HEADERSIZE) != HEADERSIZE)
     {
         return IMD_IOERROR;
     }
     swap_header(&header);
     *length = header.length;
 
-    return (IMDMessageType) header.type;
+    return (IMDMessageType)header.type;
 }
 
 
@@ -407,7 +406,7 @@ static int imd_recv_mdcomm(IMDSocket *socket, gmx_int32_t nforces, gmx_int32_t *
 
     /* reading indices */
     retsize  = sizeof(gmx_int32_t) * nforces;
-    retbytes = imd_read_multiple(socket, (char *) forcendx, retsize);
+    retbytes = imd_read_multiple(socket, (char *)forcendx, retsize);
     if (retbytes != retsize)
     {
         return FALSE;
@@ -415,7 +414,7 @@ static int imd_recv_mdcomm(IMDSocket *socket, gmx_int32_t nforces, gmx_int32_t *
 
     /* reading forces as float array */
     retsize  = 3 * sizeof(float) * nforces;
-    retbytes = imd_read_multiple(socket, (char *) forces, retsize);
+    retbytes = imd_read_multiple(socket, (char *)forces, retsize);
     if (retbytes != retsize)
     {
         return FALSE;
@@ -476,12 +475,12 @@ static int imd_send_rvecs(IMDSocket *socket, int nat, rvec *x, char *buffer)
     size = HEADERSIZE + 3 * sizeof(float) * nat;
 
     /* Prepare header */
-    fill_header((IMDHeader *) buffer, IMD_FCOORDS, (gmx_int32_t) nat);
+    fill_header((IMDHeader *)buffer, IMD_FCOORDS, (gmx_int32_t)nat);
     for (i = 0; i < nat; i++)
     {
-        sendx[0] = (float) x[i][0] * NM2A;
-        sendx[1] = (float) x[i][1] * NM2A;
-        sendx[2] = (float) x[i][2] * NM2A;
+        sendx[0] = (float)x[i][0] * NM2A;
+        sendx[1] = (float)x[i][1] * NM2A;
+        sendx[2] = (float)x[i][2] * NM2A;
         memcpy(buffer + HEADERSIZE + i * tuplesize, sendx, tuplesize);
     }
 
@@ -490,7 +489,7 @@ static int imd_send_rvecs(IMDSocket *socket, int nat, rvec *x, char *buffer)
 
 
 /*! \brief Initializes the IMD private data. */
-static t_gmx_IMD_setup* imd_create(int imdatoms, int nstimddef, int imdport)
+static t_gmx_IMD_setup *imd_create(int imdatoms, int nstimddef, int imdport)
 {
     t_gmx_IMD_setup *IMDsetup = nullptr;
 
@@ -644,7 +643,7 @@ static gmx_bool imd_tryconnect(t_gmx_IMD_setup *IMDsetup)
 static void imd_blockconnect(t_gmx_IMD_setup *IMDsetup)
 {
     /* do not wait for connection, when e.g. ctrl+c is pressed and we will terminate anyways. */
-    if (!((int) gmx_get_stop_condition() == gmx_stop_cond_none))
+    if (!((int)gmx_get_stop_condition() == gmx_stop_cond_none))
     {
         return;
     }
@@ -652,7 +651,7 @@ static void imd_blockconnect(t_gmx_IMD_setup *IMDsetup)
     fprintf(stderr, "%s Will wait until I have a connection and IMD_GO orders.\n", IMDstr);
 
     /* while we have no clientsocket... 2nd part: we should still react on ctrl+c */
-    while ((!IMDsetup->clientsocket) && ((int) gmx_get_stop_condition() == gmx_stop_cond_none))
+    while ((!IMDsetup->clientsocket) && ((int)gmx_get_stop_condition() == gmx_stop_cond_none))
     {
         imd_tryconnect(IMDsetup);
 #if GMX_NATIVE_WINDOWS
@@ -692,7 +691,7 @@ static void imd_read_vmd_Forces(t_gmx_IMD_setup *IMDsetup)
 static void imd_prepare_MD_Forces(t_gmx_IMD_setup *IMDsetup)
 {
     srenew((IMDsetup->f_ind), IMDsetup->nforces);
-    srenew((IMDsetup->f    ), IMDsetup->nforces);
+    srenew((IMDsetup->f), IMDsetup->nforces);
 }
 
 
@@ -715,7 +714,7 @@ static void imd_copyto_MD_Forces(t_gmx_IMD_setup *IMDsetup)
         IMDsetup->f_ind[i] = IMDsetup->vmd_f_ind[i];
 
         /* Convert to rvecs and do a proper unit conversion */
-        IMDsetup->f[i][0] = IMDsetup->vmd_forces[3 * i    ] * conversion;
+        IMDsetup->f[i][0] = IMDsetup->vmd_forces[3 * i] * conversion;
         IMDsetup->f[i][1] = IMDsetup->vmd_forces[3 * i + 1] * conversion;
         IMDsetup->f[i][2] = IMDsetup->vmd_forces[3 * i + 2] * conversion;
     }
@@ -918,7 +917,7 @@ static void imd_sync_nodes(t_inputrec *ir, t_commrec *cr, double t)
         if (PAR(cr))
         {
             nblock_bc(cr, IMDsetup->nforces, IMDsetup->f_ind);
-            nblock_bc(cr, IMDsetup->nforces, IMDsetup->f    );
+            nblock_bc(cr, IMDsetup->nforces, IMDsetup->f);
         }
 
         /* done communicating the forces, reset bNewForces */
@@ -1042,14 +1041,16 @@ static FILE *open_imd_out(const char *            fn,
 
         /* To reduce the output file size we remember the old values and output only
          * when something changed */
-        snew(IMDsetup->old_f_ind, IMDsetup->nat);  /* One can never pull on more atoms */
+        snew(IMDsetup->old_f_ind, IMDsetup->nat); /* One can never pull on more atoms */
         snew(IMDsetup->old_forces, IMDsetup->nat);
 
         return fp;
     }
 
-    fprintf(stdout, "%s For a log of the IMD pull forces explicitly specify '-if' on the command line.\n"
-            "%s (Not possible with energy minimization.)\n", IMDstr, IMDstr);
+    fprintf(stdout,
+            "%s For a log of the IMD pull forces explicitly specify '-if' on the command line.\n"
+            "%s (Not possible with energy minimization.)\n",
+            IMDstr, IMDstr);
 
     return nullptr;
 }
@@ -1111,7 +1112,7 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
         if (count > 0)
         {
             lmols.index[lmols.nr + 1] = lmols.index[lmols.nr] + count;
-            lmols.nr                 += 1;
+            lmols.nr += 1;
         }
     }
     srenew(lmols.index, lmols.nr + 1);
@@ -1123,9 +1124,9 @@ static void init_imd_prepare_mols_in_imdgroup(t_gmx_IMD_setup *IMDsetup, gmx_mto
 /*! \brief Copied and modified from groupcoord.c shift_positions_group(). */
 static void shift_positions(
         matrix box,
-        rvec   x[],      /* The positions [0..nr] */
-        ivec   is,       /* The shift [0..nr] */
-        int    nr)       /* The number of positions */
+        rvec   x[], /* The positions [0..nr] */
+        ivec   is,  /* The shift [0..nr] */
+        int    nr)  /* The number of positions */
 {
     int i, tx, ty, tz;
 
@@ -1209,7 +1210,6 @@ static void imd_remove_molshifts(t_gmx_IMD_setup *IMDsetup, matrix box)
             {
                 smallest[ZZ] = IMDsetup->xa_shifts[ii][ZZ];
             }
-
         }
 
         /* check if we what we can subtract/add to the positions
@@ -1247,7 +1247,6 @@ static void imd_remove_molshifts(t_gmx_IMD_setup *IMDsetup, matrix box)
             /* shift the positions */
             shift_positions(box, &(IMDsetup->xa[mols.index[i]]), shift, molsize);
         }
-
     }
 }
 
@@ -1258,11 +1257,11 @@ static void init_imd_prepare_for_x_assembly(t_commrec *cr, rvec x[], t_gmx_IMD_s
     int i, ii;
 
 
-    snew(IMDsetup->xa,         IMDsetup->nat);
-    snew(IMDsetup->xa_ind,     IMDsetup->nat);
-    snew(IMDsetup->xa_shifts,  IMDsetup->nat);
+    snew(IMDsetup->xa, IMDsetup->nat);
+    snew(IMDsetup->xa_ind, IMDsetup->nat);
+    snew(IMDsetup->xa_shifts, IMDsetup->nat);
     snew(IMDsetup->xa_eshifts, IMDsetup->nat);
-    snew(IMDsetup->xa_old,     IMDsetup->nat);
+    snew(IMDsetup->xa_old, IMDsetup->nat);
 
     /* Save the original (whole) set of positions such that later the
      * molecule can always be made whole again */
@@ -1287,7 +1286,7 @@ static void init_imd_prepare_for_x_assembly(t_commrec *cr, rvec x[], t_gmx_IMD_s
         }
     }
 
-    /* Communicate initial coordinates xa_old to all processes */
+/* Communicate initial coordinates xa_old to all processes */
 #if GMX_MPI
     if (PAR(cr))
     {
@@ -1357,12 +1356,14 @@ void init_IMD(t_inputrec *            ir,
         }
         else
         {
-            fprintf(stderr, "%s None of the -imd switches was used.\n"
-                    "%s This run will not accept incoming IMD connections\n", IMDstr, IMDstr);
+            fprintf(stderr,
+                    "%s None of the -imd switches was used.\n"
+                    "%s This run will not accept incoming IMD connections\n",
+                    IMDstr, IMDstr);
         }
     } /* end master only */
 
-    /* Disable IMD if not all the needed functionality is there! */
+/* Disable IMD if not all the needed functionality is there! */
 #if GMX_NATIVE_WINDOWS && !defined(GMX_HAVE_WINSOCK)
     bIMD = FALSE;
     fprintf(stderr, "Disabling IMD because the winsock library was not found at compile time.\n");
@@ -1387,7 +1388,7 @@ void init_IMD(t_inputrec *            ir,
     imd_check_integrator_parallel(ir, cr);
 
 
-    /*
+/*
      *****************************************************
      * From here on we assume that IMD is turned on      *
      *****************************************************
@@ -1559,7 +1560,7 @@ gmx_bool do_IMD(gmx_bool        bIMD,
     /* If a client is connected, we collect the positions
      * and put molecules back into the box before transfer */
     if ((imdstep && IMDsetup->bConnected)
-        || bNS)            /* independent of imdstep, we communicate positions at each NS step */
+        || bNS) /* independent of imdstep, we communicate positions at each NS step */
     {
         /* Transfer the IMD positions to the master node. Every node contributes
          * its local positions x and stores them in the assembled xa array. */
@@ -1606,15 +1607,15 @@ void IMD_fill_energy_record(gmx_bool bIMD, t_IMD *imd, gmx_enerdata_t *enerd,
              * last global communication step are still on display in the viewer. */
             if (bHaveNewEnergies)
             {
-                ene->T_abs   = (float)  enerd->term[F_TEMP   ];
-                ene->E_pot   = (float)  enerd->term[F_EPOT   ];
-                ene->E_tot   = (float)  enerd->term[F_ETOT   ];
-                ene->E_bond  = (float)  enerd->term[F_BONDS  ];
-                ene->E_angle = (float)  enerd->term[F_ANGLES ];
-                ene->E_dihe  = (float)  enerd->term[F_PDIHS  ];
-                ene->E_impr  = (float)  enerd->term[F_IDIHS  ];
-                ene->E_vdw   = (float)  enerd->term[F_LJ     ];
-                ene->E_coul  = (float)  enerd->term[F_COUL_SR];
+                ene->T_abs   = (float)enerd->term[F_TEMP];
+                ene->E_pot   = (float)enerd->term[F_EPOT];
+                ene->E_tot   = (float)enerd->term[F_ETOT];
+                ene->E_bond  = (float)enerd->term[F_BONDS];
+                ene->E_angle = (float)enerd->term[F_ANGLES];
+                ene->E_dihe  = (float)enerd->term[F_PDIHS];
+                ene->E_impr  = (float)enerd->term[F_IDIHS];
+                ene->E_vdw   = (float)enerd->term[F_LJ];
+                ene->E_coul  = (float)enerd->term[F_COUL_SR];
             }
         }
 #else

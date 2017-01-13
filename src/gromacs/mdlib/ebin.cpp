@@ -65,7 +65,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
     int         i, f;
     const char *u;
 
-    index      = eb->nener;
+    index = eb->nener;
     eb->nener += nener;
     srenew(eb->e, eb->nener);
     srenew(eb->e_sim, eb->nener);
@@ -95,16 +95,25 @@ int get_ebin_space(t_ebin *eb, int nener, const char *enm[], const char *unit)
             for (f = 0; f < F_NRE; f++)
             {
                 if (strcmp(eb->enm[i].name,
-                           interaction_function[f].longname) == 0)
+                           interaction_function[f].longname)
+                    == 0)
                 {
                     /* Only the terms in this list are not energies */
                     switch (f)
                     {
-                        case F_DISRESVIOL: u = unit_length;   break;
-                        case F_ORIRESDEV:  u = "obs";         break;
-                        case F_TEMP:       u = unit_temp_K;   break;
+                        case F_DISRESVIOL:
+                            u = unit_length;
+                            break;
+                        case F_ORIRESDEV:
+                            u = "obs";
+                            break;
+                        case F_TEMP:
+                            u = unit_temp_K;
+                            break;
                         case F_PDISPCORR:
-                        case F_PRES:       u = unit_pres_bar; break;
+                        case F_PRES:
+                            u = unit_pres_bar;
+                            break;
                     }
                 }
             }
@@ -144,8 +153,8 @@ void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
         {
             for (i = 0; (i < nener); i++)
             {
-                eg[i].eav    = 0;
-                eg[i].esum   = ener[i];
+                eg[i].eav  = 0;
+                eg[i].esum = ener[i];
                 egs[i].esum += ener[i];
             }
         }
@@ -159,9 +168,9 @@ void add_ebin(t_ebin *eb, int index, int nener, real ener[], gmx_bool bSum)
                 e = ener[i];
 
                 /* first update sigma, then sum */
-                diff         = eg[i].esum - m * e;
-                eg[i].eav   += diff * diff * invmm;
-                eg[i].esum  += e;
+                diff = eg[i].esum - m * e;
+                eg[i].eav += diff * diff * invmm;
+                eg[i].esum += e;
                 egs[i].esum += e;
             }
         }
@@ -209,7 +218,7 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
     {
         nener = index + nener;
     }
-    for (i = index; (i < nener) && rc >= 0; )
+    for (i = index; (i < nener) && rc >= 0;)
     {
         if (bPrHead)
         {
@@ -239,10 +248,15 @@ void pr_ebin(FILE *fp, t_ebin *eb, int index, int nener, int nperline,
         {
             switch (prmode)
             {
-                case eprNORMAL: ee = eb->e[i].e; break;
-                case eprAVER:   ee = eb->e_sim[i].esum / eb->nsum_sim; break;
-                default: gmx_fatal(FARGS, "Invalid print mode %d in pr_ebin",
-                                   prmode);
+                case eprNORMAL:
+                    ee = eb->e[i].e;
+                    break;
+                case eprAVER:
+                    ee = eb->e_sim[i].esum / eb->nsum_sim;
+                    break;
+                default:
+                    gmx_fatal(FARGS, "Invalid print mode %d in pr_ebin",
+                              prmode);
             }
 
             rc = fprintf(fp, "   %12.5e", ee);

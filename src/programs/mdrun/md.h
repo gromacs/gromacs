@@ -50,6 +50,6 @@ namespace gmx
 //! MD simulations
 integrator_t do_md;
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDLIB_MD_H

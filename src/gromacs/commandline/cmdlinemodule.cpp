@@ -51,7 +51,8 @@ namespace gmx
 class CommandLineModuleSettings::Impl
 {
 public:
-    Impl() : defaultNiceLevel_(19) {}
+    Impl()
+        : defaultNiceLevel_(19) {}
 
     int defaultNiceLevel_;
 };

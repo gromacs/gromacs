@@ -111,8 +111,8 @@ public:
                               const TopologyInformation &       top);
 
     virtual TrajectoryAnalysisModuleDataPointer startFrames(
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &        selections);
+            const AnalysisDataParallelOptions &opt,
+            const SelectionCollection &        selections);
     virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                               TrajectoryAnalysisModuleData *pdata);
 
@@ -214,26 +214,15 @@ void PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSet
 
     settings->setHelpText(desc);
 
-    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
-                           .store(&fnDist_).defaultBasename("dist")
-                           .description("Distances as function of time"));
+    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required().store(&fnDist_).defaultBasename("dist").description("Distances as function of time"));
 
-    options->addOption(DoubleOption("cutoff").store(&cutoff_)
-                           .description("Maximum distance to consider"));
-    options->addOption(EnumOption<DistanceType>("type").store(&distanceType_)
-                           .enumValue(c_distanceTypes)
-                           .description("Type of distances to calculate"));
-    options->addOption(EnumOption<GroupType>("refgrouping").store(&refGroupType_)
-                           .enumValue(c_groupTypes)
-                           .description("Grouping of -ref positions to compute the min/max over"));
-    options->addOption(EnumOption<GroupType>("selgrouping").store(&selGroupType_)
-                           .enumValue(c_groupTypes)
-                           .description("Grouping of -sel positions to compute the min/max over"));
+    options->addOption(DoubleOption("cutoff").store(&cutoff_).description("Maximum distance to consider"));
+    options->addOption(EnumOption<DistanceType>("type").store(&distanceType_).enumValue(c_distanceTypes).description("Type of distances to calculate"));
+    options->addOption(EnumOption<GroupType>("refgrouping").store(&refGroupType_).enumValue(c_groupTypes).description("Grouping of -ref positions to compute the min/max over"));
+    options->addOption(EnumOption<GroupType>("selgrouping").store(&selGroupType_).enumValue(c_groupTypes).description("Grouping of -sel positions to compute the min/max over"));
 
-    options->addOption(SelectionOption("ref").store(&refSel_).required()
-                           .description("Reference positions to calculate distances from"));
-    options->addOption(SelectionOption("sel").storeVector(&sel_).required().multiValue()
-                           .description("Positions to calculate distances for"));
+    options->addOption(SelectionOption("ref").store(&refSel_).required().description("Reference positions to calculate distances from"));
+    options->addOption(SelectionOption("sel").storeVector(&sel_).required().multiValue().description("Positions to calculate distances for"));
 }
 
 //! Helper function to initialize the grouping for a selection.
@@ -242,10 +231,18 @@ int initSelectionGroups(Selection *sel, const gmx_mtop_t *top, int type)
     e_index_t indexType = INDEX_UNKNOWN;
     switch (type)
     {
-        case eGroupType_All:      indexType = INDEX_ALL; break;
-        case eGroupType_Residue:  indexType = INDEX_RES; break;
-        case eGroupType_Molecule: indexType = INDEX_MOL; break;
-        case eGroupType_None:     indexType = INDEX_ATOM; break;
+        case eGroupType_All:
+            indexType = INDEX_ALL;
+            break;
+        case eGroupType_Residue:
+            indexType = INDEX_RES;
+            break;
+        case eGroupType_Molecule:
+            indexType = INDEX_MOL;
+            break;
+        case eGroupType_None:
+            indexType = INDEX_ATOM;
+            break;
     }
     return sel->initOriginalIdsToGroup(top, indexType);
 }
@@ -261,9 +258,9 @@ void PairDistance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     for (size_t i = 0; i < sel_.size(); ++i)
     {
         const int selGroupCount
-            = initSelectionGroups(&sel_[i], top.mtop(), selGroupType_);
+                = initSelectionGroups(&sel_[i], top.mtop(), selGroupType_);
         const int columnCount = refGroupCount_ * selGroupCount;
-        maxGroupCount_ = std::max(maxGroupCount_, columnCount);
+        maxGroupCount_        = std::max(maxGroupCount_, columnCount);
         distances_.setColumnCount(i, columnCount);
     }
 
@@ -532,11 +529,11 @@ void PairDistance::writeOutput()
 
 //! \}
 
-}       // namespace
+} // namespace
 
 const char PairDistanceInfo::name[] = "pairdist";
 const char PairDistanceInfo::shortDescription[]
-    = "Calculate pairwise distances between groups of positions";
+        = "Calculate pairwise distances between groups of positions";
 
 TrajectoryAnalysisModulePointer PairDistanceInfo::create()
 {

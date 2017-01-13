@@ -83,9 +83,9 @@ char **AtomsBuilder::symtabString(char **source)
 
 void AtomsBuilder::reserve(int atomCount, int residueCount)
 {
-    srenew(atoms_->atom,     atomCount);
+    srenew(atoms_->atom, atomCount);
     srenew(atoms_->atomname, atomCount);
-    srenew(atoms_->resinfo,  residueCount);
+    srenew(atoms_->resinfo, residueCount);
     if (atoms_->pdbinfo != nullptr)
     {
         srenew(atoms_->pdbinfo, atomCount);
@@ -114,7 +114,7 @@ void AtomsBuilder::setNextResidueNumber(int number)
 
 void AtomsBuilder::addAtom(const t_atoms &atoms, int i)
 {
-    const int index = atoms_->nr;
+    const int index            = atoms_->nr;
     atoms_->atom[index]        = atoms.atom[i];
     atoms_->atomname[index]    = symtabString(atoms.atomname[i]);
     atoms_->atom[index].resind = currentResidueIndex_;
@@ -138,7 +138,7 @@ void AtomsBuilder::startResidue(const t_resinfo &resinfo)
     {
         nextResidueNumber_ = resinfo.nr;
     }
-    const int index = atoms_->nres;
+    const int index             = atoms_->nres;
     atoms_->resinfo[index]      = resinfo;
     atoms_->resinfo[index].nr   = nextResidueNumber_;
     atoms_->resinfo[index].name = symtabString(resinfo.name);
@@ -153,7 +153,7 @@ void AtomsBuilder::finishResidue(const t_resinfo &resinfo)
     {
         nextResidueNumber_ = resinfo.nr;
     }
-    const int index = currentResidueIndex_;
+    const int index             = currentResidueIndex_;
     atoms_->resinfo[index]      = resinfo;
     atoms_->resinfo[index].nr   = nextResidueNumber_;
     atoms_->resinfo[index].name = symtabString(resinfo.name);

@@ -147,8 +147,8 @@ TEST_F(SimdFloatingpointTest, abs)
 
 TEST_F(SimdFloatingpointTest, neg)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_m1_m2_m3, -(rSimd_1_2_3));    // fneg(x)=-x
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3,    -(rSimd_m1_m2_m3)); // fneg(-x)=x
+    GMX_EXPECT_SIMD_REAL_EQ(rSimd_m1_m2_m3, -(rSimd_1_2_3)); // fneg(x)=-x
+    GMX_EXPECT_SIMD_REAL_EQ(rSimd_1_2_3, -(rSimd_m1_m2_m3)); // fneg(-x)=x
 }
 
 #if GMX_SIMD_HAVE_LOGICAL
@@ -443,13 +443,15 @@ TEST_F(SimdFloatingpointTest, reduce)
     EXPECT_EQ(sum, reduce(rSimd_4_5_6));
 }
 
-#endif      // GMX_SIMD_HAVE_REAL
+#endif // GMX_SIMD_HAVE_REAL
 
 #if GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
 TEST_F(SimdFloatingpointTest, cvtFloat2Double)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   f[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
+    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)
+    f[GMX_SIMD_FLOAT_WIDTH];
+    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)
+    d[GMX_SIMD_FLOAT_WIDTH]; // Yes, double array length should be same as float
 
     int                    i;
     SimdFloat              vf;
@@ -469,7 +471,7 @@ TEST_F(SimdFloatingpointTest, cvtFloat2Double)
 #elif (GMX_SIMD_FLOAT_WIDTH == GMX_SIMD_DOUBLE_WIDTH)
     vd0 = cvtF2D(vf);
 #else
-#    error Width of float SIMD must either be identical to double, or twice the width.
+#error Width of float SIMD must either be identical to double, or twice the width.
 #endif
     store(d, vd0); // store lower (or whole) part from start of vector
 
@@ -481,8 +483,10 @@ TEST_F(SimdFloatingpointTest, cvtFloat2Double)
 
 TEST_F(SimdFloatingpointTest, cvtDouble2Float)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)   f[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH) d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
+    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)
+    f[GMX_SIMD_FLOAT_WIDTH];
+    GMX_ALIGNED(double, GMX_SIMD_DOUBLE_WIDTH)
+    d[GMX_SIMD_FLOAT_WIDTH]; // Yes, double array length should be same as float
     int                    i;
     SimdFloat              vf;
     SimdDouble             vd0;
@@ -497,11 +501,11 @@ TEST_F(SimdFloatingpointTest, cvtDouble2Float)
     vd0 = load(d);
 #if (GMX_SIMD_FLOAT_WIDTH == 2 * GMX_SIMD_DOUBLE_WIDTH)
     SimdDouble vd1 = load(d + GMX_SIMD_DOUBLE_WIDTH); // load upper half of data
-    vf = cvtDD2F(vd0, vd1);
+    vf             = cvtDD2F(vd0, vd1);
 #elif (GMX_SIMD_FLOAT_WIDTH == GMX_SIMD_DOUBLE_WIDTH)
-    vf = cvtD2F(vd0);
+    vf  = cvtD2F(vd0);
 #else
-#    error Width of float SIMD must either be identical to double, or twice the width.
+#error Width of float SIMD must either be identical to double, or twice the width.
 #endif
     store(f, vf);
 
@@ -511,13 +515,13 @@ TEST_F(SimdFloatingpointTest, cvtDouble2Float)
         EXPECT_REAL_EQ_TOL(d[i], f[i], tolerance);
     }
 }
-#endif      // GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
+#endif // GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace
+} // namespace
 
 #endif // GMX_SIMD

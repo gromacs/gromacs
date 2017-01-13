@@ -54,21 +54,31 @@ typedef struct gmx_stats *gmx_stats_t;
 //! Error codes returned by the routines
 enum
 {
-    estatsOK, estatsNO_POINTS, estatsNO_MEMORY, estatsERROR,
-    estatsINVALID_INPUT, estatsNOT_IMPLEMENTED, estatsNR
+    estatsOK,
+    estatsNO_POINTS,
+    estatsNO_MEMORY,
+    estatsERROR,
+    estatsINVALID_INPUT,
+    estatsNOT_IMPLEMENTED,
+    estatsNR
 };
 
 //! Enum for statistical weights
 enum
 {
-    elsqWEIGHT_NONE, elsqWEIGHT_X, elsqWEIGHT_Y,
-    elsqWEIGHT_XY, elsqWEIGHT_NR
+    elsqWEIGHT_NONE,
+    elsqWEIGHT_X,
+    elsqWEIGHT_Y,
+    elsqWEIGHT_XY,
+    elsqWEIGHT_NR
 };
 
 //! Enum determining which coordinate to histogram
 enum
 {
-    ehistoX, ehistoY, ehistoNR
+    ehistoX,
+    ehistoY,
+    ehistoNR
 };
 
 /*! \brief

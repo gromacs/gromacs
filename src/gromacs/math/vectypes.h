@@ -39,20 +39,20 @@
 
 #include "gromacs/utility/real.h"
 
-#define XX      0 /* Defines for indexing in */
-#define YY      1 /* vectors                 */
-#define ZZ      2
-#define DIM     3 /* Dimension of vectors    */
+#define XX 0 /* Defines for indexing in */
+#define YY 1 /* vectors                 */
+#define ZZ 2
+#define DIM 3 /* Dimension of vectors    */
 
-typedef real    rvec[DIM];
+typedef real rvec[DIM];
 
-typedef double  dvec[DIM];
+typedef double dvec[DIM];
 
-typedef real    matrix[DIM][DIM];
+typedef real matrix[DIM][DIM];
 
-typedef real    tensor[DIM][DIM];
+typedef real tensor[DIM][DIM];
 
-typedef int     ivec[DIM];
+typedef int ivec[DIM];
 
 #ifdef __cplusplus
 
@@ -135,9 +135,11 @@ private:
 /*! \brief
  * Casts a gmx::BasicVector array into an equivalent raw C array.
  */
-template <typename ValueType> static inline
-typename BasicVector<ValueType>::RawArray
-* as_vec_array(BasicVector<ValueType> *x)
+template <typename ValueType>
+static inline
+        typename BasicVector<ValueType>::RawArray
+                *
+                as_vec_array(BasicVector<ValueType> *x)
 {
     return reinterpret_cast<typename BasicVector<ValueType>::RawArray *>(x);
 }
@@ -145,9 +147,10 @@ typename BasicVector<ValueType>::RawArray
 /*! \brief
  * Casts a gmx::BasicVector array into an equivalent raw C array.
  */
-template <typename ValueType> static inline
-const typename BasicVector<ValueType>::RawArray
-* as_vec_array(const BasicVector<ValueType> *x)
+template <typename ValueType>
+static inline const typename BasicVector<ValueType>::RawArray
+        *
+        as_vec_array(const BasicVector<ValueType> *x)
 {
     return reinterpret_cast<const typename BasicVector<ValueType>::RawArray *>(x);
 }

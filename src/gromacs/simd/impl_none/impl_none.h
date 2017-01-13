@@ -37,24 +37,24 @@
 #define GMX_SIMD_IMPL_NONE_H
 
 /* No SIMD implementation - assign 0 to all defines */
-#define GMX_SIMD                            0
-#define GMX_SIMD_HAVE_FLOAT                 0
-#define GMX_SIMD_HAVE_DOUBLE                0
-#define GMX_SIMD_HAVE_LOADU                 0
-#define GMX_SIMD_HAVE_STOREU                0
-#define GMX_SIMD_HAVE_LOGICAL               0
-#define GMX_SIMD_HAVE_FMA                   0
-#define GMX_SIMD_HAVE_FRACTION              0
-#define GMX_SIMD_HAVE_FINT32                0
-#define GMX_SIMD_HAVE_FINT32_EXTRACT        0
-#define GMX_SIMD_HAVE_FINT32_LOGICAL        0
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS    0
-#define GMX_SIMD_HAVE_DINT32                0
-#define GMX_SIMD_HAVE_DINT32_EXTRACT        0
-#define GMX_SIMD_HAVE_DINT32_LOGICAL        0
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS    0
-#define GMX_SIMD4_HAVE_FLOAT                0
-#define GMX_SIMD4_HAVE_DOUBLE               0
+#define GMX_SIMD 0
+#define GMX_SIMD_HAVE_FLOAT 0
+#define GMX_SIMD_HAVE_DOUBLE 0
+#define GMX_SIMD_HAVE_LOADU 0
+#define GMX_SIMD_HAVE_STOREU 0
+#define GMX_SIMD_HAVE_LOGICAL 0
+#define GMX_SIMD_HAVE_FMA 0
+#define GMX_SIMD_HAVE_FRACTION 0
+#define GMX_SIMD_HAVE_FINT32 0
+#define GMX_SIMD_HAVE_FINT32_EXTRACT 0
+#define GMX_SIMD_HAVE_FINT32_LOGICAL 0
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS 0
+#define GMX_SIMD_HAVE_DINT32 0
+#define GMX_SIMD_HAVE_DINT32_EXTRACT 0
+#define GMX_SIMD_HAVE_DINT32_LOGICAL 0
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS 0
+#define GMX_SIMD4_HAVE_FLOAT 0
+#define GMX_SIMD4_HAVE_DOUBLE 0
 
 #undef GMX_SIMD_FLOAT_WIDTH
 #undef GMX_SIMD_DOUBLE_WIDTH

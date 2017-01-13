@@ -93,7 +93,7 @@ TEST_F(CommandLineParserTest, HandlesSingleValues)
     const char *const cmdline[] = {
         "test", "-flag", "yes", "-mvi", "2", "-mvd", "2.7"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());
 
@@ -109,7 +109,7 @@ TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
     const char *const cmdline[] = {
         "test", "-mvi", "1", "-2", "-mvd", "-2.7"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());
 
@@ -125,7 +125,7 @@ TEST_F(CommandLineParserTest, HandlesDoubleDashOptionPrefix)
     const char *const cmdline[] = {
         "test", "--mvi", "1", "-2", "--mvd", "-2.7"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());
 
@@ -141,7 +141,7 @@ TEST_F(CommandLineParserTest, HandlesOptionsStartingWithNumbers)
     const char *const cmdline[] = {
         "test", "--12", "1", "-1p", "-12"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());
 
@@ -154,7 +154,7 @@ TEST_F(CommandLineParserTest, HandlesSkipUnknown)
     const char *const cmdline[] = {
         "test", "-opt1", "-flag", "-opt2", "value", "-mvi", "2", "-mvd", "2.7", "-opt3"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     parser_.skipUnknown(true);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());

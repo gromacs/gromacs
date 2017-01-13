@@ -154,17 +154,17 @@ void cmp_str(FILE *fp, const char *s, int index, const char *s1, const char *s2)
 
 gmx_bool equal_real(real i1, real i2, real ftol, real abstol)
 {
-    return ( ( 2 * fabs(i1 - i2) <= (fabs(i1) + fabs(i2)) * ftol ) || fabs(i1 - i2) <= abstol );
+    return ((2 * fabs(i1 - i2) <= (fabs(i1) + fabs(i2)) * ftol) || fabs(i1 - i2) <= abstol);
 }
 
 static gmx_bool equal_float(float i1, float i2, float ftol, float abstol)
 {
-    return ( ( 2 * fabs(i1 - i2) <= (fabs(i1) + fabs(i2)) * ftol ) || fabs(i1 - i2) <= abstol );
+    return ((2 * fabs(i1 - i2) <= (fabs(i1) + fabs(i2)) * ftol) || fabs(i1 - i2) <= abstol);
 }
 
 static gmx_bool equal_double(double i1, double i2, real ftol, real abstol)
 {
-    return ( ( 2 * fabs(i1 - i2) <= (fabs(i1) + fabs(i2)) * ftol ) || fabs(i1 - i2) <= abstol );
+    return ((2 * fabs(i1 - i2) <= (fabs(i1) + fabs(i2)) * ftol) || fabs(i1 - i2) <= abstol);
 }
 
 void cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real abstol)

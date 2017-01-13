@@ -129,9 +129,12 @@ private:
 
     struct Value
     {
-        Value() : y(0.0), error(0.0), bError(false) {}
-        explicit Value(real y) : y(y), error(0.0), bError(false) {}
-        Value(real y, real error) : y(y), error(error), bError(true) {}
+        Value()
+            : y(0.0), error(0.0), bError(false) {}
+        explicit Value(real y)
+            : y(y), error(0.0), bError(false) {}
+        Value(real y, real error)
+            : y(y), error(error), bError(true) {}
 
         real y;
         real error;
@@ -374,8 +377,8 @@ public:
      * \see AbstractAnalysisData::addModule()
      */
     static void addStaticParallelCheckerModule(
-        const AnalysisDataTestInput &data,
-        AbstractAnalysisData *       source);
+            const AnalysisDataTestInput &data,
+            AbstractAnalysisData *       source);
     /*! \brief
      * Adds a column mock module that verifies output against
      * AnalysisDataTestInput.

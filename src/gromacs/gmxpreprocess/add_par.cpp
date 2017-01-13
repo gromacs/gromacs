@@ -104,7 +104,7 @@ void add_imp_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c
     ps->param[ps->nr].aj() = aj;
     ps->param[ps->nr].ak() = ak;
     ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
+    clear_atom_list(4, ps->param[ps->nr].a);
     ps->param[ps->nr].c0() = c0;
     ps->param[ps->nr].c1() = c1;
     clear_force_param(2, ps->param[ps->nr].c);
@@ -120,7 +120,7 @@ void add_dih_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c
     ps->param[ps->nr].aj() = aj;
     ps->param[ps->nr].ak() = ak;
     ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
+    clear_atom_list(4, ps->param[ps->nr].a);
     ps->param[ps->nr].c0() = c0;
     ps->param[ps->nr].c1() = c1;
     ps->param[ps->nr].c2() = c2;
@@ -149,7 +149,7 @@ void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak)
     ps->param[ps->nr].ai() = ai;
     ps->param[ps->nr].aj() = aj;
     ps->param[ps->nr].ak() = ak;
-    clear_atom_list  (3, ps->param[ps->nr].a);
+    clear_atom_list(3, ps->param[ps->nr].a);
     clear_force_param(0, ps->param[ps->nr].c);
     set_p_string(&(ps->param[ps->nr]), "");
     ps->nr++;
@@ -161,7 +161,7 @@ void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0)
     ps->param[ps->nr].ai() = ai;
     ps->param[ps->nr].aj() = aj;
     ps->param[ps->nr].ak() = ak;
-    clear_atom_list  (3, ps->param[ps->nr].a);
+    clear_atom_list(3, ps->param[ps->nr].a);
     ps->param[ps->nr].c0() = c0;
     clear_force_param(1, ps->param[ps->nr].c);
     set_p_string(&(ps->param[ps->nr]), "");
@@ -176,7 +176,7 @@ void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
     ps->param[ps->nr].aj() = aj;
     ps->param[ps->nr].ak() = ak;
     ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
+    clear_atom_list(4, ps->param[ps->nr].a);
     ps->param[ps->nr].c0() = c0;
     ps->param[ps->nr].c1() = c1;
     clear_force_param(2, ps->param[ps->nr].c);
@@ -191,7 +191,7 @@ void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al, gmx_bool bSw
     ps->param[ps->nr].aj() = aj;
     ps->param[ps->nr].ak() = ak;
     ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
+    clear_atom_list(4, ps->param[ps->nr].a);
     clear_force_param(0, ps->param[ps->nr].c);
     if (bSwapParity)
     {
@@ -209,7 +209,7 @@ void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, int am)
     ps->param[ps->nr].ak() = ak;
     ps->param[ps->nr].al() = al;
     ps->param[ps->nr].am() = am;
-    clear_atom_list  (5, ps->param[ps->nr].a);
+    clear_atom_list(5, ps->param[ps->nr].a);
     clear_force_param(0, ps->param[ps->nr].c);
     set_p_string(&(ps->param[ps->nr]), "");
     ps->nr++;
@@ -226,8 +226,8 @@ int search_jtype(t_restp *rtp, char *name, gmx_bool bNterm)
     /* Do a best match comparison */
     /* for protein N-terminus, allow renaming of H1, H2 and H3 to H */
     if (bNterm && (strlen(searchname) == 2) && (searchname[0] == 'H')
-        && ( (searchname[1] == '1') || (searchname[1] == '2')
-             || (searchname[1] == '3') ) )
+        && ((searchname[1] == '1') || (searchname[1] == '2')
+            || (searchname[1] == '3')))
     {
         niter = 2;
     }
@@ -278,7 +278,8 @@ int search_jtype(t_restp *rtp, char *name, gmx_bool bNterm)
     }
     if (kmax != strlen(searchname))
     {
-        gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s, "
+        gmx_fatal(FARGS,
+                  "Atom %s not found in rtp database in residue %s, "
                   "it looks a bit like %s",
                   searchname, rtp->resname, *(rtp->atomname[jmax]));
     }

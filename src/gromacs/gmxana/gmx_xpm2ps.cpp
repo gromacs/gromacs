@@ -60,7 +60,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #define FUDGE 1.2
-#define DDD   2
+#define DDD 2
 
 typedef struct
 {
@@ -105,13 +105,24 @@ typedef struct
 /* MUST correspond to char *legend[] in main() */
 enum
 {
-    elSel, elBoth, elFirst, elSecond, elNone, elNR
+    elSel,
+    elBoth,
+    elFirst,
+    elSecond,
+    elNone,
+    elNR
 };
 
 /* MUST correspond to char *combine[] in main() */
 enum
 {
-    ecSel, ecHalves, ecAdd, ecSub, ecMult, ecDiv, ecNR
+    ecSel,
+    ecHalves,
+    ecAdd,
+    ecSub,
+    ecMult,
+    ecDiv,
+    ecNR
 };
 
 void get_params(const char *mpin, const char *mpout, t_psrec *psr)
@@ -134,47 +145,47 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
     {
         inp = nullptr;
     }
-    ETYPE("black&white",    psr->bw,             gmx_bools);
-    RTYPE("linewidth",      psr->linewidth,      1.0);
-    STYPE("titlefont",      psr->titfont,        "Helvetica");
-    RTYPE("titlefontsize",  psr->titfontsize,    20.0);
-    ETYPE("legend",         psr->legend,         gmx_bools);
-    STYPE("legendfont",     psr->legfont,        psr->titfont);
-    STYPE("legendlabel",    psr->leglabel,       "");
-    STYPE("legend2label",   psr->leg2label,      psr->leglabel);
-    RTYPE("legendfontsize", psr->legfontsize,    14.0);
-    RTYPE("xbox",           psr->xboxsize,       0.0);
-    RTYPE("ybox",           psr->yboxsize,       0.0);
-    RTYPE("matrixspacing",  psr->boxspacing,     20.0);
-    RTYPE("xoffset",        psr->xoffs,          0.0);
-    RTYPE("yoffset",        psr->yoffs,          psr->xoffs);
-    RTYPE("boxlinewidth",   psr->boxlinewidth,   psr->linewidth);
-    RTYPE("ticklinewidth",  psr->ticklinewidth,  psr->linewidth);
-    RTYPE("zerolinewidth",  psr->zerolinewidth,  psr->ticklinewidth);
-    ETYPE("x-lineat0value", psr->X.lineatzero,   colors);
-    RTYPE("x-major",        psr->X.major,        1);
-    RTYPE("x-minor",        psr->X.minor,        1);
-    RTYPE("x-firstmajor",   psr->X.offset,       0.0);
-    ETYPE("x-majorat0",     psr->X.first,        gmx_bools);
+    ETYPE("black&white", psr->bw, gmx_bools);
+    RTYPE("linewidth", psr->linewidth, 1.0);
+    STYPE("titlefont", psr->titfont, "Helvetica");
+    RTYPE("titlefontsize", psr->titfontsize, 20.0);
+    ETYPE("legend", psr->legend, gmx_bools);
+    STYPE("legendfont", psr->legfont, psr->titfont);
+    STYPE("legendlabel", psr->leglabel, "");
+    STYPE("legend2label", psr->leg2label, psr->leglabel);
+    RTYPE("legendfontsize", psr->legfontsize, 14.0);
+    RTYPE("xbox", psr->xboxsize, 0.0);
+    RTYPE("ybox", psr->yboxsize, 0.0);
+    RTYPE("matrixspacing", psr->boxspacing, 20.0);
+    RTYPE("xoffset", psr->xoffs, 0.0);
+    RTYPE("yoffset", psr->yoffs, psr->xoffs);
+    RTYPE("boxlinewidth", psr->boxlinewidth, psr->linewidth);
+    RTYPE("ticklinewidth", psr->ticklinewidth, psr->linewidth);
+    RTYPE("zerolinewidth", psr->zerolinewidth, psr->ticklinewidth);
+    ETYPE("x-lineat0value", psr->X.lineatzero, colors);
+    RTYPE("x-major", psr->X.major, 1);
+    RTYPE("x-minor", psr->X.minor, 1);
+    RTYPE("x-firstmajor", psr->X.offset, 0.0);
+    ETYPE("x-majorat0", psr->X.first, gmx_bools);
     RTYPE("x-majorticklen", psr->X.majorticklen, 8.0);
     RTYPE("x-minorticklen", psr->X.minorticklen, 4.0);
-    STYPE("x-label",        psr->X.label,        "");
-    RTYPE("x-fontsize",     psr->X.fontsize,     16.0);
-    STYPE("x-font",         psr->X.font,         psr->titfont);
+    STYPE("x-label", psr->X.label, "");
+    RTYPE("x-fontsize", psr->X.fontsize, 16.0);
+    STYPE("x-font", psr->X.font, psr->titfont);
     RTYPE("x-tickfontsize", psr->X.tickfontsize, 10.0);
-    STYPE("x-tickfont",     psr->X.tickfont,     psr->X.font);
-    ETYPE("y-lineat0value", psr->Y.lineatzero,   colors);
-    RTYPE("y-major",        psr->Y.major,        psr->X.major);
-    RTYPE("y-minor",        psr->Y.minor,        psr->X.minor);
-    RTYPE("y-firstmajor",   psr->Y.offset,       psr->X.offset);
-    ETYPE("y-majorat0",     psr->Y.first,        gmx_bools);
+    STYPE("x-tickfont", psr->X.tickfont, psr->X.font);
+    ETYPE("y-lineat0value", psr->Y.lineatzero, colors);
+    RTYPE("y-major", psr->Y.major, psr->X.major);
+    RTYPE("y-minor", psr->Y.minor, psr->X.minor);
+    RTYPE("y-firstmajor", psr->Y.offset, psr->X.offset);
+    ETYPE("y-majorat0", psr->Y.first, gmx_bools);
     RTYPE("y-majorticklen", psr->Y.majorticklen, psr->X.majorticklen);
     RTYPE("y-minorticklen", psr->Y.minorticklen, psr->X.minorticklen);
-    STYPE("y-label",        psr->Y.label,        psr->X.label);
-    RTYPE("y-fontsize",     psr->Y.fontsize,     psr->X.fontsize);
-    STYPE("y-font",         psr->Y.font,         psr->X.font);
+    STYPE("y-label", psr->Y.label, psr->X.label);
+    RTYPE("y-fontsize", psr->Y.fontsize, psr->X.fontsize);
+    STYPE("y-font", psr->Y.font, psr->X.font);
     RTYPE("y-tickfontsize", psr->Y.tickfontsize, psr->X.tickfontsize);
-    STYPE("y-tickfont",     psr->Y.tickfont,     psr->Y.font);
+    STYPE("y-tickfont", psr->Y.tickfont, psr->Y.font);
 
     check_warning_error(wi, FARGS);
 
@@ -188,8 +199,8 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
 t_rgb black = { 0, 0, 0 };
 t_rgb white = { 1, 1, 1 };
-t_rgb red = { 1, 0, 0 };
-t_rgb blue = { 0, 0, 1 };
+t_rgb red   = { 1, 0, 0 };
+t_rgb blue  = { 0, 0, 1 };
 #define BLACK (&black)
 /* this must correspond to *colors[] in get_params */
 t_rgb *linecolors[] = { nullptr, &black, &white, nullptr };
@@ -303,7 +314,8 @@ void leg_continuous(t_psdata ps, real x0, real x, real y0, char *label,
         ps_ctext(ps, x0, yhh, label, eXCenter);
     }
     ps_ctext(ps, xx0 + ((nmap - mapoffset) * boxxh)
-             - boxxh / 2, yhh, map[nmap - 1].desc, eXCenter);
+                         - boxxh / 2,
+             yhh, map[nmap - 1].desc, eXCenter);
 }
 
 void leg_bicontinuous(t_psdata ps, real x0, real x, real y0, char *label1,
@@ -337,7 +349,7 @@ static real box_dh_top(gmx_bool bOnce, t_psrec *psr)
 {
     real dh;
 
-    if (psr->bTitle || (psr->bTitleOnce && bOnce) )
+    if (psr->bTitle || (psr->bTitleOnce && bOnce))
     {
         dh = 2 * psr->titfontsize;
     }
@@ -420,12 +432,12 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
         for (x = 0; (x < ntx); x++)
         {
             xx = xx00 + (x + offset_x) * psr->xboxsize;
-            if ( ( bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major)
-                   || (psr->X.first && (x == 0)))
-                 && ( (i == 0) || box_do_all_x_maj_ticks(psr) ) )
+            if ((bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major)
+                 || (psr->X.first && (x == 0)))
+                && ((i == 0) || box_do_all_x_maj_ticks(psr)))
             {
                 /* Longer tick marks */
-                ps_line (ps, xx, yy00, xx, yy00 - psr->X.majorticklen);
+                ps_line(ps, xx, yy00, xx, yy00 - psr->X.majorticklen);
                 /* Plot label on lowest graph only */
                 if (i == 0)
                 {
@@ -435,12 +447,12 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
                 }
             }
             else if (bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.minor)
-                     && ( (i == 0) || box_do_all_x_min_ticks(psr) ) )
+                     && ((i == 0) || box_do_all_x_min_ticks(psr)))
             {
                 /* Shorter tick marks */
                 ps_line(ps, xx, yy00, xx, yy00 - psr->X.minorticklen);
             }
-            else if (bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major) )
+            else if (bRmod(mat[i].axis_x[x], psr->X.offset, psr->X.major))
             {
                 /* Even shorter marks, only each X.major */
                 ps_line(ps, xx, yy00, xx, yy00 - (psr->boxspacing / 2));
@@ -462,11 +474,11 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
             {
                 /* Major ticks */
                 strlength = std::max(strlength, std::strlen(ytick[y]));
-                ps_line (ps, xx00, yy, xx00 - psr->Y.majorticklen, yy);
+                ps_line(ps, xx00, yy, xx00 - psr->Y.majorticklen, yy);
                 ps_ctext(ps, xx00 - psr->Y.majorticklen - DDD,
                          yy - psr->Y.tickfontsize / 3.0, ytick[y], eXRight);
             }
-            else if (bRmod(mat[i].axis_y[y], psr->Y.offset, psr->Y.minor) )
+            else if (bRmod(mat[i].axis_y[y], psr->Y.offset, psr->Y.minor))
             {
                 /* Minor ticks */
                 ps_line(ps, xx00, yy, xx00 - psr->Y.minorticklen, yy);
@@ -512,7 +524,8 @@ static void draw_boxes(t_psdata ps, real x0, real y0, real w,
     {
         ps_strfont(ps, psr->X.font, psr->X.fontsize);
         ps_ctext(ps, x0 + w / 2, y0 - DDD - psr->X.majorticklen - psr->X.tickfontsize * FUDGE
-                 - psr->X.fontsize, mylab, eXCenter);
+                                         - psr->X.fontsize,
+                 mylab, eXCenter);
     }
 }
 
@@ -538,9 +551,9 @@ static void draw_zerolines(t_psdata out, real x0, real y0, real w,
                 /* draw lines whenever tick label almost zero (e.g. next trajectory) */
                 if (x != 0 && x < mat[i].nx - 1
                     && std::abs(mat[i].axis_x[x])
-                    < 0.1 * std::abs(mat[i].axis_x[x + 1] - mat[i].axis_x[x]) )
+                               < 0.1 * std::abs(mat[i].axis_x[x + 1] - mat[i].axis_x[x]))
                 {
-                    ps_line (out, xx, yy00, xx, yy00 + dy + 2);
+                    ps_line(out, xx, yy00, xx, yy00 + dy + 2);
                 }
             }
         }
@@ -553,9 +566,9 @@ static void draw_zerolines(t_psdata out, real x0, real y0, real w,
                 /* draw lines whenever tick label almost zero (e.g. next trajectory) */
                 if (y != 0 && y < mat[i].ny - 1
                     && std::abs(mat[i].axis_y[y])
-                    < 0.1 * std::abs(mat[i].axis_y[y + 1] - mat[i].axis_y[y]) )
+                               < 0.1 * std::abs(mat[i].axis_y[y + 1] - mat[i].axis_y[y]))
                 {
-                    ps_line (out, xx00, yy, xx00 + w + 2, yy);
+                    ps_line(out, xx00, yy, xx00 + w + 2, yy);
                 }
             }
         }
@@ -570,14 +583,14 @@ static void box_dim(int nmat, t_matrix mat[], t_matrix *mat2, t_psrec *psr,
     int  i, maxytick;
     real ww, hh, dww, dhh;
 
-    hh       = dww = dhh = 0;
-    maxytick = 0;
+    hh = dww = dhh = 0;
+    maxytick       = 0;
 
     ww = 0;
     for (i = 0; (i < nmat); i++)
     {
-        ww       = std::max(ww, mat[i].nx * psr->xboxsize);
-        hh      += box_height(&(mat[i]), psr);
+        ww = std::max(ww, mat[i].nx * psr->xboxsize);
+        hh += box_height(&(mat[i]), psr);
         maxytick = std::max(maxytick, mat[i].nx);
     }
     if (bFrame)
@@ -589,7 +602,7 @@ static void box_dim(int nmat, t_matrix mat[], t_matrix *mat2, t_psrec *psr,
         if (psr->Y.major > 0)
         {
             dww += psr->Y.majorticklen + DDD
-                + psr->Y.tickfontsize * (std::log(static_cast<real>(maxytick)) / std::log(10.0));
+                   + psr->Y.tickfontsize * (std::log(static_cast<real>(maxytick)) / std::log(10.0));
         }
         else if (psr->Y.minor > 0)
         {
@@ -600,10 +613,10 @@ static void box_dim(int nmat, t_matrix mat[], t_matrix *mat2, t_psrec *psr,
         {
             dhh += psr->X.fontsize + 2 * DDD;
         }
-        if ( /* fool emacs auto-indent */
+        if (/* fool emacs auto-indent */
             (elegend == elBoth && (mat[0].legend[0] || (mat2 && mat2[0].legend[0])))
             || (elegend == elFirst && mat[0].legend[0])
-            || (elegend == elSecond && (mat2 && mat2[0].legend[0])) )
+            || (elegend == elSecond && (mat2 && mat2[0].legend[0])))
         {
             dhh += 2 * (psr->legfontsize * FUDGE + 2 * DDD);
         }
@@ -745,8 +758,8 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
     gmx_bool bTryAgain;
     int      i, j, t, f = 0, ten;
 #define NFACT 4
-    real major_fact[NFACT] = {5, 4, 2, 1};
-    real minor_fact[NFACT] = {5, 4, 4, 5};
+    real major_fact[NFACT] = { 5, 4, 2, 1 };
+    real minor_fact[NFACT] = { 5, 4, 4, 5 };
 
     /* start with interval between 10 matrix points: */
     space = std::max(10 * axis[1] - axis[0], axis[std::min(10, n - 1)] - axis[0]);
@@ -762,7 +775,7 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
             i = 0;
             for (j = 0; j < n; j++)
             {
-                if (bRmod(axis[j], offset, space) )
+                if (bRmod(axis[j], offset, space))
                 {
                     i++;
                 }
@@ -798,7 +811,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
     real        x0, y0, xx;
     real        w, h, dw, dh;
     int         nmap1 = 0, nmap2 = 0, leg_nmap;
-    t_mapping * map1  = nullptr, *map2 = nullptr, *leg_map;
+    t_mapping * map1 = nullptr, *map2 = nullptr, *leg_map;
     gmx_bool    bMap1, bNextMap1, bDiscrete;
 
     /* memory leak: */
@@ -811,7 +824,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
     {
         tick_spacing((mat[0].flags & MAT_SPATIAL_X) ? mat[0].nx + 1 : mat[0].nx,
                      mat[0].axis_x, psr->X.offset, 'X',
-                     &(psr->X.major), &(psr->X.minor) );
+                     &(psr->X.major), &(psr->X.minor));
     }
     if (psr->X.minor <= 0)
     {
@@ -821,7 +834,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
     {
         tick_spacing((mat[0].flags & MAT_SPATIAL_Y) ? mat[0].ny + 1 : mat[0].ny,
                      mat[0].axis_y, psr->Y.offset, 'Y',
-                     &(psr->Y.major), &(psr->Y.minor) );
+                     &(psr->Y.major), &(psr->Y.minor));
     }
     if (psr->Y.minor <= 0)
     {
@@ -880,12 +893,12 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
             printf("Selected legend of matrix # %d for second display\n", leg);
         }
     }
-    if ( (mat[0].legend[0] == 0) && psr->legend)
+    if ((mat[0].legend[0] == 0) && psr->legend)
     {
         std::strcpy(mat[0].legend, psr->leglabel);
     }
 
-    bTitle          = bTitle     && mat[nmat - 1].title[0];
+    bTitle          = bTitle && mat[nmat - 1].title[0];
     bTitleOnce      = bTitleOnce && mat[nmat - 1].title[0];
     psr->bTitle     = bTitle;
     psr->bTitleOnce = bTitleOnce;
@@ -922,7 +935,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
 
     for (i = 0; (i < nmat); i++)
     {
-        if (bTitle || (bTitleOnce && i == nmat - 1) )
+        if (bTitle || (bTitleOnce && i == nmat - 1))
         {
             /* Print title, if any */
             ps_rgb(out, BLACK);
@@ -970,7 +983,7 @@ void ps_mat(const char *outf, int nmat, t_matrix mat[], t_matrix mat2[],
                 {
                     nextcol = mat[i].matrix[x][nexty];
                 }
-                if ( (nexty == mat[i].ny) || (col != nextcol) || (bMap1 != bNextMap1) )
+                if ((nexty == mat[i].ny) || (col != nextcol) || (bMap1 != bNextMap1))
                 {
                     if (col >= 0)
                     {
@@ -1186,17 +1199,20 @@ void write_combined_matrix(int ecombine, const char *fn,
     {
         if (mat2[k].nx != mat1[k].nx || mat2[k].ny != mat1[k].ny)
         {
-            gmx_fatal(FARGS, "Size of frame %d in 1st (%dx%d) and 2nd matrix (%dx%d) do"
-                      " not match.\n", k, mat1[k].nx, mat1[k].ny, mat2[k].nx, mat2[k].ny);
+            gmx_fatal(FARGS,
+                      "Size of frame %d in 1st (%dx%d) and 2nd matrix (%dx%d) do"
+                      " not match.\n",
+                      k, mat1[k].nx, mat1[k].ny, mat2[k].nx, mat2[k].ny);
         }
         printf("Combining two %dx%d matrices\n", mat1[k].nx, mat1[k].ny);
         rmat1 = matrix2real(&mat1[k], nullptr);
         rmat2 = matrix2real(&mat2[k], nullptr);
         if (nullptr == rmat1 || nullptr == rmat2)
         {
-            gmx_fatal(FARGS, "Could not extract real data from %s xpm matrices. Note that, e.g.,\n"
+            gmx_fatal(FARGS,
+                      "Could not extract real data from %s xpm matrices. Note that, e.g.,\n"
                       "g_rms and g_mdmat provide such data, but not do_dssp.\n",
-                      (nullptr == rmat1 && nullptr == rmat2) ? "both" : "one of the" );
+                      (nullptr == rmat1 && nullptr == rmat2) ? "both" : "one of the");
         }
         rlo = 1e38;
         rhi = -1e38;
@@ -1206,10 +1222,18 @@ void write_combined_matrix(int ecombine, const char *fn,
             {
                 switch (ecombine)
                 {
-                    case ecAdd:  rmat1[i][j] += rmat2[i][j]; break;
-                    case ecSub:  rmat1[i][j] -= rmat2[i][j]; break;
-                    case ecMult: rmat1[i][j] *= rmat2[i][j]; break;
-                    case ecDiv:  rmat1[i][j] /= rmat2[i][j]; break;
+                    case ecAdd:
+                        rmat1[i][j] += rmat2[i][j];
+                        break;
+                    case ecSub:
+                        rmat1[i][j] -= rmat2[i][j];
+                        break;
+                    case ecMult:
+                        rmat1[i][j] *= rmat2[i][j];
+                        break;
+                    case ecDiv:
+                        rmat1[i][j] /= rmat2[i][j];
+                        break;
                     default:
                         gmx_fatal(FARGS, "No such combination rule %d for matrices", ecombine);
                 }
@@ -1442,64 +1466,69 @@ int gmx_xpm2ps(int argc, char *argv[])
     t_matrix *        mat = nullptr, *mat2 = nullptr;
     gmx_bool          bTitle, bTitleOnce, bDiag, bFirstDiag, bGrad;
     static gmx_bool   bFrame = TRUE, bZeroLine = FALSE, bYonce = FALSE;
-    static real       size   = 400, boxx = 0, boxy = 0, cmin = 0, cmax = 0;
-    static rvec       grad   = {0, 0, 0};
+    static real       size = 400, boxx = 0, boxy = 0, cmin = 0, cmax = 0;
+    static rvec       grad = { 0, 0, 0 };
     enum
     {
-        etSel, etTop, etOnce, etYlabel, etNone, etNR
+        etSel,
+        etTop,
+        etOnce,
+        etYlabel,
+        etNone,
+        etNR
     };
     const char *title[] = { nullptr, "top", "once", "ylabel", "none", nullptr };
     /* MUST correspond to enum elXxx as defined at top of file */
     const char *legend[] = { nullptr, "both", "first", "second", "none", nullptr };
     enum
     {
-        edSel, edFirst, edSecond, edNone, edNR
+        edSel,
+        edFirst,
+        edSecond,
+        edNone,
+        edNR
     };
     const char *diag[] = { nullptr, "first", "second", "none", nullptr };
     enum
     {
-        erSel, erNo, erBlue, erRed, erNR
+        erSel,
+        erNo,
+        erBlue,
+        erRed,
+        erNR
     };
     const char *rainbow[] = { nullptr, "no", "blue", "red", nullptr };
     /* MUST correspond to enum ecXxx as defined at top of file */
     const char *combine[] = {
         nullptr, "halves", "add", "sub", "mult", "div", nullptr
     };
-    static int  skip = 1, mapoffset = 0;
-    t_pargs     pa[] = {
-        { "-frame",   FALSE, etBOOL, {&bFrame},
-          "Display frame, ticks, labels, title and legend" },
-        { "-title",   FALSE, etENUM, {title},   "Show title at" },
-        { "-yonce",   FALSE, etBOOL, {&bYonce}, "Show y-label only once" },
-        { "-legend",  FALSE, etENUM, {legend},  "Show legend" },
-        { "-diag",    FALSE, etENUM, {diag},    "Diagonal" },
-        { "-size",    FALSE, etREAL, {&size},
-          "Horizontal size of the matrix in ps units" },
-        { "-bx",      FALSE, etREAL, {&boxx},
-          "Element x-size, overrides [TT]-size[tt] (also y-size when [TT]-by[tt] is not set)" },
-        { "-by",      FALSE, etREAL, {&boxy},   "Element y-size" },
-        { "-rainbow", FALSE, etENUM, {rainbow},
-          "Rainbow colors, convert white to" },
-        { "-gradient", FALSE, etRVEC, {grad},
-          "Re-scale colormap to a smooth gradient from white {1,1,1} to {r,g,b}" },
-        { "-skip",    FALSE, etINT,  {&skip},
-          "only write out every nr-th row and column" },
-        { "-zeroline", FALSE, etBOOL, {&bZeroLine},
-          "insert line in [REF].xpm[ref] matrix where axis label is zero"},
-        { "-legoffset", FALSE, etINT, {&mapoffset},
-          "Skip first N colors from [REF].xpm[ref] file for the legend" },
-        { "-combine", FALSE, etENUM, {combine}, "Combine two matrices" },
-        { "-cmin",    FALSE, etREAL, {&cmin}, "Minimum for combination output" },
-        { "-cmax",    FALSE, etREAL, {&cmax}, "Maximum for combination output" }
+    static int skip = 1, mapoffset = 0;
+    t_pargs    pa[] = {
+        { "-frame", FALSE, etBOOL, { &bFrame }, "Display frame, ticks, labels, title and legend" },
+        { "-title", FALSE, etENUM, { title }, "Show title at" },
+        { "-yonce", FALSE, etBOOL, { &bYonce }, "Show y-label only once" },
+        { "-legend", FALSE, etENUM, { legend }, "Show legend" },
+        { "-diag", FALSE, etENUM, { diag }, "Diagonal" },
+        { "-size", FALSE, etREAL, { &size }, "Horizontal size of the matrix in ps units" },
+        { "-bx", FALSE, etREAL, { &boxx }, "Element x-size, overrides [TT]-size[tt] (also y-size when [TT]-by[tt] is not set)" },
+        { "-by", FALSE, etREAL, { &boxy }, "Element y-size" },
+        { "-rainbow", FALSE, etENUM, { rainbow }, "Rainbow colors, convert white to" },
+        { "-gradient", FALSE, etRVEC, { grad }, "Re-scale colormap to a smooth gradient from white {1,1,1} to {r,g,b}" },
+        { "-skip", FALSE, etINT, { &skip }, "only write out every nr-th row and column" },
+        { "-zeroline", FALSE, etBOOL, { &bZeroLine }, "insert line in [REF].xpm[ref] matrix where axis label is zero" },
+        { "-legoffset", FALSE, etINT, { &mapoffset }, "Skip first N colors from [REF].xpm[ref] file for the legend" },
+        { "-combine", FALSE, etENUM, { combine }, "Combine two matrices" },
+        { "-cmin", FALSE, etREAL, { &cmin }, "Minimum for combination output" },
+        { "-cmax", FALSE, etREAL, { &cmax }, "Maximum for combination output" }
     };
 #define NPA asize(pa)
     t_filenm fnm[] = {
-        { efXPM, "-f",  nullptr,      ffREAD },
-        { efXPM, "-f2", "root2",   ffOPTRD },
-        { efM2P, "-di", nullptr,      ffLIBOPTRD },
-        { efM2P, "-do", "out",     ffOPTWR },
-        { efEPS, "-o",  nullptr,      ffOPTWR },
-        { efXPM, "-xpm", nullptr,      ffOPTWR }
+        { efXPM, "-f", nullptr, ffREAD },
+        { efXPM, "-f2", "root2", ffOPTRD },
+        { efM2P, "-di", nullptr, ffLIBOPTRD },
+        { efM2P, "-do", "out", ffOPTWR },
+        { efEPS, "-o", nullptr, ffOPTWR },
+        { efXPM, "-xpm", nullptr, ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -1547,7 +1576,8 @@ int gmx_xpm2ps(int argc, char *argv[])
         fprintf(stderr,
                 "WARNING: can only write result of arithmetic combination "
                 "of two matrices to .xpm file\n"
-                "         file %s will not be written\n", epsfile);
+                "         file %s will not be written\n",
+                epsfile);
         epsfile = nullptr;
     }
 

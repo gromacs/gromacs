@@ -58,11 +58,12 @@ namespace test
 void organizeMdpFile(SimulationRunner *runner)
 {
     // Make sure -maxh has a chance to propagate
-    runner->useStringAsMdpFile("nsteps = 100\n"
-                               "tcoupl = v-rescale\n"
-                               "tc-grps = System\n"
-                               "tau-t = 1\n"
-                               "ref-t = 298\n");
+    runner->useStringAsMdpFile(
+            "nsteps = 100\n"
+            "tcoupl = v-rescale\n"
+            "tc-grps = System\n"
+            "tau-t = 1\n"
+            "ref-t = 298\n");
 }
 
 //! Convenience typedef

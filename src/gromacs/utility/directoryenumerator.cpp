@@ -103,8 +103,8 @@ public:
             {
                 const int         code = errno;
                 const std::string message
-                    = formatString("Failed to list files in directory '%s'",
-                                   dirname);
+                        = formatString("Failed to list files in directory '%s'",
+                                       dirname);
                 GMX_THROW_WITH_ERRNO(FileIOError(message), "_findfirst", code);
             }
             return NULL;
@@ -161,7 +161,7 @@ class DirectoryEnumerator::Impl
 public:
     static Impl *init(const char *dirname, bool bThrow)
     {
-        errno = 0;
+        errno       = 0;
         DIR *handle = opendir(dirname);
         if (handle == nullptr)
         {
@@ -169,15 +169,16 @@ public:
             {
                 const int         code = errno;
                 const std::string message
-                    = formatString("Failed to list files in directory '%s'",
-                                   dirname);
+                        = formatString("Failed to list files in directory '%s'",
+                                       dirname);
                 GMX_THROW_WITH_ERRNO(FileIOError(message), "opendir", code);
             }
             return nullptr;
         }
         return new Impl(handle);
     }
-    explicit Impl(DIR *handle) : dirent_handle(handle) {}
+    explicit Impl(DIR *handle)
+        : dirent_handle(handle) {}
     ~Impl()
     {
         closedir(dirent_handle);
@@ -185,7 +186,7 @@ public:
 
     bool nextFile(std::string *filename)
     {
-        errno = 0;
+        errno     = 0;
         dirent *p = readdir(dirent_handle);
         if (p == nullptr)
         {

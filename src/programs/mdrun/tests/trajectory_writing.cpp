@@ -58,9 +58,8 @@ namespace
 #ifdef GMX_USE_TNG
 
 //! Test fixture for mdrun trajectory writing
-class TrajectoryWritingTest :
-    public gmx::test::MdrunTestFixture,
-    public ::testing::WithParamInterface<const char *>
+class TrajectoryWritingTest : public gmx::test::MdrunTestFixture,
+                              public ::testing::WithParamInterface<const char *>
 {
 public:
     //! The file name of the MDP file
@@ -92,18 +91,19 @@ typedef TrajectoryWritingTest Trajectories;
    frequencies */
 TEST_P(Trajectories, ThatDifferInNstxout)
 {
-    theMdpFile = gmx::formatString("integrator = md\n"
-                                   "nsteps = 6\n"
-                                   "nstxout = %s\n"
-                                   "nstvout = 2\n"
-                                   "nstfout = 4\n"
-                                   "nstxout-compressed = 5\n"
-                                   "tcoupl = v-rescale\n"
-                                   "tc-grps = System\n"
-                                   "tau-t = 1\n"
-                                   "ref-t = 298\n"
-                                   "compressed-x-grps = Sol\n",
-                                   GetParam());
+    theMdpFile = gmx::formatString(
+            "integrator = md\n"
+            "nsteps = 6\n"
+            "nstxout = %s\n"
+            "nstvout = 2\n"
+            "nstfout = 4\n"
+            "nstxout-compressed = 5\n"
+            "tcoupl = v-rescale\n"
+            "tc-grps = System\n"
+            "tau-t = 1\n"
+            "ref-t = 298\n"
+            "compressed-x-grps = Sol\n",
+            GetParam());
     runTest();
 }
 
@@ -113,19 +113,20 @@ typedef TrajectoryWritingTest NptTrajectories;
 /* This test ensures mdrun can write trajectories in TNG format from NPT ensembles. */
 TEST_P(NptTrajectories, WithDifferentPcoupl)
 {
-    theMdpFile = gmx::formatString("integrator = md\n"
-                                   "nsteps = 2\n"
-                                   "nstxout = 2\n"
-                                   "nstvout = 1\n"
-                                   "pcoupl = %s\n"
-                                   "tau-p = 1\n"
-                                   "ref-p = 1\n"
-                                   "compressibility = 4.5e-5\n"
-                                   "tcoupl = v-rescale\n"
-                                   "tc-grps = System\n"
-                                   "tau-t = 1\n"
-                                   "ref-t = 298\n",
-                                   GetParam());
+    theMdpFile = gmx::formatString(
+            "integrator = md\n"
+            "nsteps = 2\n"
+            "nstxout = 2\n"
+            "nstvout = 1\n"
+            "pcoupl = %s\n"
+            "tau-p = 1\n"
+            "ref-p = 1\n"
+            "compressibility = 4.5e-5\n"
+            "tcoupl = v-rescale\n"
+            "tc-grps = System\n"
+            "tau-t = 1\n"
+            "ref-t = 298\n",
+            GetParam());
     runTest();
 }
 
@@ -133,11 +134,11 @@ TEST_P(NptTrajectories, WithDifferentPcoupl)
 // have to write .mdp and .tpr files to do it.
 INSTANTIATE_TEST_CASE_P(MdrunCanWrite,
                         Trajectories,
-                            ::testing::Values("1", "2", "3"));
+                        ::testing::Values("1", "2", "3"));
 
 INSTANTIATE_TEST_CASE_P(MdrunCanWrite,
                         NptTrajectories,
-                            ::testing::Values("no", "Berendsen", "Parrinello-Rahman"));
+                        ::testing::Values("no", "Berendsen", "Parrinello-Rahman"));
 
 #endif
 

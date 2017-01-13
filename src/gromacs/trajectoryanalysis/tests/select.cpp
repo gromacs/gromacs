@@ -70,7 +70,7 @@ using gmx::test::ExactTextMatch;
 
 //! Test fixture for the select analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::SelectInfo>
-    SelectModuleTest;
+        SelectModuleTest;
 
 TEST_F(SelectModuleTest, BasicTest)
 {

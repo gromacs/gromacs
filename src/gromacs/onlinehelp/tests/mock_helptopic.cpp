@@ -75,7 +75,7 @@ MockHelpTopic::MockHelpTopic(const char *name, const char *title, const char *te
         using ::testing::_;
         using ::testing::Invoke;
         ON_CALL(*this, writeHelp(_))
-            .WillByDefault(Invoke(this, &MockHelpTopic::writeHelpBase));
+                .WillByDefault(Invoke(this, &MockHelpTopic::writeHelpBase));
     }
 }
 

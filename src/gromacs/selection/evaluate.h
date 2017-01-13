@@ -78,20 +78,17 @@ struct gmx_sel_evaluate_t
  */
 /*@{*/
 /** Initializes an evaluation data structure. */
-void
-_gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
-                       gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
-                       const gmx_mtop_t *top, t_trxframe *fr, t_pbc *pbc);
+void _gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
+                            gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
+                            const gmx_mtop_t *top, t_trxframe *fr, t_pbc *pbc);
 /** Evaluates the children of a general selection element. */
-void
-_gmx_sel_evaluate_children(gmx_sel_evaluate_t *                    data,
-                           const gmx::SelectionTreeElementPointer &sel,
-                           gmx_ana_index_t *                       g);
-/** Evaluates the children of a \ref SEL_EXPRESSION element. */
-void
-_gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *                    data,
+void _gmx_sel_evaluate_children(gmx_sel_evaluate_t *                    data,
                                 const gmx::SelectionTreeElementPointer &sel,
                                 gmx_ana_index_t *                       g);
+/** Evaluates the children of a \ref SEL_EXPRESSION element. */
+void _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *                    data,
+                                     const gmx::SelectionTreeElementPointer &sel,
+                                     gmx_ana_index_t *                       g);
 /*@}*/
 
 /*! \name Misc. evaluation functions
@@ -114,10 +111,9 @@ _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *                    data,
  * This function can be used as gmx::SelectionTreeElement::evaluate for
  * \ref SEL_ROOT elements.
  */
-void
-_gmx_sel_evaluate_root(gmx_sel_evaluate_t *                    data,
-                       const gmx::SelectionTreeElementPointer &sel,
-                       gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_root(gmx_sel_evaluate_t *                    data,
+                            const gmx::SelectionTreeElementPointer &sel,
+                            gmx_ana_index_t *                       g);
 /*! \brief
  * Evaluates a static group selection element.
  *
@@ -131,45 +127,38 @@ _gmx_sel_evaluate_root(gmx_sel_evaluate_t *                    data,
  * This function can be used as gmx::SelectionTreeElement::evaluate for
  * \ref SEL_CONST elements with value type \ref GROUP_VALUE.
  */
-void
-_gmx_sel_evaluate_static(gmx_sel_evaluate_t *                    data,
-                         const gmx::SelectionTreeElementPointer &sel,
-                         gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_static(gmx_sel_evaluate_t *                    data,
+                              const gmx::SelectionTreeElementPointer &sel,
+                              gmx_ana_index_t *                       g);
 /** Evaluates an arithmetic expression element. */
-void
-_gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *                    data,
-                             const gmx::SelectionTreeElementPointer &sel,
-                             gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *                    data,
+                                  const gmx::SelectionTreeElementPointer &sel,
+                                  gmx_ana_index_t *                       g);
 /*@}*/
 
 /*! \name Subexpression evaluation functions
  */
 /*@{*/
 /** Evaluates a subexpression when there is only one reference. */
-void
-_gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t *                    data,
-                                 const gmx::SelectionTreeElementPointer &sel,
-                                 gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t *                    data,
+                                      const gmx::SelectionTreeElementPointer &sel,
+                                      gmx_ana_index_t *                       g);
 /** Evaluates a subexpression when the evaluation group is static. */
-void
-_gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *                    data,
-                                     const gmx::SelectionTreeElementPointer &sel,
-                                     gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t *                    data,
+                                          const gmx::SelectionTreeElementPointer &sel,
+                                          gmx_ana_index_t *                       g);
 /** Evaluates a subexpression. */
-void
-_gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *                    data,
-                          const gmx::SelectionTreeElementPointer &sel,
-                          gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *                    data,
+                               const gmx::SelectionTreeElementPointer &sel,
+                               gmx_ana_index_t *                       g);
 /** Evaluates a subexpression reference when there are no other references. */
-void
-_gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t *                    data,
-                                    const gmx::SelectionTreeElementPointer &sel,
-                                    gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t *                    data,
+                                         const gmx::SelectionTreeElementPointer &sel,
+                                         gmx_ana_index_t *                       g);
 /** Evaluates a subexpression reference. */
-void
-_gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *                    data,
-                             const gmx::SelectionTreeElementPointer &sel,
-                             gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *                    data,
+                                  const gmx::SelectionTreeElementPointer &sel,
+                                  gmx_ana_index_t *                       g);
 /*@}*/
 
 /*! \name Method evaluation functions
@@ -177,35 +166,30 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *                    data,
 /*@{*/
 
 /** Evaluates a method expression. */
-void
-_gmx_sel_evaluate_method(gmx_sel_evaluate_t *                    data,
-                         const gmx::SelectionTreeElementPointer &sel,
-                         gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_method(gmx_sel_evaluate_t *                    data,
+                              const gmx::SelectionTreeElementPointer &sel,
+                              gmx_ana_index_t *                       g);
 /** Evaluates a modifier expression. */
-void
-_gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *                    data,
-                           const gmx::SelectionTreeElementPointer &sel,
-                           gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *                    data,
+                                const gmx::SelectionTreeElementPointer &sel,
+                                gmx_ana_index_t *                       g);
 /*@}*/
 
 /*! \name Boolean evaluation functions
  */
 /*@{*/
 /** Evaluates a boolean NOT element. */
-void
-_gmx_sel_evaluate_not(gmx_sel_evaluate_t *                    data,
-                      const gmx::SelectionTreeElementPointer &sel,
-                      gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_not(gmx_sel_evaluate_t *                    data,
+                           const gmx::SelectionTreeElementPointer &sel,
+                           gmx_ana_index_t *                       g);
 /** Evaluates a boolean AND element with short-circuiting. */
-void
-_gmx_sel_evaluate_and(gmx_sel_evaluate_t *                    data,
-                      const gmx::SelectionTreeElementPointer &sel,
-                      gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_and(gmx_sel_evaluate_t *                    data,
+                           const gmx::SelectionTreeElementPointer &sel,
+                           gmx_ana_index_t *                       g);
 /** Evaluates a boolean OR element with short-circuiting. */
-void
-_gmx_sel_evaluate_or(gmx_sel_evaluate_t *                    data,
-                     const gmx::SelectionTreeElementPointer &sel,
-                     gmx_ana_index_t *                       g);
+void _gmx_sel_evaluate_or(gmx_sel_evaluate_t *                    data,
+                          const gmx::SelectionTreeElementPointer &sel,
+                          gmx_ana_index_t *                       g);
 /*@}*/
 
 #endif

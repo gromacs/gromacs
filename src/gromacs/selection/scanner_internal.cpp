@@ -129,8 +129,10 @@ static int init_method_token(YYSTYPE *yylval, YYLTYPE *yylloc,
             case REAL_VALUE:
                 state->bMatchOf = true;
                 return KEYWORD_NUMERIC;
-            case STR_VALUE:   return KEYWORD_STR;
-            case GROUP_VALUE: return KEYWORD_GROUP;
+            case STR_VALUE:
+                return KEYWORD_STR;
+            case GROUP_VALUE:
+                return KEYWORD_GROUP;
             default:
                 GMX_THROW(gmx::InternalError("Unsupported keyword type"));
         }
@@ -167,10 +169,14 @@ static int init_method_token(YYSTYPE *yylval, YYLTYPE *yylloc,
         }
         switch (method->type)
         {
-            case INT_VALUE:   return METHOD_NUMERIC;
-            case REAL_VALUE:  return METHOD_NUMERIC;
-            case POS_VALUE:   return METHOD_POS;
-            case GROUP_VALUE: return METHOD_GROUP;
+            case INT_VALUE:
+                return METHOD_NUMERIC;
+            case REAL_VALUE:
+                return METHOD_NUMERIC;
+            case POS_VALUE:
+                return METHOD_POS;
+            case GROUP_VALUE:
+                return METHOD_GROUP;
             default:
                 --state->msp;
                 GMX_THROW(gmx::InternalError("Unsupported method type"));
@@ -205,7 +211,7 @@ int _gmx_sel_lexer_process_pending(YYSTYPE *yylval, YYLTYPE *yylloc,
     if (state->nextMethodSymbol)
     {
         const gmx::SelectionParserSymbol *symbol = state->nextMethodSymbol;
-        state->nextMethodSymbol = nullptr;
+        state->nextMethodSymbol                  = nullptr;
         return init_method_token(yylval, yylloc, symbol, true, state);
     }
     return 0;
@@ -272,7 +278,7 @@ int _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
 
     /* Check if the identifier matches with a symbol */
     const gmx::SelectionParserSymbol *symbol
-        = state->sc->symtab->findSymbol(std::string(yytext, yyleng));
+            = state->sc->symtab->findSymbol(std::string(yytext, yyleng));
     /* If there is no match, return the token as a string */
     if (!symbol)
     {
@@ -291,8 +297,8 @@ int _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
     if (symtype == gmx::SelectionParserSymbol::ReservedSymbol)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString(
-                                             "Mismatch between tokenizer and reserved symbol table (for '%s')",
-                                             symbol->name().c_str())));
+                "Mismatch between tokenizer and reserved symbol table (for '%s')",
+                symbol->name().c_str())));
     }
     /* For variable symbols, return the type of the variable value */
     if (symtype == gmx::SelectionParserSymbol::VariableSymbol)
@@ -318,10 +324,14 @@ int _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, YYLTYPE *yylloc,
         yylval->sel = new gmx::SelectionTreeElementPointer(var);
         switch (var->v.type)
         {
-            case INT_VALUE:   return VARIABLE_NUMERIC;
-            case REAL_VALUE:  return VARIABLE_NUMERIC;
-            case POS_VALUE:   return VARIABLE_POS;
-            case GROUP_VALUE: return VARIABLE_GROUP;
+            case INT_VALUE:
+                return VARIABLE_NUMERIC;
+            case REAL_VALUE:
+                return VARIABLE_NUMERIC;
+            case POS_VALUE:
+                return VARIABLE_POS;
+            case GROUP_VALUE:
+                return VARIABLE_GROUP;
             default:
                 delete yylval->sel;
                 GMX_THROW(gmx::InternalError("Unsupported variable type"));
@@ -423,7 +433,7 @@ void _gmx_sel_lexer_set_exception(yyscan_t                  scanner,
                                   const std::exception_ptr &ex)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
-    state->exception = ex;
+    state->exception       = ex;
 }
 
 void _gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner)
@@ -432,7 +442,7 @@ void _gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner)
     if (state->exception)
     {
         std::exception_ptr ex = state->exception;
-        state->exception = std::exception_ptr();
+        state->exception      = std::exception_ptr();
         std::rethrow_exception(ex);
     }
 }

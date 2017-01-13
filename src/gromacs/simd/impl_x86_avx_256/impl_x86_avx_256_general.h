@@ -46,6 +46,6 @@ static inline void simdPrefetch(void *m)
     _mm_prefetch(reinterpret_cast<const char *>(m), _MM_HINT_T0);
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_256_GENERAL_H

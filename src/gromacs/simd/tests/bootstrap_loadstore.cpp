@@ -82,20 +82,25 @@ namespace
  * real and int are pretty much similar, so we use a template function with
  * additional function pointers for the actual load/store calls.
  */
-template <typename T, typename TSimd, int simdWidth> void loadStoreTester(TSimd gmx_simdcall loadFn(const T * mem), void gmx_simdcall storeFn(T * mem, TSimd),
-                                                                          const int loadOffset, const int storeOffset)
+template <typename T, typename TSimd, int simdWidth>
+void loadStoreTester(TSimd gmx_simdcall loadFn(const T *mem), void gmx_simdcall storeFn(T *mem, TSimd),
+                     const int loadOffset, const int storeOffset)
 {
-    /* We need simdWidth storage in the first place, another simdWidth elements
+/* We need simdWidth storage in the first place, another simdWidth elements
      * so we can create (deliberately) offset un-aligned pointers, and finally
      * simdWidth elements at the beginning and end
      * to test we are not polluting memory there either. Sum=4*simdWidth.
      */
 #if GMX_SIMD4_WIDTH > GMX_SIMD_REAL_WIDTH
-    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      src[simdWidth * 4];
-    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)      dst[simdWidth * 4];
+    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)
+    src[simdWidth * 4];
+    GMX_ALIGNED(T, GMX_SIMD4_WIDTH)
+    dst[simdWidth * 4];
 #else
-    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  src[simdWidth * 4];
-    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)  dst[simdWidth * 4];
+    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)
+    src[simdWidth * 4];
+    GMX_ALIGNED(T, GMX_SIMD_REAL_WIDTH)
+    dst[simdWidth * 4];
 #endif
 
     // Make sure we have memory to check both before and after the test pointers
@@ -105,7 +110,7 @@ template <typename T, typename TSimd, int simdWidth> void loadStoreTester(TSimd 
 
     for (i = 0; i < simdWidth * 4; i++)
     {
-        src[i] =  1 + i;
+        src[i] = 1 + i;
         dst[i] = -1 - i;
     }
 
@@ -132,7 +137,11 @@ template <typename T, typename TSimd, int simdWidth> void loadStoreTester(TSimd 
  * \tparam TSimd  Corresponding SIMD type
  * \param  m      Memory address to load from
  */
-template <typename T, typename TSimd> TSimd gmx_simdcall loadWrapper(const T * m) { return load(m); }
+template <typename T, typename TSimd>
+TSimd gmx_simdcall loadWrapper(const T *m)
+{
+    return load(m);
+}
 
 /*! \brief Wrapper to handle proxy objects returned by some loadU functions.
  *
@@ -140,7 +149,11 @@ template <typename T, typename TSimd> TSimd gmx_simdcall loadWrapper(const T * m
  * \tparam TSimd  Corresponding SIMD type
  * \param  m      Memory address to load from
  */
-template <typename T, typename TSimd> TSimd gmx_simdcall loadUWrapper(const T * m) { return loadU(m); }
+template <typename T, typename TSimd>
+TSimd gmx_simdcall loadUWrapper(const T *m)
+{
+    return loadU(m);
+}
 
 
 #if GMX_SIMD_HAVE_REAL
@@ -149,7 +162,7 @@ TEST(SimdBootstrapTest, loadStore)
     loadStoreTester<real, SimdReal, GMX_SIMD_REAL_WIDTH>(loadWrapper, store, 0, 0);
 }
 
-#    if GMX_SIMD_HAVE_LOADU
+#if GMX_SIMD_HAVE_LOADU
 TEST(SimdBootstrapTest, loadU)
 {
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -157,9 +170,9 @@ TEST(SimdBootstrapTest, loadU)
         loadStoreTester<real, SimdReal, GMX_SIMD_REAL_WIDTH>(loadUWrapper, store, i, 0);
     }
 }
-#    endif  // GMX_SIMD_HAVE_LOADU
+#endif // GMX_SIMD_HAVE_LOADU
 
-#    if GMX_SIMD_HAVE_STOREU
+#if GMX_SIMD_HAVE_STOREU
 TEST(SimdBootstrapTest, storeU)
 {
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -167,7 +180,7 @@ TEST(SimdBootstrapTest, storeU)
         loadStoreTester<real, SimdReal, GMX_SIMD_REAL_WIDTH>(loadWrapper, storeU, 0, i);
     }
 }
-#    endif  // GMX_SIMD_HAVE_STOREU
+#endif // GMX_SIMD_HAVE_STOREU
 
 // Tests for SimdInt32 load & store operations
 TEST(SimdBootstrapTest, loadStoreI)
@@ -175,7 +188,7 @@ TEST(SimdBootstrapTest, loadStoreI)
     loadStoreTester<int, SimdInt32, GMX_SIMD_REAL_WIDTH>(loadWrapper, store, 0, 0);
 }
 
-#    if GMX_SIMD_HAVE_LOADU
+#if GMX_SIMD_HAVE_LOADU
 TEST(SimdBootstrapTest, loadUI)
 {
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -183,9 +196,9 @@ TEST(SimdBootstrapTest, loadUI)
         loadStoreTester<int, SimdInt32, GMX_SIMD_REAL_WIDTH>(loadUWrapper, store, i, 0);
     }
 }
-#    endif  // GMX_SIMD_HAVE_LOADU
+#endif // GMX_SIMD_HAVE_LOADU
 
-#    if GMX_SIMD_HAVE_STOREU
+#if GMX_SIMD_HAVE_STOREU
 TEST(SimdBootstrapTest, storeUI)
 {
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -193,8 +206,8 @@ TEST(SimdBootstrapTest, storeUI)
         loadStoreTester<int, SimdInt32, GMX_SIMD_REAL_WIDTH>(loadWrapper, storeU, 0, i);
     }
 }
-#    endif // GMX_SIMD_HAVE_STOREU
-#endif     // GMX_SIMD_HAVE_REAL
+#endif // GMX_SIMD_HAVE_STOREU
+#endif // GMX_SIMD_HAVE_REAL
 
 #if GMX_SIMD4_HAVE_REAL
 TEST(SimdBootstrapTest, simd4LoadStore)
@@ -202,7 +215,7 @@ TEST(SimdBootstrapTest, simd4LoadStore)
     loadStoreTester<real, Simd4Real, GMX_SIMD4_WIDTH>(load4, store4, 0, 0);
 }
 
-#    if GMX_SIMD_HAVE_LOADU
+#if GMX_SIMD_HAVE_LOADU
 TEST(SimdBootstrapTest, simd4LoadU)
 {
     for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
@@ -210,9 +223,9 @@ TEST(SimdBootstrapTest, simd4LoadU)
         loadStoreTester<real, Simd4Real, GMX_SIMD4_WIDTH>(load4U, store4, i, 0);
     }
 }
-#    endif  // GMX_SIMD_HAVE_LOADU
+#endif // GMX_SIMD_HAVE_LOADU
 
-#    if GMX_SIMD_HAVE_STOREU
+#if GMX_SIMD_HAVE_STOREU
 TEST(SimdBootstrapTest, simd4StoreU)
 {
     for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
@@ -220,16 +233,16 @@ TEST(SimdBootstrapTest, simd4StoreU)
         loadStoreTester<real, Simd4Real, GMX_SIMD4_WIDTH>(load4, store4U, 0, i);
     }
 }
-#    endif // GMX_SIMD_HAVE_STOREU
-#endif     // GMX_SIMD4_HAVE_REAL
+#endif // GMX_SIMD_HAVE_STOREU
+#endif // GMX_SIMD4_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
+} // namespace
 
-}      // namespace test
+} // namespace test
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD

@@ -310,8 +310,7 @@ static inline float reduce(float a)
  */
 static inline float andNot(float a, float b)
 {
-    union
-    {
+    union {
         float         r;
         std::uint32_t i;
     } conv1, conv2;
@@ -339,8 +338,7 @@ static inline float andNot(float a, float b)
  */
 static inline bool testBits(float a)
 {
-    union
-    {
+    union {
         std::uint32_t i;
         float         f;
     } conv;
@@ -703,8 +701,7 @@ static inline double reduce(double a)
  */
 static inline double andNot(double a, double b)
 {
-    union
-    {
+    union {
         double        r;
         std::uint64_t i;
     } conv1, conv2;
@@ -732,8 +729,7 @@ static inline double andNot(double a, double b)
  */
 static inline bool testBits(double a)
 {
-    union
-    {
+    union {
         std::uint64_t i;
         double        f;
     } conv;

@@ -73,16 +73,16 @@ typedef struct
  */
 enum
 {
-    enxOR,     /* Time and ensemble averaged data for orientation restraints */
-    enxORI,    /* Instantaneous data for orientation restraints              */
-    enxORT,    /* Order tensor(s) for orientation restraints                 */
-    enxDISRE,  /* Distance restraint blocks                                  */
+    enxOR,    /* Time and ensemble averaged data for orientation restraints */
+    enxORI,   /* Instantaneous data for orientation restraints              */
+    enxORT,   /* Order tensor(s) for orientation restraints                 */
+    enxDISRE, /* Distance restraint blocks                                  */
 
     enxDHCOLL, /* Data about the free energy blocks in this frame.           */
     enxDHHIST, /* BAR histogram                                              */
     enxDH,     /* BAR raw delta H data                                       */
 
-    enxNR      /* Total number of extra blocks in the current code,
+    enxNR /* Total number of extra blocks in the current code,
                 * note that the enxio code can read files written by
                 * future code which contain more blocks.
                 */
@@ -96,16 +96,16 @@ extern const char *enx_block_id_name[];
    has a number of values of a single data type in a .edr file. */
 typedef struct
 {
-    int          nr;        /* number of items in subblock */
-    xdr_datatype type;      /* the block type */
+    int          nr;   /* number of items in subblock */
+    xdr_datatype type; /* the block type */
 
     /* the values: pointers for each type */
-    float*         fval;
-    double*        dval;
-    int*           ival;
-    gmx_int64_t*   lval;
-    unsigned char* cval;
-    char**         sval;
+    float *        fval;
+    double *       dval;
+    int *          ival;
+    gmx_int64_t *  lval;
+    unsigned char *cval;
+    char **        sval;
 
     /* the allocated sizes, defined separately.
        (nonzero sizes can be free()d later): */
@@ -132,18 +132,18 @@ typedef struct t_enxblock
 /* The frames that are read/written */
 typedef struct
 {
-    double      t;                /* Timestamp of this frame	                     */
-    gmx_int64_t step;             /* MD step	                             */
-    gmx_int64_t nsteps;           /* The number of steps between frames            */
-    double      dt;               /* The MD time step                              */
-    int         nsum;             /* The number of terms for the sums in ener      */
-    int         nre;              /* Number of energies			     */
-    int         e_size;           /* Size (in bytes) of energies		     */
-    int         e_alloc;          /* Allocated size (in elements) of ener          */
-    t_energy *  ener;             /* The energies                                  */
-    int         nblock;           /* Number of following energy blocks             */
-    t_enxblock *block;            /* The blocks                                    */
-    int         nblock_alloc;     /* The number of blocks allocated                */
+    double      t;            /* Timestamp of this frame	                     */
+    gmx_int64_t step;         /* MD step	                             */
+    gmx_int64_t nsteps;       /* The number of steps between frames            */
+    double      dt;           /* The MD time step                              */
+    int         nsum;         /* The number of terms for the sums in ener      */
+    int         nre;          /* Number of energies			     */
+    int         e_size;       /* Size (in bytes) of energies		     */
+    int         e_alloc;      /* Allocated size (in elements) of ener          */
+    t_energy *  ener;         /* The energies                                  */
+    int         nblock;       /* Number of following energy blocks             */
+    t_enxblock *block;        /* The blocks                                    */
+    int         nblock_alloc; /* The number of blocks allocated                */
 } t_enxframe;
 
 /* file handle */

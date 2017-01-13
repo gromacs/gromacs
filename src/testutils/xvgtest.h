@@ -61,7 +61,8 @@ class TestReferenceChecker;
 
 struct XvgMatchSettings
 {
-    XvgMatchSettings() : tolerance(defaultRealTolerance()), testData(true)
+    XvgMatchSettings()
+        : tolerance(defaultRealTolerance()), testData(true)
     {
     }
 

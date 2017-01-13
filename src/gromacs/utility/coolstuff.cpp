@@ -60,7 +60,7 @@ namespace
 //! Whether printing of cool quotes is enabled
 bool beCool(void)
 {
-    /* Yes, it is bad to check the environment variable every call,
+/* Yes, it is bad to check the environment variable every call,
      * but we dont call this routine often, and it avoids using
      * a mutex for locking the variable...
      */
@@ -81,11 +81,11 @@ const T &getRandomElement(gmx::ConstArrayRef<T> arrayRef)
     return arrayRef[distribution(generator)];
 }
 
-}   // namespace
+} // namespace
 
 std::string bromacs()
 {
-    const char * const bromacsArray[] = {
+    const char *const bromacsArray[] = {
         "Good gRace! Old Maple Actually Chews Slate",
         "GRoups of Organic Molecules in ACtion for Science",
         "GRowing Old MAkes el Chrono Sweat",
@@ -735,8 +735,9 @@ std::string getCoolQuote()
         { "You wouldn't walk into a chemistry lab and mix two clear liquids together just because they look pretty much the same, would you?", "Justin Lemkul" },
         { "They don't have half hours in the north", "Carl Caleman" },
         { "Safety lights are for dudes", "Ghostbusters 2016" },
-        { "It's 2040 now. Our President is a plant.",  "Ghostbusters 2016" },
-        { "It's just B I O L O G Y, can't you see?" "Joe Jackson" },
+        { "It's 2040 now. Our President is a plant.", "Ghostbusters 2016" },
+        { "It's just B I O L O G Y, can't you see?"
+          "Joe Jackson" },
         { "Input, output, electricity", "Joni Mitchell" },
         { "Your daddy ain't your daddy but your daddy don't know", "Dalahan" },
         { "Why is the Earth moving 'round the sun? Floating in the vacuum with no purpose, not a one", "Fleet Foxes" },

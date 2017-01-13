@@ -116,9 +116,7 @@ static void precalc(const t_topology &top, real normm[])
         {
             normm[j] = top.atoms.atom[j].m / mtot;
         }
-
     }
-
 }
 
 static void calc_spectrum(int n, real c[], real dt, const char *fn,
@@ -146,7 +144,7 @@ static void calc_spectrum(int n, real c[], real dt, const char *fn,
     }
     fp = xvgropen(fn, "Vibrational Power Spectrum",
                   bRecip ? "\\f{12}w\\f{4} (cm\\S-1\\N)"
-                  : "\\f{12}n\\f{4} (ps\\S-1\\N)",
+                         : "\\f{12}n\\f{4} (ps\\S-1\\N)",
                   "a.u.", oenv);
     /* This is difficult.
      * The length of the ACF is dt (as passed to this routine).
@@ -192,13 +190,10 @@ int gmx_velacc(int argc, char *argv[])
     };
 
     static gmx_bool bMass = FALSE, bMol = FALSE, bRecip = TRUE;
-    t_pargs         pa[]  = {
-        { "-m", FALSE, etBOOL, {&bMass},
-          "Calculate the momentum autocorrelation function" },
-        { "-recip", FALSE, etBOOL, {&bRecip},
-          "Use cm^-1 on X-axis instead of 1/ps for spectra." },
-        { "-mol", FALSE, etBOOL, {&bMol},
-          "Calculate the velocity acf of molecules" }
+    t_pargs         pa[] = {
+        { "-m", FALSE, etBOOL, { &bMass }, "Calculate the momentum autocorrelation function" },
+        { "-recip", FALSE, etBOOL, { &bRecip }, "Use cm^-1 on X-axis instead of 1/ps for spectra." },
+        { "-mol", FALSE, etBOOL, { &bMol }, "Calculate the velocity acf of molecules" }
     };
 
     t_topology top;
@@ -224,11 +219,11 @@ int gmx_velacc(int argc, char *argv[])
 #define NHISTO 360
 
     t_filenm fnm[] = {
-        { efTRN, "-f",    nullptr,   ffREAD  },
-        { efTPS, nullptr,    nullptr,   ffOPTRD },
-        { efNDX, nullptr,    nullptr,   ffOPTRD },
-        { efXVG, "-o",    "vac",  ffWRITE },
-        { efXVG, "-os",   "spectrum", ffOPTWR }
+        { efTRN, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffOPTRD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, "-o", "vac", ffWRITE },
+        { efXVG, "-os", "spectrum", ffOPTWR }
     };
 #define NFILE asize(fnm)
     int      npargs;
@@ -350,15 +345,15 @@ int gmx_velacc(int argc, char *argv[])
         dt = (t1 - t0) / (counter - 1);
         do_autocorr(opt2fn("-o", NFILE, fnm), oenv,
                     bMass
-                    ? "Momentum Autocorrelation Function"
-                    : "Velocity Autocorrelation Function",
+                            ? "Momentum Autocorrelation Function"
+                            : "Velocity Autocorrelation Function",
                     counter, gnx, c1, dt, eacVector, TRUE);
 
         do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");
 
         if (opt2bSet("-os", NFILE, fnm))
         {
-            calc_spectrum(counter / 2, (real *) (c1[0]), (t1 - t0) / 2, opt2fn("-os", NFILE, fnm),
+            calc_spectrum(counter / 2, (real *)(c1[0]), (t1 - t0) / 2, opt2fn("-os", NFILE, fnm),
                           oenv, bRecip);
             do_view(oenv, opt2fn("-os", NFILE, fnm), "-nxy");
         }

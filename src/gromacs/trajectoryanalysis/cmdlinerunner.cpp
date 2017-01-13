@@ -82,7 +82,7 @@ public:
     virtual void initOptions(IOptionsContainer *                options,
                              ICommandLineOptionsModuleSettings *settings);
     virtual void optionsFinished();
-    virtual int run();
+    virtual int  run();
 
     TrajectoryAnalysisModulePointer module_;
     TrajectoryAnalysisSettings      settings_;
@@ -175,7 +175,7 @@ int RunnerModule::run()
     return 0;
 }
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * TrajectoryAnalysisCommandLineRunner
@@ -185,8 +185,7 @@ int RunnerModule::run()
 int TrajectoryAnalysisCommandLineRunner::runAsMain(
         int argc, char *argv[], ModuleFactoryMethod factory)
 {
-    auto runnerFactory = [factory]
-    {
+    auto runnerFactory = [factory] {
         return createModule(factory());
     };
     return ICommandLineOptionsModule::runAsMain(argc, argv, nullptr, nullptr, runnerFactory);
@@ -197,8 +196,7 @@ void TrajectoryAnalysisCommandLineRunner::registerModule(
         CommandLineModuleManager *manager, const char *name,
         const char *description, ModuleFactoryMethod factory)
 {
-    auto runnerFactory = [factory]
-    {
+    auto runnerFactory = [factory] {
         return createModule(factory());
     };
     ICommandLineOptionsModule::registerModuleFactory(

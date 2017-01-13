@@ -72,23 +72,22 @@ namespace
 class SplineTableTestBase : public ::testing::Test
 {
 public:
-    static int s_testPoints_;      //!< Number of points to use. Public so we can set it as option
+    static int s_testPoints_; //!< Number of points to use. Public so we can set it as option
 };
 
 int
-SplineTableTestBase::s_testPoints_ = 100;
+        SplineTableTestBase::s_testPoints_
+        = 100;
 
 /*! \cond */
 /*! \brief Command-line option to adjust the number of points used to test SIMD math functions. */
 GMX_TEST_OPTIONS(SplineTableTestOptions, options)
 {
     options->addOption(::gmx::IntegerOption("npoints")
-                           .store(&SplineTableTestBase::s_testPoints_)
-                           .description("Number of points to test for spline table functions"));
+                               .store(&SplineTableTestBase::s_testPoints_)
+                               .description("Number of points to test for spline table functions"));
 }
 /*! \endcond */
-
-
 
 
 /*! \brief Test fixture for table comparision with analytical/numerical functions */
@@ -96,7 +95,8 @@ template <typename T>
 class SplineTableTest : public SplineTableTestBase
 {
 public:
-    SplineTableTest() : tolerance_(T::defaultTolerance) {}
+    SplineTableTest()
+        : tolerance_(T::defaultTolerance) {}
 
     /*! \brief Set a new tolerance to be used in table function comparison
      *
@@ -110,24 +110,24 @@ public:
      */
     template <int numFuncInTable = 1, int funcIndex = 0>
     void
-    testSplineTableAgainstFunctions(const std::string &desc,
+    testSplineTableAgainstFunctions(const std::string &                  desc,
                                     const std::function<double(double)> &refFunc,
                                     const std::function<double(double)> &refDer,
-                                    const T &table,
-                                    const std::pair<real, real>          &testRange);
+                                    const T &                            table,
+                                    const std::pair<real, real> &testRange);
     //! \endcond
 
 private:
-    real tolerance_;               //!< Tolerance to use
+    real tolerance_; //!< Tolerance to use
 };
 
 template <class T>
 template <int numFuncInTable, int funcIndex>
-void SplineTableTest<T>::testSplineTableAgainstFunctions(const std::string &desc,
+void SplineTableTest<T>::testSplineTableAgainstFunctions(const std::string &                  desc,
                                                          const std::function<double(double)> &refFunc,
                                                          const std::function<double(double)> &refDer,
-                                                         const T &table,
-                                                         const std::pair<real, real>          &testRange)
+                                                         const T &                            table,
+                                                         const std::pair<real, real> &testRange)
 {
     real dx = (testRange.second - testRange.first) / s_testPoints_;
 
@@ -153,21 +153,21 @@ void SplineTableTest<T>::testSplineTableAgainstFunctions(const std::string &desc
         if (testFuncValue != tmpFunc)
         {
             ADD_FAILURE()
-            << "Interpolation inconsistency for table " << desc << std::endl
-            << numFuncInTable << " function(s) in table, testing index " << funcIndex << std::endl
-            << "First failure at x = " << x << std::endl
-            << "Function value when evaluating function & derivative: " << testFuncValue << std::endl
-            << "Function value when evaluating only function:         " << tmpFunc << std::endl;
+                    << "Interpolation inconsistency for table " << desc << std::endl
+                    << numFuncInTable << " function(s) in table, testing index " << funcIndex << std::endl
+                    << "First failure at x = " << x << std::endl
+                    << "Function value when evaluating function & derivative: " << testFuncValue << std::endl
+                    << "Function value when evaluating only function:         " << tmpFunc << std::endl;
             return;
         }
         if (testDerValue != tmpDer)
         {
             ADD_FAILURE()
-            << "Interpolation inconsistency for table " << desc << std::endl
-            << numFuncInTable << " function(s) in table, testing index " << funcIndex << std::endl
-            << "First failure at x = " << x << std::endl
-            << "Derivative value when evaluating function & derivative: " << testDerValue << std::endl
-            << "Derivative value when evaluating only derivative:       " << tmpDer << std::endl;
+                    << "Interpolation inconsistency for table " << desc << std::endl
+                    << numFuncInTable << " function(s) in table, testing index " << funcIndex << std::endl
+                    << "First failure at x = " << x << std::endl
+                    << "Derivative value when evaluating function & derivative: " << testDerValue << std::endl
+                    << "Derivative value when evaluating only derivative:       " << tmpDer << std::endl;
             return;
         }
 
@@ -200,7 +200,7 @@ void SplineTableTest<T>::testSplineTableAgainstFunctions(const std::string &desc
         real refDerValue     = refDer(x);
         real nextRefDerValue = refDer(x + table.tableSpacing());
 
-        real derMagnitude = std::max( std::abs(refDerValue), std::abs(nextRefDerValue));
+        real derMagnitude = std::max(std::abs(refDerValue), std::abs(nextRefDerValue));
 
         // Since the reference magnitude will change over each interval we need to re-evaluate
         // the derivative tolerance inside the loop.
@@ -209,22 +209,22 @@ void SplineTableTest<T>::testSplineTableAgainstFunctions(const std::string &desc
         FloatingPointDifference funcDiff(refFuncValue, testFuncValue);
         FloatingPointDifference derDiff(refDerValue, testDerValue);
 
-        real allowedAbsFuncErr = std::abs(refDerValue)      * x * GMX_REAL_EPS;
+        real allowedAbsFuncErr = std::abs(refDerValue) * x * GMX_REAL_EPS;
         real allowedAbsDerErr  = std::abs(secondDerivative) * x * GMX_REAL_EPS;
 
         if ((!funcTolerance.isWithin(funcDiff) && funcDiff.asAbsolute() > allowedAbsFuncErr)
-            || (!derTolerance.isWithin(derDiff)  &&  derDiff.asAbsolute() > allowedAbsDerErr))
+            || (!derTolerance.isWithin(derDiff) && derDiff.asAbsolute() > allowedAbsDerErr))
         {
             ADD_FAILURE()
-            << "Failing comparison with function for table " << desc << std::endl
-            << numFuncInTable << " function(s) in table, testing index " << funcIndex << std::endl
-            << "Test range is ( " << testRange.first << " , " << testRange.second << " ) " << std::endl
-            << "Tolerance             = " << tolerance_ << std::endl
-            << "First failure at    x = " << x << std::endl
-            << "Reference function    = " << refFuncValue << std::endl
-            << "Test table function   = " << testFuncValue << std::endl
-            << "Reference derivative  = " << refDerValue << std::endl
-            << "Test table derivative = " << testDerValue << std::endl;
+                    << "Failing comparison with function for table " << desc << std::endl
+                    << numFuncInTable << " function(s) in table, testing index " << funcIndex << std::endl
+                    << "Test range is ( " << testRange.first << " , " << testRange.second << " ) " << std::endl
+                    << "Tolerance             = " << tolerance_ << std::endl
+                    << "First failure at    x = " << x << std::endl
+                    << "Reference function    = " << refFuncValue << std::endl
+                    << "Test table function   = " << testFuncValue << std::endl
+                    << "Reference derivative  = " << refDerValue << std::endl
+                    << "Test table derivative = " << testDerValue << std::endl;
             return;
         }
     }
@@ -354,26 +354,26 @@ TYPED_TEST_CASE(SplineTableTest, SplineTableTypes);
 TYPED_TEST(SplineTableTest, HandlesIncorrectInput)
 {
     // negative range
-    EXPECT_THROW_GMX(TypeParam( {{"LJ12", lj12Function, lj12Derivative}}, {-1.0, 0.0}), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(TypeParam({ { "LJ12", lj12Function, lj12Derivative } }, { -1.0, 0.0 }), gmx::InvalidInputError);
 
     // Too small range
-    EXPECT_THROW_GMX(TypeParam( {{"LJ12", lj12Function, lj12Derivative}}, {1.0, 1.00001}), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(TypeParam({ { "LJ12", lj12Function, lj12Derivative } }, { 1.0, 1.00001 }), gmx::InvalidInputError);
 
     // bad tolerance
-    EXPECT_THROW_GMX(TypeParam( {{"LJ12", lj12Function, lj12Derivative}}, {1.0, 2.0}, 1e-20), gmx::ToleranceError);
+    EXPECT_THROW_GMX(TypeParam({ { "LJ12", lj12Function, lj12Derivative } }, { 1.0, 2.0 }, 1e-20), gmx::ToleranceError);
 
     // Range is so close to 0.0 that table would require >1e6 points
-    EXPECT_THROW_GMX(TypeParam( {{"LJ12", lj12Function, lj12Derivative}}, {1e-4, 2.0}), gmx::ToleranceError);
+    EXPECT_THROW_GMX(TypeParam({ { "LJ12", lj12Function, lj12Derivative } }, { 1e-4, 2.0 }), gmx::ToleranceError);
 
     // mismatching function/derivative
-    EXPECT_THROW_GMX(TypeParam( { {"BadLJ12", lj12Derivative, lj12Function}}, {1.0, 2.0}), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(TypeParam({ { "BadLJ12", lj12Derivative, lj12Function } }, { 1.0, 2.0 }), gmx::InconsistentInputError);
 }
 
 
 #ifndef NDEBUG
 TYPED_TEST(SplineTableTest, CatchesOutOfRangeValues)
 {
-    TypeParam table( {{"LJ12", lj12Function, lj12Derivative}}, {0.2, 1.0});
+    TypeParam table({ { "LJ12", lj12Function, lj12Derivative } }, { 0.2, 1.0 });
     real      x, func, der;
 
     x = -GMX_REAL_EPS;
@@ -389,7 +389,7 @@ TYPED_TEST(SplineTableTest, Sinc)
 {
     std::pair<real, real> range(0.1, 10);
 
-    TypeParam sincTable( {{"Sinc", sincFunction, sincDerivative}}, range);
+    TypeParam sincTable({ { "Sinc", sincFunction, sincDerivative } }, range);
 
     TestFixture::testSplineTableAgainstFunctions("Sinc", sincFunction, sincDerivative, sincTable, range);
 }
@@ -399,7 +399,7 @@ TYPED_TEST(SplineTableTest, LJ12)
 {
     std::pair<real, real> range(0.2, 2.0);
 
-    TypeParam lj12Table( {{"LJ12", lj12Function, lj12Derivative}}, range);
+    TypeParam lj12Table({ { "LJ12", lj12Function, lj12Derivative } }, range);
 
     TestFixture::testSplineTableAgainstFunctions("LJ12", lj12Function, lj12Derivative, lj12Table, range);
 }
@@ -408,14 +408,13 @@ TYPED_TEST(SplineTableTest, LJ12)
 TYPED_TEST(SplineTableTest, PmeCorrection)
 {
     std::pair<real, real> range(0.0, 4.0);
-    real                  tolerance = 1e-5;
+    real tolerance = 1e-5;
 
-    TypeParam pmeCorrTable( {{"PMECorr", pmeCorrFunction, pmeCorrDerivative}}, range, tolerance);
+    TypeParam pmeCorrTable({ { "PMECorr", pmeCorrFunction, pmeCorrDerivative } }, range, tolerance);
 
     TestFixture::setTolerance(tolerance);
     TestFixture::testSplineTableAgainstFunctions("PMECorr", pmeCorrFunction, pmeCorrDerivative, pmeCorrTable, range);
 }
-
 
 
 TYPED_TEST(SplineTableTest, HandlesIncorrectNumericalInput)
@@ -423,14 +422,16 @@ TYPED_TEST(SplineTableTest, HandlesIncorrectNumericalInput)
     // Lengths do not match
     std::vector<double> functionValues(10);
     std::vector<double> derivativeValues(20);
-    EXPECT_THROW_GMX(TypeParam( {{"EmptyVectors", functionValues, derivativeValues, 0.001}},
-                                {1.0, 2.0}), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(TypeParam({ { "EmptyVectors", functionValues, derivativeValues, 0.001 } },
+                               { 1.0, 2.0 }),
+                     gmx::InconsistentInputError);
 
     // Upper range is 2.0, spacing 0.1. This requires at least 21 points. Make sure we get an error for 20.
     functionValues.resize(20);
     derivativeValues.resize(20);
-    EXPECT_THROW_GMX(TypeParam( {{"EmptyVectors", functionValues, derivativeValues, 0.1}},
-                                {1.0, 2.0}), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(TypeParam({ { "EmptyVectors", functionValues, derivativeValues, 0.1 } },
+                               { 1.0, 2.0 }),
+                     gmx::InconsistentInputError);
 
     // Create some test data
     functionValues.clear();
@@ -442,7 +443,7 @@ TYPED_TEST(SplineTableTest, HandlesIncorrectNumericalInput)
     for (std::size_t i = 0; i < 1001; i++)
     {
         double x    = i * spacing;
-        double func = (x >= 0.1) ? lj12Function(x)   : 0.0;
+        double func = (x >= 0.1) ? lj12Function(x) : 0.0;
         double der  = (x >= 0.1) ? lj12Derivative(x) : 0.0;
 
         functionValues.push_back(func);
@@ -451,21 +452,23 @@ TYPED_TEST(SplineTableTest, HandlesIncorrectNumericalInput)
     }
 
     // Derivatives not consistent with function
-    EXPECT_THROW_GMX(TypeParam( {{"NumericalBadLJ12", functionValues, badDerivativeValues, spacing}},
-                                {0.2, 1.0}), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(TypeParam({ { "NumericalBadLJ12", functionValues, badDerivativeValues, spacing } },
+                               { 0.2, 1.0 }),
+                     gmx::InconsistentInputError);
 
     // Spacing 1e-3 is not sufficient for r^-12 in range [0.1,1.0]
     // Make sure we get a tolerance error
-    EXPECT_THROW_GMX(TypeParam( {{"NumericalLJ12", functionValues, derivativeValues, spacing}},
-                                {0.2, 1.0}), gmx::ToleranceError);
+    EXPECT_THROW_GMX(TypeParam({ { "NumericalLJ12", functionValues, derivativeValues, spacing } },
+                               { 0.2, 1.0 }),
+                     gmx::ToleranceError);
 }
 
 
 TYPED_TEST(SplineTableTest, NumericalInputPmeCorr)
 {
     std::pair<real, real> range(0.0, 4.0);
-    std::vector<double>   functionValues;
-    std::vector<double>   derivativeValues;
+    std::vector<double> functionValues;
+    std::vector<double> derivativeValues;
 
     double inputSpacing = 1e-3;
     real   tolerance    = 1e-5;
@@ -479,8 +482,8 @@ TYPED_TEST(SplineTableTest, NumericalInputPmeCorr)
         derivativeValues.push_back(pmeCorrDerivative(x));
     }
 
-    TypeParam pmeCorrTable( {{"NumericalPMECorr", functionValues, derivativeValues, inputSpacing}},
-                            range, tolerance);
+    TypeParam pmeCorrTable({ { "NumericalPMECorr", functionValues, derivativeValues, inputSpacing } },
+                           range, tolerance);
 
     TestFixture::setTolerance(tolerance);
     TestFixture::testSplineTableAgainstFunctions("NumericalPMECorr", pmeCorrFunction, pmeCorrDerivative, pmeCorrTable, range);
@@ -490,7 +493,7 @@ TYPED_TEST(SplineTableTest, TwoFunctions)
 {
     std::pair<real, real> range(0.2, 2.0);
 
-    TypeParam table( {{"LJ6", lj6Function, lj6Derivative}, {"LJ12", lj12Function, lj12Derivative}}, range);
+    TypeParam table({ { "LJ6", lj6Function, lj6Derivative }, { "LJ12", lj12Function, lj12Derivative } }, range);
 
     // Test entire range for each function. This will use the method that interpolates a single function
     TestFixture::template testSplineTableAgainstFunctions<2, 0>("LJ6", lj6Function, lj6Derivative, table, range);
@@ -547,7 +550,7 @@ TYPED_TEST(SplineTableTest, ThreeFunctions)
 {
     std::pair<real, real> range(0.2, 2.0);
 
-    TypeParam table( {{"Coulomb", coulombFunction, coulombDerivative}, {"LJ6", lj6Function, lj6Derivative}, {"LJ12", lj12Function, lj12Derivative}}, range);
+    TypeParam table({ { "Coulomb", coulombFunction, coulombDerivative }, { "LJ6", lj6Function, lj6Derivative }, { "LJ12", lj12Function, lj12Derivative } }, range);
 
     // Test entire range for each function
     TestFixture::template testSplineTableAgainstFunctions<3, 0>("Coulomb", coulombFunction, coulombDerivative, table, range);
@@ -633,7 +636,7 @@ TYPED_TEST(SplineTableTest, ThreeFunctions)
 TYPED_TEST(SplineTableTest, Simd)
 {
     std::pair<real, real> range(0.2, 1.0);
-    TypeParam             table( {{"LJ12", lj12Function, lj12Derivative}}, range);
+    TypeParam table({ { "LJ12", lj12Function, lj12Derivative } }, range);
 
     // We already test that the SIMD operations handle the different elements
     // correctly in the SIMD module, so here we only test that interpolation
@@ -644,7 +647,8 @@ TYPED_TEST(SplineTableTest, Simd)
     real     refDer  = lj12Derivative(x);
     SimdReal tstFunc, tstDer;
     real     funcErr, derErr;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+    alignedMem[GMX_SIMD_REAL_WIDTH];
 
     table.evaluateFunctionAndDerivative(SimdReal(x), &tstFunc, &tstDer);
 
@@ -652,7 +656,7 @@ TYPED_TEST(SplineTableTest, Simd)
     funcErr = std::abs(alignedMem[0] - refFunc) / std::abs(refFunc);
 
     store(alignedMem, tstDer);
-    derErr = std::abs(alignedMem[0] - refDer ) / std::abs(refDer );
+    derErr = std::abs(alignedMem[0] - refDer) / std::abs(refDer);
 
     EXPECT_LT(funcErr, TypeParam::defaultTolerance);
     EXPECT_LT(derErr, TypeParam::defaultTolerance);
@@ -662,7 +666,7 @@ TYPED_TEST(SplineTableTest, SimdTwoFunctions)
 {
     std::pair<real, real> range(0.2, 2.0);
 
-    TypeParam table( {{"LJ6", lj6Function, lj6Derivative}, {"LJ12", lj12Function, lj12Derivative}}, range);
+    TypeParam table({ { "LJ6", lj6Function, lj6Derivative }, { "LJ12", lj12Function, lj12Derivative } }, range);
 
     // We already test that the SIMD operations handle the different elements
     // correctly in the SIMD module, so here we only test that interpolation
@@ -677,7 +681,8 @@ TYPED_TEST(SplineTableTest, SimdTwoFunctions)
     SimdReal tstFunc1, tstDer1;
     real     funcErr0, derErr0;
     real     funcErr1, derErr1;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+    alignedMem[GMX_SIMD_REAL_WIDTH];
 
     table.evaluateFunctionAndDerivative(SimdReal(x), &tstFunc0, &tstDer0, &tstFunc1, &tstDer1);
 
@@ -685,13 +690,13 @@ TYPED_TEST(SplineTableTest, SimdTwoFunctions)
     funcErr0 = std::abs(alignedMem[0] - refFunc0) / std::abs(refFunc0);
 
     store(alignedMem, tstDer0);
-    derErr0 = std::abs(alignedMem[0] - refDer0 ) / std::abs(refDer0 );
+    derErr0 = std::abs(alignedMem[0] - refDer0) / std::abs(refDer0);
 
     store(alignedMem, tstFunc1);
     funcErr1 = std::abs(alignedMem[0] - refFunc1) / std::abs(refFunc1);
 
     store(alignedMem, tstDer1);
-    derErr1 = std::abs(alignedMem[0] - refDer1 ) / std::abs(refDer1 );
+    derErr1 = std::abs(alignedMem[0] - refDer1) / std::abs(refDer1);
 
     EXPECT_LT(funcErr0, TypeParam::defaultTolerance);
     EXPECT_LT(derErr0, TypeParam::defaultTolerance);
@@ -704,10 +709,11 @@ TYPED_TEST(SplineTableTest, SimdTwoFunctions)
 TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
 {
     std::pair<real, real> range(0.2, 1.0);
-    TypeParam             table( {{"LJ12", lj12Function, lj12Derivative}}, range);
-    SimdReal              x, func, der;
+    TypeParam table({ { "LJ12", lj12Function, lj12Derivative } }, range);
+    SimdReal  x, func, der;
 
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+    alignedMem[GMX_SIMD_REAL_WIDTH];
 
     for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
@@ -715,14 +721,14 @@ TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
     }
     // Make position 1 incorrect if width>=2, otherwise position 0
     // range.first-GMX_REAL_EPS is not invalid. See comment in table.
-    alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = -GMX_REAL_EPS;
-    x                                               = load(alignedMem);
+    alignedMem[(GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = -GMX_REAL_EPS;
+    x                                              = load(alignedMem);
 
     EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
 
     // Make position 1 incorrect if width>=2, otherwise position 0
-    alignedMem[ (GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = range.second;
-    x                                               = load(alignedMem);
+    alignedMem[(GMX_SIMD_REAL_WIDTH >= 2) ? 1 : 0] = range.second;
+    x                                              = load(alignedMem);
 
     EXPECT_THROW_GMX(table.evaluateFunctionAndDerivative(x, &func, &der), gmx::RangeError);
 }
@@ -730,10 +736,11 @@ TYPED_TEST(SplineTableTest, CatchesOutOfRangeValuesSimd)
 TYPED_TEST(SplineTableTest, AcceptsInRangeValuesSimd)
 {
     std::pair<real, real> range(0.2, 1.0);
-    TypeParam             table( {{"LJ12", lj12Function, lj12Derivative}}, range);
-    SimdReal              x, func, der;
+    TypeParam table({ { "LJ12", lj12Function, lj12Derivative } }, range);
+    SimdReal  x, func, der;
 
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) alignedMem[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+    alignedMem[GMX_SIMD_REAL_WIDTH];
 
     // Test all values between 0 and range.second
     for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)

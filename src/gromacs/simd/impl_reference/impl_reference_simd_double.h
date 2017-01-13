@@ -268,7 +268,7 @@ static inline SimdDouble gmx_simdcall setZeroD()
  * \param m Pointer to memory, aligned to (double) integer SIMD width.
  * \return SIMD integer variable.
  */
-static inline SimdDInt32 gmx_simdcall simdLoadDI(const std::int32_t * m)
+static inline SimdDInt32 gmx_simdcall simdLoadDI(const std::int32_t *m)
 {
     SimdDInt32 a;
 
@@ -283,7 +283,7 @@ static inline SimdDInt32 gmx_simdcall simdLoadDI(const std::int32_t * m)
  * \param m Memory aligned to (double) integer SIMD width.
  * \param a SIMD (double) integer variable to store.
  */
-static inline void gmx_simdcall store(std::int32_t * m, SimdDInt32 a)
+static inline void gmx_simdcall store(std::int32_t *m, SimdDInt32 a)
 {
     assert(std::size_t(m) % (a.simdInternal_.size() * sizeof(std::int32_t)) == 0);
 
@@ -314,7 +314,7 @@ static inline SimdDInt32 gmx_simdcall simdLoadUDI(const std::int32_t *m)
  * \param m Memory pointer, no alignment requirements.
  * \param a SIMD (double) integer variable to store.
  */
-static inline void gmx_simdcall storeU(std::int32_t * m, SimdDInt32 a)
+static inline void gmx_simdcall storeU(std::int32_t *m, SimdDInt32 a)
 {
     std::copy(a.simdInternal_.begin(), a.simdInternal_.end(), m);
 }
@@ -339,7 +339,7 @@ static inline SimdDInt32 gmx_simdcall setZeroDI()
  * \param  a     SIMD variable from which to extract value.
  * \return Single integer from position index in SIMD variable.
  */
-template <int index>
+template <int              index>
 static inline std::int32_t gmx_simdcall extract(SimdDInt32 a)
 {
     return a.simdInternal_[index];
@@ -363,12 +363,10 @@ static inline SimdDouble gmx_simdcall operator&(SimdDouble a, SimdDouble b)
 {
     SimdDouble res;
 
-    union
-    {
+    union {
         double       r;
         std::int64_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -392,12 +390,10 @@ static inline SimdDouble gmx_simdcall andNot(SimdDouble a, SimdDouble b)
 {
     SimdDouble res;
 
-    union
-    {
+    union {
         double       r;
         std::int64_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -421,12 +417,10 @@ static inline SimdDouble gmx_simdcall operator|(SimdDouble a, SimdDouble b)
 {
     SimdDouble res;
 
-    union
-    {
+    union {
         double       r;
         std::int64_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -450,12 +444,10 @@ static inline SimdDouble gmx_simdcall operator^(SimdDouble a, SimdDouble b)
 {
     SimdDouble res;
 
-    union
-    {
+    union {
         double       r;
         std::int64_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -818,7 +810,7 @@ static inline SimdDouble gmx_simdcall trunc(SimdDouble a)
  * \param[out]  exponent  Returned exponent of value, integer SIMD format.
  * \return      Fraction of value, floating-point SIMD format.
  */
-static inline SimdDouble gmx_simdcall frexp(SimdDouble value, SimdDInt32 * exponent)
+static inline SimdDouble gmx_simdcall frexp(SimdDouble value, SimdDInt32 *exponent)
 {
     SimdDouble fraction;
 
@@ -956,8 +948,7 @@ static inline SimdDBool gmx_simdcall testBits(SimdDouble a)
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
-        union
-        {
+        union {
             std::uint64_t i;
             double        d;
         } conv;
@@ -1609,7 +1600,7 @@ static inline SimdFloat gmx_simdcall cvtD2F(SimdDouble gmx_unused d)
  * \param[out] d0 Double-precision SIMD variable, first half of values from f.
  * \param[out] d1 Double-precision SIMD variable, second half of values from f.
  */
-static inline void gmx_simdcall cvtF2DD(SimdFloat gmx_unused f, SimdDouble gmx_unused * d0, SimdDouble gmx_unused * d1)
+static inline void gmx_simdcall cvtF2DD(SimdFloat gmx_unused f, SimdDouble gmx_unused *d0, SimdDouble gmx_unused *d1)
 {
 #if (GMX_SIMD_FLOAT_WIDTH == 2 * GMX_SIMD_DOUBLE_WIDTH)
     for (std::size_t i = 0; i < d0->simdInternal_.size(); i++)
@@ -1655,6 +1646,6 @@ static inline SimdFloat gmx_simdcall cvtDD2F(SimdDouble gmx_unused d0, SimdDoubl
 /*! \} */
 /*! \endcond */
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_REFERENCE_SIMD_DOUBLE_H

@@ -57,14 +57,14 @@ void nbnxn_grids_init(nbnxn_search_t nbs, int ngrid);
  */
 void nbnxn_put_on_grid(nbnxn_search_t nbs,
                        int ePBC, matrix box,
-                       int dd_zone,
+                       int  dd_zone,
                        rvec corner0, rvec corner1,
                        int a0, int a1,
-                       real atom_density,
+                       real       atom_density,
                        const int *atinfo,
-                       rvec *x,
+                       rvec *     x,
                        int nmoved, int *move,
-                       int nb_kernel_type,
+                       int               nb_kernel_type,
                        nbnxn_atomdata_t *nbat);
 
 /* As nbnxn_put_on_grid, but for the non-local atoms

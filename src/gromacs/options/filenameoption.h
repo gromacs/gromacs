@@ -52,7 +52,8 @@
 namespace gmx
 {
 
-template <typename T> class ConstArrayRef;
+template <typename T>
+class ConstArrayRef;
 class FileNameOptionInfo;
 class FileNameOptionManager;
 class FileNameOptionStorage;
@@ -87,7 +88,10 @@ public:
      * Either this attribute or legacyType() must be provided.
      */
     MyClass &filetype(OptionFileType type)
-    { optionType_ = type; return me(); }
+    {
+        optionType_ = type;
+        return me();
+    }
     /*! \brief
      * Sets the type of the file from an enum in filetypes.h.
      *
@@ -95,7 +99,10 @@ public:
      * necessary.
      */
     MyClass &legacyType(int type)
-    { legacyType_ = type; return me(); }
+    {
+        legacyType_ = type;
+        return me();
+    }
     /*! \brief
      * Changes the behavior of optional options to match old t_filenm.
      *
@@ -105,24 +112,42 @@ public:
      * return value of OptionInfo::isSet() and Options::isSet().
      */
     MyClass &legacyOptionalBehavior()
-    { bLegacyOptionalBehavior_ = true; return me(); }
+    {
+        bLegacyOptionalBehavior_ = true;
+        return me();
+    }
     //! Tells that the file provided by this option is used for input only.
     MyClass &inputFile()
-    { bRead_ = true; bWrite_ = false; return me(); }
+    {
+        bRead_  = true;
+        bWrite_ = false;
+        return me();
+    }
     //! Tells that the file provided by this option is used for output only.
     MyClass &outputFile()
-    { bRead_ = false; bWrite_ = true; return me(); }
+    {
+        bRead_  = false;
+        bWrite_ = true;
+        return me();
+    }
     /*! \brief
      * Tells that the file provided by this option is used for input and
      * output both.
      */
     MyClass &inputOutputFile()
-    { bRead_ = bWrite_ = true; return me(); }
+    {
+        bRead_ = bWrite_ = true;
+        return me();
+    }
     /*! \brief
      * Sets the read/write usage for this file from boolean flags.
      */
     MyClass &readWriteFlags(bool bRead, bool bWrite)
-    { bRead_ = bRead; bWrite_ = bWrite; return me(); }
+    {
+        bRead_  = bRead;
+        bWrite_ = bWrite;
+        return me();
+    }
     /*! \brief
      * Tells that the file will be looked up in library directories in
      * addition to working directory.
@@ -134,7 +159,10 @@ public:
      * file name option implementation.
      */
     MyClass &libraryFile(bool bLibrary = true)
-    { bLibrary_ = bLibrary; return me(); }
+    {
+        bLibrary_ = bLibrary;
+        return me();
+    }
     /*! \brief
      * Tells that missing file names explicitly provided by the user are
      * valid for this input option.
@@ -148,7 +176,10 @@ public:
      * FileNameOptionManager is being used.
      */
     MyClass &allowMissing(bool bAllow = true)
-    { bAllowMissing_ = bAllow; return me(); }
+    {
+        bAllowMissing_ = bAllow;
+        return me();
+    }
     /*! \brief
      * Sets a default basename for the file option.
      *
@@ -176,7 +207,10 @@ public:
      * global default takes precedence over defaultBasename().
      */
     MyClass &defaultBasename(const char *basename)
-    { defaultBasename_ = basename; return me(); }
+    {
+        defaultBasename_ = basename;
+        return me();
+    }
     /*! \brief
      * Sets a default type/extension for the file option.
      *
@@ -190,7 +224,10 @@ public:
      * filetype().
      */
     MyClass &defaultType(int filetype)
-    { defaultType_ = filetype; return me(); }
+    {
+        defaultType_ = filetype;
+        return me();
+    }
 
 private:
     // Use defaultBasename() instead.
@@ -199,7 +236,7 @@ private:
 
     //! Creates a FileNameOptionStorage object.
     virtual AbstractOptionStorage *createStorage(
-        const OptionManagerContainer &managers) const;
+            const OptionManagerContainer &managers) const;
 
     OptionFileType optionType_;
     int            legacyType_;

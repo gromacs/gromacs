@@ -70,10 +70,10 @@ public:
      */
     enum DataProperty
     {
-        eMultipleDataSets,     //!< Data has multiple data sets.
-        eMultipleColumns,      //!< Data has multiple columns.
-        eMultipoint,           //!< Data is multipoint.
-        eDataPropertyNR        //!< Number of properties; for internal use only.
+        eMultipleDataSets, //!< Data has multiple data sets.
+        eMultipleColumns,  //!< Data has multiple columns.
+        eMultipoint,       //!< Data is multipoint.
+        eDataPropertyNR    //!< Number of properties; for internal use only.
     };
 
     AnalysisDataModuleManager();
@@ -175,8 +175,8 @@ public:
      * See notifyDataStart() for general constraints.
      */
     void notifyParallelDataStart(
-        AbstractAnalysisData *             data,
-        const AnalysisDataParallelOptions &options);
+            AbstractAnalysisData *             data,
+            const AnalysisDataParallelOptions &options);
     /*! \brief
      * Notifies attached serial modules of the start of a frame.
      *

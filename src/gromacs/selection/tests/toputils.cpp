@@ -231,7 +231,7 @@ void TopologyManager::initUniformResidues(int residueSize)
 void TopologyManager::initUniformMolecules(int moleculeSize)
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
-    int index = 0;
+    int index                = 0;
     mtop_->mols.nalloc_index = (mtop_->natoms + moleculeSize - 1) / moleculeSize + 1;
     srenew(mtop_->mols.index, mtop_->mols.nalloc_index);
     mtop_->mols.nr = 0;

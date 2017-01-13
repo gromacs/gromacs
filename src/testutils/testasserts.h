@@ -105,36 +105,43 @@ void processExpectedException(const std::exception &ex);
  * The implementation is copied and adjusted from
  * include/gtest/internal/gtest-internal.h in Google Test 1.6.0.
  */
-#define GMX_TEST_THROW_(statement, expected_exception, fail) \
-    GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
-    if (::testing::AssertionResult gmx_ar = ::testing::AssertionSuccess()) { \
-        bool gmx_caught_expected = false; \
-        try { \
-            GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
-        } \
-        catch (expected_exception const &ex) { \
-            gmx_caught_expected = true; \
-            ::gmx::test::internal::processExpectedException(ex); \
-        } \
-        catch (std::exception const &ex) { \
-            gmx_ar << "Expected: " #statement " throws an exception of type " \
-            << #expected_exception ".\n  Actual: it throws a different type.\n" \
-            << "Exception details:\n" << ::gmx::formatExceptionMessageToString(ex); \
-            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__); \
-        } \
-        catch (...) { \
-            gmx_ar << "Expected: " #statement " throws an exception of type " \
-            << #expected_exception ".\n  Actual: it throws a different type."; \
-            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__); \
-        } \
-        if (!gmx_caught_expected) { \
-            gmx_ar << "Expected: " #statement " throws an exception of type " \
-            << #expected_exception ".\n  Actual: it throws nothing."; \
-            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__); \
-        } \
-    } else \
-        GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__) : \
-            fail(gmx_ar.message())
+#define GMX_TEST_THROW_(statement, expected_exception, fail)                           \
+    GTEST_AMBIGUOUS_ELSE_BLOCKER_                                                      \
+    if (::testing::AssertionResult gmx_ar = ::testing::AssertionSuccess())             \
+    {                                                                                  \
+        bool gmx_caught_expected = false;                                              \
+        try                                                                            \
+        {                                                                              \
+            GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement);                 \
+        }                                                                              \
+        catch (expected_exception const &ex)                                           \
+        {                                                                              \
+            gmx_caught_expected = true;                                                \
+            ::gmx::test::internal::processExpectedException(ex);                       \
+        }                                                                              \
+        catch (std::exception const &ex)                                               \
+        {                                                                              \
+            gmx_ar << "Expected: " #statement " throws an exception of type "          \
+                   << #expected_exception ".\n  Actual: it throws a different type.\n" \
+                   << "Exception details:\n"                                           \
+                   << ::gmx::formatExceptionMessageToString(ex);                       \
+            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__);                  \
+        }                                                                              \
+        catch (...)                                                                    \
+        {                                                                              \
+            gmx_ar << "Expected: " #statement " throws an exception of type "          \
+                   << #expected_exception ".\n  Actual: it throws a different type.";  \
+            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__);                  \
+        }                                                                              \
+        if (!gmx_caught_expected)                                                      \
+        {                                                                              \
+            gmx_ar << "Expected: " #statement " throws an exception of type "          \
+                   << #expected_exception ".\n  Actual: it throws nothing.";           \
+            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__);                  \
+        }                                                                              \
+    }                                                                                  \
+    else                                                                               \
+        GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__) : fail(gmx_ar.message())
 
 /*! \brief
  * Internal implementation macro for exception assertations.
@@ -145,26 +152,31 @@ void processExpectedException(const std::exception &ex);
  * The implementation is copied and adjusted from
  * include/gtest/internal/gtest-internal.h in Google Test 1.6.0.
  */
-#define GMX_TEST_NO_THROW_(statement, fail) \
-    GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
-    if (::testing::AssertionResult gmx_ar = ::testing::AssertionSuccess()) { \
-        try { \
-            GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
-        } \
-        catch (std::exception const &ex) { \
+#define GMX_TEST_NO_THROW_(statement, fail)                                    \
+    GTEST_AMBIGUOUS_ELSE_BLOCKER_                                              \
+    if (::testing::AssertionResult gmx_ar = ::testing::AssertionSuccess())     \
+    {                                                                          \
+        try                                                                    \
+        {                                                                      \
+            GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement);         \
+        }                                                                      \
+        catch (std::exception const &ex)                                       \
+        {                                                                      \
             gmx_ar << "Expected: " #statement " doesn't throw an exception.\n" \
-            << "  Actual: it throws.\n" \
-            << "Exception details:\n" << ::gmx::formatExceptionMessageToString(ex); \
-            goto GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__); \
-        } \
-        catch (...) { \
+                   << "  Actual: it throws.\n"                                 \
+                   << "Exception details:\n"                                   \
+                   << ::gmx::formatExceptionMessageToString(ex);               \
+            goto GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__);        \
+        }                                                                      \
+        catch (...)                                                            \
+        {                                                                      \
             gmx_ar << "Expected: " #statement " doesn't throw an exception.\n" \
-            << "  Actual: it throws."; \
-            goto GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__); \
-        } \
-    } else \
-        GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__) : \
-            fail(gmx_ar.message())
+                   << "  Actual: it throws.";                                  \
+            goto GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__);        \
+        }                                                                      \
+    }                                                                          \
+    else                                                                       \
+        GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__) : fail(gmx_ar.message())
 //! \endcond
 
 /*! \brief
@@ -209,7 +221,6 @@ void processExpectedException(const std::exception &ex);
 class FloatingPointDifference
 {
 public:
-
     /*! \brief Initializes a single-precision difference.
      *
      *  \param ref    First term in difference
@@ -268,7 +279,6 @@ public:
     double termMagnitude() const { return termMagnitude_; }
 
 private:
-
     //! Save the magnitude of the reference value for relative (i.e., not ULP) tolerance
     double termMagnitude_;
     //! Stores the absolute difference, or NaN if one or both values were NaN.
@@ -420,7 +430,7 @@ static inline FloatingPointTolerance ulpTolerance(gmx_uint64_t ulpDiff)
  * \related FloatingPointTolerance
  */
 FloatingPointTolerance
-    relativeToleranceAsFloatingPoint(double magnitude, double tolerance);
+relativeToleranceAsFloatingPoint(double magnitude, double tolerance);
 
 /*! \brief
  * Creates a tolerance that allows a precision-dependent relative difference in
@@ -534,7 +544,7 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
  *
  * \hideinitializer
  */
-#define EXPECT_FLOAT_EQ_TOL(value1, value2, tolerance) \
+#define EXPECT_FLOAT_EQ_TOL(value1, value2, tolerance)                  \
     EXPECT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<float>, \
                         value1, value2, tolerance)
 /*! \brief
@@ -542,7 +552,7 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
  *
  * \hideinitializer
  */
-#define EXPECT_DOUBLE_EQ_TOL(value1, value2, tolerance) \
+#define EXPECT_DOUBLE_EQ_TOL(value1, value2, tolerance)                  \
     EXPECT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<double>, \
                         value1, value2, tolerance)
 /*! \def EXPECT_REAL_EQ_TOL
@@ -556,7 +566,7 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
  *
  * \hideinitializer
  */
-#define ASSERT_FLOAT_EQ_TOL(value1, value2, tolerance) \
+#define ASSERT_FLOAT_EQ_TOL(value1, value2, tolerance)                  \
     ASSERT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<float>, \
                         value1, value2, tolerance)
 /*! \brief
@@ -564,7 +574,7 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
  *
  * \hideinitializer
  */
-#define ASSERT_DOUBLE_EQ_TOL(value1, value2, tolerance) \
+#define ASSERT_DOUBLE_EQ_TOL(value1, value2, tolerance)                  \
     ASSERT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<double>, \
                         value1, value2, tolerance)
 /*! \def ASSERT_REAL_EQ_TOL

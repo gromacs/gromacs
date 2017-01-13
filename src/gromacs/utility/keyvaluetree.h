@@ -65,18 +65,18 @@ public:
     KeyValueTreePath(const std::string &path);
 
     void append(const std::string &key) { path_.push_back(key); }
-    void pop_back() { return path_.pop_back(); }
-    std::string pop_last()
+    void                           pop_back() { return path_.pop_back(); }
+    std::string                    pop_last()
     {
         std::string result = std::move(path_.back());
         path_.pop_back();
         return result;
     }
 
-    bool empty() const { return path_.empty(); }
+    bool   empty() const { return path_.empty(); }
     size_t size() const { return path_.size(); }
     const std::string &operator[](int i) const { return path_[i]; }
-    const std::vector<std::string> &elements() const { return path_; }
+    const std::vector<std::string> &  elements() const { return path_; }
 
     std::string toString() const;
 
@@ -90,20 +90,27 @@ public:
     bool isArray() const;
     bool isObject() const;
     template <typename T>
-    bool isType() const { return value_.isType<T>(); }
+    bool isType() const
+    {
+        return value_.isType<T>();
+    }
     std::type_index type() const { return value_.type(); }
 
     const KeyValueTreeArray & asArray() const;
     const KeyValueTreeObject &asObject() const;
     template <typename T>
-    const T &cast() const { return value_.cast<T>(); }
+    const T &cast() const
+    {
+        return value_.cast<T>();
+    }
 
     const Variant &asVariant() const { return value_; }
 
 private:
-    explicit KeyValueTreeValue(Variant &&value) : value_(std::move(value)) {}
+    explicit KeyValueTreeValue(Variant &&value)
+        : value_(std::move(value)) {}
 
-    KeyValueTreeArray &asArray();
+    KeyValueTreeArray & asArray();
     KeyValueTreeObject &asObject();
 
     Variant value_;
@@ -133,14 +140,15 @@ private:
 class KeyValueTreeProperty
 {
 public:
-    const std::string &key() const { return value_->first; }
+    const std::string &      key() const { return value_->first; }
     const KeyValueTreeValue &value() const { return value_->second; }
 
 private:
     typedef std::map<std::string, KeyValueTreeValue>::const_iterator
-        IteratorType;
+            IteratorType;
 
-    explicit KeyValueTreeProperty(IteratorType value) : value_(value) {}
+    explicit KeyValueTreeProperty(IteratorType value)
+        : value_(value) {}
 
     IteratorType value_;
 
@@ -166,7 +174,7 @@ public:
         std::swap(tmp.values_, values_);
         return *this;
     }
-    KeyValueTreeObject(KeyValueTreeObject &&)            = default;
+    KeyValueTreeObject(KeyValueTreeObject &&) = default;
     KeyValueTreeObject &operator=(KeyValueTreeObject &&) = default;
 
     const std::vector<KeyValueTreeProperty> &properties() const { return values_; }
@@ -194,7 +202,7 @@ private:
     }
 
     std::map<std::string, KeyValueTreeValue> valueMap_;
-    std::vector<KeyValueTreeProperty>        values_;
+    std::vector<KeyValueTreeProperty> values_;
 
     friend class KeyValueTreeObjectBuilder;
 };

@@ -84,7 +84,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 void load_checkpoint(const char *fn, FILE **fplog,
                      const t_commrec *cr, ivec dd_nc, int *npme,
                      t_inputrec *ir, t_state *state,
-                     gmx_bool *bReadEkin,
+                     gmx_bool *       bReadEkin,
                      energyhistory_t *enerhist,
                      gmx_bool bAppend, gmx_bool bForceAppend,
                      gmx_bool reproducibilityRequested);
@@ -126,11 +126,10 @@ void read_checkpoint_part_and_step(const char * filename,
  * \param[out] nfiles           Number of output files from the previous run
  * \param[out] outputfiles      Pointer to array of output file names from the previous run. Pointer is allocated in this function.
  */
-void
-read_checkpoint_simulation_part_and_filenames(struct t_fileio *            fp,
-                                              int *                        simulation_part,
-                                              int *                        nfiles,
-                                              struct gmx_file_position_t **outputfiles);
+void read_checkpoint_simulation_part_and_filenames(struct t_fileio *            fp,
+                                                   int *                        simulation_part,
+                                                   int *                        nfiles,
+                                                   struct gmx_file_position_t **outputfiles);
 
 #ifdef __cplusplus
 }

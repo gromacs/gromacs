@@ -362,7 +362,7 @@ static void read_stx_conf(const char *infile,
 
 static void readConfAndAtoms(const char *infile,
                              t_symtab *symtab, char ***name, t_atoms *atoms,
-                             int *ePBC,
+                             int *  ePBC,
                              rvec **x, rvec **v, matrix box)
 {
     int natoms;
@@ -393,7 +393,7 @@ static void readConfAndAtoms(const char *infile,
 
 void readConfAndTopology(const char *infile,
                          bool *haveTopology, gmx_mtop_t *mtop,
-                         int *ePBC,
+                         int *  ePBC,
                          rvec **x, rvec **v, matrix box)
 {
     GMX_RELEASE_ASSERT(mtop != nullptr, "readConfAndTopology requires mtop!=NULL");
@@ -418,8 +418,8 @@ void readConfAndTopology(const char *infile,
         }
         int natoms;
         int ePBC_tmp
-            = read_tpx(infile, nullptr, box, &natoms,
-                       (x == nullptr) ? nullptr : *x, (v == nullptr) ? nullptr : *v, mtop);
+                = read_tpx(infile, nullptr, box, &natoms,
+                           (x == nullptr) ? nullptr : *x, (v == nullptr) ? nullptr : *v, mtop);
         if (ePBC != nullptr)
         {
             *ePBC = ePBC_tmp;

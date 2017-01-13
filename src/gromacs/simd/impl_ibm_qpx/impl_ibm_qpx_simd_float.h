@@ -56,10 +56,12 @@ class SimdFloat
 public:
     SimdFloat() {}
 
-    SimdFloat(float f) : simdInternal_(vec_splats(f)) {}
+    SimdFloat(float f)
+        : simdInternal_(vec_splats(f)) {}
 
     // Internal utility constructor to simplify return statements
-    SimdFloat(vector4double simd) : simdInternal_(simd) {}
+    SimdFloat(vector4double simd)
+        : simdInternal_(simd) {}
 
     vector4double simdInternal_;
 };
@@ -71,13 +73,15 @@ public:
 
     SimdFInt32(std::int32_t i)
     {
-        GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH) idata[GMX_SIMD_FINT32_WIDTH];
+        GMX_ALIGNED(int, GMX_SIMD_FINT32_WIDTH)
+        idata[GMX_SIMD_FINT32_WIDTH];
         idata[0]      = i;
         simdInternal_ = vec_splat(vec_ldia(0, idata), 0);
     }
 
     // Internal utility constructor to simplify return statements
-    SimdFInt32(vector4double simd) : simdInternal_(simd) {}
+    SimdFInt32(vector4double simd)
+        : simdInternal_(simd) {}
 
     vector4double simdInternal_;
 };
@@ -87,10 +91,12 @@ class SimdFBool
 public:
     SimdFBool() {}
 
-    SimdFBool(bool b) : simdInternal_(vec_splats(b ? 1.0 : -1.0)) {}
+    SimdFBool(bool b)
+        : simdInternal_(vec_splats(b ? 1.0 : -1.0)) {}
 
     // Internal utility constructor to simplify return statements
-    SimdFBool(vector4double simd) : simdInternal_(simd) {}
+    SimdFBool(vector4double simd)
+        : simdInternal_(simd) {}
 
     vector4double simdInternal_;
 };
@@ -99,11 +105,11 @@ static inline SimdFloat gmx_simdcall simdLoad(const float *m)
 {
 #ifdef NDEBUG
     return {
-               vec_ld(0, const_cast<float *>(m))
+        vec_ld(0, const_cast<float *>(m))
     };
 #else
     return {
-               vec_lda(0, const_cast<float *>(m))
+        vec_lda(0, const_cast<float *>(m))
     };
 #endif
 }
@@ -120,24 +126,24 @@ static inline void gmx_simdcall store(float *m, SimdFloat a)
 static inline SimdFloat gmx_simdcall setZeroF()
 {
     return {
-               vec_splats(0.0)
+        vec_splats(0.0)
     };
 }
 
-static inline SimdFInt32 gmx_simdcall simdLoadFI(const std::int32_t * m)
+static inline SimdFInt32 gmx_simdcall simdLoadFI(const std::int32_t *m)
 {
 #ifdef NDEBUG
     return {
-               vec_ldia(0, const_cast<int *>(m))
+        vec_ldia(0, const_cast<int *>(m))
     };
 #else
     return {
-               vec_ldiaa(0, const_cast<int *>(m))
+        vec_ldiaa(0, const_cast<int *>(m))
     };
 #endif
 }
 
-static inline void gmx_simdcall store(std::int32_t * m, SimdFInt32 a)
+static inline void gmx_simdcall store(std::int32_t *m, SimdFInt32 a)
 {
     vec_st(a.simdInternal_, 0, m);
 }
@@ -145,98 +151,98 @@ static inline void gmx_simdcall store(std::int32_t * m, SimdFInt32 a)
 static inline SimdFInt32 gmx_simdcall setZeroFI()
 {
     return {
-               vec_splats(0.0)
+        vec_splats(0.0)
     };
 }
 
 static inline SimdFloat gmx_simdcall operator+(SimdFloat a, SimdFloat b)
 {
     return {
-               vec_add(a.simdInternal_, b.simdInternal_)
+        vec_add(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall operator-(SimdFloat a, SimdFloat b)
 {
     return {
-               vec_sub(a.simdInternal_, b.simdInternal_)
+        vec_sub(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall operator-(SimdFloat x)
 {
     return {
-               vec_neg(x.simdInternal_)
+        vec_neg(x.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall operator*(SimdFloat a, SimdFloat b)
 {
     return {
-               vec_mul(a.simdInternal_, b.simdInternal_)
+        vec_mul(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               vec_msub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        vec_msub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fnma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               vec_nmsub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        vec_nmsub(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fnms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               vec_nmadd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        vec_nmadd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall rsqrt(SimdFloat x)
 {
     return {
-               vec_rsqrte(x.simdInternal_)
+        vec_rsqrte(x.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall rcp(SimdFloat x)
 {
     return {
-               vec_re(x.simdInternal_)
+        vec_re(x.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall maskAdd(SimdFloat a, SimdFloat b, SimdFBool m)
 {
     return {
-               vec_add(a.simdInternal_, vec_sel(vec_splats(0.0), b.simdInternal_, m.simdInternal_))
+        vec_add(a.simdInternal_, vec_sel(vec_splats(0.0), b.simdInternal_, m.simdInternal_))
     };
 }
 
 static inline SimdFloat gmx_simdcall maskzMul(SimdFloat a, SimdFloat b, SimdFBool m)
 {
     return {
-               vec_sel(vec_splats(0.0), vec_mul(a.simdInternal_, b.simdInternal_), m.simdInternal_)
+        vec_sel(vec_splats(0.0), vec_mul(a.simdInternal_, b.simdInternal_), m.simdInternal_)
     };
 }
 
 static inline SimdFloat maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
 {
     return {
-               vec_sel(vec_splats(0.0), vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_), m.simdInternal_)
+        vec_sel(vec_splats(0.0), vec_madd(a.simdInternal_, b.simdInternal_, c.simdInternal_), m.simdInternal_)
     };
 }
 
@@ -246,7 +252,7 @@ static inline SimdFloat maskzRsqrt(SimdFloat x, SimdFBool m)
     x.simdInternal_ = vec_sel(vec_splats(1.0), x.simdInternal_, m.simdInternal_);
 #endif
     return {
-               vec_sel(vec_splats(0.0), vec_rsqrte(x.simdInternal_), m.simdInternal_)
+        vec_sel(vec_splats(0.0), vec_rsqrte(x.simdInternal_), m.simdInternal_)
     };
 }
 
@@ -256,28 +262,28 @@ static inline SimdFloat maskzRcp(SimdFloat x, SimdFBool m)
     x.simdInternal_ = vec_sel(vec_splats(1.0), x.simdInternal_, m.simdInternal_);
 #endif
     return {
-               vec_sel(vec_splats(0.0), vec_re(x.simdInternal_), m.simdInternal_)
+        vec_sel(vec_splats(0.0), vec_re(x.simdInternal_), m.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall abs(SimdFloat x)
 {
     return {
-               vec_abs( x.simdInternal_ )
+        vec_abs(x.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall max(SimdFloat a, SimdFloat b)
 {
     return {
-               vec_sel(b.simdInternal_, a.simdInternal_, vec_sub(a.simdInternal_, b.simdInternal_))
+        vec_sel(b.simdInternal_, a.simdInternal_, vec_sub(a.simdInternal_, b.simdInternal_))
     };
 }
 
 static inline SimdFloat gmx_simdcall min(SimdFloat a, SimdFloat b)
 {
     return {
-               vec_sel(b.simdInternal_, a.simdInternal_, vec_sub(b.simdInternal_, a.simdInternal_))
+        vec_sel(b.simdInternal_, a.simdInternal_, vec_sub(b.simdInternal_, a.simdInternal_))
     };
 }
 
@@ -288,21 +294,23 @@ static inline SimdFloat gmx_simdcall round(SimdFloat x)
     // word rounding scheme. We rely on float-to-float and float-to-integer
     // rounding being the same for half-way values in a few algorithms.
     return {
-               vec_cfid(vec_ctid(x.simdInternal_))
+        vec_cfid(vec_ctid(x.simdInternal_))
     };
 }
 
 static inline SimdFloat gmx_simdcall trunc(SimdFloat x)
 {
     return {
-               vec_trunc(x.simdInternal_)
+        vec_trunc(x.simdInternal_)
     };
 }
 
-static inline SimdFloat frexp(SimdFloat value, SimdFInt32 * exponent)
+static inline SimdFloat frexp(SimdFloat value, SimdFInt32 *exponent)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)    idata[GMX_SIMD_FLOAT_WIDTH];
+    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)
+    rdata[GMX_SIMD_FLOAT_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)
+    idata[GMX_SIMD_FLOAT_WIDTH];
 
     vec_st(value.simdInternal_, 0, rdata);
 
@@ -319,10 +327,12 @@ static inline SimdFloat frexp(SimdFloat value, SimdFInt32 * exponent)
 
 static inline SimdFloat ldexp(SimdFloat value, SimdFInt32 exponent)
 {
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  rdata[GMX_SIMD_FLOAT_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)    idata[GMX_SIMD_FLOAT_WIDTH];
+    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)
+    rdata[GMX_SIMD_FLOAT_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_FLOAT_WIDTH)
+    idata[GMX_SIMD_FLOAT_WIDTH];
 
-    vec_st(value.simdInternal_,    0, rdata);
+    vec_st(value.simdInternal_, 0, rdata);
     vec_st(exponent.simdInternal_, 0, idata);
 
     for (std::size_t i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -349,42 +359,42 @@ static inline float gmx_simdcall reduce(SimdFloat x)
 static inline SimdFBool gmx_simdcall operator==(SimdFloat a, SimdFloat b)
 {
     return {
-               vec_cmpeq(a.simdInternal_, b.simdInternal_)
+        vec_cmpeq(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFBool gmx_simdcall operator!=(SimdFloat a, SimdFloat b)
 {
     return {
-               vec_not(vec_cmpeq(a.simdInternal_, b.simdInternal_))
+        vec_not(vec_cmpeq(a.simdInternal_, b.simdInternal_))
     };
 }
 
 static inline SimdFBool gmx_simdcall operator<(SimdFloat a, SimdFloat b)
 {
     return {
-               vec_cmplt(a.simdInternal_, b.simdInternal_)
+        vec_cmplt(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFBool gmx_simdcall operator<=(SimdFloat a, SimdFloat b)
 {
     return {
-               vec_or(vec_cmplt(a.simdInternal_, b.simdInternal_), vec_cmpeq(a.simdInternal_, b.simdInternal_))
+        vec_or(vec_cmplt(a.simdInternal_, b.simdInternal_), vec_cmpeq(a.simdInternal_, b.simdInternal_))
     };
 }
 
 static inline SimdFBool gmx_simdcall operator&&(SimdFBool a, SimdFBool b)
 {
     return {
-               vec_and(a.simdInternal_, b.simdInternal_)
+        vec_and(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFBool gmx_simdcall operator||(SimdFBool a, SimdFBool b)
 {
     return {
-               vec_or(a.simdInternal_, b.simdInternal_)
+        vec_or(a.simdInternal_, b.simdInternal_)
     };
 }
 
@@ -401,52 +411,52 @@ static inline bool gmx_simdcall anyTrue(SimdFBool a)
 static inline SimdFloat gmx_simdcall selectByMask(SimdFloat a, SimdFBool m)
 {
     return {
-               vec_sel(vec_splats(0.0), a.simdInternal_, m.simdInternal_)
+        vec_sel(vec_splats(0.0), a.simdInternal_, m.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall selectByNotMask(SimdFloat a, SimdFBool m)
 {
     return {
-               vec_sel(a.simdInternal_, vec_splats(0.0), m.simdInternal_)
+        vec_sel(a.simdInternal_, vec_splats(0.0), m.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall blend(SimdFloat a, SimdFloat b, SimdFBool sel)
 {
     return {
-               vec_sel(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+        vec_sel(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall cvtR2I(SimdFloat a)
 {
     return {
-               vec_ctiw(a.simdInternal_)
+        vec_ctiw(a.simdInternal_)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall cvttR2I(SimdFloat a)
 {
     return {
-               vec_ctiwz(a.simdInternal_)
+        vec_ctiwz(a.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall cvtI2R(SimdFInt32 a)
 {
     return {
-               vec_cfid(a.simdInternal_)
+        vec_cfid(a.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall copysign(SimdFloat x, SimdFloat y)
 {
     return {
-               vec_cpsgn(y.simdInternal_, x.simdInternal_)
+        vec_cpsgn(y.simdInternal_, x.simdInternal_)
     };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPLEMENTATION_IBM_QPX_SIMD_FLOAT_H

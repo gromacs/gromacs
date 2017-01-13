@@ -44,8 +44,7 @@
 struct gmx_output_env_t;
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 typedef struct
@@ -70,7 +69,7 @@ typedef struct
 } t_mat;
 
 /* The matrix is indexed using the matrix index */
-#define EROW(m, i)  m->erow[i]
+#define EROW(m, i) m->erow[i]
 
 extern t_mat *init_mat(int n1, gmx_bool b1D);
 

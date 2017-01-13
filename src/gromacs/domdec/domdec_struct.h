@@ -52,11 +52,11 @@
 #include "gromacs/utility/real.h"
 
 //! Max number of zones in domain decomposition
-#define DD_MAXZONE  8
+#define DD_MAXZONE 8
 //! Max number of izones in domain decomposition
 #define DD_MAXIZONE 4
 //! Are we the master node for domain decomposition
-#define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
+#define DDMASTER(dd) ((dd)->rank == (dd)->masterrank)
 
 struct gmx_domdec_comm_t;
 struct gmx_domdec_constraints_t;
@@ -80,10 +80,10 @@ typedef struct
 
 typedef struct
 {
-    rvec x0;     /* Zone lower corner in triclinic coordinates         */
-    rvec x1;     /* Zone upper corner in triclinic coordinates         */
-    rvec bb_x0;  /* Zone bounding box lower corner in Cartesian coords */
-    rvec bb_x1;  /* Zone bounding box upper corner in Cartesian coords */
+    rvec x0;    /* Zone lower corner in triclinic coordinates         */
+    rvec x1;    /* Zone upper corner in triclinic coordinates         */
+    rvec bb_x0; /* Zone bounding box lower corner in Cartesian coords */
+    rvec bb_x1; /* Zone bounding box upper corner in Cartesian coords */
 } gmx_domdec_zone_size_t;
 
 struct gmx_domdec_zones_t
@@ -146,7 +146,7 @@ struct gmx_domdec_t
     /* The communication setup, identical for each cell, cartesian index */
     ivec nc;
     int  ndim;
-    ivec dim;     /* indexed by 0 to ndim */
+    ivec dim; /* indexed by 0 to ndim */
 
     /* PBC from dim 0 to npbcdim */
     int npbcdim;
@@ -211,7 +211,6 @@ struct gmx_domdec_t
     /* gmx_pme_recv_f buffer */
     int   pme_recv_f_alloc;
     rvec *pme_recv_f_buf;
-
 };
 
 #endif

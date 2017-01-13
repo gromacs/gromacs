@@ -76,7 +76,7 @@ public:
      * the `gmx` binary, and simplifying exception handling.
      */
     typedef std::function<TrajectoryAnalysisModulePointer()>
-        ModuleFactoryMethod;
+            ModuleFactoryMethod;
 
     /*! \brief
      * Implements a main() method that runs a given module.

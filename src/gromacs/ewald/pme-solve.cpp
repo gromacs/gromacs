@@ -54,7 +54,7 @@
 
 #if GMX_SIMD_HAVE_REAL
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
-#    define PME_SIMD_SOLVE
+#define PME_SIMD_SOLVE
 #endif
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
@@ -62,17 +62,17 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 struct pme_solve_work_t
 {
     /* work data for solve_pme */
-    int    nalloc;
-    real * mhx;
-    real * mhy;
-    real * mhz;
-    real * m2;
-    real * denom;
-    real * tmp1_alloc;
-    real * tmp1;
-    real * tmp2;
-    real * eterm;
-    real * m2inv;
+    int   nalloc;
+    real *mhx;
+    real *mhy;
+    real *mhz;
+    real *m2;
+    real *denom;
+    real *tmp1_alloc;
+    real *tmp1;
+    real *tmp2;
+    real *eterm;
+    real *m2inv;
 
     real   energy_q;
     matrix vir_q;
@@ -91,7 +91,7 @@ static void realloc_work(struct pme_solve_work_t *work, int nkx)
         srenew(work->mhy, work->nalloc);
         srenew(work->mhz, work->nalloc);
         srenew(work->m2, work->nalloc);
-        /* Allocate an aligned pointer for SIMD operations, including extra
+/* Allocate an aligned pointer for SIMD operations, including extra
          * elements at the end for padding.
          */
 #ifdef PME_SIMD_SOLVE
@@ -105,8 +105,8 @@ static void realloc_work(struct pme_solve_work_t *work, int nkx)
         sfree_aligned(work->tmp2);
         sfree_aligned(work->eterm);
         snew_aligned(work->denom, work->nalloc + simd_width, simd_width * sizeof(real));
-        snew_aligned(work->tmp1,  work->nalloc + simd_width, simd_width * sizeof(real));
-        snew_aligned(work->tmp2,  work->nalloc + simd_width, simd_width * sizeof(real));
+        snew_aligned(work->tmp1, work->nalloc + simd_width, simd_width * sizeof(real));
+        snew_aligned(work->tmp2, work->nalloc + simd_width, simd_width * sizeof(real));
         snew_aligned(work->eterm, work->nalloc + simd_width, simd_width * sizeof(real));
         srenew(work->m2inv, work->nalloc);
 
@@ -126,7 +126,7 @@ void pme_init_all_work(struct pme_solve_work_t **work, int nthread, int nkx)
     /* Use fft5d, order after FFT is y major, z, x minor */
 
     snew(*work, nthread);
-    /* Allocate the work arrays thread local to optimize memory access */
+/* Allocate the work arrays thread local to optimize memory access */
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (thread = 0; thread < nthread; thread++)
     {
@@ -345,7 +345,7 @@ int solve_pme_yzx(struct gmx_pme_t *pme, t_complex *grid, real vol,
     eterm = work->eterm;
     m2inv = work->m2inv;
 
-    iyz0 = local_ndata[YY] * local_ndata[ZZ] * thread   / nthread;
+    iyz0 = local_ndata[YY] * local_ndata[ZZ] * thread / nthread;
     iyz1 = local_ndata[YY] * local_ndata[ZZ] * (thread + 1) / nthread;
 
     for (iyz = iyz0; iyz < iyz1; iyz++)
@@ -589,7 +589,7 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real
     tmp1  = work->tmp1;
     tmp2  = work->tmp2;
 
-    iyz0 = local_ndata[YY] * local_ndata[ZZ] * thread   / nthread;
+    iyz0 = local_ndata[YY] * local_ndata[ZZ] * thread / nthread;
     iyz1 = local_ndata[YY] * local_ndata[ZZ] * (thread + 1) / nthread;
 
     for (iyz = iyz0; iyz < iyz1; iyz++)
@@ -609,7 +609,7 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real
         }
 
         by = 3.0 * vol * pme->bsp_mod[YY][ky]
-            / (M_PI * sqrt(M_PI) * ewaldcoeff * ewaldcoeff * ewaldcoeff);
+             / (M_PI * sqrt(M_PI) * ewaldcoeff * ewaldcoeff * ewaldcoeff);
 
         kz = iz + local_offset[ZZ];
 
@@ -725,7 +725,6 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real
                     {
                         struct2[kx] += scale * (p0->re * p1->re + p0->im * p1->im);
                     }
-
                 }
                 for (ig = 0; ig <= 6; ++ig)
                 {
@@ -754,16 +753,16 @@ int solve_pme_lj_yzx(struct gmx_pme_t *pme, t_complex **grid, gmx_bool bLB, real
 
             for (kx = kxstart; kx < kxend; kx++)
             {
-                ets2    = corner_fac * tmp1[kx];
-                vterm   = 2.0 * factor * tmp2[kx];
+                ets2  = corner_fac * tmp1[kx];
+                vterm = 2.0 * factor * tmp2[kx];
                 energy += ets2;
-                ets2vf  = corner_fac * vterm;
-                virxx  += ets2vf * mhx[kx] * mhx[kx] - ets2;
-                virxy  += ets2vf * mhx[kx] * mhy[kx];
-                virxz  += ets2vf * mhx[kx] * mhz[kx];
-                viryy  += ets2vf * mhy[kx] * mhy[kx] - ets2;
-                viryz  += ets2vf * mhy[kx] * mhz[kx];
-                virzz  += ets2vf * mhz[kx] * mhz[kx] - ets2;
+                ets2vf = corner_fac * vterm;
+                virxx += ets2vf * mhx[kx] * mhx[kx] - ets2;
+                virxy += ets2vf * mhx[kx] * mhy[kx];
+                virxz += ets2vf * mhx[kx] * mhz[kx];
+                viryy += ets2vf * mhy[kx] * mhy[kx] - ets2;
+                viryz += ets2vf * mhy[kx] * mhz[kx];
+                virzz += ets2vf * mhz[kx] * mhz[kx] - ets2;
             }
         }
         else

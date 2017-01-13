@@ -206,11 +206,11 @@ IOptionsContainer &OptionSectionImpl::Group::addGroup()
 OptionInfo *OptionSectionImpl::Group::addOptionImpl(const AbstractOption &settings)
 {
     OptionSectionImpl::AbstractOptionStoragePointer
-        option(settings.createStorage(parent_->managers_));
+            option(settings.createStorage(parent_->managers_));
     options_.reserve(options_.size() + 1);
     auto insertionResult
-        = parent_->optionMap_.insert(std::make_pair(option->name(),
-                                                    std::move(option)));
+            = parent_->optionMap_.insert(std::make_pair(option->name(),
+                                                        std::move(option)));
     if (!insertionResult.second)
     {
         const std::string &name = insertionResult.first->second->name();
@@ -221,7 +221,7 @@ OptionInfo *OptionSectionImpl::Group::addOptionImpl(const AbstractOption &settin
     return &insertedOption.optionInfo();
 }
 
-}   // namespace internal
+} // namespace internal
 
 using internal::OptionsImpl;
 

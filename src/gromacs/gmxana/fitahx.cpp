@@ -78,9 +78,9 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
 {
     static rvec *xref = nullptr;
     static real *mass = nullptr;
-    const  real  d    = 0.15;  /* Rise per residue (nm)    */
-    const  real  tw   = 1.745; /* Twist per residue (rad)  */
-    const  real  rad  = 0.23;  /* Radius of the helix (nm) */
+    const real   d    = 0.15;  /* Rise per residue (nm)    */
+    const real   tw   = 1.745; /* Twist per residue (rad)  */
+    const real   rad  = 0.23;  /* Radius of the helix (nm) */
     real         phi0, trms, rms;
     rvec         dx, xcm;
     int          ai, i, nmass;
@@ -156,10 +156,10 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
         if (mass[ai] > 0.0)
         {
             rvec_sub(x[ai], xref[ai], dx);
-            rms         = iprod(dx, dx);
+            rms = iprod(dx, dx);
             bb[i].rmsa += std::sqrt(rms);
             bb[i].nrms++;
-            trms    += rms;
+            trms += rms;
             mass[ai] = 0.0;
         }
     }

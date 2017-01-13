@@ -99,7 +99,9 @@ public:
 
     virtual OptionInfo &optionInfo() { return info_; }
     virtual std::string typeString() const
-    { return isVector() ? "vector" : "int"; }
+    {
+        return isVector() ? "vector" : "int";
+    }
     virtual std::string formatSingleValue(const int &value) const;
 
 private:
@@ -198,7 +200,9 @@ public:
 
     virtual OptionInfo &optionInfo() { return info_; }
     virtual std::string typeString() const
-    { return allowed_.empty() ? "string" : "enum"; }
+    {
+        return allowed_.empty() ? "string" : "enum";
+    }
     virtual std::string formatExtraDescription() const;
     virtual std::string formatSingleValue(const std::string &value) const;
 

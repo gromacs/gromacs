@@ -43,7 +43,7 @@
 
 int add_h(t_atoms **pdbaptr, rvec *xptr[],
           int nah, t_hackblock ah[],
-          int nterpairs,
+          int           nterpairs,
           t_hackblock **ntdb, t_hackblock **ctdb,
           int *rN, int *rC, gmx_bool bMissing,
           int **nabptr, t_hack ***abptr,

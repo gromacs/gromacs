@@ -64,7 +64,7 @@ void nbnxn_init_search(nbnxn_search_t *           nbs_ptr,
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
                              gmx_bool simple, gmx_bool combined,
                              nbnxn_alloc_t *alloc,
-                             nbnxn_free_t  *free);
+                             nbnxn_free_t * free);
 
 /* Make a apir-list with radius rlist, store it in nbl.
  * The parameter min_ci_balanced sets the minimum required

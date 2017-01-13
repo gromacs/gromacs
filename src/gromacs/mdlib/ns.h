@@ -85,8 +85,8 @@ void init_ns(FILE *fplog, const t_commrec *cr,
 
 int search_neighbours(FILE *log, t_forcerec *fr, matrix box,
                       gmx_localtop_t *top,
-                      gmx_groups_t *groups,
-                      t_commrec *cr,
+                      gmx_groups_t *  groups,
+                      t_commrec *     cr,
                       t_nrnb *nrnb, t_mdatoms *md,
                       gmx_bool bFillGrid);
 

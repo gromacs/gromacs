@@ -66,7 +66,6 @@ namespace
 
 //! Number of bits that determines the resolution of the lookup table for the normal distribution.
 const int c_TabulatedNormalDistributionDefaultBits = 14;
-
 }
 
 /*! \brief Tabulated normal random distribution
@@ -107,7 +106,7 @@ const int c_TabulatedNormalDistributionDefaultBits = 14;
 template <class RealType = real, unsigned int tableBits = c_TabulatedNormalDistributionDefaultBits>
 class TabulatedNormalDistribution
 {
-static_assert(tableBits <= 24, "Normal distribution table is limited to 24bits (64MB in single precision)");
+    static_assert(tableBits <= 24, "Normal distribution table is limited to 24bits (64MB in single precision)");
 
 public:
     /*! \brief  Type of normal distribution results */
@@ -165,10 +164,9 @@ public:
      *  and is exposed only to permit testing. Normal code should not
      *  need to call this function.
      */
-    static const
-    std::vector<RealType>
-    // cppcheck-suppress unusedPrivateFunction
-    makeTable()
+    static const std::vector<RealType>
+            // cppcheck-suppress unusedPrivateFunction
+            makeTable()
     {
         /* Fill the table with the integral of a gaussian distribution, which
          * corresponds to the inverse error function.
@@ -188,7 +186,7 @@ public:
             double x = std::sqrt(2.0) * erfinv(r);
 
             table.at(halfSize - 1 - i) = -x;
-            table.at(halfSize + i)     =  x;
+            table.at(halfSize + i)     = x;
         }
         // We want to fill in the extremal table entries with
         // values that make the total variance equal to 1, so
@@ -204,20 +202,19 @@ public:
         double missingVariance = 1.0 - 2.0 * sumOfSquares / tableSize;
         GMX_RELEASE_ASSERT(missingVariance > 0, "Incorrect computation of tabulated normal distribution");
         double extremalValue = std::sqrt(0.5 * missingVariance * tableSize);
-        table.at(0)  = -extremalValue;
-        table.back() = extremalValue;
+        table.at(0)          = -extremalValue;
+        table.back()         = extremalValue;
 
         return table;
     }
 
 public:
-
     /*! \brief Construct new normal distribution with specified mean & stdddev.
      *
      *  \param mean    Mean value of tabulated normal distribution
      *  \param stddev  Standard deviation of tabulated normal distribution
      */
-    explicit TabulatedNormalDistribution(result_type mean = 0.0, result_type stddev = 1.0 )
+    explicit TabulatedNormalDistribution(result_type mean = 0.0, result_type stddev = 1.0)
         : param_(param_type(mean, stddev)), savedRandomBits_(0), savedRandomBitsLeft_(0)
     {
     }
@@ -226,7 +223,7 @@ public:
      *
      *  \param param Parameter class containing mean and standard deviation.
      */
-    explicit TabulatedNormalDistribution(  const param_type &param )
+    explicit TabulatedNormalDistribution(const param_type &param)
         : param_(param), savedRandomBits_(0), savedRandomBitsLeft_(0)
     {
     }
@@ -316,8 +313,8 @@ public:
             savedRandomBits_     = static_cast<gmx_uint64_t>(g());
             savedRandomBitsLeft_ = std::numeric_limits<typename Rng::result_type>::digits;
         }
-        result_type value = c_table_[savedRandomBits_ & ( (1ULL << tableBits) - 1 ) ];
-        savedRandomBits_    >>= tableBits;
+        result_type value = c_table_[savedRandomBits_ & ((1ULL << tableBits) - 1)];
+        savedRandomBits_ >>= tableBits;
         savedRandomBitsLeft_ -= tableBits;
         return param.mean() + value * param.stddev();
     }
@@ -364,14 +361,13 @@ private:
 template <>
 const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
 
-extern template
-const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
+extern template const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_;
 #endif
 
 // Instantiation for all tables without specialization
 template <class RealType, unsigned int tableBits>
 const std::vector<RealType> TabulatedNormalDistribution<RealType, tableBits>::c_table_ = TabulatedNormalDistribution<RealType, tableBits>::makeTable();
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_RANDOM_TABULATEDNORMALDISTRIBUTION_H

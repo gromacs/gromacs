@@ -65,14 +65,12 @@ extern "C" {
  *                      a matrix, i.e. eigenvector j starts at offset j*n, and
  *                      is of length n.
  */
-void
-eigensolver(real * a,
-            int    n,
-            int    index_lower,
-            int    index_upper,
-            real * eigenvalues,
-            real * eigenvec);
-
+void eigensolver(real *a,
+                 int   n,
+                 int   index_lower,
+                 int   index_upper,
+                 real *eigenvalues,
+                 real *eigenvec);
 
 
 /*! \brief Sparse matrix eigensolver.
@@ -84,12 +82,11 @@ eigensolver(real * a,
  *
  *  maxiter=100000 should suffice in most cases!
  */
-void
-sparse_eigensolver(gmx_sparsematrix_t * A,
-                   int                  neig,
-                   real *               eigenvalues,
-                   real *               eigenvectors,
-                   int                  maxiter);
+void sparse_eigensolver(gmx_sparsematrix_t *A,
+                        int                 neig,
+                        real *              eigenvalues,
+                        real *              eigenvectors,
+                        int                 maxiter);
 
 #ifdef __cplusplus
 }

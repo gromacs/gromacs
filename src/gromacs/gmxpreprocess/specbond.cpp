@@ -86,7 +86,8 @@ t_specbond *get_specbonds(int *nspecbond)
     for (i = 0; (i < nlines); i++)
     {
         if (sscanf(lines[i], "%s%s%d%s%s%d%lf%s%s",
-                   r1buf, a1buf, &nb1, r2buf, a2buf, &nb2, &length, nr1buf, nr2buf) != 9)
+                   r1buf, a1buf, &nb1, r2buf, a2buf, &nb2, &length, nr1buf, nr2buf)
+            != 9)
         {
             fprintf(stderr, "Invalid line '%s' in %s\n", lines[i], sbfile);
         }
@@ -255,7 +256,8 @@ int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
                 && !(nspec > 0
                      && pdba->atom[sgp[nspec - 1]].resind == pdba->atom[i].resind
                      && gmx_strcasecmp(*pdba->atomname[sgp[nspec - 1]],
-                                       *pdba->atomname[i]) == 0))
+                                       *pdba->atomname[i])
+                                == 0))
             {
                 specp[nspec] = pdba->atom[i].resind;
                 sgp[nspec]   = i;

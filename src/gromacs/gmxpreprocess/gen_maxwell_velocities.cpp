@@ -50,8 +50,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static void low_mspeed(real tempi,
-                       gmx_mtop_t *mtop, rvec v[], gmx::ThreeFry2x64<> * rng)
+static void low_mspeed(real        tempi,
+                       gmx_mtop_t *mtop, rvec v[], gmx::ThreeFry2x64<> *rng)
 {
     int                                    i, m, nrdf;
     real                                   boltz, sd;
@@ -74,7 +74,7 @@ static void low_mspeed(real tempi,
             for (m = 0; (m < DIM); m++)
             {
                 v[i][m] = sd * normalDist(*rng);
-                ekin   += 0.5 * mass * v[i][m] * v[i][m];
+                ekin += 0.5 * mass * v[i][m] * v[i][m];
             }
             nrdf += DIM;
         }
@@ -128,7 +128,7 @@ static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
     tm = 0.0;
     for (i = 0; (i < natoms); i++)
     {
-        m0  = mass[i];
+        m0 = mass[i];
         tm += m0;
         cprod(x[i], v[i], a0);
         for (m = 0; (m < DIM); m++)
@@ -146,7 +146,7 @@ static real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
         acm[m] -= a0[m] / tm;
     }
 
-#define PVEC(str, v) fprintf(log, \
+#define PVEC(str, v) fprintf(log,                                             \
                              "%s[X]: %10.5e  %s[Y]: %10.5e  %s[Z]: %10.5e\n", \
                              str, v[0], str, v[1], str, v[2])
 #ifdef DEBUG

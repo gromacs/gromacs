@@ -53,29 +53,53 @@ struct gmx_output_env_t;
  ***************************************************/
 enum
 {
-    elNone, elSolid, elDotted, elDashed,
-    elLongDashed, elDotDashed, elNR
+    elNone,
+    elSolid,
+    elDotted,
+    elDashed,
+    elLongDashed,
+    elDotDashed,
+    elNR
 };
 /* xvgr line-styles */
 
 enum
 {
-    ecWhite, ecFrank, ecBlack = ecFrank,
-    ecRed, ecGreen, ecBlue, ecYellow, ecBrown, ecGray,
-    ecPurple, ecLightBlue, ecViolet, ecHolland, ecLila, ecDarkGray,
-    ecAquamarine, ecOlive, ecNR
+    ecWhite,
+    ecFrank,
+    ecBlack = ecFrank,
+    ecRed,
+    ecGreen,
+    ecBlue,
+    ecYellow,
+    ecBrown,
+    ecGray,
+    ecPurple,
+    ecLightBlue,
+    ecViolet,
+    ecHolland,
+    ecLila,
+    ecDarkGray,
+    ecAquamarine,
+    ecOlive,
+    ecNR
 };
 /* xvgr line-colors */
 
 enum
 {
-    eppNone, eppColor, eppPattern, eppNR
+    eppNone,
+    eppColor,
+    eppPattern,
+    eppNR
 };
 /* xvgr pattern type */
 
 enum
 {
-    evView, evWorld, evNR
+    evView,
+    evWorld,
+    evNR
 };
 /* view type */
 
@@ -101,7 +125,11 @@ gmx_bool output_env_get_print_xvgr_codes(const struct gmx_output_env_t *oenv);
 
 enum
 {
-    exvggtNONE, exvggtXNY, exvggtXYDY, exvggtXYDYDY, exvggtNR
+    exvggtNONE,
+    exvggtXNY,
+    exvggtXYDY,
+    exvggtXYDYDY,
+    exvggtNR
 };
 
 void xvgr_header(FILE *fp, const char *title, const char *xaxis,
@@ -138,7 +166,7 @@ void xvgr_world(FILE *out, real xmin, real ymin, real xmax, real ymax,
                 const struct gmx_output_env_t *oenv);
 /* Set the world in xvgr */
 
-void xvgr_legend(FILE *out, int nsets, const char** setnames,
+void xvgr_legend(FILE *out, int nsets, const char **setnames,
                  const struct gmx_output_env_t *oenv);
 /* Make a legend box, and also modifies the view to make room for the legend */
 
@@ -157,7 +185,7 @@ void xvgr_line_props(FILE *out, int NrSet, int LineStyle, int LineColor,
 /* Set xvgr line styles and colors */
 
 void xvgr_box(FILE *out,
-              int LocType,
+              int   LocType,
               real xmin, real ymin, real xmax, real ymax,
               int LineStyle, int LineWidth, int LineColor,
               int BoxFill, int BoxColor, int BoxPattern,
@@ -179,7 +207,7 @@ int read_xvg(const char *fn, double ***y, int *ny);
 /* As read_xvg_legend, but does not read legends. */
 
 void write_xvg(const char *fn, const char *title, int nx, int ny, real **y,
-               const char** leg, const struct gmx_output_env_t *oenv);
+               const char **leg, const struct gmx_output_env_t *oenv);
 /* Write a two D array (y) of dimensions nx rows times
  * ny columns to a file. If leg != NULL it will be written too.
  */
@@ -189,7 +217,7 @@ void write_xvg(const char *fn, const char *title, int nx, int ny, real **y,
  * two dimensional array which is returned.
  */
 real **read_xvg_time(const char *fn,
-                     gmx_bool bHaveT,
+                     gmx_bool    bHaveT,
                      gmx_bool bTB, real tb,
                      gmx_bool bTE, real te,
                      int nsets_in, int *nset, int *nval,

@@ -94,7 +94,7 @@ real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
         }
         for (m = 0; (m < DIM); m++)
         {
-            dx2      = x[ii][m] * x[ii][m];
+            dx2 = x[ii][m] * x[ii][m];
             comp[m] += dx2 * m0;
         }
     }
@@ -148,11 +148,11 @@ void calc_gyro_z(rvec x[], matrix box,
             {
                 zi = 0;
             }
-            w               = atom[ii].m * (1 + std::cos(M_PI * (zf - zi)));
+            w = atom[ii].m * (1 + std::cos(M_PI * (zf - zi)));
             inertia[zi][0] += w * gmx::square(x[ii][YY]);
             inertia[zi][1] += w * gmx::square(x[ii][XX]);
             inertia[zi][2] -= w * x[ii][XX] * x[ii][YY];
-            tm[zi]         += w;
+            tm[zi] += w;
         }
     }
     fprintf(out, "%10g", time);
@@ -173,7 +173,7 @@ void calc_gyro_z(rvec x[], matrix box,
 
 int gmx_gyrate(int argc, char *argv[])
 {
-    const char *      desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes the radius of gyration of a molecule",
         "and the radii of gyration about the [IT]x[it]-, [IT]y[it]- and [IT]z[it]-axes,",
         "as a function of time. The atoms are explicitly mass weighted.[PAR]",
@@ -186,19 +186,14 @@ int gmx_gyrate(int argc, char *argv[])
         "With the option [TT]-nz[tt] 2D radii of gyration in the [IT]x-y[it] plane",
         "of slices along the [IT]z[it]-axis are calculated."
     };
-    static int        nmol = 1, nz = 0;
-    static gmx_bool   bQ   = FALSE, bRot = FALSE, bMOI = FALSE;
-    t_pargs           pa[] = {
-        { "-nmol", FALSE, etINT, {&nmol},
-          "The number of molecules to analyze" },
-        { "-q", FALSE, etBOOL, {&bQ},
-          "Use absolute value of the charge of an atom as weighting factor instead of mass" },
-        { "-p", FALSE, etBOOL, {&bRot},
-          "Calculate the radii of gyration about the principal axes." },
-        { "-moi", FALSE, etBOOL, {&bMOI},
-          "Calculate the moments of inertia (defined by the principal axes)." },
-        { "-nz", FALSE, etINT, {&nz},
-          "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
+    static int      nmol = 1, nz = 0;
+    static gmx_bool bQ = FALSE, bRot = FALSE, bMOI = FALSE;
+    t_pargs         pa[] = {
+        { "-nmol", FALSE, etINT, { &nmol }, "The number of molecules to analyze" },
+        { "-q", FALSE, etBOOL, { &bQ }, "Use absolute value of the charge of an atom as weighting factor instead of mass" },
+        { "-p", FALSE, etBOOL, { &bRot }, "Calculate the radii of gyration about the principal axes." },
+        { "-moi", FALSE, etBOOL, { &bMOI }, "Calculate the moments of inertia (defined by the principal axes)." },
+        { "-nz", FALSE, etINT, { &nz }, "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
     };
     FILE *            out;
     t_trxstatus *     status;
@@ -209,7 +204,7 @@ int gmx_gyrate(int argc, char *argv[])
     matrix            box, trans;
     gmx_bool          bACF;
     real **           moi_trans = nullptr;
-    int               max_moi   = 0, delta_moi = 100;
+    int               max_moi = 0, delta_moi = 100;
     rvec              d, d1; /* eigenvalues of inertia tensor */
     real              t, t0, tm, gyro;
     int               natoms;
@@ -222,11 +217,11 @@ int gmx_gyrate(int argc, char *argv[])
     const char *      legI[] = { "Itot", "I1", "I2", "I3" };
 #define NLEG asize(leg)
     t_filenm fnm[] = {
-        { efTRX, "-f",   nullptr,       ffREAD },
-        { efTPS, nullptr,   nullptr,       ffREAD },
-        { efNDX, nullptr,   nullptr,       ffOPTRD },
-        { efXVG, nullptr,   "gyrate",   ffWRITE },
-        { efXVG, "-acf", "moi-acf",  ffOPTWR },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, nullptr, "gyrate", ffWRITE },
+        { efXVG, "-acf", "moi-acf", ffOPTWR },
     };
 #define NFILE asize(fnm)
     int      npargs;

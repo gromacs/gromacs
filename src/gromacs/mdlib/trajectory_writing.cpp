@@ -72,8 +72,7 @@ void do_md_trajectory_writing(FILE *            fplog,
                               gmx_bool          bRerunMD,
                               gmx_bool          bLastStep,
                               gmx_bool          bDoConfOut,
-                              gmx_bool          bSumEkinhOld
-                              )
+                              gmx_bool          bSumEkinhOld)
 {
     int   mdof_flags;
     rvec *x_for_confout = nullptr;
@@ -98,8 +97,7 @@ void do_md_trajectory_writing(FILE *            fplog,
     if (bCPT)
     {
         mdof_flags |= MDOF_CPT;
-    }
-    ;
+    };
 
 #if defined(GMX_FAHCORE)
     if (bLastStep)
@@ -109,7 +107,7 @@ void do_md_trajectory_writing(FILE *            fplog,
     }
     if (MASTER(cr))
     {
-        fcReportProgress( ir->nsteps, step );
+        fcReportProgress(ir->nsteps, step);
     }
 
 #if defined(__native_client__)

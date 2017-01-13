@@ -71,7 +71,7 @@ struct t_pbc;
 real bond_angle(const rvec xi, const rvec xj, const rvec xk,
                 const struct t_pbc *pbc,
                 rvec r_ij, rvec r_kj, real *costh,
-                int *t1, int *t2);  /* out */
+                int *t1, int *t2); /* out */
 
 /*! \brief Calculate dihedral-angle. No PBC is taken into account (use mol-shift) */
 real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
@@ -91,15 +91,14 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
 void make_dp_periodic(real *dp);
 
 /*! \brief Compute CMAP dihedral energies and forces */
-real
-    cmap_dihs(int nbonds,
-              const t_iatom forceatoms[], const t_iparams forceparams[],
-              const gmx_cmap_t * cmap_grid,
-              const rvec x[], rvec4 f[], rvec fshift[],
-              const struct t_pbc *pbc, const struct t_graph *g,
-              real gmx_unused lambda, real gmx_unused * dvdlambda,
-              const t_mdatoms gmx_unused * md, t_fcdata gmx_unused * fcd,
-              int  gmx_unused * global_atom_index);
+real cmap_dihs(int           nbonds,
+               const t_iatom forceatoms[], const t_iparams forceparams[],
+               const gmx_cmap_t *cmap_grid,
+               const rvec x[], rvec4 f[], rvec fshift[],
+               const struct t_pbc *pbc, const struct t_graph *g,
+               real gmx_unused lambda, real gmx_unused *dvdlambda,
+               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+               int gmx_unused *global_atom_index);
 
 //! \cond
 /*************************************************************************
@@ -116,52 +115,48 @@ t_ifunc tab_bonds, tab_angles, tab_dihs;
 t_ifunc polarize, anharm_polarize, water_pol, thole_pol, angres, angresz, dihres, unimplemented;
 
 /* As pdihs(), but without calculating energies and shift forces */
-void
-    pdihs_noener(int nbonds,
-                 const t_iatom forceatoms[], const t_iparams forceparams[],
-                 const rvec x[], rvec4 f[],
-                 const struct t_pbc gmx_unused *pbc,
-                 const struct t_graph gmx_unused *g,
-                 real lambda,
-                 const t_mdatoms gmx_unused * md, t_fcdata gmx_unused * fcd,
-                 int gmx_unused * global_atom_index);
+void pdihs_noener(int           nbonds,
+                  const t_iatom forceatoms[], const t_iparams forceparams[],
+                  const rvec x[], rvec4 f[],
+                  const struct t_pbc gmx_unused *pbc,
+                  const struct t_graph gmx_unused *g,
+                  real                             lambda,
+                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                  int gmx_unused *global_atom_index);
 
 /* TODO these declarations should be internal to the module */
 
 /* As angles(), but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
  */
-void
-    angles_noener_simd(int nbonds,
-                       const t_iatom forceatoms[], const t_iparams forceparams[],
-                       const rvec x[], rvec4 f[],
-                       const struct t_pbc *pbc,
-                       const struct t_graph gmx_unused *g,
-                       real gmx_unused lambda,
-                       const t_mdatoms gmx_unused * md, t_fcdata gmx_unused * fcd,
-                       int gmx_unused * global_atom_index);
+void angles_noener_simd(int           nbonds,
+                        const t_iatom forceatoms[], const t_iparams forceparams[],
+                        const rvec x[], rvec4 f[],
+                        const struct t_pbc * pbc,
+                        const struct t_graph gmx_unused *g,
+                        real gmx_unused lambda,
+                        const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                        int gmx_unused *global_atom_index);
 
 /* As pdihs_noener(), but using SIMD to calculate many dihedrals at once. */
-void
-    pdihs_noener_simd(int nbonds,
-                      const t_iatom forceatoms[], const t_iparams forceparams[],
-                      const rvec x[], rvec4 f[],
-                      const struct t_pbc *pbc,
-                      const struct t_graph gmx_unused *g,
-                      real gmx_unused lambda,
-                      const t_mdatoms gmx_unused * md, t_fcdata gmx_unused * fcd,
-                      int gmx_unused * global_atom_index);
-
-/* As rbdihs(), when not needing energy or shift force, using SIMD to calculate many dihedrals at once. */
-void
-    rbdihs_noener_simd(int nbonds,
+void pdihs_noener_simd(int           nbonds,
                        const t_iatom forceatoms[], const t_iparams forceparams[],
                        const rvec x[], rvec4 f[],
-                       const struct t_pbc *pbc,
+                       const struct t_pbc * pbc,
                        const struct t_graph gmx_unused *g,
                        real gmx_unused lambda,
-                       const t_mdatoms gmx_unused * md, t_fcdata gmx_unused * fcd,
-                       int gmx_unused * global_atom_index);
+                       const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                       int gmx_unused *global_atom_index);
+
+/* As rbdihs(), when not needing energy or shift force, using SIMD to calculate many dihedrals at once. */
+void rbdihs_noener_simd(int           nbonds,
+                        const t_iatom forceatoms[], const t_iparams forceparams[],
+                        const rvec x[], rvec4 f[],
+                        const struct t_pbc * pbc,
+                        const struct t_graph gmx_unused *g,
+                        real gmx_unused lambda,
+                        const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                        int gmx_unused *global_atom_index);
 
 //! \endcond
 

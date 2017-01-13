@@ -109,7 +109,7 @@ static void log_action(int bMal, const char *what, const char *file, int line,
             }
         }
         printf("%s: %.1f MB [%s, line %d, nelem %d, size %d]\n",
-               what ? what  : NN, bytes / 1024.0,
+               what ? what : NN, bytes / 1024.0,
                file ? fname : NN, line, nelem, size);
     }
     tMPI_Thread_mutex_unlock(&gmx_logfile_mtx);
@@ -130,11 +130,12 @@ void *save_malloc(const char *name, const char *file, int line, size_t size)
         if ((p = malloc(size)) == nullptr)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to malloc %" GMX_PRId64 " bytes for %s\n"
+                      "Not enough memory. Failed to malloc %" GMX_PRId64
+                      " bytes for %s\n"
                       "(called from file %s, line %d)",
                       (gmx_int64_t)size, name, file, line);
         }
-        (void) memset(p, 0, size);
+        (void)memset(p, 0, size);
     }
 #ifdef DEBUG
     log_action(1, name, file, line, 1, size, p);
@@ -174,7 +175,7 @@ void *save_calloc(const char *name, const char *file, int line,
                       (gmx_int64_t)nelem, (gmx_int64_t)elsize,
                       name, file, line);
         }
-        memset(p, 0, (size_t) (nelem * elsize));
+        memset(p, 0, (size_t)(nelem * elsize));
 #else
         if ((p = calloc((size_t)nelem, (size_t)elsize)) == nullptr)
         {
@@ -224,7 +225,8 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
         if (p == nullptr)
         {
             gmx_fatal(errno, __FILE__, __LINE__,
-                      "Not enough memory. Failed to realloc %" GMX_PRId64 " bytes for %s, %s=%x\n"
+                      "Not enough memory. Failed to realloc %" GMX_PRId64
+                      " bytes for %s, %s=%x\n"
                       "(called from file %s, line %d)",
                       (gmx_int64_t)size, name, name, ptr, file, line);
         }
@@ -254,7 +256,7 @@ void save_free(const char gmx_unused *name, const char gmx_unused *file, int gmx
 void *save_malloc_aligned(const char *name, const char *file, int line,
                           size_t nelem, size_t elsize, size_t alignment)
 {
-    void * p;
+    void *p;
 
     if (alignment == 0)
     {

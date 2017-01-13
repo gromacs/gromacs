@@ -137,7 +137,6 @@ static void write_nblist(FILE *out, gmx_domdec_t *dd, t_nblist *nblist, int nDNL
 }
 
 
-
 void dump_nblist(FILE *out, t_commrec *cr, t_forcerec *fr, int nDNL)
 {
     int n, i;
@@ -151,5 +150,4 @@ void dump_nblist(FILE *out, t_commrec *cr, t_forcerec *fr, int nDNL)
             write_nblist(out, cr->dd, &fr->nblists[n].nlist_sr[i], nDNL);
         }
     }
-
 }

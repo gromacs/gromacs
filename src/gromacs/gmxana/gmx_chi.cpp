@@ -130,7 +130,7 @@ static gmx_bool bAllowed(real phi, real psi)
 #define NPP asize(map)
     int x, y;
 
-#define INDEX(ppp) (((static_cast<int> (360 + ppp * RAD2DEG)) % 360) / 6)
+#define INDEX(ppp) (((static_cast<int>(360 + ppp * RAD2DEG)) % 360) / 6)
     x = INDEX(phi);
     y = INDEX(psi);
 #undef INDEX
@@ -170,7 +170,7 @@ int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
         id[n++]         = dl[i].atm.N;
         id[n++]         = dl[i].atm.Cn[1];
         id[n++]         = dl[i].atm.C;
-        if (i < (nl - 1) )
+        if (i < (nl - 1))
         {
             id[n++] = dl[i + 1].atm.N;
         }
@@ -445,41 +445,41 @@ static int reset_em_all(int nlist, t_dlist dlist[], int nf,
 static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                           int nf, int maxchi, real **dih,
                           int nlist, t_dlist dlist[],
-                          int index[],
+                          int      index[],
                           gmx_bool bPhi, gmx_bool bPsi, gmx_bool bOmega, gmx_bool bChi,
                           gmx_bool bNormalize, gmx_bool bSSHisto, const char *ssdump,
                           real bfac_max, const t_atoms *atoms,
                           gmx_bool bDo_jc, const char *fn,
                           const gmx_output_env_t *oenv)
 {
-    /* also gets 3J couplings and order parameters S2 */
-    // Avoid warnings about narrowing conversions from double to real
+/* also gets 3J couplings and order parameters S2 */
+// Avoid warnings about narrowing conversions from double to real
 #ifdef _MSC_VER
-#pragma warning(disable: 4838)
+#pragma warning(disable : 4838)
 #endif
     t_karplus kkkphi[] = {
-        { "J_NHa1",    6.51, -1.76,  1.6, -M_PI / 3,   0.0,  0.0 },
-        { "J_NHa2",    6.51, -1.76,  1.6,  M_PI / 3,   0.0,  0.0 },
-        { "J_HaC'",    4.0,   1.1,   0.1,  0.0,      0.0,  0.0 },
-        { "J_NHCb",    4.7,  -1.5,  -0.2,  M_PI / 3,   0.0,  0.0 },
-        { "J_Ci-1Hai", 4.5,  -1.3,  -1.2,  2 * M_PI / 3, 0.0,  0.0 }
+        { "J_NHa1", 6.51, -1.76, 1.6, -M_PI / 3, 0.0, 0.0 },
+        { "J_NHa2", 6.51, -1.76, 1.6, M_PI / 3, 0.0, 0.0 },
+        { "J_HaC'", 4.0, 1.1, 0.1, 0.0, 0.0, 0.0 },
+        { "J_NHCb", 4.7, -1.5, -0.2, M_PI / 3, 0.0, 0.0 },
+        { "J_Ci-1Hai", 4.5, -1.3, -1.2, 2 * M_PI / 3, 0.0, 0.0 }
     };
     t_karplus kkkpsi[] = {
-        { "J_HaN",   -0.88, -0.61, -0.27, M_PI / 3,  0.0,  0.0 }
+        { "J_HaN", -0.88, -0.61, -0.27, M_PI / 3, 0.0, 0.0 }
     };
     t_karplus kkkchi1[] = {
-        { "JHaHb2",       9.5, -1.6, 1.8, -M_PI / 3, 0,  0.0 },
-        { "JHaHb3",       9.5, -1.6, 1.8, 0, 0,  0.0 }
+        { "JHaHb2", 9.5, -1.6, 1.8, -M_PI / 3, 0, 0.0 },
+        { "JHaHb3", 9.5, -1.6, 1.8, 0, 0, 0.0 }
     };
 #ifdef _MSC_VER
-#pragma warning(default: 4838)
+#pragma warning(default : 4838)
 #endif
 #define NKKKPHI asize(kkkphi)
 #define NKKKPSI asize(kkkpsi)
 #define NKKKCHI asize(kkkchi1)
 #define NJC (NKKKPHI + NKKKPSI + NKKKCHI)
 
-    FILE *      fp, *ssfp[3] = {nullptr, nullptr, nullptr};
+    FILE *      fp, *ssfp[3] = { nullptr, nullptr, nullptr };
     const char *sss[3] = { "sheet", "helix", "coil" };
     real        S2;
     real *      normhisto;
@@ -549,9 +549,9 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
     {
         for (i = 0; (i < nlist); i++)
         {
-            if (((Dih  < edOmega) )
+            if (((Dih < edOmega))
                 || ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i]))))
-                || ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
+                || ((Dih > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
             {
                 make_histo(log, nf, dih[j], nbin, histmp, -M_PI, M_PI);
 
@@ -566,7 +566,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                     bBfac = bOccup = TRUE;
                     for (nn = 0; (nn < 4); nn++, n++)
                     {
-                        bBfac  = bBfac  && (atoms->pdbinfo[index[n]].bfac <= bfac_max);
+                        bBfac  = bBfac && (atoms->pdbinfo[index[n]].bfac <= bfac_max);
                         bOccup = bOccup && (atoms->pdbinfo[index[n]].occup == 1);
                     }
                     if (bOccup && ((bfac_max <= 0) || bBfac))
@@ -639,7 +639,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
                 for (k = 0; (k < nbin); k++)
                 {
                     his_aa[Dih][dlist[i].index][k] += histmp[k];
-                    histmp[k]                       = 0;
+                    histmp[k] = 0;
                 }
                 j++;
             }
@@ -701,7 +701,7 @@ static void histogramming(FILE *log, int nbin, gmx_residuetype_t *rt,
         {
             leg[i + NKKKPHI + NKKKPSI] = gmx_strdup(kkkchi1[i].name);
         }
-        xvgr_legend(fp, NJC, (const char**)leg, oenv);
+        xvgr_legend(fp, NJC, (const char **)leg, oenv);
         fprintf(fp, "%5s ", "#Res.");
         for (i = 0; (i < NJC); i++)
         {
@@ -935,13 +935,13 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                 fprintf(fp, "%10g  %10g\n", phi, psi);
                 if (bViol)
                 {
-                    fprintf(gp, "%d\n", (bAllowed(dih[Phi][j], RAD2DEG * dih[Psi][j]) == FALSE) );
+                    fprintf(gp, "%d\n", (bAllowed(dih[Phi][j], RAD2DEG * dih[Psi][j]) == FALSE));
                 }
                 if (bOm)
                 {
                     omega = RAD2DEG * dih[Om][j];
                     mat[static_cast<int>(((phi * NMAT) / 360) + NMAT / 2)][static_cast<int>(((psi * NMAT) / 360) + NMAT / 2)]
-                        += omega;
+                            += omega;
                 }
             }
             if (bViol)
@@ -959,8 +959,8 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                     for (k = 0; (k < NMAT); k++)
                     {
                         mat[j][k] /= nf;
-                        lo         = std::min(mat[j][k], lo);
-                        hi         = std::max(mat[j][k], hi);
+                        lo = std::min(mat[j][k], lo);
+                        hi = std::max(mat[j][k], hi);
                     }
                 }
                 /* Symmetrise */
@@ -980,8 +980,8 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                         mat[j][k] += 180;
                     }
                 }
-                lo     += 180;
-                hi     += 180;
+                lo += 180;
+                hi += 180;
                 nlevels = 20;
                 write_xpm3(fp, 0, "Omega/Ramachandran Plot", "Deg", "Phi", "Psi",
                            NMAT, NMAT, axis, axis, mat, lo, 180.0, hi, rlo, rmid, rhi, &nlevels);
@@ -1040,7 +1040,7 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
     /* Print order parameters */
     fp = xvgropen(fn, "Dihedral Rotamer Transitions", "Residue", "Transitions/ns",
                   oenv);
-    xvgr_legend(fp, NONCHI + maxchi, (const char**)leg, oenv);
+    xvgr_legend(fp, NONCHI + maxchi, (const char **)leg, oenv);
 
     fprintf(fp, "%5s ", "#Res.");
     fprintf(fp, "%10s %10s %10s ", leg[edPhi], leg[edPsi], leg[edOmega]);
@@ -1063,7 +1063,7 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
     xvgrclose(fp);
 }
 
-static void order_params(FILE *log,
+static void order_params(FILE *      log,
                          const char *fn, int maxchi, int nlist, t_dlist dlist[],
                          const char *pdbfn, real bfac_init,
                          t_atoms *atoms, const rvec x[], int ePBC, matrix box,
@@ -1172,7 +1172,8 @@ static void order_params(FILE *log,
 
         fp = gmx_ffopen(pdbfn, "w");
         fprintf(fp, "REMARK generated by g_chi\n");
-        fprintf(fp, "REMARK "
+        fprintf(fp,
+                "REMARK "
                 "B-factor field contains negative of dihedral order parameters\n");
         write_pdbfile(fp, nullptr, atoms, x, ePBC, box, ' ', 0, nullptr, TRUE);
         x0 = y0 = z0 = 1000.0;
@@ -1232,7 +1233,6 @@ static void order_params(FILE *log,
     {
         sfree(leg[i]);
     }
-
 }
 
 int gmx_chi(int argc, char *argv[])
@@ -1308,53 +1308,34 @@ int gmx_chi(int argc, char *argv[])
     };
 
     /* defaults */
-    static int         r0          = 1, ndeg = 1, maxchi = 2;
-    static gmx_bool    bAll        = FALSE;
-    static gmx_bool    bPhi        = FALSE, bPsi = FALSE, bOmega = FALSE;
-    static real        bfac_init   = -1.0, bfac_max = 0;
-    static const char *maxchistr[] = { nullptr, "0", "1", "2", "3",  "4", "5", "6", nullptr };
-    static gmx_bool    bRama       = FALSE, bShift = FALSE, bViol = FALSE, bRamOmega = FALSE;
-    static gmx_bool    bNormHisto  = TRUE, bChiProduct = FALSE, bHChi = FALSE, bRAD = FALSE, bPBC = TRUE;
-    static real        core_frac   = 0.5;
-    t_pargs            pa[]        = {
-        { "-r0",  FALSE, etINT, {&r0},
-          "starting residue" },
-        { "-phi",  FALSE, etBOOL, {&bPhi},
-          "Output for [GRK]phi[grk] dihedral angles" },
-        { "-psi",  FALSE, etBOOL, {&bPsi},
-          "Output for [GRK]psi[grk] dihedral angles" },
-        { "-omega", FALSE, etBOOL, {&bOmega},
-          "Output for [GRK]omega[grk] dihedrals (peptide bonds)" },
-        { "-rama", FALSE, etBOOL, {&bRama},
-          "Generate [GRK]phi[grk]/[GRK]psi[grk] and [GRK]chi[grk][SUB]1[sub]/[GRK]chi[grk][SUB]2[sub] Ramachandran plots" },
-        { "-viol", FALSE, etBOOL, {&bViol},
-          "Write a file that gives 0 or 1 for violated Ramachandran angles" },
-        { "-periodic", FALSE, etBOOL, {&bPBC},
-          "Print dihedral angles modulo 360 degrees" },
-        { "-all",  FALSE, etBOOL, {&bAll},
-          "Output separate files for every dihedral." },
-        { "-rad",  FALSE, etBOOL, {&bRAD},
-          "in angle vs time files, use radians rather than degrees."},
-        { "-shift", FALSE, etBOOL, {&bShift},
-          "Compute chemical shifts from [GRK]phi[grk]/[GRK]psi[grk] angles" },
-        { "-binwidth", FALSE, etINT, {&ndeg},
-          "bin width for histograms (degrees)" },
-        { "-core_rotamer", FALSE, etREAL, {&core_frac},
-          "only the central [TT]-core_rotamer[tt]\\*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)" },
-        { "-maxchi", FALSE, etENUM, {maxchistr},
-          "calculate first ndih [GRK]chi[grk] dihedrals" },
-        { "-normhisto", FALSE, etBOOL, {&bNormHisto},
-          "Normalize histograms" },
-        { "-ramomega", FALSE, etBOOL, {&bRamOmega},
-          "compute average omega as a function of [GRK]phi[grk]/[GRK]psi[grk] and plot it in an [REF].xpm[ref] plot" },
-        { "-bfact", FALSE, etREAL, {&bfac_init},
-          "B-factor value for [REF].pdb[ref] file for atoms with no calculated dihedral order parameter"},
-        { "-chi_prod", FALSE, etBOOL, {&bChiProduct},
-          "compute a single cumulative rotamer for each residue"},
-        { "-HChi", FALSE, etBOOL, {&bHChi},
-          "Include dihedrals to sidechain hydrogens"},
-        { "-bmax",  FALSE, etREAL, {&bfac_max},
-          "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. [TT]-bmax[tt] <= 0 means no limit." }
+    static int         r0 = 1, ndeg = 1, maxchi = 2;
+    static gmx_bool    bAll = FALSE;
+    static gmx_bool    bPhi = FALSE, bPsi = FALSE, bOmega = FALSE;
+    static real        bfac_init = -1.0, bfac_max = 0;
+    static const char *maxchistr[] = { nullptr, "0", "1", "2", "3", "4", "5", "6", nullptr };
+    static gmx_bool    bRama = FALSE, bShift = FALSE, bViol = FALSE, bRamOmega = FALSE;
+    static gmx_bool    bNormHisto = TRUE, bChiProduct = FALSE, bHChi = FALSE, bRAD = FALSE, bPBC = TRUE;
+    static real        core_frac = 0.5;
+    t_pargs            pa[]      = {
+        { "-r0", FALSE, etINT, { &r0 }, "starting residue" },
+        { "-phi", FALSE, etBOOL, { &bPhi }, "Output for [GRK]phi[grk] dihedral angles" },
+        { "-psi", FALSE, etBOOL, { &bPsi }, "Output for [GRK]psi[grk] dihedral angles" },
+        { "-omega", FALSE, etBOOL, { &bOmega }, "Output for [GRK]omega[grk] dihedrals (peptide bonds)" },
+        { "-rama", FALSE, etBOOL, { &bRama }, "Generate [GRK]phi[grk]/[GRK]psi[grk] and [GRK]chi[grk][SUB]1[sub]/[GRK]chi[grk][SUB]2[sub] Ramachandran plots" },
+        { "-viol", FALSE, etBOOL, { &bViol }, "Write a file that gives 0 or 1 for violated Ramachandran angles" },
+        { "-periodic", FALSE, etBOOL, { &bPBC }, "Print dihedral angles modulo 360 degrees" },
+        { "-all", FALSE, etBOOL, { &bAll }, "Output separate files for every dihedral." },
+        { "-rad", FALSE, etBOOL, { &bRAD }, "in angle vs time files, use radians rather than degrees." },
+        { "-shift", FALSE, etBOOL, { &bShift }, "Compute chemical shifts from [GRK]phi[grk]/[GRK]psi[grk] angles" },
+        { "-binwidth", FALSE, etINT, { &ndeg }, "bin width for histograms (degrees)" },
+        { "-core_rotamer", FALSE, etREAL, { &core_frac }, "only the central [TT]-core_rotamer[tt]\\*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)" },
+        { "-maxchi", FALSE, etENUM, { maxchistr }, "calculate first ndih [GRK]chi[grk] dihedrals" },
+        { "-normhisto", FALSE, etBOOL, { &bNormHisto }, "Normalize histograms" },
+        { "-ramomega", FALSE, etBOOL, { &bRamOmega }, "compute average omega as a function of [GRK]phi[grk]/[GRK]psi[grk] and plot it in an [REF].xpm[ref] plot" },
+        { "-bfact", FALSE, etREAL, { &bfac_init }, "B-factor value for [REF].pdb[ref] file for atoms with no calculated dihedral order parameter" },
+        { "-chi_prod", FALSE, etBOOL, { &bChiProduct }, "compute a single cumulative rotamer for each residue" },
+        { "-HChi", FALSE, etBOOL, { &bHChi }, "Include dihedrals to sidechain hydrogens" },
+        { "-bmax", FALSE, etREAL, { &bfac_max }, "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. [TT]-bmax[tt] <= 0 means no limit." }
     };
 
     FILE *             log;
@@ -1376,19 +1357,19 @@ int gmx_chi(int argc, char *argv[])
     int    i, **chi_lookup, *multiplicity;
 
     t_filenm fnm[] = {
-        { efSTX, "-s",  nullptr,     ffREAD  },
-        { efTRX, "-f",  nullptr,     ffREAD  },
-        { efXVG, "-o",  "order",  ffWRITE },
-        { efPDB, "-p",  "order",  ffOPTWR },
+        { efSTX, "-s", nullptr, ffREAD },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efXVG, "-o", "order", ffWRITE },
+        { efPDB, "-p", "order", ffOPTWR },
         { efDAT, "-ss", "ssdump", ffOPTRD },
         { efXVG, "-jc", "Jcoupling", ffWRITE },
-        { efXVG, "-corr",  "dihcorr", ffOPTWR },
-        { efLOG, "-g",  "chi",    ffWRITE },
+        { efXVG, "-corr", "dihcorr", ffOPTWR },
+        { efLOG, "-g", "chi", ffWRITE },
         /* add two more arguments copying from g_angle */
         { efXVG, "-ot", "dihtrans", ffOPTWR },
-        { efXVG, "-oh", "trhisto",  ffOPTWR },
-        { efXVG, "-rt", "restrans",  ffOPTWR },
-        { efXVG, "-cp", "chiprodhisto",  ffOPTWR }
+        { efXVG, "-oh", "trhisto", ffOPTWR },
+        { efXVG, "-rt", "restrans", ffOPTWR },
+        { efXVG, "-cp", "chiprodhisto", ffOPTWR }
     };
 #define NFILE asize(fnm)
     int      npargs;

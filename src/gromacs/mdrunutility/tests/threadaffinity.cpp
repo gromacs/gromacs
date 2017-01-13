@@ -142,7 +142,7 @@ TEST_F(ThreadAffinityTest, HandlesPinningFailureWithSingleThread)
 TEST_F(ThreadAffinityTest, PinsMultipleThreadsWithAuto)
 {
     helper_.setLogicalProcessorCount(2);
-    helper_.expectAffinitySet({0, 1});
+    helper_.expectAffinitySet({ 0, 1 });
     helper_.setAffinity(2);
 }
 
@@ -151,7 +151,7 @@ TEST_F(ThreadAffinityTest, PinsMultipleThreadsWithStrideWhenForced)
     helper_.setAffinityOption(threadaffON);
     helper_.setOffsetAndStride(0, 2);
     helper_.setLogicalProcessorCount(4);
-    helper_.expectAffinitySet({0, 2});
+    helper_.expectAffinitySet({ 0, 2 });
     helper_.setAffinity(2);
 }
 

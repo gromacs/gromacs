@@ -57,31 +57,31 @@
 /*! \internal \brief Hashing key-generation helper struct */
 struct gmx_hash_e_t
 {
-    public:
-        //! The (unique) key for storing/looking up a value
-        int key;
-        //! The value belonging to key
-        int val;
-        //! Index for the next element in the array with indentical value key%mod, -1 if there is no next element
-        int next;
+public:
+    //! The (unique) key for storing/looking up a value
+    int key;
+    //! The value belonging to key
+    int val;
+    //! Index for the next element in the array with indentical value key%mod, -1 if there is no next element
+    int next;
 };
 
 /*! \internal \brief Hashing helper struct */
 struct gmx_hash_t
 {
-    public:
-        //! Keys are looked up by first checking array index key%mod in hash
-        int mod;
-        //! mask=log2(mod), used to replace a % by the faster & operation
-        int mask;
-        //! Allocated size of hash
-        int nalloc;
-        //! The actual array containing the keys, values and next indices
-        gmx_hash_e_t *hash;
-        //! The number of keys stored
-        int nkey;
-        //! Index in hash where we should start searching for space to store a new key/value
-        int start_space_search;
+public:
+    //! Keys are looked up by first checking array index key%mod in hash
+    int mod;
+    //! mask=log2(mod), used to replace a % by the faster & operation
+    int mask;
+    //! Allocated size of hash
+    int nalloc;
+    //! The actual array containing the keys, values and next indices
+    gmx_hash_e_t *hash;
+    //! The number of keys stored
+    int nkey;
+    //! Index in hash where we should start searching for space to store a new key/value
+    int start_space_search;
 };
 
 //! Clear all the entries in the hash table.

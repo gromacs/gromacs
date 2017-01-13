@@ -41,55 +41,55 @@
 #if defined(__GNUC__) && !defined(__ibmxl__) && !defined(__xlC__)
 // According to G++ documentation, when using altivec in C++ we
 // must undefine vector & bool macros after including altivec.h
-#    undef  vector
-#    undef  bool
-#    define vmxBool __bool
+#undef vector
+#undef bool
+#define vmxBool __bool
 #else
 // We cannot undefine bool on xlc, but somehow it works anyway
-#    define vmxBool bool
+#define vmxBool bool
 #endif
 
-#define GMX_SIMD                                1
-#define GMX_SIMD_HAVE_FLOAT                     1
-#define GMX_SIMD_HAVE_DOUBLE                    0
-#define GMX_SIMD_HAVE_LOADU                     0
-#define GMX_SIMD_HAVE_STOREU                    0
+#define GMX_SIMD 1
+#define GMX_SIMD_HAVE_FLOAT 1
+#define GMX_SIMD_HAVE_DOUBLE 0
+#define GMX_SIMD_HAVE_LOADU 0
+#define GMX_SIMD_HAVE_STOREU 0
 
-#define GMX_SIMD_HAVE_LOGICAL                   1
-#define GMX_SIMD_HAVE_FMA                       1
-#define GMX_SIMD_HAVE_FINT32_EXTRACT            0
-#define GMX_SIMD_HAVE_FINT32_LOGICAL            1
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS        1
-#define GMX_SIMD_HAVE_DINT32_EXTRACT            0
-#define GMX_SIMD_HAVE_DINT32_LOGICAL            0
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS        0
-#define GMX_SIMD_HAVE_NATIVE_COPYSIGN_FLOAT     0
-#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_FLOAT   0
-#define GMX_SIMD_HAVE_NATIVE_RCP_ITER_FLOAT     0
-#define GMX_SIMD_HAVE_NATIVE_LOG_FLOAT          0
-#define GMX_SIMD_HAVE_NATIVE_EXP2_FLOAT         0
-#define GMX_SIMD_HAVE_NATIVE_EXP_FLOAT          0
-#define GMX_SIMD_HAVE_NATIVE_COPYSIGN_DOUBLE    0
-#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_DOUBLE  0
-#define GMX_SIMD_HAVE_NATIVE_RCP_ITER_DOUBLE    0
-#define GMX_SIMD_HAVE_NATIVE_LOG_DOUBLE         0
-#define GMX_SIMD_HAVE_NATIVE_EXP2_DOUBLE        0
-#define GMX_SIMD_HAVE_NATIVE_EXP_DOUBLE         0
-#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT   0
-#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE  0
-#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT          0  // No need for half-simd, width is 4
-#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE         0
+#define GMX_SIMD_HAVE_LOGICAL 1
+#define GMX_SIMD_HAVE_FMA 1
+#define GMX_SIMD_HAVE_FINT32_EXTRACT 0
+#define GMX_SIMD_HAVE_FINT32_LOGICAL 1
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS 1
+#define GMX_SIMD_HAVE_DINT32_EXTRACT 0
+#define GMX_SIMD_HAVE_DINT32_LOGICAL 0
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS 0
+#define GMX_SIMD_HAVE_NATIVE_COPYSIGN_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_RCP_ITER_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_LOG_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_EXP2_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_EXP_FLOAT 0
+#define GMX_SIMD_HAVE_NATIVE_COPYSIGN_DOUBLE 0
+#define GMX_SIMD_HAVE_NATIVE_RSQRT_ITER_DOUBLE 0
+#define GMX_SIMD_HAVE_NATIVE_RCP_ITER_DOUBLE 0
+#define GMX_SIMD_HAVE_NATIVE_LOG_DOUBLE 0
+#define GMX_SIMD_HAVE_NATIVE_EXP2_DOUBLE 0
+#define GMX_SIMD_HAVE_NATIVE_EXP_DOUBLE 0
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT 0
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE 0
+#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT 0 // No need for half-simd, width is 4
+#define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE 0
 
-#define GMX_SIMD4_HAVE_FLOAT                    1
-#define GMX_SIMD4_HAVE_DOUBLE                   0
+#define GMX_SIMD4_HAVE_FLOAT 1
+#define GMX_SIMD4_HAVE_DOUBLE 0
 
 // Implementation details
-#define GMX_SIMD_FLOAT_WIDTH                    4
-#undef  GMX_SIMD_DOUBLE_WIDTH
-#define GMX_SIMD_FINT32_WIDTH                   4
-#undef  GMX_SIMD_DINT32_WIDTH
-#define GMX_SIMD4_WIDTH                         4
-#define GMX_SIMD_RSQRT_BITS                    14
-#define GMX_SIMD_RCP_BITS                      14
+#define GMX_SIMD_FLOAT_WIDTH 4
+#undef GMX_SIMD_DOUBLE_WIDTH
+#define GMX_SIMD_FINT32_WIDTH 4
+#undef GMX_SIMD_DINT32_WIDTH
+#define GMX_SIMD4_WIDTH 4
+#define GMX_SIMD_RSQRT_BITS 14
+#define GMX_SIMD_RCP_BITS 14
 
 #endif // GMX_SIMD_IMPLEMENTATION_IBM_VMX_DEFINITIONS_H

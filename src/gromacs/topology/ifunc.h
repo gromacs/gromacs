@@ -53,13 +53,13 @@ struct t_pbc;
  */
 typedef real rvec4[4];
 
-typedef real t_ifunc (int nbonds, const t_iatom iatoms[],
-                      const t_iparams iparams[],
-                      const rvec x[], rvec4 f[], rvec fshift[],
-                      const struct t_pbc *pbc, const struct t_graph *g,
-                      real lambda, real *dvdlambda,
-                      const struct t_mdatoms *md, struct t_fcdata *fcd,
-                      int *ddgatindex);
+typedef real t_ifunc(int nbonds, const t_iatom iatoms[],
+                     const t_iparams iparams[],
+                     const rvec x[], rvec4 f[], rvec fshift[],
+                     const struct t_pbc *pbc, const struct t_graph *g,
+                     real lambda, real *dvdlambda,
+                     const struct t_mdatoms *md, struct t_fcdata *fcd,
+                     int *ddgatindex);
 
 /*
  * The function type t_ifunc() calculates one interaction, using iatoms[]
@@ -75,15 +75,15 @@ typedef real t_ifunc (int nbonds, const t_iatom iatoms[],
  * ddgatindex is NULL when domain decomposition is not used.
  */
 
-#define IF_NULL       0
-#define IF_BOND       1
-#define IF_VSITE      1 << 1
+#define IF_NULL 0
+#define IF_BOND 1
+#define IF_VSITE 1 << 1
 #define IF_CONSTRAINT 1 << 2
-#define IF_CHEMBOND   1 << 3
-#define IF_BTYPE      1 << 4
-#define IF_ATYPE      1 << 5
-#define IF_TABULATED  1 << 6
-#define IF_LIMZERO    1 << 7
+#define IF_CHEMBOND 1 << 3
+#define IF_BTYPE 1 << 4
+#define IF_ATYPE 1 << 5
+#define IF_TABULATED 1 << 6
+#define IF_LIMZERO 1 << 7
 /* These flags tell to some of the routines what can be done with this
  * item in the list.
  * With IF_BOND a bonded interaction will be calculated.
@@ -104,14 +104,14 @@ typedef struct
                               /* this corresponds to the number of params in  */
                               /* iparams struct! (see idef.h)                 */
     /* A and B are for normal and free energy components respectively.    */
-    unsigned long flags;      /* Flags (see above)                            */
-    int           nrnb_ind;   /* index for nrnb (-1 if unknown)               */
-    t_ifunc *     ifunc;      /* the function it self				*/
+    unsigned long flags;    /* Flags (see above)                            */
+    int           nrnb_ind; /* index for nrnb (-1 if unknown)               */
+    t_ifunc *     ifunc;    /* the function it self				*/
 } t_interaction_function;
 
 #define NRFPA(ftype) (interaction_function[(ftype)].nrfpA)
 #define NRFPB(ftype) (interaction_function[(ftype)].nrfpB)
-#define NRFP(ftype)  (NRFPA(ftype) + NRFPB(ftype))
+#define NRFP(ftype) (NRFPA(ftype) + NRFPB(ftype))
 #define NRAL(ftype) (interaction_function[(ftype)].nratoms)
 
 #define IS_CHEMBOND(ftype) (interaction_function[(ftype)].nratoms == 2 && (interaction_function[(ftype)].flags & IF_CHEMBOND))

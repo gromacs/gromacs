@@ -84,8 +84,7 @@ void update_tcouple(gmx_int64_t     step,
                     t_state *       state,
                     gmx_ekindata_t *ekind,
                     t_extmass *     MassQ,
-                    t_mdatoms *     md
-                    );
+                    t_mdatoms *     md);
 
 /* Update Parrinello-Rahman, to be called before the coordinate update */
 void update_pcouple_before_coordinates(FILE *            fplog,
@@ -113,16 +112,16 @@ void update_pcouple_after_coordinates(FILE *            fplog,
 
 void update_coords(FILE *            fplog,
                    gmx_int64_t       step,
-                   t_inputrec *      inputrec,  /* input record and box stuff	*/
+                   t_inputrec *      inputrec, /* input record and box stuff	*/
                    t_mdatoms *       md,
                    t_state *         state,
-                   PaddedRVecVector *f,  /* forces on home particles */
+                   PaddedRVecVector *f, /* forces on home particles */
                    t_fcdata *        fcd,
                    gmx_ekindata_t *  ekind,
                    matrix            M,
                    gmx_update_t *    upd,
                    int               bUpdatePart,
-                   t_commrec *       cr,  /* these shouldn't be here -- need to think about it */
+                   t_commrec *       cr, /* these shouldn't be here -- need to think about it */
                    gmx_constr *      constr);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
@@ -131,13 +130,13 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_int64_t step, co
 
 void update_constraints(FILE *            fplog,
                         gmx_int64_t       step,
-                        real *            dvdlambda,  /* FEP stuff */
-                        t_inputrec *      inputrec,   /* input record and box stuff	*/
+                        real *            dvdlambda, /* FEP stuff */
+                        t_inputrec *      inputrec,  /* input record and box stuff	*/
                         t_mdatoms *       md,
                         t_state *         state,
                         gmx_bool          bMolPBC,
                         t_graph *         graph,
-                        PaddedRVecVector *force,  /* forces on home particles */
+                        PaddedRVecVector *force, /* forces on home particles */
                         t_idef *          idef,
                         tensor            vir_part,
                         t_commrec *       cr,
@@ -169,17 +168,14 @@ void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
  */
 
 
-void
-init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir);
+void init_ekinstate(ekinstate_t *ekinstate, const t_inputrec *ir);
 
-void
-update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind);
+void update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind);
 
 /*! \brief Restores data from \p ekinstate to \p ekind, then broadcasts it
    to the rest of the simulation */
-void
-restore_ekinstate_from_state(t_commrec *cr,
-                             gmx_ekindata_t *ekind, const ekinstate_t *ekinstate);
+void restore_ekinstate_from_state(t_commrec *     cr,
+                                  gmx_ekindata_t *ekind, const ekinstate_t *ekinstate);
 
 void berendsen_tcoupl(t_inputrec *ir, gmx_ekindata_t *ekind, real dt);
 

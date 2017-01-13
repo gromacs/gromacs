@@ -42,23 +42,23 @@
 /* The state has changed */
 #define GMX_FORCE_STATECHANGED (1 << 0)
 /* The box might have changed */
-#define GMX_FORCE_DYNAMICBOX   (1 << 1)
+#define GMX_FORCE_DYNAMICBOX (1 << 1)
 /* Do neighbor searching */
-#define GMX_FORCE_NS           (1 << 2)
+#define GMX_FORCE_NS (1 << 2)
 /* Calculate listed energies/forces (e.g. bonds, restraints, 1-4, FEP non-bonded) */
-#define GMX_FORCE_LISTED       (1 << 4)
+#define GMX_FORCE_LISTED (1 << 4)
 /* Calculate non-bonded energies/forces */
-#define GMX_FORCE_NONBONDED    (1 << 6)
+#define GMX_FORCE_NONBONDED (1 << 6)
 /* Calculate forces (not only energies) */
-#define GMX_FORCE_FORCES       (1 << 7)
+#define GMX_FORCE_FORCES (1 << 7)
 /* Calculate the virial */
-#define GMX_FORCE_VIRIAL       (1 << 8)
+#define GMX_FORCE_VIRIAL (1 << 8)
 /* Calculate energies */
-#define GMX_FORCE_ENERGY       (1 << 9)
+#define GMX_FORCE_ENERGY (1 << 9)
 /* Calculate dHdl */
-#define GMX_FORCE_DHDL         (1 << 10)
+#define GMX_FORCE_DHDL (1 << 10)
 
 /* Normally one want all energy terms and forces */
-#define GMX_FORCE_ALLFORCES    (GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
+#define GMX_FORCE_ALLFORCES (GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
 
 #endif

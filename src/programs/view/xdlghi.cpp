@@ -53,7 +53,7 @@
 
 t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
                                    t_id GroupID, int nrb, t_id rb[],
-                                   int nSelect,
+                                   int   nSelect,
                                    char *szRB[], int x0, int y0)
 /* This routine creates a radio button group at the
  * specified position. The return values is a pointer to an
@@ -76,7 +76,7 @@ t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
         dlgitem[i + 1] = CreateRadioButton(x11, szRB[i], (i == nSelect),
                                            rb[i], GroupID, x, y, 0, 0, 0);
         y += dlgitem[i + 1]->win.height + OFFS_Y;
-        w  = std::max(w, dlgitem[i + 1]->win.width);
+        w = std::max(w, dlgitem[i + 1]->win.width);
     }
     for (i = 0; (i < nrb); i++)
     {
@@ -160,7 +160,7 @@ t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
                 gmx_fatal(FARGS, "Invalid dlgitem type: %d\n", edlg);
         }
         y += dlgitem[i + 1]->win.height + OFFS_Y;
-        w  = std::max(w, dlgitem[i + 1]->win.width);
+        w = std::max(w, dlgitem[i + 1]->win.width);
     }
     va_end(ap);
     sfree(dlgitem[0]->u.groupbox.item);
@@ -203,8 +203,8 @@ static void AddDlgItemGroups(t_dlg *dlg, int gridx, int gridy,
                     AddDlgItems(dlg, item->nitem, item->list);
                     dw = item->w;
                     dh = item->h;
-                    w  = std::max(w, ((float) QueryDlgItemW(dlg, item->list[0]->ID)) / dw);
-                    h  = std::max(h, ((float) QueryDlgItemH(dlg, item->list[0]->ID)) / dh);
+                    w  = std::max(w, ((float)QueryDlgItemW(dlg, item->list[0]->ID)) / dw);
+                    h  = std::max(h, ((float)QueryDlgItemH(dlg, item->list[0]->ID)) / dh);
                 }
             }
         }
@@ -272,9 +272,8 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
     switch (fitem->edlg)
     {
         case edlgBN:
-            AddListItem
-                (list, CreateButton(x11, fitem->name[0], fitem->bDef, (*ID)++, GroupID,
-                                    x, (*y), 0, 0, 0));
+            AddListItem(list, CreateButton(x11, fitem->name[0], fitem->bDef, (*ID)++, GroupID,
+                                           x, (*y), 0, 0, 0));
             break;
         case edlgRB:
             std::strcpy(buf, fitem->def);
@@ -297,7 +296,7 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
                             CreateRadioButton(x11, fitem->name[i], (iSel == i),
                                               (*ID)++, GroupID, x, (*y), 0, 0, 0));
                 (*y) += list->list[list->nitem - 1]->win.height + OFFS_Y;
-                (*w)  = std::max((*w), list->list[list->nitem - 1]->win.width);
+                (*w) = std::max((*w), list->list[list->nitem - 1]->win.width);
                 SetDlgitemOpts(list->list[list->nitem - 1], bUseMon,
                                fitem->set, fitem->get, fitem->help);
             }
@@ -333,7 +332,7 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
     if (fitem->edlg != edlgRB)
     {
         (*y) += list->list[list->nitem - 1]->win.height + OFFS_Y;
-        (*w)  = std::max((*w), list->list[list->nitem - 1]->win.width);
+        (*w) = std::max((*w), list->list[list->nitem - 1]->win.width);
     }
 }
 
@@ -366,8 +365,8 @@ static void AddListFGroup(t_x11 *x11, t_dlgitemlist **grid,
         ids[i] = GroupID + i + 1;
     }
     item->list[0]
-        = CreateGroupBox(x11, fgroup->name, GroupID, item->nitem - 1, ids,
-                         2 * OFFS_X, 2 * OFFS_Y, w + 2 * OFFS_X, y, 0);
+            = CreateGroupBox(x11, fgroup->name, GroupID, item->nitem - 1, ids,
+                             2 * OFFS_X, 2 * OFFS_Y, w + 2 * OFFS_X, y, 0);
     sfree(ids);
     item->w = fgroup->w;
     item->h = fgroup->h;

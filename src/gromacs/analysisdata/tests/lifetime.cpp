@@ -76,12 +76,13 @@ public:
 #endif
     }
 
-    SimpleInputData() : data_(1, false)
+    SimpleInputData()
+        : data_(1, false)
     {
         data_.setColumnCount(0, 3);
-        data_.addFrameWithValues(1.0,  1.0, 1.0, 1.0);
-        data_.addFrameWithValues(2.0,  1.0, 0.0, 1.0);
-        data_.addFrameWithValues(3.0,  0.0, 1.0, 1.0);
+        data_.addFrameWithValues(1.0, 1.0, 1.0, 1.0);
+        data_.addFrameWithValues(2.0, 1.0, 0.0, 1.0);
+        data_.addFrameWithValues(3.0, 0.0, 1.0, 1.0);
     }
 
 private:
@@ -103,7 +104,8 @@ public:
 #endif
     }
 
-    MultiDataSetInputData() : data_(2, false)
+    MultiDataSetInputData()
+        : data_(2, false)
     {
         using gmx::test::AnalysisDataTestInputFrame;
         data_.setColumnCount(0, 2);

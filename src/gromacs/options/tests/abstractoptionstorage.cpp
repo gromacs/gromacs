@@ -121,8 +121,8 @@ public:
         convertValue(value.cast<std::string>());
     }
 
-    MOCK_METHOD1(convertValue, void(const std::string & value));
-    MOCK_METHOD1(processSetValues, void(ValueList * values));
+    MOCK_METHOD1(convertValue, void(const std::string &value));
+    MOCK_METHOD1(processSetValues, void(ValueList *values));
     MOCK_METHOD0(processAll, void());
 
 private:
@@ -148,7 +148,7 @@ public:
 
 private:
     virtual gmx::AbstractOptionStorage *createStorage(
-        const gmx::OptionManagerContainer & /*managers*/) const
+            const gmx::OptionManagerContainer & /*managers*/) const
     {
         return new MockOptionStorage(*this);
     }
@@ -161,7 +161,7 @@ MockOptionStorage::MockOptionStorage(const MockOption &settings)
     using ::testing::Invoke;
     using ::testing::WithArg;
     ON_CALL(*this, convertValue(_))
-        .WillByDefault(WithArg<0>(Invoke(this, &MockOptionStorage::addValue)));
+            .WillByDefault(WithArg<0>(Invoke(this, &MockOptionStorage::addValue)));
 }
 
 MockOptionInfo::MockOptionInfo(MockOptionStorage *option)
@@ -183,16 +183,16 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
     gmx::Options             options;
     std::vector<std::string> values;
     MockOptionInfo *         info = options.addOption(
-                MockOption("name").required().storeVector(&values));
+            MockOption("name").required().storeVector(&values));
     MockOptionStorage *mock = &info->option();
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
         using ::testing::InvokeWithoutArgs;
         EXPECT_CALL(*mock, processAll())
-            .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::markAsSet),
-                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
-                            InvokeWithoutArgs(mock, &MockOptionStorage::commitValues)));
+                .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::markAsSet),
+                                InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
+                                InvokeWithoutArgs(mock, &MockOptionStorage::commitValues)));
     }
 
     gmx::OptionsAssigner assigner(&options);
@@ -213,7 +213,7 @@ TEST(AbstractOptionStorageTest, HandlesValueRemoval)
     gmx::Options             options;
     std::vector<std::string> values;
     MockOptionInfo *         info = options.addOption(
-                MockOption("name").storeVector(&values).multiValue());
+            MockOption("name").storeVector(&values).multiValue());
     MockOptionStorage *mock = &info->option();
     {
         ::testing::InSequence dummy;
@@ -222,7 +222,7 @@ TEST(AbstractOptionStorageTest, HandlesValueRemoval)
         using ::testing::Return;
         EXPECT_CALL(*mock, convertValue("a"));
         EXPECT_CALL(*mock, convertValue("b"))
-            .WillOnce(Return());
+                .WillOnce(Return());
         EXPECT_CALL(*mock, convertValue("c"));
         EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "c"))));
         EXPECT_CALL(*mock, processAll());
@@ -252,7 +252,7 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
     gmx::Options             options;
     std::vector<std::string> values;
     MockOptionInfo *         info = options.addOption(
-                MockOption("name").storeVector(&values).multiValue());
+            MockOption("name").storeVector(&values).multiValue());
     MockOptionStorage *mock = &info->option();
     {
         ::testing::InSequence dummy;
@@ -262,8 +262,8 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
         using ::testing::Pointee;
         EXPECT_CALL(*mock, convertValue("a"));
         EXPECT_CALL(*mock, convertValue("b"))
-            .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
-                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
+                .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
+                                InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
         EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "dummy", "dummy"))));
         EXPECT_CALL(*mock, processAll());
     }
@@ -292,7 +292,7 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
     gmx::Options             options;
     std::vector<std::string> values;
     MockOptionInfo *         info = options.addOption(
-                MockOption("name").storeVector(&values).valueCount(2));
+            MockOption("name").storeVector(&values).valueCount(2));
     MockOptionStorage *mock = &info->option();
     {
         ::testing::InSequence dummy;
@@ -302,8 +302,8 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
         using ::testing::Pointee;
         EXPECT_CALL(*mock, convertValue("a"));
         EXPECT_CALL(*mock, convertValue("b"))
-            .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
-                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
+                .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
+                                InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
         EXPECT_CALL(*mock, processAll());
     }
 
@@ -328,7 +328,7 @@ TEST(AbstractOptionStorageTest, AllowsEmptyValues)
     gmx::Options             options;
     std::vector<std::string> values;
     MockOptionInfo *         info = options.addOption(
-                MockOption("name").storeVector(&values).valueCount(0));
+            MockOption("name").storeVector(&values).valueCount(0));
     MockOptionStorage *mock = &info->option();
     {
         ::testing::InSequence dummy;
@@ -337,7 +337,7 @@ TEST(AbstractOptionStorageTest, AllowsEmptyValues)
         using ::testing::Pointee;
         using ::testing::Return;
         EXPECT_CALL(*mock, convertValue("a"))
-            .WillOnce(Return());
+                .WillOnce(Return());
         EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre())));
         EXPECT_CALL(*mock, processAll());
     }

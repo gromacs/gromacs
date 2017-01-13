@@ -121,7 +121,7 @@ static void pme_calc_pidx_wrapper(int natoms, matrix recipbox, rvec x[],
     {
         try
         {
-            pme_calc_pidx(natoms * thread   / nthread,
+            pme_calc_pidx(natoms * thread / nthread,
                           natoms * (thread + 1) / nthread,
                           recipbox, x, atc, atc->count_thread[thread]);
         }
@@ -152,7 +152,7 @@ static void realloc_splinevec(splinevec th, real **ptr_z, int nalloc)
 
     for (i = 0; i < padding; i++)
     {
-        (*ptr_z)[               i]     = 0;
+        (*ptr_z)[i]                    = 0;
         (*ptr_z)[padding + nalloc + i] = 0;
     }
 }
@@ -273,13 +273,14 @@ static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
     for (i = 0; i < nnodes_comm; i++)
     {
         buf_index[commnode[i]] = nsend;
-        nsend                 += atc->count[commnode[i]];
+        nsend += atc->count[commnode[i]];
     }
     if (bX)
     {
         if (atc->count[atc->nodeid] + nsend != n)
         {
-            gmx_fatal(FARGS, "%d particles communicated to PME rank %d are more than 2/3 times the cut-off out of the domain decomposition cell of their charge group in dimension %c.\n"
+            gmx_fatal(FARGS,
+                      "%d particles communicated to PME rank %d are more than 2/3 times the cut-off out of the domain decomposition cell of their charge group in dimension %c.\n"
                       "This usually means that your system is not well equilibrated.",
                       n - (atc->count[atc->nodeid] + nsend),
                       pme->nodeid, 'x' + atc->dimind);
@@ -355,7 +356,7 @@ static void dd_pmeredist_pos_coeffs(struct gmx_pme_t *pme,
             pme_dd_sendrecv(atc, FALSE, i,
                             pme->bufr + buf_pos, scount * sizeof(real),
                             atc->coefficient + local_pos, rcount * sizeof(real));
-            buf_pos   += scount;
+            buf_pos += scount;
             local_pos += atc->rcount[i];
         }
     }
@@ -388,7 +389,7 @@ void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
             local_pos += scount;
         }
         buf_index[commnode[i]] = buf_pos;
-        buf_pos               += rcount;
+        buf_pos += rcount;
     }
 
     local_pos = 0;

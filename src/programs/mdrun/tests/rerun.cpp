@@ -95,7 +95,7 @@ const char *trajectoryFileNames[] = {
 
 INSTANTIATE_TEST_CASE_P(NoFatalErrorFrom,
                         MdrunRerun,
-                            ::testing::ValuesIn(gmx::ArrayRef<const char*>(trajectoryFileNames)));
+                        ::testing::ValuesIn(gmx::ArrayRef<const char *>(trajectoryFileNames)));
 
 /*! \todo Add other tests for mdrun -rerun, e.g.
  *

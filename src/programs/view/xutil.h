@@ -47,8 +47,8 @@
 #include "Xstuff.h"
 #include "x11.h"
 
-#define OFFS_X          4
-#define OFFS_Y          4
+#define OFFS_X 4
+#define OFFS_Y 4
 
 typedef struct
 {
@@ -101,4 +101,4 @@ extern bool GrabOK(FILE *out, int err);
  * and returns false otherwise.
  */
 
-#endif  /* _xutil_h */
+#endif /* _xutil_h */

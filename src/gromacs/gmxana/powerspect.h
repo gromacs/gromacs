@@ -40,8 +40,7 @@
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 extern void powerspectavg(real ***interface, int t, int xbins, int ybins,

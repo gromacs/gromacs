@@ -57,8 +57,8 @@ class ReferenceDataEntry
 {
 public:
     typedef std::unique_ptr<ReferenceDataEntry> EntryPointer;
-    typedef std::list<EntryPointer> ChildList;
-    typedef ChildList::const_iterator ChildIterator;
+    typedef std::list<EntryPointer>             ChildList;
+    typedef ChildList::const_iterator           ChildIterator;
 
     static EntryPointer createRoot()
     {
@@ -71,12 +71,12 @@ public:
     {
     }
 
-    const std::string &type() const { return type_; }
-    const std::string &id() const { return id_; }
-    bool isCompound() const { return !children_.empty(); }
-    bool isTextBlock() const { return isTextBlock_; }
-    const std::string &value() const { return value_; }
-    const ChildList &children() const { return children_; }
+    const std::string & type() const { return type_; }
+    const std::string & id() const { return id_; }
+    bool                isCompound() const { return !children_.empty(); }
+    bool                isTextBlock() const { return isTextBlock_; }
+    const std::string & value() const { return value_; }
+    const ChildList &   children() const { return children_; }
     ReferenceDataEntry *correspondingOutputEntry() const
     {
         return correspondingOutputEntry_;

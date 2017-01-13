@@ -44,14 +44,13 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
 
-void
-gmx_nb_generic_kernel(t_nblist *         nlist,
-                      rvec *             x,
-                      rvec *             f,
-                      t_forcerec *       fr,
-                      t_mdatoms *        mdatoms,
-                      nb_kernel_data_t * kernel_data,
-                      t_nrnb *           nrnb);
+void gmx_nb_generic_kernel(t_nblist *        nlist,
+                           rvec *            x,
+                           rvec *            f,
+                           t_forcerec *      fr,
+                           t_mdatoms *       mdatoms,
+                           nb_kernel_data_t *kernel_data,
+                           t_nrnb *          nrnb);
 
 
 #endif

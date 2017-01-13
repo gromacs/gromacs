@@ -48,35 +48,35 @@ namespace gmx
 static inline SimdFloat gmx_simdcall rsqrt(SimdFloat x)
 {
     return {
-               _mm512_rsqrt28_ps(x.simdInternal_)
+        _mm512_rsqrt28_ps(x.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall rcp(SimdFloat x)
 {
     return {
-               _mm512_rcp28_ps(x.simdInternal_)
+        _mm512_rcp28_ps(x.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall maskzRsqrt(SimdFloat x, SimdFBool m)
 {
     return {
-               _mm512_maskz_rsqrt28_ps(m.simdInternal_, x.simdInternal_)
+        _mm512_maskz_rsqrt28_ps(m.simdInternal_, x.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall maskzRcp(SimdFloat x, SimdFBool m)
 {
     return {
-               _mm512_maskz_rcp28_ps(m.simdInternal_, x.simdInternal_)
+        _mm512_maskz_rcp28_ps(m.simdInternal_, x.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall exp2(SimdFloat x)
 {
     return {
-               _mm512_exp2a23_ps(x.simdInternal_)
+        _mm512_exp2a23_ps(x.simdInternal_)
     };
 }
 
@@ -101,10 +101,10 @@ static inline SimdFloat gmx_simdcall exp(SimdFloat x)
     // We should thus apply the correction as r'=r*(1+x)=r+r*x
     r = _mm512_fmadd_ps(r, x.simdInternal_, r);
     return {
-               r
+        r
     };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD_FLOAT_H

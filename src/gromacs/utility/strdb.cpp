@@ -140,7 +140,7 @@ static int fget_lines(FILE *in, const char *db, char ***strings)
     char * pret;
 
     pret = fgets(buf, STRLEN, in);
-    if (pret == nullptr  || sscanf(buf, "%d", &nstr) != 1)
+    if (pret == nullptr || sscanf(buf, "%d", &nstr) != 1)
     {
         gmx_warning("File is empty");
         gmx_ffclose(in);

@@ -68,39 +68,39 @@ struct t_filenm
 };
 
 //! Whether a file name option is set.
-#define ffSET   1 << 0
+#define ffSET 1 << 0
 //! Whether a file name option specifies an input file.
-#define ffREAD  1 << 1
+#define ffREAD 1 << 1
 //! Whether a file name option specifies an output file.
 #define ffWRITE 1 << 2
 //! Whether a file name option specifies an optional file.
-#define ffOPT   1 << 3
+#define ffOPT 1 << 3
 //! Whether a file name option specifies a library file.
-#define ffLIB   1 << 4
+#define ffLIB 1 << 4
 //! Whether a file name option accepts multiple file names.
-#define ffMULT  1 << 5
+#define ffMULT 1 << 5
 //! Whether an input file name option accepts non-existent files.
 #define ffALLOW_MISSING 1 << 6
 //! Convenience flag for an input/output file.
-#define ffRW    (ffREAD | ffWRITE)
+#define ffRW (ffREAD | ffWRITE)
 //! Convenience flag for an optional input file.
 #define ffOPTRD (ffREAD | ffOPT)
 //! Convenience flag for an optional output file.
 #define ffOPTWR (ffWRITE | ffOPT)
 //! Convenience flag for an optional input/output file.
-#define ffOPTRW (ffRW   | ffOPT)
+#define ffOPTRW (ffRW | ffOPT)
 //! Convenience flag for a library input file.
 #define ffLIBRD (ffREAD | ffLIB)
 //! Convenience flag for an optional library input file.
 #define ffLIBOPTRD (ffOPTRD | ffLIB)
 //! Convenience flag for an input file that accepts multiple files.
-#define ffRDMULT   (ffREAD  | ffMULT)
+#define ffRDMULT (ffREAD | ffMULT)
 //! Convenience flag for an optional input file that accepts multiple files.
-#define ffOPTRDMULT   (ffRDMULT | ffOPT)
+#define ffOPTRDMULT (ffRDMULT | ffOPT)
 //! Convenience flag for an output file that accepts multiple files.
-#define ffWRMULT   (ffWRITE  | ffMULT)
+#define ffWRMULT (ffWRITE | ffMULT)
 //! Convenience flag for an optional output file that accepts multiple files.
-#define ffOPTWRMULT   (ffWRMULT | ffOPT)
+#define ffOPTWRMULT (ffWRMULT | ffOPT)
 
 /*! \brief
  * Returns the filename belonging to cmd-line option opt, or NULL when

@@ -125,8 +125,8 @@ public:
                                      const t_trxframe &                fr);
 
     virtual TrajectoryAnalysisModuleDataPointer startFrames(
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &        selections);
+            const AnalysisDataParallelOptions &opt,
+            const SelectionCollection &        selections);
     virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                               TrajectoryAnalysisModuleData *pdata);
 
@@ -275,37 +275,20 @@ void Rdf::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *se
 
     settings->setHelpText(desc);
 
-    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
-                           .store(&fnRdf_).defaultBasename("rdf")
-                           .description("Computed RDFs"));
-    options->addOption(FileNameOption("cn").filetype(eftPlot).outputFile()
-                           .store(&fnCumulative_).defaultBasename("rdf_cn")
-                           .description("Cumulative RDFs"));
+    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required().store(&fnRdf_).defaultBasename("rdf").description("Computed RDFs"));
+    options->addOption(FileNameOption("cn").filetype(eftPlot).outputFile().store(&fnCumulative_).defaultBasename("rdf_cn").description("Cumulative RDFs"));
 
-    options->addOption(DoubleOption("bin").store(&binwidth_)
-                           .description("Bin width (nm)"));
-    options->addOption(EnumOption<Normalization>("norm").enumValue(c_NormalizationEnum)
-                           .store(&normalization_)
-                           .storeIsSet(&bNormalizationSet_)
-                           .description("Normalization"));
-    options->addOption(BooleanOption("xy").store(&bXY_)
-                           .description("Use only the x and y components of the distance"));
-    options->addOption(BooleanOption("excl").store(&bExclusions_)
-                           .description("Use exclusions from topology"));
-    options->addOption(DoubleOption("cut").store(&cutoff_)
-                           .description("Shortest distance (nm) to be considered"));
-    options->addOption(DoubleOption("rmax").store(&rmax_)
-                           .description("Largest distance (nm) to calculate"));
+    options->addOption(DoubleOption("bin").store(&binwidth_).description("Bin width (nm)"));
+    options->addOption(EnumOption<Normalization>("norm").enumValue(c_NormalizationEnum).store(&normalization_).storeIsSet(&bNormalizationSet_).description("Normalization"));
+    options->addOption(BooleanOption("xy").store(&bXY_).description("Use only the x and y components of the distance"));
+    options->addOption(BooleanOption("excl").store(&bExclusions_).description("Use exclusions from topology"));
+    options->addOption(DoubleOption("cut").store(&cutoff_).description("Shortest distance (nm) to be considered"));
+    options->addOption(DoubleOption("rmax").store(&rmax_).description("Largest distance (nm) to calculate"));
 
-    options->addOption(EnumOption<SurfaceType>("surf").enumValue(c_SurfaceEnum)
-                           .store(&surface_)
-                           .description("RDF with respect to the surface of the reference"));
+    options->addOption(EnumOption<SurfaceType>("surf").enumValue(c_SurfaceEnum).store(&surface_).description("RDF with respect to the surface of the reference"));
 
-    options->addOption(SelectionOption("ref").store(&refSel_).required()
-                           .description("Reference selection for RDF computation"));
-    options->addOption(SelectionOption("sel").storeVector(&sel_)
-                           .required().multiValue()
-                           .description("Selections to compute RDFs for from the reference"));
+    options->addOption(SelectionOption("ref").store(&refSel_).required().description("Reference selection for RDF computation"));
+    options->addOption(SelectionOption("sel").storeVector(&sel_).required().multiValue().description("Selections to compute RDFs for from the reference"));
 }
 
 void Rdf::optionsFinished(TrajectoryAnalysisSettings *settings)
@@ -355,7 +338,7 @@ void Rdf::initAnalysis(const TrajectoryAnalysisSettings &settings,
             GMX_THROW(InconsistentInputError("-surf only works with -ref that consists of atoms"));
         }
         const e_index_t type = (surface_ == SurfaceType_Molecule ? INDEX_MOL : INDEX_RES);
-        surfaceGroupCount_ = refSel_.initOriginalIdsToGroup(top.mtop(), type);
+        surfaceGroupCount_   = refSel_.initOriginalIdsToGroup(top.mtop(), type);
     }
 
     if (bExclusions_)
@@ -526,7 +509,7 @@ void Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 std::fill(surfaceDist2.begin(), surfaceDist2.end(),
                           std::numeric_limits<real>::max());
                 AnalysisNeighborhoodPairSearch pairSearch
-                    = nbsearch.startPairSearch(sel[g].position(i));
+                        = nbsearch.startPairSearch(sel[g].position(i));
                 AnalysisNeighborhoodPair pair;
                 while (pairSearch.findNextPair(&pair))
                 {
@@ -589,7 +572,7 @@ void Rdf::finishAnalysis(int /*nframes*/)
     // TODO: Consider how these could be exposed to the testing framework
     // through the dataset registration mechanism.
     AverageHistogramPointer finalRdf
-        = pairCounts_->averager().resampleDoubleBinWidth(true);
+            = pairCounts_->averager().resampleDoubleBinWidth(true);
 
     if (normalization_ != Normalization_None)
     {
@@ -612,8 +595,8 @@ void Rdf::finishAnalysis(int /*nframes*/)
                 sphereVolume = (4.0 / 3.0) * M_PI * r * r * r;
             }
             const real binVolume = sphereVolume - prevSphereVolume;
-            invBinVolume[i]  = 1.0 / binVolume;
-            prevSphereVolume = sphereVolume;
+            invBinVolume[i]      = 1.0 / binVolume;
+            prevSphereVolume     = sphereVolume;
         }
         finalRdf->scaleAllByVector(invBinVolume.data());
 
@@ -654,7 +637,7 @@ void Rdf::finishAnalysis(int /*nframes*/)
     if (!fnCumulative_.empty())
     {
         AverageHistogramPointer cumulativeRdf
-            = pairCounts_->averager().resampleDoubleBinWidth(false);
+                = pairCounts_->averager().resampleDoubleBinWidth(false);
         cumulativeRdf->makeCumulative();
         cumulativeRdf->done();
 
@@ -679,11 +662,11 @@ void Rdf::writeOutput()
 
 //! \}
 
-}       // namespace
+} // namespace
 
 const char RdfInfo::name[] = "rdf";
 const char RdfInfo::shortDescription[]
-    = "Calculate radial distribution functions";
+        = "Calculate radial distribution functions";
 
 TrajectoryAnalysisModulePointer RdfInfo::create()
 {

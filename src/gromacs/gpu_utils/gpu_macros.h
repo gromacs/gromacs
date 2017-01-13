@@ -47,8 +47,13 @@
 
 #define NULL_FUNC_QUALIFIER static
 #define NULL_FUNC_ARGUMENT(arg) /*arg*/
-#define NULL_FUNC_TERM {}
-#define NULL_FUNC_TERM_WITH_RETURN(arg) { return (arg); }
+#define NULL_FUNC_TERM \
+    {                  \
+    }
+#define NULL_FUNC_TERM_WITH_RETURN(arg) \
+    {                                   \
+        return (arg);                   \
+    }
 
 #ifdef DOXYGEN
 
@@ -76,7 +81,7 @@
 #define GPU_FUNC_TERM REAL_FUNC_TERM
 #define GPU_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
 
-#  if GMX_GPU == GMX_GPU_OPENCL
+#if GMX_GPU == GMX_GPU_OPENCL
 
 /* OpenCL support is enabled, so CUDA-specific functions need empty
  * implementations, while OpenCL-specific functions will have real
@@ -90,8 +95,8 @@
 #define OPENCL_FUNC_TERM REAL_FUNC_TERM
 #define OPENCL_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
 
-#  endif
-#  if GMX_GPU == GMX_GPU_CUDA
+#endif
+#if GMX_GPU == GMX_GPU_CUDA
 
 /* CUDA support is enabled, so OpenCL-specific functions need empty
  * implementations, while CUDA-specific functions will have real
@@ -105,7 +110,7 @@
 #define OPENCL_FUNC_TERM NULL_FUNC_TERM
 #define OPENCL_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
 
-#  endif
+#endif
 
 #elif GMX_GPU == GMX_GPU_NONE
 

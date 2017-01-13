@@ -100,24 +100,23 @@ extern "C" {
  *                 correspond to errors in the arguments provided.
  */
 void
-    F77_FUNC(dsaupd, DSAUPD) (int *     ido,
-                              const char *    bmat,
-                              int *     n,
-                              const char *      which,
-                              int *     nev,
-                              double *  tol,
-                              double *  resid,
-                              int *     ncv,
-                              double *  v,
-                              int *     ldv,
-                              int *     iparam,
-                              int *     ipntr,
-                              double *  workd,
-                              int *     iwork,
-                              double *  workl,
-                              int *     lworkl,
-                              int *     info);
-
+        F77_FUNC(dsaupd, DSAUPD)(int *ido,
+                                 const char *bmat,
+                                 int *       n,
+                                 const char *which,
+                                 int *       nev,
+                                 double *    tol,
+                                 double *    resid,
+                                 int *       ncv,
+                                 double *    v,
+                                 int *       ldv,
+                                 int *       iparam,
+                                 int *       ipntr,
+                                 double *    workd,
+                                 int *       iwork,
+                                 double *    workl,
+                                 int *       lworkl,
+                                 int *       info);
 
 
 /*! \brief Get eigenvalues/vectors after Arnoldi iteration, double prec.
@@ -159,31 +158,28 @@ void
  *  \param info    Provide the same argument as you did to dsaupd()
  */
 void
-    F77_FUNC(dseupd, DSEUPD) (int *     rvec,
-                              const char *    howmny,
-                              int *     select,
-                              double *  d,
-                              double *  z,
-                              int *     ldz,
-                              double *  sigma,
-                              const char *    bmat,
-                              int *     n,
-                              const char *    which,
-                              int *     nev,
-                              double *  tol,
-                              double *  resid,
-                              int *     ncv,
-                              double *  v,
-                              int *     ldv,
-                              int *     iparam,
-                              int *     ipntr,
-                              double *  workd,
-                              double *  workl,
-                              int *     lworkl,
-                              int *     info);
-
-
-
+        F77_FUNC(dseupd, DSEUPD)(int *rvec,
+                                 const char *howmny,
+                                 int *       select,
+                                 double *    d,
+                                 double *    z,
+                                 int *       ldz,
+                                 double *    sigma,
+                                 const char *bmat,
+                                 int *       n,
+                                 const char *which,
+                                 int *       nev,
+                                 double *    tol,
+                                 double *    resid,
+                                 int *       ncv,
+                                 double *    v,
+                                 int *       ldv,
+                                 int *       iparam,
+                                 int *       ipntr,
+                                 double *    workd,
+                                 double *    workl,
+                                 int *       lworkl,
+                                 int *       info);
 
 
 /*! \brief Implicitly Restarted Arnoldi Iteration, single precision.
@@ -231,26 +227,23 @@ void
  *                 correspond to errors in the arguments provided.
  */
 void
-    F77_FUNC(ssaupd, SSAUPD) (int *     ido,
-                              const char *    bmat,
-                              int *     n,
-                              const char *    which,
-                              int *     nev,
-                              float *   tol,
-                              float *   resid,
-                              int *     ncv,
-                              float *   v,
-                              int *     ldv,
-                              int *     iparam,
-                              int *     ipntr,
-                              float *   workd,
-                              int *     iwork,
-                              float *   workl,
-                              int *     lworkl,
-                              int *     info);
-
-
-
+        F77_FUNC(ssaupd, SSAUPD)(int *ido,
+                                 const char *bmat,
+                                 int *       n,
+                                 const char *which,
+                                 int *       nev,
+                                 float *     tol,
+                                 float *     resid,
+                                 int *       ncv,
+                                 float *     v,
+                                 int *       ldv,
+                                 int *       iparam,
+                                 int *       ipntr,
+                                 float *     workd,
+                                 int *       iwork,
+                                 float *     workl,
+                                 int *       lworkl,
+                                 int *       info);
 
 
 /*! \brief Get eigenvalues/vectors after Arnoldi iteration, single prec.
@@ -292,28 +285,28 @@ void
  *  \param info    Provide the same argument as you did to ssaupd()
  */
 void
-    F77_FUNC(sseupd, SSEUPD) (int *     rvec,
-                              const char *    howmny,
-                              int *     select,
-                              float *   d,
-                              float *   z,
-                              int *     ldz,
-                              float *   sigma,
-                              const char *    bmat,
-                              int *     n,
-                              const char *    which,
-                              int *     nev,
-                              float *   tol,
-                              float *   resid,
-                              int *     ncv,
-                              float *   v,
-                              int *     ldv,
-                              int *     iparam,
-                              int *     ipntr,
-                              float *   workd,
-                              float *   workl,
-                              int *     lworkl,
-                              int *     info);
+        F77_FUNC(sseupd, SSEUPD)(int *rvec,
+                                 const char *howmny,
+                                 int *       select,
+                                 float *     d,
+                                 float *     z,
+                                 int *       ldz,
+                                 float *     sigma,
+                                 const char *bmat,
+                                 int *       n,
+                                 const char *which,
+                                 int *       nev,
+                                 float *     tol,
+                                 float *     resid,
+                                 int *       ncv,
+                                 float *     v,
+                                 int *       ldv,
+                                 int *       iparam,
+                                 int *       ipntr,
+                                 float *     workd,
+                                 float *     workl,
+                                 int *       lworkl,
+                                 int *       info);
 
 #ifdef __cplusplus
 }

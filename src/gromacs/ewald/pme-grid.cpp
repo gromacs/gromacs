@@ -344,7 +344,7 @@ int copy_fftgrid_to_pmegrid(struct gmx_pme_t *pme, const real *fftgrid, real *pm
     /* The fftgrid is always 'justified' to the lower-left corner of the PME grid,
        the offset is identical, and the PME grid always has more data (due to overlap)
      */
-    ixy0 = ((thread  ) * local_fft_ndata[XX] * local_fft_ndata[YY]) / nthread;
+    ixy0 = ((thread)*local_fft_ndata[XX] * local_fft_ndata[YY]) / nthread;
     ixy1 = ((thread + 1) * local_fft_ndata[XX] * local_fft_ndata[YY]) / nthread;
 
     for (ixy = ixy0; ixy < ixy1; ixy++)
@@ -361,7 +361,7 @@ int copy_fftgrid_to_pmegrid(struct gmx_pme_t *pme, const real *fftgrid, real *pm
     }
 
 #ifdef PME_TIME_THREADS
-    c1   = omp_cyc_end(c1);
+    c1 = omp_cyc_end(c1);
     cs1 += (double)c1;
     cnt++;
     if (cnt % 20 == 0)
@@ -395,7 +395,7 @@ void wrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
             for (iz = 0; iz < overlap; iz++)
             {
                 pmegrid[(ix * pny + iy) * pnz + iz]
-                    += pmegrid[(ix * pny + iy) * pnz + nz + iz];
+                        += pmegrid[(ix * pny + iy) * pnz + nz + iz];
             }
         }
     }
@@ -409,7 +409,7 @@ void wrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
                 for (iz = 0; iz < nz; iz++)
                 {
                     pmegrid[(ix * pny + iy) * pnz + iz]
-                        += pmegrid[(ix * pny + ny + iy) * pnz + iz];
+                            += pmegrid[(ix * pny + ny + iy) * pnz + iz];
                 }
             }
         }
@@ -426,7 +426,7 @@ void wrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
                 for (iz = 0; iz < nz; iz++)
                 {
                     pmegrid[(ix * pny + iy) * pnz + iz]
-                        += pmegrid[((nx + ix) * pny + iy) * pnz + iz];
+                            += pmegrid[((nx + ix) * pny + iy) * pnz + iz];
                 }
             }
         }
@@ -460,7 +460,7 @@ void unwrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
                 for (iz = 0; iz < nz; iz++)
                 {
                     pmegrid[((nx + ix) * pny + iy) * pnz + iz]
-                        = pmegrid[(ix * pny + iy) * pnz + iz];
+                            = pmegrid[(ix * pny + iy) * pnz + iz];
                 }
             }
         }
@@ -479,13 +479,13 @@ void unwrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
                 for (iz = 0; iz < nz; iz++)
                 {
                     pmegrid[(ix * pny + ny + iy) * pnz + iz]
-                        = pmegrid[(ix * pny + iy) * pnz + iz];
+                            = pmegrid[(ix * pny + iy) * pnz + iz];
                 }
             }
         }
     }
 
-    /* Copy periodic overlap in z */
+/* Copy periodic overlap in z */
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
     for (ix = 0; ix < pme->pmegrid_nx; ix++)
     {
@@ -497,7 +497,7 @@ void unwrap_periodic_pmegrid(struct gmx_pme_t *pme, real *pmegrid)
             for (iz = 0; iz < overlap; iz++)
             {
                 pmegrid[(ix * pny + iy) * pnz + nz + iz]
-                    = pmegrid[(ix * pny + iy) * pnz + iz];
+                        = pmegrid[(ix * pny + iy) * pnz + iz];
             }
         }
     }
@@ -540,8 +540,8 @@ void pmegrid_init(pmegrid_t *grid,
                   int x0, int y0, int z0,
                   int x1, int y1, int z1,
                   gmx_bool set_alignment,
-                  int pme_order,
-                  real *ptr)
+                  int      pme_order,
+                  real *   ptr)
 {
     int nz, gridsize;
 
@@ -605,9 +605,9 @@ static void make_subgrid_division(const ivec n, int ovl, int nthread,
 
                     /* Determine the number of grid points per thread */
                     gsize
-                        = (div_round_up(n[XX], nsx) + ovl)
-                            * (div_round_up(n[YY], nsy) + ovl)
-                            * (div_round_up(n[ZZ], nsz) + ovl);
+                            = (div_round_up(n[XX], nsx) + ovl)
+                              * (div_round_up(n[YY], nsy) + ovl)
+                              * (div_round_up(n[ZZ], nsz) + ovl);
 
                     /* Minimize the number of grids points per thread
                      * and, secondarily, the number of cuts in minor dimensions.
@@ -641,11 +641,11 @@ static void make_subgrid_division(const ivec n, int ovl, int nthread,
 
 void pmegrids_init(pmegrids_t *grids,
                    int nx, int ny, int nz, int nz_base,
-                   int pme_order,
+                   int      pme_order,
                    gmx_bool bUseThreads,
-                   int nthread,
-                   int overlap_x,
-                   int overlap_y)
+                   int      nthread,
+                   int      overlap_x,
+                   int      overlap_y)
 {
     ivec n, n_base;
     int  t, x, y, z, d, i, tfac;
@@ -701,9 +701,9 @@ void pmegrids_init(pmegrids_t *grids,
                 {
                     pmegrid_init(&grids->grid_th[t],
                                  x, y, z,
-                                 (n[XX] * (x  )) / grids->nc[XX],
-                                 (n[YY] * (y  )) / grids->nc[YY],
-                                 (n[ZZ] * (z  )) / grids->nc[ZZ],
+                                 (n[XX] * (x)) / grids->nc[XX],
+                                 (n[YY] * (y)) / grids->nc[YY],
+                                 (n[ZZ] * (z)) / grids->nc[ZZ],
                                  (n[XX] * (x + 1)) / grids->nc[XX],
                                  (n[YY] * (y + 1)) / grids->nc[YY],
                                  (n[ZZ] * (z + 1)) / grids->nc[ZZ],
@@ -742,9 +742,15 @@ void pmegrids_init(pmegrids_t *grids,
 
         switch (d)
         {
-            case XX: max_comm_lines = overlap_x;     break;
-            case YY: max_comm_lines = overlap_y;     break;
-            case ZZ: max_comm_lines = pme_order - 1; break;
+            case XX:
+                max_comm_lines = overlap_x;
+                break;
+            case YY:
+                max_comm_lines = overlap_y;
+                break;
+            case ZZ:
+                max_comm_lines = pme_order - 1;
+                break;
         }
         grids->nthread_comm[d] = 0;
         while ((n[d] * grids->nthread_comm[d]) / grids->nc[d] < max_comm_lines
@@ -782,7 +788,7 @@ void pmegrids_destroy(pmegrids_t *grids)
 }
 
 void make_gridindex_to_localindex(int n, int local_start, int local_range,
-                                  int **global_to_local,
+                                  int ** global_to_local,
                                   real **fraction_shift)
 {
     /* Here we construct array for looking up the grid line index and

@@ -87,7 +87,7 @@ public:
 
     void setGroup(int count, const int atoms[]);
     template <int count>
-    void setGroup(const int (&atoms)[count])
+    void          setGroup(const int (&atoms)[count])
     {
         setGroup(count, atoms);
     }
@@ -241,7 +241,9 @@ TEST_F(IndexBlockTest, ChecksOutOfOrderGroupForFullBlocksPositive)
     const int maxGroup[] = {
         15, 16, 17, 2, 1, 0, 12, 13, 14, 5, 4, 3, 9, 10, 11, 8, 7, 6
     };
-    const int testGroup[] = { 2, 1, 0, 5, 4, 3, 8, 7, 6, };
+    const int testGroup[] = {
+        2, 1, 0, 5, 4, 3, 8, 7, 6,
+    };
     topManager_.initAtoms(18);
     topManager_.initUniformResidues(3);
     setGroup(maxGroup);
@@ -445,7 +447,7 @@ void IndexMapTest::testOrgIdGroup(e_index_t type, const char *name)
     gmx::test::TestReferenceChecker compound(
             checker_.checkCompound("OrgIdGroups", name));
     const int count
-        = gmx_ana_indexmap_init_orgid_group(&map_, topManager_.topology(), type);
+            = gmx_ana_indexmap_init_orgid_group(&map_, topManager_.topology(), type);
     compound.checkInteger(count, "GroupCount");
     compound.checkSequenceArray(map_.mapb.nr, map_.orgid, "OrgId");
     for (int i = 0; i < map_.mapb.nr; ++i)

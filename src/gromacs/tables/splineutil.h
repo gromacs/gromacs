@@ -76,10 +76,9 @@ namespace internal
  *
  *  \note The function/derivative are always double-valued to avoid accuracy loss.
  */
-void
-throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)> &function,
-                                              const std::function<double(double)> &derivative,
-                                              const std::pair<real, real>          &range);
+void throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)> &function,
+                                                   const std::function<double(double)> &derivative,
+                                                   const std::pair<real, real> &range);
 
 /*! \brief Ensure vector of derivative values is the derivative of function vector.
  *
@@ -103,13 +102,10 @@ throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)
  *  \note The function/derivative vectors and spacing are always double-valued
  *        to avoid accuracy loss.
  */
-void
-throwUnlessDerivativeIsConsistentWithFunction(ConstArrayRef<double> function,
-                                              ConstArrayRef<double> derivative,
-                                              double inputSpacing,
-                                              const std::pair<real, real>  &range);
-
-
+void throwUnlessDerivativeIsConsistentWithFunction(ConstArrayRef<double> function,
+                                                   ConstArrayRef<double> derivative,
+                                                   double                inputSpacing,
+                                                   const std::pair<real, real> &range);
 
 
 /*! \brief Find smallest quotient between analytical function and its 2nd derivative
@@ -140,12 +136,8 @@ throwUnlessDerivativeIsConsistentWithFunction(ConstArrayRef<double> function,
  *
  *  \note The function is always double-valued to avoid accuracy loss.
  */
-real
-findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(double)> &f,
-                                                  const std::pair<real, real>          &range);
-
-
-
+real findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(double)> &f,
+                                                       const std::pair<real, real> &range);
 
 
 /*! \brief Find smallest quotient between vector of values and its 2nd derivative
@@ -174,13 +166,9 @@ findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(dou
  *  \note The function vector and input spacing are always double-valued to
  *        avoid accuracy loss.
  */
-real
-findSmallestQuotientOfFunctionAndSecondDerivative(ConstArrayRef<double> function,
-                                                  double inputSpacing,
-                                                  const std::pair<real, real>  &range);
-
-
-
+real findSmallestQuotientOfFunctionAndSecondDerivative(ConstArrayRef<double> function,
+                                                       double                inputSpacing,
+                                                       const std::pair<real, real> &range);
 
 
 /*! \brief Find smallest quotient between analytical function and its 3rd derivative
@@ -211,11 +199,8 @@ findSmallestQuotientOfFunctionAndSecondDerivative(ConstArrayRef<double> function
  *
  *  \note The function is always double-valued to avoid accuracy loss.
  */
-real
-findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(double)> &f,
-                                                 const std::pair<real, real>          &range);
-
-
+real findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(double)> &f,
+                                                      const std::pair<real, real> &range);
 
 
 /*! \brief Find smallest quotient between function and 2nd derivative (vectors)
@@ -244,10 +229,9 @@ findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(doub
  *  \note The function vector and input spacing are always double-valued to
  *        avoid accuracy loss.
  */
-real
-findSmallestQuotientOfFunctionAndThirdDerivative(ConstArrayRef<double> function,
-                                                 double inputSpacing,
-                                                 const std::pair<real, real>  &range);
+real findSmallestQuotientOfFunctionAndThirdDerivative(ConstArrayRef<double> function,
+                                                      double                inputSpacing,
+                                                      const std::pair<real, real> &range);
 
 
 /*! \brief Calculate second derivative of vector and return vector of same length
@@ -298,7 +282,7 @@ void fillMultiplexedTableData(const T     inputData,
 {
     if (multiplexedOutputData->size() == 0)
     {
-        multiplexedOutputData->resize( inputData.size() * numTables );
+        multiplexedOutputData->resize(inputData.size() * numTables);
     }
     else
     {
@@ -314,7 +298,7 @@ void fillMultiplexedTableData(const T     inputData,
     for (std::size_t i = 0; i < points; i++)
     {
         std::size_t inputOffset  = valuesPerTablePoint * i;
-        std::size_t outputOffset = valuesPerTablePoint * ( numTables * i + thisTableIndex );
+        std::size_t outputOffset = valuesPerTablePoint * (numTables * i + thisTableIndex);
 
         for (std::size_t j = 0; j < valuesPerTablePoint; j++)
         {
@@ -324,8 +308,8 @@ void fillMultiplexedTableData(const T     inputData,
 }
 
 
-}      // namespace internal
+} // namespace internal
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_TABLES_SPLINEUTIL_H

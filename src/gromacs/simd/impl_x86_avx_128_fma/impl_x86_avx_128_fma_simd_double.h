@@ -55,31 +55,31 @@ static inline double gmx_simdcall reduce(SimdDouble a)
 static inline SimdDouble gmx_simdcall fma(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
-               _mm_macc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_macc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall fms(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
-               _mm_msub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_msub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall fnma(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
-               _mm_nmacc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_nmacc_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall fnms(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
-               _mm_nmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_nmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_DOUBLE_H */

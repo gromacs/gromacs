@@ -53,12 +53,12 @@ typedef struct
     int ai, aj;
 } sortable;
 
-static int bond_sort (const void *a, const void *b)
+static int bond_sort(const void *a, const void *b)
 {
     sortable *sa, *sb;
 
-    sa = (sortable *) a;
-    sb = (sortable *) b;
+    sa = (sortable *)a;
+    sb = (sortable *)b;
 
     if (sa->ai == sb->ai)
     {
@@ -70,9 +70,9 @@ static int bond_sort (const void *a, const void *b)
     }
 }
 
-static int compare_int (const void * a, const void * b)
+static int compare_int(const void *a, const void *b)
 {
-    return ( *(int*)a - *(int*)b );
+    return (*(int *)a - *(int *)b);
 }
 
 
@@ -115,14 +115,14 @@ void init_nnb(t_nextnb *nnb, int nr, int nrex)
     }
 }
 
-static void add_nnb (t_nextnb *nnb, int nre, int i, int j)
+static void add_nnb(t_nextnb *nnb, int nre, int i, int j)
 {
     srenew(nnb->a[i][nre], nnb->nrexcl[i][nre] + 1);
     nnb->a[i][nre][nnb->nrexcl[i][nre]] = j;
     nnb->nrexcl[i][nre]++;
 }
 
-void done_nnb (t_nextnb *nnb)
+void done_nnb(t_nextnb *nnb)
 {
     int i, nre;
 
@@ -132,14 +132,14 @@ void done_nnb (t_nextnb *nnb)
         {
             if (nnb->nrexcl[i][nre] > 0)
             {
-                sfree (nnb->a[i][nre]);
+                sfree(nnb->a[i][nre]);
             }
         }
-        sfree (nnb->nrexcl[i]);
-        sfree (nnb->a[i]);
+        sfree(nnb->nrexcl[i]);
+        sfree(nnb->a[i]);
     }
-    sfree (nnb->a);
-    sfree (nnb->nrexcl);
+    sfree(nnb->a);
+    sfree(nnb->nrexcl);
     nnb->nr   = 0;
     nnb->nrex = 0;
 }
@@ -212,7 +212,7 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
         prints("nnb2excl before qsort", nr_of_sortables, s);
         if (nr_of_sortables > 1)
         {
-            qsort ((void *)s, nr_of_sortables, (size_t)sizeof(s[0]), bond_sort);
+            qsort((void *)s, nr_of_sortables, (size_t)sizeof(s[0]), bond_sort);
             prints("nnb2excl after qsort", nr_of_sortables, s);
         }
 
@@ -240,11 +240,11 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
         {
             excl->a[excl->nra + nrs] = s[nrs].aj;
         }
-        excl->nra         += nr_of_sortables;
+        excl->nra += nr_of_sortables;
         excl->index[i + 1] = excl->nra;
 
         /* cleanup temporary space */
-        sfree (s);
+        sfree(s);
     }
     if (debug)
     {
@@ -301,7 +301,6 @@ static void do_gen(int       nrbonds, /* total number of bonds in s	*/
         }
     }
     print_nnb(nnb, "After exclude rest");
-
 }
 
 static void add_b(t_params *bonds, int *nrf, sortable *s)
@@ -356,7 +355,7 @@ void gen_nnb(t_nextnb *nnb, t_params plist[])
     prints("gen_excl before qsort", nrbonds, s);
     if (nrbonds > 1)
     {
-        qsort((void *) s, nrbonds, (size_t)sizeof(sortable), bond_sort);
+        qsort((void *)s, nrbonds, (size_t)sizeof(sortable), bond_sort);
         prints("gen_excl after qsort", nrbonds, s);
     }
 
@@ -403,7 +402,7 @@ static void sort_and_purge_nnb(t_nextnb *nnb)
 }
 
 
-void generate_excl (int nrexcl, int nratoms, t_params plist[], t_nextnb *nnb, t_blocka *excl)
+void generate_excl(int nrexcl, int nratoms, t_params plist[], t_nextnb *nnb, t_blocka *excl)
 {
     if (nrexcl < 0)
     {
@@ -413,5 +412,5 @@ void generate_excl (int nrexcl, int nratoms, t_params plist[], t_nextnb *nnb, t_
     gen_nnb(nnb, plist);
     excl->nr = nratoms;
     sort_and_purge_nnb(nnb);
-    nnb2excl (nnb, excl);
+    nnb2excl(nnb, excl);
 }

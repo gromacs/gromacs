@@ -97,7 +97,7 @@ class TrajectoryAnalysisModuleData::Impl
 public:
     //! Container that associates a data handle to its AnalysisData object.
     typedef std::map<const AnalysisData *, AnalysisDataHandle>
-        HandleContainer;
+            HandleContainer;
 
     //! \copydoc TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
     Impl(TrajectoryAnalysisModule *         module,
@@ -257,7 +257,7 @@ void TrajectoryAnalysisModuleDataBasic::finish()
     finishDataHandles();
 }
 
-}   // namespace
+} // namespace
 
 
 /********************************************************************
@@ -283,7 +283,7 @@ void TrajectoryAnalysisModule::optionsFinished(
 
 void TrajectoryAnalysisModule::initAfterFirstFrame(
         const TrajectoryAnalysisSettings & /*settings*/,
-        const t_trxframe                 & /*fr*/)
+        const t_trxframe & /*fr*/)
 {
 }
 
@@ -320,7 +320,7 @@ AbstractAnalysisData &TrajectoryAnalysisModule::datasetFromIndex(int index) cons
         GMX_THROW(APIError("Out of range data set index"));
     }
     Impl::DatasetContainer::const_iterator item
-        = impl_->datasets_.find(impl_->datasetNames_[index]);
+            = impl_->datasets_.find(impl_->datasetNames_[index]);
     GMX_RELEASE_ASSERT(item != impl_->datasets_.end(),
                        "Inconsistent data set names");
     return *item->second;

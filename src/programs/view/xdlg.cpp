@@ -233,8 +233,8 @@ bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
             int  i, x, y;
             t_id gid = dlgitem->GroupID;
             t_id id  = dlgitem->ID;
-            x = dlgitem->win.x + 2 * OFFS_X - old_x;
-            y = dlgitem->win.y + 2 * OFFS_Y - old_y;
+            x        = dlgitem->win.x + 2 * OFFS_X - old_x;
+            y        = dlgitem->win.y + 2 * OFFS_Y - old_y;
             for (i = 0; (i < dlg->nitem); i++)
             {
                 t_dlgitem *child = dlg->dlgitem[i];
@@ -526,7 +526,7 @@ static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
 #endif
                 if (tid != -1)
                 {
-                    t_dlgitem *dit = FindItem(dlg, tid);
+                    t_dlgitem *dit             = FindItem(dlg, tid);
                     dit->u.radiobutton.bSelect = false;
                     ExposeWin(x11->disp, dit->win.self);
                 }
@@ -609,7 +609,7 @@ void DoCreateDlg(t_dlg *dlg)
     attr.save_under        = True;
     attr.cursor            = XCreateFontCursor(dlg->x11->disp, XC_hand2);
     Val                    = CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWSaveUnder
-        | CWCursor;
+          | CWCursor;
     dlg->win.self = XCreateWindow(dlg->x11->disp, dlg->wDad,
                                   dlg->win.x, dlg->win.y,
                                   dlg->win.width, dlg->win.height,
@@ -656,9 +656,9 @@ void AddDlgItem(t_dlg *dlg, t_dlgitem *item)
         gmx_fatal(FARGS, "dlgitem not allocated");
     }
     item->win.self
-        = XCreateSimpleWindow(dlg->x11->disp, dlg->win.self, item->win.x, item->win.y,
-                              item->win.width, item->win.height,
-                              item->win.bwidth, dlg->x11->fg, dlg->x11->bg);
+            = XCreateSimpleWindow(dlg->x11->disp, dlg->win.self, item->win.x, item->win.y,
+                                  item->win.width, item->win.height,
+                                  item->win.bwidth, dlg->x11->fg, dlg->x11->bg);
     CheckWindow(item->win.self);
 
     dlg->x11->RegisterCallback(dlg->x11, item->win.self, dlg->win.self,

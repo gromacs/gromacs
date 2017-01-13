@@ -111,9 +111,9 @@ static void calc_interpolation_idx(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
         fptr   = atc->fractx[i];
 
         /* Fractional coordinates along box vectors, add a positive shift to ensure tx/ty/tz are positive for triclinic boxes */
-        tx = nx * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx + shift );
-        ty = ny * (                  xptr[YY] * ryy + xptr[ZZ] * rzy + shift );
-        tz = nz * (                                   xptr[ZZ] * rzz + shift );
+        tx = nx * (xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx + shift);
+        ty = ny * (xptr[YY] * ryy + xptr[ZZ] * rzy + shift);
+        tz = nz * (xptr[ZZ] * rzz + shift);
 
         tix = static_cast<int>(tx);
         tiy = static_cast<int>(ty);
@@ -209,52 +209,51 @@ static void make_thread_local_ind(pme_atomcomm_t *atc,
 /* Macro to force loop unrolling by fixing order.
  * This gives a significant performance gain.
  */
-#define CALC_SPLINE(order)                     \
-    {                                              \
-        for (int j = 0; (j < DIM); j++)            \
-        {                                          \
-            real dr, div;                          \
-            real data[PME_ORDER_MAX];              \
-                                                   \
-            dr = xptr[j];                         \
-                                               \
-            /* dr is relative offset from lower cell limit */ \
-            data[order - 1] = 0;                     \
-            data[1]         = dr;                          \
-            data[0]         = 1 - dr;                      \
-                                               \
-            for (int k = 3; (k < order); k++)      \
-            {                                      \
-                div         = 1.0 / (k - 1.0);               \
-                data[k - 1] = div * dr * data[k - 2];      \
-                for (int l = 1; (l < (k - 1)); l++)  \
-                {                                  \
-                    data[k - l - 1] = div * ((dr + l) * data[k - l - 2] + (k - l - dr)  \
-                                             * data[k - l - 1]);                \
-                }                                  \
-                data[0] = div * (1 - dr) * data[0];      \
-            }                                      \
-            /* differentiate */                    \
-            dtheta[j][i * order + 0] = -data[0];       \
-            for (int k = 1; (k < order); k++)      \
-            {                                      \
-                dtheta[j][i * order + k] = data[k - 1] - data[k]; \
-            }                                      \
-                                               \
-            div             = 1.0 / (order - 1);                 \
-            data[order - 1] = div * dr * data[order - 2];  \
-            for (int l = 1; (l < (order - 1)); l++)  \
-            {                                      \
-                data[order - l - 1] = div * ((dr + l) * data[order - l - 2]     \
-                                             + (order - l - dr) * data[order - l - 1]); \
-            }                                      \
-            data[0] = div * (1 - dr) * data[0];        \
-                                               \
-            for (int k = 0; k < order; k++)        \
-            {                                      \
-                theta[j][i * order + k] = data[k];    \
-            }                                      \
-        }                                          \
+#define CALC_SPLINE(order)                                                                                 \
+    {                                                                                                      \
+        for (int j = 0; (j < DIM); j++)                                                                    \
+        {                                                                                                  \
+            real dr, div;                                                                                  \
+            real data[PME_ORDER_MAX];                                                                      \
+                                                                                                           \
+            dr = xptr[j];                                                                                  \
+                                                                                                           \
+            /* dr is relative offset from lower cell limit */                                              \
+            data[order - 1] = 0;                                                                           \
+            data[1]         = dr;                                                                          \
+            data[0]         = 1 - dr;                                                                      \
+                                                                                                           \
+            for (int k = 3; (k < order); k++)                                                              \
+            {                                                                                              \
+                div         = 1.0 / (k - 1.0);                                                             \
+                data[k - 1] = div * dr * data[k - 2];                                                      \
+                for (int l = 1; (l < (k - 1)); l++)                                                        \
+                {                                                                                          \
+                    data[k - l - 1] = div * ((dr + l) * data[k - l - 2] + (k - l - dr) * data[k - l - 1]); \
+                }                                                                                          \
+                data[0] = div * (1 - dr) * data[0];                                                        \
+            }                                                                                              \
+            /* differentiate */                                                                            \
+            dtheta[j][i * order + 0] = -data[0];                                                           \
+            for (int k = 1; (k < order); k++)                                                              \
+            {                                                                                              \
+                dtheta[j][i * order + k] = data[k - 1] - data[k];                                          \
+            }                                                                                              \
+                                                                                                           \
+            div             = 1.0 / (order - 1);                                                           \
+            data[order - 1] = div * dr * data[order - 2];                                                  \
+            for (int l = 1; (l < (order - 1)); l++)                                                        \
+            {                                                                                              \
+                data[order - l - 1] = div * ((dr + l) * data[order - l - 2]                                \
+                                             + (order - l - dr) * data[order - l - 1]);                    \
+            }                                                                                              \
+            data[0] = div * (1 - dr) * data[0];                                                            \
+                                                                                                           \
+            for (int k = 0; k < order; k++)                                                                \
+            {                                                                                              \
+                theta[j][i * order + k] = data[k];                                                         \
+            }                                                                                              \
+        }                                                                                                  \
     }
 
 static void make_bsplines(splinevec theta, splinevec dtheta, int order,
@@ -278,38 +277,44 @@ static void make_bsplines(splinevec theta, splinevec dtheta, int order,
             assert(order >= 4 && order <= PME_ORDER_MAX);
             switch (order)
             {
-                case 4:  CALC_SPLINE(4);     break;
-                case 5:  CALC_SPLINE(5);     break;
-                default: CALC_SPLINE(order); break;
+                case 4:
+                    CALC_SPLINE(4);
+                    break;
+                case 5:
+                    CALC_SPLINE(5);
+                    break;
+                default:
+                    CALC_SPLINE(order);
+                    break;
             }
         }
     }
 }
 
 /* This has to be a macro to enable full compiler optimization with xlC (and probably others too) */
-#define DO_BSPLINE(order)                            \
-    for (ithx = 0; (ithx < order); ithx++)                    \
-    {                                                    \
-        index_x = (i0 + ithx) * pny * pnz;                     \
-        valx    = coefficient * thx[ithx];                          \
-                                                     \
-        for (ithy = 0; (ithy < order); ithy++)                \
-        {                                                \
-            valxy    = valx * thy[ithy];                   \
-            index_xy = index_x + (j0 + ithy) * pnz;            \
-                                                     \
-            for (ithz = 0; (ithz < order); ithz++)            \
-            {                                            \
-                index_xyz        = index_xy + (k0 + ithz);   \
-                grid[index_xyz] += valxy * thz[ithz];      \
-            }                                            \
-        }                                                \
+#define DO_BSPLINE(order)                             \
+    for (ithx = 0; (ithx < order); ithx++)            \
+    {                                                 \
+        index_x = (i0 + ithx) * pny * pnz;            \
+        valx    = coefficient * thx[ithx];            \
+                                                      \
+        for (ithy = 0; (ithy < order); ithy++)        \
+        {                                             \
+            valxy    = valx * thy[ithy];              \
+            index_xy = index_x + (j0 + ithy) * pnz;   \
+                                                      \
+            for (ithz = 0; (ithz < order); ithz++)    \
+            {                                         \
+                index_xyz = index_xy + (k0 + ithz);   \
+                grid[index_xyz] += valxy * thz[ithz]; \
+            }                                         \
+        }                                             \
     }
 
 
-static void spread_coefficients_bsplines_thread(pmegrid_t *                        pmegrid,
-                                                pme_atomcomm_t *                   atc,
-                                                splinedata_t *                     spline,
+static void spread_coefficients_bsplines_thread(pmegrid_t *            pmegrid,
+                                                pme_atomcomm_t *       atc,
+                                                splinedata_t *         spline,
                                                 struct pme_spline_work gmx_unused *work)
 {
 
@@ -324,7 +329,8 @@ static void spread_coefficients_bsplines_thread(pmegrid_t *                     
     int   offx, offy, offz;
 
 #if defined PME_SIMD4_SPREAD_GATHER && !defined PME_SIMD4_UNALIGNED
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  thz_aligned[GMX_SIMD4_WIDTH * 2];
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)
+    thz_aligned[GMX_SIMD4_WIDTH * 2];
 #endif
 
     pnx = pmegrid->s[XX];
@@ -397,14 +403,14 @@ static void spread_coefficients_bsplines_thread(pmegrid_t *                     
 static void copy_local_grid(struct gmx_pme_t *pme, pmegrids_t *pmegrids,
                             int grid_index, int thread, real *fftgrid)
 {
-    ivec local_fft_ndata, local_fft_offset, local_fft_size;
-    int  fft_my, fft_mz;
-    int  nsy, nsz;
-    ivec nf;
-    int  offx, offy, offz, x, y, z, i0, i0t;
-    int  d;
+    ivec       local_fft_ndata, local_fft_offset, local_fft_size;
+    int        fft_my, fft_mz;
+    int        nsy, nsz;
+    ivec       nf;
+    int        offx, offy, offz, x, y, z, i0, i0t;
+    int        d;
     pmegrid_t *pmegrid;
-    real *grid_th;
+    real *     grid_th;
 
     gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
                                    local_fft_ndata,
@@ -451,21 +457,21 @@ static void reduce_threadgrid_overlap(struct gmx_pme_t *pme,
                                       real *fftgrid, real *commbuf_x, real *commbuf_y,
                                       int grid_index)
 {
-    ivec local_fft_ndata, local_fft_offset, local_fft_size;
-    int  fft_nx, fft_ny, fft_nz;
-    int  fft_my, fft_mz;
-    int  buf_my = -1;
-    int  nsy, nsz;
-    ivec localcopy_end, commcopy_end;
-    int  offx, offy, offz, x, y, z, i0, i0t;
-    int  sx, sy, sz, fx, fy, fz, tx1, ty1, tz1, ox, oy, oz;
-    gmx_bool bClearBufX, bClearBufY, bClearBufXY, bClearBuf;
-    gmx_bool bCommX, bCommY;
-    int  d;
-    int  thread_f;
+    ivec             local_fft_ndata, local_fft_offset, local_fft_size;
+    int              fft_nx, fft_ny, fft_nz;
+    int              fft_my, fft_mz;
+    int              buf_my = -1;
+    int              nsy, nsz;
+    ivec             localcopy_end, commcopy_end;
+    int              offx, offy, offz, x, y, z, i0, i0t;
+    int              sx, sy, sz, fx, fy, fz, tx1, ty1, tz1, ox, oy, oz;
+    gmx_bool         bClearBufX, bClearBufY, bClearBufXY, bClearBuf;
+    gmx_bool         bCommX, bCommY;
+    int              d;
+    int              thread_f;
     const pmegrid_t *pmegrid, *pmegrid_g, *pmegrid_f;
-    const real *grid_th;
-    real *commbuf = nullptr;
+    const real *     grid_th;
+    real *           commbuf = nullptr;
 
     gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index],
                                    local_fft_ndata,
@@ -498,8 +504,8 @@ static void reduce_threadgrid_overlap(struct gmx_pme_t *pme,
          * not beyond the local FFT grid.
          */
         localcopy_end[d]
-            = std::min(pmegrid->offset[d] + pmegrid->n[d] - (pmegrid->order - 1),
-                       local_fft_ndata[d]);
+                = std::min(pmegrid->offset[d] + pmegrid->n[d] - (pmegrid->order - 1),
+                           local_fft_ndata[d]);
 
         /* Determine up to where our thread needs to copy from the
          * thread-local charge spreading grid to the communication buffer.
@@ -538,12 +544,12 @@ static void reduce_threadgrid_overlap(struct gmx_pme_t *pme,
         bCommX = FALSE;
         if (fx < 0)
         {
-            fx    += pmegrids->nc[XX];
-            ox    -= fft_nx;
+            fx += pmegrids->nc[XX];
+            ox -= fft_nx;
             bCommX = (pme->nnodes_major > 1);
         }
         pmegrid_g = &pmegrids->grid_th[fx * pmegrids->nc[YY] * pmegrids->nc[ZZ]];
-        ox       += pmegrid_g->offset[XX];
+        ox += pmegrid_g->offset[XX];
         /* Determine the end of our part of the source grid.
          * Use our thread local source grid and target grid part
          */
@@ -557,12 +563,12 @@ static void reduce_threadgrid_overlap(struct gmx_pme_t *pme,
             bCommY = FALSE;
             if (fy < 0)
             {
-                fy    += pmegrids->nc[YY];
-                oy    -= fft_ny;
+                fy += pmegrids->nc[YY];
+                oy -= fft_ny;
                 bCommY = (pme->nnodes_minor > 1);
             }
             pmegrid_g = &pmegrids->grid_th[fy * pmegrids->nc[ZZ]];
-            oy       += pmegrid_g->offset[YY];
+            oy += pmegrid_g->offset[YY];
             /* Determine the end of our part of the source grid.
              * Use our thread local source grid and target grid part
              */
@@ -579,8 +585,8 @@ static void reduce_threadgrid_overlap(struct gmx_pme_t *pme,
                     oz -= fft_nz;
                 }
                 pmegrid_g = &pmegrids->grid_th[fz];
-                oz       += pmegrid_g->offset[ZZ];
-                tz1       = std::min(oz + pmegrid_g->n[ZZ], localcopy_end[ZZ]);
+                oz += pmegrid_g->offset[ZZ];
+                tz1 = std::min(oz + pmegrid_g->n[ZZ], localcopy_end[ZZ]);
 
                 if (sx == 0 && sy == 0 && sz == 0)
                 {
@@ -640,8 +646,8 @@ static void reduce_threadgrid_overlap(struct gmx_pme_t *pme,
                          * with the part starting at the next slab.
                          */
                         buf_my
-                            = pme->overlap[1].s2g1[pme->nodeid_minor]
-                                - pme->overlap[1].s2g0[pme->nodeid_minor + 1];
+                                = pme->overlap[1].s2g1[pme->nodeid_minor]
+                                  - pme->overlap[1].s2g0[pme->nodeid_minor + 1];
                         if (bCommX)
                         {
                             /* We index commbuf modulo the local grid size */
@@ -698,17 +704,17 @@ static void reduce_threadgrid_overlap(struct gmx_pme_t *pme,
 
 static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
 {
-    ivec local_fft_ndata, local_fft_offset, local_fft_size;
+    ivec           local_fft_ndata, local_fft_offset, local_fft_size;
     pme_overlap_t *overlap;
-    int  send_index0, send_nindex;
-    int  recv_nindex;
+    int            send_index0, send_nindex;
+    int            recv_nindex;
 #if GMX_MPI
     MPI_Status stat;
 #endif
-    int  recv_size_y;
-    int  ipulse, size_yx;
+    int   recv_size_y;
+    int   ipulse, size_yx;
     real *sendptr, *recvptr;
-    int  x, y, z, indg, indb;
+    int   x, y, z, indg, indb;
 
     /* Note that this routine is only used for forward communication.
      * Since the force gathering, unlike the coefficient spreading,
@@ -744,8 +750,8 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
         for (ipulse = 0; ipulse < overlap->noverlap_nodes; ipulse++)
         {
             send_index0
-                = overlap->comm_data[ipulse].send_index0
-                    - overlap->comm_data[0].send_index0;
+                    = overlap->comm_data[ipulse].send_index0
+                      - overlap->comm_data[0].send_index0;
             send_nindex = overlap->comm_data[ipulse].send_nindex;
             /* We don't use recv_index0, as we always receive starting at 0 */
             recv_nindex = overlap->comm_data[ipulse].recv_nindex;
@@ -775,7 +781,7 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
                 for (y = 0; y < recv_nindex; y++)
                 {
                     indg = (x * local_fft_size[YY] + y) * local_fft_size[ZZ];
-                    indb = (x * recv_size_y        + y) * local_fft_ndata[ZZ];
+                    indb = (x * recv_size_y + y) * local_fft_ndata[ZZ];
                     for (z = 0; z < local_fft_ndata[ZZ]; z++)
                     {
                         fftgrid[indg + z] += recvptr[indb + z];
@@ -830,7 +836,7 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
         int datasize = local_fft_ndata[YY] * local_fft_ndata[ZZ];
         int send_id  = overlap->send_id[ipulse];
         int recv_id  = overlap->recv_id[ipulse];
-        sendptr = overlap->sendbuf;
+        sendptr      = overlap->sendbuf;
         MPI_Sendrecv(sendptr, send_nindex * datasize, GMX_MPI_REAL,
                      send_id, ipulse,
                      recvptr, recv_nindex * datasize, GMX_MPI_REAL,
@@ -842,7 +848,7 @@ static void sum_fftgrid_dd(struct gmx_pme_t *pme, real *fftgrid, int grid_index)
         {
             for (y = 0; y < local_fft_ndata[YY]; y++)
             {
-                indg = (x * local_fft_size[YY]  + y) * local_fft_size[ZZ];
+                indg = (x * local_fft_size[YY] + y) * local_fft_size[ZZ];
                 indb = (x * local_fft_ndata[YY] + y) * local_fft_ndata[ZZ];
                 for (z = 0; z < local_fft_ndata[ZZ]; z++)
                 {
@@ -860,10 +866,10 @@ void spread_on_grid(struct gmx_pme_t *pme,
 {
     int nthread, thread;
 #ifdef PME_TIME_THREADS
-    gmx_cycles_t c1, c2, c3, ct1a, ct1b, ct1c;
-    static double cs1     = 0, cs2 = 0, cs3 = 0;
-    static double cs1a[6] = {0, 0, 0, 0, 0, 0};
-    static int cnt        = 0;
+    gmx_cycles_t  c1, c2, c3, ct1a, ct1b, ct1c;
+    static double cs1 = 0, cs2 = 0, cs3 = 0;
+    static double cs1a[6] = { 0, 0, 0, 0, 0, 0 };
+    static int    cnt     = 0;
 #endif
 
     nthread = pme->nthread;
@@ -881,7 +887,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
             {
                 int start, end;
 
-                start = atc->n * thread   / nthread;
+                start = atc->n * thread / nthread;
                 end   = atc->n * (thread + 1) / nthread;
 
                 /* Compute fftgrid index for all atoms,
@@ -893,7 +899,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
         }
     }
 #ifdef PME_TIME_THREADS
-    c1   = omp_cyc_end(c1);
+    c1 = omp_cyc_end(c1);
     cs1 += (double)c1;
 #endif
 
@@ -906,7 +912,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
         try
         {
             splinedata_t *spline;
-            pmegrid_t *grid = nullptr;
+            pmegrid_t *   grid = nullptr;
 
             /* make local bsplines  */
             if (grids == nullptr || !pme->bUseThreads)
@@ -946,7 +952,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
 
             if (bSpread)
             {
-                /* put local atoms on grid. */
+/* put local atoms on grid. */
 #ifdef PME_TIME_SPREAD
                 ct1a = omp_cyc_start();
 #endif
@@ -957,7 +963,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
                     copy_local_grid(pme, grids, grid_index, thread, fftgrid);
                 }
 #ifdef PME_TIME_SPREAD
-                ct1a          = omp_cyc_end(ct1a);
+                ct1a = omp_cyc_end(ct1a);
                 cs1a[thread] += (double)ct1a;
 #endif
             }
@@ -965,7 +971,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 #ifdef PME_TIME_THREADS
-    c2   = omp_cyc_end(c2);
+    c2 = omp_cyc_end(c2);
     cs2 += (double)c2;
 #endif
 
@@ -988,7 +994,7 @@ void spread_on_grid(struct gmx_pme_t *pme,
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
 #ifdef PME_TIME_THREADS
-        c3   = omp_cyc_end(c3);
+        c3 = omp_cyc_end(c3);
         cs3 += (double)c3;
 #endif
 

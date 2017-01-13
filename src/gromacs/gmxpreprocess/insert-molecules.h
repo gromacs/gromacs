@@ -43,8 +43,8 @@ namespace gmx
 class InsertMoleculesInfo
 {
 public:
-    static const char name[];
-    static const char shortDescription[];
+    static const char                       name[];
+    static const char                       shortDescription[];
     static ICommandLineOptionsModulePointer create();
 };
 

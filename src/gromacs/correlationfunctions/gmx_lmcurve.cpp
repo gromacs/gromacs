@@ -49,18 +49,18 @@
 
 typedef struct
 {
-    const double* t;
-    const double* y;
-    const double* dy;
-    double (*f)(const double t, const double* par);
+    const double *t;
+    const double *y;
+    const double *dy;
+    double (*f)(const double t, const double *par);
 } lmcurve_data_struct;
 
 //! Callback function used by lmmin
 static void lmcurve_evaluate(
-        const double* par, const int m_dat, const void* data, double* fvec,
-        int* info)
+        const double *par, const int m_dat, const void *data, double *fvec,
+        int *info)
 {
-    lmcurve_data_struct* D = (lmcurve_data_struct*)data;
+    lmcurve_data_struct *D = (lmcurve_data_struct *)data;
     int                  i;
     for (i = 0; i < m_dat; i++)
     {
@@ -75,13 +75,13 @@ static void lmcurve_evaluate(
 }
 
 void gmx_lmcurve(
-        const int n_par, double* par, const int m_dat,
-        const double* t, const double* y, const double *dy,
-        double (*f)(double t, const double* par),
-        const lm_control_struct* control, lm_status_struct* status)
+        const int n_par, double *par, const int m_dat,
+        const double *t, const double *y, const double *dy,
+        double (*f)(double t, const double *par),
+        const lm_control_struct *control, lm_status_struct *status)
 {
     lmcurve_data_struct data = { t, y, dy, f };
 
-    lmmin(n_par, par, m_dat, (const void*)&data, lmcurve_evaluate,
+    lmmin(n_par, par, m_dat, (const void *)&data, lmcurve_evaluate,
           control, status);
 }

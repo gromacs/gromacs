@@ -105,14 +105,15 @@ int fflib_search_file_end(const char *ffdir,
     {
         std::string              ffdirFull(gmx::getLibraryFileFinder().findFile(ffdir));
         std::vector<std::string> result
-            = gmx::DirectoryEnumerator::enumerateFilesWithExtension(
+                = gmx::DirectoryEnumerator::enumerateFilesWithExtension(
                         ffdirFull.c_str(), file_end, true);
         if (result.empty() && bFatalError)
         {
             std::string message
-                = gmx::formatString("Could not find any files ending on '%s' "
-                                    "in the force field directory '%s'",
-                                    file_end, ffdir);
+                    = gmx::formatString(
+                            "Could not find any files ending on '%s' "
+                            "in the force field directory '%s'",
+                            file_end, ffdir);
             GMX_THROW(gmx::InvalidInputError(message));
         }
         const int count = static_cast<int>(result.size());
@@ -137,15 +138,15 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
     const char *const              dirend   = fflib_forcefield_dir_ext();
     const char *const              filename = fflib_forcefield_itp();
     std::vector<gmx::DataFileInfo> candidates
-        = gmx::getLibraryFileFinder().enumerateFiles(
+            = gmx::getLibraryFileFinder().enumerateFiles(
                     gmx::DataFileOptions(dirend)
-                        .throwIfNotFound(false));
+                            .throwIfNotFound(false));
 
     std::vector<gmx::DataFileInfo> result;
     for (size_t i = 0; i < candidates.size(); ++i)
     {
         std::string testPath(gmx::Path::join(
-                                     candidates[i].dir, candidates[i].name, filename));
+                candidates[i].dir, candidates[i].name, filename));
         // TODO: Consider also checking that the directory can be listed.
         if (gmx::File::exists(testPath, gmx::File::returnFalseOnError))
         {
@@ -158,9 +159,10 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
     if (result.empty())
     {
         std::string message
-            = gmx::formatString("No force fields found (files with name '%s' "
-                                "in subdirectories ending on '%s')",
-                                filename, dirend);
+                = gmx::formatString(
+                        "No force fields found (files with name '%s' "
+                        "in subdirectories ending on '%s')",
+                        filename, dirend);
         GMX_THROW(gmx::InvalidInputError(message));
     }
 

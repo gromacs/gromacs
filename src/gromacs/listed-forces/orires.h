@@ -64,7 +64,7 @@ struct t_state;
  * already allocated.
  */
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
-                 rvec x[],
+                 rvec              x[],
                  const t_inputrec *ir,
                  const t_commrec *cr, t_oriresdata *od,
                  t_state *state);

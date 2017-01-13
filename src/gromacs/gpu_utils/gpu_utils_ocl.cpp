@@ -47,7 +47,7 @@
 #include <stdlib.h>
 #include <string.h>
 #ifdef __APPLE__
-#    include <sys/sysctl.h>
+#include <sys/sysctl.h>
 #endif
 
 #include <memory.h>
@@ -62,16 +62,19 @@
 #include "gromacs/utility/smalloc.h"
 
 /*! \brief Helper macro for error handling */
-#define CALLOCLFUNC_LOGERROR(func, err_str, retval) { \
-        cl_int opencl_ret = func; \
-        if (CL_SUCCESS != opencl_ret) \
-        { \
+#define CALLOCLFUNC_LOGERROR(func, err_str, retval)          \
+    {                                                        \
+        cl_int opencl_ret = func;                            \
+        if (CL_SUCCESS != opencl_ret)                        \
+        {                                                    \
             sprintf(err_str, "OpenCL error %d", opencl_ret); \
-            retval = -1; \
-        } \
-        else{ \
-            retval = 0; } \
-}
+            retval = -1;                                     \
+        }                                                    \
+        else                                                 \
+        {                                                    \
+            retval = 0;                                      \
+        }                                                    \
+    }
 
 
 /*! \brief Helper function that checks whether a given GPU status indicates compatible GPU.
@@ -149,14 +152,12 @@ static ocl_vendor_id_t get_vendor_id(char *vendor_name)
         {
             return OCL_VENDOR_NVIDIA;
         }
-        else
-        if (strstr(vendor_name, "AMD")
-            || strstr(vendor_name, "Advanced Micro Devices"))
+        else if (strstr(vendor_name, "AMD")
+                 || strstr(vendor_name, "Advanced Micro Devices"))
         {
             return OCL_VENDOR_AMD;
         }
-        else
-        if (strstr(vendor_name, "Intel"))
+        else if (strstr(vendor_name, "Intel"))
         {
             return OCL_VENDOR_INTEL;
         }
@@ -405,7 +406,8 @@ gmx_bool check_selected_gpus(int *                 checkres,
         gpu_opt->dev_use[i] = id;
 
         checkres[i] = (id >= gpu_info->n_dev)
-            ? egpuNonexistent : gpu_info->gpu_dev[id].stat;
+                              ? egpuNonexistent
+                              : gpu_info->gpu_dev[id].stat;
 
         bAllOk = bAllOk && is_compatible_gpu(checkres[i]);
     }
@@ -427,8 +429,8 @@ void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unu
     gmx_device_info_t *dinfo = &gpu_info->gpu_dev[index];
 
     bool bGpuExists
-        = dinfo->stat == egpuCompatible
-            || dinfo->stat == egpuIncompatible;
+            = dinfo->stat == egpuCompatible
+              || dinfo->stat == egpuIncompatible;
 
     if (!bGpuExists)
     {
@@ -446,12 +448,11 @@ void get_gpu_device_info_string(char gmx_unused *s, const gmx_gpu_info_t gmx_unu
 }
 
 //! This function is documented in the header file
-gmx_bool init_gpu(const gmx::MDLogger              & /*mdlog*/,
-                  int                              mygpu,
-                  char *                           result_str,
+gmx_bool init_gpu(const gmx::MDLogger & /*mdlog*/,
+                  int                  mygpu,
+                  char *               result_str,
                   const gmx_gpu_info_t gmx_unused *gpu_info,
-                  const gmx_gpu_opt_t *            gpu_opt
-                  )
+                  const gmx_gpu_opt_t *            gpu_opt)
 {
     assert(result_str);
 
@@ -460,7 +461,8 @@ gmx_bool init_gpu(const gmx::MDLogger              & /*mdlog*/,
     if (mygpu < 0 || mygpu >= gpu_opt->n_dev_use)
     {
         char sbuf[STRLEN];
-        sprintf(sbuf, "Trying to initialize an non-existent GPU: "
+        sprintf(sbuf,
+                "Trying to initialize an non-existent GPU: "
                 "there are %d %s-selected GPU(s), but #%d was requested.",
                 gpu_opt->n_dev_use, gpu_opt->bUserSet ? "user" : "auto", mygpu);
         gmx_incons(sbuf);
@@ -473,8 +475,8 @@ gmx_bool init_gpu(const gmx::MDLogger              & /*mdlog*/,
 
     if (gpu_info->gpu_dev[mygpu].vendor_e == OCL_VENDOR_NVIDIA)
     {
-        // Ignore return values, failing to set the variable does not mean
-        // that something will go wrong later.
+// Ignore return values, failing to set the variable does not mean
+// that something will go wrong later.
 #ifdef _MSC_VER
         _putenv("CUDA_CACHE_DISABLE=1");
 #else
@@ -498,7 +500,7 @@ int get_gpu_device_id(const gmx_gpu_info_t *,
 }
 
 //! This function is documented in the header file
-char* get_ocl_gpu_device_name(const gmx_gpu_info_t *gpu_info,
+char *get_ocl_gpu_device_name(const gmx_gpu_info_t *gpu_info,
                               const gmx_gpu_opt_t * gpu_opt,
                               int                   idx)
 {
@@ -542,7 +544,7 @@ cl_int dbg_ocl_kernel_name(const cl_kernel kernel)
  * \param[in]    kernel   OpenCL kernel
  * \returns               CL_SUCCESS if the operation was successful, an OpenCL error otherwise.
  */
-cl_int dbg_ocl_kernel_name_address(void* kernel)
+cl_int dbg_ocl_kernel_name_address(void *kernel)
 {
     cl_int cl_error;
     char   kernel_name[256];

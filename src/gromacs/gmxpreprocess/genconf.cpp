@@ -55,7 +55,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
-                     gmx::DefaultRandomEngine * rng, rvec max_rot)
+                     gmx::DefaultRandomEngine *rng, rvec max_rot)
 {
     mat4                               mt1, mt2, mr[DIM], mtemp1, mtemp2, mtemp3, mxtot, mvtot;
     rvec                               xcm;
@@ -127,33 +127,32 @@ int gmx_genconf(int argc, char *argv[])
     int               ePBC;
     matrix            box, boxx; /* box length matrix */
     rvec              shift;
-    int               natoms;    /* number of atoms in one molecule  */
-    int               nres;      /* number of molecules? */
+    int               natoms; /* number of atoms in one molecule  */
+    int               nres;   /* number of molecules? */
     int               i, j, k, l, m, ndx, nrdx, nx, ny, nz;
     t_trxstatus *     status;
     gmx_bool          bTRX;
     gmx_output_env_t *oenv;
 
     t_filenm fnm[] = {
-        { efSTX, "-f", "conf", ffREAD  },
-        { efSTO, "-o", "out",  ffWRITE },
-        { efTRX, "-trj", nullptr,  ffOPTRD }
+        { efSTX, "-f", "conf", ffREAD },
+        { efSTO, "-o", "out", ffWRITE },
+        { efTRX, "-trj", nullptr, ffOPTRD }
     };
 #define NFILE asize(fnm)
-    static rvec     nrbox   = {1, 1, 1};
-    static int      seed    = 0;                  /* seed for random number generator */
-    static gmx_bool bRandom = FALSE;              /* False: no random rotations */
-    static gmx_bool bRenum  = TRUE;               /* renumber residues */
-    static rvec     dist    = {0, 0, 0};          /* space added between molecules ? */
-    static rvec     max_rot = {180, 180, 180};    /* maximum rotation */
+    static rvec     nrbox   = { 1, 1, 1 };
+    static int      seed    = 0;                 /* seed for random number generator */
+    static gmx_bool bRandom = FALSE;             /* False: no random rotations */
+    static gmx_bool bRenum  = TRUE;              /* renumber residues */
+    static rvec     dist    = { 0, 0, 0 };       /* space added between molecules ? */
+    static rvec     max_rot = { 180, 180, 180 }; /* maximum rotation */
     t_pargs         pa[]    = {
-        { "-nbox",   FALSE, etRVEC, {nrbox},   "Number of boxes" },
-        { "-dist",   FALSE, etRVEC, {dist},    "Distance between boxes" },
-        { "-seed",   FALSE, etINT,  {&seed},
-          "Random generator seed (0 means generate)" },
-        { "-rot",    FALSE, etBOOL, {&bRandom}, "Randomly rotate conformations" },
-        { "-maxrot", FALSE, etRVEC, {max_rot}, "Maximum random rotation" },
-        { "-renumber", FALSE, etBOOL, {&bRenum},  "Renumber residues" }
+        { "-nbox", FALSE, etRVEC, { nrbox }, "Number of boxes" },
+        { "-dist", FALSE, etRVEC, { dist }, "Distance between boxes" },
+        { "-seed", FALSE, etINT, { &seed }, "Random generator seed (0 means generate)" },
+        { "-rot", FALSE, etBOOL, { &bRandom }, "Randomly rotate conformations" },
+        { "-maxrot", FALSE, etRVEC, { max_rot }, "Maximum random rotation" },
+        { "-renumber", FALSE, etBOOL, { &bRenum }, "Renumber residues" }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
@@ -185,12 +184,12 @@ int gmx_genconf(int argc, char *argv[])
     atoms = &top->atoms;
     read_tps_conf(opt2fn("-f", NFILE, fnm), top, &ePBC, &x, &v, box, FALSE);
     natoms = atoms->nr;
-    nres   = atoms->nres;          /* nr of residues in one element? */
+    nres   = atoms->nres; /* nr of residues in one element? */
     /* make space for all the atoms */
     add_t_atoms(atoms, natoms * (vol - 1), nres * (vol - 1));
-    srenew(x, natoms * vol);       /* get space for coordinates of all atoms */
-    srenew(v, natoms * vol);       /* velocities. not really needed? */
-    snew(xrot, natoms);            /* get space for rotation matrix? */
+    srenew(x, natoms * vol); /* get space for coordinates of all atoms */
+    srenew(v, natoms * vol); /* velocities. not really needed? */
+    snew(xrot, natoms);      /* get space for rotation matrix? */
     snew(vrot, natoms);
 
     if (bTRX)
@@ -210,7 +209,7 @@ int gmx_genconf(int argc, char *argv[])
     }
 
 
-    for (k = 0; (k < nz); k++)     /* loop over all gridpositions    */
+    for (k = 0; (k < nz); k++) /* loop over all gridpositions    */
     {
         shift[ZZ] = k * (dist[ZZ] + box[ZZ][ZZ]);
 

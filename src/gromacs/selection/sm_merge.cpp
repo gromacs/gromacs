@@ -96,7 +96,7 @@ free_data_merge(void *data);
  */
 static void
 evaluate_merge(const gmx::SelMethodEvalContext &context,
-               gmx_ana_pos_t * p, gmx_ana_selvalue_t *out, void *data);
+               gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 /*! \brief
  * Evaluates the \p plus selection modifier.
  *
@@ -107,13 +107,13 @@ evaluate_merge(const gmx::SelMethodEvalContext &context,
  */
 static void
 evaluate_plus(const gmx::SelMethodEvalContext &context,
-              gmx_ana_pos_t * p, gmx_ana_selvalue_t *out, void *data);
+              gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the merging selection modifiers. */
 static gmx_ana_selparam_t smparams_merge[] = {
-    {nullptr,       {POS_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
-    {nullptr,       {POS_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
-    {"stride",   {INT_VALUE,  1, {nullptr}}, nullptr, SPAR_OPTIONAL},
+    { nullptr, { POS_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_VARNUM },
+    { nullptr, { POS_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_VARNUM },
+    { "stride", { INT_VALUE, 1, { nullptr } }, nullptr, SPAR_OPTIONAL },
 };
 
 //! Help title for the merging selection modifiers.
@@ -146,32 +146,12 @@ static const char *const help_merge[] = {
 
 /** Selection method data for the \p plus modifier. */
 gmx_ana_selmethod_t sm_merge = {
-    "merge", POS_VALUE, SMETH_MODIFIER,
-    asize(smparams_merge), smparams_merge,
-    &init_data_merge,
-    nullptr,
-    &init_merge,
-    &init_output_merge,
-    &free_data_merge,
-    nullptr,
-    nullptr,
-    &evaluate_merge,
-    {"merge POSEXPR", helptitle_merge, asize(help_merge), help_merge},
+    "merge", POS_VALUE, SMETH_MODIFIER, asize(smparams_merge), smparams_merge, &init_data_merge, nullptr, &init_merge, &init_output_merge, &free_data_merge, nullptr, nullptr, &evaluate_merge, { "merge POSEXPR", helptitle_merge, asize(help_merge), help_merge },
 };
 
 /** Selection method data for the \p plus modifier. */
 gmx_ana_selmethod_t sm_plus = {
-    "plus", POS_VALUE, SMETH_MODIFIER,
-    asize(smparams_merge) - 1, smparams_merge,
-    &init_data_merge,
-    nullptr,
-    &init_merge,
-    &init_output_plus,
-    &free_data_merge,
-    nullptr,
-    nullptr,
-    &evaluate_plus,
-    {"plus POSEXPR", helptitle_merge, asize(help_merge), help_merge},
+    "plus", POS_VALUE, SMETH_MODIFIER, asize(smparams_merge) - 1, smparams_merge, &init_data_merge, nullptr, &init_merge, &init_output_plus, &free_data_merge, nullptr, nullptr, &evaluate_plus, { "plus POSEXPR", helptitle_merge, asize(help_merge), help_merge },
 };
 
 /*!
@@ -185,9 +165,9 @@ gmx_ana_selmethod_t sm_plus = {
 static void *init_data_merge(int npar, gmx_ana_selparam_t *param)
 {
     t_methoddata_merge *data = new t_methoddata_merge();
-    data->stride     = 0;
-    param[0].val.u.p = &data->p1;
-    param[1].val.u.p = &data->p2;
+    data->stride             = 0;
+    param[0].val.u.p         = &data->p1;
+    param[1].val.u.p         = &data->p2;
     if (npar > 2)
     {
         param[2].val.u.i = &data->stride;

@@ -60,7 +60,7 @@ using gmx::test::CommandLine;
 
 //! Test fixture for the angle analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::FreeVolumeInfo>
-    FreeVolumeModuleTest;
+        FreeVolumeModuleTest;
 
 TEST_F(FreeVolumeModuleTest, ComputesFreeVolume)
 {

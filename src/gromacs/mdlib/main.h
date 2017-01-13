@@ -46,7 +46,7 @@ struct t_commrec;
 struct t_filenm;
 
 void gmx_log_open(const char *fn, const t_commrec *cr,
-                  gmx_bool bAppendFiles, FILE**);
+                  gmx_bool bAppendFiles, FILE **);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */

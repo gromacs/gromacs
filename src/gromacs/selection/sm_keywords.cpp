@@ -73,7 +73,7 @@
  * Allocates memory for a \ref t_methoddata_kwint structure.
  */
 static void *
-init_data_kwint(int npar, gmx_ana_selparam_t * param);
+init_data_kwint(int npar, gmx_ana_selparam_t *param);
 /*! \brief
  * Allocates data for real keyword evaluation.
  *
@@ -84,7 +84,7 @@ init_data_kwint(int npar, gmx_ana_selparam_t * param);
  * Allocates memory for a \ref t_methoddata_kwreal structure.
  */
 static void *
-init_data_kwreal(int npar, gmx_ana_selparam_t * param);
+init_data_kwreal(int npar, gmx_ana_selparam_t *param);
 /*! \brief
  * Allocates data for string keyword evaluation.
  *
@@ -95,7 +95,7 @@ init_data_kwreal(int npar, gmx_ana_selparam_t * param);
  * Allocates memory for a t_methoddata_kwstr structure.
  */
 static void *
-init_data_kwstr(int npar, gmx_ana_selparam_t * param);
+init_data_kwstr(int npar, gmx_ana_selparam_t *param);
 /** /brief Initializes data for integer keyword evaluation.
  *
  * \param[in] top   Not used.
@@ -218,8 +218,10 @@ public:
             if (!gmx::Regex::isSupported())
             {
                 std::string message
-                    = gmx::formatString("No regular expression support, "
-                                        "cannot match \"%s\"", str);
+                        = gmx::formatString(
+                                "No regular expression support, "
+                                "cannot match \"%s\"",
+                                str);
                 GMX_THROW(gmx::InvalidInputError(message));
             }
             regex_.reset(new gmx::Regex(str));
@@ -274,65 +276,35 @@ struct t_methoddata_kwstr
 
 /** Parameters for integer keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_int[] = {
-    {nullptr, {INT_VALUE, -1, {nullptr}}, nullptr, SPAR_ATOMVAL},
-    {nullptr, {INT_VALUE, -1, {nullptr}}, nullptr, SPAR_RANGES | SPAR_VARNUM},
+    { nullptr, { INT_VALUE, -1, { nullptr } }, nullptr, SPAR_ATOMVAL },
+    { nullptr, { INT_VALUE, -1, { nullptr } }, nullptr, SPAR_RANGES | SPAR_VARNUM },
 };
 
 /** Parameters for real keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_real[] = {
-    {nullptr, {REAL_VALUE, -1, {nullptr}}, nullptr, SPAR_ATOMVAL | SPAR_DYNAMIC},
-    {nullptr, {REAL_VALUE, -1, {nullptr}}, nullptr, SPAR_RANGES | SPAR_VARNUM},
+    { nullptr, { REAL_VALUE, -1, { nullptr } }, nullptr, SPAR_ATOMVAL | SPAR_DYNAMIC },
+    { nullptr, { REAL_VALUE, -1, { nullptr } }, nullptr, SPAR_RANGES | SPAR_VARNUM },
 };
 
 /** Parameters for string keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_str[] = {
-    {nullptr, {STR_VALUE, -1, {nullptr}}, nullptr, SPAR_ATOMVAL},
-    {nullptr, {STR_VALUE, -1, {nullptr}}, nullptr, SPAR_VARNUM},
+    { nullptr, { STR_VALUE, -1, { nullptr } }, nullptr, SPAR_ATOMVAL },
+    { nullptr, { STR_VALUE, -1, { nullptr } }, nullptr, SPAR_VARNUM },
 };
 
 /** Selection method data for integer keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_int = {
-    "kw_int", GROUP_VALUE, SMETH_SINGLEVAL,
-    asize(smparams_keyword_int), smparams_keyword_int,
-    &init_data_kwint,
-    nullptr,
-    &init_kwint,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_keyword_int,
-    nullptr,
-    {nullptr, nullptr, 0, nullptr},
+    "kw_int", GROUP_VALUE, SMETH_SINGLEVAL, asize(smparams_keyword_int), smparams_keyword_int, &init_data_kwint, nullptr, &init_kwint, nullptr, nullptr, nullptr, &evaluate_keyword_int, nullptr, { nullptr, nullptr, 0, nullptr },
 };
 
 /** Selection method data for real keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_real = {
-    "kw_real", GROUP_VALUE, SMETH_SINGLEVAL,
-    asize(smparams_keyword_real), smparams_keyword_real,
-    &init_data_kwreal,
-    nullptr,
-    &init_kwreal,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_keyword_real,
-    nullptr,
-    {nullptr, nullptr, 0, nullptr},
+    "kw_real", GROUP_VALUE, SMETH_SINGLEVAL, asize(smparams_keyword_real), smparams_keyword_real, &init_data_kwreal, nullptr, &init_kwreal, nullptr, nullptr, nullptr, &evaluate_keyword_real, nullptr, { nullptr, nullptr, 0, nullptr },
 };
 
 /** Selection method data for string keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_str = {
-    "kw_str", GROUP_VALUE, SMETH_SINGLEVAL,
-    asize(smparams_keyword_str), smparams_keyword_str,
-    &init_data_kwstr,
-    nullptr,
-    &init_kwstr,
-    nullptr,
-    &free_data_kwstr,
-    nullptr,
-    &evaluate_keyword_str,
-    nullptr,
-    {nullptr, nullptr, 0, nullptr},
+    "kw_str", GROUP_VALUE, SMETH_SINGLEVAL, asize(smparams_keyword_str), smparams_keyword_str, &init_data_kwstr, nullptr, &init_kwstr, nullptr, &free_data_kwstr, nullptr, &evaluate_keyword_str, nullptr, { nullptr, nullptr, 0, nullptr },
 };
 
 /*! \brief
@@ -347,7 +319,7 @@ gmx_ana_selmethod_t sm_keyword_str = {
  * Calls the initialization method of the wrapped keyword.
  */
 static void
-init_kweval(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t * param, void *data);
+init_kweval(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
 /*! \brief
  * Initializes output for keyword evaluation in an arbitrary group.
  *
@@ -419,11 +391,11 @@ struct t_methoddata_kweval
 
 /** Parameters for keyword evaluation in an arbitrary group. */
 static gmx_ana_selparam_t smparams_kweval_group[] = {
-    {nullptr,   {GROUP_VALUE, 1, {nullptr}}, nullptr, SPAR_DYNAMIC},
+    { nullptr, { GROUP_VALUE, 1, { nullptr } }, nullptr, SPAR_DYNAMIC },
 };
 /** Parameters for keyword evaluation from positions. */
 static gmx_ana_selparam_t smparams_kweval_pos[] = {
-    {nullptr,   {POS_VALUE, 1, {nullptr}}, nullptr, SPAR_DYNAMIC},
+    { nullptr, { POS_VALUE, 1, { nullptr } }, nullptr, SPAR_DYNAMIC },
 };
 
 
@@ -431,7 +403,7 @@ static gmx_ana_selparam_t smparams_kweval_pos[] = {
  * INTEGER KEYWORD EVALUATION
  ********************************************************************/
 
-static void *init_data_kwint(int  /* npar */, gmx_ana_selparam_t * /* param */)
+static void *init_data_kwint(int /* npar */, gmx_ana_selparam_t * /* param */)
 {
     t_methoddata_kwint *data;
 
@@ -578,7 +550,7 @@ static void evaluate_keyword_real(const gmx::SelMethodEvalContext & /*context*/,
 static void *init_data_kwstr(int /* npar */, gmx_ana_selparam_t * /* param */)
 {
     t_methoddata_kwstr *data = new t_methoddata_kwstr();
-    data->matchType = gmx::eStringMatchType_Auto;
+    data->matchType          = gmx::eStringMatchType_Auto;
     return data;
 }
 
@@ -735,8 +707,8 @@ static gmx::SelectionTreeElementPointer init_evaluator_group(gmx_ana_selmethod_t
         || method->outinit || method->pupdate)
     {
         std::string message
-            = gmx::formatString("Keyword '%s' cannot be evaluated in this context",
-                                method->name);
+                = gmx::formatString("Keyword '%s' cannot be evaluated in this context",
+                                    method->name);
         GMX_THROW(gmx::InvalidInputError(message));
     }
 
@@ -747,7 +719,7 @@ static gmx::SelectionTreeElementPointer init_evaluator_group(gmx_ana_selmethod_t
     _gmx_selelem_set_method(sel, method, scanner);
 
     t_methoddata_kweval *data
-        = new t_methoddata_kweval(sel->u.expr.method, sel->u.expr.mdata);
+            = new t_methoddata_kweval(sel->u.expr.method, sel->u.expr.mdata);
 
     snew(sel->u.expr.method, 1);
     sel->u.expr.method->name        = data->kwmethod->name;
@@ -792,8 +764,8 @@ static gmx::SelectionTreeElementPointer init_evaluator_pos(gmx_ana_selmethod_t *
         || method->outinit || method->pupdate == nullptr)
     {
         std::string message
-            = gmx::formatString("Keyword '%s' cannot be evaluated in this context",
-                                method->name);
+                = gmx::formatString("Keyword '%s' cannot be evaluated in this context",
+                                    method->name);
         GMX_THROW(gmx::InvalidInputError(message));
     }
 
@@ -803,7 +775,7 @@ static gmx::SelectionTreeElementPointer init_evaluator_pos(gmx_ana_selmethod_t *
     _gmx_selelem_set_method(sel, method, scanner);
 
     t_methoddata_kweval *data
-        = new t_methoddata_kweval(sel->u.expr.method, sel->u.expr.mdata);
+            = new t_methoddata_kweval(sel->u.expr.method, sel->u.expr.mdata);
 
     snew(sel->u.expr.method, 1);
     sel->u.expr.method->name        = data->kwmethod->name;
@@ -848,8 +820,8 @@ gmx::SelectionTreeElementPointer _gmx_sel_init_keyword_evaluator(gmx_ana_selmeth
     {
         std::string text(_gmx_sel_lexer_get_text(scanner, child->location()));
         std::string message
-            = gmx::formatString("Expression '%s' cannot be used to evaluate keywords",
-                                text.c_str());
+                = gmx::formatString("Expression '%s' cannot be used to evaluate keywords",
+                                    text.c_str());
         GMX_THROW(gmx::InvalidInputError(message));
     }
 }

@@ -47,7 +47,6 @@
 #include <cstdio>
 
 //! Print a message asking to cite something
-void
-please_cite(FILE *fp, const char *key);
+void please_cite(FILE *fp, const char *key);
 
 #endif

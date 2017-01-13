@@ -47,13 +47,13 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 
-void gmx_nb_generic_cg_kernel(t_nblist *         nlist,
-                              rvec *             xx,
-                              rvec *             ff,
-                              t_forcerec *       fr,
-                              t_mdatoms *        mdatoms,
-                              nb_kernel_data_t * kernel_data,
-                              t_nrnb *           nrnb)
+void gmx_nb_generic_cg_kernel(t_nblist *        nlist,
+                              rvec *            xx,
+                              rvec *            ff,
+                              t_forcerec *      fr,
+                              t_mdatoms *       mdatoms,
+                              nb_kernel_data_t *kernel_data,
+                              t_nrnb *          nrnb)
 {
     int      ntype, table_nelements, ielec, ivdw;
     real     facel;
@@ -116,8 +116,8 @@ void gmx_nb_generic_cg_kernel(t_nblist *         nlist,
     eps2 = 0.0;
 
     /* 3 VdW parameters for buckingham, otherwise 2 */
-    nvdwparam        = (nlist->ivdw == 2) ? 3 : 2;
-    table_nelements  = (ielec == 3) ? 4 : 0;
+    nvdwparam       = (nlist->ivdw == 2) ? 3 : 2;
+    table_nelements = (ielec == 3) ? 4 : 0;
     table_nelements += (ivdw == 3) ? 8 : 0;
 
     charge   = mdatoms->chargeA;
@@ -220,7 +220,7 @@ void gmx_nb_generic_cg_kernel(t_nblist *         nlist,
                                 F     = VFtab[nnn + 1];
                                 Geps  = eps * VFtab[nnn + 2];
                                 Heps2 = eps2 * VFtab[nnn + 3];
-                                nnn  += 4;
+                                nnn += 4;
                                 Fp    = F + Geps + Heps2;
                                 VV    = Y + eps * Fp;
                                 FF    = Fp + Geps + 2.0 * Heps2;
@@ -238,7 +238,7 @@ void gmx_nb_generic_cg_kernel(t_nblist *         nlist,
                                 break;
                         }
                         vctot = vctot + vcoul;
-                    }  /* End of coulomb interactions */
+                    } /* End of coulomb interactions */
 
 
                     /* VdW interaction. ivdw==0 means no interaction */
@@ -256,8 +256,8 @@ void gmx_nb_generic_cg_kernel(t_nblist *         nlist,
                                 rinvsix   = rinvsq * rinvsq * rinvsq;
                                 Vvdw_disp = c6 * rinvsix;
                                 Vvdw_rep  = c12 * rinvsix * rinvsix;
-                                fscal    += (12.0 * Vvdw_rep - 6.0 * Vvdw_disp) * rinvsq;
-                                Vvdwtot   = Vvdwtot + Vvdw_rep - Vvdw_disp;
+                                fscal += (12.0 * Vvdw_rep - 6.0 * Vvdw_disp) * rinvsq;
+                                Vvdwtot = Vvdwtot + Vvdw_rep - Vvdw_disp;
                                 break;
 
                             case 2:
@@ -270,8 +270,8 @@ void gmx_nb_generic_cg_kernel(t_nblist *         nlist,
                                 Vvdw_disp = c6 * rinvsix;
                                 br        = cexp2 * rsq * rinv;
                                 Vvdw_rep  = cexp1 * std::exp(-br);
-                                fscal    += (br * Vvdw_rep - 6.0 * Vvdw_disp) * rinvsq;
-                                Vvdwtot   = Vvdwtot + Vvdw_rep - Vvdw_disp;
+                                fscal += (br * Vvdw_rep - 6.0 * Vvdw_disp) * rinvsq;
+                                Vvdwtot = Vvdwtot + Vvdw_rep - Vvdw_disp;
                                 break;
 
                             case 3:
@@ -288,49 +288,49 @@ void gmx_nb_generic_cg_kernel(t_nblist *         nlist,
                                 FF        = Fp + Geps + 2.0 * Heps2;
                                 Vvdw_disp = c6 * VV;
                                 fijD      = c6 * FF;
-                                nnn      += 4;
-                                Y         = VFtab[nnn];
-                                F         = VFtab[nnn + 1];
-                                Geps      = eps * VFtab[nnn + 2];
-                                Heps2     = eps2 * VFtab[nnn + 3];
-                                Fp        = F + Geps + Heps2;
-                                VV        = Y + eps * Fp;
-                                FF        = Fp + Geps + 2.0 * Heps2;
-                                Vvdw_rep  = c12 * VV;
-                                fijR      = c12 * FF;
-                                fscal    += -(fijD + fijR) * tabscale * rinv;
-                                Vvdwtot   = Vvdwtot + Vvdw_disp + Vvdw_rep;
+                                nnn += 4;
+                                Y        = VFtab[nnn];
+                                F        = VFtab[nnn + 1];
+                                Geps     = eps * VFtab[nnn + 2];
+                                Heps2    = eps2 * VFtab[nnn + 3];
+                                Fp       = F + Geps + Heps2;
+                                VV       = Y + eps * Fp;
+                                FF       = Fp + Geps + 2.0 * Heps2;
+                                Vvdw_rep = c12 * VV;
+                                fijR     = c12 * FF;
+                                fscal += -(fijD + fijR) * tabscale * rinv;
+                                Vvdwtot = Vvdwtot + Vvdw_disp + Vvdw_rep;
                                 break;
 
                             default:
                                 gmx_fatal(FARGS, "Death & horror! No generic VdW interaction for ivdw=%d.\n", ivdw);
                                 break;
                         }
-                    }  /* end VdW interactions */
+                    } /* end VdW interactions */
 
 
-                    tx         = fscal * dx;
-                    ty         = fscal * dy;
-                    tz         = fscal * dz;
+                    tx = fscal * dx;
+                    ty = fscal * dy;
+                    tz = fscal * dz;
                     f[i3 + 0] += tx;
                     f[i3 + 1] += ty;
                     f[i3 + 2] += tz;
                     f[j3 + 0] -= tx;
                     f[j3 + 1] -= ty;
                     f[j3 + 2] -= tz;
-                    fix       += tx;
-                    fiy       += ty;
-                    fiz       += tz;
+                    fix += tx;
+                    fiy += ty;
+                    fiz += tz;
                 }
             }
         }
 
-        fshift[is3]     += fix;
+        fshift[is3] += fix;
         fshift[is3 + 1] += fiy;
         fshift[is3 + 2] += fiz;
-        ggid             = nlist->gid[n];
-        Vc[ggid]        += vctot;
-        Vvdw[ggid]      += Vvdwtot;
+        ggid = nlist->gid[n];
+        Vc[ggid] += vctot;
+        Vvdw[ggid] += Vvdwtot;
     }
     /* Estimate flops, average for generic cg kernel:
      * 12  flops per outer iteration

@@ -83,7 +83,7 @@ static void calc_entropy_qh(FILE *fp, int n, real eigval[], real temp, int nskip
             w      = std::sqrt(BOLTZMANN * temp / lambda) / NANO;
             hwkT   = (hbar * w) / (BOLTZMANN * temp);
             dS     = (hwkT / std::expm1(hwkT) - std::log1p(-std::exp(-hwkT)));
-            S     += dS;
+            S += dS;
             if (debug)
             {
                 fprintf(debug, "i = %5d w = %10g lam = %10g hwkT = %10g dS = %10g\n",
@@ -117,7 +117,7 @@ static void calc_entropy_schlitter(FILE *fp, int n, int nskip,
     deter = 0;
     for (i = 0; (i < n - nskip); i++)
     {
-        dd     = 1 + kteh * eigval[i];
+        dd = 1 + kteh * eigval[i];
         deter += std::log(dd);
     }
     S = 0.5 * RGAS * deter;
@@ -291,7 +291,7 @@ static void compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
         {
             eigval1[i] = 0;
         }
-        sum1      += eigval1[i];
+        sum1 += eigval1[i];
         eigval1[i] = std::sqrt(eigval1[i]);
     }
     trace1 = sum1;
@@ -306,7 +306,7 @@ static void compare(int natoms, int n1, rvec **eigvec1, int n2, rvec **eigvec2,
         {
             eigval2[i] = 0;
         }
-        sum2      += eigval2[i];
+        sum2 += eigval2[i];
         eigval2[i] = std::sqrt(eigval2[i]);
     }
     trace2 = sum2;
@@ -448,8 +448,12 @@ static void inprod_matrix(const char *matfile, int natoms,
         }
     }
     fprintf(stderr, "\n");
-    rlo.r   = 1; rlo.g = 1; rlo.b = 1;
-    rhi.r   = 0; rhi.g = 0; rhi.b = 0;
+    rlo.r   = 1;
+    rlo.g   = 1;
+    rlo.b   = 1;
+    rhi.r   = 0;
+    rhi.g   = 0;
+    rhi.b   = 0;
     nlevels = 41;
     out     = gmx_ffopen(matfile, "w");
     write_xpm(out, 0, "Eigenvector inner-products", "in.prod.", "run 1", "run 2",
@@ -607,7 +611,8 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     {
                         inp += (eigvec[vec][i][0] * (x[i][0] - xav[i][0])
                                 + eigvec[vec][i][1] * (x[i][1] - xav[i][1])
-                                + eigvec[vec][i][2] * (x[i][2] - xav[i][2])) * sqrtm[i];
+                                + eigvec[vec][i][2] * (x[i][2] - xav[i][2]))
+                               * sqrtm[i];
                     }
                     inprod[v][nframes] = inp;
                 }
@@ -622,7 +627,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                             for (v = 0; v < noutvec; v++)
                             {
                                 xread[index[i]][d]
-                                    += inprod[v][nframes] * eigvec[outvec[v]][i][d] / sqrtm[i];
+                                        += inprod[v][nframes] * eigvec[outvec[v]][i][d] / sqrtm[i];
                             }
                         }
                     }
@@ -708,7 +713,8 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         b4D = bPDB && (noutvec >= 4);
         if (b4D)
         {
-            fprintf(stderr, "You have selected four or more eigenvectors:\n"
+            fprintf(stderr,
+                    "You have selected four or more eigenvectors:\n"
                     "fourth eigenvector will be plotted "
                     "in bfactor field of pdb file\n");
             sprintf(str, "4D proj. of traj. on eigenv. %d, %d, %d and %d",
@@ -750,7 +756,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                 b[i] = inprod[3][i];
             }
         }
-        if ( ( b4D || bSplit ) && bPDB)
+        if ((b4D || bSplit) && bPDB)
         {
             GMX_RELEASE_ASSERT(inprod != nullptr, "inprod must be non-NULL with 4D or split PDB output options");
 
@@ -821,7 +827,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
         else
         {
             pmin[0] = -extreme;
-            pmax[0] =  extreme;
+            pmax[0] = extreme;
         }
         /* build format string for filename: */
         std::strcpy(str, extremefile); /* copy filename */
@@ -856,8 +862,7 @@ static void project(const char *trajfile, const t_topology *top, int ePBC, matri
                     for (d = 0; d < DIM; d++)
                     {
                         xread[index[i]][d]
-                            = (xav[i][d] + (pmin[v] * (nextr - frame - 1) + pmax[v] * frame) / (nextr - 1)
-                               * eigvec[outvec[v]][i][d] / sqrtm[i]);
+                                = (xav[i][d] + (pmin[v] * (nextr - frame - 1) + pmax[v] * frame) / (nextr - 1) * eigvec[outvec[v]][i][d] / sqrtm[i]);
                     }
                 }
                 write_trx(out, natoms, index, atoms, 0, frame, topbox, xread, nullptr, nullptr);
@@ -1041,29 +1046,21 @@ int gmx_anaeig(int argc, char *argv[])
         "computed based on the Quasiharmonic approach and based on",
         "Schlitter's formula."
     };
-    static int         first  = 1, last = -1, skip = 1, nextr = 2, nskip = 6;
-    static real        max    = 0.0, temp = 298.15;
-    static gmx_bool    bSplit = FALSE, bEntropy = FALSE;
-    t_pargs            pa[]   = {
-        { "-first", FALSE, etINT, {&first},
-          "First eigenvector for analysis (-1 is select)" },
-        { "-last",  FALSE, etINT, {&last},
-          "Last eigenvector for analysis (-1 is till the last)" },
-        { "-skip",  FALSE, etINT, {&skip},
-          "Only analyse every nr-th frame" },
-        { "-max",  FALSE, etREAL, {&max},
+    static int      first = 1, last = -1, skip = 1, nextr = 2, nskip = 6;
+    static real     max = 0.0, temp = 298.15;
+    static gmx_bool bSplit = FALSE, bEntropy = FALSE;
+    t_pargs         pa[] = {
+        { "-first", FALSE, etINT, { &first }, "First eigenvector for analysis (-1 is select)" },
+        { "-last", FALSE, etINT, { &last }, "Last eigenvector for analysis (-1 is till the last)" },
+        { "-skip", FALSE, etINT, { &skip }, "Only analyse every nr-th frame" },
+        { "-max", FALSE, etREAL, { &max },
           "Maximum for projection of the eigenvector on the average structure, "
           "max=0 gives the extremes" },
-        { "-nframes",  FALSE, etINT, {&nextr},
-          "Number of frames for the extremes output" },
-        { "-split",   FALSE, etBOOL, {&bSplit},
-          "Split eigenvector projections where time is zero" },
-        { "-entropy", FALSE, etBOOL, {&bEntropy},
-          "Compute entropy according to the Quasiharmonic formula or Schlitter's method." },
-        { "-temp",    FALSE, etREAL, {&temp},
-          "Temperature for entropy calculations" },
-        { "-nevskip", FALSE, etINT, {&nskip},
-          "Number of eigenvalues to skip when computing the entropy due to the quasi harmonic approximation. When you do a rotational and/or translational fit prior to the covariance analysis, you get 3 or 6 eigenvalues that are very close to zero, and which should not be taken into account when computing the entropy." }
+        { "-nframes", FALSE, etINT, { &nextr }, "Number of frames for the extremes output" },
+        { "-split", FALSE, etBOOL, { &bSplit }, "Split eigenvector projections where time is zero" },
+        { "-entropy", FALSE, etBOOL, { &bEntropy }, "Compute entropy according to the Quasiharmonic formula or Schlitter's method." },
+        { "-temp", FALSE, etREAL, { &temp }, "Temperature for entropy calculations" },
+        { "-nevskip", FALSE, etINT, { &nskip }, "Number of eigenvalues to skip when computing the entropy due to the quasi harmonic approximation. When you do a rotational and/or translational fit prior to the covariance analysis, you get 3 or 6 eigenvalues that are very close to zero, and which should not be taken into account when computing the entropy." }
     };
 #define NPA asize(pa)
 
@@ -1097,22 +1094,22 @@ int gmx_anaeig(int argc, char *argv[])
     gmx_rmpbc_t       gpbc;
 
     t_filenm fnm[] = {
-        { efTRN, "-v",    "eigenvec",    ffREAD  },
-        { efTRN, "-v2",   "eigenvec2",   ffOPTRD },
-        { efTRX, "-f",    nullptr,          ffOPTRD },
-        { efTPS, nullptr,    nullptr,          ffOPTRD },
-        { efNDX, nullptr,    nullptr,          ffOPTRD },
-        { efXVG, "-eig", "eigenval",     ffOPTRD },
-        { efXVG, "-eig2", "eigenval2",   ffOPTRD },
-        { efXVG, "-comp", "eigcomp",     ffOPTWR },
-        { efXVG, "-rmsf", "eigrmsf",     ffOPTWR },
-        { efXVG, "-proj", "proj",        ffOPTWR },
-        { efXVG, "-2d",   "2dproj",      ffOPTWR },
-        { efSTO, "-3d",   "3dproj.pdb",  ffOPTWR },
-        { efTRX, "-filt", "filtered",    ffOPTWR },
+        { efTRN, "-v", "eigenvec", ffREAD },
+        { efTRN, "-v2", "eigenvec2", ffOPTRD },
+        { efTRX, "-f", nullptr, ffOPTRD },
+        { efTPS, nullptr, nullptr, ffOPTRD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, "-eig", "eigenval", ffOPTRD },
+        { efXVG, "-eig2", "eigenval2", ffOPTRD },
+        { efXVG, "-comp", "eigcomp", ffOPTWR },
+        { efXVG, "-rmsf", "eigrmsf", ffOPTWR },
+        { efXVG, "-proj", "proj", ffOPTWR },
+        { efXVG, "-2d", "2dproj", ffOPTWR },
+        { efSTO, "-3d", "3dproj.pdb", ffOPTWR },
+        { efTRX, "-filt", "filtered", ffOPTWR },
         { efTRX, "-extr", "extreme.pdb", ffOPTWR },
-        { efXVG, "-over", "overlap",     ffOPTWR },
-        { efXPM, "-inpr", "inprod",      ffOPTWR }
+        { efXVG, "-over", "overlap", ffOPTWR },
+        { efXPM, "-inpr", "inprod", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -1141,18 +1138,18 @@ int gmx_anaeig(int argc, char *argv[])
     InpMatFile     = ftp2fn_null(efXPM, NFILE, fnm);
 
     bProj = ProjOnVecFile || TwoDPlotFile || ThreeDPlotFile
-        || FilterFile || ExtremeFile;
+            || FilterFile || ExtremeFile;
     bFirstLastSet
-                 = opt2parg_bSet("-first", NPA, pa) && opt2parg_bSet("-last", NPA, pa);
+            = opt2parg_bSet("-first", NPA, pa) && opt2parg_bSet("-last", NPA, pa);
     bFirstToLast = CompFile || RmsfFile || ProjOnVecFile || FilterFile
-        || OverlapFile || ((ExtremeFile || InpMatFile) && bFirstLastSet);
+                   || OverlapFile || ((ExtremeFile || InpMatFile) && bFirstLastSet);
     bVec2 = Vec2File || OverlapFile || InpMatFile;
     bM    = RmsfFile || bProj;
     bTraj = ProjOnVecFile || FilterFile || (ExtremeFile && (max == 0))
-        || TwoDPlotFile || ThreeDPlotFile;
+            || TwoDPlotFile || ThreeDPlotFile;
     bIndex = bM || bProj;
     bTPS   = ftp2bSet(efTPS, NFILE, fnm) || bM || bTraj
-        || FilterFile  || (bIndex && indexfile);
+           || FilterFile || (bIndex && indexfile);
     bCompare = Vec2File || Eig2File;
     bPDB3D   = fn2ftp(ThreeDPlotFile) == efPDB;
 
@@ -1173,7 +1170,7 @@ int gmx_anaeig(int argc, char *argv[])
         srenew(eigval1, neig1);
         for (j = 0; j < neig1; j++)
         {
-            real tmp = eigval1[j];
+            real tmp   = eigval1[j];
             eigval1[j] = xvgdata[1][j];
             if (debug && (eigval1[j] != tmp))
             {
@@ -1268,7 +1265,8 @@ int gmx_anaeig(int argc, char *argv[])
             if (xref1 == nullptr)
             {
                 printf("\nNote: the structure in %s should be the same\n"
-                       "      as the one used for the fit in g_covar\n", topfile);
+                       "      as the one used for the fit in g_covar\n",
+                       topfile);
             }
             printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
             get_index(atoms, indexfile, 1, &nfit, &ifit, &grpname);
@@ -1349,12 +1347,14 @@ int gmx_anaeig(int argc, char *argv[])
         {
             for (d = 0; (d < DIM); d++)
             {
-                t       += gmx::square((xav1[i][d] - xav2[i][d]) * sqrtm[i]);
+                t += gmx::square((xav1[i][d] - xav2[i][d]) * sqrtm[i]);
                 totmass += gmx::square(sqrtm[i]);
             }
         }
-        fprintf(stdout, "RMSD (without fit) between the two average structures:"
-                " %.3f (nm)\n\n", std::sqrt(t / totmass));
+        fprintf(stdout,
+                "RMSD (without fit) between the two average structures:"
+                " %.3f (nm)\n\n",
+                std::sqrt(t / totmass));
     }
 
     if (last == -1)
@@ -1486,7 +1486,8 @@ int gmx_anaeig(int argc, char *argv[])
     if (!CompFile && !bProj && !OverlapFile && !InpMatFile
         && !bCompare && !bEntropy)
     {
-        fprintf(stderr, "\nIf you want some output,"
+        fprintf(stderr,
+                "\nIf you want some output,"
                 " set one (or two or ...) of the output file options\n");
     }
 

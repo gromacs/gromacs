@@ -151,25 +151,25 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
               int gmx_unused nstglobalcomm,
               gmx_vsite_t gmx_unused *vsite, gmx_constr_t gmx_unused constr,
               int gmx_unused stepout,
-              t_inputrec *inputrec,
+              t_inputrec *   inputrec,
               gmx_mtop_t *top_global, t_fcdata *fcd,
-              t_state *state_global,
+              t_state *       state_global,
               energyhistory_t gmx_unused *energyHistory,
-              t_mdatoms *mdatoms,
+              t_mdatoms *                 mdatoms,
               t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_edsam_t gmx_unused ed,
-              t_forcerec *fr,
+              t_forcerec *           fr,
               int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
               gmx_membed_t gmx_unused *membed,
               real gmx_unused cpt_period, real gmx_unused max_hours,
               int gmx_unused imdport,
-              unsigned long gmx_unused Flags,
+              unsigned long gmx_unused  Flags,
               gmx_walltime_accounting_t walltime_accounting)
 {
     gmx_localtop_t * top;
     gmx_groups_t *   groups;
     gmx_enerdata_t * enerd;
-    PaddedRVecVector f {};
+    PaddedRVecVector f{};
     real             lambda, t, temp, beta, drmax, epot;
     double           embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
     t_trxstatus *    status;
@@ -194,7 +194,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     double           invbinw, *bin, refvolshift, logV, bUlogV;
     real             prescorr, enercorr, dvdlcorr;
     gmx_bool         bEnergyOutOfBounds;
-    const char *     tpid_leg[2] = {"direct", "reweighted"};
+    const char *     tpid_leg[2] = { "direct", "reweighted" };
 
     /* Since there is no upper limit to the insertion energies,
      * we need to set an upper limit for the distribution output.
@@ -395,7 +395,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     /* Copy the random seed set by the user */
     seed = inputrec->ld_seed;
 
-    gmx::ThreeFry2x64<16>              rng(seed, gmx::RandomDomain::TestParticleInsertion);   // 16 bits internal counter => 2^16 * 2 = 131072 values per stream
+    gmx::ThreeFry2x64<16>              rng(seed, gmx::RandomDomain::TestParticleInsertion); // 16 bits internal counter => 2^16 * 2 = 131072 values per stream
     gmx::UniformRealDistribution<real> dist;
 
     if (MASTER(cr))
@@ -446,7 +446,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                 leg[e++] = gmx_strdup(str);
             }
         }
-        xvgr_legend(fp_tpi, 4 + nener, (const char**)leg, oenv);
+        xvgr_legend(fp_tpi, 4 + nener, (const char **)leg, oenv);
         for (i = 0; i < 4 + nener; i++)
         {
             sfree(leg[i]);
@@ -471,7 +471,8 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
     if (rerun_fr.natoms - (bCavity ? nat_cavity : 0)
         != mdatoms->nr - (a_tp1 - a_tp0))
     {
-        gmx_fatal(FARGS, "Number of atoms in trajectory (%d)%s "
+        gmx_fatal(FARGS,
+                  "Number of atoms in trajectory (%d)%s "
                   "is not equal the number in the run input file (%d) "
                   "minus the number of atoms to insert (%d)\n",
                   rerun_fr.natoms, bCavity ? " minus one" : "",
@@ -540,7 +541,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
              * wrong you will get an exception when the stream is exhausted.
              */
             rng.restart(frame_step, step);
-            dist.reset();  // erase any memory in the distribution
+            dist.reset(); // erase any memory in the distribution
 
             if (!bCavity)
             {
@@ -594,7 +595,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                             for (d = 0; d < DIM; d++)
                             {
                                 x_init[d]
-                                    += mass_cavity[i] * rerun_fr.x[rerun_fr.natoms - nat_cavity + i][d];
+                                        += mass_cavity[i] * rerun_fr.x[rerun_fr.natoms - nat_cavity + i][d];
                             }
                             mass_tot += mass_cavity[i];
                         }
@@ -663,8 +664,8 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                      &state_global->lambda,
                      nullptr, fr, nullptr, mu_tot, t, nullptr, FALSE,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY
-                     | (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS : 0)
-                     | (bStateChanged ? GMX_FORCE_STATECHANGED : 0));
+                             | (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS : 0)
+                             | (bStateChanged ? GMX_FORCE_STATECHANGED : 0));
             cr->nnodes    = nnodes;
             bStateChanged = FALSE;
             bNS           = FALSE;
@@ -673,9 +674,9 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             calc_dispcorr(inputrec, fr, state_global->box,
                           lambda, pres, vir, &prescorr, &enercorr, &dvdlcorr);
             /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
-            enerd->term[F_DISPCORR]  = enercorr;
-            enerd->term[F_EPOT]     += enercorr;
-            enerd->term[F_PRES]     += prescorr;
+            enerd->term[F_DISPCORR] = enercorr;
+            enerd->term[F_EPOT] += enercorr;
+            enerd->term[F_PRES] += prescorr;
             enerd->term[F_DVDL_VDW] += dvdlcorr;
 
             epot               = enerd->term[F_EPOT];
@@ -709,17 +710,17 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             }
             else
             {
-                embU      = exp(-beta * epot);
+                embU = exp(-beta * epot);
                 sum_embU += embU;
                 /* Determine the weighted energy contributions of each energy group */
-                e                = 0;
+                e = 0;
                 sum_UgembU[e++] += epot * embU;
                 if (fr->bBHAM)
                 {
                     for (i = 0; i < ngid; i++)
                     {
                         sum_UgembU[e++]
-                            += enerd->grpp.ener[egBHAMSR][GID(i, gid_tp, ngid)] * embU;
+                                += enerd->grpp.ener[egBHAMSR][GID(i, gid_tp, ngid)] * embU;
                     }
                 }
                 else
@@ -727,7 +728,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
                     for (i = 0; i < ngid; i++)
                     {
                         sum_UgembU[e++]
-                            += enerd->grpp.ener[egLJSR][GID(i, gid_tp, ngid)] * embU;
+                                += enerd->grpp.ener[egLJSR][GID(i, gid_tp, ngid)] * embU;
                     }
                 }
                 if (bDispCorr)
@@ -758,7 +759,8 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             else
             {
                 i = (int)((bU_logV_bin_limit
-                           - (beta * epot - logV + refvolshift)) * invbinw
+                           - (beta * epot - logV + refvolshift))
+                                  * invbinw
                           + 0.5);
                 if (i < 0)
                 {
@@ -796,12 +798,12 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         if (PAR(cr))
         {
             /* When running in parallel sum the energies over the processes */
-            gmx_sumd(1,    &sum_embU, cr);
+            gmx_sumd(1, &sum_embU, cr);
             gmx_sumd(nener, sum_UgembU, cr);
         }
 
         frame++;
-        V_all     += V;
+        V_all += V;
         VembU_all += V * sum_embU / nsteps;
 
         if (fp_tpi)
@@ -815,7 +817,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
             fprintf(fp_tpi, "%10.3f %12.5e %12.5e %12.5e %12.5e",
                     t,
                     VembU_all == 0 ? 20 / beta : -log(VembU_all / V_all) / beta,
-                    sum_embU == 0  ? 20 / beta : -log(sum_embU / nsteps) / beta,
+                    sum_embU == 0 ? 20 / beta : -log(sum_embU / nsteps) / beta,
                     sum_embU / nsteps, V);
             for (e = 0; e < nener; e++)
             {
@@ -826,7 +828,7 @@ double do_tpi(FILE *fplog, t_commrec *cr, const gmx::MDLogger gmx_unused &mdlog,
         }
 
         bNotLastFrame = read_next_frame(oenv, status, &rerun_fr);
-    }   /* End of the loop  */
+    } /* End of the loop  */
     walltime_accounting_end(walltime_accounting);
 
     close_trj(status);

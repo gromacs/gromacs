@@ -85,9 +85,9 @@ public:
         testX_   = nullptr;
         clear_mat(testBox_);
         referenceFilename_
-            = fileManager_.getTemporaryFilePath(getFileSuffix("ref"));
+                = fileManager_.getTemporaryFilePath(getFileSuffix("ref"));
         testFilename_
-            = fileManager_.getTemporaryFilePath(getFileSuffix("test"));
+                = fileManager_.getTemporaryFilePath(getFileSuffix("test"));
     }
     ~StructureIORoundtripTest()
     {
@@ -174,9 +174,9 @@ private:
     void generateReferenceCoordinates()
     {
         clear_mat(refBox_);
-        refBox_[XX][XX] = 1;
-        refBox_[YY][YY] = 2;
-        refBox_[ZZ][ZZ] = 3;
+        refBox_[XX][XX]     = 1;
+        refBox_[YY][YY]     = 2;
+        refBox_[ZZ][ZZ]     = 3;
         const int atomCount = refTop_->atoms.nr;
         refX_.reserve(atomCount);
         for (int i = 0; i < atomCount; ++i)
@@ -206,6 +206,6 @@ TEST_P(StructureIORoundtripTest, ReadWriteTpsConf)
 
 INSTANTIATE_TEST_CASE_P(WithDifferentFormats,
                         StructureIORoundtripTest,
-                            ::testing::Values(efGRO, efG96, efPDB, efESP));
+                        ::testing::Values(efGRO, efG96, efPDB, efESP));
 
 } // namespace

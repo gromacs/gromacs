@@ -72,7 +72,7 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
         bLJ[i] = FALSE;
         for (j = 0; j < ntype; j++)
         {
-            if (mtop->ffparams.iparams[i * ntype + j].lj.c6  != 0
+            if (mtop->ffparams.iparams[i * ntype + j].lj.c6 != 0
                 || mtop->ffparams.iparams[i * ntype + j].lj.c12 != 0)
             {
                 bLJ[i] = TRUE;
@@ -104,7 +104,7 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
                     for (a = a0; a < a1; a++)
                     {
                         r2 = distance2(cen, x[a_mol + a]);
-                        if (r2 > r2v2 && (bLJ[atom[a].type ]
+                        if (r2 > r2v2 && (bLJ[atom[a].type]
                                           || bLJ[atom[a].typeB]))
                         {
                             if (r2 > r2v1)
@@ -305,7 +305,8 @@ void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
         {
             if ((cg_cm[icg][d] < 0) || (cg_cm[icg][d] >= box[d][d]))
             {
-                gmx_fatal(FARGS, "cg_cm[%d] = %15f  %15f  %15f\n"
+                gmx_fatal(FARGS,
+                          "cg_cm[%d] = %15f  %15f  %15f\n"
                           "box = %15f  %15f  %15f\n",
                           icg, cg_cm[icg][XX], cg_cm[icg][YY], cg_cm[icg][ZZ],
                           box[XX][XX], box[YY][YY], box[ZZ][ZZ]);

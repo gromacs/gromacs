@@ -84,13 +84,12 @@ int gmx_fio_fp_close(t_fileio *fp);
 
 
 /* Open a file, return a stream, record the entry in internal FIO object */
-FILE* gmx_fio_fopen(const char *fn, const char *mode);
+FILE *gmx_fio_fopen(const char *fn, const char *mode);
 
 /* Close a file previously opened with gmx_fio_fopen.
  * Do not mix these calls with standard fopen/fclose ones!
  * Returns 0 on success.  */
 int gmx_fio_fclose(FILE *fp);
-
 
 
 /********************************************************
@@ -147,11 +146,10 @@ typedef struct gmx_file_position_t
     gmx_off_t     offset;
     unsigned char chksum[16];
     int           chksum_size;
-}
-gmx_file_position_t;
+} gmx_file_position_t;
 
-int gmx_fio_get_output_file_positions(gmx_file_position_t ** outputfiles,
-                                      int *                  nfiles );
+int gmx_fio_get_output_file_positions(gmx_file_position_t **outputfiles,
+                                      int *                 nfiles);
 /* Return the name and file pointer positions for all currently open
  * output files. This is used for saving in the checkpoint files, so we
  * can truncate output files upon restart-with-appending.

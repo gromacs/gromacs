@@ -65,7 +65,7 @@ static int search_str2(int nstr, char **str, char *key)
     int keylen = std::strlen(key);
     /* Linear search */
     n = 0;
-    while ( (n < keylen) && ((key[n] < '0') || (key[n] > '9')) )
+    while ((n < keylen) && ((key[n] < '0') || (key[n] > '9')))
     {
         n++;
     }
@@ -82,7 +82,7 @@ static int search_str2(int nstr, char **str, char *key)
 
 int gmx_enemat(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] extracts an energy matrix from the energy file ([TT]-f[tt]).",
         "With [TT]-groups[tt] a file must be supplied with on each",
         "line a group of atoms to be used. For these groups matrix of",
@@ -117,32 +117,29 @@ int gmx_enemat(int argc, char *argv[])
     };
     static gmx_bool bSum      = FALSE;
     static gmx_bool bMeanEmtx = TRUE;
-    static int      skip      = 0, nlevels = 20;
-    static real     cutmax    = 1e20, cutmin = -1e20, reftemp = 300.0;
-    static gmx_bool bCoulSR   = TRUE, bCoul14 = FALSE;
-    static gmx_bool bLJSR     = TRUE, bLJ14 = FALSE, bBhamSR = FALSE,
-                    bFree     = TRUE;
-    t_pargs pa[]              = {
-        { "-sum",  FALSE, etBOOL, {&bSum},
-          "Sum the energy terms selected rather than display them all" },
-        { "-skip", FALSE, etINT,  {&skip},
-          "Skip number of frames between data points" },
-        { "-mean", FALSE, etBOOL, {&bMeanEmtx},
+    static int      skip = 0, nlevels = 20;
+    static real     cutmax = 1e20, cutmin = -1e20, reftemp = 300.0;
+    static gmx_bool bCoulSR = TRUE, bCoul14 = FALSE;
+    static gmx_bool bLJSR = TRUE, bLJ14 = FALSE, bBhamSR = FALSE,
+                    bFree = TRUE;
+    t_pargs pa[]          = {
+        { "-sum", FALSE, etBOOL, { &bSum }, "Sum the energy terms selected rather than display them all" },
+        { "-skip", FALSE, etINT, { &skip }, "Skip number of frames between data points" },
+        { "-mean", FALSE, etBOOL, { &bMeanEmtx },
           "with [TT]-groups[tt] extracts matrix of mean energies instead of "
           "matrix for each timestep" },
-        { "-nlevels", FALSE, etINT, {&nlevels}, "number of levels for matrix colors"},
-        { "-max", FALSE, etREAL, {&cutmax}, "max value for energies"},
-        { "-min", FALSE, etREAL, {&cutmin}, "min value for energies"},
-        { "-coulsr", FALSE, etBOOL, {&bCoulSR}, "extract Coulomb SR energies"},
-        { "-coul14", FALSE, etBOOL, {&bCoul14}, "extract Coulomb 1-4 energies"},
-        { "-ljsr", FALSE, etBOOL, {&bLJSR}, "extract Lennard-Jones SR energies"},
-        { "-lj14", FALSE, etBOOL, {&bLJ14}, "extract Lennard-Jones 1-4 energies"},
-        { "-bhamsr", FALSE, etBOOL, {&bBhamSR}, "extract Buckingham SR energies"},
-        { "-free", FALSE, etBOOL, {&bFree}, "calculate free energy"},
-        { "-temp", FALSE, etREAL, {&reftemp},
-          "reference temperature for free energy calculation"}
+        { "-nlevels", FALSE, etINT, { &nlevels }, "number of levels for matrix colors" },
+        { "-max", FALSE, etREAL, { &cutmax }, "max value for energies" },
+        { "-min", FALSE, etREAL, { &cutmin }, "min value for energies" },
+        { "-coulsr", FALSE, etBOOL, { &bCoulSR }, "extract Coulomb SR energies" },
+        { "-coul14", FALSE, etBOOL, { &bCoul14 }, "extract Coulomb 1-4 energies" },
+        { "-ljsr", FALSE, etBOOL, { &bLJSR }, "extract Lennard-Jones SR energies" },
+        { "-lj14", FALSE, etBOOL, { &bLJ14 }, "extract Lennard-Jones 1-4 energies" },
+        { "-bhamsr", FALSE, etBOOL, { &bBhamSR }, "extract Buckingham SR energies" },
+        { "-free", FALSE, etBOOL, { &bFree }, "calculate free energy" },
+        { "-temp", FALSE, etREAL, { &reftemp }, "reference temperature for free energy calculation" }
     };
-    /* We will define egSP more energy-groups:
+/* We will define egSP more energy-groups:
        egTotal (total energy) */
 #define egTotal egNR
 #define egSP 1
@@ -167,16 +164,16 @@ int gmx_enemat(int argc, char *argv[])
     double            beta, expE, **e, *eaver, *efree = nullptr, edum;
     char              label[234];
     char **           ereflines, **erefres = nullptr;
-    real *            eref  = nullptr, *edif = nullptr;
+    real *            eref = nullptr, *edif = nullptr;
     int               neref = 0;
     gmx_output_env_t *oenv;
 
     t_filenm fnm[] = {
         { efEDR, "-f", nullptr, ffOPTRD },
         { efDAT, "-groups", "groups", ffREAD },
-        { efDAT, "-eref",   "eref",   ffOPTRD },
-        { efXPM, "-emat",   "emat",   ffWRITE },
-        { efXVG, "-etot",   "energy", ffWRITE }
+        { efDAT, "-eref", "eref", ffOPTRD },
+        { efXPM, "-emat", "emat", ffWRITE },
+        { efXVG, "-etot", "energy", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -245,8 +242,10 @@ int gmx_enemat(int argc, char *argv[])
                     }
                     if (k == prevk + nre)
                     {
-                        fprintf(stderr, "WARNING! could not find group %s (%d,%d)"
-                                "in energy file\n", groupname, i, j);
+                        fprintf(stderr,
+                                "WARNING! could not find group %s (%d,%d)"
+                                "in energy file\n",
+                                groupname, i, j);
                     }
                     else
                     {
@@ -296,7 +295,7 @@ int gmx_enemat(int argc, char *argv[])
                 for (i = 0; (i < nset); i++)
                 {
                     eneset[i][nenergy] = fr->ener[set[i]].e;
-                    sum               += fr->ener[set[i]].e;
+                    sum += fr->ener[set[i]].e;
                 }
                 if (bSum)
                 {
@@ -310,8 +309,10 @@ int gmx_enemat(int argc, char *argv[])
 
     fprintf(stderr, "\n");
 
-    fprintf(stderr, "Will build energy half-matrix of %d groups, %d elements, "
-            "over %d frames\n", ngroups, nset, nenergy);
+    fprintf(stderr,
+            "Will build energy half-matrix of %d groups, %d elements, "
+            "over %d frames\n",
+            ngroups, nset, nenergy);
 
     snew(emat, egNR + egSP);
     for (j = 0; (j < egNR + egSP); j++)
@@ -330,9 +331,9 @@ int gmx_enemat(int argc, char *argv[])
     {
         groupnr[i] = i + 1;
     }
-    rlo.r  = 1.0, rlo.g  = 0.0, rlo.b  = 0.0;
+    rlo.r = 1.0, rlo.g = 0.0, rlo.b = 0.0;
     rmid.r = 1.0, rmid.g = 1.0, rmid.b = 1.0;
-    rhi.r  = 0.0, rhi.g  = 0.0, rhi.b  = 1.0;
+    rhi.r = 0.0, rhi.g = 0.0, rhi.b = 1.0;
     if (bMeanEmtx)
     {
         snew(e, ngroups);
@@ -352,17 +353,17 @@ int gmx_enemat(int argc, char *argv[])
                         for (k = 0; (k < nenergy); k++)
                         {
                             emat[m][i][j] += eneset[n][k];
-                            e[i][k]       += eneset[n][k]; /* *0.5; */
-                            e[j][k]       += eneset[n][k]; /* *0.5; */
+                            e[i][k] += eneset[n][k]; /* *0.5; */
+                            e[j][k] += eneset[n][k]; /* *0.5; */
                         }
                         n++;
                         emat[egTotal][i][j] += emat[m][i][j];
-                        emat[m][i][j]       /= nenergy;
-                        emat[m][j][i]        = emat[m][i][j];
+                        emat[m][i][j] /= nenergy;
+                        emat[m][j][i] = emat[m][i][j];
                     }
                 }
                 emat[egTotal][i][j] /= nenergy;
-                emat[egTotal][j][i]  = emat[egTotal][i][j];
+                emat[egTotal][j][i] = emat[egTotal][i][j];
             }
         }
         if (bFree)
@@ -411,8 +412,10 @@ int gmx_enemat(int argc, char *argv[])
                     else
                     {
                         edif[i] = efree[i];
-                        fprintf(stderr, "WARNING: group %s not found "
-                                "in reference energies.\n", groups[i]);
+                        fprintf(stderr,
+                                "WARNING: group %s not found "
+                                "in reference energies.\n",
+                                groups[i]);
                     }
                 }
                 else
@@ -446,8 +449,10 @@ int gmx_enemat(int argc, char *argv[])
                 }
                 if (emax == emin)
                 {
-                    fprintf(stderr, "Matrix of %s energy is uniform at %f "
-                            "(will not produce output).\n", egrp_nm[m], emax);
+                    fprintf(stderr,
+                            "Matrix of %s energy is uniform at %f "
+                            "(will not produce output).\n",
+                            egrp_nm[m], emax);
                 }
                 else
                 {
@@ -584,9 +589,10 @@ int gmx_enemat(int argc, char *argv[])
     }
     else
     {
-        fprintf(stderr, "While typing at your keyboard, suddenly...\n"
+        fprintf(stderr,
+                "While typing at your keyboard, suddenly...\n"
                 "...nothing happens.\nWARNING: Not Implemented Yet\n");
-/*
+        /*
     out=ftp2FILE(efMAT,NFILE,fnm,"w");
     n=0;
     emin=emax=0.0;

@@ -78,9 +78,9 @@
 #include "thread_mpi/mpi_bindings.h" /* IWYU pragma: export */
 #include "thread_mpi/tmpi.h"         /* IWYU pragma: export */
 #else
-typedef void* MPI_Comm;
-typedef void* MPI_Request;
-typedef void* MPI_Group;
+typedef void *MPI_Comm;
+typedef void *MPI_Request;
+typedef void *MPI_Group;
 #define MPI_COMM_NULL NULL
 #endif
 #endif

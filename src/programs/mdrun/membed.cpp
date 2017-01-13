@@ -62,52 +62,52 @@
 /* information about scaling center */
 typedef struct
 {
-    rvec  xmin;          /* smallest coordinates of all embedded molecules */
-    rvec  xmax;          /* largest coordinates of all embedded molecules */
-    rvec *geom_cent;     /* scaling center of each independent molecule to embed */
-    int   pieces;        /* number of molecules to embed independently */
-    int * nidx;          /* n atoms for every independent embedded molecule (index in subindex) */
-    int **subindex;      /* atomids for independent molecule *
+    rvec  xmin;      /* smallest coordinates of all embedded molecules */
+    rvec  xmax;      /* largest coordinates of all embedded molecules */
+    rvec *geom_cent; /* scaling center of each independent molecule to embed */
+    int   pieces;    /* number of molecules to embed independently */
+    int * nidx;      /* n atoms for every independent embedded molecule (index in subindex) */
+    int **subindex;  /* atomids for independent molecule *
                           * atoms of piece i run from subindex[i][0] to subindex[i][nidx[i]] */
 } pos_ins_t;
 
 /* variables needed in do_md */
 struct gmx_membed_t
 {
-    int        it_xy;     /* number of iterations (steps) used to grow something in the xy-plane */
-    int        it_z;      /* same, but for z */
-    real       xy_step;   /* stepsize used during resize in xy-plane */
-    real       z_step;    /* same, but in z */
-    rvec       fac;       /* initial scaling of the molecule to grow into the membrane */
-    rvec *     r_ins;     /* final coordinates of the molecule to grow  */
-    pos_ins_t *pos_ins;   /* scaling center for each piece to embed */
+    int        it_xy;   /* number of iterations (steps) used to grow something in the xy-plane */
+    int        it_z;    /* same, but for z */
+    real       xy_step; /* stepsize used during resize in xy-plane */
+    real       z_step;  /* same, but in z */
+    rvec       fac;     /* initial scaling of the molecule to grow into the membrane */
+    rvec *     r_ins;   /* final coordinates of the molecule to grow  */
+    pos_ins_t *pos_ins; /* scaling center for each piece to embed */
 };
 
 /* membrane related variables */
 typedef struct
 {
-    char *  name;        /* name of index group to embed molecule into (usually membrane) */
-    t_block mem_at;      /* list all atoms in membrane */
-    int     nmol;        /* number of membrane molecules overlapping with the molecule to embed */
-    int *   mol_id;      /* list of molecules in membrane that overlap with the molecule to embed */
-    real    lip_area;    /* average area per lipid in membrane (only correct for homogeneous bilayers)*/
-    real    zmin;        /* minimum z coordinate of membrane */
-    real    zmax;        /* maximum z coordinate of membrane */
-    real    zmed;        /* median z coordinate of membrane */
+    char *  name;     /* name of index group to embed molecule into (usually membrane) */
+    t_block mem_at;   /* list all atoms in membrane */
+    int     nmol;     /* number of membrane molecules overlapping with the molecule to embed */
+    int *   mol_id;   /* list of molecules in membrane that overlap with the molecule to embed */
+    real    lip_area; /* average area per lipid in membrane (only correct for homogeneous bilayers)*/
+    real    zmin;     /* minimum z coordinate of membrane */
+    real    zmax;     /* maximum z coordinate of membrane */
+    real    zmed;     /* median z coordinate of membrane */
 } mem_t;
 
 /* Lists all molecules in the membrane that overlap with the molecule to be embedded. *
  * These will then be removed from the system */
 typedef struct
 {
-    int  nr;      /* number of molecules to remove */
-    int *mol;     /* list of molecule ids to remove */
-    int *block;   /* id of the molblock that the molecule to remove is part of */
+    int  nr;    /* number of molecules to remove */
+    int *mol;   /* list of molecule ids to remove */
+    int *block; /* id of the molblock that the molecule to remove is part of */
 } rm_t;
 
 /* Get the global molecule id, and the corresponding molecule type and id of the *
  * molblock from the global atom nr. */
-static int get_mol_id(int at, gmx_mtop_t  *mtop, int *type, int *block)
+static int get_mol_id(int at, gmx_mtop_t *mtop, int *type, int *block)
 {
     int mol_id = 0;
     int i;
@@ -187,7 +187,7 @@ static void check_types(t_block *ins_at, t_block *rest_at, gmx_mtop_t *mtop)
 
     snew(ins_mtype, 1);
     snew(rest_mtype, 1);
-    ins_mtype->nr  = get_mtype_list(ins_at, mtop, ins_mtype );
+    ins_mtype->nr  = get_mtype_list(ins_at, mtop, ins_mtype);
     rest_mtype->nr = get_mtype_list(rest_at, mtop, rest_mtype);
 
     for (i = 0; i < ins_mtype->nr; i++)
@@ -196,14 +196,16 @@ static void check_types(t_block *ins_at, t_block *rest_at, gmx_mtop_t *mtop)
         {
             if (ins_mtype->index[i] == rest_mtype->index[j])
             {
-                gmx_fatal(FARGS, "Moleculetype %s is found both in the group to insert and the rest of the system.\n"
+                gmx_fatal(FARGS,
+                          "Moleculetype %s is found both in the group to insert and the rest of the system.\n"
                           "1. Your *.ndx and *.top do not match\n"
                           "2. You are inserting some molecules of type %s (for example xray-solvent), while\n"
                           "the same moleculetype is also used in the rest of the system (solvent box). Because\n"
                           "we need to exclude all interactions between the atoms in the group to\n"
                           "insert, the same moleculetype can not be used in both groups. Change the\n"
                           "moleculetype of the molecules %s in the inserted group. Do not forget to provide\n"
-                          "an appropriate *.itp file", *(mtop->moltype[rest_mtype->index[j]].name),
+                          "an appropriate *.itp file",
+                          *(mtop->moltype[rest_mtype->index[j]].name),
                           *(mtop->moltype[rest_mtype->index[j]].name), *(mtop->moltype[rest_mtype->index[j]].name));
             }
         }
@@ -226,16 +228,16 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
     wi = init_warning(TRUE, 0);
 
     inp = read_inpfile(membed_input, &ninp, wi);
-    ITYPE ("nxy", *it_xy, 1000);
-    ITYPE ("nz", *it_z, 0);
-    RTYPE ("xyinit", *xy_fac, 0.5);
-    RTYPE ("xyend", *xy_max, 1.0);
-    RTYPE ("zinit", *z_fac, 1.0);
-    RTYPE ("zend", *z_max, 1.0);
-    RTYPE ("rad", *probe_rad, 0.22);
-    ITYPE ("ndiff", *low_up_rm, 0);
-    ITYPE ("maxwarn", *maxwarn, 0);
-    ITYPE ("pieces", *pieces, 1);
+    ITYPE("nxy", *it_xy, 1000);
+    ITYPE("nz", *it_z, 0);
+    RTYPE("xyinit", *xy_fac, 0.5);
+    RTYPE("xyend", *xy_max, 1.0);
+    RTYPE("zinit", *z_fac, 1.0);
+    RTYPE("zend", *z_max, 1.0);
+    RTYPE("rad", *probe_rad, 0.22);
+    ITYPE("ndiff", *low_up_rm, 0);
+    ITYPE("maxwarn", *maxwarn, 0);
+    ITYPE("pieces", *pieces, 1);
     EETYPE("asymmetry", *bALLOW_ASYMMETRY, yesno_names);
     check_warning_error(wi, FARGS);
     write_inpfile(membed_input, ninp, inp, FALSE, wi);
@@ -317,7 +319,7 @@ static int init_ins_at(t_block *ins_at, t_block *rest_at, t_state *state, pos_in
         pos_ins->xmax[YY] = ymax;
     }
 
-    if ( (zmax - zmin) < min_memthick)
+    if ((zmax - zmin) < min_memthick)
     {
         pos_ins->xmin[ZZ] = zmin + (zmax - zmin) / 2.0 - 0.5 * min_memthick;
         pos_ins->xmax[ZZ] = zmin + (zmax - zmin) / 2.0 + 0.5 * min_memthick;
@@ -353,14 +355,14 @@ static real est_prot_area(pos_ins_t *pos_ins, rvec *r, t_block *ins_at, mem_t *m
             do
             {
                 at = ins_at->index[c];
-                if ( (r[at][XX] >= x) && (r[at][XX] < x + dx)
-                     && (r[at][YY] >= y) && (r[at][YY] < y + dy)
-                     && (r[at][ZZ] > memmin) && (r[at][ZZ] < memmax) )
+                if ((r[at][XX] >= x) && (r[at][XX] < x + dx)
+                    && (r[at][YY] >= y) && (r[at][YY] < y + dy)
+                    && (r[at][ZZ] > memmin) && (r[at][ZZ] < memmax))
                 {
                     add = 1.0;
                 }
                 c++;
-            } while ( (c < ins_at->nr) && (add < 0.5) );
+            } while ((c < ins_at->nr) && (add < 0.5));
             area += add;
         }
     }
@@ -378,17 +380,17 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
     int *    mol_id;
     int      type = 0, block = 0;
 
-    nmol  = count = 0;
-    mem_a = &(mem_p->mem_at);
+    nmol = count = 0;
+    mem_a        = &(mem_p->mem_at);
     snew(mol_id, mem_a->nr);
     zmin = pos_ins->xmax[ZZ];
     zmax = pos_ins->xmin[ZZ];
     for (i = 0; i < mem_a->nr; i++)
     {
         at = mem_a->index[i];
-        if ( (r[at][XX] > pos_ins->xmin[XX]) && (r[at][XX] < pos_ins->xmax[XX])
-             && (r[at][YY] > pos_ins->xmin[YY]) && (r[at][YY] < pos_ins->xmax[YY])
-             && (r[at][ZZ] > pos_ins->xmin[ZZ]) && (r[at][ZZ] < pos_ins->xmax[ZZ]) )
+        if ((r[at][XX] > pos_ins->xmin[XX]) && (r[at][XX] < pos_ins->xmax[XX])
+            && (r[at][YY] > pos_ins->xmin[YY]) && (r[at][YY] < pos_ins->xmax[YY])
+            && (r[at][ZZ] > pos_ins->xmin[ZZ]) && (r[at][ZZ] < pos_ins->xmax[ZZ]))
         {
             mol  = get_mol_id(at, mtop, &type, &block);
             bNew = TRUE;
@@ -427,10 +429,12 @@ static int init_mem_at(mem_t *mem_p, gmx_mtop_t *mtop, rvec *r, matrix box, pos_
 
     if ((zmax - zmin) > (box[ZZ][ZZ] - 0.5))
     {
-        gmx_fatal(FARGS, "Something is wrong with your membrane. Max and min z values are %f and %f.\n"
+        gmx_fatal(FARGS,
+                  "Something is wrong with your membrane. Max and min z values are %f and %f.\n"
                   "Maybe your membrane is not centered in the box, but located at the box edge in the z-direction,\n"
                   "so that one membrane is distributed over two periodic box images. Another possibility is that\n"
-                  "your water layer is not thick enough.\n", zmax, zmin);
+                  "your water layer is not thick enough.\n",
+                  zmax, zmin);
     }
     mem_p->zmin = zmin;
     mem_p->zmax = zmax;
@@ -477,7 +481,7 @@ static void init_resize(t_block *ins_at, rvec *r_ins, pos_ins_t *pos_ins, mem_t 
         {
             at = pos_ins->subindex[i][j];
             copy_rvec(r[at], r_ins[gctr]);
-            if ( (r_ins[gctr][ZZ] < mem_p->zmax) && (r_ins[gctr][ZZ] > mem_p->zmin) )
+            if ((r_ins[gctr][ZZ] < mem_p->zmax) && (r_ins[gctr][ZZ] > mem_p->zmin))
             {
                 rvec_inc(pos_ins->geom_cent[i], r_ins[gctr]);
                 c++;
@@ -541,8 +545,8 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
     r_min_rad = probe_rad * probe_rad;
     snew(rm_p->mol, mtop->mols.nr);
     snew(rm_p->block, mtop->mols.nr);
-    nrm    = nupper = 0;
-    nlower = low_up_rm;
+    nrm = nupper = 0;
+    nlower       = low_up_rm;
     for (i = 0; i < ins_at->nr; i++)
     {
         at = ins_at->index[i];
@@ -594,7 +598,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
     }
 
     /*make sure equal number of lipids from upper and lower layer are removed */
-    if ( (nupper != nlower) && (!bALLOW_ASYMMETRY) )
+    if ((nupper != nlower) && (!bALLOW_ASYMMETRY))
     {
         snew(dist, mem_p->nmol);
         snew(order, mem_p->nmol);
@@ -708,7 +712,7 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
         mtop->mols.index[mol_id] = -1;
     }
 
-    mtop->mols.nr           -= rm_p->nr;
+    mtop->mols.nr -= rm_p->nr;
     mtop->mols.nalloc_index -= rm_p->nr;
     snew(new_mols, mtop->mols.nr);
     for (i = 0; i < mtop->mols.nr + rm_p->nr; i++)
@@ -722,8 +726,8 @@ static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state
     }
     sfree(mtop->mols.index);
     mtop->mols.index = new_mols;
-    mtop->natoms    -= n;
-    state->natoms   -= n;
+    mtop->natoms -= n;
+    state->natoms -= n;
     snew(x_tmp, state->natoms);
     snew(v_tmp, state->natoms);
 
@@ -1042,14 +1046,14 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
     int         pieces           = 1;
     gmx_bool    bALLOW_ASYMMETRY = FALSE;
 
-    /* sanity check constants */         /* Issue a warning when: */
-    const real min_probe_rad = 0.2199999;  /* A probe radius for overlap between embedded molecule *
+    /* sanity check constants */          /* Issue a warning when: */
+    const real min_probe_rad = 0.2199999; /* A probe radius for overlap between embedded molecule *
                                             * and rest smaller than this value is probably too small */
-    const real min_xy_init   = 0.0999999;  /* the initial shrinking of the molecule to embed is smaller */
-    const int  min_it_xy     = 1000;       /* the number of steps to embed in xy-plane is smaller */
-    const int  min_it_z      = 100;        /* the number of steps to embed in z is smaller */
-    const real prot_vs_box   = 7.5;        /* molecule to embed is large (more then prot_vs_box) with respect */
-    const real box_vs_prot   = 50;         /* to the box size (less than box_vs_prot) */
+    const real min_xy_init   = 0.0999999; /* the initial shrinking of the molecule to embed is smaller */
+    const int  min_it_xy     = 1000;      /* the number of steps to embed in xy-plane is smaller */
+    const int  min_it_z      = 100;       /* the number of steps to embed in z is smaller */
+    const real prot_vs_box   = 7.5;       /* molecule to embed is large (more then prot_vs_box) with respect */
+    const real box_vs_prot   = 50;        /* to the box size (less than box_vs_prot) */
 
     snew(membed, 1);
     snew(ins_at, 1);
@@ -1062,7 +1066,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         get_input(membed_input, &xy_fac, &xy_max, &z_fac, &z_max, &it_xy, &it_z, &probe_rad, &low_up_rm,
                   &maxwarn, &pieces, &bALLOW_ASYMMETRY);
 
-        if (!EI_DYNAMICS(inputrec->eI) )
+        if (!EI_DYNAMICS(inputrec->eI))
         {
             gmx_input("Change integrator to a dynamics integrator in mdp file (e.g. md or sd).");
         }
@@ -1113,9 +1117,11 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         if (probe_rad < min_probe_rad)
         {
             warn++;
-            fprintf(stderr, "\nWarning %d:\nA probe radius (-rad) smaller than 0.2 nm can result "
+            fprintf(stderr,
+                    "\nWarning %d:\nA probe radius (-rad) smaller than 0.2 nm can result "
                     "in overlap between waters and the group to embed, which will result "
-                    "in Lincs errors etc.\n\n", warn);
+                    "in Lincs errors etc.\n\n",
+                    warn);
         }
 
         if (xy_fac < min_xy_init)
@@ -1127,23 +1133,29 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         if (it_xy < min_it_xy)
         {
             warn++;
-            fprintf(stderr, "\nWarning %d;\nThe number of steps used to grow the xy-coordinates of %s (%d)"
-                    " is probably too small.\nIncrease -nxy or.\n\n", warn, ins, it_xy);
+            fprintf(stderr,
+                    "\nWarning %d;\nThe number of steps used to grow the xy-coordinates of %s (%d)"
+                    " is probably too small.\nIncrease -nxy or.\n\n",
+                    warn, ins, it_xy);
         }
 
-        if ( (it_z < min_it_z) && ( z_fac < 0.99999999 || z_fac > 1.0000001) )
+        if ((it_z < min_it_z) && (z_fac < 0.99999999 || z_fac > 1.0000001))
         {
             warn++;
-            fprintf(stderr, "\nWarning %d;\nThe number of steps used to grow the z-coordinate of %s (%d)"
-                    " is probably too small.\nIncrease -nz or the maxwarn setting in the membed input file.\n\n", warn, ins, it_z);
+            fprintf(stderr,
+                    "\nWarning %d;\nThe number of steps used to grow the z-coordinate of %s (%d)"
+                    " is probably too small.\nIncrease -nz or the maxwarn setting in the membed input file.\n\n",
+                    warn, ins, it_z);
         }
 
         if (it_xy + it_z > inputrec->nsteps)
         {
             warn++;
-            fprintf(stderr, "\nWarning %d:\nThe number of growth steps (-nxy + -nz) is larger than the "
+            fprintf(stderr,
+                    "\nWarning %d:\nThe number of growth steps (-nxy + -nz) is larger than the "
                     "number of steps in the tpr.\n"
-                    "(increase maxwarn in the membed input file to override)\n\n", warn);
+                    "(increase maxwarn in the membed input file to override)\n\n",
+                    warn);
         }
 
         fr_id = -1;
@@ -1188,11 +1200,13 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
                 if (inputrec->opts.egp_flags[ng * i + j] == EGP_EXCL)
                 {
                     bExcl = TRUE;
-                    if ( (groups->grps[egcENER].nm_ind[i] != ins_grp_id)
-                         || (groups->grps[egcENER].nm_ind[j] != ins_grp_id) )
+                    if ((groups->grps[egcENER].nm_ind[i] != ins_grp_id)
+                        || (groups->grps[egcENER].nm_ind[j] != ins_grp_id))
                     {
-                        gmx_fatal(FARGS, "Energy exclusions \"%s\" and  \"%s\" do not match the group "
-                                  "to embed \"%s\"", *groups->grpname[groups->grps[egcENER].nm_ind[i]],
+                        gmx_fatal(FARGS,
+                                  "Energy exclusions \"%s\" and  \"%s\" do not match the group "
+                                  "to embed \"%s\"",
+                                  *groups->grpname[groups->grps[egcENER].nm_ind[i]],
                                   *groups->grpname[groups->grps[egcENER].nm_ind[j]], ins);
                     }
                 }
@@ -1201,8 +1215,9 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 
         if (!bExcl)
         {
-            gmx_input("No energy exclusion groups defined. This is necessary for energy exclusion in "
-                      "the freeze group");
+            gmx_input(
+                    "No energy exclusion groups defined. This is necessary for energy exclusion in "
+                    "the freeze group");
         }
 
         /* Obtain the maximum and minimum coordinates of the group to be embedded */
@@ -1214,13 +1229,15 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         init_mem_at(mem_p, mtop, as_rvec_array(state->x.data()), state->box, pos_ins);
 
         prot_area = est_prot_area(pos_ins, as_rvec_array(state->x.data()), ins_at, mem_p);
-        if ( (prot_area > prot_vs_box) && ( (state->box[XX][XX] * state->box[YY][YY] - state->box[XX][YY] * state->box[YY][XX]) < box_vs_prot) )
+        if ((prot_area > prot_vs_box) && ((state->box[XX][XX] * state->box[YY][YY] - state->box[XX][YY] * state->box[YY][XX]) < box_vs_prot))
         {
             warn++;
-            fprintf(stderr, "\nWarning %d:\nThe xy-area is very small compared to the area of the protein.\n"
+            fprintf(stderr,
+                    "\nWarning %d:\nThe xy-area is very small compared to the area of the protein.\n"
                     "This might cause pressure problems during the growth phase. Just try with\n"
                     "current setup and increase 'maxwarn' in your membed settings file, but lower the\n"
-                    "compressibility in the mdp-file or disable pressure coupling if problems occur.\n\n", warn);
+                    "compressibility in the mdp-file or disable pressure coupling if problems occur.\n\n",
+                    warn);
         }
 
         if (warn > maxwarn)
@@ -1230,7 +1247,8 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
 
         printf("The estimated area of the protein in the membrane is %.3f nm^2\n", prot_area);
         printf("\nThere are %d lipids in the membrane part that overlaps the protein.\n"
-               "The area per lipid is %.4f nm^2.\n", mem_p->nmol, mem_p->lip_area);
+               "The area per lipid is %.4f nm^2.\n",
+               mem_p->nmol, mem_p->lip_area);
 
         /* Maximum number of lipids to be removed*/
         max_lip_rm = (int)(2 * prot_area / mem_p->lip_area);
@@ -1245,7 +1263,7 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         snew(r_ins, ins_at->nr);
         init_resize(ins_at, r_ins, pos_ins, mem_p, as_rvec_array(state->x.data()), bALLOW_ASYMMETRY);
         membed->fac[0] = membed->fac[1] = xy_fac;
-        membed->fac[2] = z_fac;
+        membed->fac[2]                  = z_fac;
 
         membed->xy_step = (xy_max - xy_fac) / (double)(it_xy);
         membed->z_step  = (z_max - z_fac) / (double)(it_z - 1);
@@ -1286,9 +1304,11 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         if (lip_rm > max_lip_rm)
         {
             warn++;
-            fprintf(stderr, "\nWarning %d:\nTrying to remove a larger lipid area than the estimated "
+            fprintf(stderr,
+                    "\nWarning %d:\nTrying to remove a larger lipid area than the estimated "
                     "protein area\nTry making the -xyinit resize factor smaller or increase "
-                    "maxwarn in the membed input file.\n\n", warn);
+                    "maxwarn in the membed input file.\n\n",
+                    warn);
         }
 
         /*remove all lipids and waters overlapping and update all important structures*/
@@ -1297,14 +1317,17 @@ gmx_membed_t *init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop
         rm_bonded_at = rm_bonded(ins_at, mtop);
         if (rm_bonded_at != ins_at->nr)
         {
-            fprintf(stderr, "Warning: The number of atoms for which the bonded interactions are removed is %d, "
+            fprintf(stderr,
+                    "Warning: The number of atoms for which the bonded interactions are removed is %d, "
                     "while %d atoms are embedded. Make sure that the atoms to be embedded are not in the same"
-                    "molecule type as atoms that are not to be embedded.\n", rm_bonded_at, ins_at->nr);
+                    "molecule type as atoms that are not to be embedded.\n",
+                    rm_bonded_at, ins_at->nr);
         }
 
         if (warn > maxwarn)
         {
-            gmx_fatal(FARGS, "Too many warnings.\nIf you are sure these warnings are harmless,\n"
+            gmx_fatal(FARGS,
+                      "Too many warnings.\nIf you are sure these warnings are harmless,\n"
                       "you can increase the maxwarn setting in the membed input file.");
         }
 

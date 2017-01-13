@@ -177,7 +177,8 @@ static void read_h_db_file(const char *hfn, int *nahptr, t_hackblock **ah)
             {
                 if (feof(in))
                 {
-                    gmx_fatal(FARGS, "Expected %d lines of hydrogens, found only %d "
+                    gmx_fatal(FARGS,
+                              "Expected %d lines of hydrogens, found only %d "
                               "while reading Hydrogen Database %s residue %s",
                               nab, i - 1, aah[nah].name, hfn);
                 }

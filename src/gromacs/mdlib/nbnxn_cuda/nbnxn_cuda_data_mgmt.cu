@@ -157,8 +157,8 @@ static void setup1DFloatTexture(cudaTextureObject_t &texObj,
  * \param[in]  sizeInBytes  size of memory area to bind \p texObj to
  */
 static void setup1DFloatTexture(const struct texture<float, 1, cudaReadModeElementType> *texRef,
-                                const void                                              *devPtr,
-                                size_t                                                   sizeInBytes)
+                                const void *devPtr,
+                                size_t      sizeInBytes)
 {
     cudaError_t           stat;
     cudaChannelFormatDesc cd;
@@ -216,16 +216,16 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
     cudaError_t stat;
 
     ad->ntypes = ntypes;
-    stat       = cudaMalloc((void**)&ad->shift_vec, SHIFTS * sizeof(*ad->shift_vec));
+    stat       = cudaMalloc((void **)&ad->shift_vec, SHIFTS * sizeof(*ad->shift_vec));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec");
     ad->bShiftVecUploaded = false;
 
-    stat = cudaMalloc((void**)&ad->fshift, SHIFTS * sizeof(*ad->fshift));
+    stat = cudaMalloc((void **)&ad->fshift, SHIFTS * sizeof(*ad->fshift));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->fshift");
 
-    stat = cudaMalloc((void**)&ad->e_lj, sizeof(*ad->e_lj));
+    stat = cudaMalloc((void **)&ad->e_lj, sizeof(*ad->e_lj));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->e_lj");
-    stat = cudaMalloc((void**)&ad->e_el, sizeof(*ad->e_el));
+    stat = cudaMalloc((void **)&ad->e_el, sizeof(*ad->e_el));
     CU_RET_ERR(stat, "cudaMalloc failed on ad->e_el");
 
     /* initialize to NULL poiters to data that is not allocated here and will
@@ -253,8 +253,9 @@ static int pick_ewald_kernel_type(bool                     bTwinCut,
 
     if (bForceAnalyticalEwald && bForceTabulatedEwald)
     {
-        gmx_incons("Both analytical and tabulated Ewald CUDA non-bonded kernels "
-                   "requested through environment variables.");
+        gmx_incons(
+                "Both analytical and tabulated Ewald CUDA non-bonded kernels "
+                "requested through environment variables.");
     }
 
     /* By default, on SM 3.0 and later use analytical Ewald, on earlier tabulated. */
@@ -326,12 +327,12 @@ static void set_cutoff_parameters(cu_nbparam_t *             nbp,
  * \param[in]  numElem   number of elements in the hostPtr
  * \param[in]  devInfo   pointer to the info struct of the device in use
  */
-static void initParamLookupTable(float * &devPtr,
+static void initParamLookupTable(float *&             devPtr,
                                  cudaTextureObject_t &texObj,
                                  const struct texture<float, 1, cudaReadModeElementType> *texRef,
-                                 const float               *hostPtr,
-                                 int                        numElem,
-                                 const gmx_device_info_t   *devInfo)
+                                 const float *            hostPtr,
+                                 int                      numElem,
+                                 const gmx_device_info_t *devInfo)
 {
     cudaError_t stat;
 
@@ -510,7 +511,7 @@ static void init_plist(cu_plist_t *pl)
 static void init_timers(cu_timers_t *t, bool bUseTwoStreams)
 {
     cudaError_t stat;
-    int         eventflags = ( bUseCudaEventBlockingSync ? cudaEventBlockingSync : cudaEventDefault );
+    int         eventflags = (bUseCudaEventBlockingSync ? cudaEventBlockingSync : cudaEventDefault);
 
     stat = cudaEventCreateWithFlags(&(t->start_atdat), eventflags);
     CU_RET_ERR(stat, "cudaEventCreate on start_atdat failed");
@@ -581,8 +582,8 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t **        p_nb,
                     const interaction_const_t *ic,
                     nonbonded_verlet_group_t * nbv_grp,
                     int                        my_gpu_index,
-                    int                        /*rank*/,
-                    gmx_bool                   bLocalAndNonlocal)
+                    int /*rank*/,
+                    gmx_bool bLocalAndNonlocal)
 {
     cudaError_t       stat;
     gmx_nbnxn_cuda_t *nb;
@@ -609,9 +610,9 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t **        p_nb,
     snew(nb->timings, 1);
 
     /* init nbst */
-    pmalloc((void**)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
-    pmalloc((void**)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
-    pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
+    pmalloc((void **)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
+    pmalloc((void **)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
+    pmalloc((void **)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
 
     init_plist(nb->plist[eintLocal]);
 
@@ -625,7 +626,7 @@ void nbnxn_gpu_init(gmx_nbnxn_cuda_t **        p_nb,
     {
         init_plist(nb->plist[eintNonlocal]);
 
-        /* CUDA stream priority available in the CUDA RT 5.5 API.
+/* CUDA stream priority available in the CUDA RT 5.5 API.
          * Note that the device we're running on does not have to support
          * priorities, because we are querying the priority range which in this
          * case will be a single value.
@@ -1037,12 +1038,12 @@ void cu_synchstream_atdat(gmx_nbnxn_cuda_t *nb, int iloc)
     CU_RET_ERR(stat, "cudaStreamWaitEvent failed");
 }
 
-gmx_wallclock_gpu_t * nbnxn_gpu_get_timings(gmx_nbnxn_cuda_t *nb)
+gmx_wallclock_gpu_t *nbnxn_gpu_get_timings(gmx_nbnxn_cuda_t *nb)
 {
     return (nb != NULL && nb->bDoTime) ? nb->timings : NULL;
 }
 
-void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
+void nbnxn_gpu_reset_timings(nonbonded_verlet_t *nbv)
 {
     if (nbv->gpu_nbv && nbv->gpu_nbv->bDoTime)
     {
@@ -1053,8 +1054,8 @@ void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
 int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_cuda_t *nb)
 {
     return nb != NULL
-           ? gpu_min_ci_balanced_factor * nb->dev_info->prop.multiProcessorCount : 0;
-
+                   ? gpu_min_ci_balanced_factor * nb->dev_info->prop.multiProcessorCount
+                   : 0;
 }
 
 gmx_bool nbnxn_gpu_is_kernel_ewald_analytical(const gmx_nbnxn_cuda_t *nb)

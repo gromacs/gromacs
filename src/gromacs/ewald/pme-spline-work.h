@@ -47,7 +47,7 @@ struct pme_spline_work
     /* Masks for 4-wide SIMD aligned spreading and gathering */
     Simd4Bool mask_S0[6], mask_S1[6];
 #else
-    int dummy;              /* C89 requires that struct has at least one member */
+    int dummy; /* C89 requires that struct has at least one member */
 #endif
 };
 

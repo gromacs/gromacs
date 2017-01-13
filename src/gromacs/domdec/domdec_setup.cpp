@@ -181,7 +181,7 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
 /*! \brief Make a guess for the number of PME ranks to use. */
 static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
                       matrix box,
-                      int nrank_tot)
+                      int    nrank_tot)
 {
     float ratio;
     int   npme;
@@ -243,7 +243,8 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
     }
     if (npme > nrank_tot / 2)
     {
-        gmx_fatal(FARGS, "Could not find an appropriate number of separate PME ranks. i.e. >= %5f*#ranks (%d) and <= #ranks/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
+        gmx_fatal(FARGS,
+                  "Could not find an appropriate number of separate PME ranks. i.e. >= %5f*#ranks (%d) and <= #ranks/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
                   "Use the -npme option of mdrun or change the number of ranks or the PME grid dimensions, see the manual for details.",
                   ratio, (int)(0.95 * ratio * nrank_tot + 0.5), nrank_tot / 2, ir->nkx, ir->nky);
         /* Keep the compiler happy */
@@ -258,7 +259,8 @@ static int guess_npme(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir,
                     "This is a guess, check the performance at the end of the log file\n",
                     nrank_tot - npme, npme);
         }
-        fprintf(stderr, "\n"
+        fprintf(stderr,
+                "\n"
                 "Will use %d particle-particle and %d PME only ranks\n"
                 "This is a guess, check the performance at the end of the log file\n",
                 nrank_tot - npme, npme);
@@ -282,7 +284,7 @@ real comm_box_frac(const ivec dd_nc, real cutoff, const gmx_ddbox_t *ddbox)
     for (i = 0; i < DIM; i++)
     {
         real bt = ddbox->box_size[i] * ddbox->skew_fac[i];
-        nw[i] = dd_nc[i] * cutoff / bt;
+        nw[i]   = dd_nc[i] * cutoff / bt;
     }
 
     comm_vol = 0;
@@ -330,7 +332,7 @@ static float comm_pme_cost_vol(int npme, int a, int b, int c)
     /* We use a float here, since an integer might overflow */
     float comm_vol;
 
-    comm_vol  = npme - 1;
+    comm_vol = npme - 1;
     comm_vol *= npme;
     comm_vol *= div_up(a, npme);
     comm_vol *= div_up(b, npme);
@@ -346,7 +348,7 @@ static float comm_cost_est(real limit, real cutoff,
                            float pbcdxr,
                            int npme_tot, ivec nc)
 {
-    ivec  npme = {1, 1, 1};
+    ivec  npme = { 1, 1, 1 };
     int   i, j, nk, overlap;
     rvec  bt;
     float comm_vol, comm_vol_xf, comm_pme, cost_pbcdx;
@@ -486,16 +488,16 @@ static float comm_cost_est(real limit, real cutoff,
         /* Grid overlap communication */
         if (npme[i] > 1)
         {
-            nk        = (i == 0 ? ir->nkx : ir->nky);
-            overlap   = (nk % npme[i] == 0 ? ir->pme_order - 1 : ir->pme_order);
-            temp      = npme[i];
-            temp     *= overlap;
-            temp     *= ir->nkx;
-            temp     *= ir->nky;
-            temp     *= ir->nkz;
-            temp     /= nk;
+            nk      = (i == 0 ? ir->nkx : ir->nky);
+            overlap = (nk % npme[i] == 0 ? ir->pme_order - 1 : ir->pme_order);
+            temp    = npme[i];
+            temp *= overlap;
+            temp *= ir->nkx;
+            temp *= ir->nky;
+            temp *= ir->nkz;
+            temp /= nk;
             comm_pme += temp;
-/* Old line comm_pme += npme[i]*overlap*ir->nkx*ir->nky*ir->nkz/nk; */
+            /* Old line comm_pme += npme[i]*overlap*ir->nkx*ir->nky*ir->nkz/nk; */
         }
     }
 
@@ -599,10 +601,10 @@ static real optimize_ncells(FILE *fplog,
                             const gmx_mtop_t *mtop,
                             matrix box, const gmx_ddbox_t *ddbox,
                             const t_inputrec *ir,
-                            gmx_domdec_t *dd,
+                            gmx_domdec_t *    dd,
                             real cellsize_limit, real cutoff,
                             gmx_bool bInterCGBondeds,
-                            ivec nc)
+                            ivec     nc)
 {
     int    npp, npme, ndiv, *div, *mdiv, d, nmax;
     double pbcdxr;
@@ -711,12 +713,12 @@ static real optimize_ncells(FILE *fplog,
     return limit;
 }
 
-real dd_choose_grid(FILE *fplog,
+real dd_choose_grid(FILE *     fplog,
                     t_commrec *cr, gmx_domdec_t *dd,
                     const t_inputrec *ir,
                     const gmx_mtop_t *mtop,
                     matrix box, const gmx_ddbox_t *ddbox,
-                    int nPmeRanks,
+                    int      nPmeRanks,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
                     gmx_bool bInterCGBondeds)

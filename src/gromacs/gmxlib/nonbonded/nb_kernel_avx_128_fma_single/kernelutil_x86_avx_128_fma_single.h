@@ -41,21 +41,21 @@
 
 #include <immintrin.h>
 #ifdef _MSC_VER
-#    include <intrin.h>
+#include <intrin.h>
 #else
-#    include <x86intrin.h>
+#include <x86intrin.h>
 #endif
 
-#define gmx_mm_castsi128_ps   _mm_castsi128_ps
-#define gmx_mm_extract_epi32  _mm_extract_epi32
+#define gmx_mm_castsi128_ps _mm_castsi128_ps
+#define gmx_mm_extract_epi32 _mm_extract_epi32
 
-#define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), (mask))
-#define gmx_mm_maskstore_ps(mem, mask, x)    _mm_maskstore_ps((mem), (mask), (x))
-#define gmx_mm256_maskload_ps(mem, mask)    _mm256_maskload_ps((mem), (mask))
+#define gmx_mm_maskload_ps(mem, mask) _mm_maskload_ps((mem), (mask))
+#define gmx_mm_maskstore_ps(mem, mask, x) _mm_maskstore_ps((mem), (mask), (x))
+#define gmx_mm256_maskload_ps(mem, mask) _mm256_maskload_ps((mem), (mask))
 #define gmx_mm256_maskstore_ps(mem, mask, x) _mm256_maskstore_ps((mem), (mask), (x))
 
 /* Normal sum of four xmm registers */
-#define gmx_mm_sum4_ps(t0, t1, t2, t3)  _mm_add_ps(_mm_add_ps(t0, t1), _mm_add_ps(t2, t3))
+#define gmx_mm_sum4_ps(t0, t1, t2, t3) _mm_add_ps(_mm_add_ps(t0, t1), _mm_add_ps(t2, t3))
 
 static gmx_inline int gmx_simdcall gmx_mm_any_lt(__m128 a, __m128 b)
 {
@@ -69,10 +69,10 @@ static gmx_inline __m128 gmx_simdcall gmx_mm_calc_rsq_ps(__m128 dx, __m128 dy, _
 
 /* Load a single value from 1-4 places, merge into xmm register */
 
-static gmx_inline __m128 gmx_simdcall gmx_mm_load_4real_swizzle_ps(const float * gmx_restrict ptrA,
-                                                                   const float * gmx_restrict ptrB,
-                                                                   const float * gmx_restrict ptrC,
-                                                                   const float * gmx_restrict ptrD)
+static gmx_inline __m128 gmx_simdcall gmx_mm_load_4real_swizzle_ps(const float *gmx_restrict ptrA,
+                                                                   const float *gmx_restrict ptrB,
+                                                                   const float *gmx_restrict ptrC,
+                                                                   const float *gmx_restrict ptrD)
 {
     __m128 t1, t2;
 
@@ -82,10 +82,10 @@ static gmx_inline __m128 gmx_simdcall gmx_mm_load_4real_swizzle_ps(const float *
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_store_4real_swizzle_ps(float * gmx_restrict ptrA,
-                                                                  float * gmx_restrict ptrB,
-                                                                  float * gmx_restrict ptrC,
-                                                                  float * gmx_restrict ptrD, __m128 xmm1)
+static gmx_inline void gmx_simdcall gmx_mm_store_4real_swizzle_ps(float *gmx_restrict ptrA,
+                                                                  float *gmx_restrict ptrB,
+                                                                  float *gmx_restrict ptrC,
+                                                                  float *gmx_restrict ptrD, __m128 xmm1)
 {
     __m128 t2, t3, t4;
 
@@ -99,10 +99,10 @@ static gmx_inline void gmx_simdcall gmx_mm_store_4real_swizzle_ps(float * gmx_re
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_increment_4real_swizzle_ps(float * gmx_restrict ptrA,
-                                                                      float * gmx_restrict ptrB,
-                                                                      float * gmx_restrict ptrC,
-                                                                      float * gmx_restrict ptrD, __m128 xmm1)
+static gmx_inline void gmx_simdcall gmx_mm_increment_4real_swizzle_ps(float *gmx_restrict ptrA,
+                                                                      float *gmx_restrict ptrB,
+                                                                      float *gmx_restrict ptrC,
+                                                                      float *gmx_restrict ptrD, __m128 xmm1)
 {
     __m128 tmp;
 
@@ -112,11 +112,11 @@ static gmx_inline void gmx_simdcall gmx_mm_increment_4real_swizzle_ps(float * gm
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_load_4pair_swizzle_ps(const float * gmx_restrict p1,
-                                                                 const float * gmx_restrict p2,
-                                                                 const float * gmx_restrict p3,
-                                                                 const float * gmx_restrict p4,
-                                                                 __m128 * gmx_restrict c6, __m128 * gmx_restrict c12)
+static gmx_inline void gmx_simdcall gmx_mm_load_4pair_swizzle_ps(const float *gmx_restrict p1,
+                                                                 const float *gmx_restrict p2,
+                                                                 const float *gmx_restrict p3,
+                                                                 const float *gmx_restrict p4,
+                                                                 __m128 *gmx_restrict c6, __m128 *gmx_restrict c12)
 {
     __m128 t1, t2, t3, t4;
     t1   = _mm_loadl_pi(_mm_setzero_ps(), (__m64 *)p1);
@@ -130,13 +130,11 @@ static gmx_inline void gmx_simdcall gmx_mm_load_4pair_swizzle_ps(const float * g
 }
 
 
-
-
-static gmx_inline void gmx_simdcall gmx_mm_load_shift_and_1rvec_broadcast_ps(const float * gmx_restrict xyz_shift,
-                                                                             const float * gmx_restrict xyz,
-                                                                             __m128 * gmx_restrict      x1,
-                                                                             __m128 * gmx_restrict      y1,
-                                                                             __m128 * gmx_restrict      z1)
+static gmx_inline void gmx_simdcall gmx_mm_load_shift_and_1rvec_broadcast_ps(const float *gmx_restrict xyz_shift,
+                                                                             const float *gmx_restrict xyz,
+                                                                             __m128 *gmx_restrict x1,
+                                                                             __m128 *gmx_restrict y1,
+                                                                             __m128 *gmx_restrict z1)
 {
     __m128 t1, t2, t3, t4;
 
@@ -153,11 +151,11 @@ static gmx_inline void gmx_simdcall gmx_mm_load_shift_and_1rvec_broadcast_ps(con
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_load_shift_and_3rvec_broadcast_ps(const float * gmx_restrict xyz_shift,
-                                                                             const float * gmx_restrict xyz,
-                                                                             __m128 * gmx_restrict x1, __m128 * gmx_restrict y1, __m128 * gmx_restrict z1,
-                                                                             __m128 * gmx_restrict x2, __m128 * gmx_restrict y2, __m128 * gmx_restrict z2,
-                                                                             __m128 * gmx_restrict x3, __m128 * gmx_restrict y3, __m128 * gmx_restrict z3)
+static gmx_inline void gmx_simdcall gmx_mm_load_shift_and_3rvec_broadcast_ps(const float *gmx_restrict xyz_shift,
+                                                                             const float *gmx_restrict xyz,
+                                                                             __m128 *gmx_restrict x1, __m128 *gmx_restrict y1, __m128 *gmx_restrict z1,
+                                                                             __m128 *gmx_restrict x2, __m128 *gmx_restrict y2, __m128 *gmx_restrict z2,
+                                                                             __m128 *gmx_restrict x3, __m128 *gmx_restrict y3, __m128 *gmx_restrict z3)
 {
     __m128 tA, tB;
     __m128 t1, t2, t3, t4, t5, t6;
@@ -190,12 +188,12 @@ static gmx_inline void gmx_simdcall gmx_mm_load_shift_and_3rvec_broadcast_ps(con
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_load_shift_and_4rvec_broadcast_ps(const float * gmx_restrict xyz_shift,
-                                                                             const float * gmx_restrict xyz,
-                                                                             __m128 * gmx_restrict x1, __m128 * gmx_restrict y1, __m128 * gmx_restrict z1,
-                                                                             __m128 * gmx_restrict x2, __m128 * gmx_restrict y2, __m128 * gmx_restrict z2,
-                                                                             __m128 * gmx_restrict x3, __m128 * gmx_restrict y3, __m128 * gmx_restrict z3,
-                                                                             __m128 * gmx_restrict x4, __m128 * gmx_restrict y4, __m128 * gmx_restrict z4)
+static gmx_inline void gmx_simdcall gmx_mm_load_shift_and_4rvec_broadcast_ps(const float *gmx_restrict xyz_shift,
+                                                                             const float *gmx_restrict xyz,
+                                                                             __m128 *gmx_restrict x1, __m128 *gmx_restrict y1, __m128 *gmx_restrict z1,
+                                                                             __m128 *gmx_restrict x2, __m128 *gmx_restrict y2, __m128 *gmx_restrict z2,
+                                                                             __m128 *gmx_restrict x3, __m128 *gmx_restrict y3, __m128 *gmx_restrict z3,
+                                                                             __m128 *gmx_restrict x4, __m128 *gmx_restrict y4, __m128 *gmx_restrict z4)
 {
     __m128 tA, tB;
     __m128 t1, t2, t3, t4, t5, t6;
@@ -231,16 +229,16 @@ static gmx_inline void gmx_simdcall gmx_mm_load_shift_and_4rvec_broadcast_ps(con
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_load_1rvec_4ptr_swizzle_ps(const float * gmx_restrict ptrA, const float * gmx_restrict ptrB,
-                                                                      const float * gmx_restrict ptrC, const float * gmx_restrict ptrD,
-                                                                      __m128 * gmx_restrict x1, __m128 * gmx_restrict y1, __m128 * gmx_restrict z1)
+static gmx_inline void gmx_simdcall gmx_mm_load_1rvec_4ptr_swizzle_ps(const float *gmx_restrict ptrA, const float *gmx_restrict ptrB,
+                                                                      const float *gmx_restrict ptrC, const float *gmx_restrict ptrD,
+                                                                      __m128 *gmx_restrict x1, __m128 *gmx_restrict y1, __m128 *gmx_restrict z1)
 {
     __m128  t1, t2, t3, t4;
     __m128i mask = _mm_set_epi32(0, -1, -1, -1);
-    t1 = gmx_mm_maskload_ps(ptrA, mask);
-    t2 = gmx_mm_maskload_ps(ptrB, mask);
-    t3 = gmx_mm_maskload_ps(ptrC, mask);
-    t4 = gmx_mm_maskload_ps(ptrD, mask);
+    t1           = gmx_mm_maskload_ps(ptrA, mask);
+    t2           = gmx_mm_maskload_ps(ptrB, mask);
+    t3           = gmx_mm_maskload_ps(ptrC, mask);
+    t4           = gmx_mm_maskload_ps(ptrD, mask);
     _MM_TRANSPOSE4_PS(t1, t2, t3, t4);
     *x1 = t1;
     *y1 = t2;
@@ -248,11 +246,11 @@ static gmx_inline void gmx_simdcall gmx_mm_load_1rvec_4ptr_swizzle_ps(const floa
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_load_3rvec_4ptr_swizzle_ps(const float * gmx_restrict ptrA, const float * gmx_restrict ptrB,
-                                                                      const float * gmx_restrict ptrC, const float * gmx_restrict ptrD,
-                                                                      __m128 * gmx_restrict x1, __m128 * gmx_restrict y1, __m128 * gmx_restrict z1,
-                                                                      __m128 * gmx_restrict x2, __m128 * gmx_restrict y2, __m128 * gmx_restrict z2,
-                                                                      __m128 * gmx_restrict x3, __m128 * gmx_restrict y3, __m128 * gmx_restrict z3)
+static gmx_inline void gmx_simdcall gmx_mm_load_3rvec_4ptr_swizzle_ps(const float *gmx_restrict ptrA, const float *gmx_restrict ptrB,
+                                                                      const float *gmx_restrict ptrC, const float *gmx_restrict ptrD,
+                                                                      __m128 *gmx_restrict x1, __m128 *gmx_restrict y1, __m128 *gmx_restrict z1,
+                                                                      __m128 *gmx_restrict x2, __m128 *gmx_restrict y2, __m128 *gmx_restrict z2,
+                                                                      __m128 *gmx_restrict x3, __m128 *gmx_restrict y3, __m128 *gmx_restrict z3)
 {
     __m128 t1, t2, t3, t4;
     t1 = _mm_loadu_ps(ptrA);
@@ -283,12 +281,12 @@ static gmx_inline void gmx_simdcall gmx_mm_load_3rvec_4ptr_swizzle_ps(const floa
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_load_4rvec_4ptr_swizzle_ps(const float * gmx_restrict ptrA, const float * gmx_restrict ptrB,
-                                                                      const float * gmx_restrict ptrC, const float * gmx_restrict ptrD,
-                                                                      __m128 * gmx_restrict x1, __m128 * gmx_restrict y1, __m128 * gmx_restrict z1,
-                                                                      __m128 * gmx_restrict x2, __m128 * gmx_restrict y2, __m128 * gmx_restrict z2,
-                                                                      __m128 * gmx_restrict x3, __m128 * gmx_restrict y3, __m128 * gmx_restrict z3,
-                                                                      __m128 * gmx_restrict x4, __m128 * gmx_restrict y4, __m128 * gmx_restrict z4)
+static gmx_inline void gmx_simdcall gmx_mm_load_4rvec_4ptr_swizzle_ps(const float *gmx_restrict ptrA, const float *gmx_restrict ptrB,
+                                                                      const float *gmx_restrict ptrC, const float *gmx_restrict ptrD,
+                                                                      __m128 *gmx_restrict x1, __m128 *gmx_restrict y1, __m128 *gmx_restrict z1,
+                                                                      __m128 *gmx_restrict x2, __m128 *gmx_restrict y2, __m128 *gmx_restrict z2,
+                                                                      __m128 *gmx_restrict x3, __m128 *gmx_restrict y3, __m128 *gmx_restrict z3,
+                                                                      __m128 *gmx_restrict x4, __m128 *gmx_restrict y4, __m128 *gmx_restrict z4)
 {
     __m128 t1, t2, t3, t4;
     t1 = _mm_loadu_ps(ptrA);
@@ -321,8 +319,8 @@ static gmx_inline void gmx_simdcall gmx_mm_load_4rvec_4ptr_swizzle_ps(const floa
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_decrement_1rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
-                                                                           float * gmx_restrict ptrC, float * gmx_restrict ptrD,
+static gmx_inline void gmx_simdcall gmx_mm_decrement_1rvec_4ptr_swizzle_ps(float *gmx_restrict ptrA, float *gmx_restrict ptrB,
+                                                                           float *gmx_restrict ptrC, float *gmx_restrict ptrD,
                                                                            __m128 x1, __m128 y1, __m128 z1)
 {
     __m128 t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12;
@@ -355,8 +353,8 @@ static gmx_inline void gmx_simdcall gmx_mm_decrement_1rvec_4ptr_swizzle_ps(float
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_decrement_3rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
-                                                                           float * gmx_restrict ptrC, float * gmx_restrict ptrD,
+static gmx_inline void gmx_simdcall gmx_mm_decrement_3rvec_4ptr_swizzle_ps(float *gmx_restrict ptrA, float *gmx_restrict ptrB,
+                                                                           float *gmx_restrict ptrC, float *gmx_restrict ptrD,
                                                                            __m128 x1, __m128 y1, __m128 z1,
                                                                            __m128 x2, __m128 y2, __m128 z2,
                                                                            __m128 x3, __m128 y3, __m128 z3)
@@ -422,8 +420,8 @@ static gmx_inline void gmx_simdcall gmx_mm_decrement_3rvec_4ptr_swizzle_ps(float
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_decrement_4rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
-                                                                           float * gmx_restrict ptrC, float * gmx_restrict ptrD,
+static gmx_inline void gmx_simdcall gmx_mm_decrement_4rvec_4ptr_swizzle_ps(float *gmx_restrict ptrA, float *gmx_restrict ptrB,
+                                                                           float *gmx_restrict ptrC, float *gmx_restrict ptrD,
                                                                            __m128 x1, __m128 y1, __m128 z1,
                                                                            __m128 x2, __m128 y2, __m128 z2,
                                                                            __m128 x3, __m128 y3, __m128 z3,
@@ -496,8 +494,8 @@ static gmx_inline void gmx_simdcall gmx_mm_decrement_4rvec_4ptr_swizzle_ps(float
 
 
 static gmx_inline void gmx_simdcall gmx_mm_update_iforce_1atom_swizzle_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
-                                                                          float * gmx_restrict fptr,
-                                                                          float * gmx_restrict fshiftptr)
+                                                                          float *gmx_restrict fptr,
+                                                                          float *gmx_restrict fshiftptr)
 {
     __m128 t2, t3;
 
@@ -524,8 +522,8 @@ static gmx_inline void gmx_simdcall gmx_mm_update_iforce_1atom_swizzle_ps(__m128
 static gmx_inline void gmx_simdcall gmx_mm_update_iforce_3atom_swizzle_ps(__m128 fix1, __m128 fiy1, __m128 fiz1,
                                                                           __m128 fix2, __m128 fiy2, __m128 fiz2,
                                                                           __m128 fix3, __m128 fiy3, __m128 fiz3,
-                                                                          float * gmx_restrict fptr,
-                                                                          float * gmx_restrict fshiftptr)
+                                                                          float *gmx_restrict fptr,
+                                                                          float *gmx_restrict fshiftptr)
 {
     __m128 t1, t2, t3, t4;
 
@@ -539,9 +537,9 @@ static gmx_inline void gmx_simdcall gmx_mm_update_iforce_3atom_swizzle_ps(__m128
     fiy2 = _mm_hadd_ps(fiy2, fix3); /* fiy3 fix3 fiz2 fiy2 */
     fiz3 = _mm_hadd_ps(fiz3, fiz3); /*  -    -    -   fiz3 */
 
-    _mm_storeu_ps(fptr,  _mm_add_ps(fix1, _mm_loadu_ps(fptr)  ));
+    _mm_storeu_ps(fptr, _mm_add_ps(fix1, _mm_loadu_ps(fptr)));
     _mm_storeu_ps(fptr + 4, _mm_add_ps(fiy2, _mm_loadu_ps(fptr + 4)));
-    _mm_store_ss (fptr + 8, _mm_add_ss(fiz3, _mm_load_ss(fptr + 8) ));
+    _mm_store_ss(fptr + 8, _mm_add_ss(fiz3, _mm_load_ss(fptr + 8)));
 
     t4 = _mm_load_ss(fshiftptr + 2);
     t4 = _mm_loadh_pi(t4, (__m64 *)(fshiftptr));
@@ -564,8 +562,8 @@ static gmx_inline void gmx_simdcall gmx_mm_update_iforce_4atom_swizzle_ps(__m128
                                                                           __m128 fix2, __m128 fiy2, __m128 fiz2,
                                                                           __m128 fix3, __m128 fiy3, __m128 fiz3,
                                                                           __m128 fix4, __m128 fiy4, __m128 fiz4,
-                                                                          float * gmx_restrict fptr,
-                                                                          float * gmx_restrict fshiftptr)
+                                                                          float *gmx_restrict fptr,
+                                                                          float *gmx_restrict fshiftptr)
 {
     __m128 t1, t2, t3, t4, t5;
 
@@ -580,7 +578,7 @@ static gmx_inline void gmx_simdcall gmx_mm_update_iforce_4atom_swizzle_ps(__m128
     fiy2 = _mm_hadd_ps(fiy2, fix3); /* fiy3 fix3 fiz2 fiy2 */
     fiz3 = _mm_hadd_ps(fiz3, fiy4); /* fiz4 fiy4 fix4 fiz3 */
 
-    _mm_storeu_ps(fptr,  _mm_add_ps(fix1, _mm_loadu_ps(fptr)  ));
+    _mm_storeu_ps(fptr, _mm_add_ps(fix1, _mm_loadu_ps(fptr)));
     _mm_storeu_ps(fptr + 4, _mm_add_ps(fiy2, _mm_loadu_ps(fptr + 4)));
     _mm_storeu_ps(fptr + 8, _mm_add_ps(fiz3, _mm_loadu_ps(fptr + 8)));
 
@@ -603,15 +601,15 @@ static gmx_inline void gmx_simdcall gmx_mm_update_iforce_4atom_swizzle_ps(__m128
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm_update_1pot_ps(__m128 pot1, float * gmx_restrict ptrA)
+static gmx_inline void gmx_simdcall gmx_mm_update_1pot_ps(__m128 pot1, float *gmx_restrict ptrA)
 {
     pot1 = _mm_hadd_ps(pot1, pot1);
     pot1 = _mm_hadd_ps(pot1, pot1);
     _mm_store_ss(ptrA, _mm_add_ss(pot1, _mm_load_ss(ptrA)));
 }
 
-static gmx_inline void gmx_simdcall gmx_mm_update_2pot_ps(__m128 pot1, float * gmx_restrict ptrA,
-                                                          __m128 pot2, float * gmx_restrict ptrB)
+static gmx_inline void gmx_simdcall gmx_mm_update_2pot_ps(__m128 pot1, float *gmx_restrict ptrA,
+                                                          __m128 pot2, float *gmx_restrict ptrB)
 {
     pot1 = _mm_hadd_ps(pot1, pot2);
     pot1 = _mm_hadd_ps(pot1, pot1);
@@ -621,9 +619,9 @@ static gmx_inline void gmx_simdcall gmx_mm_update_2pot_ps(__m128 pot1, float * g
 }
 
 #ifdef __PGI
-#    define AVX128FMA_FLOAT_NEGZERO   ({ const union { int  fi; float f; } _gmx_fzero = {-2147483648}; _gmx_fzero.f; })
+#define AVX128FMA_FLOAT_NEGZERO ({ const union { int  fi; float f; } _gmx_fzero = {-2147483648}; _gmx_fzero.f; })
 #else
-#    define AVX128FMA_FLOAT_NEGZERO  (-0.0f)
+#define AVX128FMA_FLOAT_NEGZERO (-0.0f)
 #endif
 
 static gmx_inline __m128 gmx_simdcall avx128fma_set_exponent_f(__m128 x)

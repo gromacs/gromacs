@@ -97,12 +97,13 @@ public:
     typedef BooleanOptionInfo InfoType;
 
     //! Initializes an option with the given name.
-    explicit BooleanOption(const char *name) : MyBase(name) {}
+    explicit BooleanOption(const char *name)
+        : MyBase(name) {}
 
 private:
     //! Creates a BooleanOptionStorage object.
     virtual AbstractOptionStorage *createStorage(
-        const OptionManagerContainer &managers) const;
+            const OptionManagerContainer &managers) const;
 };
 
 /*! \brief
@@ -130,7 +131,8 @@ public:
     typedef IntegerOptionInfo InfoType;
 
     //! Initializes an option with the given name.
-    explicit IntegerOption(const char *name) : MyBase(name) {}
+    explicit IntegerOption(const char *name)
+        : MyBase(name) {}
 
     /*! \brief
      * Sets the option to return a vector value.
@@ -140,12 +142,16 @@ public:
      * a single value, in which case the value is used to fill the whole
      * vector.
      */
-    MyClass &vector() { setVector(); return me(); }
+    MyClass &vector()
+    {
+        setVector();
+        return me();
+    }
 
 private:
     //! Creates an IntegerOptionStorage object.
     virtual AbstractOptionStorage *createStorage(
-        const OptionManagerContainer &managers) const;
+            const OptionManagerContainer &managers) const;
 
     /*! \brief
      * Needed to initialize IntegerOptionStorage from this class without
@@ -170,12 +176,13 @@ public:
     typedef Int64OptionInfo InfoType;
 
     //! Initializes an option with the given name.
-    explicit Int64Option(const char *name) : MyBase(name) {}
+    explicit Int64Option(const char *name)
+        : MyBase(name) {}
 
 private:
     //! Creates an Int64OptionStorage object.
     virtual AbstractOptionStorage *createStorage(
-        const OptionManagerContainer &managers) const;
+            const OptionManagerContainer &managers) const;
 
     /*! \brief
      * Needed to initialize Int64OptionStorage from this class without
@@ -198,12 +205,17 @@ public:
     typedef DoubleOptionInfo InfoType;
 
     //! Initializes an option with the given name.
-    explicit DoubleOption(const char *name) : MyBase(name), bTime_(false)
+    explicit DoubleOption(const char *name)
+        : MyBase(name), bTime_(false)
     {
     }
 
     //! \copydoc IntegerOption::vector()
-    MyClass &vector() { setVector(); return me(); }
+    MyClass &vector()
+    {
+        setVector();
+        return me();
+    }
     /*! \brief
      * Marks this option as providing a time value whose unit can be changed.
      *
@@ -216,12 +228,16 @@ public:
      * user-provided values are scaled according to the time unit set in
      * TimeUnitManager.
      */
-    MyClass &timeValue() { bTime_ = true; return me(); }
+    MyClass &timeValue()
+    {
+        bTime_ = true;
+        return me();
+    }
 
 private:
     //! Creates a DoubleOptionStorage object.
     virtual AbstractOptionStorage *createStorage(
-        const OptionManagerContainer &managers) const;
+            const OptionManagerContainer &managers) const;
 
     bool bTime_;
 
@@ -248,19 +264,28 @@ public:
     typedef FloatOptionInfo InfoType;
 
     //! Initializes an option with the given name.
-    explicit FloatOption(const char *name) : MyBase(name), bTime_(false)
+    explicit FloatOption(const char *name)
+        : MyBase(name), bTime_(false)
     {
     }
 
     //! \copydoc IntegerOption::vector()
-    MyClass &vector() { setVector(); return me(); }
+    MyClass &vector()
+    {
+        setVector();
+        return me();
+    }
     //! \copydoc DoubleOption::timeValue()
-    MyClass &timeValue() { bTime_ = true; return me(); }
+    MyClass &timeValue()
+    {
+        bTime_ = true;
+        return me();
+    }
 
 private:
     //! Creates a FloatOptionStorage object.
     virtual AbstractOptionStorage *createStorage(
-        const OptionManagerContainer &managers) const;
+            const OptionManagerContainer &managers) const;
 
     bool bTime_;
 
@@ -315,7 +340,7 @@ public:
      * The strings are copied once the option is created.
      */
     template <size_t count>
-    MyClass &enumValue(const char *const (&values)[count])
+    MyClass &        enumValue(const char *const (&values)[count])
     {
         GMX_ASSERT(enumValues_ == NULL,
                    "Multiple sets of enumerated values specified");
@@ -358,7 +383,7 @@ public:
 private:
     //! Creates a StringOptionStorage object.
     virtual AbstractOptionStorage *createStorage(
-        const OptionManagerContainer &managers) const;
+            const OptionManagerContainer &managers) const;
 
     const char *const *enumValues_;
     int                enumValuesCount_;
@@ -409,9 +434,9 @@ public:
         }
     }
 
-    virtual int valueCount() { return static_cast<int>(intStore_.size()); }
+    virtual int           valueCount() { return static_cast<int>(intStore_.size()); }
     virtual ArrayRef<int> values() { return intStore_; }
-    virtual void clear()
+    virtual void          clear()
     {
         intStore_.clear();
         if (storeVector_ != nullptr)
@@ -466,7 +491,7 @@ createEnumOptionStorage(const AbstractOption &option,
                         IOptionValueStore<int> *store);
 //! \endcond
 
-}   // namespace internal
+} // namespace internal
 
 //! \addtogroup module_options
 //! \{
@@ -502,7 +527,7 @@ createEnumOptionStorage(const AbstractOption &option,
  * \inpublicapi
  */
 template <typename EnumType>
-class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType> >
+class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType>>
 {
 public:
     //! OptionInfo subclass corresponding to this option type.
@@ -511,7 +536,7 @@ public:
     // This needs to be duplicated from OptionTemplate because this class
     // is a template.
     //! Short-hand for the base class.
-    typedef OptionTemplate<EnumType, EnumOption<EnumType> > MyBase;
+    typedef OptionTemplate<EnumType, EnumOption<EnumType>> MyBase;
 
     //! Initializes an option with the given name.
     explicit EnumOption(const char *name)
@@ -531,7 +556,7 @@ public:
      * The strings are copied once the option is created.
      */
     template <size_t count>
-    EnumOption &enumValue(const char *const (&values)[count])
+    EnumOption &     enumValue(const char *const (&values)[count])
     {
         GMX_ASSERT(enumValues_ == NULL,
                    "Multiple sets of enumerated values specified");
@@ -569,7 +594,7 @@ private:
 
     //! Creates a EnumOptionStorage object.
     virtual AbstractOptionStorage *createStorage(
-        const OptionManagerContainer & /*managers*/) const
+            const OptionManagerContainer & /*managers*/) const
     {
         // TODO: Implement storeCount() if necessary.
         return internal::createEnumOptionStorage(
@@ -660,7 +685,7 @@ public:
     void setScaleFactor(double factor);
 
 private:
-    DoubleOptionStorage &option();
+    DoubleOptionStorage &      option();
     const DoubleOptionStorage &option() const;
 };
 
@@ -682,7 +707,7 @@ public:
     void setScaleFactor(double factor);
 
 private:
-    FloatOptionStorage &option();
+    FloatOptionStorage &      option();
     const FloatOptionStorage &option() const;
 };
 
@@ -753,8 +778,8 @@ private:
 typedef DoubleOption     RealOption;
 typedef DoubleOptionInfo RealOptionInfo;
 #else
-typedef FloatOption      RealOption;
-typedef FloatOptionInfo  RealOptionInfo;
+typedef FloatOption     RealOption;
+typedef FloatOptionInfo RealOptionInfo;
 #endif
 
 //! \}

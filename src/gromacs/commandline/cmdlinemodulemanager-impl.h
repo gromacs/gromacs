@@ -81,7 +81,7 @@ public:
      * (gmx-something) of the module, and the second element contains the
      * description.  The second element is never NULL.
      */
-    typedef std::vector<std::pair<std::string, const char *> > ModuleList;
+    typedef std::vector<std::pair<std::string, const char *>> ModuleList;
 
     /*! \brief
      * Constructs an empty module group.
@@ -128,10 +128,10 @@ private:
 
 //! Smart pointer type for managing a CommandLineModuleGroup.
 typedef std::unique_ptr<CommandLineModuleGroupData>
-    CommandLineModuleGroupDataPointer;
+        CommandLineModuleGroupDataPointer;
 //! Container type for keeping a list of module groups.
 typedef std::vector<CommandLineModuleGroupDataPointer>
-    CommandLineModuleGroupList;
+        CommandLineModuleGroupList;
 
 /*! \internal
  * \brief

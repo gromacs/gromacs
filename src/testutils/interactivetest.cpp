@@ -89,10 +89,10 @@ public:
         using ::testing::_;
         using ::testing::Invoke;
         EXPECT_CALL(inputStream_, readLine(_))
-            .WillRepeatedly(Invoke(this, &Impl::readInputLine));
+                .WillRepeatedly(Invoke(this, &Impl::readInputLine));
         EXPECT_CALL(inputStream_, close()).Times(0);
         EXPECT_CALL(outputStream_, write(_))
-            .WillRepeatedly(Invoke(this, &Impl::addOutput));
+                .WillRepeatedly(Invoke(this, &Impl::addOutput));
         EXPECT_CALL(outputStream_, close()).Times(0);
     }
 

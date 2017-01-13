@@ -74,8 +74,8 @@ std::string makeBinaryCacheFilename(const std::string &kernelFilename,
     // Note that the OpenCL API is defined in terms of bytes, and we
     // assume that sizeof(char) is one byte.
     std::array<char, 1024> deviceName;
-    size_t                 deviceNameLength;
-    cl_int                 cl_error = clGetDeviceInfo(deviceId, CL_DEVICE_NAME, deviceName.size(), deviceName.data(), &deviceNameLength);
+    size_t deviceNameLength;
+    cl_int cl_error = clGetDeviceInfo(deviceId, CL_DEVICE_NAME, deviceName.size(), deviceName.data(), &deviceNameLength);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError(formatString("Could not get OpenCL device name, error was %s", ocl_get_error_string(cl_error).c_str())));

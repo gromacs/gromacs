@@ -48,24 +48,25 @@
  * reset the value afterwards.
  */
 #ifdef _ISOC99_SOURCE
-#    undef _ISOC99_SOURCE
-#    define SAVE_ISOC99_SOURCE
+#undef _ISOC99_SOURCE
+#define SAVE_ISOC99_SOURCE
 #endif
 
 #include <emmintrin.h>
 
 #ifdef SAVE_ISOC99_SOURCE
-#    define _ISOC99_SOURCE
-#    undef SAVE_ISOC99_SOURCE
+#define _ISOC99_SOURCE
+#undef SAVE_ISOC99_SOURCE
 #endif
 
 #define GMX_FJSP_SHUFFLE2(x, y) (((x) << 1) | (y))
 
-#define GMX_FJSP_TRANSPOSE2_V2R8(row0, row1) {           \
-        _fjsp_v2r8 __gmx_t1 = row0;                          \
-        row0 = _fjsp_unpacklo_v2r8(row0, row1);     \
-        row1 = _fjsp_unpackhi_v2r8(__gmx_t1, row1); \
-}
+#define GMX_FJSP_TRANSPOSE2_V2R8(row0, row1)                       \
+    {                                                              \
+        _fjsp_v2r8 __gmx_t1 = row0;                                \
+        row0                = _fjsp_unpacklo_v2r8(row0, row1);     \
+        row1                = _fjsp_unpackhi_v2r8(__gmx_t1, row1); \
+    }
 
 
 static void gmx_fjsp_print_v2r8(const char *s, _fjsp_v2r8 a)
@@ -83,7 +84,7 @@ static _fjsp_v2r8 gmx_fjsp_set1_v2r8(double d)
     return _fjsp_set_v2r8(d, d);
 }
 
-static _fjsp_v2r8 gmx_fjsp_load1_v2r8(const double * gmx_restrict ptr)
+static _fjsp_v2r8 gmx_fjsp_load1_v2r8(const double *gmx_restrict ptr)
 {
     return gmx_fjsp_set1_v2r8(*ptr);
 }
@@ -91,12 +92,10 @@ static _fjsp_v2r8 gmx_fjsp_load1_v2r8(const double * gmx_restrict ptr)
 
 static int gmx_fjsp_any_lt_v2r8(_fjsp_v2r8 a, _fjsp_v2r8 b)
 {
-    union
-    {
+    union {
         double        d;
         long long int i;
-    }
-    conv;
+    } conv;
 
     a = _fjsp_cmplt_v2r8(a, b);
     a = _fjsp_or_v2r8(a, _fjsp_unpackhi_v2r8(a, a));
@@ -112,7 +111,7 @@ static gmx_inline _fjsp_v2r8 gmx_fjsp_invsqrt_v2r8(_fjsp_v2r8 x)
     _fjsp_v2r8       lu    = _fjsp_rsqrta_v2r8(x);
 
     lu = _fjsp_mul_v2r8(_fjsp_mul_v2r8(half, lu), _fjsp_nmsub_v2r8(_fjsp_mul_v2r8(lu, lu), x, three));
-    /* The HPC-ACE instruction set is only available in double precision, while
+/* The HPC-ACE instruction set is only available in double precision, while
      * single precision is typically sufficient for Gromacs. If you define
      * "GMX_RELAXED_DOUBLE_PRECISION" during compile, we stick to two Newton-Raphson
      * iterations and accept 32bits of accuracy in 1.0/sqrt(x) and 1.0/x, rather than full
@@ -133,7 +132,7 @@ static gmx_inline _fjsp_v2r8 gmx_fjsp_inv_v2r8(_fjsp_v2r8 x)
 
     /* Perform three N-R steps for double precision */
     lu = _fjsp_mul_v2r8(lu, _fjsp_nmsub_v2r8(lu, x, two));
-    /* The HPC-ACE instruction set is only available in double precision, while
+/* The HPC-ACE instruction set is only available in double precision, while
      * single precision is typically sufficient for Gromacs. If you define
      * "GMX_RELAXED_DOUBLE_PRECISION" during compile, we stick to two Newton-Raphson
      * iterations and accept 32bits of accuracy in 1.0/sqrt(x) and 1.0/x, rather than full
@@ -152,27 +151,24 @@ static gmx_inline _fjsp_v2r8 gmx_fjsp_calc_rsq_v2r8(_fjsp_v2r8 dx, _fjsp_v2r8 dy
 }
 
 /* Normal sum of four ymm registers */
-#define gmx_fjsp_sum4_v2r8(t0, t1, t2, t3)  _fjsp_add_v2r8(_fjsp_add_v2r8(t0, t1), _fjsp_add_v2r8(t2, t3))
+#define gmx_fjsp_sum4_v2r8(t0, t1, t2, t3) _fjsp_add_v2r8(_fjsp_add_v2r8(t0, t1), _fjsp_add_v2r8(t2, t3))
 
 
-
-
-
-static _fjsp_v2r8 gmx_fjsp_load_2real_swizzle_v2r8(const double * gmx_restrict ptrA,
-                                                   const double * gmx_restrict ptrB)
+static _fjsp_v2r8 gmx_fjsp_load_2real_swizzle_v2r8(const double *gmx_restrict ptrA,
+                                                   const double *gmx_restrict ptrB)
 {
     return _fjsp_unpacklo_v2r8(_fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), ptrA), _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), ptrB));
 }
 
-static _fjsp_v2r8 gmx_fjsp_load_1real_v2r8(const double * gmx_restrict ptrA)
+static _fjsp_v2r8 gmx_fjsp_load_1real_v2r8(const double *gmx_restrict ptrA)
 {
     return _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), ptrA);
 }
 
 
-static void gmx_fjsp_store_2real_swizzle_v2r8(double * gmx_restrict ptrA,
-                                              double * gmx_restrict ptrB,
-                                              _fjsp_v2r8            xmm1)
+static void gmx_fjsp_store_2real_swizzle_v2r8(double *gmx_restrict ptrA,
+                                              double *gmx_restrict ptrB,
+                                              _fjsp_v2r8           xmm1)
 {
     _fjsp_v2r8 t2;
 
@@ -181,15 +177,15 @@ static void gmx_fjsp_store_2real_swizzle_v2r8(double * gmx_restrict ptrA,
     _fjsp_storel_v2r8(ptrB, t2);
 }
 
-static void gmx_fjsp_store_1real_v2r8(double * gmx_restrict ptrA, _fjsp_v2r8 xmm1)
+static void gmx_fjsp_store_1real_v2r8(double *gmx_restrict ptrA, _fjsp_v2r8 xmm1)
 {
     _fjsp_storel_v2r8(ptrA, xmm1);
 }
 
 
 /* Similar to store, but increments value in memory */
-static void gmx_fjsp_increment_2real_swizzle_v2r8(double * gmx_restrict ptrA,
-                                                  double * gmx_restrict ptrB, _fjsp_v2r8 xmm1)
+static void gmx_fjsp_increment_2real_swizzle_v2r8(double *gmx_restrict ptrA,
+                                                  double *gmx_restrict ptrB, _fjsp_v2r8 xmm1)
 {
     _fjsp_v2r8 t1;
 
@@ -200,7 +196,7 @@ static void gmx_fjsp_increment_2real_swizzle_v2r8(double * gmx_restrict ptrA,
     _fjsp_storel_v2r8(ptrB, t1);
 }
 
-static void gmx_fjsp_increment_1real_v2r8(double * gmx_restrict ptrA, _fjsp_v2r8 xmm1)
+static void gmx_fjsp_increment_1real_v2r8(double *gmx_restrict ptrA, _fjsp_v2r8 xmm1)
 {
     _fjsp_v2r8 tmp;
 
@@ -210,11 +206,10 @@ static void gmx_fjsp_increment_1real_v2r8(double * gmx_restrict ptrA, _fjsp_v2r8
 }
 
 
-
-static gmx_inline void gmx_fjsp_load_2pair_swizzle_v2r8(const double * gmx_restrict p1,
-                                                        const double * gmx_restrict p2,
-                                                        _fjsp_v2r8 * gmx_restrict   c6,
-                                                        _fjsp_v2r8 * gmx_restrict   c12)
+static gmx_inline void gmx_fjsp_load_2pair_swizzle_v2r8(const double *gmx_restrict p1,
+                                                        const double *gmx_restrict p2,
+                                                        _fjsp_v2r8 *gmx_restrict c6,
+                                                        _fjsp_v2r8 *gmx_restrict c12)
 {
     _fjsp_v2r8 t1, t2, t3;
 
@@ -225,20 +220,20 @@ static gmx_inline void gmx_fjsp_load_2pair_swizzle_v2r8(const double * gmx_restr
     *c12 = _fjsp_unpackhi_v2r8(t1, t2);
 }
 
-static gmx_inline void gmx_fjsp_load_1pair_swizzle_v2r8(const double * gmx_restrict p1,
-                                                        _fjsp_v2r8 * gmx_restrict   c6,
-                                                        _fjsp_v2r8 * gmx_restrict   c12)
+static gmx_inline void gmx_fjsp_load_1pair_swizzle_v2r8(const double *gmx_restrict p1,
+                                                        _fjsp_v2r8 *gmx_restrict c6,
+                                                        _fjsp_v2r8 *gmx_restrict c12)
 {
     *c6  = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1);
     *c12 = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1 + 1);
 }
 
 
-static gmx_inline void gmx_fjsp_load_shift_and_1rvec_broadcast_v2r8(const double * gmx_restrict xyz_shift,
-                                                                    const double * gmx_restrict xyz,
-                                                                    _fjsp_v2r8 * gmx_restrict   x1,
-                                                                    _fjsp_v2r8 * gmx_restrict   y1,
-                                                                    _fjsp_v2r8 * gmx_restrict   z1)
+static gmx_inline void gmx_fjsp_load_shift_and_1rvec_broadcast_v2r8(const double *gmx_restrict xyz_shift,
+                                                                    const double *gmx_restrict xyz,
+                                                                    _fjsp_v2r8 *gmx_restrict x1,
+                                                                    _fjsp_v2r8 *gmx_restrict y1,
+                                                                    _fjsp_v2r8 *gmx_restrict z1)
 {
     _fjsp_v2r8 mem_xy, mem_z, mem_sxy, mem_sz;
 
@@ -256,11 +251,11 @@ static gmx_inline void gmx_fjsp_load_shift_and_1rvec_broadcast_v2r8(const double
 }
 
 
-static gmx_inline void gmx_fjsp_load_shift_and_3rvec_broadcast_v2r8(const double * gmx_restrict xyz_shift,
-                                                                    const double * gmx_restrict xyz,
-                                                                    _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
-                                                                    _fjsp_v2r8 * gmx_restrict x2, _fjsp_v2r8 * gmx_restrict y2, _fjsp_v2r8 * gmx_restrict z2,
-                                                                    _fjsp_v2r8 * gmx_restrict x3, _fjsp_v2r8 * gmx_restrict y3, _fjsp_v2r8 * gmx_restrict z3)
+static gmx_inline void gmx_fjsp_load_shift_and_3rvec_broadcast_v2r8(const double *gmx_restrict xyz_shift,
+                                                                    const double *gmx_restrict xyz,
+                                                                    _fjsp_v2r8 *gmx_restrict x1, _fjsp_v2r8 *gmx_restrict y1, _fjsp_v2r8 *gmx_restrict z1,
+                                                                    _fjsp_v2r8 *gmx_restrict x2, _fjsp_v2r8 *gmx_restrict y2, _fjsp_v2r8 *gmx_restrict z2,
+                                                                    _fjsp_v2r8 *gmx_restrict x3, _fjsp_v2r8 *gmx_restrict y3, _fjsp_v2r8 *gmx_restrict z3)
 {
     _fjsp_v2r8 t1, t2, t3, t4, t5, sxy, sz, szx, syz;
 
@@ -293,12 +288,12 @@ static gmx_inline void gmx_fjsp_load_shift_and_3rvec_broadcast_v2r8(const double
 }
 
 
-static gmx_inline void gmx_fjsp_load_shift_and_4rvec_broadcast_v2r8(const double * gmx_restrict xyz_shift,
-                                                                    const double * gmx_restrict xyz,
-                                                                    _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
-                                                                    _fjsp_v2r8 * gmx_restrict x2, _fjsp_v2r8 * gmx_restrict y2, _fjsp_v2r8 * gmx_restrict z2,
-                                                                    _fjsp_v2r8 * gmx_restrict x3, _fjsp_v2r8 * gmx_restrict y3, _fjsp_v2r8 * gmx_restrict z3,
-                                                                    _fjsp_v2r8 * gmx_restrict x4, _fjsp_v2r8 * gmx_restrict y4, _fjsp_v2r8 * gmx_restrict z4)
+static gmx_inline void gmx_fjsp_load_shift_and_4rvec_broadcast_v2r8(const double *gmx_restrict xyz_shift,
+                                                                    const double *gmx_restrict xyz,
+                                                                    _fjsp_v2r8 *gmx_restrict x1, _fjsp_v2r8 *gmx_restrict y1, _fjsp_v2r8 *gmx_restrict z1,
+                                                                    _fjsp_v2r8 *gmx_restrict x2, _fjsp_v2r8 *gmx_restrict y2, _fjsp_v2r8 *gmx_restrict z2,
+                                                                    _fjsp_v2r8 *gmx_restrict x3, _fjsp_v2r8 *gmx_restrict y3, _fjsp_v2r8 *gmx_restrict z3,
+                                                                    _fjsp_v2r8 *gmx_restrict x4, _fjsp_v2r8 *gmx_restrict y4, _fjsp_v2r8 *gmx_restrict z4)
 {
     _fjsp_v2r8 t1, t2, t3, t4, t5, t6, sxy, sz, szx, syz;
 
@@ -336,19 +331,18 @@ static gmx_inline void gmx_fjsp_load_shift_and_4rvec_broadcast_v2r8(const double
 }
 
 
-
-static gmx_inline void gmx_fjsp_load_1rvec_1ptr_swizzle_v2r8(const double * gmx_restrict p1,
-                                                             _fjsp_v2r8 * gmx_restrict x, _fjsp_v2r8 * gmx_restrict y, _fjsp_v2r8 * gmx_restrict z)
+static gmx_inline void gmx_fjsp_load_1rvec_1ptr_swizzle_v2r8(const double *gmx_restrict p1,
+                                                             _fjsp_v2r8 *gmx_restrict x, _fjsp_v2r8 *gmx_restrict y, _fjsp_v2r8 *gmx_restrict z)
 {
     *x = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1);
     *y = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1 + 1);
     *z = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1 + 2);
 }
 
-static gmx_inline void gmx_fjsp_load_3rvec_1ptr_swizzle_v2r8(const double * gmx_restrict p1,
-                                                             _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
-                                                             _fjsp_v2r8 * gmx_restrict x2, _fjsp_v2r8 * gmx_restrict y2, _fjsp_v2r8 * gmx_restrict z2,
-                                                             _fjsp_v2r8 * gmx_restrict x3, _fjsp_v2r8 * gmx_restrict y3, _fjsp_v2r8 * gmx_restrict z3)
+static gmx_inline void gmx_fjsp_load_3rvec_1ptr_swizzle_v2r8(const double *gmx_restrict p1,
+                                                             _fjsp_v2r8 *gmx_restrict x1, _fjsp_v2r8 *gmx_restrict y1, _fjsp_v2r8 *gmx_restrict z1,
+                                                             _fjsp_v2r8 *gmx_restrict x2, _fjsp_v2r8 *gmx_restrict y2, _fjsp_v2r8 *gmx_restrict z2,
+                                                             _fjsp_v2r8 *gmx_restrict x3, _fjsp_v2r8 *gmx_restrict y3, _fjsp_v2r8 *gmx_restrict z3)
 {
     *x1 = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1);
     *y1 = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1 + 1);
@@ -361,11 +355,11 @@ static gmx_inline void gmx_fjsp_load_3rvec_1ptr_swizzle_v2r8(const double * gmx_
     *z3 = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1 + 8);
 }
 
-static gmx_inline void gmx_fjsp_load_4rvec_1ptr_swizzle_v2r8(const double * gmx_restrict p1,
-                                                             _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
-                                                             _fjsp_v2r8 * gmx_restrict x2, _fjsp_v2r8 * gmx_restrict y2, _fjsp_v2r8 * gmx_restrict z2,
-                                                             _fjsp_v2r8 * gmx_restrict x3, _fjsp_v2r8 * gmx_restrict y3, _fjsp_v2r8 * gmx_restrict z3,
-                                                             _fjsp_v2r8 * gmx_restrict x4, _fjsp_v2r8 * gmx_restrict y4, _fjsp_v2r8 * gmx_restrict z4)
+static gmx_inline void gmx_fjsp_load_4rvec_1ptr_swizzle_v2r8(const double *gmx_restrict p1,
+                                                             _fjsp_v2r8 *gmx_restrict x1, _fjsp_v2r8 *gmx_restrict y1, _fjsp_v2r8 *gmx_restrict z1,
+                                                             _fjsp_v2r8 *gmx_restrict x2, _fjsp_v2r8 *gmx_restrict y2, _fjsp_v2r8 *gmx_restrict z2,
+                                                             _fjsp_v2r8 *gmx_restrict x3, _fjsp_v2r8 *gmx_restrict y3, _fjsp_v2r8 *gmx_restrict z3,
+                                                             _fjsp_v2r8 *gmx_restrict x4, _fjsp_v2r8 *gmx_restrict y4, _fjsp_v2r8 *gmx_restrict z4)
 {
     *x1 = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1);
     *y1 = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), p1 + 1);
@@ -382,9 +376,9 @@ static gmx_inline void gmx_fjsp_load_4rvec_1ptr_swizzle_v2r8(const double * gmx_
 }
 
 
-static gmx_inline void gmx_fjsp_load_1rvec_2ptr_swizzle_v2r8(const double * gmx_restrict ptrA,
-                                                             const double * gmx_restrict ptrB,
-                                                             _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1)
+static gmx_inline void gmx_fjsp_load_1rvec_2ptr_swizzle_v2r8(const double *gmx_restrict ptrA,
+                                                             const double *gmx_restrict ptrB,
+                                                             _fjsp_v2r8 *gmx_restrict x1, _fjsp_v2r8 *gmx_restrict y1, _fjsp_v2r8 *gmx_restrict z1)
 {
     _fjsp_v2r8 t1, t2, t3, t4;
     t1 = _fjsp_load_v2r8(ptrA);
@@ -397,10 +391,10 @@ static gmx_inline void gmx_fjsp_load_1rvec_2ptr_swizzle_v2r8(const double * gmx_
     *z1 = _fjsp_unpacklo_v2r8(t3, t4);
 }
 
-static gmx_inline void gmx_fjsp_load_3rvec_2ptr_swizzle_v2r8(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
-                                                             _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
-                                                             _fjsp_v2r8 * gmx_restrict x2, _fjsp_v2r8 * gmx_restrict y2, _fjsp_v2r8 * gmx_restrict z2,
-                                                             _fjsp_v2r8 * gmx_restrict x3, _fjsp_v2r8 * gmx_restrict y3, _fjsp_v2r8 * gmx_restrict z3)
+static gmx_inline void gmx_fjsp_load_3rvec_2ptr_swizzle_v2r8(const double *gmx_restrict ptrA, const double *gmx_restrict ptrB,
+                                                             _fjsp_v2r8 *gmx_restrict x1, _fjsp_v2r8 *gmx_restrict y1, _fjsp_v2r8 *gmx_restrict z1,
+                                                             _fjsp_v2r8 *gmx_restrict x2, _fjsp_v2r8 *gmx_restrict y2, _fjsp_v2r8 *gmx_restrict z2,
+                                                             _fjsp_v2r8 *gmx_restrict x3, _fjsp_v2r8 *gmx_restrict y3, _fjsp_v2r8 *gmx_restrict z3)
 {
     _fjsp_v2r8 t1, t2, t3, t4, t5, t6, t7, t8, t9, t10;
     t1  = _fjsp_load_v2r8(ptrA);
@@ -429,11 +423,11 @@ static gmx_inline void gmx_fjsp_load_3rvec_2ptr_swizzle_v2r8(const double * gmx_
 }
 
 
-static gmx_inline void gmx_fjsp_load_4rvec_2ptr_swizzle_v2r8(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
-                                                             _fjsp_v2r8 * gmx_restrict x1, _fjsp_v2r8 * gmx_restrict y1, _fjsp_v2r8 * gmx_restrict z1,
-                                                             _fjsp_v2r8 * gmx_restrict x2, _fjsp_v2r8 * gmx_restrict y2, _fjsp_v2r8 * gmx_restrict z2,
-                                                             _fjsp_v2r8 * gmx_restrict x3, _fjsp_v2r8 * gmx_restrict y3, _fjsp_v2r8 * gmx_restrict z3,
-                                                             _fjsp_v2r8 * gmx_restrict x4, _fjsp_v2r8 * gmx_restrict y4, _fjsp_v2r8 * gmx_restrict z4)
+static gmx_inline void gmx_fjsp_load_4rvec_2ptr_swizzle_v2r8(const double *gmx_restrict ptrA, const double *gmx_restrict ptrB,
+                                                             _fjsp_v2r8 *gmx_restrict x1, _fjsp_v2r8 *gmx_restrict y1, _fjsp_v2r8 *gmx_restrict z1,
+                                                             _fjsp_v2r8 *gmx_restrict x2, _fjsp_v2r8 *gmx_restrict y2, _fjsp_v2r8 *gmx_restrict z2,
+                                                             _fjsp_v2r8 *gmx_restrict x3, _fjsp_v2r8 *gmx_restrict y3, _fjsp_v2r8 *gmx_restrict z3,
+                                                             _fjsp_v2r8 *gmx_restrict x4, _fjsp_v2r8 *gmx_restrict y4, _fjsp_v2r8 *gmx_restrict z4)
 {
     _fjsp_v2r8 t1, t2, t3, t4, t5, t6;
     t1 = _fjsp_load_v2r8(ptrA);
@@ -469,7 +463,7 @@ static gmx_inline void gmx_fjsp_load_4rvec_2ptr_swizzle_v2r8(const double * gmx_
 }
 
 
-static void gmx_fjsp_decrement_1rvec_1ptr_swizzle_v2r8(double * gmx_restrict ptrA,
+static void gmx_fjsp_decrement_1rvec_1ptr_swizzle_v2r8(double *gmx_restrict ptrA,
                                                        _fjsp_v2r8 x1, _fjsp_v2r8 y1, _fjsp_v2r8 z1)
 {
     _fjsp_v2r8 t1, t2, t3;
@@ -486,7 +480,7 @@ static void gmx_fjsp_decrement_1rvec_1ptr_swizzle_v2r8(double * gmx_restrict ptr
     _fjsp_storel_v2r8(ptrA + 2, t3);
 }
 
-static void gmx_fjsp_decrement_fma_1rvec_1ptr_swizzle_v2r8(double * gmx_restrict ptrA, _fjsp_v2r8 fscal,
+static void gmx_fjsp_decrement_fma_1rvec_1ptr_swizzle_v2r8(double *gmx_restrict ptrA, _fjsp_v2r8 fscal,
                                                            _fjsp_v2r8 dx1, _fjsp_v2r8 dy1, _fjsp_v2r8 dz1)
 {
     _fjsp_v2r8 t1, t2, t3;
@@ -504,7 +498,7 @@ static void gmx_fjsp_decrement_fma_1rvec_1ptr_swizzle_v2r8(double * gmx_restrict
 }
 
 
-static void gmx_fjsp_decrement_3rvec_1ptr_swizzle_v2r8(double * gmx_restrict ptrA,
+static void gmx_fjsp_decrement_3rvec_1ptr_swizzle_v2r8(double *gmx_restrict ptrA,
                                                        _fjsp_v2r8 x1, _fjsp_v2r8 y1, _fjsp_v2r8 z1,
                                                        _fjsp_v2r8 x2, _fjsp_v2r8 y2, _fjsp_v2r8 z2,
                                                        _fjsp_v2r8 x3, _fjsp_v2r8 y3, _fjsp_v2r8 z3)
@@ -540,7 +534,7 @@ static void gmx_fjsp_decrement_3rvec_1ptr_swizzle_v2r8(double * gmx_restrict ptr
 }
 
 
-static void gmx_fjsp_decrement_4rvec_1ptr_swizzle_v2r8(double * gmx_restrict ptrA,
+static void gmx_fjsp_decrement_4rvec_1ptr_swizzle_v2r8(double *gmx_restrict ptrA,
                                                        _fjsp_v2r8 x1, _fjsp_v2r8 y1, _fjsp_v2r8 z1,
                                                        _fjsp_v2r8 x2, _fjsp_v2r8 y2, _fjsp_v2r8 z2,
                                                        _fjsp_v2r8 x3, _fjsp_v2r8 y3, _fjsp_v2r8 z3,
@@ -562,21 +556,21 @@ static void gmx_fjsp_decrement_4rvec_1ptr_swizzle_v2r8(double * gmx_restrict ptr
     z3 = _fjsp_unpacklo_v2r8(z3, x4);
     y4 = _fjsp_unpacklo_v2r8(y4, z4);
 
-    _fjsp_storel_v2r8(ptrA,    _fjsp_sub_v2r8( t1, x1 ));
-    _fjsp_storeh_v2r8(ptrA + 1,  _fjsp_sub_v2r8( t1, x1 ));
-    _fjsp_storel_v2r8(ptrA + 2,  _fjsp_sub_v2r8( t2, z1 ));
-    _fjsp_storeh_v2r8(ptrA + 3,  _fjsp_sub_v2r8( t2, z1 ));
-    _fjsp_storel_v2r8(ptrA + 4,  _fjsp_sub_v2r8( t3, y2 ));
-    _fjsp_storeh_v2r8(ptrA + 5,  _fjsp_sub_v2r8( t3, y2 ));
-    _fjsp_storel_v2r8(ptrA + 6,  _fjsp_sub_v2r8( t4, x3 ));
-    _fjsp_storeh_v2r8(ptrA + 7,  _fjsp_sub_v2r8( t4, x3 ));
-    _fjsp_storel_v2r8(ptrA + 8,  _fjsp_sub_v2r8( t5, z3 ));
-    _fjsp_storeh_v2r8(ptrA + 9,  _fjsp_sub_v2r8( t5, z3 ));
-    _fjsp_storel_v2r8(ptrA + 10, _fjsp_sub_v2r8( t6, y4 ));
-    _fjsp_storeh_v2r8(ptrA + 11, _fjsp_sub_v2r8( t6, y4 ));
+    _fjsp_storel_v2r8(ptrA, _fjsp_sub_v2r8(t1, x1));
+    _fjsp_storeh_v2r8(ptrA + 1, _fjsp_sub_v2r8(t1, x1));
+    _fjsp_storel_v2r8(ptrA + 2, _fjsp_sub_v2r8(t2, z1));
+    _fjsp_storeh_v2r8(ptrA + 3, _fjsp_sub_v2r8(t2, z1));
+    _fjsp_storel_v2r8(ptrA + 4, _fjsp_sub_v2r8(t3, y2));
+    _fjsp_storeh_v2r8(ptrA + 5, _fjsp_sub_v2r8(t3, y2));
+    _fjsp_storel_v2r8(ptrA + 6, _fjsp_sub_v2r8(t4, x3));
+    _fjsp_storeh_v2r8(ptrA + 7, _fjsp_sub_v2r8(t4, x3));
+    _fjsp_storel_v2r8(ptrA + 8, _fjsp_sub_v2r8(t5, z3));
+    _fjsp_storeh_v2r8(ptrA + 9, _fjsp_sub_v2r8(t5, z3));
+    _fjsp_storel_v2r8(ptrA + 10, _fjsp_sub_v2r8(t6, y4));
+    _fjsp_storeh_v2r8(ptrA + 11, _fjsp_sub_v2r8(t6, y4));
 }
 
-static void gmx_fjsp_decrement_1rvec_2ptr_swizzle_v2r8(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
+static void gmx_fjsp_decrement_1rvec_2ptr_swizzle_v2r8(double *gmx_restrict ptrA, double *gmx_restrict ptrB,
                                                        _fjsp_v2r8 x1, _fjsp_v2r8 y1, _fjsp_v2r8 z1)
 {
     _fjsp_v2r8 t1, t2, t3, t4, t5, t6, t7;
@@ -605,7 +599,7 @@ static void gmx_fjsp_decrement_1rvec_2ptr_swizzle_v2r8(double * gmx_restrict ptr
 }
 
 
-static void gmx_fjsp_decrement_fma_1rvec_2ptr_swizzle_v2r8(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
+static void gmx_fjsp_decrement_fma_1rvec_2ptr_swizzle_v2r8(double *gmx_restrict ptrA, double *gmx_restrict ptrB,
                                                            _fjsp_v2r8 fscal, _fjsp_v2r8 dx1, _fjsp_v2r8 dy1, _fjsp_v2r8 dz1)
 {
     _fjsp_v2r8 t1, t2, t3, t4, t5, t6, t7, fscalA, fscalB;
@@ -636,7 +630,7 @@ static void gmx_fjsp_decrement_fma_1rvec_2ptr_swizzle_v2r8(double * gmx_restrict
 }
 
 
-static void gmx_fjsp_decrement_3rvec_2ptr_swizzle_v2r8(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
+static void gmx_fjsp_decrement_3rvec_2ptr_swizzle_v2r8(double *gmx_restrict ptrA, double *gmx_restrict ptrB,
                                                        _fjsp_v2r8 x1, _fjsp_v2r8 y1, _fjsp_v2r8 z1,
                                                        _fjsp_v2r8 x2, _fjsp_v2r8 y2, _fjsp_v2r8 z2,
                                                        _fjsp_v2r8 x3, _fjsp_v2r8 y3, _fjsp_v2r8 z3)
@@ -698,7 +692,7 @@ static void gmx_fjsp_decrement_3rvec_2ptr_swizzle_v2r8(double * gmx_restrict ptr
 }
 
 
-static void gmx_fjsp_decrement_4rvec_2ptr_swizzle_v2r8(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
+static void gmx_fjsp_decrement_4rvec_2ptr_swizzle_v2r8(double *gmx_restrict ptrA, double *gmx_restrict ptrB,
                                                        _fjsp_v2r8 x1, _fjsp_v2r8 y1, _fjsp_v2r8 z1,
                                                        _fjsp_v2r8 x2, _fjsp_v2r8 y2, _fjsp_v2r8 z2,
                                                        _fjsp_v2r8 x3, _fjsp_v2r8 y3, _fjsp_v2r8 z3,
@@ -747,7 +741,7 @@ static void gmx_fjsp_decrement_4rvec_2ptr_swizzle_v2r8(double * gmx_restrict ptr
     t11 = _fjsp_sub_v2r8(t11, tJ);
     t12 = _fjsp_sub_v2r8(t12, tL);
 
-    _fjsp_storel_v2r8(ptrA,  t1);
+    _fjsp_storel_v2r8(ptrA, t1);
     _fjsp_storeh_v2r8(ptrA + 1, t1);
     _fjsp_storel_v2r8(ptrA + 2, t2);
     _fjsp_storeh_v2r8(ptrA + 3, t2);
@@ -759,7 +753,7 @@ static void gmx_fjsp_decrement_4rvec_2ptr_swizzle_v2r8(double * gmx_restrict ptr
     _fjsp_storeh_v2r8(ptrA + 9, t5);
     _fjsp_storel_v2r8(ptrA + 10, t6);
     _fjsp_storeh_v2r8(ptrA + 11, t6);
-    _fjsp_storel_v2r8(ptrB,  t7);
+    _fjsp_storel_v2r8(ptrB, t7);
     _fjsp_storeh_v2r8(ptrB + 1, t7);
     _fjsp_storel_v2r8(ptrB + 2, t8);
     _fjsp_storeh_v2r8(ptrB + 3, t8);
@@ -774,10 +768,9 @@ static void gmx_fjsp_decrement_4rvec_2ptr_swizzle_v2r8(double * gmx_restrict ptr
 }
 
 
-
 static gmx_inline void gmx_fjsp_update_iforce_1atom_swizzle_v2r8(_fjsp_v2r8 fix1, _fjsp_v2r8 fiy1, _fjsp_v2r8 fiz1,
-                                                                 double * gmx_restrict fptr,
-                                                                 double * gmx_restrict fshiftptr)
+                                                                 double *gmx_restrict fptr,
+                                                                 double *gmx_restrict fshiftptr)
 {
     __m128d t1, t2, t3, t4;
 
@@ -787,24 +780,24 @@ static gmx_inline void gmx_fjsp_update_iforce_1atom_swizzle_v2r8(_fjsp_v2r8 fix1
     fiy1 = _fjsp_unpackhi_v2r8(t1, fiy1);   /* y1 x1 */
 
     fix1 = _fjsp_add_v2r8(fix1, fiy1);
-    fiz1 = _fjsp_add_v2r8( fiz1, _fjsp_unpackhi_v2r8(fiz1, fiz1 ));
+    fiz1 = _fjsp_add_v2r8(fiz1, _fjsp_unpackhi_v2r8(fiz1, fiz1));
 
-    t4 = _fjsp_add_v2r8( _fjsp_load_v2r8(fptr), fix1 );
-    _fjsp_storel_v2r8( fptr, t4 );
-    _fjsp_storeh_v2r8( fptr + 1, t4 );
-    _fjsp_storel_v2r8( fptr + 2, _fjsp_add_v2r8( _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), fptr + 2), fiz1 ));
+    t4 = _fjsp_add_v2r8(_fjsp_load_v2r8(fptr), fix1);
+    _fjsp_storel_v2r8(fptr, t4);
+    _fjsp_storeh_v2r8(fptr + 1, t4);
+    _fjsp_storel_v2r8(fptr + 2, _fjsp_add_v2r8(_fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), fptr + 2), fiz1));
 
-    t4 = _fjsp_add_v2r8( _fjsp_load_v2r8(fshiftptr), fix1 );
-    _fjsp_storel_v2r8( fshiftptr, t4 );
-    _fjsp_storeh_v2r8( fshiftptr + 1, t4 );
-    _fjsp_storel_v2r8( fshiftptr + 2, _fjsp_add_v2r8( _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), fshiftptr + 2), fiz1 ));
+    t4 = _fjsp_add_v2r8(_fjsp_load_v2r8(fshiftptr), fix1);
+    _fjsp_storel_v2r8(fshiftptr, t4);
+    _fjsp_storeh_v2r8(fshiftptr + 1, t4);
+    _fjsp_storel_v2r8(fshiftptr + 2, _fjsp_add_v2r8(_fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), fshiftptr + 2), fiz1));
 }
 
 static gmx_inline void gmx_fjsp_update_iforce_3atom_swizzle_v2r8(_fjsp_v2r8 fix1, _fjsp_v2r8 fiy1, _fjsp_v2r8 fiz1,
                                                                  _fjsp_v2r8 fix2, _fjsp_v2r8 fiy2, _fjsp_v2r8 fiz2,
                                                                  _fjsp_v2r8 fix3, _fjsp_v2r8 fiy3, _fjsp_v2r8 fiz3,
-                                                                 double * gmx_restrict fptr,
-                                                                 double * gmx_restrict fshiftptr)
+                                                                 double *gmx_restrict fptr,
+                                                                 double *gmx_restrict fshiftptr)
 {
     __m128d t1, t2, t3, t4, t5, t6;
 
@@ -821,22 +814,22 @@ static gmx_inline void gmx_fjsp_update_iforce_3atom_swizzle_v2r8(_fjsp_v2r8 fix1
     fiy2 = _fjsp_add_v2r8(fiy2, fiz2);
 
     fix3 = _fjsp_add_v2r8(fix3, fiy3);
-    fiz3 = _fjsp_add_v2r8( fiz3, _fjsp_unpackhi_v2r8(fiz3, fiz3));
+    fiz3 = _fjsp_add_v2r8(fiz3, _fjsp_unpackhi_v2r8(fiz3, fiz3));
 
-    t3 = _fjsp_add_v2r8( _fjsp_load_v2r8(fptr), fix1 );
-    t4 = _fjsp_add_v2r8( _fjsp_load_v2r8(fptr + 2), fiz1 );
-    t5 = _fjsp_add_v2r8( _fjsp_load_v2r8(fptr + 4), fiy2 );
-    t6 = _fjsp_add_v2r8( _fjsp_load_v2r8(fptr + 6), fix3 );
+    t3 = _fjsp_add_v2r8(_fjsp_load_v2r8(fptr), fix1);
+    t4 = _fjsp_add_v2r8(_fjsp_load_v2r8(fptr + 2), fiz1);
+    t5 = _fjsp_add_v2r8(_fjsp_load_v2r8(fptr + 4), fiy2);
+    t6 = _fjsp_add_v2r8(_fjsp_load_v2r8(fptr + 6), fix3);
 
-    _fjsp_storel_v2r8( fptr,   t3 );
-    _fjsp_storeh_v2r8( fptr + 1, t3 );
-    _fjsp_storel_v2r8( fptr + 2, t4 );
-    _fjsp_storeh_v2r8( fptr + 3, t4 );
-    _fjsp_storel_v2r8( fptr + 4, t5 );
-    _fjsp_storeh_v2r8( fptr + 5, t5 );
-    _fjsp_storel_v2r8( fptr + 6, t6 );
-    _fjsp_storeh_v2r8( fptr + 7, t6 );
-    _fjsp_storel_v2r8( fptr + 8, _fjsp_add_v2r8( _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), fptr + 8), fiz3 ));
+    _fjsp_storel_v2r8(fptr, t3);
+    _fjsp_storeh_v2r8(fptr + 1, t3);
+    _fjsp_storel_v2r8(fptr + 2, t4);
+    _fjsp_storeh_v2r8(fptr + 3, t4);
+    _fjsp_storel_v2r8(fptr + 4, t5);
+    _fjsp_storeh_v2r8(fptr + 5, t5);
+    _fjsp_storel_v2r8(fptr + 6, t6);
+    _fjsp_storeh_v2r8(fptr + 7, t6);
+    _fjsp_storel_v2r8(fptr + 8, _fjsp_add_v2r8(_fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), fptr + 8), fiz3));
 
     fix1 = _fjsp_add_v2r8(fix1, fix3);
     t1   = _fjsp_shuffle_v2r8(fiz1, fiy2, GMX_FJSP_SHUFFLE2(0, 1));
@@ -846,10 +839,10 @@ static gmx_inline void gmx_fjsp_update_iforce_3atom_swizzle_v2r8(_fjsp_v2r8 fix1
     fiz1 = _fjsp_add_v2r8(fiz1, fiz3);
     fiz1 = _fjsp_add_v2r8(fiz1, t2); /* z sum */
 
-    t3 = _fjsp_add_v2r8( _fjsp_load_v2r8(fshiftptr), fix1 );
-    _fjsp_storel_v2r8( fshiftptr, t3 );
-    _fjsp_storeh_v2r8( fshiftptr + 1, t3 );
-    _fjsp_storel_v2r8( fshiftptr + 2, _fjsp_add_v2r8( _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), fshiftptr + 2), fiz1 ));
+    t3 = _fjsp_add_v2r8(_fjsp_load_v2r8(fshiftptr), fix1);
+    _fjsp_storel_v2r8(fshiftptr, t3);
+    _fjsp_storeh_v2r8(fshiftptr + 1, t3);
+    _fjsp_storel_v2r8(fshiftptr + 2, _fjsp_add_v2r8(_fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), fshiftptr + 2), fiz1));
 }
 
 
@@ -857,8 +850,8 @@ static gmx_inline void gmx_fjsp_update_iforce_4atom_swizzle_v2r8(_fjsp_v2r8 fix1
                                                                  _fjsp_v2r8 fix2, _fjsp_v2r8 fiy2, _fjsp_v2r8 fiz2,
                                                                  _fjsp_v2r8 fix3, _fjsp_v2r8 fiy3, _fjsp_v2r8 fiz3,
                                                                  _fjsp_v2r8 fix4, _fjsp_v2r8 fiy4, _fjsp_v2r8 fiz4,
-                                                                 double * gmx_restrict fptr,
-                                                                 double * gmx_restrict fshiftptr)
+                                                                 double *gmx_restrict fptr,
+                                                                 double *gmx_restrict fshiftptr)
 {
     __m128d t1, t2, t3, t4, t5, t6, t7, t8;
 
@@ -877,24 +870,24 @@ static gmx_inline void gmx_fjsp_update_iforce_4atom_swizzle_v2r8(_fjsp_v2r8 fix1
     fiz3 = _fjsp_add_v2r8(fiz3, fix4);
     fiy4 = _fjsp_add_v2r8(fiy4, fiz4);
 
-    t3 = _fjsp_add_v2r8( _fjsp_load_v2r8(fptr),    fix1 );
-    t4 = _fjsp_add_v2r8( _fjsp_load_v2r8(fptr + 2),  fiz1 );
-    t5 = _fjsp_add_v2r8( _fjsp_load_v2r8(fptr + 4),  fiy2 );
-    t6 = _fjsp_add_v2r8( _fjsp_load_v2r8(fptr + 6),  fix3 );
-    t7 = _fjsp_add_v2r8( _fjsp_load_v2r8(fptr + 8),  fiz3 );
-    t8 = _fjsp_add_v2r8( _fjsp_load_v2r8(fptr + 10), fiy4 );
-    _fjsp_storel_v2r8( fptr,    t3 );
-    _fjsp_storeh_v2r8( fptr + 1,  t3 );
-    _fjsp_storel_v2r8( fptr + 2,  t4 );
-    _fjsp_storeh_v2r8( fptr + 3,  t4 );
-    _fjsp_storel_v2r8( fptr + 4,  t5 );
-    _fjsp_storeh_v2r8( fptr + 5,  t5 );
-    _fjsp_storel_v2r8( fptr + 6,  t6 );
-    _fjsp_storeh_v2r8( fptr + 7,  t6 );
-    _fjsp_storel_v2r8( fptr + 8,  t7 );
-    _fjsp_storeh_v2r8( fptr + 9,  t7 );
-    _fjsp_storel_v2r8( fptr + 10, t8 );
-    _fjsp_storeh_v2r8( fptr + 11, t8 );
+    t3 = _fjsp_add_v2r8(_fjsp_load_v2r8(fptr), fix1);
+    t4 = _fjsp_add_v2r8(_fjsp_load_v2r8(fptr + 2), fiz1);
+    t5 = _fjsp_add_v2r8(_fjsp_load_v2r8(fptr + 4), fiy2);
+    t6 = _fjsp_add_v2r8(_fjsp_load_v2r8(fptr + 6), fix3);
+    t7 = _fjsp_add_v2r8(_fjsp_load_v2r8(fptr + 8), fiz3);
+    t8 = _fjsp_add_v2r8(_fjsp_load_v2r8(fptr + 10), fiy4);
+    _fjsp_storel_v2r8(fptr, t3);
+    _fjsp_storeh_v2r8(fptr + 1, t3);
+    _fjsp_storel_v2r8(fptr + 2, t4);
+    _fjsp_storeh_v2r8(fptr + 3, t4);
+    _fjsp_storel_v2r8(fptr + 4, t5);
+    _fjsp_storeh_v2r8(fptr + 5, t5);
+    _fjsp_storel_v2r8(fptr + 6, t6);
+    _fjsp_storeh_v2r8(fptr + 7, t6);
+    _fjsp_storel_v2r8(fptr + 8, t7);
+    _fjsp_storeh_v2r8(fptr + 9, t7);
+    _fjsp_storel_v2r8(fptr + 10, t8);
+    _fjsp_storeh_v2r8(fptr + 11, t8);
 
     t1   = _fjsp_shuffle_v2r8(fiz1, fiy2, GMX_FJSP_SHUFFLE2(0, 1));
     fix1 = _fjsp_add_v2r8(fix1, t1);
@@ -906,22 +899,21 @@ static gmx_inline void gmx_fjsp_update_iforce_4atom_swizzle_v2r8(_fjsp_v2r8 fix1
     fiz3 = _fjsp_add_v2r8(fiz3, _fjsp_unpackhi_v2r8(fiy4, fiy4));
     fiz1 = _fjsp_add_v2r8(fiz1, fiz3); /* z sum */
 
-    t3 = _fjsp_add_v2r8( _fjsp_load_v2r8(fshiftptr), fix1 );
-    _fjsp_storel_v2r8( fshiftptr, t3 );
-    _fjsp_storeh_v2r8( fshiftptr + 1, t3 );
-    _fjsp_storel_v2r8( fshiftptr + 2, _fjsp_add_v2r8( _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), fshiftptr + 2), fiz1 ));
+    t3 = _fjsp_add_v2r8(_fjsp_load_v2r8(fshiftptr), fix1);
+    _fjsp_storel_v2r8(fshiftptr, t3);
+    _fjsp_storeh_v2r8(fshiftptr + 1, t3);
+    _fjsp_storel_v2r8(fshiftptr + 2, _fjsp_add_v2r8(_fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), fshiftptr + 2), fiz1));
 }
 
 
-
-static gmx_inline void gmx_fjsp_update_1pot_v2r8(_fjsp_v2r8 pot1, double * gmx_restrict ptrA)
+static gmx_inline void gmx_fjsp_update_1pot_v2r8(_fjsp_v2r8 pot1, double *gmx_restrict ptrA)
 {
     pot1 = _fjsp_add_v2r8(pot1, _fjsp_unpackhi_v2r8(pot1, pot1));
     _fjsp_storel_v2r8(ptrA, _fjsp_add_v2r8(pot1, _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), ptrA)));
 }
 
-static gmx_inline void gmx_fjsp_update_2pot_v2r8(_fjsp_v2r8 pot1, double * gmx_restrict ptrA,
-                                                 _fjsp_v2r8 pot2, double * gmx_restrict ptrB)
+static gmx_inline void gmx_fjsp_update_2pot_v2r8(_fjsp_v2r8 pot1, double *gmx_restrict ptrA,
+                                                 _fjsp_v2r8 pot2, double *gmx_restrict ptrB)
 {
     GMX_FJSP_TRANSPOSE2_V2R8(pot1, pot2);
     pot1 = _fjsp_add_v2r8(pot1, pot2);

@@ -135,14 +135,11 @@ typedef struct gmx_sel_lexer_t
  * and this file is included from scanner.l,
  * we cannot have them here as parameter names... */
 /** Internal function for cases where several tokens need to be returned. */
-int
-_gmx_sel_lexer_process_pending(YYSTYPE *, YYLTYPE *, gmx_sel_lexer_t *state);
+int _gmx_sel_lexer_process_pending(YYSTYPE *, YYLTYPE *, gmx_sel_lexer_t *state);
 /** Internal function that processes identifier tokens. */
-int
-    _gmx_sel_lexer_process_identifier(YYSTYPE *, YYLTYPE *, char *, size_t,
-                                      gmx_sel_lexer_t * state);
+int _gmx_sel_lexer_process_identifier(YYSTYPE *, YYLTYPE *, char *, size_t,
+                                      gmx_sel_lexer_t *state);
 /** Internal function to add a token to the pretty-printed selection text. */
-void
-_gmx_sel_lexer_add_token(YYLTYPE *, const char *str, int len, gmx_sel_lexer_t *state);
+void _gmx_sel_lexer_add_token(YYLTYPE *, const char *str, int len, gmx_sel_lexer_t *state);
 
 #endif

@@ -67,15 +67,15 @@ real calc_similar_ind(gmx_bool bRho, int nind, int *index, real mass[],
         {
             i = j;
         }
-        m   = mass[i];
+        m = mass[i];
         tm += m;
         for (d = 0; d < DIM; d++)
         {
-            xd  = x[i][d] - xp[i][d];
+            xd = x[i][d] - xp[i][d];
             rd += m * gmx::square(xd);
             if (bRho)
             {
-                xs  = x[i][d] + xp[i][d];
+                xs = x[i][d] + xp[i][d];
                 rs += m * gmx::square(xs);
             }
         }
@@ -154,7 +154,7 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matr
                 xpc = xp[n][c];
                 for (r = 0; (r < ndim); r++)
                 {
-                    xnr      = x[n][r];
+                    xnr = x[n][r];
                     u[c][r] += mn * xnr * xpc;
                 }
             }
@@ -228,9 +228,9 @@ void calc_fit_R(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x, matr
     {
         /* Calculate the last eigenvector from the first one */
         vh[1][XX] = -vh[0][YY];
-        vh[1][YY] =  vh[0][XX];
+        vh[1][YY] = vh[0][XX];
         vk[1][XX] = -vk[0][YY];
-        vk[1][YY] =  vk[0][XX];
+        vk[1][YY] = vk[0][XX];
     }
 
     /* determine R */

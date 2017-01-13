@@ -67,9 +67,9 @@ class DefaultProgramContext : public IProgramContext
 public:
     DefaultProgramContext() {}
 
-    virtual const char *programName() const { return "GROMACS"; }
-    virtual const char *displayName() const { return "GROMACS"; }
-    virtual const char *fullBinaryPath() const { return ""; }
+    virtual const char *           programName() const { return "GROMACS"; }
+    virtual const char *           displayName() const { return "GROMACS"; }
+    virtual const char *           fullBinaryPath() const { return ""; }
     virtual InstallationPrefixInfo installationPrefix() const
     {
         return InstallationPrefixInfo("", false);
@@ -84,7 +84,7 @@ const DefaultProgramContext g_defaultContext;
 
 //! \}
 
-}   // namespace
+} // namespace
 
 const IProgramContext &getProgramContext()
 {

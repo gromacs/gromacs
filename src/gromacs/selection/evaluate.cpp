@@ -353,7 +353,7 @@ void _gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc)
     }
     else
     {
-        fprintf(fp, "%p", (void*)(evalfunc));
+        fprintf(fp, "%p", (void *)(evalfunc));
     }
 }
 
@@ -515,7 +515,7 @@ void _gmx_sel_evaluate_children(gmx_sel_evaluate_t *                    data,
 
 void _gmx_sel_evaluate_root(gmx_sel_evaluate_t *                    data,
                             const gmx::SelectionTreeElementPointer &sel,
-                            gmx_ana_index_t                         * /* g */)
+                            gmx_ana_index_t * /* g */)
 {
     if (sel->u.cgrp.isize == 0 || !sel->child->evaluate)
     {
@@ -526,7 +526,7 @@ void _gmx_sel_evaluate_root(gmx_sel_evaluate_t *                    data,
                          sel->u.cgrp.isize < 0 ? nullptr : &sel->u.cgrp);
 }
 
-void _gmx_sel_evaluate_static(gmx_sel_evaluate_t                      * /* data */,
+void _gmx_sel_evaluate_static(gmx_sel_evaluate_t * /* data */,
                               const gmx::SelectionTreeElementPointer &sel,
                               gmx_ana_index_t *                       g)
 {
@@ -1140,9 +1140,9 @@ void _gmx_sel_evaluate_or(gmx_sel_evaluate_t *                    data,
             gmx_ana_index_partition(&tmp, &tmp2, &tmp, child->v.u.g);
         }
         sel->v.u.g->isize += tmp.isize;
-        tmp.isize          = tmp2.isize;
-        tmp.index          = tmp2.index;
-        child              = child->next;
+        tmp.isize = tmp2.isize;
+        tmp.index = tmp2.index;
+        child     = child->next;
     }
     gmx_ana_index_sort(sel->v.u.g);
 }
@@ -1199,12 +1199,24 @@ void _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *                    data,
         }
         switch (sel->u.arith.type)
         {
-            case ARITH_PLUS:    val = lval + rval;     break;
-            case ARITH_MINUS:   val = lval - rval;     break;
-            case ARITH_NEG:     val = -lval;           break;
-            case ARITH_MULT:    val = lval * rval;     break;
-            case ARITH_DIV:     val = lval / rval;     break;
-            case ARITH_EXP:     val = pow(lval, rval); break;
+            case ARITH_PLUS:
+                val = lval + rval;
+                break;
+            case ARITH_MINUS:
+                val = lval - rval;
+                break;
+            case ARITH_NEG:
+                val = -lval;
+                break;
+            case ARITH_MULT:
+                val = lval * rval;
+                break;
+            case ARITH_DIV:
+                val = lval / rval;
+                break;
+            case ARITH_EXP:
+                val = pow(lval, rval);
+                break;
         }
         sel->v.u.r[i] = val;
         if (!(left->flags & SEL_SINGLEVAL))

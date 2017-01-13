@@ -66,19 +66,19 @@
 #include "gromacs/utility/smalloc.h"
 
 #define MAXNAME 32
-#define OPENDIR     '[' /* starting sign for directive		*/
-#define CLOSEDIR    ']' /* ending sign for directive		*/
+#define OPENDIR '['  /* starting sign for directive		*/
+#define CLOSEDIR ']' /* ending sign for directive		*/
 
 typedef struct
 {
-    char     atomtype[MAXNAME];    /* Type for the XH3/XH2 atom */
-    gmx_bool isplanar;             /* If true, the atomtype above and the three connected
+    char     atomtype[MAXNAME];      /* Type for the XH3/XH2 atom */
+    gmx_bool isplanar;               /* If true, the atomtype above and the three connected
                                     * ones are in a planar geometry. The two next entries
                                     * are undefined in that case
                                     */
-    int  nhydrogens;               /* number of connected hydrogens */
-    char nextheavytype[MAXNAME];   /* Type for the heavy atom bonded to XH2/XH3 */
-    char dummymass[MAXNAME];       /* The type of MNH* or MCH3* dummy mass to use */
+    int      nhydrogens;             /* number of connected hydrogens */
+    char     nextheavytype[MAXNAME]; /* Type for the heavy atom bonded to XH2/XH3 */
+    char     dummymass[MAXNAME];     /* The type of MNH* or MCH3* dummy mass to use */
 } t_vsiteconf;
 
 
@@ -97,21 +97,29 @@ typedef struct
         char  atom1[MAXNAME];
         char  atom2[MAXNAME];
         float value;
-    } *bond; /* list of bonds */
+    } * bond; /* list of bonds */
     struct vsitetop_angle
     {
         char  atom1[MAXNAME];
         char  atom2[MAXNAME];
         char  atom3[MAXNAME];
         float value;
-    } *angle; /* list of angles */
+    } * angle; /* list of angles */
 } t_vsitetop;
 
 
 enum
 {
-    DDB_CH3, DDB_NH3, DDB_NH2, DDB_PHE, DDB_TYR,
-    DDB_TRP, DDB_HISA, DDB_HISB, DDB_HISH, DDB_DIR_NR
+    DDB_CH3,
+    DDB_NH3,
+    DDB_NH2,
+    DDB_PHE,
+    DDB_TYR,
+    DDB_TRP,
+    DDB_HISA,
+    DDB_HISB,
+    DDB_HISH,
+    DDB_DIR_NR
 };
 
 typedef char t_dirname[STRLEN];
@@ -150,7 +158,7 @@ static int ddb_name2dir(char *name)
 }
 
 
-static void read_vsite_database(const char *ddbname,
+static void read_vsite_database(const char *  ddbname,
                                 t_vsiteconf **pvsiteconflist, int *nvsiteconf,
                                 t_vsitetop **pvsitetoplist, int *nvsitetop)
 {
@@ -197,11 +205,11 @@ static void read_vsite_database(const char *ddbname,
             if (pline[0] == OPENDIR)
             {
                 strncpy(dirstr, pline + 1, STRLEN - 2);
-                if ((ch = strchr (dirstr, CLOSEDIR)) != nullptr)
+                if ((ch = strchr(dirstr, CLOSEDIR)) != nullptr)
                 {
                     (*ch) = 0;
                 }
-                trim (dirstr);
+                trim(dirstr);
 
                 if (!gmx_strcasecmp(dirstr, "HID")
                     || !gmx_strcasecmp(dirstr, "HISD"))
@@ -373,7 +381,6 @@ static char *get_dummymass_name(t_vsiteconf vsiteconflist[], int nvsiteconf, cha
 }
 
 
-
 static real get_ddb_bond(t_vsitetop *vsitetop, int nvsitetop,
                          const char res[],
                          const char atom1[], const char atom2[])
@@ -391,8 +398,8 @@ static real get_ddb_bond(t_vsitetop *vsitetop, int nvsitetop,
     }
     j = 0;
     while (j < vsitetop[i].nbonds
-           && ( strcmp(atom1, vsitetop[i].bond[j].atom1) || strcmp(atom2, vsitetop[i].bond[j].atom2))
-           && ( strcmp(atom2, vsitetop[i].bond[j].atom1) || strcmp(atom1, vsitetop[i].bond[j].atom2)))
+           && (strcmp(atom1, vsitetop[i].bond[j].atom1) || strcmp(atom2, vsitetop[i].bond[j].atom2))
+           && (strcmp(atom2, vsitetop[i].bond[j].atom1) || strcmp(atom1, vsitetop[i].bond[j].atom2)))
     {
         j++;
     }
@@ -422,12 +429,12 @@ static real get_ddb_angle(t_vsitetop *vsitetop, int nvsitetop,
     }
     j = 0;
     while (j < vsitetop[i].nangles
-           && ( strcmp(atom1, vsitetop[i].angle[j].atom1)
-                || strcmp(atom2, vsitetop[i].angle[j].atom2)
-                || strcmp(atom3, vsitetop[i].angle[j].atom3))
-           && ( strcmp(atom3, vsitetop[i].angle[j].atom1)
-                || strcmp(atom2, vsitetop[i].angle[j].atom2)
-                || strcmp(atom1, vsitetop[i].angle[j].atom3)))
+           && (strcmp(atom1, vsitetop[i].angle[j].atom1)
+               || strcmp(atom2, vsitetop[i].angle[j].atom2)
+               || strcmp(atom3, vsitetop[i].angle[j].atom3))
+           && (strcmp(atom3, vsitetop[i].angle[j].atom1)
+               || strcmp(atom2, vsitetop[i].angle[j].atom2)
+               || strcmp(atom1, vsitetop[i].angle[j].atom3)))
     {
         j++;
     }
@@ -536,7 +543,7 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
         /* get type from rtp */
         rtpp   = get_restp(*(at->resinfo[at->atom[atom].resind].name), nrtp, rtp);
         bNterm = gmx_residuetype_is_protein(rt, *(at->resinfo[at->atom[atom].resind].name))
-            && (at->atom[atom].resind == 0);
+                 && (at->atom[atom].resind == 0);
         j    = search_jtype(rtpp, *(at->atomname[atom]), bNterm);
         type = rtpp->atom[j].type;
     }
@@ -574,7 +581,7 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
         /* get mass from rtp */
         rtpp   = get_restp(*(at->resinfo[at->atom[atom].resind].name), nrtp, rtp);
         bNterm = gmx_residuetype_is_protein(rt, *(at->resinfo[at->atom[atom].resind].name))
-            && (at->atom[atom].resind == 0);
+                 && (at->atom[atom].resind == 0);
         j    = search_jtype(rtpp, *(at->atomname[atom]), bNterm);
         mass = rtpp->atom[j].m;
     }
@@ -583,8 +590,7 @@ static real get_amass(int atom, t_atoms *at, int nrtp, t_restp rtp[],
 
 static void my_add_param(t_params *plist, int ai, int aj, real b)
 {
-    static real c[MAXFORCEPARAM] =
-    { NOTSET, NOTSET, NOTSET, NOTSET, NOTSET, NOTSET };
+    static real c[MAXFORCEPARAM] = { NOTSET, NOTSET, NOTSET, NOTSET, NOTSET, NOTSET };
 
     c[0] = b;
     add_param(plist, ai, aj, c, nullptr);
@@ -612,10 +618,12 @@ static void add_vsites(t_params plist[], int vsite_type[],
         vsite_type[Hatoms[i]] = ftype = abs(ftype);
         if (ftype == F_BONDS)
         {
-            if ( (nrheavies != 1) && (nrHatoms != 1) )
+            if ((nrheavies != 1) && (nrHatoms != 1))
             {
-                gmx_fatal(FARGS, "cannot make constraint in add_vsites for %d heavy "
-                          "atoms and %d hydrogen atoms", nrheavies, nrHatoms);
+                gmx_fatal(FARGS,
+                          "cannot make constraint in add_vsites for %d heavy "
+                          "atoms and %d hydrogen atoms",
+                          nrheavies, nrHatoms);
             }
             my_add_param(&(plist[F_CONSTRNC]), Hatoms[i], heavies[0], NOTSET);
         }
@@ -655,7 +663,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
                             {
                                 other = plist[F_BONDS].param[j].ai();
                             }
-                            if ( (other != NOTSET) && (other != Heavy) )
+                            if ((other != NOTSET) && (other != Heavy))
                             {
                                 moreheavy = other;
                             }
@@ -693,9 +701,9 @@ static void add_vsites(t_params plist[], int vsite_type[],
 
 /* cosine rule: a^2 = b^2 + c^2 - 2 b c cos(alpha) */
 /* get a^2 when a, b and alpha are given: */
-#define cosrule(b, c, alpha) ( gmx::square(b) + gmx::square(c) - 2 * b * c * std::cos(alpha) )
+#define cosrule(b, c, alpha) (gmx::square(b) + gmx::square(c) - 2 * b * c * std::cos(alpha))
 /* get cos(alpha) when a, b and c are given: */
-#define acosrule(a, b, c) ( (gmx::square(b) + gmx::square(c) - gmx::square(a)) / (2 * b * c) )
+#define acosrule(a, b, c) ((gmx::square(b) + gmx::square(c) - gmx::square(a)) / (2 * b * c))
 
 static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
                             int nrfound, int *ats, real bond_cc, real bond_ch,
@@ -704,8 +712,18 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
     enum
     {
-        atCG, atCD1, atHD1, atCD2, atHD2, atCE1, atHE1, atCE2, atHE2,
-        atCZ, atHZ, atNR
+        atCG,
+        atCD1,
+        atHD1,
+        atCD2,
+        atHD2,
+        atCE1,
+        atHE1,
+        atCE2,
+        atHE2,
+        atCZ,
+        atHZ,
+        atNR
     };
 
     int  i, nvsite;
@@ -724,7 +742,7 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
     }
 
     /* constraints between CG, CE1 and CE2: */
-    dCGCE = std::sqrt( cosrule(bond_cc, bond_cc, ANGLE_6RING) );
+    dCGCE = std::sqrt(cosrule(bond_cc, bond_cc, ANGLE_6RING));
     my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atCE1], dCGCE);
     my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atCE2], dCGCE);
     my_add_param(&(plist[F_CONSTRNC]), ats[atCE1], ats[atCE2], dCGCE);
@@ -732,13 +750,13 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
     /* rest will be vsite3 */
     mtot   = 0;
     nvsite = 0;
-    for (i = 0; i <  (bDoZ ? atNR : atHZ); i++)
+    for (i = 0; i < (bDoZ ? atNR : atHZ); i++)
     {
         mtot += at->atom[ats[i]].m;
-        if (i != atCG && i != atCE1 && i != atCE2 && (bDoZ || (i != atHZ && i != atCZ) ) )
+        if (i != atCG && i != atCE1 && i != atCE2 && (bDoZ || (i != atHZ && i != atCZ)))
         {
-            at->atom[ats[i]].m    = at->atom[ats[i]].mB = 0;
-            (*vsite_type)[ats[i]] = F_VSITE3;
+            at->atom[ats[i]].m = at->atom[ats[i]].mB = 0;
+            (*vsite_type)[ats[i]]                    = F_VSITE3;
             nvsite++;
         }
     }
@@ -748,16 +766,16 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
      */
     xCG = -bond_cc + bond_cc * std::cos(ANGLE_6RING);
 
-    mG                     = at->atom[ats[atCG]].m = at->atom[ats[atCG]].mB = xcom * mtot / xCG;
-    mrest                  = mtot - mG;
-    at->atom[ats[atCE1]].m = at->atom[ats[atCE1]].mB
-                           = at->atom[ats[atCE2]].m = at->atom[ats[atCE2]].mB = mrest / 2;
+    mG = at->atom[ats[atCG]].m = at->atom[ats[atCG]].mB = xcom * mtot / xCG;
+    mrest                                               = mtot - mG;
+    at->atom[ats[atCE1]].m                              = at->atom[ats[atCE1]].mB
+            = at->atom[ats[atCE2]].m = at->atom[ats[atCE2]].mB = mrest / 2;
 
     /* vsite3 construction: r_d = r_i + a r_ij + b r_ik */
-    tmp1  = dCGCE * std::sin(ANGLE_6RING * 0.5);
-    tmp2  = bond_cc * std::cos(0.5 * ANGLE_6RING) + tmp1;
+    tmp1 = dCGCE * std::sin(ANGLE_6RING * 0.5);
+    tmp2 = bond_cc * std::cos(0.5 * ANGLE_6RING) + tmp1;
     tmp1 *= 2;
-    a     = b = -bond_ch / tmp1;
+    a = b = -bond_ch / tmp1;
     /* HE1 and HE2: */
     add_vsite3_param(&plist[F_VSITE3],
                      ats[atHE1], ats[atCE1], ats[atCE2], ats[atCG], a, b);
@@ -775,7 +793,7 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
                          ats[atCZ], ats[atCG], ats[atCE1], ats[atCE2], a, b);
     }
     /* HD1, HD2 and HZ: */
-    a = b = ( bond_ch + tmp2 ) / tmp1;
+    a = b = (bond_ch + tmp2) / tmp1;
     add_vsite3_param(&plist[F_VSITE3],
                      ats[atHD1], ats[atCE2], ats[atCE1], ats[atCG], a, b);
     add_vsite3_param(&plist[F_VSITE3],
@@ -798,8 +816,18 @@ static int gen_vsites_phe(t_atoms *at, int *vsite_type[], t_params plist[],
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
     enum
     {
-        atCG, atCD1, atHD1, atCD2, atHD2, atCE1, atHE1, atCE2, atHE2,
-        atCZ, atHZ, atNR
+        atCG,
+        atCD1,
+        atHD1,
+        atCD2,
+        atHD2,
+        atCE1,
+        atHE1,
+        atCE2,
+        atHE2,
+        atCZ,
+        atHZ,
+        atNR
     };
     real x[atNR];
     /* Aromatic rings have 6-fold symmetry, so we only need one bond length.
@@ -844,8 +872,8 @@ static void calc_vsite3_param(real xd, real yd, real xi, real yi, real xj, real 
     dx_ik = xk - xi;
     dy_ik = yk - yi;
 
-    *a = ( (xd - xi) * dy_ik - dx_ik * (yd - yi) ) / (dx_ij * dy_ik - dx_ik * dy_ij);
-    *b = ( yd - yi - (*a) * dy_ij ) / dy_ik;
+    *a = ((xd - xi) * dy_ik - dx_ik * (yd - yi)) / (dx_ij * dy_ik - dx_ik * dy_ij);
+    *b = (yd - yi - (*a) * dy_ij) / dy_ik;
 }
 
 
@@ -861,15 +889,30 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
     enum
     {
-        atCB,  atCG,  atCD1, atHD1, atCD2, atNE1, atHE1, atCE2, atCE3, atHE3,
-        atCZ2, atHZ2, atCZ3, atHZ3, atCH2, atHH2, atNR
+        atCB,
+        atCG,
+        atCD1,
+        atHD1,
+        atCD2,
+        atNE1,
+        atHE1,
+        atCE2,
+        atCE3,
+        atHE3,
+        atCZ2,
+        atHZ2,
+        atCZ3,
+        atHZ3,
+        atCH2,
+        atHH2,
+        atNR
     };
     /* weights for determining the COM's of both rings (M1 and M2): */
     real mw[NMASS][atNR] = {
-        {   0,     1,     1,     1,   0.5,     1,     1,   0.5,     0,     0,
-            0,     0,     0,     0,     0,     0 },
-        {   0,     0,     0,     0,   0.5,     0,     0,   0.5,     1,     1,
-            1,     1,     1,     1,     1,     1 }
+        { 0, 1, 1, 1, 0.5, 1, 1, 0.5, 0, 0,
+          0, 0, 0, 0, 0, 0 },
+        { 0, 0, 0, 0, 0.5, 0, 0, 0.5, 1, 1,
+          1, 1, 1, 1, 1, 1 }
     };
 
     real xi[atNR], yi[atNR];
@@ -938,10 +981,10 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
     xi[atCE2] = 0;
     yi[atCE2] = 0.5 * b_CD2_CE2;
 
-    xi[atNE1] = -b_NE1_CE2*std::sin(a_NE1_CE2_CD2);
+    xi[atNE1] = -b_NE1_CE2 * std::sin(a_NE1_CE2_CD2);
     yi[atNE1] = yi[atCE2] - b_NE1_CE2 * std::cos(a_NE1_CE2_CD2);
 
-    xi[atCG] = -b_CG_CD2*std::sin(a_CE2_CD2_CG);
+    xi[atCG] = -b_CG_CD2 * std::sin(a_CE2_CD2_CG);
     yi[atCG] = yi[atCD2] + b_CG_CD2 * std::cos(a_CE2_CD2_CG);
 
     alpha    = a_CE2_CD2_CG + M_PI - a_CB_CG_CD2;
@@ -1002,7 +1045,7 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
         {
             for (j = 0; j < NMASS; j++)
             {
-                mM[j]   += mw[j][i] * at->atom[ats[i]].m;
+                mM[j] += mw[j][i] * at->atom[ats[i]].m;
                 xcom[j] += xi[i] * mw[j][i] * at->atom[ats[i]].m;
                 ycom[j] += yi[i] * mw[j][i] * at->atom[ats[i]].m;
             }
@@ -1068,16 +1111,16 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
     for (j = 0; j < NMASS; j++)
     {
         sprintf(name, "MW%d", j + 1);
-        (*newatomname)  [atM[j]]         = put_symtab(symtab, name);
-        (*newatom)      [atM[j]].m       = (*newatom)[atM[j]].mB    = mM[j];
-        (*newatom)      [atM[j]].q       = (*newatom)[atM[j]].qB    = 0.0;
-        (*newatom)      [atM[j]].type    = (*newatom)[atM[j]].typeB = tpM;
-        (*newatom)      [atM[j]].ptype   = eptAtom;
-        (*newatom)      [atM[j]].resind  = at->atom[i0].resind;
-        (*newatom)      [atM[j]].elem[0] = 'M';
-        (*newatom)      [atM[j]].elem[1] = '\0';
-        (*newvsite_type)[atM[j]]         = NOTSET;
-        (*newcgnr)      [atM[j]]         = (*cgnr)[i0];
+        (*newatomname)[atM[j]] = put_symtab(symtab, name);
+        (*newatom)[atM[j]].m = (*newatom)[atM[j]].mB = mM[j];
+        (*newatom)[atM[j]].q = (*newatom)[atM[j]].qB = 0.0;
+        (*newatom)[atM[j]].type = (*newatom)[atM[j]].typeB = tpM;
+        (*newatom)[atM[j]].ptype                           = eptAtom;
+        (*newatom)[atM[j]].resind                          = at->atom[i0].resind;
+        (*newatom)[atM[j]].elem[0]                         = 'M';
+        (*newatom)[atM[j]].elem[1]                         = '\0';
+        (*newvsite_type)[atM[j]]                           = NOTSET;
+        (*newcgnr)[atM[j]]                                 = (*cgnr)[i0];
     }
     /* renumber cgnr: */
     for (i = i0; i < at->nr; i++)
@@ -1087,11 +1130,11 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
 
     /* constraints between CB, M1 and M2 */
     /* 'add_shift' says which atoms won't be renumbered afterwards */
-    dCBM1 = std::hypot( xcom[0] - xi[atCB], ycom[0] - yi[atCB] );
-    dM1M2 = std::hypot( xcom[0] - xcom[1], ycom[0] - ycom[1] );
-    dCBM2 = std::hypot( xcom[1] - xi[atCB], ycom[1] - yi[atCB] );
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCB],       add_shift + atM[0], dCBM1);
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCB],       add_shift + atM[1], dCBM2);
+    dCBM1 = std::hypot(xcom[0] - xi[atCB], ycom[0] - yi[atCB]);
+    dM1M2 = std::hypot(xcom[0] - xcom[1], ycom[0] - ycom[1]);
+    dCBM2 = std::hypot(xcom[1] - xi[atCB], ycom[1] - yi[atCB]);
+    my_add_param(&(plist[F_CONSTRNC]), ats[atCB], add_shift + atM[0], dCBM1);
+    my_add_param(&(plist[F_CONSTRNC]), ats[atCB], add_shift + atM[1], dCBM2);
     my_add_param(&(plist[F_CONSTRNC]), add_shift + atM[0], add_shift + atM[1], dM1M2);
 
     /* rest will be vsite3 */
@@ -1100,8 +1143,8 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
     {
         if (i != atCB)
         {
-            at->atom[ats[i]].m    = at->atom[ats[i]].mB = 0;
-            (*vsite_type)[ats[i]] = F_VSITE3;
+            at->atom[ats[i]].m = at->atom[ats[i]].mB = 0;
+            (*vsite_type)[ats[i]]                    = F_VSITE3;
             nvsite++;
         }
     }
@@ -1110,7 +1153,7 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
        r_d = r_M1 + a r_M1_M2 + b r_M1_CB */
     for (i = 0; i < atNR; i++)
     {
-        if ( (*vsite_type)[ats[i]] == F_VSITE3)
+        if ((*vsite_type)[ats[i]] == F_VSITE3)
         {
             calc_vsite3_param(xi[i], yi[i], xcom[0], ycom[0], xcom[1], ycom[1], xi[atCB], yi[atCB], &a, &b);
             add_vsite3_param(&plist[F_VSITE3],
@@ -1141,8 +1184,19 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
     enum
     {
-        atCG, atCD1, atHD1, atCD2, atHD2, atCE1, atHE1, atCE2, atHE2,
-        atCZ, atOH, atHH, atNR
+        atCG,
+        atCD1,
+        atHD1,
+        atCD2,
+        atHD2,
+        atCE1,
+        atHE1,
+        atCE2,
+        atHE2,
+        atCZ,
+        atOH,
+        atHH,
+        atNR
     };
     real xi[atNR];
     /* CG, CE1, CE2 (as in general 6-ring) and OH and HH stay,
@@ -1188,14 +1242,14 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
 
     /* then construct CZ from the 2nd triangle */
     /* vsite3 construction: r_d = r_i + a r_ij + b r_ik */
-    a = b = 0.5 * bond_co / ( bond_co - bond_cc * std::cos(ANGLE_6RING) );
+    a = b = 0.5 * bond_co / (bond_co - bond_cc * std::cos(ANGLE_6RING));
     add_vsite3_param(&plist[F_VSITE3],
                      ats[atCZ], ats[atOH], ats[atCE1], ats[atCE2], a, b);
     at->atom[ats[atCZ]].m = at->atom[ats[atCZ]].mB = 0;
 
     /* constraints between CE1, CE2 and OH */
-    dCGCE = std::sqrt( cosrule(bond_cc, bond_cc, ANGLE_6RING) );
-    dCEOH = std::sqrt( cosrule(bond_cc, bond_co, ANGLE_6RING) );
+    dCGCE = std::sqrt(cosrule(bond_cc, bond_cc, ANGLE_6RING));
+    dCEOH = std::sqrt(cosrule(bond_cc, bond_co, ANGLE_6RING));
     my_add_param(&(plist[F_CONSTRNC]), ats[atCE1], ats[atOH], dCEOH);
     my_add_param(&(plist[F_CONSTRNC]), ats[atCE2], ats[atOH], dCEOH);
 
@@ -1209,11 +1263,11 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
      * apply to the HH constructed atom and not directly on the virtual mass.
      */
 
-    vdist                   = 2.0 * bond_oh;
-    mM                      = at->atom[ats[atHH]].m / 2.0;
-    at->atom[ats[atOH]].m  += mM; /* add 1/2 of original H mass */
+    vdist = 2.0 * bond_oh;
+    mM    = at->atom[ats[atHH]].m / 2.0;
+    at->atom[ats[atOH]].m += mM;  /* add 1/2 of original H mass */
     at->atom[ats[atOH]].mB += mM; /* add 1/2 of original H mass */
-    at->atom[ats[atHH]].m   = at->atom[ats[atHH]].mB = 0;
+    at->atom[ats[atHH]].m = at->atom[ats[atHH]].mB = 0;
 
     /* get dummy mass type */
     tpM = vsite_nm2type("MW", atype);
@@ -1242,16 +1296,16 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     rvec_add(r1, x[ats[atHH]], (*newx)[atM]);
 
     strcpy(name, "MW1");
-    (*newatomname)  [atM]         = put_symtab(symtab, name);
-    (*newatom)      [atM].m       = (*newatom)[atM].mB    = mM;
-    (*newatom)      [atM].q       = (*newatom)[atM].qB    = 0.0;
-    (*newatom)      [atM].type    = (*newatom)[atM].typeB = tpM;
-    (*newatom)      [atM].ptype   = eptAtom;
-    (*newatom)      [atM].resind  = at->atom[i0].resind;
-    (*newatom)      [atM].elem[0] = 'M';
-    (*newatom)      [atM].elem[1] = '\0';
-    (*newvsite_type)[atM]         = NOTSET;
-    (*newcgnr)      [atM]         = (*cgnr)[i0];
+    (*newatomname)[atM] = put_symtab(symtab, name);
+    (*newatom)[atM].m = (*newatom)[atM].mB = mM;
+    (*newatom)[atM].q = (*newatom)[atM].qB = 0.0;
+    (*newatom)[atM].type = (*newatom)[atM].typeB = tpM;
+    (*newatom)[atM].ptype                        = eptAtom;
+    (*newatom)[atM].resind                       = at->atom[i0].resind;
+    (*newatom)[atM].elem[0]                      = 'M';
+    (*newatom)[atM].elem[1]                      = '\0';
+    (*newvsite_type)[atM]                        = NOTSET;
+    (*newcgnr)[atM]                              = (*cgnr)[i0];
     /* renumber cgnr: */
     for (i = i0; i < at->nr; i++)
     {
@@ -1262,7 +1316,7 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     nvsite++;
     /* assume we also want the COH angle constrained: */
     tmp1 = bond_cc * std::cos(0.5 * ANGLE_6RING) + dCGCE * std::sin(ANGLE_6RING * 0.5) + bond_co;
-    dCGM = std::sqrt( cosrule(tmp1, vdist, angle_coh) );
+    dCGM = std::sqrt(cosrule(tmp1, vdist, angle_coh));
     my_add_param(&(plist[F_CONSTRNC]), ats[atCG], add_shift + atM, dCGM);
     my_add_param(&(plist[F_CONSTRNC]), ats[atOH], add_shift + atM, vdist);
 
@@ -1288,7 +1342,16 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
     enum
     {
-        atCG, atND1, atHD1, atCD2, atHD2, atCE1, atHE1, atNE2, atHE2, atNR
+        atCG,
+        atND1,
+        atHD1,
+        atCD2,
+        atHD2,
+        atCE1,
+        atHE1,
+        atNE2,
+        atHE2,
+        atNR
     };
     real x[atNR], y[atNR];
 
@@ -1304,8 +1367,8 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     }
 
     /* avoid warnings about uninitialized variables */
-    b_ND1_HD1           = b_NE2_HE2 = b_CE1_HE1 = b_CD2_HD2 = a_NE2_CE1_HE1
-                        = a_NE2_CD2_HD2 = a_CE1_ND1_HD1 = a_CE1_NE2_HE2 = 0;
+    b_ND1_HD1 = b_NE2_HE2 = b_CE1_HE1 = b_CD2_HD2 = a_NE2_CE1_HE1
+            = a_NE2_CD2_HD2 = a_CE1_ND1_HD1 = a_CE1_NE2_HE2 = 0;
 
     if (ats[atHD1] != NOTSET)
     {
@@ -1356,8 +1419,8 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     }
 
     /* constraints between CG, CE1 and NE1 */
-    dCGCE1 = std::sqrt( cosrule(b_CG_ND1, b_ND1_CE1, a_CG_ND1_CE1) );
-    dCGNE2 = std::sqrt( cosrule(b_CG_CD2, b_CD2_NE2, a_CG_CD2_NE2) );
+    dCGCE1 = std::sqrt(cosrule(b_CG_ND1, b_ND1_CE1, a_CG_ND1_CE1));
+    dCGNE2 = std::sqrt(cosrule(b_CG_CD2, b_CD2_NE2, a_CG_CD2_NE2));
 
     my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atCE1], dCGCE1);
     my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atNE2], dCGNE2);
@@ -1383,10 +1446,10 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
 
     /* calculate ND1 and CD2 positions from CE1 and NE2 */
 
-    x[atND1] = -b_ND1_CE1*std::sin(a_ND1_CE1_NE2);
+    x[atND1] = -b_ND1_CE1 * std::sin(a_ND1_CE1_NE2);
     y[atND1] = y[atCE1] - b_ND1_CE1 * std::cos(a_ND1_CE1_NE2);
 
-    x[atCD2] = -b_CD2_NE2*std::sin(a_CE1_NE2_CD2);
+    x[atCD2] = -b_CD2_NE2 * std::sin(a_CE1_NE2_CD2);
     y[atCD2] = y[atNE2] + b_CD2_NE2 * std::cos(a_CE1_NE2_CD2);
 
     /* And finally the hydrogen positions */
@@ -1419,8 +1482,8 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     /* calc center-of-mass; keep atoms CG, CE1, NE2 and
      * set the rest to vsite3
      */
-    mtot   = xcom = ycom = 0;
-    nvsite = 0;
+    mtot = xcom = ycom = 0;
+    nvsite             = 0;
     for (i = 0; i < atNR; i++)
     {
         if (ats[i] != NOTSET)
@@ -1430,8 +1493,8 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
             ycom += y[i] * at->atom[ats[i]].m;
             if (i != atCG && i != atCE1 && i != atNE2)
             {
-                at->atom[ats[i]].m    = at->atom[ats[i]].mB = 0;
-                (*vsite_type)[ats[i]] = F_VSITE3;
+                at->atom[ats[i]].m = at->atom[ats[i]].mB = 0;
+                (*vsite_type)[ats[i]]                    = F_VSITE3;
                 nvsite++;
             }
         }
@@ -1450,7 +1513,7 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
     mCE1  = (ycom - y[atNE2]) * mrest / (y[atCE1] - y[atNE2]);
     mNE2  = mrest - mCE1;
 
-    at->atom[ats[atCG]].m  = at->atom[ats[atCG]].mB = mG;
+    at->atom[ats[atCG]].m = at->atom[ats[atCG]].mB = mG;
     at->atom[ats[atCE1]].m = at->atom[ats[atCE1]].mB = mCE1;
     at->atom[ats[atNE2]].m = at->atom[ats[atNE2]].mB = mNE2;
 
@@ -1508,7 +1571,7 @@ static gmx_bool is_vsite(int vsite_type)
     {
         return FALSE;
     }
-    switch (abs(vsite_type) )
+    switch (abs(vsite_type))
     {
         case F_VSITE3:
         case F_VSITE3FD:
@@ -1531,27 +1594,27 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                const char *ffdir)
 {
 #define MAXATOMSPERRESIDUE 16
-    int               i, j, k, m, i0, ni0, whatres, resind, add_shift, ftype, nvsite, nadd;
-    int               ai, aj, ak, al;
-    int               nrfound = 0, needed, nrbonds, nrHatoms, Heavy, nrheavies, tpM, tpHeavy;
-    int               Hatoms[4], heavies[4];
-    gmx_bool          bWARNING, bAddVsiteParam, bFirstWater;
-    matrix            tmpmat;
-    gmx_bool *        bResProcessed;
-    real              mHtot, mtot, fact, fact2;
-    rvec              rpar, rperp, temp;
-    char              name[10], tpname[32], nexttpname[32], *ch;
-    rvec *            newx;
-    int *             o2n, *newvsite_type, *newcgnr, ats[MAXATOMSPERRESIDUE];
-    t_atom *          newatom;
-    t_params *        params;
-    char ***          newatomname;
-    char *            resnm = nullptr;
-    int               ndb, f;
-    char **           db;
-    int               nvsiteconf, nvsitetop, cmplength;
-    gmx_bool          isN, planarN, bFound;
-    gmx_residuetype_t*rt;
+    int                i, j, k, m, i0, ni0, whatres, resind, add_shift, ftype, nvsite, nadd;
+    int                ai, aj, ak, al;
+    int                nrfound = 0, needed, nrbonds, nrHatoms, Heavy, nrheavies, tpM, tpHeavy;
+    int                Hatoms[4], heavies[4];
+    gmx_bool           bWARNING, bAddVsiteParam, bFirstWater;
+    matrix             tmpmat;
+    gmx_bool *         bResProcessed;
+    real               mHtot, mtot, fact, fact2;
+    rvec               rpar, rperp, temp;
+    char               name[10], tpname[32], nexttpname[32], *ch;
+    rvec *             newx;
+    int *              o2n, *newvsite_type, *newcgnr, ats[MAXATOMSPERRESIDUE];
+    t_atom *           newatom;
+    t_params *         params;
+    char ***           newatomname;
+    char *             resnm = nullptr;
+    int                ndb, f;
+    char **            db;
+    int                nvsiteconf, nvsitetop, cmplength;
+    gmx_bool           isN, planarN, bFound;
+    gmx_residuetype_t *rt;
 
     t_vsiteconf *vsiteconflist;
     /* pointer to a list of CH3/NH3/NH2 configuration entries.
@@ -1572,14 +1635,18 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
        PHE, TRP, TYR and HIS to a construction of virtual sites */
     enum
     {
-        resPHE, resTRP, resTYR, resHIS, resNR
+        resPHE,
+        resTRP,
+        resTYR,
+        resHIS,
+        resNR
     };
-    const char *resnms[resNR] = {   "PHE",  "TRP",  "TYR",  "HIS" };
+    const char *resnms[resNR] = { "PHE", "TRP", "TYR", "HIS" };
     /* Amber03 alternative names for termini */
-    const char *resnmsN[resNR] = {  "NPHE", "NTRP", "NTYR", "NHIS" };
-    const char *resnmsC[resNR] = {  "CPHE", "CTRP", "CTYR", "CHIS" };
+    const char *resnmsN[resNR] = { "NPHE", "NTRP", "NTYR", "NHIS" };
+    const char *resnmsC[resNR] = { "CPHE", "CTRP", "CTYR", "CHIS" };
     /* HIS can be known as HISH, HIS1, HISA, HID, HIE, HIP, etc. too */
-    gmx_bool bPartial[resNR] = {  FALSE,  FALSE,  FALSE,   TRUE  };
+    gmx_bool bPartial[resNR] = { FALSE, FALSE, FALSE, TRUE };
     /* the atnms for every residue MUST correspond to the enums in the
        gen_vsites_* (one for each residue) routines! */
     /* also the atom names in atnms MUST be in the same order as in the .rtp! */
@@ -1662,7 +1729,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
         if (bVsiteAromatics
             && !strcmp(*(at->atomname[i]), "CA")
             && !bResProcessed[resind]
-            && gmx_residuetype_is_protein(rt, *(at->resinfo[resind].name)) )
+            && gmx_residuetype_is_protein(rt, *(at->resinfo[resind].name)))
         {
             /* mark this residue */
             bResProcessed[resind] = TRUE;
@@ -1706,7 +1773,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     }
                     if (nrfound < needed)
                     {
-                        gmx_fatal(FARGS, "not enough atoms found (%d, need %d) in "
+                        gmx_fatal(FARGS,
+                                  "not enough atoms found (%d, need %d) in "
                                   "residue %s %d while\n             "
                                   "generating aromatics virtual site construction",
                                   nrfound, needed, resnm, at->resinfo[resind].nr);
@@ -1766,7 +1834,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 
         /* now process the rest of the hydrogens */
         /* only process hydrogen atoms which are not already set */
-        if ( ((*vsite_type)[i] == NOTSET) && is_hydrogen(*(at->atomname[i])))
+        if (((*vsite_type)[i] == NOTSET) && is_hydrogen(*(at->atomname[i])))
         {
             /* find heavy atom, count #bonds from it and #H atoms bound to it
                and return H atom numbers (Hatoms) and heavy atom numbers (heavies) */
@@ -1815,11 +1883,10 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     default: /* nrbonds != 2, 3 or 4 */
                         bWARNING = TRUE;
                 }
-
             }
-            else if ( /*(nrHatoms == 2) && (nrbonds == 2) && REMOVED this test
+            else if (/*(nrHatoms == 2) && (nrbonds == 2) && REMOVED this test
                          DvdS 19-01-04 */
-                (gmx_strncasecmp(*at->atomname[Heavy], "OW", 2) == 0) )
+                     (gmx_strncasecmp(*at->atomname[Heavy], "OW", 2) == 0))
             {
                 bAddVsiteParam = FALSE; /* this is water: skip these hydrogens */
                 if (bFirstWater)
@@ -1832,7 +1899,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     }
                 }
             }
-            else if ( (nrHatoms == 2) && (nrbonds == 4) )
+            else if ((nrHatoms == 2) && (nrbonds == 4))
             {
                 /* -CH2- , -NH2+- */
                 (*vsite_type)[Hatoms[0]] = F_VSITE3OUT;
@@ -1854,19 +1921,19 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     }
                     planarN = (j == 1);
                 }
-                if ( (nrHatoms == 2) && (nrbonds == 3) && ( !isN || planarN ) )
+                if ((nrHatoms == 2) && (nrbonds == 3) && (!isN || planarN))
                 {
                     /* =CH2 or, if it is a nitrogen NH2, it is a planar one */
                     (*vsite_type)[Hatoms[0]] = F_VSITE3FAD;
                     (*vsite_type)[Hatoms[1]] = -F_VSITE3FAD;
                 }
-                else if ( ( (nrHatoms == 2) && (nrbonds == 3)
-                            && ( isN && !planarN ) )
-                          || ( (nrHatoms == 3) && (nrbonds == 4) ) )
+                else if (((nrHatoms == 2) && (nrbonds == 3)
+                          && (isN && !planarN))
+                         || ((nrHatoms == 3) && (nrbonds == 4)))
                 {
                     /* CH3, NH3 or non-planar NH2 group */
                     int      Hat_vsite_type[3] = { F_VSITE3, F_VSITE3OUT, F_VSITE3OUT };
-                    gmx_bool Hat_SwapParity[3] = { FALSE,    TRUE,        FALSE };
+                    gmx_bool Hat_SwapParity[3] = { FALSE, TRUE, FALSE };
 
                     if (debug)
                     {
@@ -1901,7 +1968,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     }
 
                     tpM = vsite_nm2type(name, atype);
-                    /* make space for 2 masses: shift all atoms starting with 'Heavy' */
+/* make space for 2 masses: shift all atoms starting with 'Heavy' */
 #define NMASS 2
                     i0  = Heavy;
                     ni0 = i0 + nadd;
@@ -1931,7 +1998,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     /* get atom masses, and set Heavy and Hatoms mass to zero */
                     for (j = 0; j < nrHatoms; j++)
                     {
-                        mHtot                += get_amass(Hatoms[j], at, nrtp, rtp, rt);
+                        mHtot += get_amass(Hatoms[j], at, nrtp, rtp, rt);
                         at->atom[Hatoms[j]].m = at->atom[Hatoms[j]].mB = 0;
                     }
                     mtot              = mHtot + get_amass(Heavy, at, nrtp, rtp, rt);
@@ -1953,7 +2020,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     svmul(1.0 / nrHatoms, rpar, rpar); /* rpar = ( H1+H2+H3 ) / 3 */
                     rvec_dec(rpar, (*x)[Heavy]);       /*        - Heavy          */
                     rvec_sub((*x)[Hatoms[0]], (*x)[Heavy], rperp);
-                    rvec_dec(rperp, rpar);             /* rperp = H1 - Heavy - rpar */
+                    rvec_dec(rperp, rpar); /* rperp = H1 - Heavy - rpar */
                     /* calc mass positions */
                     svmul(fact2, rpar, temp);
                     for (j = 0; (j < NMASS); j++) /* xM = xN + fact2 * rpar +/- fact * rperp */
@@ -1961,41 +2028,41 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                         rvec_add((*x)[Heavy], temp, newx[ni0 + j]);
                     }
                     svmul(fact, rperp, temp);
-                    rvec_inc(newx[ni0  ], temp);
+                    rvec_inc(newx[ni0], temp);
                     rvec_dec(newx[ni0 + 1], temp);
                     /* set atom parameters for the masses */
                     for (j = 0; (j < NMASS); j++)
                     {
                         /* make name: "M??#" or "M?#" (? is atomname, # is number) */
                         name[0] = 'M';
-                        for (k = 0; (*at->atomname[Heavy])[k] && ( k < NMASS ); k++)
+                        for (k = 0; (*at->atomname[Heavy])[k] && (k < NMASS); k++)
                         {
                             name[k + 1] = (*at->atomname[Heavy])[k];
                         }
-                        name[k + 1]              = atomnamesuffix[j];
-                        name[k + 2]              = '\0';
-                        newatomname[ni0 + j]     = put_symtab(symtab, name);
-                        newatom[ni0 + j].m       = newatom[ni0 + j].mB    = mtot / NMASS;
-                        newatom[ni0 + j].q       = newatom[ni0 + j].qB    = 0.0;
-                        newatom[ni0 + j].type    = newatom[ni0 + j].typeB = tpM;
-                        newatom[ni0 + j].ptype   = eptAtom;
-                        newatom[ni0 + j].resind  = at->atom[i0].resind;
-                        newatom[ni0 + j].elem[0] = 'M';
-                        newatom[ni0 + j].elem[1] = '\0';
-                        newvsite_type[ni0 + j]   = NOTSET;
-                        newcgnr[ni0 + j]         = (*cgnr)[i0];
+                        name[k + 1]          = atomnamesuffix[j];
+                        name[k + 2]          = '\0';
+                        newatomname[ni0 + j] = put_symtab(symtab, name);
+                        newatom[ni0 + j].m = newatom[ni0 + j].mB = mtot / NMASS;
+                        newatom[ni0 + j].q = newatom[ni0 + j].qB = 0.0;
+                        newatom[ni0 + j].type = newatom[ni0 + j].typeB = tpM;
+                        newatom[ni0 + j].ptype                         = eptAtom;
+                        newatom[ni0 + j].resind                        = at->atom[i0].resind;
+                        newatom[ni0 + j].elem[0]                       = 'M';
+                        newatom[ni0 + j].elem[1]                       = '\0';
+                        newvsite_type[ni0 + j]                         = NOTSET;
+                        newcgnr[ni0 + j]                               = (*cgnr)[i0];
                     }
                     /* add constraints between dummy masses and to heavies[0] */
                     /* 'add_shift' says which atoms won't be renumbered afterwards */
-                    my_add_param(&(plist[F_CONSTRNC]), heavies[0],  add_shift + ni0,  NOTSET);
-                    my_add_param(&(plist[F_CONSTRNC]), heavies[0],  add_shift + ni0 + 1, NOTSET);
+                    my_add_param(&(plist[F_CONSTRNC]), heavies[0], add_shift + ni0, NOTSET);
+                    my_add_param(&(plist[F_CONSTRNC]), heavies[0], add_shift + ni0 + 1, NOTSET);
                     my_add_param(&(plist[F_CONSTRNC]), add_shift + ni0, add_shift + ni0 + 1, NOTSET);
 
                     /* generate Heavy, H1, H2 and H3 from M1, M2 and heavies[0] */
                     /* note that vsite_type cannot be NOTSET, because we just set it */
-                    add_vsite3_atoms  (&plist[(*vsite_type)[Heavy]],
-                                       Heavy,     heavies[0], add_shift + ni0, add_shift + ni0 + 1,
-                                       FALSE);
+                    add_vsite3_atoms(&plist[(*vsite_type)[Heavy]],
+                                     Heavy, heavies[0], add_shift + ni0, add_shift + ni0 + 1,
+                                     FALSE);
                     for (j = 0; j < nrHatoms; j++)
                     {
                         add_vsite3_atoms(&plist[(*vsite_type)[Hatoms[j]]],
@@ -2008,7 +2075,6 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 {
                     bWARNING = TRUE;
                 }
-
             }
             if (bWARNING)
             {
@@ -2029,7 +2095,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                 {
                     if (is_vsite((*vsite_type)[Hatoms[j]]))
                     {
-                        at->atom[Heavy].m    += at->atom[Hatoms[j]].m;
+                        at->atom[Heavy].m += at->atom[Hatoms[j]].m;
                         at->atom[Heavy].mB    = at->atom[Heavy].m;
                         at->atom[Hatoms[j]].m = at->atom[Hatoms[j]].mB = 0;
                     }
@@ -2043,7 +2109,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
             }
         } /* if vsite NOTSET & is hydrogen */
 
-    }     /* for i < at->nr */
+    } /* for i < at->nr */
 
     gmx_residuetype_destroy(rt);
 
@@ -2056,10 +2122,12 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     at->atomname[i] ? *(at->atomname[i]) : "(NULL)",
                     at->resinfo[at->atom[i].resind].nr,
                     at->resinfo[at->atom[i].resind].name
-                    ? *(at->resinfo[at->atom[i].resind].name) : "(NULL)",
+                            ? *(at->resinfo[at->atom[i].resind].name)
+                            : "(NULL)",
                     (*cgnr)[i],
                     ((*vsite_type)[i] == NOTSET)
-                    ? "NOTSET" : interaction_function[(*vsite_type)[i]].name);
+                            ? "NOTSET"
+                            : interaction_function[(*vsite_type)[i]].name);
         }
         fprintf(debug, "new atoms to be inserted:\n");
         for (i = 0; i < at->nr + nadd; i++)
@@ -2070,7 +2138,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                         newatomname[i] ? *(newatomname[i]) : "(NULL)",
                         newatom[i].resind, newcgnr[i],
                         (newvsite_type[i] == NOTSET)
-                        ? "NOTSET" : interaction_function[newvsite_type[i]].name);
+                                ? "NOTSET"
+                                : interaction_function[newvsite_type[i]].name);
             }
         }
     }
@@ -2078,10 +2147,10 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     /* add all original atoms to the new arrays, using o2n index array */
     for (i = 0; i < at->nr; i++)
     {
-        newatomname  [o2n[i]] = at->atomname [i];
-        newatom      [o2n[i]] = at->atom     [i];
+        newatomname[o2n[i]]   = at->atomname[i];
+        newatom[o2n[i]]       = at->atom[i];
         newvsite_type[o2n[i]] = (*vsite_type)[i];
-        newcgnr      [o2n[i]] = (*cgnr)      [i];
+        newcgnr[o2n[i]]       = (*cgnr)[i];
         copy_rvec((*x)[i], newx[o2n[i]]);
     }
     /* throw away old atoms */
@@ -2091,7 +2160,7 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     sfree(*cgnr);
     sfree(*x);
     /* put in the new ones */
-    at->nr      += nadd;
+    at->nr += nadd;
     at->atom     = newatom;
     at->atomname = newatomname;
     *vsite_type  = newvsite_type;
@@ -2099,8 +2168,10 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
     *x           = newx;
     if (at->nr > add_shift)
     {
-        gmx_fatal(FARGS, "Added impossible amount of dummy masses "
-                  "(%d on a total of %d atoms)\n", nadd, at->nr - nadd);
+        gmx_fatal(FARGS,
+                  "Added impossible amount of dummy masses "
+                  "(%d on a total of %d atoms)\n",
+                  nadd, at->nr - nadd);
     }
 
     if (debug)
@@ -2112,10 +2183,12 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                     at->atomname[i] ? *(at->atomname[i]) : "(NULL)",
                     at->resinfo[at->atom[i].resind].nr,
                     at->resinfo[at->atom[i].resind].name
-                    ? *(at->resinfo[at->atom[i].resind].name) : "(NULL)",
+                            ? *(at->resinfo[at->atom[i].resind].name)
+                            : "(NULL)",
                     (*cgnr)[i],
                     ((*vsite_type)[i] == NOTSET)
-                    ? "NOTSET" : interaction_function[(*vsite_type)[i]].name);
+                            ? "NOTSET"
+                            : interaction_function[(*vsite_type)[i]].name);
         }
     }
 
@@ -2187,20 +2260,20 @@ void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
     for (i = 0; i < at->nr; i++)
     {
         /* adjust masses if i is hydrogen and not a virtual site */
-        if (!is_vsite(vsite_type[i]) && is_hydrogen(*(at->atomname[i])) )
+        if (!is_vsite(vsite_type[i]) && is_hydrogen(*(at->atomname[i])))
         {
             /* find bonded heavy atom */
             a = NOTSET;
             for (j = 0; (j < psb->nr) && (a == NOTSET); j++)
             {
                 /* if other atom is not a virtual site, it is the one we want */
-                if ( (psb->param[j].ai() == i)
-                     && !is_vsite(vsite_type[psb->param[j].aj()]) )
+                if ((psb->param[j].ai() == i)
+                    && !is_vsite(vsite_type[psb->param[j].aj()]))
                 {
                     a = psb->param[j].aj();
                 }
-                else if ( (psb->param[j].aj() == i)
-                          && !is_vsite(vsite_type[psb->param[j].ai()]) )
+                else if ((psb->param[j].aj() == i)
+                         && !is_vsite(vsite_type[psb->param[j].ai()]))
                 {
                     a = psb->param[j].ai();
                 }
@@ -2215,10 +2288,10 @@ void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
                and correct mass of a (bonded atom) with same amount */
             if (!bDeuterate)
             {
-                at->atom[a].m  -= (mHmult - 1.0) * at->atom[i].m;
+                at->atom[a].m -= (mHmult - 1.0) * at->atom[i].m;
                 at->atom[a].mB -= (mHmult - 1.0) * at->atom[i].m;
             }
-            at->atom[i].m  *= mHmult;
+            at->atom[i].m *= mHmult;
             at->atom[i].mB *= mHmult;
         }
     }

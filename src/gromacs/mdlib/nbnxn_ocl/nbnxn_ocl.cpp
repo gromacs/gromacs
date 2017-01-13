@@ -130,7 +130,8 @@ static inline void validate_global_work_size(size_t *global_work_size, int work_
         {
             if (global_work_size[i] > device_limit)
             {
-                gmx_fatal(FARGS, "Watch out, the input system is too large to simulate!\n"
+                gmx_fatal(FARGS,
+                          "Watch out, the input system is too large to simulate!\n"
                           "The number of nonbonded work units (=number of super-clusters) exceeds the"
                           "device capabilities. Global work size limit exceeded (%d > %d)!",
                           global_work_size[i], device_limit);
@@ -148,47 +149,43 @@ static inline void validate_global_work_size(size_t *global_work_size, int work_
  */
 
 /*! \brief Force-only kernel function names. */
-static const char* nb_kfunc_noener_noprune_ptr[eelOclNR][evdwOclNR] =
-{
-    { "nbnxn_kernel_ElecCut_VdwLJ_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_opencl"            },
-    { "nbnxn_kernel_ElecRF_VdwLJ_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_opencl"             },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_opencl"        },
+static const char *nb_kfunc_noener_noprune_ptr[eelOclNR][evdwOclNR] = {
+    { "nbnxn_kernel_ElecCut_VdwLJ_F_opencl", "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_opencl", "nbnxn_kernel_ElecCut_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecCut_VdwLJFsw_F_opencl", "nbnxn_kernel_ElecCut_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_opencl" },
+    { "nbnxn_kernel_ElecRF_VdwLJ_F_opencl", "nbnxn_kernel_ElecRF_VdwLJCombGeom_F_opencl", "nbnxn_kernel_ElecRF_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecRF_VdwLJFsw_F_opencl", "nbnxn_kernel_ElecRF_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_opencl", "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_opencl" },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_F_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_opencl" },
     { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_opencl" },
-    { "nbnxn_kernel_ElecEw_VdwLJ_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_opencl"             },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_opencl"      }
+    { "nbnxn_kernel_ElecEw_VdwLJ_F_opencl", "nbnxn_kernel_ElecEw_VdwLJCombGeom_F_opencl", "nbnxn_kernel_ElecEw_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecEw_VdwLJFsw_F_opencl", "nbnxn_kernel_ElecEw_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_opencl", "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_opencl" },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_opencl" }
 };
 
 /*! \brief Force + energy kernel function pointers. */
-static const char* nb_kfunc_ener_noprune_ptr[eelOclNR][evdwOclNR] =
-{
-    { "nbnxn_kernel_ElecCut_VdwLJ_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_opencl"            },
-    { "nbnxn_kernel_ElecRF_VdwLJ_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_opencl"             },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_opencl"        },
+static const char *nb_kfunc_ener_noprune_ptr[eelOclNR][evdwOclNR] = {
+    { "nbnxn_kernel_ElecCut_VdwLJ_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJFsw_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_opencl" },
+    { "nbnxn_kernel_ElecRF_VdwLJ_VF_opencl", "nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_opencl", "nbnxn_kernel_ElecRF_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecRF_VdwLJFsw_VF_opencl", "nbnxn_kernel_ElecRF_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_opencl", "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_opencl" },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_VF_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_opencl" },
     { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_opencl" },
-    { "nbnxn_kernel_ElecEw_VdwLJ_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_opencl"             },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_opencl"      }
+    { "nbnxn_kernel_ElecEw_VdwLJ_VF_opencl", "nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_opencl", "nbnxn_kernel_ElecEw_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecEw_VdwLJFsw_VF_opencl", "nbnxn_kernel_ElecEw_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_opencl", "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_opencl" },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_opencl" }
 };
 
 /*! \brief Force + pruning kernel function pointers. */
-static const char* nb_kfunc_noener_prune_ptr[eelOclNR][evdwOclNR] =
-{
-    { "nbnxn_kernel_ElecCut_VdwLJ_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_prune_opencl"             },
-    { "nbnxn_kernel_ElecRF_VdwLJ_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_prune_opencl"              },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_prune_opencl"         },
-    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_prune_opencl"  },
-    { "nbnxn_kernel_ElecEw_VdwLJ_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_prune_opencl"              },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_prune_opencl"       }
+static const char *nb_kfunc_noener_prune_ptr[eelOclNR][evdwOclNR] = {
+    { "nbnxn_kernel_ElecCut_VdwLJ_F_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJCombLB_F_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_prune_opencl" },
+    { "nbnxn_kernel_ElecRF_VdwLJ_F_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJCombGeom_F_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJCombLB_F_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJPsw_F_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_prune_opencl" },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_F_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_prune_opencl" },
+    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_prune_opencl" },
+    { "nbnxn_kernel_ElecEw_VdwLJ_F_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJCombLB_F_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJPsw_F_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_prune_opencl" },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_prune_opencl" }
 };
 
 /*! \brief Force + energy + pruning kernel function pointers. */
-static const char* nb_kfunc_ener_prune_ptr[eelOclNR][evdwOclNR] =
-{
-    { "nbnxn_kernel_ElecCut_VdwLJ_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_prune_opencl"            },
-    { "nbnxn_kernel_ElecRF_VdwLJ_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_prune_opencl"             },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_prune_opencl"        },
+static const char *nb_kfunc_ener_prune_ptr[eelOclNR][evdwOclNR] = {
+    { "nbnxn_kernel_ElecCut_VdwLJ_VF_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_prune_opencl" },
+    { "nbnxn_kernel_ElecRF_VdwLJ_VF_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJCombLB_VF_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJFsw_VF_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJPsw_VF_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_prune_opencl" },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_prune_opencl" },
     { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_prune_opencl" },
-    { "nbnxn_kernel_ElecEw_VdwLJ_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_prune_opencl"             },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_opencl"      }
+    { "nbnxn_kernel_ElecEw_VdwLJ_VF_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJCombLB_VF_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJFsw_VF_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJPsw_VF_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_prune_opencl" },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_opencl" }
 };
 
 
@@ -202,11 +199,11 @@ static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t *nb,
                                             bool             bDoEne,
                                             bool             bDoPrune)
 {
-    const char* kernel_name_to_run;
+    const char *kernel_name_to_run;
     cl_kernel * kernel_ptr;
     cl_int      cl_error;
 
-    assert(eeltype  < eelOclNR);
+    assert(eeltype < eelOclNR);
     assert(evdwtype < evdwOclNR);
 
     if (bDoEne)
@@ -256,9 +253,9 @@ static inline int calc_shmem_required(int  vdwType,
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem = c_numClPerSupercl * c_clSize * sizeof(float) * 4;  /* xqib */
+    shmem = c_numClPerSupercl * c_clSize * sizeof(float) * 4; /* xqib */
     /* cj in shared memory, for both warps separately */
-    shmem += 2 * c_nbnxnGpuJgroupSize * sizeof(int);           /* cjs  */
+    shmem += 2 * c_nbnxnGpuJgroupSize * sizeof(int); /* cjs  */
     if (bPrefetchLjParam)
     {
         if (useLjCombRule(vdwType))
@@ -273,9 +270,9 @@ static inline int calc_shmem_required(int  vdwType,
         }
     }
     /* force reduction buffers in shared memory */
-    shmem += c_clSize * c_clSize * 3 * sizeof(float);    /* f_buf */
+    shmem += c_clSize * c_clSize * 3 * sizeof(float); /* f_buf */
     /* Warp vote. In fact it must be * number of warps in block.. */
-    shmem += sizeof(cl_uint) * 2;                        /* warp_any */
+    shmem += sizeof(cl_uint) * 2; /* warp_any */
     return shmem;
 }
 
@@ -335,11 +332,11 @@ void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
 {
     cl_int gmx_unused cl_error;
 
-    /* Enqueue wait */
+/* Enqueue wait */
 #ifdef CL_VERSION_1_2
     cl_error = clEnqueueBarrierWithWaitList(stream, 1, ocl_event, NULL);
 #else
-    cl_error = clEnqueueWaitForEvents(stream, 1, ocl_event);
+    cl_error         = clEnqueueWaitForEvents(stream, 1, ocl_event);
 #endif
 
     GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error, ocl_get_error_string(cl_error).c_str());
@@ -410,11 +407,11 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t *              nb,
                              int                            iloc)
 {
     cl_int cl_error;
-    int    adat_begin, adat_len;               /* local/nonlocal offset and length used for xq and f */
+    int    adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
     /* OpenCL kernel launch-related stuff */
     int       shmem;
     size_t    local_work_size[3], global_work_size[3];
-    cl_kernel nb_kernel = NULL;            /* fn pointer to the nonbonded kernel */
+    cl_kernel nb_kernel = NULL; /* fn pointer to the nonbonded kernel */
 
     cl_atomdata_t *  adat   = nb->atdat;
     cl_nbparam_t *   nbp    = nb->nbparam;
@@ -429,8 +426,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t *              nb,
 
     cl_nbparam_params_t nbparams_params;
 #ifdef DEBUG_OCL
-    float * debug_buffer_h;
-    size_t  debug_buffer_size;
+    float *debug_buffer_h;
+    size_t debug_buffer_size;
 #endif
 
     /* turn energy calculation always on/off (for debugging/testing only) */
@@ -532,7 +529,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t *              nb,
         if (DEBUG_RUN_STEP == run_step)
         {
             debug_buffer_size = global_work_size[0] * global_work_size[1] * global_work_size[2] * sizeof(float);
-            debug_buffer_h    = (float*)calloc(1, debug_buffer_size);
+            debug_buffer_h    = (float *)calloc(1, debug_buffer_size);
             assert(NULL != debug_buffer_h);
 
             if (NULL == nb->debug_buffer)
@@ -549,7 +546,8 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t *              nb,
 #endif
     if (debug)
     {
-        fprintf(debug, "GPU launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
+        fprintf(debug,
+                "GPU launch configuration:\n\tLocal work size: %dx%dx%d\n\t"
                 "Global work size : %dx%d\n\t#Super-clusters/clusters: %d/%d (%d)\n",
                 (int)(local_work_size[0]), (int)(local_work_size[1]), (int)(local_work_size[2]),
                 (int)(global_work_size[0]), (int)(global_work_size[1]), plist->nsci * c_numClPerSupercl,
@@ -605,7 +603,7 @@ void nbnxn_gpu_launch_kernel(gmx_nbnxn_ocl_t *              nb,
         if (DEBUG_RUN_STEP == run_step)
         {
             FILE *pf;
-            char  file_name[256] = {0};
+            char  file_name[256] = { 0 };
 
             ocl_copy_D2H_async(debug_buffer_h, nb->debug_buffer, 0,
                                debug_buffer_size, stream, NULL);
@@ -679,8 +677,10 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t *              nb,
     else
     {
         char stmp[STRLEN];
-        sprintf(stmp, "Invalid atom locality passed (%d); valid here is only "
-                "local (%d) or nonlocal (%d)", aloc, eatLocal, eatNonlocal);
+        sprintf(stmp,
+                "Invalid atom locality passed (%d); valid here is only "
+                "local (%d) or nonlocal (%d)",
+                aloc, eatLocal, eatNonlocal);
 
         gmx_incons(stmp);
     }
@@ -732,7 +732,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t *              nb,
 
     /* DtoH f */
     ocl_copy_D2H_async(nbatom->out[0].f + adat_begin * 3, adat->f, adat_begin * 3 * sizeof(float),
-                       (adat_len) * adat->f_elem_size, stream, bDoTime ? &(t->nb_d2h_f[iloc]) : NULL);
+                       (adat_len)*adat->f_elem_size, stream, bDoTime ? &(t->nb_d2h_f[iloc]) : NULL);
 
     /* kick off work */
     cl_error = clFlush(stream);
@@ -747,7 +747,7 @@ void nbnxn_gpu_launch_cpyback(gmx_nbnxn_ocl_t *              nb,
 #ifdef CL_VERSION_1_2
         cl_error = clEnqueueMarkerWithWaitList(stream, 0, NULL, &(nb->nonlocal_done));
 #else
-        cl_error = clEnqueueMarker(stream, &(nb->nonlocal_done));
+        cl_error     = clEnqueueMarker(stream, &(nb->nonlocal_done));
 #endif
         assert(CL_SUCCESS == cl_error);
         nb->bNonLocalStreamActive = true;
@@ -799,8 +799,10 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
     else
     {
         char stmp[STRLEN];
-        sprintf(stmp, "Invalid atom locality passed (%d); valid here is only "
-                "local (%d) or nonlocal (%d)", aloc, eatLocal, eatNonlocal);
+        sprintf(stmp,
+                "Invalid atom locality passed (%d); valid here is only "
+                "local (%d) or nonlocal (%d)",
+                aloc, eatLocal, eatNonlocal);
         gmx_incons(stmp);
     }
 
@@ -844,14 +846,14 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
         /* kernel timings */
 
         timings->ktime[plist->bDoPrune ? 1 : 0][bCalcEner ? 1 : 0].t
-            += ocl_event_elapsed_ms(timers->nb_k + iloc);
+                += ocl_event_elapsed_ms(timers->nb_k + iloc);
 
         /* X/q H2D and F D2H timings */
-        timings->nb_h2d_t += ocl_event_elapsed_ms(timers->nb_h2d        + iloc);
-        timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_f      + iloc);
+        timings->nb_h2d_t += ocl_event_elapsed_ms(timers->nb_h2d + iloc);
+        timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_f + iloc);
         timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_fshift + iloc);
-        timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_e_el   + iloc);
-        timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_e_lj   + iloc);
+        timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_e_el + iloc);
+        timings->nb_d2h_t += ocl_event_elapsed_ms(timers->nb_d2h_e_lj + iloc);
 
         /* only count atdat and pair-list H2D at pair-search step */
         if (plist->bDoPrune)
@@ -864,10 +866,9 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
             }
 
             timings->pl_h2d_t
-                += ocl_event_elapsed_ms(timers->pl_h2d_sci     + iloc)
-                    + ocl_event_elapsed_ms(timers->pl_h2d_cj4     + iloc)
-                    + ocl_event_elapsed_ms(timers->pl_h2d_excl    + iloc);
-
+                    += ocl_event_elapsed_ms(timers->pl_h2d_sci + iloc)
+                       + ocl_event_elapsed_ms(timers->pl_h2d_cj4 + iloc)
+                       + ocl_event_elapsed_ms(timers->pl_h2d_excl + iloc);
         }
     }
 
@@ -893,7 +894,6 @@ void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_ocl_t *nb,
 
     /* turn off pruning (doesn't matter if this is pair-search step or not) */
     plist->bDoPrune = false;
-
 }
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
@@ -909,8 +909,9 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
 
     if (bForceAnalyticalEwald && bForceTabulatedEwald)
     {
-        gmx_incons("Both analytical and tabulated Ewald OpenCL non-bonded kernels "
-                   "requested through environment variables.");
+        gmx_incons(
+                "Both analytical and tabulated Ewald OpenCL non-bonded kernels "
+                "requested through environment variables.");
     }
 
     /* OpenCL: By default, use analytical Ewald
@@ -920,7 +921,7 @@ int nbnxn_gpu_pick_ewald_kernel_type(bool bTwinCut)
      *
      */
     //if ((dev_info->prop.major >= 3 || bForceAnalyticalEwald) && !bForceTabulatedEwald)
-    if ((1                         || bForceAnalyticalEwald) && !bForceTabulatedEwald)
+    if ((1 || bForceAnalyticalEwald) && !bForceTabulatedEwald)
     {
         bUseAnalyticalEwald = true;
 

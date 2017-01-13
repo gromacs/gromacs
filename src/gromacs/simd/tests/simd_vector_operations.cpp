@@ -105,13 +105,13 @@ TEST_F(SimdVectorOperationsTest, cprod)
     GMX_EXPECT_SIMD_REAL_NEAR(refcZ, cZ);
 }
 
-#endif      // GMX_SIMD_HAVE_REAL
+#endif // GMX_SIMD_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace
+} // namespace
 
 #endif // GMX_SIMD

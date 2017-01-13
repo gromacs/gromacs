@@ -45,21 +45,21 @@
 
 typedef struct
 {
-    int   nr;       /* The number of entries in the list            */
-    int   nra2;     /* The total number of entries in a			*/
-    int * nra;      /* The number of entries in each a array (dim nr)   */
-    int **a;        /* The atom numbers (dim nr) the length of each element	*/
+    int   nr;   /* The number of entries in the list            */
+    int   nra2; /* The total number of entries in a			*/
+    int * nra;  /* The number of entries in each a array (dim nr)   */
+    int **a;    /* The atom numbers (dim nr) the length of each element	*/
     /* i is nra[i]						*/
 } t_block2;
 
 void generate_nbparams(int comb, int funct, t_params plist[],
                        gpp_atomtype_t atype,
-                       warninp_t wi);
+                       warninp_t      wi);
 
-void push_at (struct t_symtab *symtab, gpp_atomtype_t at,
-              t_bond_atomtype bat, char *line, int nb_funct,
-              t_nbparam ***nbparam, t_nbparam ***pair,
-              warninp_t wi);
+void push_at(struct t_symtab *symtab, gpp_atomtype_t at,
+             t_bond_atomtype bat, char *line, int nb_funct,
+             t_nbparam ***nbparam, t_nbparam ***pair,
+             warninp_t wi);
 
 void push_bt(directive d, t_params bt[], int nral,
              gpp_atomtype_t at, t_bond_atomtype bat, char *line,
@@ -77,10 +77,9 @@ void push_nbt(directive d, t_nbparam **nbt, gpp_atomtype_t atype,
               char *plines, int nb_funct,
               warninp_t wi);
 
-void
-push_gb_params(gpp_atomtype_t atype,
-               char *         line,
-               warninp_t      wi);
+void push_gb_params(gpp_atomtype_t atype,
+                    char *         line,
+                    warninp_t      wi);
 
 void push_atom(struct t_symtab *symtab,
                t_block *        cgs,

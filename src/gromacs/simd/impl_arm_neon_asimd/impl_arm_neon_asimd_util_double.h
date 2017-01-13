@@ -51,7 +51,7 @@
 namespace gmx
 {
 
-template <int align>
+template <int          align>
 static gmx_inline void gmx_simdcall gatherLoadTranspose(const double *     base,
                                                         const std::int32_t offset[],
                                                         SimdDouble *       v0,
@@ -75,7 +75,7 @@ static gmx_inline void gmx_simdcall gatherLoadTranspose(const double *     base,
     v3->simdInternal_ = vuzp2q_f64(t3, t4);
 }
 
-template <int align>
+template <int          align>
 static gmx_inline void gmx_simdcall gatherLoadTranspose(const double *     base,
                                                         const std::int32_t offset[],
                                                         SimdDouble *       v0,
@@ -95,7 +95,7 @@ static gmx_inline void gmx_simdcall gatherLoadTranspose(const double *     base,
 
 static const int c_simdBestPairAlignmentDouble = 2;
 
-template <int align>
+template <int          align>
 static gmx_inline void gmx_simdcall gatherLoadUTranspose(const double *     base,
                                                          const std::int32_t offset[],
                                                          SimdDouble *       v0,
@@ -116,7 +116,7 @@ static gmx_inline void gmx_simdcall gatherLoadUTranspose(const double *     base
     v2->simdInternal_ = vcombine_f64(t3, t4);
 }
 
-template <int align>
+template <int          align>
 static gmx_inline void gmx_simdcall transposeScatterStoreU(double *           base,
                                                            const std::int32_t offset[],
                                                            SimdDouble         v0,
@@ -135,7 +135,7 @@ static gmx_inline void gmx_simdcall transposeScatterStoreU(double *           ba
     vst1_f64(base + align * offset[1] + 2, vget_high_f64(v2.simdInternal_));
 }
 
-template <int align>
+template <int          align>
 static gmx_inline void gmx_simdcall transposeScatterIncrU(double *           base,
                                                           const std::int32_t offset[],
                                                           SimdDouble         v0,
@@ -147,8 +147,8 @@ static gmx_inline void gmx_simdcall transposeScatterIncrU(double *           bas
 
     assert(std::size_t(offset) % 8 == 0);
 
-    t0 = vuzp1q_f64(v0.simdInternal_, v1.simdInternal_);  // x0 y0
-    t1 = vuzp2q_f64(v0.simdInternal_, v1.simdInternal_);  // x1 y1
+    t0 = vuzp1q_f64(v0.simdInternal_, v1.simdInternal_); // x0 y0
+    t1 = vuzp2q_f64(v0.simdInternal_, v1.simdInternal_); // x1 y1
 
     t2 = vld1q_f64(base + align * offset[0]);
     t2 = vaddq_f64(t2, t0);
@@ -167,7 +167,7 @@ static gmx_inline void gmx_simdcall transposeScatterIncrU(double *           bas
     vst1_f64(base + align * offset[1] + 2, t3);
 }
 
-template <int align>
+template <int          align>
 static gmx_inline void gmx_simdcall transposeScatterDecrU(double *           base,
                                                           const std::int32_t offset[],
                                                           SimdDouble         v0,
@@ -179,8 +179,8 @@ static gmx_inline void gmx_simdcall transposeScatterDecrU(double *           bas
 
     assert(std::size_t(offset) % 8 == 0);
 
-    t0 = vuzp1q_f64(v0.simdInternal_, v1.simdInternal_);  // x0 y0
-    t1 = vuzp2q_f64(v0.simdInternal_, v1.simdInternal_);  // x1 y1
+    t0 = vuzp1q_f64(v0.simdInternal_, v1.simdInternal_); // x0 y0
+    t1 = vuzp2q_f64(v0.simdInternal_, v1.simdInternal_); // x1 y1
 
     t2 = vld1q_f64(base + align * offset[0]);
     t2 = vsubq_f64(t2, t0);
@@ -199,25 +199,26 @@ static gmx_inline void gmx_simdcall transposeScatterDecrU(double *           bas
     vst1_f64(base + align * offset[1] + 2, t3);
 }
 
-static gmx_inline void gmx_simdcall expandScalarsToTriplets(SimdDouble   scalar,
-                                                            SimdDouble * triplets0,
-                                                            SimdDouble * triplets1,
-                                                            SimdDouble * triplets2)
+static gmx_inline void gmx_simdcall expandScalarsToTriplets(SimdDouble  scalar,
+                                                            SimdDouble *triplets0,
+                                                            SimdDouble *triplets1,
+                                                            SimdDouble *triplets2)
 {
     triplets0->simdInternal_ = vuzp1q_f64(scalar.simdInternal_, scalar.simdInternal_);
     triplets1->simdInternal_ = scalar.simdInternal_;
     triplets2->simdInternal_ = vuzp2q_f64(scalar.simdInternal_, scalar.simdInternal_);
 }
 
-template <int align>
-static gmx_inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * base,
-                                                                 SimdDInt32     offset,
-                                                                 SimdDouble *   v0,
-                                                                 SimdDouble *   v1,
-                                                                 SimdDouble *   v2,
-                                                                 SimdDouble *   v3)
+template <int          align>
+static gmx_inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double *base,
+                                                                 SimdDInt32    offset,
+                                                                 SimdDouble *  v0,
+                                                                 SimdDouble *  v1,
+                                                                 SimdDouble *  v2,
+                                                                 SimdDouble *  v3)
 {
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)
+    ioffset[GMX_SIMD_DINT32_WIDTH];
 
     assert(std::size_t(base) % 16 == 0);
     assert(align % 2 == 0);
@@ -227,13 +228,14 @@ static gmx_inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * 
 }
 
 
-template <int align>
-static gmx_inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * base,
-                                                                 SimdDInt32     offset,
-                                                                 SimdDouble *   v0,
-                                                                 SimdDouble *   v1)
+template <int          align>
+static gmx_inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double *base,
+                                                                 SimdDInt32    offset,
+                                                                 SimdDouble *  v0,
+                                                                 SimdDouble *  v1)
 {
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)
+    ioffset[GMX_SIMD_DINT32_WIDTH];
 
     assert(std::size_t(base) % 16 == 0);
     assert(align % 2 == 0);
@@ -242,13 +244,14 @@ static gmx_inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double * 
     gatherLoadTranspose<align>(base, ioffset, v0, v1);
 }
 
-template <int align>
-static gmx_inline void gmx_simdcall gatherLoadUBySimdIntTranspose(const double * base,
-                                                                  SimdDInt32     offset,
-                                                                  SimdDouble *   v0,
-                                                                  SimdDouble *   v1)
+template <int          align>
+static gmx_inline void gmx_simdcall gatherLoadUBySimdIntTranspose(const double *base,
+                                                                  SimdDInt32    offset,
+                                                                  SimdDouble *  v0,
+                                                                  SimdDouble *  v1)
 {
-    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)  ioffset[GMX_SIMD_DINT32_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_DINT32_WIDTH)
+    ioffset[GMX_SIMD_DINT32_WIDTH];
 
     vst1_s32(ioffset, offset.simdInternal_);
 
@@ -290,6 +293,6 @@ static gmx_inline double gmx_simdcall reduceIncr4ReturnSum(double *   m,
     return vgetq_lane_f64(t2, 0);
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_UTIL_DOUBLE_H

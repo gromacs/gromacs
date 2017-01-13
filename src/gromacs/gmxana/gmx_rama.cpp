@@ -78,8 +78,8 @@ int gmx_rama(int argc, char *argv[])
     int               j;
     gmx_output_env_t *oenv;
     t_filenm          fnm[] = {
-        { efTRX, "-f", nullptr,  ffREAD },
-        { efTPR, nullptr, nullptr,  ffREAD },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPR, nullptr, nullptr, ffREAD },
         { efXVG, nullptr, "rama", ffWRITE }
     };
 #define NFILE asize(fnm)

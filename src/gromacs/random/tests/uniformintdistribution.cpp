@@ -109,7 +109,7 @@ TEST(UniformIntDistributionTest, AltParam)
     gmx::ThreeFry2x64<8>                         rngA(123456, gmx::RandomDomain::Other);
     gmx::ThreeFry2x64<8>                         rngB(123456, gmx::RandomDomain::Other);
     gmx::UniformIntDistribution<int>             distA(2, 5);
-    gmx::UniformIntDistribution<int>             distB;  // default parameters
+    gmx::UniformIntDistribution<int>             distB; // default parameters
     gmx::UniformIntDistribution<int>::param_type paramA(2, 5);
 
     EXPECT_NE(distA(rngA), distB(rngB));
@@ -121,6 +121,6 @@ TEST(UniformIntDistributionTest, AltParam)
 }
 
 
-}      // namespace anonymous
+} // namespace anonymous
 
-}      // namespace gmx
+} // namespace gmx

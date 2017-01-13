@@ -135,11 +135,11 @@ void ocl_free_buffered(cl_mem d_ptr, int *n, int *nalloc)
 void ocl_realloc_buffered(cl_mem *d_dest, void *h_src,
                           size_t type_size,
                           int *curr_size, int *curr_alloc_size,
-                          int req_size,
-                          cl_context context,
+                          int              req_size,
+                          cl_context       context,
                           cl_command_queue s,
-                          bool bAsync = true,
-                          cl_event *copy_event = NULL)
+                          bool             bAsync     = true,
+                          cl_event *       copy_event = NULL)
 {
     if (d_dest == NULL || req_size < 0)
     {
@@ -177,7 +177,7 @@ void ocl_realloc_buffered(cl_mem *d_dest, void *h_src,
         }
         else
         {
-            ocl_copy_H2D(*d_dest, h_src,  0, *curr_size * type_size, s);
+            ocl_copy_H2D(*d_dest, h_src, 0, *curr_size * type_size, s);
         }
     }
 }
@@ -249,7 +249,7 @@ static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtim
 
     /* An element of the shift_vec device buffer has the same size as one element
        of the host side shift_vec buffer. */
-    ad->shift_vec_elem_size = sizeof(*(((nbnxn_atomdata_t*)0)->shift_vec));
+    ad->shift_vec_elem_size = sizeof(*(((nbnxn_atomdata_t *)0)->shift_vec));
 
     // TODO: handle errors, check clCreateBuffer flags
     ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->shift_vec_elem_size, NULL, &cl_error);
@@ -258,7 +258,7 @@ static void init_atomdata_first(cl_atomdata_t *ad, int ntypes, gmx_device_runtim
 
     /* An element of the fshift device buffer has the same size as one element
        of the host side fshift buffer. */
-    ad->fshift_elem_size = sizeof(*(((cl_nb_staging_t*)0)->fshift));
+    ad->fshift_elem_size = sizeof(*(((cl_nb_staging_t *)0)->fshift));
 
     ad->fshift = clCreateBuffer(runData->context, CL_MEM_READ_WRITE, SHIFTS * ad->fshift_elem_size, NULL, &cl_error);
     assert(cl_error == CL_SUCCESS);
@@ -584,7 +584,7 @@ static void nbnxn_gpu_create_context(gmx_device_runtime_data_t *runtimeData,
     device_id   = devInfo->ocl_gpu_id.ocl_device_id;
 
     context_properties[0] = CL_CONTEXT_PLATFORM;
-    context_properties[1] = (cl_context_properties) platform_id;
+    context_properties[1] = (cl_context_properties)platform_id;
     context_properties[2] = 0; /* Terminates the list of properties */
 
     context = clCreateContext(context_properties, 1, &device_id, NULL, NULL, &cl_error);
@@ -628,8 +628,8 @@ static void nbnxn_ocl_clear_e_fshift(gmx_nbnxn_ocl_t *nb)
     cl_atomdata_t *  adat = nb->atdat;
     cl_command_queue ls   = nb->stream[eintLocal];
 
-    size_t local_work_size[3]  = {1, 1, 1};
-    size_t global_work_size[3] = {1, 1, 1};
+    size_t local_work_size[3]  = { 1, 1, 1 };
+    size_t global_work_size[3] = { 1, 1, 1 };
 
     cl_int shifts = SHIFTS * 3;
 
@@ -641,8 +641,8 @@ static void nbnxn_ocl_clear_e_fshift(gmx_nbnxn_ocl_t *nb)
     // Round the total number of threads up from the array size
     global_work_size[0] = ((shifts + local_work_size[0] - 1) / local_work_size[0]) * local_work_size[0];
 
-    arg_no    = 0;
-    cl_error  = clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->fshift));
+    arg_no   = 0;
+    cl_error = clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->fshift));
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->e_lj));
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_mem), &(adat->e_el));
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_uint), &shifts);
@@ -728,9 +728,9 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t **         p_nb,
     nb->debug_buffer = NULL;
 
     /* init nbst */
-    ocl_pmalloc((void**)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
-    ocl_pmalloc((void**)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
-    ocl_pmalloc((void**)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
+    ocl_pmalloc((void **)&nb->nbst.e_lj, sizeof(*nb->nbst.e_lj));
+    ocl_pmalloc((void **)&nb->nbst.e_el, sizeof(*nb->nbst.e_el));
+    ocl_pmalloc((void **)&nb->nbst.fshift, SHIFTS * sizeof(*nb->nbst.fshift));
 
     init_plist(nb->plist[eintLocal]);
 
@@ -789,8 +789,8 @@ void nbnxn_gpu_init(gmx_nbnxn_ocl_t **         p_nb,
      * TODO: decide about NVIDIA
      */
     nb->bPrefetchLjParam
-        = (getenv("GMX_OCL_DISABLE_I_PREFETCH") == NULL)
-            && ((nb->dev_info->vendor_e == OCL_VENDOR_AMD) || (getenv("GMX_OCL_ENABLE_I_PREFETCH") != NULL));
+            = (getenv("GMX_OCL_DISABLE_I_PREFETCH") == NULL)
+              && ((nb->dev_info->vendor_e == OCL_VENDOR_AMD) || (getenv("GMX_OCL_ENABLE_I_PREFETCH") != NULL));
 
     /* NOTE: in CUDA we pick L1 cache configuration for the nbnxn kernels here,
      * but sadly this is not supported in OpenCL (yet?). Consider adding it if
@@ -824,8 +824,8 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
     cl_command_queue ls    = nb->stream[eintLocal];
     cl_float         value = 0.0f;
 
-    size_t local_work_size[3]  = {1, 1, 1};
-    size_t global_work_size[3] = {1, 1, 1};
+    size_t local_work_size[3]  = { 1, 1, 1 };
+    size_t global_work_size[3] = { 1, 1, 1 };
 
     cl_int arg_no;
 
@@ -838,8 +838,8 @@ static void nbnxn_ocl_clear_f(gmx_nbnxn_ocl_t *nb, int natoms_clear)
     global_work_size[0] = ((natoms_flat + local_work_size[0] - 1) / local_work_size[0]) * local_work_size[0];
 
 
-    arg_no    = 0;
-    cl_error  = clSetKernelArg(memset_f, arg_no++, sizeof(cl_mem), &(adat->f));
+    arg_no   = 0;
+    cl_error = clSetKernelArg(memset_f, arg_no++, sizeof(cl_mem), &(adat->f));
     cl_error |= clSetKernelArg(memset_f, arg_no++, sizeof(cl_float), &value);
     cl_error |= clSetKernelArg(memset_f, arg_no++, sizeof(cl_uint), &natoms_flat);
     assert(cl_error == CL_SUCCESS);
@@ -1005,7 +1005,6 @@ void nbnxn_gpu_init_atomdata(gmx_nbnxn_ocl_t *              nb,
     {
         ocl_copy_H2D_async(d_atdat->atom_types, nbat->type, 0,
                            natoms * sizeof(int), ls, bDoTime ? &(timers->atdat) : NULL);
-
     }
 
     /* kick off the tasks enqueued above to ensure concurrency with the search */
@@ -1069,7 +1068,6 @@ static void free_gpu_device_runtime_data(gmx_device_runtime_data_t *runData)
         runData->program = NULL;
         assert(CL_SUCCESS == cl_error);
     }
-
 }
 
 //! This function is documented in the header file
@@ -1079,16 +1077,16 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
 
     /* Free kernels */
     kernel_count = sizeof(nb->kernel_ener_noprune_ptr) / sizeof(nb->kernel_ener_noprune_ptr[0][0]);
-    free_kernels((cl_kernel*)nb->kernel_ener_noprune_ptr, kernel_count);
+    free_kernels((cl_kernel *)nb->kernel_ener_noprune_ptr, kernel_count);
 
     kernel_count = sizeof(nb->kernel_ener_prune_ptr) / sizeof(nb->kernel_ener_prune_ptr[0][0]);
-    free_kernels((cl_kernel*)nb->kernel_ener_prune_ptr, kernel_count);
+    free_kernels((cl_kernel *)nb->kernel_ener_prune_ptr, kernel_count);
 
     kernel_count = sizeof(nb->kernel_noener_noprune_ptr) / sizeof(nb->kernel_noener_noprune_ptr[0][0]);
-    free_kernels((cl_kernel*)nb->kernel_noener_noprune_ptr, kernel_count);
+    free_kernels((cl_kernel *)nb->kernel_noener_noprune_ptr, kernel_count);
 
     kernel_count = sizeof(nb->kernel_noener_prune_ptr) / sizeof(nb->kernel_noener_prune_ptr[0][0]);
-    free_kernels((cl_kernel*)nb->kernel_noener_prune_ptr, kernel_count);
+    free_kernels((cl_kernel *)nb->kernel_noener_prune_ptr, kernel_count);
 
     free_kernel(&(nb->kernel_memset_f));
     free_kernel(&(nb->kernel_memset_f2));
@@ -1174,13 +1172,13 @@ void nbnxn_gpu_free(gmx_nbnxn_ocl_t *nb)
 
 
 //! This function is documented in the header file
-gmx_wallclock_gpu_t * nbnxn_gpu_get_timings(gmx_nbnxn_ocl_t *nb)
+gmx_wallclock_gpu_t *nbnxn_gpu_get_timings(gmx_nbnxn_ocl_t *nb)
 {
     return (nb != NULL && nb->bDoTime) ? nb->timings : NULL;
 }
 
 //! This function is documented in the header file
-void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
+void nbnxn_gpu_reset_timings(nonbonded_verlet_t *nbv)
 {
     if (nbv->gpu_nbv && nbv->gpu_nbv->bDoTime)
     {
@@ -1192,7 +1190,8 @@ void nbnxn_gpu_reset_timings(nonbonded_verlet_t* nbv)
 int nbnxn_gpu_min_ci_balanced(gmx_nbnxn_ocl_t *nb)
 {
     return nb != NULL
-           ? gpu_min_ci_balanced_factor * nb->dev_info->compute_units : 0;
+                   ? gpu_min_ci_balanced_factor * nb->dev_info->compute_units
+                   : 0;
 }
 
 //! This function is documented in the header file

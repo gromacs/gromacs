@@ -61,7 +61,7 @@ TEST(TabulatedNormalDistributionTest, Output14)
     gmx::test::TestReferenceChecker checker(data.rootChecker());
 
     gmx::ThreeFry2x64<2>               rng(123456, gmx::RandomDomain::Other);
-    gmx::TabulatedNormalDistribution<> dist(2.0, 5.0);   // Use default 14-bit resolution
+    gmx::TabulatedNormalDistribution<> dist(2.0, 5.0); // Use default 14-bit resolution
     std::vector<float>                 result;
 
     for (int i = 0; i < 10; i++)
@@ -76,9 +76,9 @@ TEST(TabulatedNormalDistributionTest, Output16)
     gmx::test::TestReferenceData    data;
     gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    gmx::ThreeFry2x64<2>                        rng(123456, gmx::RandomDomain::Other);
-    gmx::TabulatedNormalDistribution<float, 16> dist(2.0, 5.0);   // Use larger 16-bit table
-    std::vector<float>                          result;
+    gmx::ThreeFry2x64<2> rng(123456, gmx::RandomDomain::Other);
+    gmx::TabulatedNormalDistribution<float, 16> dist(2.0, 5.0); // Use larger 16-bit table
+    std::vector<float> result;
 
     for (int i = 0; i < 10; i++)
     {
@@ -165,7 +165,7 @@ TEST(TabulatedNormalDistributionTableTest, HasValidProperties)
     for (size_t i = 0, iFromEnd = table.size() - 1; i < halfSize; ++i, --iFromEnd)
     {
         EXPECT_REAL_EQ_TOL(table.at(i), -table.at(iFromEnd), tolerance)
-        << "Table is not an odd-valued function for entries " << i << " and " << iFromEnd;
+                << "Table is not an odd-valued function for entries " << i << " and " << iFromEnd;
         // Add up the squares of the table values in order of ascending
         // magnitude (to minimize accumulation of round-off error).
         sumOfSquares += table.at(i) * table.at(i) + table.at(iFromEnd) * table.at(iFromEnd);
@@ -175,6 +175,6 @@ TEST(TabulatedNormalDistributionTableTest, HasValidProperties)
     EXPECT_REAL_EQ_TOL(1.0, variance, tolerance) << "Table should have unit variance";
 }
 
-}      // namespace anonymous
+} // namespace anonymous
 
-}      // namespace gmx
+} // namespace gmx

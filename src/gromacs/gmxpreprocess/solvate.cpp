@@ -91,7 +91,7 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
     nrmoltypes = 0;
     for (i = 0; i < atoms->nr; i++)
     {
-        if ( (i == 0) || (atoms->atom[i].resind != atoms->atom[i - 1].resind) )
+        if ((i == 0) || (atoms->atom[i].resind != atoms->atom[i - 1].resind))
         {
             /* see if this was a molecule type we haven't had yet: */
             moltp = -1;
@@ -148,8 +148,8 @@ static void sort_molecule(t_atoms **atoms_solvt, std::vector<RVec> *x,
         for (j = 1; j < nrmoltypes; j++)
         {
             moltypes[j].i
-                        = moltypes[j].i0
-                        = moltypes[j - 1].i0 + moltypes[j - 1].natoms * moltypes[j - 1].nmol;
+                    = moltypes[j].i0
+                    = moltypes[j - 1].i0 + moltypes[j - 1].natoms * moltypes[j - 1].nmol;
         }
 
         /* now put them there: */
@@ -230,8 +230,8 @@ static void rm_res_pbc(const t_atoms *atoms, std::vector<RVec> *x, matrix box)
             nat++;
             rvec_inc(xcg, (*x)[n]);
         }
-        if ( (n + 1 == atoms->nr)
-             || (atoms->atom[n + 1].resind != atoms->atom[n].resind) )
+        if ((n + 1 == atoms->nr)
+            || (atoms->atom[n + 1].resind != atoms->atom[n].resind))
         {
             /* if nat==0 we have only hydrogens in the solvent,
                we take last coordinate as cg */
@@ -333,7 +333,7 @@ static void replicateSolventBox(t_atoms *atoms, std::vector<RVec> *x,
             delta[YY] = iy * box[YY][YY];
             for (int iz = 0; iz < n_box[ZZ]; ++iz)
             {
-                delta[ZZ] = iz * box[ZZ][ZZ];
+                delta[ZZ]         = iz * box[ZZ][ZZ];
                 bool bKeepResidue = false;
                 for (int i = 0; i < atoms->nr; ++i)
                 {
@@ -342,8 +342,8 @@ static void replicateSolventBox(t_atoms *atoms, std::vector<RVec> *x,
                     for (int m = 0; m < DIM; ++m)
                     {
                         const real newCoord = delta[m] + (*x)[i][m];
-                        bKeepAtom         = bKeepAtom && (newCoord < boxWithMargin[m]);
-                        newX[newIndex][m] = newCoord;
+                        bKeepAtom           = bKeepAtom && (newCoord < boxWithMargin[m]);
+                        newX[newIndex][m]   = newCoord;
                     }
                     bKeepResidue = bKeepResidue || bKeepAtom;
                     if (!v->empty())
@@ -505,15 +505,15 @@ static void removeSolventBoxOverlap(t_atoms *atoms, std::vector<RVec> *x,
  */
 static void removeSoluteOverlap(t_atoms *atoms, std::vector<RVec> *x,
                                 std::vector<RVec> *v, std::vector<real> *r,
-                                const t_pbc &pbc,
+                                const t_pbc &            pbc,
                                 const std::vector<RVec> &x_solute,
                                 const std::vector<real> &r_solute,
-                                real rshell)
+                                real                     rshell)
 {
     const real maxRadius1
-        = *std::max_element(r->begin(), r->end());
+            = *std::max_element(r->begin(), r->end());
     const real maxRadius2
-        = *std::max_element(r_solute.begin(), r_solute.end());
+            = *std::max_element(r_solute.begin(), r_solute.end());
 
     gmx::AtomsRemover remover(*atoms);
     // If rshell is >0, the neighborhood search looks at all pairs
@@ -573,7 +573,7 @@ static void removeSoluteOverlap(t_atoms *atoms, std::vector<RVec> *x,
  */
 static void removeExtraSolventMolecules(t_atoms *atoms, std::vector<RVec> *x,
                                         std::vector<RVec> *v,
-                                        int numberToRemove)
+                                        int                numberToRemove)
 {
     gmx::AtomsRemover remover(*atoms);
     // TODO: It might be nicer to remove a random set of residues, but
@@ -691,9 +691,9 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
     for (i = 0; (i < atoms->nres); i++)
     {
         /* calculate number of SOLvent molecules */
-        if ( (strcmp(*atoms->resinfo[i].name, "SOL") == 0)
-             || (strcmp(*atoms->resinfo[i].name, "WAT") == 0)
-             || (strcmp(*atoms->resinfo[i].name, "HOH") == 0) )
+        if ((strcmp(*atoms->resinfo[i].name, "SOL") == 0)
+            || (strcmp(*atoms->resinfo[i].name, "WAT") == 0)
+            || (strcmp(*atoms->resinfo[i].name, "HOH") == 0))
         {
             nsol++;
         }
@@ -716,7 +716,7 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
 
     /* open topology file and append sol molecules */
     topinout = ftp2fn(efTOP, NFILE, fnm);
-    if (ftp2bSet(efTOP, NFILE, fnm) )
+    if (ftp2bSet(efTOP, NFILE, fnm))
     {
         char temporary_filename[STRLEN];
         strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
@@ -753,11 +753,11 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
                     bMolecules = (gmx_strcasecmp(buf2, "molecules") == 0);
                 }
             }
-            else if (bSystem && nsol && (buf[0] != ';') )
+            else if (bSystem && nsol && (buf[0] != ';'))
             {
                 /* if sol present, append "in water" to system name */
                 rtrim(buf2);
-                if (buf2[0] && (!strstr(buf2, " water")) )
+                if (buf2[0] && (!strstr(buf2, " water")))
                 {
                     sprintf(buf, "%s in water\n", buf2);
                     bSystem = FALSE;
@@ -795,8 +795,10 @@ static void update_top(t_atoms *atoms, matrix box, int NFILE, t_filenm fnm[],
         gmx_ffclose(fpin);
         if (nsol)
         {
-            fprintf(stdout, "Adding line for %d solvent molecules to "
-                    "topology file (%s)\n", nsol, topinout);
+            fprintf(stdout,
+                    "Adding line for %d solvent molecules to "
+                    "topology file (%s)\n",
+                    nsol, topinout);
             fprintf(fpout, "%-15s %5d\n", "SOL", nsol);
         }
         gmx_ffclose(fpout);
@@ -874,30 +876,24 @@ int gmx_solvate(int argc, char *argv[])
 
     t_filenm fnm[] = {
         { efSTX, "-cp", "protein", ffOPTRD },
-        { efSTX, "-cs", "spc216",  ffLIBRD},
-        { efSTO, nullptr,  nullptr,      ffWRITE},
-        { efTOP, nullptr,  nullptr,      ffOPTRW},
+        { efSTX, "-cs", "spc216", ffLIBRD },
+        { efSTO, nullptr, nullptr, ffWRITE },
+        { efTOP, nullptr, nullptr, ffOPTRW },
     };
 #define NFILE asize(fnm)
 
     static real       defaultDistance = 0.105, r_shell = 0, scaleFactor = 0.57;
-    static rvec       new_box         = {0.0, 0.0, 0.0};
-    static gmx_bool   bReadV          = FALSE;
-    static int        max_sol         = 0;
+    static rvec       new_box = { 0.0, 0.0, 0.0 };
+    static gmx_bool   bReadV  = FALSE;
+    static int        max_sol = 0;
     gmx_output_env_t *oenv;
     t_pargs           pa[] = {
-        { "-box",    FALSE, etRVEC, {new_box},
-          "Box size (in nm)" },
-        { "-radius",   FALSE, etREAL, {&defaultDistance},
-          "Default van der Waals distance"},
-        { "-scale", FALSE, etREAL, {&scaleFactor},
-          "Scale factor to multiply Van der Waals radii from the database in share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 g/l for proteins in water." },
-        { "-shell",  FALSE, etREAL, {&r_shell},
-          "Thickness of optional water layer around solute" },
-        { "-maxsol", FALSE, etINT,  {&max_sol},
-          "Maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
-        { "-vel",    FALSE, etBOOL, {&bReadV},
-          "Keep velocities from input solute and solvent" },
+        { "-box", FALSE, etRVEC, { new_box }, "Box size (in nm)" },
+        { "-radius", FALSE, etREAL, { &defaultDistance }, "Default van der Waals distance" },
+        { "-scale", FALSE, etREAL, { &scaleFactor }, "Scale factor to multiply Van der Waals radii from the database in share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 g/l for proteins in water." },
+        { "-shell", FALSE, etREAL, { &r_shell }, "Thickness of optional water layer around solute" },
+        { "-maxsol", FALSE, etINT, { &max_sol }, "Maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
+        { "-vel", FALSE, etBOOL, { &bReadV }, "Keep velocities from input solute and solvent" },
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
@@ -907,13 +903,14 @@ int gmx_solvate(int argc, char *argv[])
     }
 
     const char *solventFileName = opt2fn("-cs", NFILE, fnm);
-    bProt = opt2bSet("-cp", NFILE, fnm);
-    bBox  = opt2parg_bSet("-box", asize(pa), pa);
+    bProt                       = opt2bSet("-cp", NFILE, fnm);
+    bBox                        = opt2parg_bSet("-box", asize(pa), pa);
 
     /* check input */
     if (!bProt && !bBox)
     {
-        gmx_fatal(FARGS, "When no solute (-cp) is specified, "
+        gmx_fatal(FARGS,
+                  "When no solute (-cp) is specified, "
                   "a box size (-box) must be specified");
     }
 
@@ -948,7 +945,8 @@ int gmx_solvate(int argc, char *argv[])
     }
     if (det(box) == 0)
     {
-        gmx_fatal(FARGS, "Undefined solute box.\nCreate one with gmx editconf "
+        gmx_fatal(FARGS,
+                  "Undefined solute box.\nCreate one with gmx editconf "
                   "or give explicit -box command line option");
     }
 

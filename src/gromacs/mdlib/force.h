@@ -89,17 +89,17 @@ void calc_rffac(FILE *fplog, int eel, real eps_r, real eps_rf,
                 real *kappa, real *krf, real *crf);
 /* Determine the reaction-field constants */
 
-void init_generalized_rf(FILE *fplog,
+void init_generalized_rf(FILE *            fplog,
                          const gmx_mtop_t *mtop, const t_inputrec *ir,
                          t_forcerec *fr);
 /* Initialize the generalized reaction field parameters */
 
 
 /* In wall.c */
-void make_wall_tables(FILE *fplog,
+void make_wall_tables(FILE *            fplog,
                       const t_inputrec *ir, const char *tabfn,
                       const gmx_groups_t *groups,
-                      t_forcerec *fr);
+                      t_forcerec *        fr);
 
 real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
               rvec x[], rvec f[], real lambda, real Vlj[], t_nrnb *nrnb);
@@ -161,18 +161,18 @@ void do_force(FILE *log, t_commrec *cr,
               t_inputrec *inputrec,
               gmx_int64_t step, struct t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
-              gmx_groups_t *groups,
+              gmx_groups_t *  groups,
               matrix box, PaddedRVecVector *coordinates, history_t *hist,
               PaddedRVecVector *force,
-              tensor vir_force,
-              t_mdatoms *mdatoms,
+              tensor            vir_force,
+              t_mdatoms *       mdatoms,
               gmx_enerdata_t *enerd, t_fcdata *fcd,
               std::vector<real> *lambda, struct t_graph *graph,
-              t_forcerec *fr,
+              t_forcerec * fr,
               gmx_vsite_t *vsite, rvec mu_tot,
               double t, struct gmx_edsam *ed,
               gmx_bool bBornRadii,
-              int flags);
+              int      flags);
 
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
@@ -194,29 +194,29 @@ void ns(FILE *          fplog,
         gmx_bool        bFillGrid);
 /* Call the neighborsearcher */
 
-void do_force_lowlevel(t_forcerec   * fr,
-                       t_inputrec   * ir,
-                       t_idef       * idef,
-                       t_commrec    * cr,
-                       t_nrnb       * nrnb,
+void do_force_lowlevel(t_forcerec *    fr,
+                       t_inputrec *    ir,
+                       t_idef *        idef,
+                       t_commrec *     cr,
+                       t_nrnb *        nrnb,
                        gmx_wallcycle_t wcycle,
-                       t_mdatoms    * md,
-                       rvec         x[],
-                       history_t    * hist,
-                       rvec         f_shortrange[],
-                       gmx_enerdata_t * enerd,
-                       t_fcdata     * fcd,
-                       gmx_localtop_t * top,
+                       t_mdatoms *     md,
+                       rvec            x[],
+                       history_t *     hist,
+                       rvec            f_shortrange[],
+                       gmx_enerdata_t *enerd,
+                       t_fcdata *      fcd,
+                       gmx_localtop_t *top,
                        gmx_genborn_t * born,
-                       gmx_bool         bBornRadii,
-                       matrix       box,
-                       t_lambda     * fepvals,
-                       real         * lambda,
-                       t_graph      * graph,
-                       t_blocka     * excl,
-                       rvec         mu_tot[2],
-                       int          flags,
-                       float        *cycles_pme);
+                       gmx_bool        bBornRadii,
+                       matrix          box,
+                       t_lambda *      fepvals,
+                       real *          lambda,
+                       t_graph *       graph,
+                       t_blocka *      excl,
+                       rvec            mu_tot[2],
+                       int             flags,
+                       float *         cycles_pme);
 /* Call all the force routines */
 
 void free_gpu_resources(const t_forcerec *    fr,

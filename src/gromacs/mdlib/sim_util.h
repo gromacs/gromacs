@@ -82,7 +82,6 @@ void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
 void put_atoms_in_box_omp(int ePBC, const matrix box, int natoms, rvec x[]);
 
 
-
 /* ROUTINES from stat.c */
 gmx_global_stat_t global_stat_init(t_inputrec *ir);
 
@@ -91,11 +90,11 @@ void global_stat_destroy(gmx_global_stat_t gs);
 void global_stat(gmx_global_stat_t gs,
                  t_commrec *cr, gmx_enerdata_t *enerd,
                  tensor fvir, tensor svir, rvec mu_tot,
-                 t_inputrec *inputrec,
+                 t_inputrec *    inputrec,
                  gmx_ekindata_t *ekind,
                  gmx_constr *constr, t_vcm *vcm,
                  int nsig, real *sig,
-                 int *totalNumberOfBondedInteractions,
+                 int *    totalNumberOfBondedInteractions,
                  gmx_bool bSumEkinhOld, int flags);
 /* All-reduce energy-like quantities over cr->mpi_comm_mysim */
 
@@ -120,14 +119,14 @@ void print_date_and_time(FILE *log, int rank, const char *title,
 
 void print_start(FILE *fplog, t_commrec *cr,
                  gmx_walltime_accounting_t walltime_accounting,
-                 const char *name);
+                 const char *              name);
 
 void finish_run(FILE *log, const gmx::MDLogger &mdlog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
-                nonbonded_verlet_t *nbv,
-                gmx_bool bWriteStat);
+                nonbonded_verlet_t *      nbv,
+                gmx_bool                  bWriteStat);
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
 
@@ -142,7 +141,7 @@ void do_constrain_first(FILE *log, gmx_constr *constr,
                         t_state *state, t_commrec *cr, t_nrnb *nrnb,
                         t_forcerec *fr, gmx_localtop_t *top);
 
-void init_md(FILE *fplog,
+void init_md(FILE *     fplog,
              t_commrec *cr, t_inputrec *ir, const gmx_output_env_t *oenv,
              double *t, double *t0,
              std::vector<real> *lambda, int *fep_state, double *lam0,
@@ -151,7 +150,7 @@ void init_md(FILE *fplog,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
-             rvec mu_tot,
+             rvec      mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags,
              gmx_wallcycle_t wcycle);
 /* Routine in sim_util.c */

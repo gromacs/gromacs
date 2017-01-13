@@ -49,28 +49,28 @@ namespace gmx
 static inline Simd4Float gmx_simdcall fma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
-               _mm_macc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_macc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline Simd4Float gmx_simdcall fms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
-               _mm_msub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_msub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline Simd4Float gmx_simdcall fnma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
-               _mm_nmacc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_nmacc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline Simd4Float gmx_simdcall fnms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
     return {
-               _mm_nmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_nmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
@@ -82,6 +82,6 @@ static inline float gmx_simdcall reduce(Simd4Float a)
     return *reinterpret_cast<float *>(&b);
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD4_FLOAT_H

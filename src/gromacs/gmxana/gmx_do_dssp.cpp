@@ -96,15 +96,15 @@ static int strip_dssp(char *dsspfile, int nres,
         snew(ssbuf, 2 * nres - 1);
     }
 
-    iaccb     = iaccf = 0;
-    nresidues = 0;
-    naccf     = 0;
-    naccb     = 0;
+    iaccb = iaccf = 0;
+    nresidues     = 0;
+    naccf         = 0;
+    naccb         = 0;
     for (nr = 0; (fgets2(buf, STRLEN, tapeout) != nullptr); nr++)
     {
         if (buf[13] == '!') /* Chain separator line has '!' at pos. 13 */
         {
-            SSTP = '=';     /* Chain separator sign '=' */
+            SSTP = '='; /* Chain separator sign '=' */
         }
         else
         {
@@ -202,7 +202,7 @@ static gmx_bool *bPhobics(t_atoms *atoms)
 
     for (i = 0; (i < atoms->nres); i++)
     {
-        if (-1 != search_str(nb, cb, *atoms->resinfo[i].name) )
+        if (-1 != search_str(nb, cb, *atoms->resinfo[i].name))
         {
             bb[i] = TRUE;
         }
@@ -317,7 +317,7 @@ void write_sas_mat(const char *fn, real **accr, int nframe, int nres, t_matrix *
 {
     real  lo, hi;
     int   i, j, nlev;
-    t_rgb rlo = {1, 1, 1}, rhi = {0, 0, 0};
+    t_rgb rlo = { 1, 1, 1 }, rhi = { 0, 0, 0 };
     FILE *fp;
 
     if (fn)
@@ -347,7 +347,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
     t_mapping *  map;
     int          f, r, *count, *total, ss_count, total_count;
     size_t       s;
-    const char** leg;
+    const char **leg;
 
     map = mat->map;
     snew(count, mat->nmap);
@@ -403,7 +403,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
         {
             if (std::strchr(ss_string, map[s].code.c1))
             {
-                ss_count    += count[s];
+                ss_count += count[s];
                 total_count += count[s];
             }
         }
@@ -437,7 +437,7 @@ void analyse_ss(const char *outfile, t_matrix *mat, const char *ss_string,
 
 int gmx_do_dssp(int argc, char *argv[])
 {
-    const char *       desc[] = {
+    const char *desc[] = {
         "[THISMODULE] ",
         "reads a trajectory file and computes the secondary structure for",
         "each time frame ",
@@ -477,12 +477,9 @@ int gmx_do_dssp(int argc, char *argv[])
     static const char *ss_string   = "HEBT";
     static int         dsspVersion = 2;
     t_pargs            pa[]        = {
-        { "-v",  FALSE, etBOOL, {&bVerbose},
-          "HIDDENGenerate miles of useless information" },
-        { "-sss", FALSE, etSTR, {&ss_string},
-          "Secondary structures for structure count"},
-        { "-ver", FALSE, etINT, {&dsspVersion},
-          "DSSP major version. Syntax changed with version 2"}
+        { "-v", FALSE, etBOOL, { &bVerbose }, "HIDDENGenerate miles of useless information" },
+        { "-sss", FALSE, etSTR, { &ss_string }, "Secondary structures for structure count" },
+        { "-ver", FALSE, etINT, { &dsspVersion }, "DSSP major version. Syntax changed with version 2" }
     };
 
     t_trxstatus *     status;
@@ -498,7 +495,7 @@ int gmx_do_dssp(int argc, char *argv[])
     gmx_bool *        bPhbres, bDoAccSurf;
     real              t;
     int               i, j, natoms, nframe = 0;
-    matrix            box = {{0}};
+    matrix            box = { { 0 } };
     int               gnx;
     char *            grpnm, *ss_str;
     int *             index;
@@ -512,16 +509,16 @@ int gmx_do_dssp(int argc, char *argv[])
     gmx_rmpbc_t       gpbc = nullptr;
 
     t_filenm fnm[] = {
-        { efTRX, "-f",   nullptr,      ffREAD },
-        { efTPS, nullptr,   nullptr,      ffREAD },
-        { efNDX, nullptr,   nullptr,      ffOPTRD },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
         { efDAT, "-ssdump", "ssdump", ffOPTWR },
-        { efMAP, "-map", "ss",      ffLIBRD },
-        { efXPM, "-o",   "ss",      ffWRITE },
-        { efXVG, "-sc",  "scount",  ffWRITE },
-        { efXPM, "-a",   "area",    ffOPTWR },
-        { efXVG, "-ta",  "totarea", ffOPTWR },
-        { efXVG, "-aa",  "averarea", ffOPTWR }
+        { efMAP, "-map", "ss", ffLIBRD },
+        { efXPM, "-o", "ss", ffWRITE },
+        { efXVG, "-sc", "scount", ffWRITE },
+        { efXPM, "-a", "area", ffOPTWR },
+        { efXVG, "-ta", "totarea", ffOPTWR },
+        { efXVG, "-aa", "averarea", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -610,7 +607,6 @@ int gmx_do_dssp(int argc, char *argv[])
     {
         sprintf(dssp, "%s %s %s %s > /dev/null %s",
                 dptr, bDoAccSurf ? "" : "-na", pdbfile, tmpfile, bVerbose ? "" : "2> /dev/null");
-
     }
     fprintf(stderr, "dssp cmd='%s'\n", dssp);
 

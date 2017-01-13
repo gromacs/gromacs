@@ -55,7 +55,7 @@
 CorrelationDataSet::CorrelationDataSet(const std::string &fileName)
 {
     std::string fileNm = gmx::test::TestFileManager::getInputFilePath(fileName.c_str());
-    nrLines_ = read_xvg(fileNm.c_str(), &tempValues_, &nrColumns_);
+    nrLines_           = read_xvg(fileNm.c_str(), &tempValues_, &nrColumns_);
 
     dt_        = tempValues_[0][1] - tempValues_[0][0];
     startTime_ = tempValues_[0][0];

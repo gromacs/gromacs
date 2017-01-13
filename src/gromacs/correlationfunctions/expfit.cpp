@@ -146,7 +146,7 @@ static double myexp(double x, double A, double tau)
 }
 
 /*! \brief Compute y=(a0+a1)/2-(a0-a1)/2*erf((x-a2)/a3^2) */
-static double lmc_erffit (double x, const double *a)
+static double lmc_erffit(double x, const double *a)
 {
     double erfarg;
     double myerf;
@@ -292,7 +292,7 @@ static double lmc_pres_6_parm(double x, const double *a)
     if ((a[4] != 0) && (a[0] != 0))
     {
         double power = std::min(fabs(a[5]), pow_max);
-        term3 = a[0] * safe_exp(-pow((x / fabs(a[4])), power));
+        term3        = a[0] * safe_exp(-pow((x / fabs(a[4])), power));
     }
 
     term1 = 1 - a[0];
@@ -300,7 +300,7 @@ static double lmc_pres_6_parm(double x, const double *a)
     if ((term1 != 0) && (a[2] != 0))
     {
         double power = std::min(fabs(a[3]), pow_max);
-        term2 = safe_exp(-pow((x / fabs(a[2])), power)) * cos(x * fabs(a[1]));
+        term2        = safe_exp(-pow((x / fabs(a[2])), power)) * cos(x * fabs(a[1]));
     }
 
     return term1 * term2 + term3;
@@ -400,9 +400,9 @@ typedef double (*t_lmcurve)(double x, const double *a);
 /*! \brief array of fitting functions corresponding to the pre-defined types */
 t_lmcurve lmcurves[effnNR + 1] = {
     lmc_exp_one_parm, lmc_exp_one_parm, lmc_exp_two_parm,
-    lmc_exp_exp,      lmc_exp_5_parm,   lmc_exp_7_parm,
+    lmc_exp_exp, lmc_exp_5_parm, lmc_exp_7_parm,
     lmc_exp_9_parm,
-    lmc_vac_2_parm,   lmc_erffit,  lmc_errest_3_parm, lmc_pres_6_parm
+    lmc_vac_2_parm, lmc_erffit, lmc_errest_3_parm, lmc_pres_6_parm
 };
 
 double fit_function(const int eFitFn, const double parm[], const double x)
@@ -773,13 +773,13 @@ real do_lmfit(int ndata, real c1[], real sig[], real dt, real *x0,
             switch (eFitFn)
             {
                 case effnEXP1:
-                    integral = fitparms[0] * myexp(begintimefit, 1,  fitparms[0]);
+                    integral = fitparms[0] * myexp(begintimefit, 1, fitparms[0]);
                     break;
                 case effnEXP2:
-                    integral = fitparms[0] * myexp(begintimefit, fitparms[1],  fitparms[0]);
+                    integral = fitparms[0] * myexp(begintimefit, fitparms[1], fitparms[0]);
                     break;
                 case effnEXPEXP:
-                    integral = (fitparms[0] * myexp(begintimefit, fitparms[1],  fitparms[0])
+                    integral = (fitparms[0] * myexp(begintimefit, fitparms[1], fitparms[0])
                                 + fitparms[2] * myexp(begintimefit, 1 - fitparms[1], fitparms[2]));
                     break;
                 case effnEXP5:

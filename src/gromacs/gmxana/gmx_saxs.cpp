@@ -58,25 +58,21 @@ int gmx_saxs(int argc, char *argv[])
     static int  ngroups = 1;
 
     t_pargs pa[] = {
-        { "-ng",       FALSE, etINT, {&ngroups},
-          "Number of groups to compute SAXS" },
-        {"-startq", FALSE, etREAL, {&start_q},
-         "Starting q (1/nm) "},
-        {"-endq", FALSE, etREAL, {&end_q},
-         "Ending q (1/nm)"},
-        {"-energy", FALSE, etREAL, {&energy},
-         "Energy of the incoming X-ray (keV) "}
+        { "-ng", FALSE, etINT, { &ngroups }, "Number of groups to compute SAXS" },
+        { "-startq", FALSE, etREAL, { &start_q }, "Starting q (1/nm) " },
+        { "-endq", FALSE, etREAL, { &end_q }, "Ending q (1/nm)" },
+        { "-energy", FALSE, etREAL, { &energy }, "Energy of the incoming X-ray (keV) " }
     };
 #define NPA asize(pa)
     const char *      fnTPS, *fnTRX, *fnNDX, *fnDAT = nullptr;
     gmx_output_env_t *oenv;
 
     t_filenm fnm[] = {
-        { efTRX, "-f",  nullptr,      ffREAD },
-        { efTPS, nullptr,  nullptr,      ffREAD },
-        { efNDX, nullptr,  nullptr,      ffOPTRD },
-        { efDAT, "-d",  "sfactor", ffOPTRD },
-        { efXVG, "-sq", "sq",      ffWRITE },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efDAT, "-d", "sfactor", ffOPTRD },
+        { efXVG, "-sq", "sq", ffWRITE },
     };
 #define NFILE asize(fnm)
     if (!parse_common_args(&argc, argv, PCA_CAN_TIME,

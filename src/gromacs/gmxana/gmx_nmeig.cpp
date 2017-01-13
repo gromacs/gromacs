@@ -102,7 +102,7 @@ static size_t get_nharm_mt(const gmx_moltype_t *mt)
 
     for (i = 0; (i < asize(harm_func)); i++)
     {
-        ft  = harm_func[i];
+        ft = harm_func[i];
         nh += mt->ilist[ft].nr / (interaction_function[ft].nratoms + 1);
     }
     return nh;
@@ -114,11 +114,11 @@ static size_t get_nvsite_mt(gmx_moltype_t *mt)
         F_VSITE2, F_VSITE3, F_VSITE3FD, F_VSITE3FAD,
         F_VSITE3OUT, F_VSITE4FD, F_VSITE4FDN, F_VSITEN
     };
-    int        i, ft;
-    size_t     nh = 0;
+    int    i, ft;
+    size_t nh = 0;
     for (i = 0; (i < asize(vs_func)); i++)
     {
-        ft  = vs_func[i];
+        ft = vs_func[i];
         nh += mt->ilist[ft].nr / (interaction_function[ft].nratoms + 1);
     }
     return nh;
@@ -160,7 +160,7 @@ static void nma_full_hessian(real *                     hess,
                 for (size_t k = 0; (k < atom_index.size()); k++)
                 {
                     size_t ak = atom_index[k];
-                    mass_fac = gmx::invsqrt(top->atoms.atom[ai].m * top->atoms.atom[ak].m);
+                    mass_fac  = gmx::invsqrt(top->atoms.atom[ai].m * top->atoms.atom[ak].m);
                     for (size_t l = 0; (l < DIM); l++)
                     {
                         hess[(i * DIM + j) * ndim + k * DIM + l] *= mass_fac;
@@ -185,7 +185,7 @@ static void nma_full_hessian(real *                     hess,
             for (size_t j = 0; j < atom_index.size(); j++)
             {
                 size_t aj = atom_index[j];
-                mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
+                mass_fac  = gmx::invsqrt(top->atoms.atom[aj].m);
                 for (size_t k = 0; (k < DIM); k++)
                 {
                     eigenvectors[i * ndim + j * DIM + k] *= mass_fac;
@@ -194,7 +194,6 @@ static void nma_full_hessian(real *                     hess,
         }
     }
 }
-
 
 
 static void nma_sparse_hessian(gmx_sparsematrix_t *       sparse_hessian,
@@ -228,10 +227,10 @@ static void nma_sparse_hessian(gmx_sparsematrix_t *       sparse_hessian,
                 row = DIM * iatom + j;
                 for (k = 0; k < sparse_hessian->ndata[row]; k++)
                 {
-                    col   = sparse_hessian->data[row][k].col;
-                    katom = col / 3;
+                    col       = sparse_hessian->data[row][k].col;
+                    katom     = col / 3;
                     size_t ak = atom_index[katom];
-                    mass_fac                            = gmx::invsqrt(top->atoms.atom[ai].m * top->atoms.atom[ak].m);
+                    mass_fac  = gmx::invsqrt(top->atoms.atom[ai].m * top->atoms.atom[ak].m);
                     sparse_hessian->data[row][k].value *= mass_fac;
                 }
             }
@@ -250,7 +249,7 @@ static void nma_sparse_hessian(gmx_sparsematrix_t *       sparse_hessian,
             for (size_t j = 0; j < atom_index.size(); j++)
             {
                 size_t aj = atom_index[j];
-                mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
+                mass_fac  = gmx::invsqrt(top->atoms.atom[aj].m);
                 for (k = 0; (k < DIM); k++)
                 {
                     eigenvectors[i * ndim + j * DIM + k] *= mass_fac;
@@ -324,59 +323,52 @@ int gmx_nmeig(int argc, char *argv[])
         "output."
     };
 
-    static gmx_bool bM    = TRUE, bCons = FALSE;
+    static gmx_bool bM = TRUE, bCons = FALSE;
     static int      begin = 1, end = 50, maxspec = 4000;
-    static real     T     = 298.15, width = 1;
-    t_pargs         pa[]  =
-    {
-        { "-m",  FALSE, etBOOL, {&bM},
+    static real     T = 298.15, width = 1;
+    t_pargs         pa[] = {
+        { "-m", FALSE, etBOOL, { &bM },
           "Divide elements of Hessian by product of sqrt(mass) of involved "
           "atoms prior to diagonalization. This should be used for 'Normal Modes' "
           "analysis" },
-        { "-first", FALSE, etINT, {&begin},
-          "First eigenvector to write away" },
-        { "-last",  FALSE, etINT, {&end},
-          "Last eigenvector to write away" },
-        { "-maxspec", FALSE, etINT, {&maxspec},
-          "Highest frequency (1/cm) to consider in the spectrum" },
-        { "-T",     FALSE, etREAL, {&T},
-          "Temperature for computing quantum heat capacity and enthalpy when using normal mode calculations to correct classical simulations" },
-        { "-constr", FALSE, etBOOL, {&bCons},
-          "If constraints were used in the simulation but not in the normal mode analysis (this is the recommended way of doing it) you will need to set this for computing the quantum corrections." },
-        { "-width",  FALSE, etREAL, {&width},
-          "Width (sigma) of the gaussian peaks (1/cm) when generating a spectrum" }
+        { "-first", FALSE, etINT, { &begin }, "First eigenvector to write away" },
+        { "-last", FALSE, etINT, { &end }, "Last eigenvector to write away" },
+        { "-maxspec", FALSE, etINT, { &maxspec }, "Highest frequency (1/cm) to consider in the spectrum" },
+        { "-T", FALSE, etREAL, { &T }, "Temperature for computing quantum heat capacity and enthalpy when using normal mode calculations to correct classical simulations" },
+        { "-constr", FALSE, etBOOL, { &bCons }, "If constraints were used in the simulation but not in the normal mode analysis (this is the recommended way of doing it) you will need to set this for computing the quantum corrections." },
+        { "-width", FALSE, etREAL, { &width }, "Width (sigma) of the gaussian peaks (1/cm) when generating a spectrum" }
     };
-    FILE *               out, *qc, *spec;
-    t_topology           top;
-    gmx_mtop_t           mtop;
-    rvec *               top_x;
-    matrix               box;
-    real *               eigenvalues;
-    real *               eigenvectors;
-    real                 qcvtot, qutot, qcv, qu;
-    int                  i, j, k;
-    t_tpxheader          tpx;
-    real                 value, omega, nu;
-    real                 factor_gmx_to_omega2;
-    real                 factor_omega_to_wavenumber;
-    real *               spectrum = nullptr;
-    real                 wfac;
-    gmx_output_env_t *   oenv;
-    const char *         qcleg[] = {
+    FILE *            out, *qc, *spec;
+    t_topology        top;
+    gmx_mtop_t        mtop;
+    rvec *            top_x;
+    matrix            box;
+    real *            eigenvalues;
+    real *            eigenvectors;
+    real              qcvtot, qutot, qcv, qu;
+    int               i, j, k;
+    t_tpxheader       tpx;
+    real              value, omega, nu;
+    real              factor_gmx_to_omega2;
+    real              factor_omega_to_wavenumber;
+    real *            spectrum = nullptr;
+    real              wfac;
+    gmx_output_env_t *oenv;
+    const char *      qcleg[] = {
         "Heat Capacity cV (J/mol K)",
         "Enthalpy H (kJ/mol)"
     };
-    real *               full_hessian   = nullptr;
-    gmx_sparsematrix_t * sparse_hessian = nullptr;
+    real *              full_hessian   = nullptr;
+    gmx_sparsematrix_t *sparse_hessian = nullptr;
 
     t_filenm fnm[] = {
-        { efMTX, "-f", "hessian",    ffREAD  },
-        { efTPR, nullptr, nullptr,         ffREAD  },
+        { efMTX, "-f", "hessian", ffREAD },
+        { efTPR, nullptr, nullptr, ffREAD },
         { efXVG, "-of", "eigenfreq", ffWRITE },
-        { efXVG, "-ol", "eigenval",  ffWRITE },
-        { efXVG, "-os", "spectrum",  ffOPTWR },
-        { efXVG, "-qc", "quant_corr",  ffOPTWR },
-        { efTRN, "-v", "eigenvec",  ffWRITE }
+        { efXVG, "-ol", "eigenval", ffWRITE },
+        { efXVG, "-os", "spectrum", ffOPTWR },
+        { efXVG, "-qc", "quant_corr", ffOPTWR },
+        { efTRN, "-v", "eigenvec", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -402,7 +394,7 @@ int gmx_nmeig(int argc, char *argv[])
 
     top = gmx_mtop_t_to_t_topology(&mtop, true);
 
-    bM = TRUE;
+    bM       = TRUE;
     int ndim = DIM * atom_index.size();
 
     if (opt2bSet("-qc", NFILE, fnm))
@@ -501,7 +493,7 @@ int gmx_nmeig(int argc, char *argv[])
     }
 
     /* now write the output */
-    fprintf (stderr, "Writing eigenvalues...\n");
+    fprintf(stderr, "Writing eigenvalues...\n");
     out = xvgropen(opt2fn("-ol", NFILE, fnm),
                    "Eigenvalues", "Eigenvalue index", "Eigenvalue [Gromacs units]",
                    oenv);
@@ -519,7 +511,7 @@ int gmx_nmeig(int argc, char *argv[])
 
     for (i = 0; i <= (end - begin); i++)
     {
-        fprintf (out, "%6d %15g\n", begin + i, eigenvalues[i]);
+        fprintf(out, "%6d %15g\n", begin + i, eigenvalues[i]);
     }
     xvgrclose(out);
 
@@ -587,7 +579,7 @@ int gmx_nmeig(int argc, char *argv[])
         omega = std::sqrt(value * factor_gmx_to_omega2);
         nu    = 1e-12 * omega / (2 * M_PI);
         value = omega * factor_omega_to_wavenumber;
-        fprintf (out, "%6d %15g\n", i, value);
+        fprintf(out, "%6d %15g\n", i, value);
         if (nullptr != spec)
         {
             wfac = eigenvalues[i - begin] / (width * std::sqrt(2 * M_PI));
@@ -603,11 +595,11 @@ int gmx_nmeig(int argc, char *argv[])
             if (i > end - nharm)
             {
                 qcv += BOLTZ * KILO;
-                qu  += BOLTZ * T;
+                qu += BOLTZ * T;
             }
-            fprintf (qc, "%6d %15g %15g\n", i, qcv, qu);
+            fprintf(qc, "%6d %15g %15g\n", i, qcv, qu);
             qcvtot += qcv;
-            qutot  += qu;
+            qutot += qu;
         }
     }
     xvgrclose(out);

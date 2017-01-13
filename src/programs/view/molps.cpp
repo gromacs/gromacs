@@ -70,8 +70,8 @@ static void init_pbc(matrix box)
 
     for (i = 0; (i < DIM); i++)
     {
-        gl_fbox[i]  =  box[i][i];
-        gl_hbox[i]  =  gl_fbox[i] * 0.5;
+        gl_fbox[i]  = box[i][i];
+        gl_hbox[i]  = gl_fbox[i] * 0.5;
         gl_mhbox[i] = -gl_hbox[i];
     }
 }
@@ -172,14 +172,11 @@ static void v4_to_iv2(vec4 x4, iv2 v2, int x0, int y0, real sx, real sy)
 static void draw_box(t_psdata ps, t_3dview *view, matrix box,
                      int x0, int y0, real sx, real sy)
 {
-    int  ivec[8][4] =  {
-        { 0, 0, 0, 1 }, { 1, 0, 0, 1 }, { 1, 1, 0, 1 }, { 0, 1, 0, 1 },
-        { 0, 0, 1, 1 }, { 1, 0, 1, 1 }, { 1, 1, 1, 1 }, { 0, 1, 1, 1 }
+    int ivec[8][4] = {
+        { 0, 0, 0, 1 }, { 1, 0, 0, 1 }, { 1, 1, 0, 1 }, { 0, 1, 0, 1 }, { 0, 0, 1, 1 }, { 1, 0, 1, 1 }, { 1, 1, 1, 1 }, { 0, 1, 1, 1 }
     };
-    int  bonds[12][2] = {
-        { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 },
-        { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 },
-        { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 }
+    int bonds[12][2] = {
+        { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 }, { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 }, { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 }
     };
     int  i, j;
     rvec corner[8];
@@ -243,7 +240,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
     }
     set_sizes(man);
 
-    z_fill (man, man->zz);
+    z_fill(man, man->zz);
 
     /* Start drawing
        XClearWindow(x11->disp,win->self); */

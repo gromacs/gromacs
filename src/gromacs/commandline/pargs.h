@@ -54,8 +54,7 @@ struct t_commrec;
 struct gmx_output_env_t;
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /*! \addtogroup module_commandline
@@ -65,7 +64,15 @@ extern "C"
 /** Command line argument type. */
 enum
 {
-    etINT, etINT64, etREAL, etTIME, etSTR, etBOOL, etRVEC, etENUM, etNR
+    etINT,
+    etINT64,
+    etREAL,
+    etTIME,
+    etSTR,
+    etBOOL,
+    etRVEC,
+    etENUM,
+    etNR
 };
 
 /*! \brief
@@ -89,8 +96,7 @@ typedef struct
      * changed.  In other words, the initial value for the variable defines the
      * default value.
      */
-    union
-    {
+    union {
         /*! \brief
          * Generic pointer for operations that do not need type information.
          *
@@ -121,7 +127,7 @@ typedef struct
         gmx_bool *b;
         /** Vector value for etRVEC. */
         rvec *rv;
-    }           u;
+    } u;
     /*! \brief
      * Description for the argument.
      *
@@ -218,23 +224,23 @@ gmx_bool opt2parg_bSet(const char *option, int nparg, t_pargs pa[]);
 
 
 /** Add option -w to view output files (must be implemented in program). */
-#define PCA_CAN_VIEW       (1 << 5)
+#define PCA_CAN_VIEW (1 << 5)
 /** Add option to set begin time for trajectory reading. */
-#define PCA_CAN_BEGIN      (1 << 6)
+#define PCA_CAN_BEGIN (1 << 6)
 /** Add option to set end time for trajectory reading. */
-#define PCA_CAN_END        (1 << 7)
+#define PCA_CAN_END (1 << 7)
 /** Add option to set time step for trajectory reading. */
-#define PCA_CAN_DT         (1 << 14)
+#define PCA_CAN_DT (1 << 14)
 /** Add all options for trajectory time control. */
-#define PCA_CAN_TIME       (PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_DT)
+#define PCA_CAN_TIME (PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_DT)
 /** Add option -tu to set time unit for output. */
-#define PCA_TIME_UNIT      (1 << 15)
+#define PCA_TIME_UNIT (1 << 15)
 /** Add option -deffnm to set default for all file options. */
 #define PCA_CAN_SET_DEFFNM (1 << 10)
 /** Do not raise a fatal error when invalid options are encountered. */
 #define PCA_NOEXIT_ON_ARGS (1 << 11)
 /** Is this node not reading: for parallel all nodes but the master */
-#define PCA_NOT_READ_NODE  (1 << 16)
+#define PCA_NOT_READ_NODE (1 << 16)
 /** Don't do any special processing for ffREAD files */
 #define PCA_DISABLE_INPUT_FILE_CHECKING (1 << 17)
 

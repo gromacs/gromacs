@@ -106,7 +106,6 @@ static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
     qall = 0.0;
 
 
-
     for (i = 0; i < top.mols.nr; i++)
     {
         k    = top.mols.index[i];
@@ -123,8 +122,8 @@ static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
         for (j = k; j < l; j++)
         {
             top.atoms.atom[j].q -= top.atoms.atom[j].m * qtot / mtot;
-            mass2[j]             = top.atoms.atom[j].m / mtot;
-            qmol[j]              = qtot;
+            mass2[j] = top.atoms.atom[j].m / mtot;
+            qmol[j]  = qtot;
         }
 
 
@@ -151,7 +150,6 @@ static gmx_bool precalc(t_topology top, real mass2[], real qmol[])
     }
 
     return bNEU;
-
 }
 
 static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
@@ -186,7 +184,7 @@ static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
     }
 }
 
-static void calc_mj(t_topology top, int ePBC, matrix box, gmx_bool bNoJump, int isize, int index0[], \
+static void calc_mj(t_topology top, int ePBC, matrix box, gmx_bool bNoJump, int isize, int index0[],
                     rvec fr[], rvec mj, real mass2[], real qmol[])
 {
 
@@ -230,9 +228,7 @@ static void calc_mj(t_topology top, int ePBC, matrix box, gmx_bool bNoJump, int 
         }
 
         rvec_inc(mj, mt1);
-
     }
-
 }
 
 
@@ -258,17 +254,15 @@ static real calceps(real prefactor, real md2, real mj2, real cor, real eps_rf, g
     if (eps_rf == 0.0)
     {
         epsilon = 1.0 + prefactor * epsilon;
-
     }
     else
     {
-        epsilon  = 2.0 * eps_rf + 1.0 + 2.0 * eps_rf * prefactor * epsilon;
+        epsilon = 2.0 * eps_rf + 1.0 + 2.0 * eps_rf * prefactor * epsilon;
         epsilon /= 2.0 * eps_rf + 1.0 - prefactor * epsilon;
     }
 
 
     return epsilon;
-
 }
 
 
@@ -289,7 +283,7 @@ static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int
         {
             real corint;
 
-            rfr      = static_cast<real>(nfr + i) / nshift;
+            rfr = static_cast<real>(nfr + i) / nshift;
             cacf[i] /= rfr;
 
             if (time[vfr[i]] <= time[vfr[ei]])
@@ -312,7 +306,6 @@ static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int
 
             i++;
         }
-
     }
     else
     {
@@ -320,7 +313,6 @@ static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int
     }
 
     return sigma_ret;
-
 }
 
 static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], int nfr, real refr[])
@@ -338,10 +330,7 @@ static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], i
             dsp2[i] *= prefactor / refr[i];
             fprintf(fmjdsp, "%.3f\t%10.6g\n", time[i], dsp2[i]);
         }
-
-
     }
-
 }
 
 
@@ -465,7 +454,6 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
         if (nfr == 0)
         {
             t0 = fr.time;
-
         }
 
         time[nfr] = fr.time - t0;
@@ -495,7 +483,6 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
             {
                 copy_rvec(fr.x[i], xp[i]);
             }
-
         }
 
         gmx_rmpbc_trxfr(gpbc, &fr);
@@ -515,7 +502,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
             for (j = nfr; j >= 0; j--)
             {
                 rvec_sub(mtrans[nfr], mtrans[j], tmp);
-                dsp2[nfr - j]  += norm2(tmp);
+                dsp2[nfr - j] += norm2(tmp);
                 xshfr[nfr - j] += 1.0;
             }
         }
@@ -585,7 +572,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
             nvfr++;
         }
 
-        volume     = det(fr.box);
+        volume = det(fr.box);
         volume_av += volume;
 
         rvec_inc(mja_tmp, mtrans[nfr]);
@@ -596,7 +583,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
         md2 += iprod(mu[nfr], mu[nfr]);
 
         fprintf(fmj, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", time[nfr], mtrans[nfr][XX], mtrans[nfr][YY], mtrans[nfr][ZZ], mj2 / refr, norm(mja_tmp) / refr);
-        fprintf(fmd, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n",    \
+        fprintf(fmd, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n",
                 time[nfr], mu[nfr][XX], mu[nfr][YY], mu[nfr][ZZ], md2 / refr, norm(mdvec) / refr);
 
         nfr++;
@@ -607,11 +594,11 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
 
     volume_av /= refr;
 
-    prefactor  = 1.0;
+    prefactor = 1.0;
     prefactor /= 3.0 * EPSILON0 * volume_av * BOLTZ * temp;
 
 
-    prefactorav  = E_CHARGE * E_CHARGE;
+    prefactorav = E_CHARGE * E_CHARGE;
     prefactorav /= volume_av * BOLTZMANN * temp * NANO * 6.0;
 
     fprintf(stderr, "Prefactor fit E-H: 1 / 6.0*V*k_B*T: %g\n", prefactorav);
@@ -645,7 +632,6 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
 
             printf("\nCalculating M_D - current correlation integral ... \n");
             corint = calc_cacf(mcor, prefactorav / EPSI0, djc, time, nvfr, vfr, ie, nshift);
-
         }
 
         if (bACF)
@@ -666,7 +652,6 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
                     xfit[i - ii] = std::log(time[vfr[i]]);
                     rtmp         = std::abs(cacf[i]);
                     yfit[i - ii] = std::log(rtmp);
-
                 }
 
                 lsq_y_ax_b(ie - ii, xfit, yfit, &sigma, &malt, &err, &rest);
@@ -679,7 +664,6 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
 
                 sfree(xfit);
                 sfree(yfit);
-
             }
         }
     }
@@ -710,7 +694,6 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     fprintf(stderr, "and corresponding refactor 1.0 / 3.0*V*k_B*T*EPSILON_0: %f \n", prefactor);
 
 
-
     if (bACF && (ii < nvfr))
     {
         fprintf(stderr, "Integral and integrated fit to the current acf yields at t=%f:\n", time[vfr[ii]]);
@@ -734,7 +717,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
         lsq_y_ax_b(ei - bi, xfit, yfit, &sigma, &malt, &err, &rest);
 
         sigma *= 1e12;
-        dk_d   = calceps(prefactor, md2, 0.5 * malt / prefactorav, corint, eps_rf, TRUE);
+        dk_d = calceps(prefactor, md2, 0.5 * malt / prefactorav, corint, eps_rf, TRUE);
 
         fprintf(stderr, "Einstein-Helfand fit to the MSD of the translational dipole moment yields:\n\n");
         fprintf(stderr, "sigma=%.4f\n", sigma);
@@ -771,7 +754,6 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
 }
 
 
-
 int gmx_current(int argc, char *argv[])
 {
 
@@ -784,22 +766,14 @@ int gmx_current(int argc, char *argv[])
     static real     efit    = 400.0;
     static real     evit    = 5.0;
     t_pargs         pa[]    = {
-        { "-sh", FALSE, etINT, {&nshift},
-          "Shift of the frames for averaging the correlation functions and the mean-square displacement."},
-        { "-nojump", FALSE, etBOOL, {&bNoJump},
-          "Removes jumps of atoms across the box."},
-        { "-eps", FALSE, etREAL, {&eps_rf},
-          "Dielectric constant of the surrounding medium. The value zero corresponds to infinity (tin-foil boundary conditions)."},
-        { "-bfit", FALSE, etREAL, {&bfit},
-          "Begin of the fit of the straight line to the MSD of the translational fraction of the dipole moment."},
-        { "-efit", FALSE, etREAL, {&efit},
-          "End of the fit of the straight line to the MSD of the translational fraction of the dipole moment."},
-        { "-bvit", FALSE, etREAL, {&bvit},
-          "Begin of the fit of the current autocorrelation function to a*t^b."},
-        { "-evit", FALSE, etREAL, {&evit},
-          "End of the fit of the current autocorrelation function to a*t^b."},
-        { "-temp", FALSE, etREAL, {&temp},
-          "Temperature for calculating epsilon."}
+        { "-sh", FALSE, etINT, { &nshift }, "Shift of the frames for averaging the correlation functions and the mean-square displacement." },
+        { "-nojump", FALSE, etBOOL, { &bNoJump }, "Removes jumps of atoms across the box." },
+        { "-eps", FALSE, etREAL, { &eps_rf }, "Dielectric constant of the surrounding medium. The value zero corresponds to infinity (tin-foil boundary conditions)." },
+        { "-bfit", FALSE, etREAL, { &bfit }, "Begin of the fit of the straight line to the MSD of the translational fraction of the dipole moment." },
+        { "-efit", FALSE, etREAL, { &efit }, "End of the fit of the straight line to the MSD of the translational fraction of the dipole moment." },
+        { "-bvit", FALSE, etREAL, { &bvit }, "Begin of the fit of the current autocorrelation function to a*t^b." },
+        { "-evit", FALSE, etREAL, { &evit }, "End of the fit of the current autocorrelation function to a*t^b." },
+        { "-temp", FALSE, etREAL, { &temp }, "Temperature for calculating epsilon." }
     };
 
     gmx_output_env_t *oenv;
@@ -827,15 +801,15 @@ int gmx_current(int argc, char *argv[])
     FILE *            fmjdsp = nullptr;
     FILE *            fcur   = nullptr;
     t_filenm          fnm[]  = {
-        { efTPS,  nullptr,  nullptr, ffREAD }, /* this is for the topology */
+        { efTPS, nullptr, nullptr, ffREAD }, /* this is for the topology */
         { efNDX, nullptr, nullptr, ffOPTRD },
-        { efTRX, "-f", nullptr, ffREAD },      /* and this for the trajectory */
-        { efXVG, "-o",   "current", ffWRITE },
-        { efXVG, "-caf", "caf",     ffOPTWR },
-        { efXVG, "-dsp", "dsp",     ffWRITE },
-        { efXVG, "-md",  "md",      ffWRITE },
-        { efXVG, "-mj",  "mj",      ffWRITE },
-        { efXVG, "-mc",  "mc",      ffOPTWR }
+        { efTRX, "-f", nullptr, ffREAD }, /* and this for the trajectory */
+        { efXVG, "-o", "current", ffWRITE },
+        { efXVG, "-caf", "caf", ffOPTWR },
+        { efXVG, "-dsp", "dsp", ffWRITE },
+        { efXVG, "-md", "md", ffWRITE },
+        { efXVG, "-mj", "mj", ffWRITE },
+        { efXVG, "-mc", "mc", ffOPTWR }
     };
 
 #define NFILE asize(fnm)

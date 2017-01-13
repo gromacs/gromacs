@@ -91,7 +91,8 @@ public:
      * changes do not matter.
      */
     virtual void checkStream(TextInputStream *     stream,
-                             TestReferenceChecker *checker) = 0;
+                             TestReferenceChecker *checker)
+            = 0;
 };
 
 //! Smart pointer for managing a ITextBlockMatcher.

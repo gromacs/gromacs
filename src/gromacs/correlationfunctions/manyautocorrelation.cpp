@@ -49,7 +49,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxomp.h"
 
-int many_auto_correl(std::vector<std::vector<real> > *c)
+int many_auto_correl(std::vector<std::vector<real>> *c)
 {
     size_t nfunc = (*c).size();
     if (nfunc == 0)
@@ -81,7 +81,7 @@ int many_auto_correl(std::vector<std::vector<real> > *c)
     {
         i.resize(nfft, 0);
     }
-    #pragma omp parallel
+#pragma omp parallel
     {
         try
         {

@@ -45,8 +45,7 @@ extern "C" {
 
 
 /** Nonbonded NxN kernel types: plain C, CPU SIMD, GPU, GPU emulation */
-typedef enum
-{
+typedef enum {
     nbnxnkNotSet = 0,
     nbnxnk4x4_PlainC,
     nbnxnk4xN_SIMD_4xN,
@@ -61,19 +60,22 @@ const char *lookup_nbnxn_kernel_name(int kernel_type);
 
 enum
 {
-    ewaldexclTable, ewaldexclAnalytical
+    ewaldexclTable,
+    ewaldexclAnalytical
 };
 
 /* Atom locality indicator: local, non-local, all, used for calls to:
    gridding, pair-search, force calculation, x/f buffer operations */
 enum
 {
-    eatLocal = 0, eatNonlocal = 1, eatAll
+    eatLocal    = 0,
+    eatNonlocal = 1,
+    eatAll
 };
 
-#define LOCAL_A(x)               ((x) == eatLocal)
-#define NONLOCAL_A(x)            ((x) == eatNonlocal)
-#define LOCAL_OR_NONLOCAL_A(x)   (LOCAL_A(x) || NONLOCAL_A(x))
+#define LOCAL_A(x) ((x) == eatLocal)
+#define NONLOCAL_A(x) ((x) == eatNonlocal)
+#define LOCAL_OR_NONLOCAL_A(x) (LOCAL_A(x) || NONLOCAL_A(x))
 
 /* Interaction locality indicator (used in pair-list search/calculations):
     - local interactions require local atom data and affect local output only;
@@ -81,35 +83,37 @@ enum
       affect both local- and non-local output. */
 enum
 {
-    eintLocal = 0, eintNonlocal = 1
+    eintLocal    = 0,
+    eintNonlocal = 1
 };
 
-#define LOCAL_I(x)               ((x) == eintLocal)
-#define NONLOCAL_I(x)            ((x) == eintNonlocal)
+#define LOCAL_I(x) ((x) == eintLocal)
+#define NONLOCAL_I(x) ((x) == eintNonlocal)
 
 enum
 {
-    enbvClearFNo, enbvClearFYes
+    enbvClearFNo,
+    enbvClearFYes
 };
 
 typedef struct nonbonded_verlet_group_t
 {
-    nbnxn_pairlist_set_t nbl_lists;    /* pair list(s)                       */
-    nbnxn_atomdata_t *   nbat;         /* atom data                          */
-    int                  kernel_type;  /* non-bonded kernel - see enum above */
-    int                  ewald_excl;   /* Ewald exclusion - see enum above   */
+    nbnxn_pairlist_set_t nbl_lists;   /* pair list(s)                       */
+    nbnxn_atomdata_t *   nbat;        /* atom data                          */
+    int                  kernel_type; /* non-bonded kernel - see enum above */
+    int                  ewald_excl;  /* Ewald exclusion - see enum above   */
 } nonbonded_verlet_group_t;
 
 /* non-bonded data structure with Verlet-type cut-off */
 typedef struct nonbonded_verlet_t
 {
-    nbnxn_search_t           nbs;             /* n vs n atom pair searching data       */
-    int                      ngrp;            /* number of interaction groups          */
-    nonbonded_verlet_group_t grp[2];          /* local and non-local interaction group */
+    nbnxn_search_t           nbs;    /* n vs n atom pair searching data       */
+    int                      ngrp;   /* number of interaction groups          */
+    nonbonded_verlet_group_t grp[2]; /* local and non-local interaction group */
 
-    gmx_bool         bUseGPU;                 /* TRUE when GPU acceleration is used */
-    gmx_nbnxn_gpu_t *gpu_nbv;                 /* pointer to GPU nb verlet data     */
-    int              min_ci_balanced;         /* pair list balancing parameter
+    gmx_bool         bUseGPU;         /* TRUE when GPU acceleration is used */
+    gmx_nbnxn_gpu_t *gpu_nbv;         /* pointer to GPU nb verlet data     */
+    int              min_ci_balanced; /* pair list balancing parameter
                                                  used for the 8x8x8 GPU kernels    */
 } nonbonded_verlet_t;
 

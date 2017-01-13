@@ -51,12 +51,12 @@
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 void set_pbc_simd(const t_pbc gmx_unused *pbc,
-                  real gmx_unused *       pbc_simd)
+                  real gmx_unused *pbc_simd)
 {
 #if GMX_SIMD_HAVE_REAL
     if (pbc != nullptr && pbc->ePBC != epbcNONE)
     {
-        rvec inv_box_diag = {0, 0, 0};
+        rvec inv_box_diag = { 0, 0, 0 };
 
         for (int d = 0; d < pbc->ndim_ePBC; d++)
         {

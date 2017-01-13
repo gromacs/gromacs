@@ -42,8 +42,7 @@
 #include "gromacs/gmxana/hxprops.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],

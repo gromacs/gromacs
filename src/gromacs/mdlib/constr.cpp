@@ -74,32 +74,32 @@
 
 typedef struct gmx_constr
 {
-    int              ncon_tot;         /* The total number of constraints    */
-    int              nflexcon;         /* The number of flexible constraints */
-    int              n_at2con_mt;      /* The size of at2con = #moltypes     */
-    t_blocka *       at2con_mt;        /* A list of atoms to constraints     */
-    int              n_at2settle_mt;   /* The size of at2settle = #moltypes  */
-    int **           at2settle_mt;     /* A list of atoms to settles         */
+    int              ncon_tot;       /* The total number of constraints    */
+    int              nflexcon;       /* The number of flexible constraints */
+    int              n_at2con_mt;    /* The size of at2con = #moltypes     */
+    t_blocka *       at2con_mt;      /* A list of atoms to constraints     */
+    int              n_at2settle_mt; /* The size of at2settle = #moltypes  */
+    int **           at2settle_mt;   /* A list of atoms to settles         */
     gmx_bool         bInterCGsettles;
-    gmx_lincsdata_t  lincsd;           /* LINCS data                         */
-    gmx_shakedata_t  shaked;           /* SHAKE data                         */
-    gmx_settledata_t settled;          /* SETTLE data                        */
-    int              nblocks;          /* The number of SHAKE blocks         */
-    int *            sblock;           /* The SHAKE blocks                   */
-    int              sblock_nalloc;    /* The allocation size of sblock      */
-    real *           lagr;             /* -2 times the Lagrange multipliers for SHAKE */
-    int              lagr_nalloc;      /* The allocation size of lagr        */
-    int              maxwarn;          /* The maximum number of warnings     */
+    gmx_lincsdata_t  lincsd;        /* LINCS data                         */
+    gmx_shakedata_t  shaked;        /* SHAKE data                         */
+    gmx_settledata_t settled;       /* SETTLE data                        */
+    int              nblocks;       /* The number of SHAKE blocks         */
+    int *            sblock;        /* The SHAKE blocks                   */
+    int              sblock_nalloc; /* The allocation size of sblock      */
+    real *           lagr;          /* -2 times the Lagrange multipliers for SHAKE */
+    int              lagr_nalloc;   /* The allocation size of lagr        */
+    int              maxwarn;       /* The maximum number of warnings     */
     int              warncount_lincs;
     int              warncount_settle;
-    gmx_edsam_t      ed;               /* The essential dynamics data        */
+    gmx_edsam_t      ed; /* The essential dynamics data        */
 
     /* Thread local working data */
-    tensor *vir_r_m_dr_th;                      /* Thread virial contribution */
-    bool *  bSettleErrorHasOccurred;            /* Did a settle error occur?  */
+    tensor *vir_r_m_dr_th;           /* Thread virial contribution */
+    bool *  bSettleErrorHasOccurred; /* Did a settle error occur?  */
 
     /* Only used for printing warnings */
-    const gmx_mtop_t *warn_mtop;      /* Pointer to the global topology     */
+    const gmx_mtop_t *warn_mtop; /* Pointer to the global topology     */
 } t_gmx_constr;
 
 typedef struct
@@ -174,7 +174,8 @@ void too_many_constraint_warnings(int eConstrAlg, int warncount)
               "but normally it is better to fix the problem",
               (eConstrAlg == econtLINCS) ? "LINCS" : "SETTLE", warncount,
               (eConstrAlg == econtLINCS)
-              ? "adjust the lincs warning threshold in your mdp file\nor " : "\n");
+                      ? "adjust the lincs warning threshold in your mdp file\nor "
+                      : "\n");
 }
 
 static void write_constr_pdb(const char *fn, const char *title,
@@ -275,9 +276,9 @@ static void pr_sortblock(FILE *fp, const char *title, int nsb, t_sortblock sb[])
 gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    struct gmx_constr *constr,
                    t_idef *idef, t_inputrec *ir,
-                   t_commrec *cr,
+                   t_commrec * cr,
                    gmx_int64_t step, int delta_step,
-                   real step_scaling,
+                   real       step_scaling,
                    t_mdatoms *md,
                    rvec *x, rvec *xprime, rvec *min_proj,
                    gmx_bool bMolPBC, matrix box,
@@ -503,7 +504,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                             clear_mat(constr->vir_r_m_dr_th[th]);
                         }
 
-                        int start_th = (nsettle * th   ) / nth;
+                        int start_th = (nsettle * th) / nth;
                         int end_th   = (nsettle * (th + 1)) / nth;
 
                         if (start_th >= 0 && end_th - start_th > 0)
@@ -549,7 +550,9 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             {
                 char buf[STRLEN];
                 sprintf(buf,
-                        "\nstep " "%" GMX_PRId64 ": One or more water molecules can not be settled.\n"
+                        "\nstep "
+                        "%" GMX_PRId64
+                        ": One or more water molecules can not be settled.\n"
                         "Check for bad contacts and/or reduce the timestep if appropriate.\n",
                         step);
                 if (fplog)
@@ -597,7 +600,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
         if (EI_VV(ir->eI))
         {
-            vir_fac *= 2;  /* only constraining over half the distance here */
+            vir_fac *= 2; /* only constraining over half the distance here */
         }
         for (int i = 0; i < DIM; i++)
         {
@@ -697,7 +700,7 @@ static void make_shake_sblock_serial(struct gmx_constr *constr,
 
     done_blocka(&sblocks);
 
-    /* Store the block number in temp array and
+/* Store the block number in temp array and
      * sort the constraints in order of the sblock number
      * and the atom numbers, really sorting a segment of the array!
      */
@@ -768,7 +771,8 @@ static void make_shake_sblock_serial(struct gmx_constr *constr,
         {
             fprintf(stderr, "sblock[%3d]=%5d\n", j, (int)constr->sblock[j]);
         }
-        gmx_fatal(FARGS, "DEATH HORROR: "
+        gmx_fatal(FARGS,
+                  "DEATH HORROR: "
                   "sblocks does not match idef->il[F_CONSTR]");
     }
     sfree(sb);
@@ -1066,7 +1070,7 @@ static real constr_r_max_moltype(const gmx_moltype_t *molt,
     t_blocka at2con;
     real     r0, r1, r2maxA, r2maxB, rmax, lam0, lam1;
 
-    if (molt->ilist[F_CONSTR].nr   == 0
+    if (molt->ilist[F_CONSTR].nr == 0
         && molt->ilist[F_CONSTRNC].nr == 0)
     {
         return 0;
@@ -1147,16 +1151,16 @@ real constr_r_max(FILE *fplog, const gmx_mtop_t *mtop, const t_inputrec *ir)
     return rmax;
 }
 
-gmx_constr_t init_constraints(FILE *fplog,
+gmx_constr_t init_constraints(FILE *            fplog,
                               const gmx_mtop_t *mtop, const t_inputrec *ir,
                               gmx_edsam_t ed, t_state *state,
                               t_commrec *cr)
 {
     int nconstraints
-        = gmx_mtop_ftype_count(mtop, F_CONSTR)
-            + gmx_mtop_ftype_count(mtop, F_CONSTRNC);
+            = gmx_mtop_ftype_count(mtop, F_CONSTR)
+              + gmx_mtop_ftype_count(mtop, F_CONSTRNC);
     int nsettles
-        = gmx_mtop_ftype_count(mtop, F_SETTLE);
+            = gmx_mtop_ftype_count(mtop, F_SETTLE);
 
     GMX_RELEASE_ASSERT(!ir->bPull || ir->pull_work != nullptr, "init_constraints called with COM pulling before/without initializing the pull code");
 
@@ -1201,7 +1205,8 @@ gmx_constr_t init_constraints(FILE *fplog,
                         constr->nflexcon);
                 if (ir->fc_stepsize == 0)
                 {
-                    fprintf(fplog, "\n"
+                    fprintf(fplog,
+                            "\n"
                             "WARNING: step size for flexible constraining = 0\n"
                             "         All flexible constraints will be rigid.\n"
                             "         Will try to keep all flexible constraints at their original length,\n"
@@ -1257,8 +1262,8 @@ gmx_constr_t init_constraints(FILE *fplog,
         for (int mt = 0; mt < mtop->nmoltype; mt++)
         {
             constr->at2settle_mt[mt]
-                = make_at2settle(mtop->moltype[mt].atoms.nr,
-                                 &mtop->moltype[mt].ilist[F_SETTLE]);
+                    = make_at2settle(mtop->moltype[mt].atoms.nr,
+                                     &mtop->moltype[mt].ilist[F_SETTLE]);
         }
 
         /* Allocate thread-local work arrays */
@@ -1276,7 +1281,7 @@ gmx_constr_t init_constraints(FILE *fplog,
     }
 
     constr->maxwarn = 999;
-    char *env = getenv("GMX_MAXCONSTRWARN");
+    char *env       = getenv("GMX_MAXCONSTRWARN");
     if (env)
     {
         constr->maxwarn = 0;
@@ -1339,7 +1344,7 @@ gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop)
     {
         molt = &mtop->moltype[mtop->molblock[mb].type];
 
-        if (molt->ilist[F_CONSTR].nr   > 0
+        if (molt->ilist[F_CONSTR].nr > 0
             || molt->ilist[F_CONSTRNC].nr > 0
             || molt->ilist[F_SETTLE].nr > 0)
         {

@@ -128,7 +128,8 @@ public:
                          const char *           integrator,
                          const char *           tcoupl,
                          const char *           pcoupl,
-                         FloatingPointTolerance tolerance) = 0;
+                         FloatingPointTolerance tolerance)
+            = 0;
     //! Convenience overload of runTest() for cases that don't need to customize the command line for grompp
     virtual void runTest(const char *           simulationName,
                          const char *           integrator,

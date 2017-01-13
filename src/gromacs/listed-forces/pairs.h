@@ -59,12 +59,11 @@ struct t_pbc;
  *
  * global_atom_index is only passed for printing error messages.
  */
-void
-do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[],
-         const rvec x[], rvec4 f[], rvec fshift[],
-         const struct t_pbc *pbc, const struct t_graph *g,
-         real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
-         gmx_bool bCalcEnergyAndVirial, gmx_grppairener_t *grppener,
-         int *global_atom_index);
+void do_pairs(int ftype, int nbonds, const t_iatom iatoms[], const t_iparams iparams[],
+              const rvec x[], rvec4 f[], rvec fshift[],
+              const struct t_pbc *pbc, const struct t_graph *g,
+              real *lambda, real *dvdl, const t_mdatoms *md, const t_forcerec *fr,
+              gmx_bool bCalcEnergyAndVirial, gmx_grppairener_t *grppener,
+              int *global_atom_index);
 
 #endif

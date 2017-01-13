@@ -63,8 +63,8 @@ TEST(PathTest, StripSourcePrefixWorks)
     // TODO: For in-source builds, this might not work.
     EXPECT_EQ(gmx::Path::normalize("src/gromacs/utility/tests/path.cpp"),
               gmx::Path::stripSourcePrefix(__FILE__))
-    << "stripSourcePrefix() does not work with compiler-produced file names. "
-    << "This only affects source paths reported in fatal error messages.";
+            << "stripSourcePrefix() does not work with compiler-produced file names. "
+            << "This only affects source paths reported in fatal error messages.";
 }
 
 TEST(PathTest, ConcatenateBeforeExtensionWorks)

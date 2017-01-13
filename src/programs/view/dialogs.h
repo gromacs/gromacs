@@ -51,46 +51,92 @@ typedef struct
 
 enum eDialogs
 {
-    edExport, edBonds, edFilter, edNR
+    edExport,
+    edBonds,
+    edFilter,
+    edNR
 };
 
 enum eMBoxes
 {
-    emQuit, emHelp, emAbout, emNotImplemented, emNR
+    emQuit,
+    emHelp,
+    emAbout,
+    emNotImplemented,
+    emNR
 };
 
 enum eExport
 {
-    eExpGromos, eExpPDB, eExpNR
+    eExpGromos,
+    eExpPDB,
+    eExpNR
 };
 
 typedef struct
 {
-    char        confout[256];    /* Export file			*/
-    int         ExpMode;         /* Export mode			*/
-    t_dlg **    dlgs;            /* Temporary storage for dlgs	*/
-    int         which_mb;        /* Which mb is visible          */
-    t_dlg **    mboxes;          /* id for message boxes         */
-    t_filter *  filter;          /* Filter for visibility etc.	*/
-    t_windata * wd;              /* The main window		*/
-    t_pulldown *pd;              /* The pull-down menu		*/
-    t_manager * man;             /* The manager			*/
-    /*t_statrec    *sr;*/		/* The statistics dlg		*/
-    t_logo *logo;                /* The gromacs logo             */
+    char        confout[256]; /* Export file			*/
+    int         ExpMode;      /* Export mode			*/
+    t_dlg **    dlgs;         /* Temporary storage for dlgs	*/
+    int         which_mb;     /* Which mb is visible          */
+    t_dlg **    mboxes;       /* id for message boxes         */
+    t_filter *  filter;       /* Filter for visibility etc.	*/
+    t_windata * wd;           /* The main window		*/
+    t_pulldown *pd;           /* The pull-down menu		*/
+    t_manager * man;          /* The manager			*/
+    /*t_statrec    *sr;*/     /* The statistics dlg		*/
+    t_logo *logo;             /* The gromacs logo             */
 } t_gmx;
 
 enum
 {
-    IDNEW, IDOPEN, IDOPENED, IDCLOSE, IDIMPORT, IDEXPORT, IDDOEXPORT, IDQUIT, IDTERM,
-    IDEDITTOP, IDEDITCOORDS, IDEDITPARAMS,
-    IDGROMPP, IDRUNMD, IDDOGROMPP, IDGSTAT, IDDOGSTAT, IDDORUNMD,
-    IDFILTER, IDDOFILTER,
-    IDANIMATE, IDSHOWBOX, IDRMPBC, IDHYDROGEN, IDLABELSOFF, IDRESETVIEW, IDPHOTO,
-    IDDUMPWIN, IDDODUMP,
-    IDBONDOPTS, IDTHIN, IDFAT, IDVERYFAT, IDBALLS,
-    IDNOBOX, IDRECTBOX, IDTRIBOX, IDTOBOX,
-    IDBOND, IDANGLE, IDDIH, IDRMS, IDRDF, IDENERGIES, IDCORR,
-    IDHELP, IDABOUT,
+    IDNEW,
+    IDOPEN,
+    IDOPENED,
+    IDCLOSE,
+    IDIMPORT,
+    IDEXPORT,
+    IDDOEXPORT,
+    IDQUIT,
+    IDTERM,
+    IDEDITTOP,
+    IDEDITCOORDS,
+    IDEDITPARAMS,
+    IDGROMPP,
+    IDRUNMD,
+    IDDOGROMPP,
+    IDGSTAT,
+    IDDOGSTAT,
+    IDDORUNMD,
+    IDFILTER,
+    IDDOFILTER,
+    IDANIMATE,
+    IDSHOWBOX,
+    IDRMPBC,
+    IDHYDROGEN,
+    IDLABELSOFF,
+    IDRESETVIEW,
+    IDPHOTO,
+    IDDUMPWIN,
+    IDDODUMP,
+    IDBONDOPTS,
+    IDTHIN,
+    IDFAT,
+    IDVERYFAT,
+    IDBALLS,
+    IDNOBOX,
+    IDRECTBOX,
+    IDTRIBOX,
+    IDTOBOX,
+    IDBOND,
+    IDANGLE,
+    IDDIH,
+    IDRMS,
+    IDRDF,
+    IDENERGIES,
+    IDCORR,
+    IDHELP,
+    IDABOUT,
 
     /* Last line specifies how many IDs there are */
     IDMENUNR

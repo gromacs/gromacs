@@ -488,7 +488,7 @@ public:
     void checkSequence(Iterator begin, Iterator end, const char *id)
     {
         typename std::iterator_traits<Iterator>::difference_type length
-            = std::distance(begin, end);
+                = std::distance(begin, end);
         TestReferenceChecker compound(checkSequenceCompound(id, length));
         for (Iterator i = begin; i != end; ++i)
         {
@@ -524,7 +524,7 @@ public:
                        ItemChecker checkItem)
     {
         typename std::iterator_traits<Iterator>::difference_type length
-            = std::distance(begin, end);
+                = std::distance(begin, end);
         TestReferenceChecker compound(checkSequenceCompound(id, length));
         for (Iterator i = begin; i != end; ++i)
         {

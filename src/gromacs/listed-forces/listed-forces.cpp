@@ -139,7 +139,7 @@ static void zero_thread_output(struct bonded_threading_t *bt, int thread)
 /*! \brief Reduce thread-local force buffers */
 static void reduce_thread_forces(int n, rvec *f,
                                  struct bonded_threading_t *bt,
-                                 int nthreads)
+                                 int                        nthreads)
 {
     if (nthreads > MAX_BONDED_THREADS)
     {
@@ -147,7 +147,7 @@ static void reduce_thread_forces(int n, rvec *f,
                   MAX_BONDED_THREADS);
     }
 
-    /* This reduction can run on any number of threads,
+/* This reduction can run on any number of threads,
      * independently of bt->nthreads.
      * But if nthreads matches bt->nthreads (which it currently does)
      * the uniform distribution of the touched blocks over nthreads will
@@ -175,7 +175,7 @@ static void reduce_thread_forces(int n, rvec *f,
             if (nfb > 0)
             {
                 /* Reduce force buffers for threads that contribute */
-                int a0 =  ind     * reduction_block_size;
+                int a0 = ind * reduction_block_size;
                 int a1 = (ind + 1) * reduction_block_size;
                 /* It would be nice if we could pad f to avoid this min */
                 a1 = std::min(a1, n);
@@ -196,8 +196,8 @@ static void reduce_thread_forces(int n, rvec *f,
 static void reduce_thread_output(int n, rvec *f, rvec *fshift,
                                  real *ener, gmx_grppairener_t *grpp, real *dvdl,
                                  struct bonded_threading_t *bt,
-                                 gmx_bool bCalcEnerVir,
-                                 gmx_bool bDHDL)
+                                 gmx_bool                   bCalcEnerVir,
+                                 gmx_bool                   bDHDL)
 {
     if (!bt->haveBondeds)
     {
@@ -258,14 +258,14 @@ static void reduce_thread_output(int n, rvec *f, rvec *fshift,
 real calc_one_bond(int thread,
                    int ftype, const t_idef *idef,
                    const rvec x[], rvec4 f[], rvec fshift[],
-                   t_forcerec *fr,
+                   t_forcerec * fr,
                    const t_pbc *pbc, const t_graph *g,
                    gmx_grppairener_t *grpp,
-                   t_nrnb *nrnb,
+                   t_nrnb *           nrnb,
                    real *lambda, real *dvdl,
                    const t_mdatoms *md, t_fcdata *fcd,
                    gmx_bool bCalcEnerVir,
-                   int *global_atom_index)
+                   int *    global_atom_index)
 {
 #if GMX_SIMD_HAVE_REAL
     bool bUseSIMD = fr->use_simd_kernels;
@@ -322,7 +322,7 @@ real calc_one_bond(int thread,
         else if (ftype == F_PDIHS
                  && !bCalcEnerVir && fr->efep == efepNO)
         {
-            /* No energies, shift forces, dvdl */
+/* No energies, shift forces, dvdl */
 #if GMX_SIMD_HAVE_REAL
             if (bUseSIMD)
             {
@@ -350,7 +350,7 @@ real calc_one_bond(int thread,
             /* No energies, shift forces, dvdl */
             rbdihs_noener_simd(nbn, idef->il[ftype].iatoms + nb0,
                                idef->iparams,
-                               (const rvec*)x, f,
+                               (const rvec *)x, f,
                                pbc, g, lambda[efptFTYPE], md, fcd,
                                global_atom_index);
             v = 0;
@@ -388,22 +388,21 @@ real calc_one_bond(int thread,
 
 gmx_bool ftype_is_bonded_potential(int ftype)
 {
-    return
-        (interaction_function[ftype].flags & IF_BOND)
-        && !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES)
-        && (ftype < F_GB12 || ftype > F_GB14);
+    return (interaction_function[ftype].flags & IF_BOND)
+           && !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES)
+           && (ftype < F_GB12 || ftype > F_GB14);
 }
 
-void calc_listed(const t_commrec *cr,
+void calc_listed(const t_commrec *     cr,
                  struct gmx_wallcycle *wcycle,
-                 const t_idef *idef,
+                 const t_idef *        idef,
                  const rvec x[], history_t *hist,
                  rvec f[], t_forcerec *fr,
-                 const struct t_pbc *pbc,
-                 const struct t_pbc *pbc_full,
+                 const struct t_pbc *  pbc,
+                 const struct t_pbc *  pbc_full,
                  const struct t_graph *g,
                  gmx_enerdata_t *enerd, t_nrnb *nrnb,
-                 real *lambda,
+                 real *           lambda,
                  const t_mdatoms *md,
                  t_fcdata *fcd, int *global_atom_index,
                  int force_flags)
@@ -413,9 +412,9 @@ void calc_listed(const t_commrec *cr,
     int                        i;
     /* The dummy array is to have a place to store the dhdl at other values
        of lambda, which will be thrown away in the end */
-    real          dvdl[efptNR];
-    const  t_pbc *pbc_null;
-    int           thread;
+    real         dvdl[efptNR];
+    const t_pbc *pbc_null;
+    int          thread;
 
     bt = fr->bonded_threading;
 
@@ -469,10 +468,10 @@ void calc_listed(const t_commrec *cr,
         if (fcd->orires.nr > 0)
         {
             enerd->term[F_ORIRESDEV]
-                = calc_orires_dev(cr->ms, idef->il[F_ORIRES].nr,
-                                  idef->il[F_ORIRES].iatoms,
-                                  idef->iparams, md, x,
-                                  pbc_null, fcd, hist);
+                    = calc_orires_dev(cr->ms, idef->il[F_ORIRES].nr,
+                                      idef->il[F_ORIRES].iatoms,
+                                      idef->iparams, md, x,
+                                      pbc_null, fcd, hist);
         }
         if (fcd->disres.nres > 0)
         {
@@ -558,27 +557,26 @@ void calc_listed(const t_commrec *cr,
     if (fcd)
     {
         enerd->term[F_DISRESVIOL] = fcd->disres.sumviol;
-
     }
 }
 
-void calc_listed_lambda(const t_idef *idef,
-                        const rvec x[],
-                        t_forcerec *fr,
+void calc_listed_lambda(const t_idef *      idef,
+                        const rvec          x[],
+                        t_forcerec *        fr,
                         const struct t_pbc *pbc, const struct t_graph *g,
                         gmx_grppairener_t *grpp, real *epot, t_nrnb *nrnb,
-                        real *lambda,
+                        real *           lambda,
                         const t_mdatoms *md,
-                        t_fcdata *fcd,
-                        int *global_atom_index)
+                        t_fcdata *       fcd,
+                        int *            global_atom_index)
 {
-    int           ftype, nr_nonperturbed, nr;
-    real          v;
-    real          dvdl_dum[efptNR] = {0};
-    rvec4 *       f;
-    rvec *        fshift;
-    const  t_pbc *pbc_null;
-    t_idef        idef_fe;
+    int          ftype, nr_nonperturbed, nr;
+    real         v;
+    real         dvdl_dum[efptNR] = { 0 };
+    rvec4 *      f;
+    rvec *       fshift;
+    const t_pbc *pbc_null;
+    t_idef       idef_fe;
 
     if (fr->bMolPBC)
     {

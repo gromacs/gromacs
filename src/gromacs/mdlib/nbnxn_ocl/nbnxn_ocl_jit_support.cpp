@@ -76,8 +76,7 @@
  * not available to the user. FastGen takes care of generating both
  * single- and twin-cutoff versions because PME tuning might need both.
  */
-static const char * kernel_electrostatic_family_definitions[] =
-{
+static const char *kernel_electrostatic_family_definitions[] = {
     " -DEL_CUTOFF -DEELNAME=_ElecCut",
     " -DEL_RF -DEELNAME=_ElecRF",
     " -DEL_EWALD_TAB -DEELNAME=_ElecEwQSTab",
@@ -88,8 +87,7 @@ static const char * kernel_electrostatic_family_definitions[] =
 
 /*! \brief Array of the defines needed to generate a specific vdw flavour
  */
-static const char * kernel_VdW_family_definitions[] =
-{
+static const char *kernel_VdW_family_definitions[] = {
     " -DVDWNAME=_VdwLJ",
     " -DLJ_COMB_GEOM -DVDWNAME=_VdwLJCombGeom",
     " -DLJ_COMB_LB  -DVDWNAME=_VdwLJCombLB",
@@ -195,16 +193,16 @@ void nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t *nb)
          * in the JIT compilation that happens at runtime.
          */
         extraDefines += gmx::formatString(
-                    " -DCENTRAL=%d -DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d -DNBNXN_MIN_RSQ=%s %s",
-                    CENTRAL,                                 /* Defined in ishift.h */
-                    c_nbnxnGpuNumClusterPerSupercluster,     /* Defined in nbnxn_pairlist.h */
-                    c_nbnxnGpuClusterSize,                   /* Defined in nbnxn_pairlist.h */
-                    c_nbnxnGpuJgroupSize,                    /* Defined in nbnxn_pairlist.h */
-                    STRINGIFY_MACRO(NBNXN_MIN_RSQ)           /* Defined in nbnxn_consts.h */
-                                                             /* NBNXN_MIN_RSQ passed as string to avoid
+                " -DCENTRAL=%d -DNBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER=%d -DNBNXN_GPU_CLUSTER_SIZE=%d -DNBNXN_GPU_JGROUP_SIZE=%d -DNBNXN_MIN_RSQ=%s %s",
+                CENTRAL,                             /* Defined in ishift.h */
+                c_nbnxnGpuNumClusterPerSupercluster, /* Defined in nbnxn_pairlist.h */
+                c_nbnxnGpuClusterSize,               /* Defined in nbnxn_pairlist.h */
+                c_nbnxnGpuJgroupSize,                /* Defined in nbnxn_pairlist.h */
+                STRINGIFY_MACRO(NBNXN_MIN_RSQ)       /* Defined in nbnxn_consts.h */
+                                                     /* NBNXN_MIN_RSQ passed as string to avoid
                                                                 floating point representation problems with sprintf */
-                    , (nb->bPrefetchLjParam) ? "-DIATYPE_SHMEM" : ""
-                    );
+                ,
+                (nb->bPrefetchLjParam) ? "-DIATYPE_SHMEM" : "");
 
 
         try

@@ -268,7 +268,7 @@ public:
      * \p option to \p args with a value that points to the generated file.
      */
     void setInputFileContents(CommandLine *args, const char *option,
-                              const char *extension,
+                              const char *       extension,
                               const std::string &contents);
     /*! \brief
      * Generates and sets an input file.
@@ -283,7 +283,7 @@ public:
      * that points to the generated file.
      */
     void setInputFileContents(CommandLine *args, const char *option,
-                              const char *extension,
+                              const char *                       extension,
                               const ConstArrayRef<const char *> &contents);
     /*! \brief
      * Sets an output file parameter and adds it to the set of tested files.
@@ -312,7 +312,7 @@ public:
      * are not interesting for the test, use NoTextMatch as the matcher.
      */
     void setOutputFile(CommandLine *args, const char *option,
-                       const char *filename,
+                       const char *                     filename,
                        const ITextBlockMatcherSettings &matcher);
 
     /*! \brief

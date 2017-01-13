@@ -111,21 +111,24 @@ const real maxFluctuationAccepted = 1.02;
 /*! \brief Enumeration whose values describe the effect limiting the load balancing */
 enum epmelb
 {
-    epmelblimNO, epmelblimBOX, epmelblimDD, epmelblimPMEGRID, epmelblimNR
+    epmelblimNO,
+    epmelblimBOX,
+    epmelblimDD,
+    epmelblimPMEGRID,
+    epmelblimNR
 };
 
 /*! \brief Descriptive strings matching ::epmelb */
-const char *pmelblim_str[epmelblimNR] =
-{ "no", "box size", "domain decompostion", "PME grid restriction" };
+const char *pmelblim_str[epmelblimNR] = { "no", "box size", "domain decompostion", "PME grid restriction" };
 
 struct pme_load_balancing_t
 {
-    gmx_bool    bSepPMERanks;        /**< do we have separate PME ranks? */
-    gmx_bool    bActive;             /**< is PME tuning active? */
-    gmx_int64_t step_rel_stop;       /**< stop the tuning after this value of step_rel */
-    gmx_bool    bTriggerOnDLB;       /**< trigger balancing only on DD DLB */
-    gmx_bool    bBalance;            /**< are we in the balancing phase, i.e. trying different setups? */
-    int         nstage;              /**< the current maximum number of stages */
+    gmx_bool    bSepPMERanks;  /**< do we have separate PME ranks? */
+    gmx_bool    bActive;       /**< is PME tuning active? */
+    gmx_int64_t step_rel_stop; /**< stop the tuning after this value of step_rel */
+    gmx_bool    bTriggerOnDLB; /**< trigger balancing only on DD DLB */
+    gmx_bool    bBalance;      /**< are we in the balancing phase, i.e. trying different setups? */
+    int         nstage;        /**< the current maximum number of stages */
 
     real         cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
     real         rcut_vdw;           /**< Vdw cutoff (does not change) */
@@ -143,10 +146,10 @@ struct pme_load_balancing_t
     int          elimited;           /**< was the balancing limited, uses enum above */
     int          cutoff_scheme;      /**< Verlet or group cut-offs */
 
-    int stage;                       /**< the current stage */
+    int stage; /**< the current stage */
 
-    int    cycles_n;                 /**< step cycle counter cummulative count */
-    double cycles_c;                 /**< step cycle counter cummulative cycles */
+    int    cycles_n; /**< step cycle counter cummulative count */
+    double cycles_c; /**< step cycle counter cummulative cycles */
 };
 
 /* TODO The code in this file should call this getter, rather than
@@ -375,10 +378,10 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
     }
     /* The Ewald coefficient is inversly proportional to the cut-off */
     set->ewaldcoeff_q
-        = pme_lb->setup[0].ewaldcoeff_q * pme_lb->setup[0].rcut_coulomb / set->rcut_coulomb;
+            = pme_lb->setup[0].ewaldcoeff_q * pme_lb->setup[0].rcut_coulomb / set->rcut_coulomb;
     /* We set ewaldcoeff_lj in set, even when LJ-PME is not used */
     set->ewaldcoeff_lj
-        = pme_lb->setup[0].ewaldcoeff_lj * pme_lb->setup[0].rcut_coulomb / set->rcut_coulomb;
+            = pme_lb->setup[0].ewaldcoeff_lj * pme_lb->setup[0].rcut_coulomb / set->rcut_coulomb;
 
     set->count  = 0;
     set->cycles = 0;
@@ -393,10 +396,10 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t *pme_lb,
 
 /*! \brief Print the PME grid */
 static void print_grid(FILE *fp_err, FILE *fp_log,
-                       const char *pre,
-                       const char *desc,
+                       const char *       pre,
+                       const char *       desc,
                        const pme_setup_t *set,
-                       double cycles)
+                       double             cycles)
 {
     char buf[STRLEN], buft[STRLEN];
 
@@ -439,7 +442,7 @@ static int pme_loadbal_end(pme_load_balancing_t *pme_lb)
 
 /*! \brief Print descriptive string about what limits PME load balancing */
 static void print_loadbal_limited(FILE *fp_err, FILE *fp_log,
-                                  gmx_int64_t step,
+                                  gmx_int64_t           step,
                                   pme_load_balancing_t *pme_lb)
 {
     char buf[STRLEN], sbuf[22];
@@ -471,7 +474,7 @@ static void switch_to_stage1(pme_load_balancing_t *pme_lb)
     while (pme_lb->start + 1 < pme_lb->n
            && (pme_lb->setup[pme_lb->start].count == 0
                || pme_lb->setup[pme_lb->start].cycles
-               > pme_lb->setup[pme_lb->fastest].cycles * maxRelativeSlowdownAccepted))
+                          > pme_lb->setup[pme_lb->fastest].cycles * maxRelativeSlowdownAccepted))
     {
         pme_lb->start++;
     }
@@ -490,7 +493,7 @@ static void switch_to_stage1(pme_load_balancing_t *pme_lb)
     pme_lb->end = pme_lb->n;
     if (pme_lb->setup[pme_lb->end - 1].count > 0
         && pme_lb->setup[pme_lb->end - 1].cycles
-        > pme_lb->setup[pme_lb->fastest].cycles * maxRelativeSlowdownAccepted)
+                   > pme_lb->setup[pme_lb->fastest].cycles * maxRelativeSlowdownAccepted)
     {
         pme_lb->end--;
     }
@@ -572,7 +575,8 @@ static void pme_load_balance(pme_load_balancing_t *     pme_lb,
 
             if (debug)
             {
-                fprintf(debug, "The performance for grid %d %d %d went from %.3f to %.1f M-cycles, this is more than %f\n"
+                fprintf(debug,
+                        "The performance for grid %d %d %d went from %.3f to %.1f M-cycles, this is more than %f\n"
                         "Increased the number stages to %d"
                         " and ignoring the previous performance\n",
                         set->grid[XX], set->grid[YY], set->grid[ZZ],
@@ -679,12 +683,11 @@ static void pme_load_balance(pme_load_balancing_t *     pme_lb,
             }
         } while (OK
                  && !(pme_lb->setup[pme_lb->cur].grid[XX]
-                      * pme_lb->setup[pme_lb->cur].grid[YY]
-                      * pme_lb->setup[pme_lb->cur].grid[ZZ]
-                      < gridsize_start * gridScaleFactor
-                      &&
-                      pme_lb->setup[pme_lb->cur].grid_efficiency
-                      < pme_lb->setup[pme_lb->cur - 1].grid_efficiency * relativeEfficiencyFactor));
+                                      * pme_lb->setup[pme_lb->cur].grid[YY]
+                                      * pme_lb->setup[pme_lb->cur].grid[ZZ]
+                              < gridsize_start * gridScaleFactor
+                      && pme_lb->setup[pme_lb->cur].grid_efficiency
+                                 < pme_lb->setup[pme_lb->cur - 1].grid_efficiency * relativeEfficiencyFactor));
     }
 
     if (pme_lb->stage > 0 && pme_lb->end == 1)
@@ -746,8 +749,7 @@ static void pme_load_balance(pme_load_balancing_t *     pme_lb,
                 /* This should not happen, as we set limits on the DLB bounds.
                  * But we implement a complete failsafe solution anyhow.
                  */
-                GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                        "The fastest PP/PME load balancing setting (cutoff %.3f nm) is no longer available due to DD DLB or box size limitations", pme_lb->fastest);
+                GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("The fastest PP/PME load balancing setting (cutoff %.3f nm) is no longer available due to DD DLB or box size limitations", pme_lb->fastest);
                 pme_lb->fastest = pme_lb->lower_limit;
                 pme_lb->start   = pme_lb->lower_limit;
             }
@@ -793,7 +795,7 @@ static void pme_load_balance(pme_load_balancing_t *     pme_lb,
 
     nbnxn_gpu_pme_loadbal_update_param(nbv, ic);
 
-    /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
+/* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
      * also sharing texture references. To keep the code simple, we don't
      * treat texture references as shared resources, but this means that
      * the coulomb_tab texture ref will get updated by multiple threads.
@@ -810,7 +812,7 @@ static void pme_load_balance(pme_load_balancing_t *     pme_lb,
     {
         gmx_barrier(cr);
     }
-#endif  /* GMX_THREAD_MPI */
+#endif /* GMX_THREAD_MPI */
 
     if (!pme_lb->bSepPMERanks)
     {
@@ -927,7 +929,7 @@ void pme_loadbal_do(pme_load_balancing_t *pme_lb,
             {
                 /* If PME rank load is too high, start tuning */
                 pme_lb->bBalance
-                    = (dd_pme_f_ratio(cr->dd) >= loadBalanceTriggerFactor);
+                        = (dd_pme_f_ratio(cr->dd) >= loadBalanceTriggerFactor);
             }
             dd_bcast(cr->dd, sizeof(gmx_bool), &pme_lb->bBalance);
         }
@@ -1054,7 +1056,7 @@ static void print_pme_loadbal_settings(pme_load_balancing_t *pme_lb,
     pp_ratio_temporary = pme_lb->setup[pme_lb->cur].rlist / pme_lb->setup[0].rlist;
     pp_ratio           = gmx::power3(pp_ratio_temporary);
     grid_ratio         = pme_grid_points(&pme_lb->setup[pme_lb->cur])
-        / (double)pme_grid_points(&pme_lb->setup[0]);
+                 / (double)pme_grid_points(&pme_lb->setup[0]);
 
     fprintf(fplog, "\n");
     fprintf(fplog, "       P P   -   P M E   L O A D   B A L A N C I N G\n");

@@ -242,8 +242,8 @@ void printCurrentStatus(TextWriter *writer, gmx_ana_selcollection_t *sc,
     writer->writeString(formatString("%s%s:\n",
                                      context.empty() ? "" : " ", context.c_str()));
     writer->writeString(formatString(
-                                "(one per line, <enter> for status/groups, 'help' for help%s)\n",
-                                maxCount < 0 ? ", Ctrl-D to end" : ""));
+            "(one per line, <enter> for status/groups, 'help' for help%s)\n",
+            maxCount < 0 ? ", Ctrl-D to end" : ""));
     if (!bFirst && (sc->nvars > 0 || sc->sel.size() > firstSelection))
     {
         writer->writeLine("Currently provided selections:");
@@ -254,17 +254,17 @@ void printCurrentStatus(TextWriter *writer, gmx_ana_selcollection_t *sc,
         for (size_t i = firstSelection; i < sc->sel.size(); ++i)
         {
             writer->writeString(formatString(
-                                        " %2d. %s\n",
-                                        static_cast<int>(i - firstSelection + 1),
-                                        sc->sel[i]->selectionText()));
+                    " %2d. %s\n",
+                    static_cast<int>(i - firstSelection + 1),
+                    sc->sel[i]->selectionText()));
         }
         if (maxCount > 0)
         {
             const int remaining
-                = maxCount - static_cast<int>(sc->sel.size() - firstSelection);
+                    = maxCount - static_cast<int>(sc->sel.size() - firstSelection);
             writer->writeString(formatString(
-                                        "(%d more selection%s required)\n",
-                                        remaining, remaining > 1 ? "s" : ""));
+                    "(%d more selection%s required)\n",
+                    remaining, remaining > 1 ? "s" : ""));
         }
     }
 }
@@ -379,7 +379,7 @@ SelectionList runParser(yyscan_t scanner, TextInputStream *inputStream,
             }
             // TODO: Remove added selections from the collection if parsing failed?
             _gmx_sel_lexer_rethrow_exception_if_occurred(scanner);
-early_termination:
+        early_termination:
             GMX_RELEASE_ASSERT(status == 0,
                                "Parser errors should have resulted in an exception");
         }
@@ -395,8 +395,8 @@ early_termination:
     if (maxnr > 0 && nr != maxnr)
     {
         std::string message
-            = formatString("Too few selections provided; got %d, expected %d",
-                           nr, maxnr);
+                = formatString("Too few selections provided; got %d, expected %d",
+                               nr, maxnr);
         GMX_THROW(InvalidInputError(message));
     }
 
@@ -466,7 +466,7 @@ void checkTopologyProperties(const gmx_mtop_t *                 top,
     }
 }
 
-}   // namespace
+} // namespace
 
 
 void SelectionCollection::Impl::resolveExternalGroups(
@@ -491,7 +491,7 @@ void SelectionCollection::Impl::resolveExternalGroups(
     {
         resolveExternalGroups(child, errors);
         root->flags |= (child->flags & SEL_UNSORTED);
-        child        = child->next;
+        child = child->next;
     }
 }
 
@@ -549,20 +549,22 @@ SelectionCollection::~SelectionCollection()
 void SelectionCollection::initOptions(IOptionsContainer * options,
                                       SelectionTypeOption selectionTypeOption)
 {
-    const char * const debug_levels[]
-        = { "no", "basic", "compile", "eval", "full" };
+    const char *const debug_levels[]
+            = { "no", "basic", "compile", "eval", "full" };
 
     const char *const *postypes = PositionCalculationCollection::typeEnumValues;
     options->addOption(StringOption("selrpos")
-                           .enumValueFromNullTerminatedArray(postypes)
-                           .store(&impl_->rpost_).defaultValue(postypes[0])
-                           .description("Selection reference positions"));
+                               .enumValueFromNullTerminatedArray(postypes)
+                               .store(&impl_->rpost_)
+                               .defaultValue(postypes[0])
+                               .description("Selection reference positions"));
     if (selectionTypeOption == IncludeSelectionTypeOption)
     {
         options->addOption(StringOption("seltype")
-                               .enumValueFromNullTerminatedArray(postypes)
-                               .store(&impl_->spost_).defaultValue(postypes[0])
-                               .description("Default selection output positions"));
+                                   .enumValueFromNullTerminatedArray(postypes)
+                                   .store(&impl_->spost_)
+                                   .defaultValue(postypes[0])
+                                   .description("Default selection output positions"));
     }
     else
     {
@@ -570,9 +572,7 @@ void SelectionCollection::initOptions(IOptionsContainer * options,
     }
     GMX_RELEASE_ASSERT(impl_->debugLevel_ >= 0 && impl_->debugLevel_ <= 4,
                        "Debug level out of range");
-    options->addOption(EnumIntOption("seldebug").hidden(impl_->debugLevel_ == 0)
-                           .enumValue(debug_levels).store(&impl_->debugLevel_)
-                           .description("Print out selection trees for debugging"));
+    options->addOption(EnumIntOption("seldebug").hidden(impl_->debugLevel_ == 0).enumValue(debug_levels).store(&impl_->debugLevel_).description("Print out selection trees for debugging"));
 }
 
 
@@ -719,7 +719,7 @@ std::unique_ptr<TextWriter> initStatusWriter(TextOutputStream *statusStream)
     return statusWriter;
 }
 
-}   // namespace
+} // namespace
 
 SelectionList SelectionCollection::parseInteractive(int                count,
                                                     TextInputStream *  inputStream,
@@ -753,8 +753,8 @@ SelectionList SelectionCollection::parseFromFile(const std::string &filename)
     catch (GromacsException &ex)
     {
         ex.prependContext(formatString(
-                                  "Error in parsing selections from file '%s'",
-                                  filename.c_str()));
+                "Error in parsing selections from file '%s'",
+                filename.c_str()));
         throw;
     }
 }
@@ -813,9 +813,9 @@ void SelectionCollection::compile()
             if (!sel.hasOnlyAtoms())
             {
                 std::string message = formatString(
-                            "Selection '%s' does not evaluate to individual atoms. "
-                            "This is not allowed in this context.",
-                            sel.selectionText());
+                        "Selection '%s' does not evaluate to individual atoms. "
+                        "This is not allowed in this context.",
+                        sel.selectionText());
                 GMX_THROW(InvalidInputError(message));
             }
             if (sel.hasFlag(efSelection_OnlySorted))
@@ -823,10 +823,10 @@ void SelectionCollection::compile()
                 if (!sel.hasSortedAtomIndices())
                 {
                     const std::string message = formatString(
-                                "Selection '%s' does not evaluate to atoms in an "
-                                "ascending (sorted) order. "
-                                "This is not allowed in this context.",
-                                sel.selectionText());
+                            "Selection '%s' does not evaluate to atoms in an "
+                            "ascending (sorted) order. "
+                            "This is not allowed in this context.",
+                            sel.selectionText());
                     GMX_THROW(InvalidInputError(message));
                 }
             }
@@ -836,8 +836,8 @@ void SelectionCollection::compile()
             if (sel.posCount() == 0)
             {
                 std::string message = formatString(
-                            "Selection '%s' never matches any atoms.",
-                            sel.selectionText());
+                        "Selection '%s' never matches any atoms.",
+                        sel.selectionText());
                 GMX_THROW(InvalidInputError(message));
             }
         }
@@ -860,8 +860,8 @@ void SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
         if (!gmx_ana_index_contains(&g, &impl_->requiredAtoms_))
         {
             const std::string message = formatString(
-                        "Trajectory does not contain all atoms required for "
-                        "evaluating the provided selections.");
+                    "Trajectory does not contain all atoms required for "
+                    "evaluating the provided selections.");
             GMX_THROW(InconsistentInputError(message));
         }
     }
@@ -871,9 +871,10 @@ void SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
         if (fr->natoms <= maxAtomIndex)
         {
             const std::string message = formatString(
-                        "Trajectory has less atoms (%d) than what is required for "
-                        "evaluating the provided selections (atoms up to index %d "
-                        "are required).", fr->natoms, maxAtomIndex + 1);
+                    "Trajectory has less atoms (%d) than what is required for "
+                    "evaluating the provided selections (atoms up to index %d "
+                    "are required).",
+                    fr->natoms, maxAtomIndex + 1);
             GMX_THROW(InconsistentInputError(message));
         }
     }

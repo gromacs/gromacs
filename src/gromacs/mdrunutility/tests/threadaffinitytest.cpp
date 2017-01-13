@@ -57,7 +57,7 @@ MockThreadAffinityAccess::MockThreadAffinityAccess()
     using ::testing::_;
     using ::testing::Return;
     ON_CALL(*this, setCurrentThreadAffinityToCore(_))
-        .WillByDefault(Return(true));
+            .WillByDefault(Return(true));
 }
 
 MockThreadAffinityAccess::~MockThreadAffinityAccess()

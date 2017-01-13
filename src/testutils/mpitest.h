@@ -111,14 +111,15 @@ bool threadMpiTestRunner(std::function<void()> testBody);
  * \ingroup module_testutils
  */
 #if GMX_THREAD_MPI
-#define GMX_MPI_TEST(expectedRankCount) \
-    do { \
-        ASSERT_EQ(expectedRankCount, ::gmx::test::getNumberOfTestMpiRanks()); \
-        typedef std::remove_reference<decltype(*this)>::type MyTestClass; \
+#define GMX_MPI_TEST(expectedRankCount)                                                 \
+    do                                                                                  \
+    {                                                                                   \
+        ASSERT_EQ(expectedRankCount, ::gmx::test::getNumberOfTestMpiRanks());           \
+        typedef std::remove_reference<decltype(*this)>::type MyTestClass;               \
         if (!::gmx::test::threadMpiTestRunner(std::bind(&MyTestClass::TestBody, this))) \
-        { \
-            return; \
-        } \
+        {                                                                               \
+            return;                                                                     \
+        }                                                                               \
     } while (0)
 #else
 #define GMX_MPI_TEST(expectedRankCount) \

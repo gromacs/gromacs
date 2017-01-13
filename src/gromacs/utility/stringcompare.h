@@ -58,12 +58,12 @@ namespace gmx
  */
 enum class StringCompareType
 {
-//! Only exact matches are accepted.
-Exact,
-//! Case-insensitive comparison.
-CaseInsensitive,
-//! Case-insensitive comparison that also ignores '-' and '_'.
-CaseAndDashInsensitive
+    //! Only exact matches are accepted.
+    Exact,
+    //! Case-insensitive comparison.
+    CaseInsensitive,
+    //! Case-insensitive comparison that also ignores '-' and '_'.
+    CaseAndDashInsensitive
 };
 //! \endcond
 

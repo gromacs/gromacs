@@ -60,14 +60,13 @@ void pswap(int *v1, int *v2)
 }
 
 
-void Swap (real *v1, real *v2)
+void Swap(real *v1, real *v2)
 {
     real temp;
     temp = *v1;
     *v1  = *v2;
     *v2  = temp;
 }
-
 
 
 void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction)
@@ -86,9 +85,7 @@ void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction
                 pswap(&perm[j], &perm[j - 1]);
                 j--;
             }
-
         }
-
     }
 
     if (direction < 0)
@@ -103,19 +100,18 @@ void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction
                 pswap(&perm[j], &perm[j - 1]);
                 j--;
             }
-
         }
     }
 }
 
 
-int BinarySearch (real *array, int low, int high, real key, int direction)
+int BinarySearch(real *array, int low, int high, real key, int direction)
 {
     int iMid, iMax, iMin;
     iMax = high + 2;
     iMin = low + 1;
 
-/*Iterative implementation*/
+    /*Iterative implementation*/
 
     if (direction >= 0)
     {
@@ -159,8 +155,8 @@ int start_binsearch(real *array, int *perm, int low, int high,
     return BinarySearch(array, low, high, key, direction);
 }
 
-int LinearSearch (double *array, int startindx, int stopindx,
-                  double key, int *count, int direction)
+int LinearSearch(double *array, int startindx, int stopindx,
+                 double key, int *count, int direction)
 {
     /*Iterative implementation - assume elements sorted*/
     int i;

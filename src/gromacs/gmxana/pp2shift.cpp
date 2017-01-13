@@ -79,8 +79,8 @@ static real interpolate(real phi, real psi, t_shiftdata *sd)
     fphi = phi * sd->dx;
     fpsi = psi * sd->dy;
 
-    iphi  = static_cast<int>(fphi);
-    ipsi  = static_cast<int>(fpsi);
+    iphi = static_cast<int>(fphi);
+    ipsi = static_cast<int>(fpsi);
     fphi -= iphi; /* Fraction (offset from gridpoint) */
     fpsi -= ipsi;
 
@@ -93,10 +93,10 @@ static real interpolate(real phi, real psi, t_shiftdata *sd)
     iphi1 = (iphi + 1) % sd->nx;
     ipsi1 = (ipsi + 1) % sd->ny;
 
-    return (sd->data[iphi]  [ipsi]  * wx0 * wy0
-            + sd->data[iphi1] [ipsi]  * wx1 * wy0
-            + sd->data[iphi]  [ipsi1] * wx0 * wy1
-            + sd->data[iphi1] [ipsi1] * wx1 * wy1);
+    return (sd->data[iphi][ipsi] * wx0 * wy0
+            + sd->data[iphi1][ipsi] * wx1 * wy0
+            + sd->data[iphi][ipsi1] * wx0 * wy1
+            + sd->data[iphi1][ipsi1] * wx1 * wy1);
 }
 
 static void dump_sd(const char *fn, t_shiftdata *sd)
@@ -114,7 +114,7 @@ static void dump_sd(const char *fn, t_shiftdata *sd)
     snew(x_phi, nnx);
     snew(y_psi, nny);
     snew(newdata, nnx);
-    lo =  100000;
+    lo = 100000;
     hi = -100000;
     for (i = 0; (i < nnx); i++)
     {
@@ -235,7 +235,7 @@ void do_pp2shifts(FILE *fp, int nf, int nlist, t_dlist dlist[], real **dih)
         {
             Phi = dlist[i].j0[edPhi];
             Psi = dlist[i].j0[edPsi];
-            ca  = cb = co = ha = 0;
+            ca = cb = co = ha = 0;
             for (j = 0; (j < nf); j++)
             {
                 phi = dih[Phi][j];

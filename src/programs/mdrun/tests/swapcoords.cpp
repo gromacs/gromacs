@@ -66,7 +66,6 @@ SwapTestFixture::~SwapTestFixture()
 }
 
 
-
 //! Test fixture for mdrun with "Computational Electrophysiology" settings,
 // i.e. double membrane sandwich with ion/water exchange protocol
 typedef gmx::test::SwapTestFixture CompelTest;
@@ -100,7 +99,6 @@ TEST_F(CompelTest, SwapCanRun)
     runner_.nsteps_ = 2;
     ASSERT_EQ(0, runner_.callMdrun(secondCaller));
 }
-
 
 
 /*! \todo Add other tests for the compel module, e.g.

@@ -55,10 +55,10 @@
 
 /* Check if we can/should use winsock or standard UNIX sockets. */
 #if GMX_NATIVE_WINDOWS
-  #ifdef GMX_HAVE_WINSOCK
-  #include <Winsock.h>
-  #define GMX_IMD
-  #endif
+#ifdef GMX_HAVE_WINSOCK
+#include <Winsock.h>
+#define GMX_IMD
+#endif
 #else
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -74,11 +74,10 @@
 typedef struct
 {
 #ifdef GMX_IMD
-    struct sockaddr_in address;      /**< address of socket                   */
+    struct sockaddr_in address; /**< address of socket                   */
 #endif
-    int sockfd;                      /**< socket file descriptor              */
+    int sockfd; /**< socket file descriptor              */
 } IMDSocket;
-
 
 
 #if GMX_NATIVE_WINDOWS && defined(GMX_HAVE_WINSOCK)

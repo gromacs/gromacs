@@ -61,8 +61,8 @@ void AnalysisDataFrameAverager::addValue(int index, real value)
 {
     AverageItem &item  = values_[index];
     const double delta = value - item.average;
-    item.samples    += 1;
-    item.average    += delta / item.samples;
+    item.samples += 1;
+    item.average += delta / item.samples;
     item.squaredSum += delta * (value - item.average);
 }
 
@@ -78,7 +78,6 @@ void AnalysisDataFrameAverager::addPoints(const AnalysisDataPointSetRef &points)
             addValue(firstColumn + i, points.y(i));
         }
     }
-
 }
 
 void AnalysisDataFrameAverager::finish()

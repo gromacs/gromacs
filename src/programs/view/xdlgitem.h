@@ -42,37 +42,49 @@
 #include "x11.h"
 #include "xutil.h"
 
-typedef enum
-{
-    edlgBN, edlgRB, edlgGB, edlgCB, edlgPM, edlgST, edlgET, edlgNR
+typedef enum {
+    edlgBN,
+    edlgRB,
+    edlgGB,
+    edlgCB,
+    edlgPM,
+    edlgST,
+    edlgET,
+    edlgNR
 } edlgitem;
-#define XCARET  2
+#define XCARET 2
 
 enum
 {
-    ITEMOK, RBPRESSED, BNPRESSED, CBPRESSED, ETCHANGED, HELPPRESSED, ENTERPRESSED
+    ITEMOK,
+    RBPRESSED,
+    BNPRESSED,
+    CBPRESSED,
+    ETCHANGED,
+    HELPPRESSED,
+    ENTERPRESSED
 };
 
 typedef int t_id;
 
 typedef struct
 {
-    bool bDefault;  /* This is the default button */
+    bool bDefault; /* This is the default button */
 } t_button;
 
 typedef struct
 {
-    bool bSelect;   /* Is this rb selected ? */
+    bool bSelect; /* Is this rb selected ? */
 } t_radiobutton;
 
 typedef struct
 {
-    bool bChecked;  /* Is this cb checked ? */
+    bool bChecked; /* Is this cb checked ? */
 } t_checkbox;
 
 typedef struct
 {
-    Pixmap pm;      /* The pixmap bits */
+    Pixmap pm; /* The pixmap bits */
 } t_pixmap;
 
 typedef struct
@@ -83,8 +95,8 @@ typedef struct
 
 typedef struct
 {
-    int buflen, strbegin;  /* Length of the screen buf and begin of string  */
-    int pos;               /* Current length of the string and pos of caret */
+    int buflen, strbegin; /* Length of the screen buf and begin of string  */
+    int pos;              /* Current length of the string and pos of caret */
     /* Pos is relative to strbegin, and is the pos   */
     /* in the window.                                */
     bool  bChanged;
@@ -105,9 +117,8 @@ typedef struct t_dlgitem
     bool      bUseMon;
     char *    set, *get, *help;
     edlgitem  type;
-    int       (*WndProc)(t_x11 *x11, struct t_dlgitem *dlgitem, XEvent *event);
-    union
-    {
+    int (*WndProc)(t_x11 *x11, struct t_dlgitem *dlgitem, XEvent *event);
+    union {
         t_button      button;
         t_radiobutton radiobutton;
         t_groupbox    groupbox;
@@ -136,7 +147,7 @@ extern t_dlgitem *CreateButton(t_x11 *x11, const char *szLab, bool bDef,
                                t_id id, t_id groupid,
                                int x0, int y0, int w, int h, int bw);
 
-extern t_dlgitem *CreateRadioButton(t_x11 *x11,
+extern t_dlgitem *CreateRadioButton(t_x11 *     x11,
                                     const char *szLab, bool bSet, t_id id,
                                     t_id groupid,
                                     int x0, int y0, int w, int h, int bw);
@@ -154,7 +165,7 @@ extern t_dlgitem *CreatePixmap(Pixmap pm, t_id id, t_id groupid,
                                int x0, int y0, int w, int h, int bw);
 
 extern t_dlgitem *CreateStaticText(t_x11 *x11,
-                                   int nlines, const char * const *lines,
+                                   int nlines, const char *const *lines,
                                    t_id id, t_id groupid,
                                    int x0, int y0, int w, int h, int bw);
 
@@ -165,4 +176,4 @@ extern t_dlgitem *CreateEditText(t_x11 *x11, const char *title,
 extern void SetDlgitemOpts(t_dlgitem *dlgitem, bool bUseMon,
                            char *set, char *get, char *help);
 
-#endif  /* _xdlgitem_h */
+#endif /* _xdlgitem_h */

@@ -87,7 +87,7 @@ static void cross_corr_low(int n, real f[], real g[], real corr[], gmx_fft_t fft
 {
     int       i;
     const int size = zeroPaddingSize(n);
-    double ** in1, ** in2;
+    double ** in1, **in2;
     snew(in1, size);
     snew(in2, size);
 
@@ -136,19 +136,18 @@ static void cross_corr_low(int n, real f[], real g[], real corr[], gmx_fft_t fft
 
     sfree(in1);
     sfree(in2);
-
 }
 
 void cross_corr(int n, real f[], real g[], real corr[])
 {
     gmx_fft_t fft;
     gmx_fft_init_1d(&fft, zeroPaddingSize(n), GMX_FFT_FLAG_CONSERVATIVE);
-    cross_corr_low( n,  f,  g, corr, fft);
+    cross_corr_low(n, f, g, corr, fft);
     gmx_fft_destroy(fft);
     gmx_fft_cleanup();
 }
 
-void many_cross_corr(int nFunc, int * nData, real ** f, real ** g, real ** corr)
+void many_cross_corr(int nFunc, int *nData, real **f, real **g, real **corr)
 {
 #pragma omp parallel
     //gmx_fft_t is not thread safe, so structure are allocated per thread.
@@ -162,12 +161,11 @@ void many_cross_corr(int nFunc, int * nData, real ** f, real ** g, real ** corr)
             {
                 gmx_fft_t fft;
                 gmx_fft_init_1d(&fft, zeroPaddingSize(nData[i]), GMX_FFT_FLAG_CONSERVATIVE);
-                cross_corr_low( nData[i],  f[i],  g[i], corr[i], fft);
+                cross_corr_low(nData[i], f[i], g[i], corr[i], fft);
                 gmx_fft_destroy(fft);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
     }
     gmx_fft_cleanup();
-
 }

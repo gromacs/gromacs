@@ -59,36 +59,36 @@ static const t_nrnb_data nbdata[eNRNB] = {
     /* These are re-used for different NB kernels, since there are so many.
      * The actual number of flops is set dynamically.
      */
-    { "NB VdW [V&F]",                    1 },
-    { "NB VdW [F]",                      1 },
-    { "NB Elec. [V&F]",                  1 },
-    { "NB Elec. [F]",                    1 },
-    { "NB Elec. [W3,V&F]",               1 },
-    { "NB Elec. [W3,F]",                 1 },
-    { "NB Elec. [W3-W3,V&F]",            1 },
-    { "NB Elec. [W3-W3,F]",              1 },
-    { "NB Elec. [W4,V&F]",               1 },
-    { "NB Elec. [W4,F]",                 1 },
-    { "NB Elec. [W4-W4,V&F]",            1 },
-    { "NB Elec. [W4-W4,F]",              1 },
-    { "NB VdW & Elec. [V&F]",            1 },
-    { "NB VdW & Elec. [F]",              1 },
-    { "NB VdW & Elec. [W3,V&F]",         1 },
-    { "NB VdW & Elec. [W3,F]",           1 },
-    { "NB VdW & Elec. [W3-W3,V&F]",      1 },
-    { "NB VdW & Elec. [W3-W3,F]",        1 },
-    { "NB VdW & Elec. [W4,V&F]",         1 },
-    { "NB VdW & Elec. [W4,F]",           1 },
-    { "NB VdW & Elec. [W4-W4,V&F]",      1 },
-    { "NB VdW & Elec. [W4-W4,F]",        1 },
+    { "NB VdW [V&F]", 1 },
+    { "NB VdW [F]", 1 },
+    { "NB Elec. [V&F]", 1 },
+    { "NB Elec. [F]", 1 },
+    { "NB Elec. [W3,V&F]", 1 },
+    { "NB Elec. [W3,F]", 1 },
+    { "NB Elec. [W3-W3,V&F]", 1 },
+    { "NB Elec. [W3-W3,F]", 1 },
+    { "NB Elec. [W4,V&F]", 1 },
+    { "NB Elec. [W4,F]", 1 },
+    { "NB Elec. [W4-W4,V&F]", 1 },
+    { "NB Elec. [W4-W4,F]", 1 },
+    { "NB VdW & Elec. [V&F]", 1 },
+    { "NB VdW & Elec. [F]", 1 },
+    { "NB VdW & Elec. [W3,V&F]", 1 },
+    { "NB VdW & Elec. [W3,F]", 1 },
+    { "NB VdW & Elec. [W3-W3,V&F]", 1 },
+    { "NB VdW & Elec. [W3-W3,F]", 1 },
+    { "NB VdW & Elec. [W4,V&F]", 1 },
+    { "NB VdW & Elec. [W4,F]", 1 },
+    { "NB VdW & Elec. [W4-W4,V&F]", 1 },
+    { "NB VdW & Elec. [W4-W4,F]", 1 },
 
-    { "NB Generic kernel",               1 },
-    { "NB Generic charge grp kernel",    1 },
-    { "NB Free energy kernel",           1 },
-    { "NB All-vs-all",                   1 },
-    { "NB All-vs-all, GB",               1 },
+    { "NB Generic kernel", 1 },
+    { "NB Generic charge grp kernel", 1 },
+    { "NB Free energy kernel", 1 },
+    { "NB All-vs-all", 1 },
+    { "NB All-vs-all, GB", 1 },
 
-    { "Pair Search distance check",      9 }, /* nbnxn pair dist. check */
+    { "Pair Search distance check", 9 }, /* nbnxn pair dist. check */
     /* nbnxn kernel flops are based on inner-loops without exclusion checks.
      * Plain Coulomb runs through the RF kernels, except with GPUs.
      * invsqrt is counted as 6 flops: 1 for _mm_rsqt_ps + 5 for iteration.
@@ -99,98 +99,98 @@ static const t_nrnb_data nbdata[eNRNB] = {
      * - GPU always does exclusions, which requires 2-4 flops, but as invsqrt
      *   is always counted as 6 flops, this roughly compensates.
      */
-    { "NxN RF Elec. + LJ [F]",          38 }, /* nbnxn kernel LJ+RF, no ener */
-    { "NxN RF Elec. + LJ [V&F]",        54 },
-    { "NxN QSTab Elec. + LJ [F]",       41 }, /* nbnxn kernel LJ+tab, no en */
-    { "NxN QSTab Elec. + LJ [V&F]",     59 },
-    { "NxN Ewald Elec. + LJ [F]",       66 }, /* nbnxn kernel LJ+Ewald, no en */
-    { "NxN Ewald Elec. + LJ [V&F]",    107 },
-    { "NxN LJ [F]",                     33 }, /* nbnxn kernel LJ, no ener */
-    { "NxN LJ [V&F]",                   43 },
-    { "NxN RF Electrostatics [F]",      31 }, /* nbnxn kernel RF, no ener */
-    { "NxN RF Electrostatics [V&F]",    36 },
-    { "NxN QSTab Elec. [F]",            34 }, /* nbnxn kernel tab, no ener */
-    { "NxN QSTab Elec. [V&F]",          41 },
-    { "NxN Ewald Elec. [F]",            61 }, /* nbnxn kernel Ewald, no ener */
-    { "NxN Ewald Elec. [V&F]",          84 },
+    { "NxN RF Elec. + LJ [F]", 38 }, /* nbnxn kernel LJ+RF, no ener */
+    { "NxN RF Elec. + LJ [V&F]", 54 },
+    { "NxN QSTab Elec. + LJ [F]", 41 }, /* nbnxn kernel LJ+tab, no en */
+    { "NxN QSTab Elec. + LJ [V&F]", 59 },
+    { "NxN Ewald Elec. + LJ [F]", 66 }, /* nbnxn kernel LJ+Ewald, no en */
+    { "NxN Ewald Elec. + LJ [V&F]", 107 },
+    { "NxN LJ [F]", 33 }, /* nbnxn kernel LJ, no ener */
+    { "NxN LJ [V&F]", 43 },
+    { "NxN RF Electrostatics [F]", 31 }, /* nbnxn kernel RF, no ener */
+    { "NxN RF Electrostatics [V&F]", 36 },
+    { "NxN QSTab Elec. [F]", 34 }, /* nbnxn kernel tab, no ener */
+    { "NxN QSTab Elec. [V&F]", 41 },
+    { "NxN Ewald Elec. [F]", 61 }, /* nbnxn kernel Ewald, no ener */
+    { "NxN Ewald Elec. [V&F]", 84 },
     /* The switch function flops should be added to the LJ kernels above */
-    { "NxN LJ add F-switch [F]",        12 }, /* extra cost for LJ F-switch */
-    { "NxN LJ add F-switch [V&F]",      22 },
-    { "NxN LJ add P-switch [F]",        27 }, /* extra cost for LJ P-switch */
-    { "NxN LJ add P-switch [V&F]",      20 },
-    { "NxN LJ add LJ Ewald [F]",        36 }, /* extra cost for LJ Ewald */
-    { "NxN LJ add LJ Ewald [V&F]",      33 },
-    { "1,4 nonbonded interactions",     90 },
-    { "Born radii (Still)",             47 },
-    { "Born radii (HCT/OBC)",          183 },
-    { "Born force chain rule",          15 },
-    { "All-vs-All Still radii",          1 },
-    { "All-vs-All HCT/OBC radii",        1 },
-    { "All-vs-All Born chain rule",      1 },
-    { "Calc Weights",                   36 },
-    { "Spread Q",                        6 },
-    { "Spread Q Bspline",                2 },
-    { "Gather F",                      23  },
-    { "Gather F Bspline",              6   },
-    { "3D-FFT",                        8   },
-    { "Convolution",                   4   },
-    { "Solve PME",                     64  },
-    { "NS-Pairs",                      21  },
-    { "Reset In Box",                  3   },
-    { "Shift-X",                       6   },
-    { "CG-CoM",                        3   },
-    { "Sum Forces",                    1   },
-    { "Bonds",                         59  },
-    { "G96Bonds",                      44  },
-    { "FENE Bonds",                    58  },
-    { "Tab. Bonds",                    62  },
-    { "Restraint Potential",           86  },
-    { "Linear Angles",                 57  },
-    { "Angles",                        168 },
-    { "G96Angles",                     150 },
-    { "Quartic Angles",                160 },
-    { "Tab. Angles",                   169 },
-    { "Propers",                       229 },
-    { "Impropers",                     208 },
-    { "RB-Dihedrals",                  247 },
-    { "Four. Dihedrals",               247 },
-    { "Tab. Dihedrals",                227 },
-    { "Dist. Restr.",                  200 },
-    { "Orient. Restr.",                200 },
-    { "Dihedral Restr.",               200 },
-    { "Pos. Restr.",                   50  },
-    { "Flat-bottom posres",            50  },
-    { "Angle Restr.",                  191 },
-    { "Angle Restr. Z",                164 },
-    { "Morse Potent.",                 83  },
-    { "Cubic Bonds",                   54  },
-    { "Walls",                         31  },
-    { "Polarization",                  59  },
-    { "Anharmonic Polarization",       72  },
-    { "Water Pol.",                    62  },
-    { "Thole Pol.",                    296 },
-    { "Virial",                        18  },
-    { "Update",                        31  },
-    { "Ext.ens. Update",               54  },
-    { "Stop-CM",                       10  },
-    { "P-Coupling",                    6   },
-    { "Calc-Ekin",                     27  },
-    { "Lincs",                         60  },
-    { "Lincs-Mat",                     4   },
-    { "Shake",                         30  },
-    { "Constraint-V",                   8  },
-    { "Shake-Init",                    10  },
-    { "Constraint-Vir",                24  },
-    { "Settle",                        323 },
-    { "Virtual Site 2",                23  },
-    { "Virtual Site 3",                37  },
-    { "Virtual Site 3fd",              95  },
-    { "Virtual Site 3fad",             176 },
-    { "Virtual Site 3out",             87  },
-    { "Virtual Site 4fd",              110 },
-    { "Virtual Site 4fdn",             254 },
-    { "Virtual Site N",                 15 },
-    { "Mixed Generalized Born stuff",   10 }
+    { "NxN LJ add F-switch [F]", 12 }, /* extra cost for LJ F-switch */
+    { "NxN LJ add F-switch [V&F]", 22 },
+    { "NxN LJ add P-switch [F]", 27 }, /* extra cost for LJ P-switch */
+    { "NxN LJ add P-switch [V&F]", 20 },
+    { "NxN LJ add LJ Ewald [F]", 36 }, /* extra cost for LJ Ewald */
+    { "NxN LJ add LJ Ewald [V&F]", 33 },
+    { "1,4 nonbonded interactions", 90 },
+    { "Born radii (Still)", 47 },
+    { "Born radii (HCT/OBC)", 183 },
+    { "Born force chain rule", 15 },
+    { "All-vs-All Still radii", 1 },
+    { "All-vs-All HCT/OBC radii", 1 },
+    { "All-vs-All Born chain rule", 1 },
+    { "Calc Weights", 36 },
+    { "Spread Q", 6 },
+    { "Spread Q Bspline", 2 },
+    { "Gather F", 23 },
+    { "Gather F Bspline", 6 },
+    { "3D-FFT", 8 },
+    { "Convolution", 4 },
+    { "Solve PME", 64 },
+    { "NS-Pairs", 21 },
+    { "Reset In Box", 3 },
+    { "Shift-X", 6 },
+    { "CG-CoM", 3 },
+    { "Sum Forces", 1 },
+    { "Bonds", 59 },
+    { "G96Bonds", 44 },
+    { "FENE Bonds", 58 },
+    { "Tab. Bonds", 62 },
+    { "Restraint Potential", 86 },
+    { "Linear Angles", 57 },
+    { "Angles", 168 },
+    { "G96Angles", 150 },
+    { "Quartic Angles", 160 },
+    { "Tab. Angles", 169 },
+    { "Propers", 229 },
+    { "Impropers", 208 },
+    { "RB-Dihedrals", 247 },
+    { "Four. Dihedrals", 247 },
+    { "Tab. Dihedrals", 227 },
+    { "Dist. Restr.", 200 },
+    { "Orient. Restr.", 200 },
+    { "Dihedral Restr.", 200 },
+    { "Pos. Restr.", 50 },
+    { "Flat-bottom posres", 50 },
+    { "Angle Restr.", 191 },
+    { "Angle Restr. Z", 164 },
+    { "Morse Potent.", 83 },
+    { "Cubic Bonds", 54 },
+    { "Walls", 31 },
+    { "Polarization", 59 },
+    { "Anharmonic Polarization", 72 },
+    { "Water Pol.", 62 },
+    { "Thole Pol.", 296 },
+    { "Virial", 18 },
+    { "Update", 31 },
+    { "Ext.ens. Update", 54 },
+    { "Stop-CM", 10 },
+    { "P-Coupling", 6 },
+    { "Calc-Ekin", 27 },
+    { "Lincs", 60 },
+    { "Lincs-Mat", 4 },
+    { "Shake", 30 },
+    { "Constraint-V", 8 },
+    { "Shake-Init", 10 },
+    { "Constraint-Vir", 24 },
+    { "Settle", 323 },
+    { "Virtual Site 2", 23 },
+    { "Virtual Site 3", 37 },
+    { "Virtual Site 3fd", 95 },
+    { "Virtual Site 3fad", 176 },
+    { "Virtual Site 3out", 87 },
+    { "Virtual Site 4fd", 110 },
+    { "Virtual Site 4fdn", 254 },
+    { "Virtual Site N", 15 },
+    { "Mixed Generalized Born stuff", 10 }
 };
 
 static void pr_two(FILE *out, int c, int i)
@@ -411,8 +411,8 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
                 }
             }
             *mflop += mni * flop;
-            frac    = 100.0 * mni * flop / tflop;
-            tfrac  += frac;
+            frac = 100.0 * mni * flop / tflop;
+            tfrac += frac;
             if (out != nullptr)
             {
                 fprintf(out, " %-32s %16.6f %15.3f  %6.1f\n",
@@ -512,14 +512,14 @@ const char *nrnb_str(int enr)
 }
 
 static const int force_index[] = {
-    eNR_BONDS,  eNR_ANGLES,  eNR_PROPER, eNR_IMPROPER,
-    eNR_RB,     eNR_DISRES,  eNR_ORIRES, eNR_POSRES,
+    eNR_BONDS, eNR_ANGLES, eNR_PROPER, eNR_IMPROPER,
+    eNR_RB, eNR_DISRES, eNR_ORIRES, eNR_POSRES,
     eNR_FBPOSRES, eNR_NS,
 };
 #define NFORCE_INDEX asize(force_index)
 
 static const int constr_index[] = {
-    eNR_SHAKE,     eNR_SHAKE_RIJ, eNR_SETTLE,       eNR_UPDATE,       eNR_PCOUPL,
+    eNR_SHAKE, eNR_SHAKE_RIJ, eNR_SETTLE, eNR_UPDATE, eNR_PCOUPL,
     eNR_CONSTR_VIR, eNR_CONSTR_V
 };
 #define NCONSTR_INDEX asize(constr_index)

@@ -89,27 +89,23 @@ int gmx_morph(int argc, char *argv[])
         "if explicitly selected ([TT]-or[tt] option). In that case, an index file may be",
         "read to select the group from which the RMS is computed."
     };
-    t_filenm    fnm[] = {
-        { efSTX, "-f1", "conf1",  ffREAD },
-        { efSTX, "-f2", "conf2",  ffREAD },
-        { efTRX, "-o",  "interm", ffWRITE },
+    t_filenm fnm[] = {
+        { efSTX, "-f1", "conf1", ffREAD },
+        { efSTX, "-f2", "conf2", ffREAD },
+        { efTRX, "-o", "interm", ffWRITE },
         { efXVG, "-or", "rms-interm", ffOPTWR },
-        { efNDX, "-n",  "index",  ffOPTRD }
+        { efNDX, "-n", "index", ffOPTRD }
     };
 #define NFILE asize(fnm)
-    static  int       ninterm = 11;
-    static  real      first   = 0.0;
-    static  real      last    = 1.0;
-    static  gmx_bool  bFit    = TRUE;
-    t_pargs           pa []   = {
-        { "-ninterm", FALSE, etINT,  {&ninterm},
-          "Number of intermediates" },
-        { "-first",   FALSE, etREAL, {&first},
-          "Corresponds to first generated structure (0 is input x[SUB]1[sub], see above)" },
-        { "-last",    FALSE, etREAL, {&last},
-          "Corresponds to last generated structure (1 is input x[SUB]2[sub], see above)" },
-        { "-fit",     FALSE, etBOOL, {&bFit},
-          "Do a least squares fit of the second to the first structure before interpolating" }
+    static int      ninterm = 11;
+    static real     first   = 0.0;
+    static real     last    = 1.0;
+    static gmx_bool bFit    = TRUE;
+    t_pargs         pa[]    = {
+        { "-ninterm", FALSE, etINT, { &ninterm }, "Number of intermediates" },
+        { "-first", FALSE, etREAL, { &first }, "Corresponds to first generated structure (0 is input x[SUB]1[sub], see above)" },
+        { "-last", FALSE, etREAL, { &last }, "Corresponds to last generated structure (1 is input x[SUB]2[sub], see above)" },
+        { "-fit", FALSE, etBOOL, { &bFit }, "Do a least squares fit of the second to the first structure before interpolating" }
     };
     const char *      leg[] = { "Ref = 1\\Sst\\N conf", "Ref = 2\\Snd\\N conf" };
     FILE *            fp    = nullptr;

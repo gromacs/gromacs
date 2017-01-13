@@ -114,7 +114,7 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
     *skmean = 0.0;
     l       = 0;
     for (i = 0; (i < maxidx); i++)
-    {   /* loop over index file */
+    { /* loop over index file */
         ix = index[i];
         for (j = 0; (j < maxidx); j++)
         {
@@ -134,25 +134,35 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
             /* determine the nearest neighbours */
             if (r2 < r_nn[0][i])
             {
-                r_nn[3][i] = r_nn[2][i]; nn[3][i] = nn[2][i];
-                r_nn[2][i] = r_nn[1][i]; nn[2][i] = nn[1][i];
-                r_nn[1][i] = r_nn[0][i]; nn[1][i] = nn[0][i];
-                r_nn[0][i] = r2;         nn[0][i] = j;
+                r_nn[3][i] = r_nn[2][i];
+                nn[3][i]   = nn[2][i];
+                r_nn[2][i] = r_nn[1][i];
+                nn[2][i]   = nn[1][i];
+                r_nn[1][i] = r_nn[0][i];
+                nn[1][i]   = nn[0][i];
+                r_nn[0][i] = r2;
+                nn[0][i]   = j;
             }
             else if (r2 < r_nn[1][i])
             {
-                r_nn[3][i] = r_nn[2][i]; nn[3][i] = nn[2][i];
-                r_nn[2][i] = r_nn[1][i]; nn[2][i] = nn[1][i];
-                r_nn[1][i] = r2;         nn[1][i] = j;
+                r_nn[3][i] = r_nn[2][i];
+                nn[3][i]   = nn[2][i];
+                r_nn[2][i] = r_nn[1][i];
+                nn[2][i]   = nn[1][i];
+                r_nn[1][i] = r2;
+                nn[1][i]   = j;
             }
             else if (r2 < r_nn[2][i])
             {
-                r_nn[3][i] = r_nn[2][i]; nn[3][i] = nn[2][i];
-                r_nn[2][i] = r2;         nn[2][i] = j;
+                r_nn[3][i] = r_nn[2][i];
+                nn[3][i]   = nn[2][i];
+                r_nn[2][i] = r2;
+                nn[2][i]   = j;
             }
             else if (r2 < r_nn[3][i])
             {
-                r_nn[3][i] = r2;         nn[3][i] = j;
+                r_nn[3][i] = r2;
+                nn[3][i]   = j;
             }
         }
 
@@ -162,7 +172,7 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
         for (j = 0; (j < 4); j++)
         {
             r_nn[j][i] = std::sqrt(r_nn[j][i]);
-            rmean     += r_nn[j][i];
+            rmean += r_nn[j][i];
         }
         rmean /= 4;
 
@@ -207,9 +217,9 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
         *skmean += skmol[i];
 
         /* Compute sliced stuff in x y z*/
-        slindex_x                                = static_cast<int>(std::round((1 + x[i][XX] / box[XX][XX]) * nslicex)) % nslicex;
-        slindex_y                                = static_cast<int>(std::round((1 + x[i][YY] / box[YY][YY]) * nslicey)) % nslicey;
-        slindex_z                                = static_cast<int>(std::round((1 + x[i][ZZ] / box[ZZ][ZZ]) * nslicez)) % nslicez;
+        slindex_x = static_cast<int>(std::round((1 + x[i][XX] / box[XX][XX]) * nslicex)) % nslicex;
+        slindex_y = static_cast<int>(std::round((1 + x[i][YY] / box[YY][YY]) * nslicey)) % nslicey;
+        slindex_z = static_cast<int>(std::round((1 + x[i][ZZ] / box[ZZ][ZZ]) * nslicez)) % nslicez;
         sggrid[slindex_x][slindex_y][slindex_z] += sgmol[i];
         skgrid[slindex_x][slindex_y][slindex_z] += skmol[i];
         (sl_count[slindex_x][slindex_y][slindex_z])++;
@@ -247,7 +257,7 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
 /*Outputs interface positions(bins), the number of timeframes, and the number of surface-mesh points in xy*/
 
 static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, const char *fnTRX, real binw, int tblock,
-                                       int *nframes,  int *nslicex, int *nslicey,
+                                       int *nframes, int *nslicex, int *nslicey,
                                        real sgang1, real sgang2, real ****intfpos,
                                        gmx_output_env_t *oenv)
 {
@@ -276,8 +286,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
 
     *nslicex = static_cast<int>(box[XX][XX] / binw + onehalf); /*Calculate slicenr from binwidth*/
     *nslicey = static_cast<int>(box[YY][YY] / binw + onehalf);
-    nslicez  = static_cast<int>(box[ZZ][ZZ] / binw +  onehalf);
-
+    nslicez  = static_cast<int>(box[ZZ][ZZ] / binw + onehalf);
 
 
     ng = 1;
@@ -317,7 +326,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     *nframes = 0;
     framenr  = 0;
 
-/* Loop over frames*/
+    /* Loop over frames*/
     do
     {
         /*Initialize box meshes (temporary storage for each tblock frame -reinitialise every tblock steps */
@@ -411,7 +420,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     bins = (*nslicex) * (*nslicey);
 
 
-    snew(perm, nslicez);  /*permutation array for sorting along normal coordinate*/
+    snew(perm, nslicez); /*permutation array for sorting along normal coordinate*/
 
 
     for (n = 0; n < *nframes; n++)
@@ -445,22 +454,22 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
     sfree(sg_4d);
 }
 
-static void writesurftoxpms(real ***surf, int tblocks, int xbins, int ybins, real bw, char **outfiles, int maplevels )
+static void writesurftoxpms(real ***surf, int tblocks, int xbins, int ybins, real bw, char **outfiles, int maplevels)
 {
 
     char   numbuf[8];
     int    n, i, j;
     real **profile1, **profile2;
     real   max1, max2, min1, min2, *xticks, *yticks;
-    t_rgb  lo = {1, 1, 1};
-    t_rgb  hi = {0, 0, 0};
+    t_rgb  lo = { 1, 1, 1 };
+    t_rgb  hi = { 0, 0, 0 };
     FILE * xpmfile1, *xpmfile2;
 
-/*Prepare xpm structures for output*/
+    /*Prepare xpm structures for output*/
 
-/*Allocate memory to tick's and matrices*/
-    snew (xticks, xbins + 1);
-    snew (yticks, ybins + 1);
+    /*Allocate memory to tick's and matrices*/
+    snew(xticks, xbins + 1);
+    snew(yticks, ybins + 1);
 
     profile1 = mk_matrix(xbins, ybins, FALSE);
     profile2 = mk_matrix(xbins, ybins, FALSE);
@@ -518,7 +527,6 @@ static void writesurftoxpms(real ***surf, int tblocks, int xbins, int ybins, rea
     gmx_ffclose(xpmfile2);
 
 
-
     sfree(profile1);
     sfree(profile2);
     sfree(xticks);
@@ -554,7 +562,6 @@ static void writeraw(real ***surf, int tblocks, int xbins, int ybins, char **fnm
 }
 
 
-
 int gmx_hydorder(int argc, char *argv[])
 {
     static const char *desc[] = {
@@ -573,7 +580,7 @@ int gmx_hydorder(int argc, char *argv[])
     static int         nlevels   = 100;
     static real        binwidth  = 1.0; /* binwidth in mesh           */
     static real        sg1       = 1;
-    static real        sg2       = 1;   /* order parameters for bulk phases */
+    static real        sg2       = 1; /* order parameters for bulk phases */
     static gmx_bool    bFourier  = FALSE;
     static gmx_bool    bRawOut   = FALSE;
     int                frames, xslices, yslices; /* Dimensions of interface arrays*/
@@ -581,27 +588,22 @@ int gmx_hydorder(int argc, char *argv[])
     static const char *normal_axis[] = { nullptr, "z", "x", "y", nullptr };
 
     t_pargs pa[] = {
-        { "-d",   FALSE, etENUM, {normal_axis},
-          "Direction of the normal on the membrane" },
-        { "-bw",  FALSE, etREAL, {&binwidth},
-          "Binwidth of box mesh" },
-        { "-sgang1", FALSE, etREAL, {&sg1},
-          "tetrahedral angle parameter in Phase 1 (bulk)" },
-        { "-sgang2", FALSE, etREAL, {&sg2},
-          "tetrahedral angle parameter in Phase 2 (bulk)" },
-        { "-tblock", FALSE, etINT, {&nsttblock},
-          "Number of frames in one time-block average"},
-        { "-nlevel", FALSE, etINT, {&nlevels},
-          "Number of Height levels in 2D - XPixMaps"}
+        { "-d", FALSE, etENUM, { normal_axis }, "Direction of the normal on the membrane" },
+        { "-bw", FALSE, etREAL, { &binwidth }, "Binwidth of box mesh" },
+        { "-sgang1", FALSE, etREAL, { &sg1 }, "tetrahedral angle parameter in Phase 1 (bulk)" },
+        { "-sgang2", FALSE, etREAL, { &sg2 }, "tetrahedral angle parameter in Phase 2 (bulk)" },
+        { "-tblock", FALSE, etINT, { &nsttblock }, "Number of frames in one time-block average" },
+        { "-nlevel", FALSE, etINT, { &nlevels }, "Number of Height levels in 2D - XPixMaps" }
     };
 
-    t_filenm fnm[] = {                                /* files for g_order    */
-        { efTRX, "-f", nullptr,  ffREAD },            /* trajectory file              */
-        { efNDX, "-n", nullptr,  ffREAD },            /* index file           */
-        { efTPR, "-s", nullptr,  ffREAD },            /* topology file                */
-        { efXPM, "-o", "intf",  ffWRMULT},            /* XPM- surface maps	*/
-        { efOUT, "-or", "raw", ffOPTWRMULT },         /* xvgr output file           */
-        { efOUT, "-Spect", "intfspect", ffOPTWRMULT}, /* Fourier spectrum interfaces */
+    t_filenm fnm[] = {
+        /* files for g_order    */
+        { efTRX, "-f", nullptr, ffREAD },              /* trajectory file              */
+        { efNDX, "-n", nullptr, ffREAD },              /* index file           */
+        { efTPR, "-s", nullptr, ffREAD },              /* topology file                */
+        { efXPM, "-o", "intf", ffWRMULT },             /* XPM- surface maps	*/
+        { efOUT, "-or", "raw", ffOPTWRMULT },          /* xvgr output file           */
+        { efOUT, "-Spect", "intfspect", ffOPTWRMULT }, /* Fourier spectrum interfaces */
     };
 #define NFILE asize(fnm)
 

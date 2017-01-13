@@ -77,7 +77,7 @@ void disableNice(gmx::CommandLineModuleSettings *settings)
     settings->setDefaultNiceLevel(0);
 }
 
-}       // namespace
+} // namespace
 
 /********************************************************************
  * MockModule
@@ -89,9 +89,9 @@ MockModule::MockModule(const char *name, const char *description)
     using ::testing::_;
     using ::testing::Invoke;
     ON_CALL(*this, init(_))
-        .WillByDefault(Invoke(&disableNice));
+            .WillByDefault(Invoke(&disableNice));
     ON_CALL(*this, writeHelp(_))
-        .WillByDefault(Invoke(this, &MockModule::checkHelpContext));
+            .WillByDefault(Invoke(this, &MockModule::checkHelpContext));
 }
 
 MockModule::~MockModule()
@@ -104,7 +104,7 @@ void MockModule::checkHelpContext(const gmx::CommandLineHelpContext &context) co
 
     gmx::TextLineWrapperSettings settings;
     std::string                  moduleName
-        = context.writerContext().substituteMarkupAndWrapToString(
+            = context.writerContext().substituteMarkupAndWrapToString(
                     settings, "[THISMODULE]");
     EXPECT_EQ(expectedDisplayName_, moduleName);
 }
@@ -118,7 +118,7 @@ MockOptionsModule::MockOptionsModule()
     using ::testing::_;
     using ::testing::Invoke;
     ON_CALL(*this, init(_))
-        .WillByDefault(Invoke(&disableNice));
+            .WillByDefault(Invoke(&disableNice));
 }
 
 MockOptionsModule::~MockOptionsModule()

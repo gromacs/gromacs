@@ -60,8 +60,7 @@
 
 int gmx_nmtraj(int argc, char *argv[])
 {
-    const char *desc[] =
-    {
+    const char *desc[] = {
         "[THISMODULE] generates an virtual trajectory from an eigenvector, ",
         "corresponding to a harmonic Cartesian oscillation around the average ",
         "structure. The eigenvectors should normally be mass-weighted, but you can ",
@@ -84,13 +83,12 @@ int gmx_nmtraj(int argc, char *argv[])
     static const char *eignrvec     = "7";
     static const char *phasevec     = "0.0";
 
-    t_pargs pa[] =
-    {
-        { "-eignr",     FALSE, etSTR,  {&eignrvec}, "String of eigenvectors to use (first is 1)" },
-        { "-phases",    FALSE, etSTR,  {&phasevec}, "String of phases (default is 0.0)" },
-        { "-temp",      FALSE, etREAL, {&temp},      "Temperature (K)" },
-        { "-amplitude", FALSE, etREAL, {&refamplitude}, "Amplitude for modes with eigenvalue<=0" },
-        { "-nframes",   FALSE, etINT,  {&nframes},   "Number of frames to generate" }
+    t_pargs pa[] = {
+        { "-eignr", FALSE, etSTR, { &eignrvec }, "String of eigenvectors to use (first is 1)" },
+        { "-phases", FALSE, etSTR, { &phasevec }, "String of phases (default is 0.0)" },
+        { "-temp", FALSE, etREAL, { &temp }, "Temperature (K)" },
+        { "-amplitude", FALSE, etREAL, { &refamplitude }, "Amplitude for modes with eigenvalue<=0" },
+        { "-nframes", FALSE, etINT, { &nframes }, "Number of frames to generate" }
     };
 
 #define NPA asize(pa)
@@ -122,11 +120,10 @@ int gmx_nmtraj(int argc, char *argv[])
     char *            pe;
     gmx_output_env_t *oenv;
 
-    t_filenm fnm[] =
-    {
-        { efTPS, nullptr,    nullptr,          ffREAD },
-        { efTRN, "-v",    "eigenvec",    ffREAD  },
-        { efTRO, "-o",    "nmtraj",      ffWRITE }
+    t_filenm fnm[] = {
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efTRN, "-v", "eigenvec", ffREAD },
+        { efTRO, "-o", "nmtraj", ffWRITE }
     };
 
 #define NFILE asize(fnm)
@@ -249,7 +246,7 @@ int gmx_nmtraj(int argc, char *argv[])
         kmode       = out_eigidx[i];
         this_eigvec = eigvec[kmode];
 
-        if ( (kmode >= 6) && (eigval[kmode] > 0))
+        if ((kmode >= 6) && (eigval[kmode] > 0))
         {
             /* Derive amplitude from temperature and eigenvalue if we can */
 
@@ -276,7 +273,7 @@ int gmx_nmtraj(int argc, char *argv[])
                 m = atoms->atom[k].m;
                 for (d = 0; d < DIM; d++)
                 {
-                    vel   = omega * this_eigvec[k][d];
+                    vel = omega * this_eigvec[k][d];
                     Ekin += 0.5 * 0.5 * m * vel * vel;
                 }
             }

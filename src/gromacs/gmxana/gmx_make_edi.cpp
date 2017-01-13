@@ -63,46 +63,45 @@ typedef struct
 {
     real     deltaF0;
     gmx_bool bHarmonic;
-    gmx_bool bConstForce;      /* Do constant force flooding instead of
+    gmx_bool bConstForce; /* Do constant force flooding instead of
                                   evaluating a flooding potential             */
-    real tau;
-    real deltaF;
-    real kT;
-    real constEfl;
-    real alpha2;
+    real     tau;
+    real     deltaF;
+    real     kT;
+    real     constEfl;
+    real     alpha2;
 } t_edflood;
 
 
 /* This type is for the average, reference, target, and origin structure   */
 typedef struct edix
 {
-    int   nr;                   /* number of atoms this structure contains */
-    int * anrs;                 /* atom index numbers                      */
-    rvec *x;                    /* positions                               */
-    real *sqrtm;                /* sqrt of the masses used for mass-
+    int   nr;    /* number of atoms this structure contains */
+    int * anrs;  /* atom index numbers                      */
+    rvec *x;     /* positions                               */
+    real *sqrtm; /* sqrt of the masses used for mass-
                                  * weighting of analysis                   */
 } t_edix;
 
 
 typedef struct edipar
 {
-    int      nini;              /* total Nr of atoms                    */
-    gmx_bool fitmas;            /* true if trans fit with cm            */
-    gmx_bool pcamas;            /* true if mass-weighted PCA            */
-    int      presteps;          /* number of steps to run without any
+    int         nini;       /* total Nr of atoms                    */
+    gmx_bool    fitmas;     /* true if trans fit with cm            */
+    gmx_bool    pcamas;     /* true if mass-weighted PCA            */
+    int         presteps;   /* number of steps to run without any
                                  *    perturbations ... just monitoring */
-    int         outfrq;         /* freq (in steps) of writing to edo    */
-    int         maxedsteps;     /* max nr of steps per cycle            */
-    struct edix sref;           /* reference positions, to these fitting
+    int         outfrq;     /* freq (in steps) of writing to edo    */
+    int         maxedsteps; /* max nr of steps per cycle            */
+    struct edix sref;       /* reference positions, to these fitting
                                  * will be done                         */
-    struct edix sav;            /* average positions                    */
-    struct edix star;           /* target positions                     */
-    struct edix sori;           /* origin positions                     */
-    real        slope;          /* minimal slope in acceptance radexp   */
-    int         ned;            /* Nr of atoms in essdyn buffer         */
-    t_edflood   flood;          /* parameters especially for flooding   */
+    struct edix sav;        /* average positions                    */
+    struct edix star;       /* target positions                     */
+    struct edix sori;       /* origin positions                     */
+    real        slope;      /* minimal slope in acceptance radexp   */
+    int         ned;        /* Nr of atoms in essdyn buffer         */
+    t_edflood   flood;      /* parameters especially for flooding   */
 } t_edipar;
-
 
 
 void make_t_edx(struct edix *edx, int natoms, rvec *pos, int index[])
@@ -142,17 +141,24 @@ int sscan_list(int *list[], const char *str, const char *listname)
     /*enums to define the different lexical stati */
     enum
     {
-        sBefore, sNumber, sMinus, sRange, sZero, sSmaller, sError, sSteppedRange
+        sBefore,
+        sNumber,
+        sMinus,
+        sRange,
+        sZero,
+        sSmaller,
+        sError,
+        sSteppedRange
     };
 
-    int status     = sBefore;   /*status of the deterministic automat to scan str   */
+    int status     = sBefore; /*status of the deterministic automat to scan str   */
     int number     = 0;
     int end_number = 0;
 
     char *start = nullptr; /*holds the string of the number behind a ','*/
     char *end   = nullptr; /*holds the string of the number behind a '-' */
 
-    int nvecs = 0;         /* counts the number of vectors in the list*/
+    int nvecs = 0; /* counts the number of vectors in the list*/
 
     step = nullptr;
     snew(pos, n + 4);
@@ -169,7 +175,8 @@ int sscan_list(int *list[], const char *str, const char *listname)
         switch (status)
         {
             /* expect a number */
-            case sBefore: if (std::isdigit(c))
+            case sBefore:
+                if (std::isdigit(c))
                 {
                     start  = pos;
                     status = sNumber;
@@ -178,15 +185,17 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* have read a number, expect ',' or '-' */
-            case sNumber: if (c == ',')
+            case sNumber:
+                if (c == ',')
                 {
                     /*store number*/
                     srenew(*list, nvecs + 1);
                     (*list)[nvecs++] = number = std::strtol(start, nullptr, 10);
-                    status           = sBefore;
+                    status                    = sBefore;
                     if (number == 0)
                     {
                         status = sZero;
@@ -195,7 +204,8 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 }
                 else if (c == '-')
                 {
-                    status = sMinus; break;
+                    status = sMinus;
+                    break;
                 }
                 else if (std::isdigit(c))
                 {
@@ -204,26 +214,30 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* have read a '-' -> expect a number */
             case sMinus:
                 if (std::isdigit(c))
                 {
                     end    = pos;
-                    status = sRange; break;
+                    status = sRange;
+                    break;
                 }
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             case sSteppedRange:
                 if (std::isdigit(c))
                 {
                     if (step)
                     {
-                        status = sError; break;
+                        status = sError;
+                        break;
                     }
                     else
                     {
@@ -235,7 +249,8 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* have read the number after a minus, expect ',' or ':' */
             case sRange:
@@ -247,11 +262,13 @@ int sscan_list(int *list[], const char *str, const char *listname)
                     status     = sBefore;
                     if (number == 0)
                     {
-                        status = sZero; break;
+                        status = sZero;
+                        break;
                     }
                     if (end_number <= number)
                     {
-                        status = sSmaller; break;
+                        status = sSmaller;
+                        break;
                     }
                     srenew(*list, nvecs + end_number - number + 1);
                     if (step)
@@ -281,7 +298,8 @@ int sscan_list(int *list[], const char *str, const char *listname)
                 else
                 {
                     status = sError;
-                } break;
+                }
+                break;
 
             /* format error occured */
             case sError:
@@ -305,19 +323,19 @@ int sscan_list(int *list[], const char *str, const char *listname)
     return nvecs;
 } /*sscan_list*/
 
-void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs, int nvec, const char *grouptitle, real steps[])
+void write_eigvec(FILE *fp, int natoms, int eig_list[], rvec **eigvecs, int nvec, const char *grouptitle, real steps[])
 {
-/* eig_list is a zero-terminated list of indices into the eigvecs array.
+    /* eig_list is a zero-terminated list of indices into the eigvecs array.
    eigvecs are coordinates of eigenvectors
    grouptitle to write in the comment line
    steps  -- array with stepsizes for evLINFIX, evLINACC and evRADACC
  */
 
-    int n = 0, i; rvec x;
+    int  n = 0, i;
+    rvec x;
     while (eig_list[n++])
     {
-        ;                 /*count selected eigenvecs*/
-
+        ; /*count selected eigenvecs*/
     }
     fprintf(fp, "# NUMBER OF EIGENVECTORS + %s\n %d\n", grouptitle, n - 1);
 
@@ -355,16 +373,23 @@ void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs, int nvec
 /*enum referring to the different lists of eigenvectors*/
 enum
 {
-    evLINFIX, evLINACC, evFLOOD, evRADFIX, evRADACC, evRADCON, evMON,  evNr
+    evLINFIX,
+    evLINACC,
+    evFLOOD,
+    evRADFIX,
+    evRADACC,
+    evRADCON,
+    evMON,
+    evNr
 };
 #define oldMAGIC 666
 #define MAGIC 670
 
 
-void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs,
-                           int nvec, int *eig_listen[], real* evStepList[])
+void write_the_whole_thing(FILE *fp, t_edipar *edpars, rvec **eigvecs,
+                           int nvec, int *eig_listen[], real *evStepList[])
 {
-/* write edi-file */
+    /* write edi-file */
 
     /*Header*/
     fprintf(fp, "#MAGIC\n %d \n#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",
@@ -459,9 +484,9 @@ void read_eigenvalues(int vecs[], const char *eigfile, real values[],
 }
 
 
-static real *scan_vecparams(const char *str, const char * par, int nvecs)
+static real *scan_vecparams(const char *str, const char *par, int nvecs)
 {
-    char   f0[256], f1[256];          /*format strings adapted every pass of the loop*/
+    char   f0[256], f1[256]; /*format strings adapted every pass of the loop*/
     double d;
     int    i;
     real * vec_params;
@@ -494,9 +519,9 @@ void init_edx(struct edix *edx)
 }
 
 void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
-                int igro[], const rvec *x, const char* structure)
+                int igro[], const rvec *x, const char *structure)
 {
-/* filter2edx copies coordinates from x to edx which are given in index
+    /* filter2edx copies coordinates from x to edx which are given in index
  */
 
     int pos, i;
@@ -508,8 +533,7 @@ void filter2edx(struct edix *edx, int nindex, int index[], int ngro,
     {
         for (pos = 0; pos < ngro - 1 && igro[pos] != index[i]; ++pos)
         {
-        }
-        ;                                                            /*search element in igro*/
+        }; /*search element in igro*/
         if (igro[pos] != index[i])
         {
             gmx_fatal(FARGS, "Couldn't find atom with index %d in structure %s", index[i], structure);
@@ -523,11 +547,11 @@ void get_structure(const t_atoms *atoms, const char *IndexFile,
                    const char *StructureFile, struct edix *edx, int nfit,
                    int ifit[], int nav, int index[])
 {
-    int *  igro;   /*index corresponding to target or origin structure*/
-    int    ngro;
-    int    ntar;
-    rvec * xtar;
-    char * grpname;
+    int * igro; /*index corresponding to target or origin structure*/
+    int   ngro;
+    int   ntar;
+    rvec *xtar;
+    char *grpname;
 
 
     ntar = read_conffile(StructureFile, &xtar);
@@ -652,11 +676,11 @@ int gmx_make_edi(int argc, char *argv[])
     {
         evStepNr = evRADFIX + 1
     };
-    static const char* evSelections[evNr]      = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-    static const char* evOptions[evNr]         = {"-linfix", "-linacc", "-flood", "-radfix", "-radacc", "-radcon", "-mon"};
-    static const char* evParams[evStepNr]      = {nullptr, nullptr};
-    static const char* evStepOptions[evStepNr] = {"-linstep", "-accdir", "-not_used", "-radstep"};
-    static const char* ConstForceStr;
+    static const char *evSelections[evNr]      = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+    static const char *evOptions[evNr]         = { "-linfix", "-linacc", "-flood", "-radfix", "-radacc", "-radcon", "-mon" };
+    static const char *evParams[evStepNr]      = { nullptr, nullptr };
+    static const char *evStepOptions[evStepNr] = { "-linstep", "-accdir", "-not_used", "-radstep" };
+    static const char *ConstForceStr;
     static real *      evStepList[evStepNr];
     static real        radstep  = 0.0;
     static real        deltaF0  = 150;
@@ -672,72 +696,50 @@ int gmx_make_edi(int argc, char *argv[])
     static gmx_bool    bHesse    = FALSE;
     static gmx_bool    bHarmonic = FALSE;
     t_pargs            pa[]      = {
-        { "-mon", FALSE, etSTR, {&evSelections[evMON]},
-          "Indices of eigenvectors for projections of x (e.g. 1,2-5,9) or 1-100:10 means 1 11 21 31 ... 91" },
-        { "-linfix", FALSE, etSTR, {&evSelections[0]},
-          "Indices of eigenvectors for fixed increment linear sampling" },
-        { "-linacc", FALSE, etSTR, {&evSelections[1]},
-          "Indices of eigenvectors for acceptance linear sampling" },
-        { "-radfix", FALSE, etSTR, {&evSelections[3]},
-          "Indices of eigenvectors for fixed increment radius expansion" },
-        { "-radacc", FALSE, etSTR, {&evSelections[4]},
-          "Indices of eigenvectors for acceptance radius expansion" },
-        { "-radcon", FALSE, etSTR, {&evSelections[5]},
-          "Indices of eigenvectors for acceptance radius contraction" },
-        { "-flood",  FALSE, etSTR, {&evSelections[2]},
-          "Indices of eigenvectors for flooding"},
-        { "-outfrq", FALSE, etINT, {&edi_params.outfrq},
-          "Frequency (in steps) of writing output in [REF].xvg[ref] file" },
-        { "-slope", FALSE, etREAL, { &edi_params.slope},
-          "Minimal slope in acceptance radius expansion"},
-        { "-linstep", FALSE, etSTR, {&evParams[0]},
-          "Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! \"1.0 2.3 5.1 -3.1\")"},
-        { "-accdir", FALSE, etSTR, {&evParams[1]},
-          "Directions for acceptance linear sampling - only sign counts! (put in quotes! \"-1 +1 -1.1\")"},
-        { "-radstep", FALSE, etREAL, {&radstep},
-          "Stepsize (nm/step) for fixed increment radius expansion"},
-        { "-maxedsteps", FALSE, etINT, {&edi_params.maxedsteps},
-          "Maximum number of steps per cycle" },
-        { "-eqsteps", FALSE, etINT, {&eqSteps},
-          "Number of steps to run without any perturbations "},
-        { "-deltaF0", FALSE, etREAL, {&deltaF0},
-          "Target destabilization energy for flooding"},
-        { "-deltaF", FALSE, etREAL, {&deltaF},
-          "Start deltaF with this parameter - default 0, nonzero values only needed for restart"},
-        { "-tau", FALSE, etREAL, {&tau},
-          "Coupling constant for adaption of flooding strength according to deltaF0, 0 = infinity i.e. constant flooding strength"},
-        { "-Eflnull", FALSE, etREAL, {&constEfl},
+        { "-mon", FALSE, etSTR, { &evSelections[evMON] }, "Indices of eigenvectors for projections of x (e.g. 1,2-5,9) or 1-100:10 means 1 11 21 31 ... 91" },
+        { "-linfix", FALSE, etSTR, { &evSelections[0] }, "Indices of eigenvectors for fixed increment linear sampling" },
+        { "-linacc", FALSE, etSTR, { &evSelections[1] }, "Indices of eigenvectors for acceptance linear sampling" },
+        { "-radfix", FALSE, etSTR, { &evSelections[3] }, "Indices of eigenvectors for fixed increment radius expansion" },
+        { "-radacc", FALSE, etSTR, { &evSelections[4] }, "Indices of eigenvectors for acceptance radius expansion" },
+        { "-radcon", FALSE, etSTR, { &evSelections[5] }, "Indices of eigenvectors for acceptance radius contraction" },
+        { "-flood", FALSE, etSTR, { &evSelections[2] }, "Indices of eigenvectors for flooding" },
+        { "-outfrq", FALSE, etINT, { &edi_params.outfrq }, "Frequency (in steps) of writing output in [REF].xvg[ref] file" },
+        { "-slope", FALSE, etREAL, { &edi_params.slope }, "Minimal slope in acceptance radius expansion" },
+        { "-linstep", FALSE, etSTR, { &evParams[0] }, "Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! \"1.0 2.3 5.1 -3.1\")" },
+        { "-accdir", FALSE, etSTR, { &evParams[1] }, "Directions for acceptance linear sampling - only sign counts! (put in quotes! \"-1 +1 -1.1\")" },
+        { "-radstep", FALSE, etREAL, { &radstep }, "Stepsize (nm/step) for fixed increment radius expansion" },
+        { "-maxedsteps", FALSE, etINT, { &edi_params.maxedsteps }, "Maximum number of steps per cycle" },
+        { "-eqsteps", FALSE, etINT, { &eqSteps }, "Number of steps to run without any perturbations " },
+        { "-deltaF0", FALSE, etREAL, { &deltaF0 }, "Target destabilization energy for flooding" },
+        { "-deltaF", FALSE, etREAL, { &deltaF }, "Start deltaF with this parameter - default 0, nonzero values only needed for restart" },
+        { "-tau", FALSE, etREAL, { &tau }, "Coupling constant for adaption of flooding strength according to deltaF0, 0 = infinity i.e. constant flooding strength" },
+        { "-Eflnull", FALSE, etREAL, { &constEfl },
           "The starting value of the flooding strength. The flooding strength is updated "
-          "according to the adaptive flooding scheme. For a constant flooding strength use [TT]-tau[tt] 0. "},
-        { "-T", FALSE, etREAL, {&T},
-          "T is temperature, the value is needed if you want to do flooding "},
-        { "-alpha", FALSE, etREAL, {&alpha},
-          "Scale width of gaussian flooding potential with alpha^2 "},
-        { "-restrain", FALSE, etBOOL, {&bRestrain},
-          "Use the flooding potential with inverted sign -> effects as quasiharmonic restraining potential"},
-        { "-hessian", FALSE, etBOOL, {&bHesse},
-          "The eigenvectors and eigenvalues are from a Hessian matrix"},
-        { "-harmonic", FALSE, etBOOL, {&bHarmonic},
-          "The eigenvalues are interpreted as spring constant"},
-        { "-constF", FALSE, etSTR, {&ConstForceStr},
+          "according to the adaptive flooding scheme. For a constant flooding strength use [TT]-tau[tt] 0. " },
+        { "-T", FALSE, etREAL, { &T }, "T is temperature, the value is needed if you want to do flooding " },
+        { "-alpha", FALSE, etREAL, { &alpha }, "Scale width of gaussian flooding potential with alpha^2 " },
+        { "-restrain", FALSE, etBOOL, { &bRestrain }, "Use the flooding potential with inverted sign -> effects as quasiharmonic restraining potential" },
+        { "-hessian", FALSE, etBOOL, { &bHesse }, "The eigenvectors and eigenvalues are from a Hessian matrix" },
+        { "-harmonic", FALSE, etBOOL, { &bHarmonic }, "The eigenvalues are interpreted as spring constant" },
+        { "-constF", FALSE, etSTR, { &ConstForceStr },
           "Constant force flooding: manually set the forces for the eigenvectors selected with -flood "
-          "(put in quotes! \"1.0 2.3 5.1 -3.1\"). No other flooding parameters are needed when specifying the forces directly."}
+          "(put in quotes! \"1.0 2.3 5.1 -3.1\"). No other flooding parameters are needed when specifying the forces directly." }
     };
 #define NPA asize(pa)
 
     rvec *      xref1;
-    int         nvec1, *eignr1 = nullptr;
+    int         nvec1, *eignr1  = nullptr;
     rvec *      xav1, **eigvec1 = nullptr;
     t_atoms *   atoms = nullptr;
-    int         nav;       /* Number of atoms in the average structure */
+    int         nav; /* Number of atoms in the average structure */
     char *      grpname;
     const char *indexfile;
     int         i;
     int *       index, *ifit;
-    int         nfit;                    /* Number of atoms in the reference/fit structure */
-    int         ev_class;                /* parameter _class i.e. evMON, evRADFIX etc. */
+    int         nfit;     /* Number of atoms in the reference/fit structure */
+    int         ev_class; /* parameter _class i.e. evMON, evRADFIX etc. */
     int         nvecs;
-    real *      eigval1 = nullptr;       /* in V3.3 this is parameter of read_eigenvectors */
+    real *      eigval1 = nullptr; /* in V3.3 this is parameter of read_eigenvectors */
 
     const char *EdiFile;
     const char *TargetFile;
@@ -754,16 +756,18 @@ int gmx_make_edi(int argc, char *argv[])
     gmx_bool   bFit1;
 
     t_filenm fnm[] = {
-        { efTRN, "-f",    "eigenvec",    ffREAD  },
-        { efXVG, "-eig",  "eigenval",    ffOPTRD },
-        { efTPS, nullptr,    nullptr,          ffREAD },
-        { efNDX, nullptr,    nullptr,  ffOPTRD },
-        { efSTX, "-tar", "target", ffOPTRD},
-        { efSTX, "-ori", "origin", ffOPTRD},
+        { efTRN, "-f", "eigenvec", ffREAD },
+        { efXVG, "-eig", "eigenval", ffOPTRD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efSTX, "-tar", "target", ffOPTRD },
+        { efSTX, "-ori", "origin", ffOPTRD },
         { efEDI, "-o", "sam", ffWRITE }
     };
 #define NFILE asize(fnm)
-    edi_params.outfrq = 100; edi_params.slope = 0.0; edi_params.maxedsteps = 0;
+    edi_params.outfrq     = 100;
+    edi_params.slope      = 0.0;
+    edi_params.maxedsteps = 0;
     if (!parse_common_args(&argc, argv, 0,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
@@ -788,9 +792,9 @@ int gmx_make_edi(int argc, char *argv[])
                 if (opt2parg_bSet(evStepOptions[ev_class], NPA, pa))
                 {
                     evStepList[ev_class]
-                        = scan_vecparams(opt2parg_str(evStepOptions[ev_class], NPA, pa), evStepOptions[ev_class], nvecs);
+                            = scan_vecparams(opt2parg_str(evStepOptions[ev_class], NPA, pa), evStepOptions[ev_class], nvecs);
                 }
-                else   /*if list is not given fill with zeros */
+                else /*if list is not given fill with zeros */
                 {
                     snew(evStepList[ev_class], nvecs);
                     for (i = 0; i < nvecs; i++)
@@ -820,9 +824,9 @@ int gmx_make_edi(int argc, char *argv[])
             }
             else
             {
-            };   /*to avoid ambiguity   */
+            }; /*to avoid ambiguity   */
         }
-        else     /* if there are no eigenvectors for this option set list to zero */
+        else /* if there are no eigenvectors for this option set list to zero */
         {
             listen[ev_class] = nullptr;
             snew(listen[ev_class], 1);
@@ -869,7 +873,8 @@ int gmx_make_edi(int argc, char *argv[])
         {
             /* if g_covar used different coordinate groups to fit and to do the PCA */
             printf("\nNote: the structure in %s should be the same\n"
-                   "      as the one used for the fit in g_covar\n", ftp2fn(efTPS, NFILE, fnm));
+                   "      as the one used for the fit in g_covar\n",
+                   ftp2fn(efTPS, NFILE, fnm));
             printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
         }
         else
@@ -931,7 +936,7 @@ int gmx_make_edi(int argc, char *argv[])
 
 
     /*store reference and average structure in edi_params*/
-    make_t_edx(&edi_params.sref, nfit, xref1, ifit );
+    make_t_edx(&edi_params.sref, nfit, xref1, ifit);
     make_t_edx(&edi_params.sav, nav, xav1, index);
 
 
@@ -940,7 +945,8 @@ int gmx_make_edi(int argc, char *argv[])
     {
         if (0 != listen[evFLOOD][0])
         {
-            fprintf(stderr, "\nNote: Providing a TARGET structure has no effect when using flooding.\n"
+            fprintf(stderr,
+                    "\nNote: Providing a TARGET structure has no effect when using flooding.\n"
                     "      You may want to use -ori to define the flooding potential center.\n\n");
         }
         get_structure(atoms, indexfile, TargetFile, &edi_params.star, nfit, ifit, nav, index);

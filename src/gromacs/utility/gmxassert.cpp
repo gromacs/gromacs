@@ -67,7 +67,7 @@ void assertHandler(const char *condition, const char *msg,
     gmx_exit_on_fatal_error(ExitType_Abort, 1);
 }
 
-}   // namespace internal
+} // namespace internal
 //! \endcond
 
 } // namespace gmx

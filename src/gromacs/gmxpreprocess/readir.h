@@ -54,12 +54,21 @@ typedef warninp *warninp_t;
 
 enum
 {
-    eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR
+    eshNONE,
+    eshHBONDS,
+    eshALLBONDS,
+    eshHANGLES,
+    eshALLANGLES,
+    eshNR
 };
 
 enum
 {
-    ecouplamVDWQ, ecouplamVDW, ecouplamQ, ecouplamNONE, ecouplamNR
+    ecouplamVDWQ,
+    ecouplamVDW,
+    ecouplamQ,
+    ecouplamNONE,
+    ecouplamNR
 };
 
 struct t_gromppopts
@@ -99,8 +108,8 @@ int search_string(const char *s, int ng, char *gn[]);
 /* Returns the index of string s in the index groups */
 
 void double_check(t_inputrec *ir, matrix box,
-                  gmx_bool bHasNormalConstraints,
-                  gmx_bool bHasAnyConstraints,
+                  gmx_bool  bHasNormalConstraints,
+                  gmx_bool  bHasAnyConstraints,
                   warninp_t wi);
 /* Do more checks */
 
@@ -109,7 +118,7 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
 /* Do even more checks */
 
 void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
-                             rvec *x,
+                             rvec *    x,
                              warninp_t wi);
 /* Even more checks, charge group radii vs. cut-off's only. */
 
@@ -121,7 +130,7 @@ void get_ir(const char *mdparin, const char *mdparout,
  * function is called. Also prints the input file back to mdparout.
  */
 
-void do_index(const char* mdparin,
+void do_index(const char *mdparin,
               const char *ndx,
               gmx_mtop_t *mtop,
               gmx_bool    bVerbose,
@@ -134,11 +143,11 @@ void do_index(const char* mdparin,
 
 char **read_pullparams(int *ninp_p, t_inpfile **inp,
                        pull_params_t *pull,
-                       warninp_t wi);
+                       warninp_t      wi);
 /* Reads the pull parameters, returns a list of the pull group names */
 
-void make_pull_groups(pull_params_t *pull,
-                      char **pgnames,
+void make_pull_groups(pull_params_t * pull,
+                      char **         pgnames,
                       const t_blocka *grps, char **gnames);
 /* Process the pull group parameters after reading the index groups */
 

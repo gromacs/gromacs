@@ -105,9 +105,9 @@ bool MenuCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
             if (m->bGrabbed)
             {
                 m->bGrabbed
-                    = GrabOK(stderr, XGrabPointer(x11->disp, m->wd.self, True,
-                                                  ButtonReleaseMask, GrabModeAsync,
-                                                  GrabModeAsync, m->wd.self, None, CurrentTime));
+                        = GrabOK(stderr, XGrabPointer(x11->disp, m->wd.self, True,
+                                                      ButtonReleaseMask, GrabModeAsync,
+                                                      GrabModeAsync, m->wd.self, None, CurrentTime));
             }
             break;
         case ButtonRelease:
@@ -146,7 +146,7 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
     mht = XTextHeight(x11->font);
     /* Now we have the biggest single box, add a border of 2 pixels */
     mlen += 20; /* We need extra space at the left for checkmarks */
-    mht  += 4;
+    mht += 4;
     /* Calculate the area of the menu */
     area = mlen * mht;
     ht   = std::sqrt(area);
@@ -180,7 +180,7 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
                                      m->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, m->wd.self, Parent, MenuCallBack, m);
     x11->SetInputMask(x11, m->wd.self, ExposureMask
-                      | OwnerGrabButtonMask | ButtonReleaseMask);
+                                               | OwnerGrabButtonMask | ButtonReleaseMask);
 
     for (j = l = 0; (j < fcol); j++)
     {
@@ -198,8 +198,8 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
                                   ChildCallBack, kid);
             x11->SetInputMask(x11, w->self,
                               ButtonPressMask | ButtonReleaseMask
-                              | OwnerGrabButtonMask | ExposureMask
-                              | EnterWindowMask | LeaveWindowMask);
+                                      | OwnerGrabButtonMask | ExposureMask
+                                      | EnterWindowMask | LeaveWindowMask);
         }
     }
 

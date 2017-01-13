@@ -169,7 +169,8 @@ public:
 #endif
     }
 
-    SimpleInputData() : data_(1, true)
+    SimpleInputData()
+        : data_(1, true)
     {
         using gmx::test::AnalysisDataTestInputFrame;
         data_.setColumnCount(0, 1);
@@ -255,7 +256,8 @@ public:
 #endif
     }
 
-    WeightedSimpleInputData() : data_(1, true)
+    WeightedSimpleInputData()
+        : data_(1, true)
     {
         using gmx::test::AnalysisDataTestInputFrame;
         data_.setColumnCount(0, 2);
@@ -292,7 +294,8 @@ public:
 #endif
     }
 
-    WeightedDataSetInputData() : data_(2, true)
+    WeightedDataSetInputData()
+        : data_(2, true)
     {
         using gmx::test::AnalysisDataTestInputFrame;
         data_.setColumnCount(0, 2);
@@ -464,16 +467,17 @@ public:
 #endif
     }
 
-    AverageInputData() : data_(1, false)
+    AverageInputData()
+        : data_(1, false)
     {
         data_.setColumnCount(0, 1);
-        data_.addFrameWithValueAndError(1.0,  2.0, 1.0);
-        data_.addFrameWithValueAndError(1.5,  1.0, 1.0);
-        data_.addFrameWithValueAndError(2.0,  3.0, 2.0);
-        data_.addFrameWithValueAndError(2.5,  4.0, 2.0);
-        data_.addFrameWithValueAndError(3.0,  2.0, 1.0);
-        data_.addFrameWithValueAndError(3.5,  0.0, 3.0);
-        data_.addFrameWithValueAndError(4.0,  1.0, 3.0);
+        data_.addFrameWithValueAndError(1.0, 2.0, 1.0);
+        data_.addFrameWithValueAndError(1.5, 1.0, 1.0);
+        data_.addFrameWithValueAndError(2.0, 3.0, 2.0);
+        data_.addFrameWithValueAndError(2.5, 4.0, 2.0);
+        data_.addFrameWithValueAndError(3.0, 2.0, 1.0);
+        data_.addFrameWithValueAndError(3.5, 0.0, 3.0);
+        data_.addFrameWithValueAndError(4.0, 1.0, 3.0);
     }
 
 private:

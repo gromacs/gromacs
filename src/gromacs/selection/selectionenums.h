@@ -49,10 +49,9 @@
  *
  * \inpublicapi
  */
-typedef enum
-{
-    CFRAC_NONE,         /**< No covered fraction (everything covered). */
-    CFRAC_SOLIDANGLE    /**< Fraction of a solid (3D) angle covered. */
+typedef enum {
+    CFRAC_NONE,      /**< No covered fraction (everything covered). */
+    CFRAC_SOLIDANGLE /**< Fraction of a solid (3D) angle covered. */
 } e_coverfrac_t;
 
 namespace gmx
@@ -132,7 +131,6 @@ struct SelectionTopologyProperties
     //! Whether atom masses are needed for selection evaluation.
     bool needsMasses;
 };
-
 }
 
 #endif

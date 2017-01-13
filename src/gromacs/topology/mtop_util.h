@@ -56,19 +56,16 @@ struct t_symtab;
  * to set some compute intesive variables to avoid
  * N^2 operations later on.
  */
-void
-gmx_mtop_finalize(gmx_mtop_t *mtop);
+void gmx_mtop_finalize(gmx_mtop_t *mtop);
 
 /* Counts the number of atoms of each type. State should be 0 for
  * state A and 1 for state B types.  typecount should have at
  * least mtop->ffparams.atnr elements.
  */
-void
-gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[]);
+void gmx_mtop_count_atomtypes(const gmx_mtop_t *mtop, int state, int typecount[]);
 
 /* Returns the total number of charge groups in mtop */
-int
-ncg_mtop(const gmx_mtop_t *mtop);
+int ncg_mtop(const gmx_mtop_t *mtop);
 
 /* Returns the total number of residues in mtop. */
 int gmx_mtop_nres(const gmx_mtop_t *mtop);
@@ -108,16 +105,14 @@ gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
 /* Return the atomname, the residue number and residue name
  * of the current atom in the loop.
  */
-void
-gmx_mtop_atomloop_all_names(gmx_mtop_atomloop_all_t aloop,
-                            char **atomname, int *resnr, char **resname);
+void gmx_mtop_atomloop_all_names(gmx_mtop_atomloop_all_t aloop,
+                                 char **atomname, int *resnr, char **resname);
 
 /* Return the a pointer to the moltype struct of the current atom
  * in the loop and the atom number in the molecule.
  */
-void
-gmx_mtop_atomloop_all_moltype(gmx_mtop_atomloop_all_t aloop,
-                              gmx_moltype_t **moltype, int *at_mol);
+void gmx_mtop_atomloop_all_moltype(gmx_mtop_atomloop_all_t aloop,
+                                   gmx_moltype_t **moltype, int *at_mol);
 
 
 /* Abstract type for atom loop over atoms in all molecule blocks */
@@ -188,8 +183,7 @@ gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
 
 
 /* Returns the total number of interactions in the system of type ftype */
-int
-gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype);
+int gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype);
 
 
 /* Returns a charge group index for the whole system */
@@ -239,10 +233,9 @@ std::vector<size_t> get_atom_index(const gmx_mtop_t *mtop);
  * \param[in]  atoms   The atoms to convert
  * \param[out] mtop    The molecular topology output containing atoms.
  */
-void
-convertAtomsToMtop(t_symtab *  symtab,
-                   char **     name,
-                   t_atoms *   atoms,
-                   gmx_mtop_t *mtop);
+void convertAtomsToMtop(t_symtab *  symtab,
+                        char **     name,
+                        t_atoms *   atoms,
+                        gmx_mtop_t *mtop);
 
 #endif

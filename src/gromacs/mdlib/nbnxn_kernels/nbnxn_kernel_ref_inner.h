@@ -72,7 +72,7 @@
             real FrLJ6 = 0, FrLJ12 = 0, frLJ = 0;
             real VLJ gmx_unused;
 #if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
-            real r, rsw;
+            real                       r, rsw;
 #endif
 
 #ifdef CALC_COULOMB
@@ -151,7 +151,7 @@
             if (i < UNROLLI / 2)
 #endif
             {
-                c6  = nbfp[type_i_off + type[aj] * 2  ];
+                c6  = nbfp[type_i_off + type[aj] * 2];
                 c12 = nbfp[type_i_off + type[aj] * 2 + 1];
 
 #if defined LJ_CUT || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
@@ -159,11 +159,11 @@
                 FrLJ6   = c6 * rinvsix;
                 FrLJ12  = c12 * rinvsix * rinvsix;
                 frLJ    = FrLJ12 - FrLJ6;
-                /* 7 flops for r^-2 + LJ force */
+/* 7 flops for r^-2 + LJ force */
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
                 VLJ = (FrLJ12 + c12 * ic->repulsion_shift.cpot) / 12
-                    - (FrLJ6 + c6 * ic->dispersion_shift.cpot) / 6;
-                /* 7 flops for LJ energy */
+                      - (FrLJ6 + c6 * ic->dispersion_shift.cpot) / 6;
+/* 7 flops for LJ energy */
 #endif
 #endif
 
@@ -175,12 +175,12 @@
 #endif
 #ifdef LJ_FORCE_SWITCH
                 frLJ
-                    += -c6 * (ic->dispersion_shift.c2 + ic->dispersion_shift.c3 * rsw) * rsw * rsw * r
-                        + c12 * (ic->repulsion_shift.c2 + ic->repulsion_shift.c3 * rsw) * rsw * rsw * r;
+                        += -c6 * (ic->dispersion_shift.c2 + ic->dispersion_shift.c3 * rsw) * rsw * rsw * r
+                           + c12 * (ic->repulsion_shift.c2 + ic->repulsion_shift.c3 * rsw) * rsw * rsw * r;
 #if defined CALC_ENERGIES
                 VLJ
-                    += -c6 * (-ic->dispersion_shift.c2 / 3 - ic->dispersion_shift.c3 / 4 * rsw) * rsw * rsw * rsw
-                        + c12 * (-ic->repulsion_shift.c2 / 3 - ic->repulsion_shift.c3 / 4 * rsw) * rsw * rsw * rsw;
+                        += -c6 * (-ic->dispersion_shift.c2 / 3 - ic->dispersion_shift.c3 / 4 * rsw) * rsw * rsw * rsw
+                           + c12 * (-ic->repulsion_shift.c2 / 3 - ic->repulsion_shift.c3 / 4 * rsw) * rsw * rsw * rsw;
 #endif
 #endif
 
@@ -238,7 +238,7 @@
 #if GMX_DOUBLE
                     expmcr2 = exp(-cr2);
 #else
-                    expmcr2 = expf(-cr2);
+                    expmcr2    = expf(-cr2);
 #endif
                     poly = 1 + cr2 + 0.5 * cr2 * cr2;
 
@@ -251,7 +251,7 @@
                     VLJ += c6grid / 6 * (rinvsix_nm * (1 - expmcr2 * poly) + sh_mask);
 #endif
                 }
-#endif          /* LJ_EWALD */
+#endif /* LJ_EWALD */
 
 #ifdef VDW_CUTOFF_CHECK
                 /* Mask for VdW cut-off shorter than Coulomb cut-off */
@@ -259,7 +259,7 @@
                     real skipmask_rvdw;
 
                     skipmask_rvdw = (rsq < rvdw2) ? 1.0 : 0.0;
-                    frLJ         *= skipmask_rvdw;
+                    frLJ *= skipmask_rvdw;
 #ifdef CALC_ENERGIES
                     VLJ *= skipmask_rvdw;
 #endif
@@ -268,9 +268,9 @@
 #if defined CALC_ENERGIES
                 /* Need to zero the interaction if r >= rcut */
                 VLJ = VLJ * skipmask;
-                /* 1 more flop for LJ energy */
+/* 1 more flop for LJ energy */
 #endif
-#endif          /* VDW_CUTOFF_CHECK */
+#endif /* VDW_CUTOFF_CHECK */
 
 
 #ifdef CALC_ENERGIES
@@ -278,7 +278,7 @@
                 Vvdw[egp_sh_i[i] + ((egp_cj >> (nbat->neg_2log * j)) & egp_mask)] += VLJ;
 #else
                 Vvdw_ci += VLJ;
-                /* 1 flop for LJ energy addition */
+/* 1 flop for LJ energy addition */
 #endif
 #endif
             }
@@ -297,10 +297,10 @@
 
 #ifdef CALC_COUL_RF
             fcoul = qq * (interact * rinv * rinvsq - k_rf2);
-            /* 4 flops for RF force */
+/* 4 flops for RF force */
 #ifdef CALC_ENERGIES
             vcoul = qq * (interact * rinv + k_rf * rsq - c_rf);
-            /* 4 flops for RF energy */
+/* 4 flops for RF energy */
 #endif
 #endif
 
@@ -316,13 +316,13 @@
             fexcl = (1 - frac) * tab_coul_F[ri] + frac * tab_coul_F[ri + 1];
 #endif
             fcoul = interact * rinvsq - fexcl;
-            /* 7 flops for float 1/r-table force */
+/* 7 flops for float 1/r-table force */
 #ifdef CALC_ENERGIES
 #if !GMX_DOUBLE
             vcoul = qq * (interact * (rinv - ic->sh_ewald)
                           - (tab_coul_FDV0[ri * 4 + 2]
                              - halfsp * frac * (tab_coul_FDV0[ri * 4] + fexcl)));
-            /* 7 flops for float 1/r-table energy (8 with excls) */
+/* 7 flops for float 1/r-table energy (8 with excls) */
 #else
             vcoul = qq * (interact * (rinv - ic->sh_ewald)
                           - (tab_coul_V[ri]
@@ -337,7 +337,7 @@
             Vc[egp_sh_i[i] + ((egp_cj >> (nbat->neg_2log * j)) & egp_mask)] += vcoul;
 #else
             Vc_ci += vcoul;
-            /* 1 flop for Coulomb energy addition */
+/* 1 flop for Coulomb energy addition */
 #endif
 #endif
 #endif

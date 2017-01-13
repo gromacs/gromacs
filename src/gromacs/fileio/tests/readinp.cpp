@@ -56,11 +56,12 @@ namespace testing
 class ReadTest : public ::testing::Test
 {
 public:
-    ReadTest() : numInputs_(1),
-                 inputField_(nullptr),
-                 inpGuard_(),
-                 wi_(),
-                 wiGuard_()
+    ReadTest()
+        : numInputs_(1),
+          inputField_(nullptr),
+          inpGuard_(),
+          wi_(),
+          wiGuard_()
     {
         snew(inputField_, numInputs_);
         inpGuard_.reset(inputField_);
@@ -68,79 +69,79 @@ public:
         inputField_[0].count     = 0;
         inputField_[0].bObsolete = FALSE;
         inputField_[0].bSet      = FALSE;
-        inputField_[0].name      = (char *) "test";
+        inputField_[0].name      = (char *)"test";
         inputField_[0].inp_count = 0;
 
         wi_ = init_warning(FALSE, 0);
         wiGuard_.reset(wi_);
     }
 
-    int                                            numInputs_;
-    t_inpfile *                                    inputField_;
-    gmx::unique_cptr<t_inpfile>                    inpGuard_;
-    warninp_t                                      wi_;
+    int                         numInputs_;
+    t_inpfile *                 inputField_;
+    gmx::unique_cptr<t_inpfile> inpGuard_;
+    warninp_t                   wi_;
     gmx::unique_cptr<struct warninp, free_warning> wiGuard_;
 };
 
 TEST_F(ReadTest, get_eint_ReadsInteger)
 {
-    inputField_[0].value = (char *) "1";
+    inputField_[0].value = (char *)"1";
     ASSERT_EQ(1, get_eint(&numInputs_, &inputField_, "test", 2, wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint_WarnsAboutFloat)
 {
-    inputField_[0].value = (char *) "0.8";
+    inputField_[0].value = (char *)"0.8";
     get_eint(&numInputs_, &inputField_, "test", 2, wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint_WarnsAboutString)
 {
-    inputField_[0].value = (char *) "hello";
+    inputField_[0].value = (char *)"hello";
     get_eint(&numInputs_, &inputField_, "test", 2, wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint64_ReadsInteger)
 {
-    inputField_[0].value = (char *) "1";
+    inputField_[0].value = (char *)"1";
     ASSERT_EQ(1, get_eint64(&numInputs_, &inputField_, "test", 2, wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint64_WarnsAboutFloat)
 {
-    inputField_[0].value = (char *) "0.8";
+    inputField_[0].value = (char *)"0.8";
     get_eint64(&numInputs_, &inputField_, "test", 2, wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_eint64_WarnsAboutString)
 {
-    inputField_[0].value = (char *) "hello";
+    inputField_[0].value = (char *)"hello";
     get_eint64(&numInputs_, &inputField_, "test", 2, wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_ereal_ReadsInteger)
 {
-    inputField_[0].value = (char *) "1";
+    inputField_[0].value = (char *)"1";
     ASSERT_EQ(1, get_ereal(&numInputs_, &inputField_, "test", 2, wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_ereal_ReadsFloat)
 {
-    inputField_[0].value = (char *) "0.8";
+    inputField_[0].value = (char *)"0.8";
     ASSERT_EQ(0.8, get_ereal(&numInputs_, &inputField_, "test", 2, wi_));
     ASSERT_FALSE(warning_errors_exist(wi_));
 }
 
 TEST_F(ReadTest, get_ereal_WarnsAboutString)
 {
-    inputField_[0].value = (char *) "hello";
+    inputField_[0].value = (char *)"hello";
     get_ereal(&numInputs_, &inputField_, "test", 2, wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
 }

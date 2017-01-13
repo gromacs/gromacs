@@ -73,7 +73,7 @@ protected:
      *
      * \throws FileIOError  when the freopen() fails
      */
-    void redirectStringToStdin(const char* theString);
+    void redirectStringToStdin(const char *theString);
 
     /*! \brief Discards stdout while running a test
      *
@@ -91,7 +91,6 @@ protected:
      * details, so we cannot use the private access specifer
      * here. */
 public:
-
     /*! \brief Object that manages finding input files, writing
      * temporary output files and cleaning up files.
      */

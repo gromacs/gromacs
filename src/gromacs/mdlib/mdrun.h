@@ -56,29 +56,33 @@ struct t_mdatoms;
 struct t_simtemp;
 struct t_state;
 
-#define MD_POLARISE       (1 << 2)
-#define MD_RERUN          (1 << 4)
-#define MD_RERUN_VSITE    (1 << 5)
-#define MD_DDBONDCHECK    (1 << 10)
-#define MD_DDBONDCOMM     (1 << 11)
-#define MD_CONFOUT        (1 << 12)
-#define MD_REPRODUCIBLE   (1 << 13)
-#define MD_APPENDFILES    (1 << 15)
+#define MD_POLARISE (1 << 2)
+#define MD_RERUN (1 << 4)
+#define MD_RERUN_VSITE (1 << 5)
+#define MD_DDBONDCHECK (1 << 10)
+#define MD_DDBONDCOMM (1 << 11)
+#define MD_CONFOUT (1 << 12)
+#define MD_REPRODUCIBLE (1 << 13)
+#define MD_APPENDFILES (1 << 15)
 #define MD_APPENDFILESSET (1 << 21)
-#define MD_KEEPANDNUMCPT  (1 << 16)
-#define MD_READ_EKIN      (1 << 17)
-#define MD_STARTFROMCPT   (1 << 18)
+#define MD_KEEPANDNUMCPT (1 << 16)
+#define MD_READ_EKIN (1 << 17)
+#define MD_STARTFROMCPT (1 << 18)
 #define MD_RESETCOUNTERSHALFWAY (1 << 19)
-#define MD_TUNEPME        (1 << 20)
-#define MD_NTOMPSET       (1 << 21)
-#define MD_IMDWAIT        (1 << 23)
-#define MD_IMDTERM        (1 << 24)
-#define MD_IMDPULL        (1 << 25)
+#define MD_TUNEPME (1 << 20)
+#define MD_NTOMPSET (1 << 21)
+#define MD_IMDWAIT (1 << 23)
+#define MD_IMDTERM (1 << 24)
+#define MD_IMDPULL (1 << 25)
 
 /* The options for the domain decomposition MPI task ordering */
 enum
 {
-    ddrankorderSEL, ddrankorderINTERLEAVE, ddrankorderPP_PME, ddrankorderCARTESIAN, ddrankorderNR
+    ddrankorderSEL,
+    ddrankorderINTERLEAVE,
+    ddrankorderPP_PME,
+    ddrankorderCARTESIAN,
+    ddrankorderNR
 };
 
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);

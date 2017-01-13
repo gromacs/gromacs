@@ -56,31 +56,31 @@ static inline float gmx_simdcall reduce(SimdFloat a)
 static inline SimdFloat gmx_simdcall fma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               _mm_macc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_macc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               _mm_msub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_msub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fnma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               _mm_nmacc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_nmacc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fnms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               _mm_nmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm_nmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD_FLOAT_H

@@ -86,7 +86,7 @@ namespace internal
 
 //! Smart pointer type for managing a storage frame builder.
 typedef std::unique_ptr<AnalysisDataStorageFrame>
-    AnalysisDataFrameBuilderPointer;
+        AnalysisDataFrameBuilderPointer;
 
 /*! \internal \brief
  * Private implementation class for AnalysisDataStorage.
@@ -296,10 +296,10 @@ public:
     //! Indicates what operations have been performed on a frame.
     enum Status
     {
-        eMissing,      //!< Frame has not yet been started.
-        eStarted,      //!< startFrame() has been called.
-        eFinished,     //!< finishFrame() has been called.
-        eNotified      //!< Appropriate notifications have been sent.
+        eMissing,  //!< Frame has not yet been started.
+        eStarted,  //!< startFrame() has been called.
+        eFinished, //!< finishFrame() has been called.
+        eNotified  //!< Appropriate notifications have been sent.
     };
 
     /*! \brief
@@ -653,7 +653,7 @@ AnalysisDataPointSetRef AnalysisDataStorageFrameData::pointSet(int index) const
             constArrayRefFromVector<AnalysisDataValue>(values_.begin(), values_.end()));
 }
 
-}   // namespace internal
+} // namespace internal
 
 /********************************************************************
  * AnalysisDataStorageFrame
@@ -719,9 +719,9 @@ void AnalysisDataStorageFrame::finishPointSet()
     if (bPointSetInProgress_)
     {
         std::vector<AnalysisDataValue>::const_iterator begin
-            = values_.begin() + currentOffset_;
+                = values_.begin() + currentOffset_;
         std::vector<AnalysisDataValue>::const_iterator end
-            = begin + columnCount_;
+                = begin + columnCount_;
         int firstColumn = 0;
         while (begin != end && !begin->isSet())
         {
@@ -778,7 +778,7 @@ AnalysisDataFrameRef AnalysisDataStorage::tryGetDataFrame(int index) const
         return AnalysisDataFrameRef();
     }
     const internal::AnalysisDataStorageFrameData &storedFrame
-        = *impl_->frames_[storageIndex];
+            = *impl_->frames_[storageIndex];
     if (!storedFrame.isAvailable())
     {
         return AnalysisDataFrameRef();
@@ -826,7 +826,7 @@ void AnalysisDataStorage::startParallelDataStorage(
         const AnalysisDataParallelOptions &options)
 {
     const int pendingLimit = options.parallelizationFactor();
-    impl_->pendingLimit_ = pendingLimit;
+    impl_->pendingLimit_   = pendingLimit;
     modules->notifyParallelDataStart(data, options);
     // Data needs to be set before calling extendBuffer()
     impl_->data_    = data;

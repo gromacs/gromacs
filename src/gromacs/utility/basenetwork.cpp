@@ -73,7 +73,7 @@ int gmx_node_num()
     }
 #endif
     int i;
-    (void) MPI_Comm_size(MPI_COMM_WORLD, &i);
+    (void)MPI_Comm_size(MPI_COMM_WORLD, &i);
     return i;
 #endif
 }
@@ -90,7 +90,7 @@ int gmx_node_rank()
     }
 #endif
     int i;
-    (void) MPI_Comm_rank(MPI_COMM_WORLD, &i);
+    (void)MPI_Comm_rank(MPI_COMM_WORLD, &i);
     return i;
 #endif
 }
@@ -121,7 +121,7 @@ static int bgq_nodenum()
        node). However, T is irrelevant for computing a suitable return
        value for gmx_physicalnode_id_hash().
      */
-    hostnum  = personality.Network_Config.Acoord;
+    hostnum = personality.Network_Config.Acoord;
     hostnum *= personality.Network_Config.Bnodes;
     hostnum += personality.Network_Config.Bcoord;
     hostnum *= personality.Network_Config.Cnodes;

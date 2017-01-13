@@ -54,10 +54,12 @@ class Simd4Double
 public:
     Simd4Double() {}
 
-    Simd4Double(double d) : simdInternal_(_mm256_set1_pd(d)) {}
+    Simd4Double(double d)
+        : simdInternal_(_mm256_set1_pd(d)) {}
 
     // Internal utility constructor to simplify return statements
-    Simd4Double(__m256d simd) : simdInternal_(simd) {}
+    Simd4Double(__m256d simd)
+        : simdInternal_(simd) {}
 
     __m256d simdInternal_;
 };
@@ -68,7 +70,8 @@ public:
     Simd4DBool() {}
 
     // Internal utility constructor to simplify return statements
-    Simd4DBool(__mmask8 simd) : simdInternal_(simd) {}
+    Simd4DBool(__mmask8 simd)
+        : simdInternal_(simd) {}
 
     __mmask8 simdInternal_;
 };
@@ -77,7 +80,7 @@ static inline Simd4Double gmx_simdcall load4(const double *m)
 {
     assert(size_t(m) % 32 == 0);
     return {
-               _mm256_load_pd(m)
+        _mm256_load_pd(m)
     };
 }
 
@@ -90,7 +93,7 @@ static inline void gmx_simdcall store4(double *m, Simd4Double a)
 static inline Simd4Double gmx_simdcall load4U(const double *m)
 {
     return {
-               _mm256_loadu_pd(m)
+        _mm256_loadu_pd(m)
     };
 }
 
@@ -102,91 +105,91 @@ static inline void gmx_simdcall store4U(double *m, Simd4Double a)
 static inline Simd4Double gmx_simdcall simd4SetZeroD()
 {
     return {
-               _mm256_setzero_pd()
+        _mm256_setzero_pd()
     };
 }
 
 static inline Simd4Double gmx_simdcall operator&(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm256_and_pd(a.simdInternal_, b.simdInternal_)
+        _mm256_and_pd(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall andNot(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm256_andnot_pd(a.simdInternal_, b.simdInternal_)
+        _mm256_andnot_pd(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall operator|(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm256_or_pd(a.simdInternal_, b.simdInternal_)
+        _mm256_or_pd(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall operator^(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm256_xor_pd(a.simdInternal_, b.simdInternal_)
+        _mm256_xor_pd(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall operator+(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm256_add_pd(a.simdInternal_, b.simdInternal_)
+        _mm256_add_pd(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall operator-(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm256_sub_pd(a.simdInternal_, b.simdInternal_)
+        _mm256_sub_pd(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall operator-(Simd4Double x)
 {
     return {
-               _mm256_xor_pd(x.simdInternal_, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
+        _mm256_xor_pd(x.simdInternal_, _mm256_set1_pd(GMX_DOUBLE_NEGZERO))
     };
 }
 
 static inline Simd4Double gmx_simdcall operator*(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm256_mul_pd(a.simdInternal_, b.simdInternal_)
+        _mm256_mul_pd(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall fma(Simd4Double a, Simd4Double b, Simd4Double c)
 {
     return {
-               _mm256_fmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall fms(Simd4Double a, Simd4Double b, Simd4Double c)
 {
     return {
-               _mm256_fmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall fnma(Simd4Double a, Simd4Double b, Simd4Double c)
 {
     return {
-               _mm256_fnmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fnmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall fnms(Simd4Double a, Simd4Double b, Simd4Double c)
 {
     return {
-               _mm256_fnmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fnmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
@@ -195,7 +198,7 @@ static inline Simd4Double gmx_simdcall fnms(Simd4Double a, Simd4Double b, Simd4D
 static inline Simd4Double gmx_simdcall rsqrt(Simd4Double x)
 {
     return {
-               _mm512_castpd512_pd256(_mm512_rsqrt14_pd(_mm512_castpd256_pd512(x.simdInternal_)))
+        _mm512_castpd512_pd256(_mm512_rsqrt14_pd(_mm512_castpd256_pd512(x.simdInternal_)))
     };
 }
 #endif
@@ -203,35 +206,35 @@ static inline Simd4Double gmx_simdcall rsqrt(Simd4Double x)
 static inline Simd4Double gmx_simdcall abs(Simd4Double x)
 {
     return {
-               _mm256_andnot_pd(_mm256_set1_pd(GMX_DOUBLE_NEGZERO), x.simdInternal_)
+        _mm256_andnot_pd(_mm256_set1_pd(GMX_DOUBLE_NEGZERO), x.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall max(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm256_max_pd(a.simdInternal_, b.simdInternal_)
+        _mm256_max_pd(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall min(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm256_min_pd(a.simdInternal_, b.simdInternal_)
+        _mm256_min_pd(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline Simd4Double gmx_simdcall round(Simd4Double x)
 {
     return {
-               _mm256_round_pd(x.simdInternal_, _MM_FROUND_NINT)
+        _mm256_round_pd(x.simdInternal_, _MM_FROUND_NINT)
     };
 }
 
 static inline Simd4Double gmx_simdcall trunc(Simd4Double x)
 {
     return {
-               _mm256_round_pd(x.simdInternal_, _MM_FROUND_TRUNC)
+        _mm256_round_pd(x.simdInternal_, _MM_FROUND_TRUNC)
     };
 }
 
@@ -247,8 +250,8 @@ static inline float gmx_simdcall dotProduct(Simd4Double a, Simd4Double b)
     return *reinterpret_cast<double *>(&tmp1);
 }
 
-static inline void gmx_simdcall transpose(Simd4Double * v0, Simd4Double * v1,
-                                          Simd4Double * v2, Simd4Double * v3)
+static inline void gmx_simdcall transpose(Simd4Double *v0, Simd4Double *v1,
+                                          Simd4Double *v2, Simd4Double *v3)
 {
     __m256d t1, t2, t3, t4;
     t1                = _mm256_unpacklo_pd(v0->simdInternal_, v1->simdInternal_);
@@ -264,68 +267,68 @@ static inline void gmx_simdcall transpose(Simd4Double * v0, Simd4Double * v1,
 static inline Simd4DBool gmx_simdcall operator==(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm512_mask_cmp_pd_mask(avx512Int2Mask(0xF), _mm512_castpd256_pd512(a.simdInternal_), _mm512_castpd256_pd512(b.simdInternal_), _CMP_EQ_OQ)
+        _mm512_mask_cmp_pd_mask(avx512Int2Mask(0xF), _mm512_castpd256_pd512(a.simdInternal_), _mm512_castpd256_pd512(b.simdInternal_), _CMP_EQ_OQ)
     };
 }
 
 static inline Simd4DBool gmx_simdcall operator!=(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm512_mask_cmp_pd_mask(avx512Int2Mask(0xF), _mm512_castpd256_pd512(a.simdInternal_), _mm512_castpd256_pd512(b.simdInternal_), _CMP_NEQ_OQ)
+        _mm512_mask_cmp_pd_mask(avx512Int2Mask(0xF), _mm512_castpd256_pd512(a.simdInternal_), _mm512_castpd256_pd512(b.simdInternal_), _CMP_NEQ_OQ)
     };
 }
 
 static inline Simd4DBool gmx_simdcall operator<(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm512_mask_cmp_pd_mask(avx512Int2Mask(0xF), _mm512_castpd256_pd512(a.simdInternal_), _mm512_castpd256_pd512(b.simdInternal_), _CMP_LT_OQ)
+        _mm512_mask_cmp_pd_mask(avx512Int2Mask(0xF), _mm512_castpd256_pd512(a.simdInternal_), _mm512_castpd256_pd512(b.simdInternal_), _CMP_LT_OQ)
     };
 }
 
 static inline Simd4DBool gmx_simdcall operator<=(Simd4Double a, Simd4Double b)
 {
     return {
-               _mm512_mask_cmp_pd_mask(avx512Int2Mask(0xF), _mm512_castpd256_pd512(a.simdInternal_), _mm512_castpd256_pd512(b.simdInternal_), _CMP_LE_OQ)
+        _mm512_mask_cmp_pd_mask(avx512Int2Mask(0xF), _mm512_castpd256_pd512(a.simdInternal_), _mm512_castpd256_pd512(b.simdInternal_), _CMP_LE_OQ)
     };
 }
 
 static inline Simd4DBool gmx_simdcall operator&&(Simd4DBool a, Simd4DBool b)
 {
     return {
-               static_cast<__mmask8>(_mm512_kand(a.simdInternal_, b.simdInternal_))
+        static_cast<__mmask8>(_mm512_kand(a.simdInternal_, b.simdInternal_))
     };
 }
 
 static inline Simd4DBool gmx_simdcall operator||(Simd4DBool a, Simd4DBool b)
 {
     return {
-               static_cast<__mmask8>(_mm512_kor(a.simdInternal_, b.simdInternal_))
+        static_cast<__mmask8>(_mm512_kor(a.simdInternal_, b.simdInternal_))
     };
 }
 
 static inline bool gmx_simdcall anyTrue(Simd4DBool x)
 {
-    return ( avx512Mask2Int(x.simdInternal_) & 0xF ) != 0;
+    return (avx512Mask2Int(x.simdInternal_) & 0xF) != 0;
 }
 
 static inline Simd4Double gmx_simdcall selectByMask(Simd4Double a, Simd4DBool m)
 {
     return {
-               _mm512_castpd512_pd256(_mm512_mask_mov_pd(_mm512_setzero_pd(), m.simdInternal_, _mm512_castpd256_pd512(a.simdInternal_)))
+        _mm512_castpd512_pd256(_mm512_mask_mov_pd(_mm512_setzero_pd(), m.simdInternal_, _mm512_castpd256_pd512(a.simdInternal_)))
     };
 }
 
 static inline Simd4Double gmx_simdcall selectByNotMask(Simd4Double a, Simd4DBool m)
 {
     return {
-               _mm512_castpd512_pd256(_mm512_mask_mov_pd(_mm512_castpd256_pd512(a.simdInternal_), m.simdInternal_, _mm512_setzero_pd()))
+        _mm512_castpd512_pd256(_mm512_mask_mov_pd(_mm512_castpd256_pd512(a.simdInternal_), m.simdInternal_, _mm512_setzero_pd()))
     };
 }
 
 static inline Simd4Double gmx_simdcall blend(Simd4Double a, Simd4Double b, Simd4DBool sel)
 {
     return {
-               _mm512_castpd512_pd256(_mm512_mask_blend_pd(sel.simdInternal_, _mm512_castpd256_pd512(a.simdInternal_), _mm512_castpd256_pd512(b.simdInternal_)))
+        _mm512_castpd512_pd256(_mm512_mask_blend_pd(sel.simdInternal_, _mm512_castpd256_pd512(a.simdInternal_), _mm512_castpd256_pd512(b.simdInternal_)))
     };
 }
 
@@ -340,6 +343,6 @@ static inline float gmx_simdcall reduce(Simd4Double a)
     return *reinterpret_cast<double *>(&a0);
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_512_SIMD4_DOUBLE_H

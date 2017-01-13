@@ -98,7 +98,7 @@ public:
 
 //! Shorthand for a smart pointer to TestExecutableEnvironment.
 typedef std::unique_ptr<TestExecutableEnvironment>
-    TestExecutableEnvironmentPointer;
+        TestExecutableEnvironmentPointer;
 
 class CommandLineProgramContextTest : public ::testing::Test
 {
@@ -107,7 +107,7 @@ public:
         : env_(new TestExecutableEnvironment())
     {
         expectedExecutable_
-            = Path::normalize(
+                = Path::normalize(
                         Path::join(env_->getWorkingDirectory(),
                                    "bin/test-exe" EXECUTABLE_EXTENSION));
     }

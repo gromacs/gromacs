@@ -52,7 +52,7 @@ public:
     virtual void finishSection() {}
 };
 
-}   // namespace
+} // namespace
 
 IOptionSectionStorage *OptionSection::createStorage() const
 {

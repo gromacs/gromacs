@@ -76,7 +76,7 @@ public:
      *
      * Wraps the constructor of HelpWriterContext.
      */
-    CommandLineHelpContext(TextWriter *writer,
+    CommandLineHelpContext(TextWriter *     writer,
                            HelpOutputFormat format, const HelpLinks *links,
                            const std::string &programName);
     //! Creates a context for a particular HelpWriterContext.

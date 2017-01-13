@@ -59,9 +59,9 @@ public:
     {
     }
 
-    virtual int valueCount() { return count_; }
+    virtual int         valueCount() { return count_; }
     virtual ArrayRef<T> values() { return ArrayRef<T>::fromArray(store_, count_); }
-    virtual void clear()
+    virtual void        clear()
     {
         count_ = 0;
         if (storeCount_ != nullptr)
@@ -93,11 +93,12 @@ class OptionValueStoreVector : public IOptionValueStore<T>
 {
 public:
     // cppcheck-suppress uninitMemberVar
-    explicit OptionValueStoreVector(std::vector<T> *store) : store_(store) {}
+    explicit OptionValueStoreVector(std::vector<T> *store)
+        : store_(store) {}
 
-    virtual int valueCount() { return static_cast<int>(store_->size()); }
+    virtual int         valueCount() { return static_cast<int>(store_->size()); }
     virtual ArrayRef<T> values() { return *store_; }
-    virtual void clear() { store_->clear(); }
+    virtual void        clear() { store_->clear(); }
     virtual void reserve(size_t count)
     {
         store_->reserve(store_->size() + count);
@@ -117,11 +118,12 @@ template <>
 class OptionValueStoreVector<bool> : public IOptionValueStore<bool>
 {
 public:
-    explicit OptionValueStoreVector(std::vector<bool> *store) : store_(store)
+    explicit OptionValueStoreVector(std::vector<bool> *store)
+        : store_(store)
     {
     }
 
-    virtual int valueCount() { return static_cast<int>(store_->size()); }
+    virtual int            valueCount() { return static_cast<int>(store_->size()); }
     virtual ArrayRef<bool> values()
     {
         return ArrayRef<bool>::fromArray(reinterpret_cast<bool *>(boolStore_.data()),
@@ -139,7 +141,7 @@ public:
     }
     virtual void append(const bool &value)
     {
-        boolStore_.push_back({value});
+        boolStore_.push_back({ value });
         store_->push_back(value);
     }
 
@@ -166,11 +168,12 @@ template <typename T>
 class OptionValueStoreNull : public IOptionValueStore<T>
 {
 public:
-    OptionValueStoreNull() : store_(&vector_) {}
+    OptionValueStoreNull()
+        : store_(&vector_) {}
 
-    virtual int valueCount() { return store_.valueCount(); }
+    virtual int         valueCount() { return store_.valueCount(); }
     virtual ArrayRef<T> values() { return store_.values(); }
-    virtual void clear() { store_.clear(); }
+    virtual void        clear() { store_.clear(); }
     virtual void reserve(size_t count) { store_.reserve(count); }
     virtual void append(const T &value) { store_.append(value); }
 

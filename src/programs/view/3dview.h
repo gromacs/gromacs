@@ -42,7 +42,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-typedef int  iv2[2];
+typedef int iv2[2];
 
 typedef struct
 {

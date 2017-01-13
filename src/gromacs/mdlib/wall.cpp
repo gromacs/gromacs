@@ -56,10 +56,10 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-void make_wall_tables(FILE *fplog,
+void make_wall_tables(FILE *            fplog,
                       const t_inputrec *ir, const char *tabfn,
                       const gmx_groups_t *groups,
-                      t_forcerec *fr)
+                      t_forcerec *        fr)
 {
     int  negp_pp;
     int *nm_ind;
@@ -97,7 +97,7 @@ void make_wall_tables(FILE *fplog,
                     for (int j = 0; j < 8; j++)
                     {
                         fr->wall_tab[w][egp]->data[8 * i + j]
-                            = fr->wall_tab[w][egp]->data[12 * i + 4 + j];
+                                = fr->wall_tab[w][egp]->data[12 * i + 4 + j];
                     }
                 }
             }
@@ -304,8 +304,8 @@ real do_walls(t_inputrec *ir, t_forcerec *fr, matrix box, t_mdatoms *md,
                         F = -F;
                     }
                     Vlj[ggid] += lamfac * V;
-                    Vtot      += V;
-                    f[i][ZZ]  += F;
+                    Vtot += V;
+                    f[i][ZZ] += F;
                     /* Because of the single sum virial calculation we need
                      * to add  the full virial contribution of the walls.
                      * Since the force only has a z-component, there is only

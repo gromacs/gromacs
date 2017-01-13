@@ -44,8 +44,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static gmx_inline
-void do_rotate(double **a, int i, int j, int k, int l, double tau, double s)
+static gmx_inline void do_rotate(double **a, int i, int j, int k, int l, double tau, double s)
 {
     double g, h;
     g       = a[i][j];
@@ -73,7 +72,7 @@ void jacobi(double **a, int n, double d[], double **v, int *nrot)
     for (ip = 0; ip < n; ip++)
     {
         b[ip] = d[ip] = a[ip][ip];
-        z[ip] = 0.0;
+        z[ip]         = 0.0;
     }
     *nrot = 0;
     for (i = 1; i <= 50; i++)
@@ -126,14 +125,14 @@ void jacobi(double **a, int n, double d[], double **v, int *nrot)
                             t = -t;
                         }
                     }
-                    c         = 1.0 / std::sqrt(1 + t * t);
-                    s         = t * c;
-                    tau       = s / (1.0 + c);
-                    h         = t * a[ip][iq];
-                    z[ip]    -= h;
-                    z[iq]    += h;
-                    d[ip]    -= h;
-                    d[iq]    += h;
+                    c   = 1.0 / std::sqrt(1 + t * t);
+                    s   = t * c;
+                    tau = s / (1.0 + c);
+                    h   = t * a[ip][iq];
+                    z[ip] -= h;
+                    z[iq] += h;
+                    d[ip] -= h;
+                    d[iq] += h;
                     a[ip][iq] = 0.0;
                     for (j = 0; j < ip; j++)
                     {
@@ -157,9 +156,9 @@ void jacobi(double **a, int n, double d[], double **v, int *nrot)
         }
         for (ip = 0; ip < n; ip++)
         {
-            b[ip] +=  z[ip];
-            d[ip]  =  b[ip];
-            z[ip]  =  0.0;
+            b[ip] += z[ip];
+            d[ip] = b[ip];
+            z[ip] = 0.0;
         }
     }
     gmx_fatal(FARGS, "Error: Too many iterations in routine JACOBI\n");

@@ -93,7 +93,7 @@ int add_binr(t_bin *b, int nr, real r[])
         rbuf[i] = r[i];
     }
 
-    index     = b->nreal;
+    index = b->nreal;
     b->nreal += nr;
 
     return index;
@@ -122,7 +122,7 @@ int add_bind(t_bin *b, int nr, double r[])
         rbuf[i] = r[i];
     }
 
-    index     = b->nreal;
+    index = b->nreal;
     b->nreal += nr;
 
     return index;

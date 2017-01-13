@@ -71,7 +71,7 @@ namespace
  */
 void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
                const rvec comA_sc, const rvec comB_sc,
-               real lambda,
+               real         lambda,
                const t_pbc *pbc, int refcoord_scaling, int npbcdim,
                rvec dx, rvec rdist, rvec dpdl)
 {
@@ -110,7 +110,7 @@ void posres_dx(const rvec x, const rvec pos0A, const rvec pos0B,
                     break;
                 case erscCOM:
                     ref      = L1 * comA_sc[m] + lambda * comB_sc[m];
-                    rdist[m] = L1 * posA       + lambda * posB;
+                    rdist[m] = L1 * posA + lambda * posB;
                     dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
                     break;
                 default:
@@ -159,13 +159,12 @@ real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bo
         }
     }
 
-    if  (dr2 > 0.0
-         && ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
-         )
+    if (dr2 > 0.0
+        && ((dr2 > rfb2 && bInvert == FALSE) || (dr2 < rfb2 && bInvert == TRUE)))
     {
         dr    = std::sqrt(dr2);
         invdr = 1. / dr;
-        v     = 0.5*kk*gmx::square(dr - rfb);
+        v     = 0.5 * kk * gmx::square(dr - rfb);
         for (d = 0; d < DIM; d++)
         {
             if (d != fbdim)
@@ -183,7 +182,7 @@ real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bo
  *
  * Returns the flat-bottomed potential. Same PBC treatment as in
  * normal position restraints */
-real fbposres(int nbonds,
+real fbposres(int           nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
               const rvec x[], rvec f[], rvec vir_diag,
               const t_pbc *pbc,
@@ -213,7 +212,7 @@ real fbposres(int nbonds,
     }
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -246,11 +245,10 @@ real fbposres(int nbonds,
                 /* spherical flat-bottom posres */
                 dr2 = norm2(dx);
                 if (dr2 > 0.0
-                    && ( (dr2 > rfb2 && bInvert == FALSE ) || (dr2 < rfb2 && bInvert == TRUE ) )
-                    )
+                    && ((dr2 > rfb2 && bInvert == FALSE) || (dr2 < rfb2 && bInvert == TRUE)))
                 {
                     dr   = std::sqrt(dr2);
-                    v    = 0.5*kk*gmx::square(dr - rfb);
+                    v    = 0.5 * kk * gmx::square(dr - rfb);
                     fact = -kk * (dr - rfb) / dr; /* Force pointing to the center pos0 */
                     svmul(fact, dx, fm);
                 }
@@ -278,14 +276,14 @@ real fbposres(int nbonds,
                 /* 1D flat-bottom potential */
                 fbdim = pr->fbposres.geom - efbposresX;
                 dr    = dx[fbdim];
-                if ( ( dr > rfb && bInvert == FALSE ) || ( 0 < dr && dr < rfb && bInvert == TRUE )  )
+                if ((dr > rfb && bInvert == FALSE) || (0 < dr && dr < rfb && bInvert == TRUE))
                 {
-                    v         = 0.5*kk*gmx::square(dr - rfb);
+                    v         = 0.5 * kk * gmx::square(dr - rfb);
                     fm[fbdim] = -kk * (dr - rfb);
                 }
-                else if ( (dr < (-rfb) && bInvert == FALSE ) || ( (-rfb) < dr && dr < 0 && bInvert == TRUE ))
+                else if ((dr < (-rfb) && bInvert == FALSE) || ((-rfb) < dr && dr < 0 && bInvert == TRUE))
                 {
-                    v         = 0.5*kk*gmx::square(dr + rfb);
+                    v         = 0.5 * kk * gmx::square(dr + rfb);
                     fm[fbdim] = -kk * (dr + rfb);
                 }
                 break;
@@ -309,7 +307,7 @@ real fbposres(int nbonds,
  *
  * Note that position restraints require a different pbc treatment
  * from other bondeds */
-real posres(int nbonds,
+real posres(int           nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
             const rvec x[], rvec f[], rvec vir_diag,
             const struct t_pbc *pbc,
@@ -323,7 +321,7 @@ real posres(int nbonds,
     rvec             comA_sc, comB_sc, rdist, dpdl, dx;
     gmx_bool         bForceValid = TRUE;
 
-    if ((f == nullptr) || (vir_diag == nullptr))    /* should both be null together! */
+    if ((f == nullptr) || (vir_diag == nullptr)) /* should both be null together! */
     {
         bForceValid = FALSE;
     }
@@ -348,7 +346,7 @@ real posres(int nbonds,
     L1 = 1.0 - lambda;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -362,17 +360,17 @@ real posres(int nbonds,
 
         for (m = 0; (m < DIM); m++)
         {
-            kk    = L1 * pr->posres.fcA[m] + lambda * pr->posres.fcB[m];
-            fm    = -kk * dx[m];
+            kk = L1 * pr->posres.fcA[m] + lambda * pr->posres.fcB[m];
+            fm = -kk * dx[m];
             vtot += 0.5 * kk * dx[m] * dx[m];
             *dvdlambda
-                += 0.5 * (pr->posres.fcB[m] - pr->posres.fcA[m]) * dx[m] * dx[m]
-                    + fm * dpdl[m];
+                    += 0.5 * (pr->posres.fcB[m] - pr->posres.fcA[m]) * dx[m] * dx[m]
+                       + fm * dpdl[m];
 
             /* Here we correct for the pbc_dx which included rdist */
             if (bForceValid)
             {
-                f[ai][m]    += fm;
+                f[ai][m] += fm;
                 vir_diag[m] -= 0.5 * (dx[m] + rdist[m]) * fm;
             }
         }
@@ -395,11 +393,11 @@ void posres_wrapper(t_nrnb *            nrnb,
 
     dvdl = 0;
     v    = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
-                  idef->iparams_posres,
-                  x, as_rvec_array(fr->f_novirsum->data()), fr->vir_diag_posres,
-                  fr->ePBC == epbcNONE ? nullptr : pbc,
-                  lambda[efptRESTRAINT], &dvdl,
-                  fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
+               idef->iparams_posres,
+               x, as_rvec_array(fr->f_novirsum->data()), fr->vir_diag_posres,
+               fr->ePBC == epbcNONE ? nullptr : pbc,
+               lambda[efptRESTRAINT], &dvdl,
+               fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
     enerd->term[F_POSRES] += v;
     /* If just the force constant changes, the FEP term is linear,
      * but if k changes, it is not.
@@ -432,10 +430,10 @@ void posres_wrapper_lambda(struct gmx_wallcycle *wcycle,
 
         lambda_dum = (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i - 1]);
         v          = posres(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms,
-                            idef->iparams_posres,
-                            x, nullptr, nullptr,
-                            fr->ePBC == epbcNONE ? nullptr : pbc, lambda_dum, &dvdl_dum,
-                            fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
+                   idef->iparams_posres,
+                   x, nullptr, nullptr,
+                   fr->ePBC == epbcNONE ? nullptr : pbc, lambda_dum, &dvdl_dum,
+                   fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
         enerd->enerpart_lambda[i] += v;
     }
     wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);

@@ -52,18 +52,18 @@ struct t_state;
 /* Abstract type for replica exchange */
 typedef struct gmx_repl_ex *gmx_repl_ex_t;
 
-gmx_repl_ex_t init_replica_exchange(FILE *fplog,
+gmx_repl_ex_t init_replica_exchange(FILE *                fplog,
                                     const gmx_multisim_t *ms,
-                                    const t_state *state,
-                                    const t_inputrec *ir,
+                                    const t_state *       state,
+                                    const t_inputrec *    ir,
                                     int nst, int nmultiex, int init_seed);
 /* Should only be called on the master nodes */
 
-gmx_bool replica_exchange(FILE *fplog,
+gmx_bool replica_exchange(FILE *           fplog,
                           const t_commrec *cr,
-                          gmx_repl_ex_t re,
+                          gmx_repl_ex_t    re,
                           t_state *state, gmx_enerdata_t *enerd,
-                          t_state *state_local,
+                          t_state *   state_local,
                           gmx_int64_t step, real time);
 /* Attempts replica exchange, should be called on all nodes.
  * Returns TRUE if this state has been exchanged.
@@ -76,4 +76,4 @@ gmx_bool replica_exchange(FILE *fplog,
 void print_replica_exchange_statistics(FILE *fplog, gmx_repl_ex_t re);
 /* Should only be called on the master nodes */
 
-#endif  /* _repl_ex_h */
+#endif /* _repl_ex_h */

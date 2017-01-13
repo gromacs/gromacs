@@ -114,7 +114,7 @@ TEST(ExponentialDistributionTest, AltParam)
     gmx::ThreeFry2x64<8>                           rngA(123456, gmx::RandomDomain::Other);
     gmx::ThreeFry2x64<8>                           rngB(123456, gmx::RandomDomain::Other);
     gmx::ExponentialDistribution<real>             distA(2.0);
-    gmx::ExponentialDistribution<real>             distB;  // default parameters
+    gmx::ExponentialDistribution<real>             distB; // default parameters
     gmx::ExponentialDistribution<real>::param_type paramA(2.0);
 
     EXPECT_NE(distA(rngA), distB(rngB));
@@ -125,6 +125,6 @@ TEST(ExponentialDistributionTest, AltParam)
     EXPECT_REAL_EQ_TOL(distA(rngA), distB(rngB, paramA), gmx::test::ulpTolerance(0));
 }
 
-}      // namespace anonymous
+} // namespace anonymous
 
-}      // namespace gmx
+} // namespace gmx

@@ -98,12 +98,14 @@ static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
         if (!bFound)
         {
             nmiss++;
-            fprintf(stderr, "\nWARNING: "
+            fprintf(stderr,
+                    "\nWARNING: "
                     "atom %s is missing in residue %s %d in the pdb file\n",
                     name, *(at->resinfo[resind].name), at->resinfo[resind].nr);
             if (name[0] == 'H' || name[0] == 'h')
             {
-                fprintf(stderr, "         You might need to add atom %s to the hydrogen database of building block %s\n"
+                fprintf(stderr,
+                        "         You might need to add atom %s to the hydrogen database of building block %s\n"
                         "         in the file %s.hdb (see the manual)\n",
                         name, *(at->resinfo[resind].rtp), rp->filebase);
             }
@@ -156,7 +158,7 @@ static void choose_ff_impl(const char *ffsel,
     int sel;
     if (ffsel != nullptr)
     {
-        sel = -1;
+        sel        = -1;
         int cwdsel = -1;
         int nfound = 0;
         for (int i = 0; i < nff; ++i)
@@ -186,23 +188,26 @@ static void choose_ff_impl(const char *ffsel,
                 fprintf(stderr,
                         "Force field '%s' occurs in %d places. pdb2gmx is using the one in the\n"
                         "current directory. Use interactive selection (not the -ff option) if\n"
-                        "you would prefer a different one.\n", ffsel, nfound);
+                        "you would prefer a different one.\n",
+                        ffsel, nfound);
             }
             else
             {
                 std::string message = gmx::formatString(
-                            "Force field '%s' occurs in %d places, but not in "
-                            "the current directory.\n"
-                            "Run without the -ff switch and select the force "
-                            "field interactively.", ffsel, nfound);
+                        "Force field '%s' occurs in %d places, but not in "
+                        "the current directory.\n"
+                        "Run without the -ff switch and select the force "
+                        "field interactively.",
+                        ffsel, nfound);
                 GMX_THROW(gmx::InconsistentInputError(message));
             }
         }
         else if (nfound == 0)
         {
             std::string message = gmx::formatString(
-                        "Could not find force field '%s' in current directory, "
-                        "install tree or GMXLIB path.", ffsel);
+                    "Could not find force field '%s' in current directory, "
+                    "install tree or GMXLIB path.",
+                    ffsel);
             GMX_THROW(gmx::InconsistentInputError(message));
         }
     }
@@ -293,14 +298,14 @@ static void choose_ff_impl(const char *ffsel,
             if (ffs[i] == ffs[sel])
             {
                 std::string message = gmx::formatString(
-                            "Can only select the first of multiple force "
-                            "field entries with directory name '%s%s' in "
-                            "the list. If you want to use the next entry, "
-                            "run pdb2gmx in a different directory, set GMXLIB "
-                            "to point to the desired force field first, and/or "
-                            "rename or move the force field directory present "
-                            "in the current working directory.",
-                            ffs[sel].c_str(), fflib_forcefield_dir_ext());
+                        "Can only select the first of multiple force "
+                        "field entries with directory name '%s%s' in "
+                        "the list. If you want to use the next entry, "
+                        "run pdb2gmx in a different directory, set GMXLIB "
+                        "to point to the desired force field first, and/or "
+                        "rename or move the force field directory present "
+                        "in the current working directory.",
+                        ffs[sel].c_str(), fflib_forcefield_dir_ext());
                 GMX_THROW(gmx::NotImplementedError(message));
             }
         }
@@ -313,8 +318,8 @@ static void choose_ff_impl(const char *ffsel,
     if (ffs[sel].length() >= static_cast<size_t>(ff_maxlen))
     {
         std::string message = gmx::formatString(
-                    "Length of force field name (%d) >= maxlen (%d)",
-                    static_cast<int>(ffs[sel].length()), ff_maxlen);
+                "Length of force field name (%d) >= maxlen (%d)",
+                static_cast<int>(ffs[sel].length()), ff_maxlen);
         GMX_THROW(gmx::InvalidInputError(message));
     }
     strcpy(forcefield, ffs[sel].c_str());
@@ -331,8 +336,8 @@ static void choose_ff_impl(const char *ffsel,
     if (ffpath.length() >= static_cast<size_t>(ffdir_maxlen))
     {
         std::string message = gmx::formatString(
-                    "Length of force field dir (%d) >= maxlen (%d)",
-                    static_cast<int>(ffpath.length()), ffdir_maxlen);
+                "Length of force field dir (%d) >= maxlen (%d)",
+                static_cast<int>(ffpath.length()), ffdir_maxlen);
         GMX_THROW(gmx::InvalidInputError(message));
     }
     strcpy(ffdir, ffpath.c_str());
@@ -490,7 +495,7 @@ static int name2type(t_atoms *at, int **cgnr,
             /* A charge group number -1 signals a separate charge group
              * for this atom.
              */
-            if ( (cg == -1) || (cg != prevcg) || (resind != prevresind) )
+            if ((cg == -1) || (cg != prevcg) || (resind != prevresind))
             {
                 curcg++;
             }
@@ -532,8 +537,10 @@ static void print_top_heavy_H(FILE *out, real mHmult)
     }
     else if (mHmult != 1.0)
     {
-        fprintf(stderr, "WARNING: unsupported proton mass multiplier (%g) "
-                "in pdb2top\n", mHmult);
+        fprintf(stderr,
+                "WARNING: unsupported proton mass multiplier (%g) "
+                "in pdb2top\n",
+                mHmult);
     }
 }
 
@@ -645,7 +652,7 @@ static void print_top_system(FILE *out, const char *title)
     fprintf(out, "%s\n\n", title[0] ? title : "Protein");
 }
 
-void print_top_mols(FILE *out,
+void print_top_mols(FILE *      out,
                     const char *title, const char *ffdir, const char *water,
                     int nincl, char **incls, int nmol, t_mols *mols)
 {
@@ -702,24 +709,24 @@ void write_top(FILE *out, char *pr, char *molname,
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 
         print_atoms(out, atype, at, cgnr, bRTPresname);
-        print_bondeds(out, at->nr, d_bonds,      F_BONDS,    bts[ebtsBONDS], plist);
-        print_bondeds(out, at->nr, d_constraints, F_CONSTR,   0,              plist);
-        print_bondeds(out, at->nr, d_constraints, F_CONSTRNC, 0,              plist);
-        print_bondeds(out, at->nr, d_pairs,      F_LJ14,     0,              plist);
+        print_bondeds(out, at->nr, d_bonds, F_BONDS, bts[ebtsBONDS], plist);
+        print_bondeds(out, at->nr, d_constraints, F_CONSTR, 0, plist);
+        print_bondeds(out, at->nr, d_constraints, F_CONSTRNC, 0, plist);
+        print_bondeds(out, at->nr, d_pairs, F_LJ14, 0, plist);
         print_excl(out, at->nr, excls);
-        print_bondeds(out, at->nr, d_angles,     F_ANGLES,   bts[ebtsANGLES], plist);
-        print_bondeds(out, at->nr, d_dihedrals,  F_PDIHS,    bts[ebtsPDIHS], plist);
-        print_bondeds(out, at->nr, d_dihedrals,  F_IDIHS,    bts[ebtsIDIHS], plist);
-        print_bondeds(out, at->nr, d_cmap,       F_CMAP,     bts[ebtsCMAP],  plist);
-        print_bondeds(out, at->nr, d_polarization, F_POLARIZATION,   0,       plist);
-        print_bondeds(out, at->nr, d_thole_polarization, F_THOLE_POL, 0,       plist);
-        print_bondeds(out, at->nr, d_vsites2,    F_VSITE2,   0,              plist);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3,   0,              plist);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3FD, 0,              plist);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3FAD, 0,              plist);
-        print_bondeds(out, at->nr, d_vsites3,    F_VSITE3OUT, 0,              plist);
-        print_bondeds(out, at->nr, d_vsites4,    F_VSITE4FD, 0,              plist);
-        print_bondeds(out, at->nr, d_vsites4,    F_VSITE4FDN, 0,             plist);
+        print_bondeds(out, at->nr, d_angles, F_ANGLES, bts[ebtsANGLES], plist);
+        print_bondeds(out, at->nr, d_dihedrals, F_PDIHS, bts[ebtsPDIHS], plist);
+        print_bondeds(out, at->nr, d_dihedrals, F_IDIHS, bts[ebtsIDIHS], plist);
+        print_bondeds(out, at->nr, d_cmap, F_CMAP, bts[ebtsCMAP], plist);
+        print_bondeds(out, at->nr, d_polarization, F_POLARIZATION, 0, plist);
+        print_bondeds(out, at->nr, d_thole_polarization, F_THOLE_POL, 0, plist);
+        print_bondeds(out, at->nr, d_vsites2, F_VSITE2, 0, plist);
+        print_bondeds(out, at->nr, d_vsites3, F_VSITE3, 0, plist);
+        print_bondeds(out, at->nr, d_vsites3, F_VSITE3FD, 0, plist);
+        print_bondeds(out, at->nr, d_vsites3, F_VSITE3FAD, 0, plist);
+        print_bondeds(out, at->nr, d_vsites3, F_VSITE3OUT, 0, plist);
+        print_bondeds(out, at->nr, d_vsites4, F_VSITE4FD, 0, plist);
+        print_bondeds(out, at->nr, d_vsites4, F_VSITE4FDN, 0, plist);
 
         if (pr)
         {
@@ -727,7 +734,6 @@ void write_top(FILE *out, char *pr, char *molname,
         }
     }
 }
-
 
 
 static void do_ssbonds(t_params *ps, t_atoms *atoms,
@@ -755,7 +761,7 @@ static void do_ssbonds(t_params *ps, t_atoms *atoms,
 
 static void at2bonds(t_params *psb, t_hackblock *hb,
                      t_atoms *atoms,
-                     rvec x[],
+                     rvec     x[],
                      real long_bond_dist, real short_bond_dist)
 {
     int         resind, i, j, k;
@@ -808,13 +814,13 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
             }
         }
         /* add bonds from list of hacks (each added atom gets a bond) */
-        while ( (i < atoms->nr) && (atoms->atom[i].resind == resind) )
+        while ((i < atoms->nr) && (atoms->atom[i].resind == resind))
         {
             for (j = 0; j < hb[resind].nhack; j++)
             {
-                if ( ( hb[resind].hack[j].tp > 0
-                       || hb[resind].hack[j].oname == nullptr )
-                     && strcmp(hb[resind].hack[j].a[0], *(atoms->atomname[i])) == 0)
+                if ((hb[resind].hack[j].tp > 0
+                     || hb[resind].hack[j].oname == nullptr)
+                    && strcmp(hb[resind].hack[j].a[0], *(atoms->atomname[i])) == 0)
                 {
                     switch (hb[resind].hack[j].tp)
                     {
@@ -885,7 +891,7 @@ static void clean_bonds(t_params *ps)
         for (i = 1; (i < ps->nr); i++)
         {
             if ((ps->param[i].a[0] != ps->param[j - 1].a[0])
-                || (ps->param[i].a[1] != ps->param[j - 1].a[1]) )
+                || (ps->param[i].a[1] != ps->param[j - 1].a[1]))
             {
                 if (j != i)
                 {
@@ -922,7 +928,7 @@ void print_sums(t_atoms *atoms, gmx_bool bSystem)
     qtot = 0;
     for (i = 0; (i < atoms->nr); i++)
     {
-        m    += atoms->atom[i].m;
+        m += atoms->atom[i].m;
         qtot += atoms->atom[i].q;
     }
 
@@ -973,18 +979,18 @@ void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
     }
     /* make space */
     restp->natom += hack->nr;
-    srenew(restp->atom,     restp->natom);
+    srenew(restp->atom, restp->natom);
     srenew(restp->atomname, restp->natom);
-    srenew(restp->cgnr,     restp->natom);
+    srenew(restp->cgnr, restp->natom);
     /* shift the rest */
     for (k = restp->natom - 1; k > at_start + hack->nr; k--)
     {
         restp->atom[k]
-            = restp->atom    [k - hack->nr];
+                = restp->atom[k - hack->nr];
         restp->atomname[k]
-            = restp->atomname[k - hack->nr];
+                = restp->atomname[k - hack->nr];
         restp->cgnr[k]
-            = restp->cgnr    [k - hack->nr];
+                = restp->cgnr[k - hack->nr];
     }
     /* now add them */
     for (k = 0; k < hack->nr; k++)
@@ -994,16 +1000,16 @@ void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
         {
             buf[strlen(buf) - 1] = Hnum[k];
         }
-        snew( restp->atomname[at_start + 1 + k], 1);
-        restp->atom     [at_start + 1 + k] = *hack->atom;
+        snew(restp->atomname[at_start + 1 + k], 1);
+        restp->atom[at_start + 1 + k]      = *hack->atom;
         *restp->atomname[at_start + 1 + k] = gmx_strdup(buf);
         if (hack->cgnr != NOTSET)
         {
-            restp->cgnr   [at_start + 1 + k] = hack->cgnr;
+            restp->cgnr[at_start + 1 + k] = hack->cgnr;
         }
         else
         {
-            restp->cgnr   [at_start + 1 + k] = restp->cgnr[at_start];
+            restp->cgnr[at_start + 1 + k] = restp->cgnr[at_start];
         }
     }
 }
@@ -1011,7 +1017,7 @@ void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
 void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         int nrtp, t_restp rtp[],
                         int nres, t_resinfo *resinfo,
-                        int nterpairs,
+                        int           nterpairs,
                         t_hackblock **ntdb, t_hackblock **ctdb,
                         int *rn, int *rc)
 {
@@ -1093,15 +1099,15 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
     {
         for (j = 0; j < (*hb)[i].nhack; j++)
         {
-            if ( (*hb)[i].hack[j].nr)
+            if ((*hb)[i].hack[j].nr)
             {
                 /* find atom in restp */
                 for (l = 0; l < (*restp)[i].natom; l++)
                 {
-                    if ( ( (*hb)[i].hack[j].oname == nullptr
-                           && strcmp((*hb)[i].hack[j].a[0], *(*restp)[i].atomname[l]) == 0 )
-                         || ( (*hb)[i].hack[j].oname != nullptr
-                              && strcmp((*hb)[i].hack[j].oname, *(*restp)[i].atomname[l]) == 0 ) )
+                    if (((*hb)[i].hack[j].oname == nullptr
+                         && strcmp((*hb)[i].hack[j].a[0], *(*restp)[i].atomname[l]) == 0)
+                        || ((*hb)[i].hack[j].oname != nullptr
+                            && strcmp((*hb)[i].hack[j].oname, *(*restp)[i].atomname[l]) == 0))
                     {
                         break;
                     }
@@ -1124,13 +1130,14 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                                   "atom %s not found in buiding block %d%s "
                                   "while combining tdb and rtp",
                                   (*hb)[i].hack[j].oname != nullptr
-                                  ? (*hb)[i].hack[j].oname : (*hb)[i].hack[j].a[0],
+                                          ? (*hb)[i].hack[j].oname
+                                          : (*hb)[i].hack[j].a[0],
                                   i + 1, *resinfo[i].rtp);
                     }
                 }
                 else
                 {
-                    if ( (*hb)[i].hack[j].oname == nullptr)
+                    if ((*hb)[i].hack[j].oname == nullptr)
                     {
                         /* we're adding: */
                         add_atom_to_restp(&(*restp)[i], l, &(*hb)[i].hack[j]);
@@ -1138,7 +1145,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                     else
                     {
                         /* oname != NULL */
-                        if ( (*hb)[i].hack[j].nname == nullptr)
+                        if ((*hb)[i].hack[j].nname == nullptr)
                         {
                             /* we're deleting */
                             if (debug)
@@ -1151,14 +1158,14 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                             (*restp)[i].natom--;
                             for (k = l; k < (*restp)[i].natom; k++)
                             {
-                                (*restp)[i].atom    [k] = (*restp)[i].atom    [k + 1];
+                                (*restp)[i].atom[k]     = (*restp)[i].atom[k + 1];
                                 (*restp)[i].atomname[k] = (*restp)[i].atomname[k + 1];
-                                (*restp)[i].cgnr    [k] = (*restp)[i].cgnr    [k + 1];
+                                (*restp)[i].cgnr[k]     = (*restp)[i].cgnr[k + 1];
                             }
                             /* give back space */
-                            srenew((*restp)[i].atom,     (*restp)[i].natom);
+                            srenew((*restp)[i].atom, (*restp)[i].natom);
                             srenew((*restp)[i].atomname, (*restp)[i].natom);
-                            srenew((*restp)[i].cgnr,     (*restp)[i].natom);
+                            srenew((*restp)[i].cgnr, (*restp)[i].natom);
                         }
                         else /* nname != NULL */
                         {    /* we're replacing */
@@ -1168,12 +1175,12 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                                         *(*restp)[i].atomname[l], (*hb)[i].hack[j].nname,
                                         i + 1, (*restp)[i].resname);
                             }
-                            snew( (*restp)[i].atomname[l], 1);
-                            (*restp)[i].atom[l]      =       *(*hb)[i].hack[j].atom;
+                            snew((*restp)[i].atomname[l], 1);
+                            (*restp)[i].atom[l]      = *(*hb)[i].hack[j].atom;
                             *(*restp)[i].atomname[l] = gmx_strdup((*hb)[i].hack[j].nname);
-                            if ( (*hb)[i].hack[j].cgnr != NOTSET)
+                            if ((*hb)[i].hack[j].cgnr != NOTSET)
                             {
-                                (*restp)[i].cgnr   [l] = (*hb)[i].hack[j].cgnr;
+                                (*restp)[i].cgnr[l] = (*hb)[i].hack[j].cgnr;
                             }
                         }
                     }
@@ -1478,7 +1485,7 @@ static void gen_cmap(t_params *psb, t_restp *restp, t_atoms *atoms)
                      * chain number as the residues for previous
                      * atoms? */
                     bAddCMAP = bAddCMAP
-                        && cmap_chainnum == resinfo[this_residue_index].chainnum;
+                               && cmap_chainnum == resinfo[this_residue_index].chainnum;
                 }
                 /* Here we used to check that the residuetype was protein and
                  * disable bAddCMAP if that was not the case. However, some
@@ -1528,7 +1535,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              gmx_bool bAllowMissing,
              gmx_bool bVsites, gmx_bool bVsiteAromatics,
              const char *ffdir,
-             real mHmult,
+             real        mHmult,
              int nssbonds, t_ssbond *ssbonds,
              real long_bond_dist, real short_bond_dist,
              gmx_bool bDeuterate, gmx_bool bChargeGroups, gmx_bool bCmap,
@@ -1538,14 +1545,14 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
        t_hackblock *hb;
        t_restp  *restp;
      */
-    t_params          plist[F_NRE];
-    t_excls *         excls;
-    t_nextnb          nnb;
-    int *             cgnr;
-    int *             vsite_type;
-    int               i, nmissat;
-    int               bts[ebtsNR];
-    gmx_residuetype_t*rt;
+    t_params           plist[F_NRE];
+    t_excls *          excls;
+    t_nextnb           nnb;
+    int *              cgnr;
+    int *              vsite_type;
+    int                i, nmissat;
+    int                bts[ebtsNR];
+    gmx_residuetype_t *rt;
 
     init_plist(plist);
     gmx_residuetype_init(&rt);
@@ -1633,12 +1640,12 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
             plist[F_PDIHS].nr, plist[F_IDIHS].nr, plist[F_ANGLES].nr,
             plist[F_LJ14].nr, plist[F_BONDS].nr,
             plist[F_VSITE2].nr
-            + plist[F_VSITE3].nr
-            + plist[F_VSITE3FD].nr
-            + plist[F_VSITE3FAD].nr
-            + plist[F_VSITE3OUT].nr
-            + plist[F_VSITE4FD].nr
-            + plist[F_VSITE4FDN].nr );
+                    + plist[F_VSITE3].nr
+                    + plist[F_VSITE3FD].nr
+                    + plist[F_VSITE3FAD].nr
+                    + plist[F_VSITE3OUT].nr
+                    + plist[F_VSITE4FD].nr
+                    + plist[F_VSITE4FDN].nr);
 
     print_sums(atoms, FALSE);
 

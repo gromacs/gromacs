@@ -197,8 +197,8 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
                 else
                 {
                     /* cross product with (1,0,0) */
-                    normal[d][XX] =  0;
-                    normal[d][YY] =  v[d + 1][ZZ];
+                    normal[d][XX] = 0;
+                    normal[d][YY] = v[d + 1][ZZ];
                     normal[d][ZZ] = -v[d + 1][YY];
                 }
                 if (debug)
@@ -242,7 +242,7 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
 /*! \brief This function calculates bounding box and pbc info and populates ddbox */
 static void low_set_ddbox(const t_inputrec *ir, const ivec *dd_nc, const matrix box,
                           gmx_bool bCalcUnboundedSize, int ncg, const t_block *cgs, const rvec *x,
-                          t_commrec *cr_sum,
+                          t_commrec *  cr_sum,
                           gmx_ddbox_t *ddbox)
 {
     rvec av, stddev;

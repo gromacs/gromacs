@@ -65,23 +65,22 @@
  *
  * For both cutoff schemes, but only for Coulomb interactions,
  * calculates correction for surface dipole terms. */
-void
-ewald_LRcorrection(int numAtomsLocal,
-                   t_commrec *cr,
-                   int numThreads, int thread,
-                   t_forcerec *fr,
-                   real *chargeA, real *chargeB,
-                   real *C6A, real *C6B,
-                   real *sigmaA, real *sigmaB,
-                   real *sigma3A, real *sigma3B,
-                   gmx_bool bHaveChargeOrTypePerturbed,
-                   gmx_bool calc_excl_corr,
-                   t_blocka *excl, rvec x[],
-                   matrix box, rvec mu_tot[],
-                   int ewald_geometry, real epsilon_surface,
-                   rvec *f, tensor vir_q, tensor vir_lj,
-                   real *Vcorr_q, real *Vcorr_lj,
-                   real lambda_q, real lambda_lj,
-                   real *dvdlambda_q, real *dvdlambda_lj);
+void ewald_LRcorrection(int        numAtomsLocal,
+                        t_commrec *cr,
+                        int numThreads, int thread,
+                        t_forcerec *fr,
+                        real *chargeA, real *chargeB,
+                        real *C6A, real *C6B,
+                        real *sigmaA, real *sigmaB,
+                        real *sigma3A, real *sigma3B,
+                        gmx_bool  bHaveChargeOrTypePerturbed,
+                        gmx_bool  calc_excl_corr,
+                        t_blocka *excl, rvec x[],
+                        matrix box, rvec mu_tot[],
+                        int ewald_geometry, real epsilon_surface,
+                        rvec *f, tensor vir_q, tensor vir_lj,
+                        real *Vcorr_q, real *Vcorr_lj,
+                        real lambda_q, real lambda_lj,
+                        real *dvdlambda_q, real *dvdlambda_lj);
 
 #endif

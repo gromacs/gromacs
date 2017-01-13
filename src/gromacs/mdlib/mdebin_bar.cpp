@@ -62,7 +62,7 @@ static void mde_delta_h_reset(t_mde_delta_h *dh)
 
 /* initialize the delta_h list */
 static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
-                             double dx, unsigned int  ndhmax,
+                             double dx, unsigned int ndhmax,
                              int type, int derivative, int nlambda,
                              double *lambda)
 {
@@ -130,7 +130,7 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
     double       max_dh_hist; /* maximum binnable dh value */
     double       min_dh_hist; /* minimum binnable dh value */
     double       dx = dh->dx;
-    double       f;           /* energy mult. factor */
+    double       f; /* energy mult. factor */
 
     /* by applying a -1 scaling factor on the energies we get the same as
        having a negative dx, but we don't need to fix the min/max values
@@ -177,9 +177,9 @@ static void mde_delta_h_make_hist(t_mde_delta_h *dh, int hi, gmx_bool invert)
            add it to the last bin.
            We check the max_dh_int range because converting to integers
            might lead to overflow with unpredictable results.*/
-        if ( (f * dh->dh[i] >= min_dh_hist) && (f * dh->dh[i] <= max_dh_hist ) )
+        if ((f * dh->dh[i] >= min_dh_hist) && (f * dh->dh[i] <= max_dh_hist))
         {
-            bin = (unsigned int)( (f * dh->dh[i] - min_dh_hist) / dx );
+            bin = (unsigned int)((f * dh->dh[i] - min_dh_hist) / dx);
         }
         else
         {
@@ -397,7 +397,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
                     && fep->init_fep_state < fep->n_lambda)
                 {
                     dhc->native_lambda_vec[j]
-                        = fep->all_lambda[i][fep->init_fep_state];
+                            = fep->all_lambda[i][fep->init_fep_state];
                 }
                 else
                 {
@@ -444,14 +444,14 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
             {
                 if (ir->fepvals->separate_dvdl[i])
                 {
-                    dhc->ndh   += 1;
+                    dhc->ndh += 1;
                     dhc->ndhdl += 1;
                 }
             }
         }
         /* add the lambdas */
         dhc->nlambda = ir->fepvals->lambda_stop_n - ir->fepvals->lambda_start_n;
-        dhc->ndh    += dhc->nlambda;
+        dhc->ndh += dhc->nlambda;
         /* another compatibility check */
         if (dhc->start_lambda < 0)
         {
@@ -466,12 +466,12 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
             if (ir->fepvals->edHdLPrintEnergy != edHdLPrintEnergyNO)
             {
                 dhc->ndh += 1;
-                bEnergy   = TRUE;
+                bEnergy = TRUE;
             }
             if (ir->epc > epcNO)
             {
-                dhc->ndh += 1;  /* include pressure-volume work */
-                bPV       = TRUE;
+                dhc->ndh += 1; /* include pressure-volume work */
+                bPV = TRUE;
             }
         }
         /* allocate them */
@@ -525,7 +525,6 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
                     n_lambda_components++; /* count the components */
                 }
             }
-
         }
         /* add the lambdas */
         dhc->dh_du = dhc->dh + n;
@@ -596,7 +595,6 @@ void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc,
     {
         mde_delta_h_add_dh(dhc->dh_expanded, fep_state);
     }
-
 }
 
 /* write the metadata associated with all the du blocks, and call
@@ -690,7 +688,7 @@ void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll *dhc,
         enerhist->deltaHForeignLambdas->dh.resize(dhc->ndh);
     }
 
-    delta_h_history_t * const deltaH = enerhist->deltaHForeignLambdas.get();
+    delta_h_history_t *const deltaH = enerhist->deltaHForeignLambdas.get();
 
     GMX_RELEASE_ASSERT(deltaH->dh.size() == static_cast<size_t>(dhc->ndh), "energy history number of delta_h histograms should match inputrec's number");
 
@@ -703,7 +701,6 @@ void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll *dhc,
     deltaH->start_time   = dhc->start_time;
     deltaH->start_lambda = dhc->start_lambda;
 }
-
 
 
 /* restore the variables from an energyhistory */

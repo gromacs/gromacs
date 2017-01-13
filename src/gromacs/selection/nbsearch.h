@@ -322,7 +322,8 @@ class AnalysisNeighborhoodPair
 {
 public:
     //! Initializes an invalid pair.
-    AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0), distance2_(0.0)
+    AnalysisNeighborhoodPair()
+        : refIndex_(-1), testIndex_(0), distance2_(0.0)
     {
         clear_rvec(dx_);
     }
@@ -431,7 +432,7 @@ public:
      * AnalysisNeighborhood; it always keeps one instance of the pointer.
      */
     typedef std::shared_ptr<internal::AnalysisNeighborhoodSearchImpl>
-        ImplPointer;
+            ImplPointer;
 
     /*! \brief
      * Initializes an invalid search.
@@ -555,7 +556,7 @@ public:
      * shared_ptr and ownership semantics.
      */
     typedef std::shared_ptr<internal::AnalysisNeighborhoodPairSearchImpl>
-        ImplPointer;
+            ImplPointer;
 
     /*! \brief
      * Internally initialize the search.

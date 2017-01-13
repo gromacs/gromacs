@@ -43,13 +43,13 @@ static void qsort_swapfunc(void * a,
                            size_t n,
                            int    swaptype)
 {
-    int * ia;
-    int * ib;
-    int   itmp;
+    int *ia;
+    int *ib;
+    int  itmp;
 
-    char * ca;
-    char * cb;
-    char   ctmp;
+    char *ca;
+    char *cb;
+    char  ctmp;
 
     if (swaptype <= 1)
     {
@@ -76,10 +76,10 @@ static void qsort_swapfunc(void * a,
 }
 
 
-static void *qsort_med3(void * a,
-                        void * b,
-                        void * c,
-                        int (*compar) (const void *a, const void *b))
+static void *qsort_med3(void *a,
+                        void *b,
+                        void *c,
+                        int (*compar)(const void *a, const void *b))
 {
     if (compar(a, b) < 0)
     {
@@ -120,8 +120,8 @@ void gmx_qsort(void * base,
                int (*compar)(const void *, const void *))
 {
 #define QSORT_EXCH(a, b, t) (t = a, a = b, b = t)
-#define QSORT_SWAP(a, b) swaptype != 0 ? qsort_swapfunc(a, b, size, swaptype)   \
-    : (void)QSORT_EXCH(*(int *)(a), *(int *)(b), t)
+#define QSORT_SWAP(a, b) swaptype != 0 ? qsort_swapfunc(a, b, size, swaptype) \
+                                       : (void)QSORT_EXCH(*(int *)(a), *(int *)(b), t)
 
     char * pa, *pb, *pc, *pd, *pl, *pm, *pn, *pv, *cbase;
     int    r, swaptype;
@@ -142,7 +142,7 @@ void gmx_qsort(void * base,
         /* Insertion sort on smallest arrays */
         for (pm = cbase + size; pm < cbase + nmemb * size; pm += size)
         {
-            for (pl = pm; (pl > cbase) && compar((void *)(pl - size), (void *) pl) > 0; pl -= size)
+            for (pl = pm; (pl > cbase) && compar((void *)(pl - size), (void *)pl) > 0; pl -= size)
             {
                 QSORT_SWAP(pl, pl - size);
             }
@@ -178,15 +178,15 @@ void gmx_qsort(void * base,
     else
     {
         v  = *(int *)pm;
-        pv = (char*)(void*)&v;
+        pv = (char *)(void *)&v;
     }
 
     pa = pb = cbase;
     pc = pd = cbase + (nmemb - 1) * size;
 
-    for (;; )
+    for (;;)
     {
-        while (pb <= pc && (r = compar((void *)pb, (void *) pv)) <= 0)
+        while (pb <= pc && (r = compar((void *)pb, (void *)pv)) <= 0)
         {
             if (r == 0)
             {
@@ -195,7 +195,7 @@ void gmx_qsort(void * base,
             }
             pb += size;
         }
-        while (pc >= pb && (r = compar((void *)pc, (void *) pv)) >= 0)
+        while (pc >= pb && (r = compar((void *)pc, (void *)pv)) >= 0)
         {
             if (r == 0)
             {

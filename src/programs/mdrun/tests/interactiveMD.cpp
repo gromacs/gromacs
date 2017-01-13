@@ -85,13 +85,12 @@ TEST_F(ImdTest, ImdCanRun)
     ::gmx::test::CommandLine imdCaller;
     imdCaller.addOption("-imdport", 0); // automatically assign a free port
     imdCaller.append("-imdpull");
-    imdCaller.append("-noimdwait");     // cannot use -imdwait: then mdrun would not return control ...
+    imdCaller.append("-noimdwait"); // cannot use -imdwait: then mdrun would not return control ...
     imdCaller.append("-noimdterm");
 
     // Do an mdrun with IMD enabled
     ASSERT_EQ(0, runner_.callMdrun(imdCaller));
 }
-
 
 
 } // namespace test

@@ -167,7 +167,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     max_clust_size = 1;
     max_clust_ind  = -1;
-    int molb = 0;
+    int molb       = 0;
     do
     {
         if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0)))
@@ -283,7 +283,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                 {
                     nclust++;
                     cs_dist[n_x - 1][ci - 1] += 1.0;
-                    max_size                  = std::max(max_size, ci);
+                    max_size = std::max(max_size, ci);
                     if (ci > 1)
                     {
                         cav += ci;
@@ -320,9 +320,9 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                     {
                         if (clust_index[i] == max_clust_ind)
                         {
-                            ai = index[i];
-                            real          m = mtopGetAtomMass(mtop, ai, &molb);
-                            ekin += 0.5*m*iprod(v[ai], v[ai]);
+                            ai     = index[i];
+                            real m = mtopGetAtomMass(mtop, ai, &molb);
+                            ekin += 0.5 * m * iprod(v[ai], v[ai]);
                         }
                     }
                     temp = (ekin * 2.0) / (3.0 * tfac * max_clust_size * BOLTZ);
@@ -464,38 +464,30 @@ int gmx_clustsize(int argc, char *argv[])
     gmx_output_env_t *oenv;
 
     t_pargs pa[] = {
-        { "-cut",      FALSE, etREAL, {&cutoff},
-          "Largest distance (nm) to be considered in a cluster" },
-        { "-mol",      FALSE, etBOOL, {&bMol},
-          "Cluster molecules rather than atoms (needs [REF].tpr[ref] file)" },
-        { "-pbc",      FALSE, etBOOL, {&bPBC},
-          "Use periodic boundary conditions" },
-        { "-nskip",    FALSE, etINT,  {&nskip},
-          "Number of frames to skip between writing" },
-        { "-nlevels",  FALSE, etINT,  {&nlevels},
-          "Number of levels of grey in [REF].xpm[ref] output" },
-        { "-ndf",      FALSE, etINT,  {&ndf},
-          "Number of degrees of freedom of the entire system for temperature calculation. If not set, the number of atoms times three is used." },
-        { "-rgblo",    FALSE, etRVEC, {rlo},
-          "RGB values for the color of the lowest occupied cluster size" },
-        { "-rgbhi",    FALSE, etRVEC, {rhi},
-          "RGB values for the color of the highest occupied cluster size" }
+        { "-cut", FALSE, etREAL, { &cutoff }, "Largest distance (nm) to be considered in a cluster" },
+        { "-mol", FALSE, etBOOL, { &bMol }, "Cluster molecules rather than atoms (needs [REF].tpr[ref] file)" },
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "Use periodic boundary conditions" },
+        { "-nskip", FALSE, etINT, { &nskip }, "Number of frames to skip between writing" },
+        { "-nlevels", FALSE, etINT, { &nlevels }, "Number of levels of grey in [REF].xpm[ref] output" },
+        { "-ndf", FALSE, etINT, { &ndf }, "Number of degrees of freedom of the entire system for temperature calculation. If not set, the number of atoms times three is used." },
+        { "-rgblo", FALSE, etRVEC, { rlo }, "RGB values for the color of the lowest occupied cluster size" },
+        { "-rgbhi", FALSE, etRVEC, { rhi }, "RGB values for the color of the highest occupied cluster size" }
     };
 #define NPA asize(pa)
     const char *fnNDX, *fnTPR;
     t_rgb       rgblo, rgbhi;
 
     t_filenm fnm[] = {
-        { efTRX, "-f",  nullptr,         ffREAD  },
-        { efTPR, nullptr,  nullptr,         ffOPTRD },
-        { efNDX, nullptr,  nullptr,         ffOPTRD },
-        { efXPM, "-o", "csize",       ffWRITE },
-        { efXPM, "-ow", "csizew",      ffWRITE },
-        { efXVG, "-nc", "nclust",      ffWRITE },
-        { efXVG, "-mc", "maxclust",    ffWRITE },
-        { efXVG, "-ac", "avclust",     ffWRITE },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPR, nullptr, nullptr, ffOPTRD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXPM, "-o", "csize", ffWRITE },
+        { efXPM, "-ow", "csizew", ffWRITE },
+        { efXVG, "-nc", "nclust", ffWRITE },
+        { efXVG, "-mc", "maxclust", ffWRITE },
+        { efXVG, "-ac", "avclust", ffWRITE },
         { efXVG, "-hc", "histo-clust", ffWRITE },
-        { efXVG, "-temp", "temp",     ffOPTWR },
+        { efXVG, "-temp", "temp", ffOPTWR },
         { efNDX, "-mcn", "maxclust", ffOPTWR }
     };
 #define NFILE asize(fnm)

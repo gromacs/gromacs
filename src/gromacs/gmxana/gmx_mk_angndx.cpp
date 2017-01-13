@@ -118,15 +118,15 @@ static void fill_ft_ind(int nft, int *ft, const t_idef *idef,
                     case F_RBDIHS:
                         sprintf(buf, "RB-A1=%.2f", idef->iparams[i].rbdihs.rbcA[1]);
                         break;
-                    case  F_RESTRANGLES:
+                    case F_RESTRANGLES:
                         sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
-                    case  F_RESTRDIHS:
+                    case F_RESTRDIHS:
                         sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
-                    case  F_CBTDIHS:
+                    case F_CBTDIHS:
                         sprintf(buf, "CBT-A1=%.2f", idef->iparams[i].cbtdihs.cbtcA[1]);
                         break;
 
@@ -159,7 +159,7 @@ static void fill_ang(int nft, int *ft, int fac,
     {
         ftype = ft[f];
         ia    = idef->il[ftype].iatoms;
-        for (i = 0; (i < idef->il[ftype].nr); )
+        for (i = 0; (i < idef->il[ftype].nr);)
         {
             indg = ft_ind[ia[0]];
             if (indg == -1)
@@ -201,7 +201,7 @@ static void fill_ang(int nft, int *ft, int fac,
                 nr[indg]++;
             }
             ia += interaction_function[ftype].nratoms + 1;
-            i  += interaction_function[ftype].nratoms + 1;
+            i += interaction_function[ftype].nratoms + 1;
         }
     }
 }
@@ -259,12 +259,9 @@ int gmx_mk_angndx(int argc, char *argv[])
     static gmx_bool    bH    = TRUE;
     static real        hq    = -1;
     t_pargs            pa[]  = {
-        { "-type", FALSE, etENUM, {opt},
-          "Type of angle" },
-        { "-hyd", FALSE, etBOOL, {&bH},
-          "Include angles with atoms with mass < 1.5" },
-        { "-hq", FALSE, etREAL, {&hq},
-          "Ignore angles with atoms with mass < 1.5 and magnitude of their charge less than this value" }
+        { "-type", FALSE, etENUM, { opt }, "Type of angle" },
+        { "-hyd", FALSE, etBOOL, { &bH }, "Include angles with atoms with mass < 1.5" },
+        { "-hq", FALSE, etREAL, { &hq }, "Ignore angles with atoms with mass < 1.5 and magnitude of their charge less than this value" }
     };
 
     gmx_output_env_t *oenv;
@@ -277,7 +274,7 @@ int gmx_mk_angndx(int argc, char *argv[])
     int *             nr;
     char **           grpnames;
     t_filenm          fnm[] = {
-        { efTPR, nullptr, nullptr, ffREAD  },
+        { efTPR, nullptr, nullptr, ffREAD },
         { efNDX, nullptr, "angle", ffWRITE }
     };
 #define NFILE asize(fnm)

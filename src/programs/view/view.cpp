@@ -263,22 +263,22 @@ static bool MainCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
 }
 
 static t_mentry FileMenu[] = {
-    { 0,  IDEXPORT,   false,  "Export..." },
-    { 0,  IDDUMPWIN,  false,  "Print"     },
-    { 0,  IDQUIT,     false,  "Quit"      }
+    { 0, IDEXPORT, false, "Export..." },
+    { 0, IDDUMPWIN, false, "Print" },
+    { 0, IDQUIT, false, "Quit" }
 };
 
 static t_mentry DispMenu[] = {
-    { 0,  IDFILTER,   false,  "Filter..." },
-    { 0,  IDANIMATE,  false,  "Animate"   },
-    { 0,  IDLABELSOFF,    false,  "Labels Off"},
-    { 0,  IDRESETVIEW,    false,  "Reset View"},
-    { 0,  IDBONDOPTS,     false,  "Options..."}
+    { 0, IDFILTER, false, "Filter..." },
+    { 0, IDANIMATE, false, "Animate" },
+    { 0, IDLABELSOFF, false, "Labels Off" },
+    { 0, IDRESETVIEW, false, "Reset View" },
+    { 0, IDBONDOPTS, false, "Options..." }
 };
 
 static t_mentry HelpMenu[] = {
-    { 0,  IDHELP,     false,  "Help"             },
-    { 0,  IDABOUT,    false,  "About GROMACS..." }
+    { 0, IDHELP, false, "Help" },
+    { 0, IDABOUT, false, "About GROMACS..." }
 };
 
 static t_mentry *gmx_pd[] = { FileMenu, DispMenu, HelpMenu };
@@ -337,9 +337,9 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 
     x11->RegisterCallback(x11, gmx->wd->self, x11->root, MainCallBack, gmx);
     x11->SetInputMask(x11, gmx->wd->self,
-                      ButtonPressMask     | ButtonReleaseMask
-                      | OwnerGrabButtonMask | ExposureMask
-                      | StructureNotifyMask);
+                      ButtonPressMask | ButtonReleaseMask
+                              | OwnerGrabButtonMask | ExposureMask
+                              | StructureNotifyMask);
 
     /* The order of creating windows is important here! */
     /* Manager */
@@ -412,7 +412,8 @@ int gmx_view(int argc, char *argv[])
 
         if ((x11 = GetX11(&argc, argv)) == nullptr)
         {
-            std::fprintf(stderr, "Can't connect to X Server.\n"
+            std::fprintf(stderr,
+                         "Can't connect to X Server.\n"
                          "Check your DISPLAY environment variable\n");
         }
         else

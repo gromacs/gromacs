@@ -52,11 +52,11 @@
 #error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 2xnn kernel common header file"
 #endif
 
-#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    (GMX_SIMD_REAL_WIDTH / GMX_SIMD_J_UNROLL_SIZE)
+#define UNROLLI NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ (GMX_SIMD_REAL_WIDTH / GMX_SIMD_J_UNROLL_SIZE)
 
 /* The stride of all the atom data arrays is equal to half the SIMD width */
-#define STRIDE     UNROLLJ
+#define STRIDE UNROLLJ
 
 // TODO: Remove when all kernels are in the gmx namespace
 using namespace gmx;
@@ -85,9 +85,9 @@ static gmx_inline void add_ener_grp_halves(SimdReal e_S, real *v0, real *v1, con
 #endif
 
 #if GMX_SIMD_HAVE_INT32_LOGICAL
-typedef SimdInt32    SimdBitMask;
+typedef SimdInt32 SimdBitMask;
 #else
-typedef SimdReal     SimdBitMask;
+typedef SimdReal SimdBitMask;
 #endif
 
 
@@ -99,24 +99,23 @@ static gmx_inline void gmx_simdcall gmx_load_simd_2xnn_interactions(int         
 {
 #if GMX_SIMD_HAVE_INT32_LOGICAL
     SimdInt32 mask_pr_S(excl);
-    *interact_S0 = cvtIB2B( testBits( mask_pr_S & filter_S0 ) );
-    *interact_S2 = cvtIB2B( testBits( mask_pr_S & filter_S2 ) );
+    *interact_S0 = cvtIB2B(testBits(mask_pr_S & filter_S0));
+    *interact_S2 = cvtIB2B(testBits(mask_pr_S & filter_S2));
 #elif GMX_SIMD_HAVE_LOGICAL
-    union
-    {
+    union {
 #if GMX_DOUBLE
         std::int64_t i;
 #else
         std::int32_t i;
 #endif
-        real r;
+        real         r;
     } conv;
 
     conv.i = excl;
     SimdReal mask_pr_S(conv.r);
 
-    *interact_S0 = testBits( mask_pr_S & filter_S0 );
-    *interact_S2 = testBits( mask_pr_S & filter_S2 );
+    *interact_S0 = testBits(mask_pr_S & filter_S0);
+    *interact_S2 = testBits(mask_pr_S & filter_S2);
 #endif
 }
 

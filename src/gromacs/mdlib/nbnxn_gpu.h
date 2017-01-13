@@ -66,36 +66,36 @@ struct nbnxn_atomdata_t;
  *  separate streams.
  */
 GPU_FUNC_QUALIFIER
-void nbnxn_gpu_launch_kernel(gmx_nbnxn_gpu_t gmx_unused *              nb,
+void nbnxn_gpu_launch_kernel(gmx_nbnxn_gpu_t gmx_unused *  nb,
                              const struct nbnxn_atomdata_t gmx_unused *nbdata,
-                             int gmx_unused                            flags,
-                             int gmx_unused                            iloc) GPU_FUNC_TERM
+                             int gmx_unused flags,
+                             int gmx_unused iloc) GPU_FUNC_TERM
 
-/*! \brief
+        /*! \brief
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
  */
-GPU_FUNC_QUALIFIER
-void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t  gmx_unused *             nb,
-                              const struct nbnxn_atomdata_t gmx_unused *nbatom,
-                              int                    gmx_unused         flags,
-                              int                    gmx_unused         aloc) GPU_FUNC_TERM
+        GPU_FUNC_QUALIFIER
+        void nbnxn_gpu_launch_cpyback(gmx_nbnxn_gpu_t gmx_unused *  nb,
+                                      const struct nbnxn_atomdata_t gmx_unused *nbatom,
+                                      int gmx_unused flags,
+                                      int gmx_unused aloc) GPU_FUNC_TERM
 
-/*! \brief
+        /*! \brief
  * Wait for the asynchronously launched nonbonded calculations and data
  * transfers to finish.
  */
-GPU_FUNC_QUALIFIER
-void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused *nb,
-                            int             gmx_unused  flags,
-                            int             gmx_unused  aloc,
-                            real            gmx_unused *e_lj,
-                            real            gmx_unused *e_el,
-                            rvec            gmx_unused *fshift) GPU_FUNC_TERM
+        GPU_FUNC_QUALIFIER
+        void nbnxn_gpu_wait_for_gpu(gmx_nbnxn_gpu_t gmx_unused *nb,
+                                    int gmx_unused flags,
+                                    int gmx_unused aloc,
+                                    real gmx_unused *e_lj,
+                                    real gmx_unused *e_el,
+                                    rvec gmx_unused *fshift) GPU_FUNC_TERM
 
-/*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
-GPU_FUNC_QUALIFIER
-int nbnxn_gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1)
+        /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
+        GPU_FUNC_QUALIFIER
+        int nbnxn_gpu_pick_ewald_kernel_type(bool gmx_unused bTwinCut) GPU_FUNC_TERM_WITH_RETURN(-1)
 
 #ifdef __cplusplus
 }

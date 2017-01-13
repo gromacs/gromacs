@@ -45,7 +45,7 @@
 
 int name2index(char *str, char ***typenames, int ntypes);
 
-void pr_alloc (int extra, t_params *pr);
+void pr_alloc(int extra, t_params *pr);
 
 void set_p_string(t_param *p, const char *s);
 

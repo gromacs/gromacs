@@ -37,16 +37,13 @@
 
 #include "pme-internal.h"
 
-void
-pme_realloc_atomcomm_things(pme_atomcomm_t *atc);
+void pme_realloc_atomcomm_things(pme_atomcomm_t *atc);
 
-void
-dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
-               int n, rvec *f,
-               gmx_bool bAddF);
+void dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
+                    int n, rvec *f,
+                    gmx_bool bAddF);
 
-void
-do_redist_pos_coeffs(struct gmx_pme_t *pme, t_commrec *cr, int start, int homenr,
-                     gmx_bool bFirst, rvec x[], real *data);
+void do_redist_pos_coeffs(struct gmx_pme_t *pme, t_commrec *cr, int start, int homenr,
+                          gmx_bool bFirst, rvec x[], real *data);
 
 #endif

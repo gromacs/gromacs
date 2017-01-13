@@ -58,10 +58,10 @@ class TextWriter;
 //! \libinternal Output format for help writing.
 enum HelpOutputFormat
 {
-    eHelpOutputFormat_Console,  //!< Plain text directly on the console.
-    eHelpOutputFormat_Rst,      //!< reStructuredText for online manual and man pages.
-    eHelpOutputFormat_Other,    //!< Used for extensions in other modules.
-    eHelpOutputFormat_NR        //!< Used for the number of output formats.
+    eHelpOutputFormat_Console, //!< Plain text directly on the console.
+    eHelpOutputFormat_Rst,     //!< reStructuredText for online manual and man pages.
+    eHelpOutputFormat_Other,   //!< Used for extensions in other modules.
+    eHelpOutputFormat_NR       //!< Used for the number of output formats.
 };
 //! \endcond
 
@@ -279,9 +279,9 @@ public:
      * \param[in] description  Full description of the option.
      */
     void writeOptionItem(
-        const std::string &name, const std::string &value,
-        const std::string &defaultValue, const std::string &info,
-        const std::string &description) const;
+            const std::string &name, const std::string &value,
+            const std::string &defaultValue, const std::string &info,
+            const std::string &description) const;
     /*! \brief
      * Finishes writing a list of options.
      *

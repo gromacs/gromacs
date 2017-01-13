@@ -214,8 +214,8 @@ public:
         for (size_t i = 0; i != numConstraints; ++i)
         {
             gmx::test::FloatingPointTolerance constraintTolerance
-                = gmx::test::relativeToleranceAsFloatingPoint(constrainedDistancesSquared[i],
-                                                              ShakeTest::tolerance_);
+                    = gmx::test::relativeToleranceAsFloatingPoint(constrainedDistancesSquared[i],
+                                                                  ShakeTest::tolerance_);
             // Assert that the constrained distances are within the required tolerance
             EXPECT_FLOAT_EQ_TOL(constrainedDistancesSquared[i],
                                 finalDistancesSquared[i],

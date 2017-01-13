@@ -62,7 +62,7 @@ using gmx::test::defaultRealTolerance;
 
 TEST(InvertMatrixTest, IdentityIsImpotent)
 {
-    matrix in = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    matrix in = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
     matrix out;
 
     invertMatrix(in, out);
@@ -80,17 +80,17 @@ TEST(InvertMatrixTest, IdentityIsImpotent)
 
 TEST(InvertMatrixTest, ComputesInverse)
 {
-    matrix in = {{1, 2, 3}, {-1, real(2.5), 1}, {10, -2, real(1.2)}};
+    matrix in = { { 1, 2, 3 }, { -1, real(2.5), 1 }, { 10, -2, real(1.2) } };
     matrix out;
-    matrix expected = {{real(-0.12019230769230768),
-                        real(0.20192307692307693),
-                        real(0.13221153846153844)},
-                       {real(-0.26923076923076916),
-                        real(0.69230769230769229),
-                        real(0.096153846153846145)},
-                       {real(0.55288461538461531),
-                        real(-0.52884615384615374),
-                        real(-0.10817307692307691)}};
+    matrix expected = { { real(-0.12019230769230768),
+                          real(0.20192307692307693),
+                          real(0.13221153846153844) },
+                        { real(-0.26923076923076916),
+                          real(0.69230769230769229),
+                          real(0.096153846153846145) },
+                        { real(0.55288461538461531),
+                          real(-0.52884615384615374),
+                          real(-0.10817307692307691) } };
 
     invertMatrix(in, out);
 
@@ -107,7 +107,7 @@ TEST(InvertMatrixTest, ComputesInverse)
 
 TEST(InvertBoxMatrixTest, IdentityIsImpotent)
 {
-    matrix in = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    matrix in = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
 
     invertBoxMatrix(in, in);
 
@@ -124,10 +124,10 @@ TEST(InvertBoxMatrixTest, IdentityIsImpotent)
 
 TEST(InvertBoxMatrixTest, ComputesInverseInPlace)
 {
-    matrix in       = {{1, 0, 0}, {-1, real(2.5), 0}, {10, -2, real(1.2)}};
-    matrix expected = {{1, 0, 0},
-                       {real(0.4), real(0.4), 0},
-                       {real(-23.0 / 3.0), real(2.0 / 3.0), real(5.0 / 6.0)}};
+    matrix in       = { { 1, 0, 0 }, { -1, real(2.5), 0 }, { 10, -2, real(1.2) } };
+    matrix expected = { { 1, 0, 0 },
+                        { real(0.4), real(0.4), 0 },
+                        { real(-23.0 / 3.0), real(2.0 / 3.0), real(5.0 / 6.0) } };
 
     invertBoxMatrix(in, in);
 

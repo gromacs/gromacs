@@ -188,15 +188,13 @@ int gmx_mdmat(int argc, char *argv[])
     static real truncate = 1.5;
     static int  nlevels  = 40;
     t_pargs     pa[]     = {
-        { "-t",   FALSE, etREAL, {&truncate},
-          "trunc distance" },
-        { "-nlevels",   FALSE, etINT,  {&nlevels},
-          "Discretize distance in this number of levels" }
+        { "-t", FALSE, etREAL, { &truncate }, "trunc distance" },
+        { "-nlevels", FALSE, etINT, { &nlevels }, "Discretize distance in this number of levels" }
     };
-    t_filenm    fnm[] = {
-        { efTRX, "-f",  nullptr, ffREAD },
-        { efTPS, nullptr,  nullptr, ffREAD },
-        { efNDX, nullptr,  nullptr, ffOPTRD },
+    t_filenm fnm[] = {
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
         { efXPM, "-mean", "dm", ffWRITE },
         { efXPM, "-frames", "dmf", ffOPTWR },
         { efXVG, "-no", "num", ffOPTWR },
@@ -223,7 +221,7 @@ int gmx_mdmat(int argc, char *argv[])
     int **            nmat, **totnmat;
     real *            mean_n;
     int *             tot_n;
-    matrix            box = {{0}};
+    matrix            box = { { 0 } };
     gmx_output_env_t *oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
@@ -257,7 +255,7 @@ int gmx_mdmat(int argc, char *argv[])
     newres  = 0;
     for (i = 0; (i < isize); i++)
     {
-        int ii = index[i];
+        int ii               = index[i];
         useatoms.atomname[i] = top.atoms.atomname[ii];
         if (top.atoms.atom[ii].resind != prevres)
         {
@@ -381,7 +379,7 @@ int gmx_mdmat(int argc, char *argv[])
         sprintf(legend[2], "Mean");
         sprintf(legend[3], "# atoms");
         sprintf(legend[4], "Mean/# atoms");
-        xvgr_legend(fp, 5, (const char**)legend, oenv);
+        xvgr_legend(fp, 5, (const char **)legend, oenv);
         for (i = 0; (i < nres); i++)
         {
             if (mean_n[i] == 0)

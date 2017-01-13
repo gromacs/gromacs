@@ -85,7 +85,7 @@
 
 #include "pme-internal.h"
 
-static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
+static void reset_pmeonly_counters(gmx_wallcycle_t           wcycle,
                                    gmx_walltime_accounting_t walltime_accounting,
                                    t_nrnb *nrnb, t_inputrec *ir,
                                    gmx_int64_t step)
@@ -140,8 +140,8 @@ static void gmx_pmeonly_switch(int *npmedata, struct gmx_pme_t ***pmedata,
 }
 
 int gmx_pmeonly(struct gmx_pme_t *pme,
-                t_commrec *cr,    t_nrnb *mynrnb,
-                gmx_wallcycle_t wcycle,
+                t_commrec *cr, t_nrnb *mynrnb,
+                gmx_wallcycle_t           wcycle,
                 gmx_walltime_accounting_t walltime_accounting,
                 real ewaldcoeff_q, real ewaldcoeff_lj,
                 t_inputrec *ir)
@@ -152,10 +152,10 @@ int gmx_pmeonly(struct gmx_pme_t *pme,
     int                ret;
     int                natoms;
     matrix             box;
-    rvec *             x_pp       = nullptr, *f_pp = nullptr;
-    real *             chargeA    = nullptr, *chargeB = nullptr;
-    real *             c6A        = nullptr, *c6B = nullptr;
-    real *             sigmaA     = nullptr, *sigmaB = nullptr;
+    rvec *             x_pp = nullptr, *f_pp = nullptr;
+    real *             chargeA = nullptr, *chargeB = nullptr;
+    real *             c6A = nullptr, *c6B = nullptr;
+    real *             sigmaA = nullptr, *sigmaB = nullptr;
     real               lambda_q   = 0;
     real               lambda_lj  = 0;
     int                maxshift_x = 0, maxshift_y = 0;

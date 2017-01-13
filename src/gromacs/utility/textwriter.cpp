@@ -69,22 +69,22 @@ public:
         {
             stream_->write("\n");
         }
-        pendingNewLine_ = false;
+        pendingNewLine_         = false;
         const char *lastNewLine = std::strrchr(str, '\n');
         if (lastNewLine == nullptr)
         {
-            newLineCount_       = 0;
+            newLineCount_ = 0;
             currentLineLength_ += std::strlen(str);
         }
         else if (lastNewLine[1] != '\0')
         {
-            newLineCount_       = 0;
+            newLineCount_ = 0;
             currentLineLength_ += std::strlen(lastNewLine + 1);
         }
         else
         {
             currentLineLength_ = 0;
-            int newLineCount = 0;
+            int newLineCount   = 0;
             while (lastNewLine >= str && *lastNewLine == '\n')
             {
                 ++newLineCount;

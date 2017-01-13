@@ -52,16 +52,20 @@
 #include "gromacs/utility/gmxassert.h"
 
 #define FORWARD_TO_DEFAULT_PRINTER1(MethodName, Param1Type) \
-    virtual void MethodName(const Param1Type &param1) { \
-        if (rank_ == 0) { \
-            defaultPrinter_->MethodName(param1); \
-        } \
+    virtual void MethodName(const Param1Type &param1)       \
+    {                                                       \
+        if (rank_ == 0)                                     \
+        {                                                   \
+            defaultPrinter_->MethodName(param1);            \
+        }                                                   \
     }
-#define FORWARD_TO_DEFAULT_PRINTER2(MethodName, Param1Type, Param2Type) \
-    virtual void MethodName(const Param1Type &param1, Param2Type param2) { \
-        if (rank_ == 0) { \
-            defaultPrinter_->MethodName(param1, param2); \
-        } \
+#define FORWARD_TO_DEFAULT_PRINTER2(MethodName, Param1Type, Param2Type)  \
+    virtual void MethodName(const Param1Type &param1, Param2Type param2) \
+    {                                                                    \
+        if (rank_ == 0)                                                  \
+        {                                                                \
+            defaultPrinter_->MethodName(param1, param2);                 \
+        }                                                                \
     }
 
 namespace
@@ -70,7 +74,7 @@ namespace
 class MPIEventForward : public ::testing::TestEventListener
 {
 public:
-    MPIEventForward(TestEventListener* defaultPrinter, int rank, int size)
+    MPIEventForward(TestEventListener *defaultPrinter, int rank, int size)
         : defaultPrinter_(defaultPrinter), rank_(rank), size_(size)
     {
     }
@@ -168,11 +172,11 @@ void MPIEventForward::OnTestEnd(const ::testing::TestInfo &test_info)
             // behind the scenes, so the default printer sees the test as
             // failed even if localPassed is true.
             ADD_FAILURE()
-            << "See AllFailingRanks for the rank IDs that failed. Only if "
-            "rank 0 was among those that failed, will there be some "
-            "accompanying information about the failure, and it will "
-            "pertain only to that rank. Run this test manually to get "
-            "more information.";
+                    << "See AllFailingRanks for the rank IDs that failed. Only if "
+                       "rank 0 was among those that failed, will there be some "
+                       "accompanying information about the failure, and it will "
+                       "pertain only to that rank. Run this test manually to get "
+                       "more information.";
         }
     }
 }
@@ -193,10 +197,10 @@ void gmx::test::initMPIOutput()
         return;
     }
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ::testing::UnitTest           &unit_test = *::testing::UnitTest::GetInstance();
+    ::testing::UnitTest &          unit_test = *::testing::UnitTest::GetInstance();
     ::testing::TestEventListeners &listeners = unit_test.listeners();
-    ::testing::TestEventListener  *defprinter
-        = listeners.Release(listeners.default_result_printer());
+    ::testing::TestEventListener * defprinter
+            = listeners.Release(listeners.default_result_printer());
     listeners.Append(new MPIEventForward(defprinter, rank, size));
     if (0 != rank)
     {

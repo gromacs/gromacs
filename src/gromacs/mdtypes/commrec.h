@@ -50,16 +50,16 @@ typedef struct
 {
     /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
        supported.*/
-    int *ibuf;             /* for ints */
+    int *ibuf; /* for ints */
     int  ibuf_alloc;
 
     gmx_int64_t *libuf;
     int          libuf_alloc;
 
-    float *fbuf;           /* for floats */
+    float *fbuf; /* for floats */
     int    fbuf_alloc;
 
-    double *dbuf;          /* for doubles */
+    double *dbuf; /* for doubles */
     int     dbuf_alloc;
 } mpi_in_place_buf_t;
 
@@ -74,7 +74,7 @@ struct gmx_multisim_t
     mpi_in_place_buf_t *mpb;
 };
 
-#define DUTY_PP  (1 << 0)
+#define DUTY_PP (1 << 0)
 #define DUTY_PME (1 << 1)
 
 typedef struct
@@ -102,10 +102,10 @@ struct t_commrec
     MPI_Comm mpi_comm_mygroup;
 
     /* MPI ranks within a physical node for hardware access */
-    int nrank_intranode;               /* nr of ranks on this physical node */
-    int rank_intranode;                /* our rank on this physical node */
-    int nrank_pp_intranode;            /* as nrank_intranode, for particle-particle only */
-    int rank_pp_intranode;             /* as rank_intranode, for particle-particle only */
+    int nrank_intranode;    /* nr of ranks on this physical node */
+    int rank_intranode;     /* our rank on this physical node */
+    int nrank_pp_intranode; /* as nrank_intranode, for particle-particle only */
+    int rank_pp_intranode;  /* as rank_intranode, for particle-particle only */
 
     gmx_nodecomm_t nc;
 
@@ -123,19 +123,19 @@ struct t_commrec
 };
 
 //! True if this is a simulation with more than 1 node
-#define PAR(cr)        ((cr)->nnodes > 1)
+#define PAR(cr) ((cr)->nnodes > 1)
 
 //! True of this is the master node
-#define MASTER(cr)     (((cr)->nodeid == 0) || !PAR(cr))
+#define MASTER(cr) (((cr)->nodeid == 0) || !PAR(cr))
 
 //! True if this is the particle-particle master
-#define SIMMASTER(cr)  ((MASTER(cr) && ((cr)->duty & DUTY_PP)) || !PAR(cr))
+#define SIMMASTER(cr) ((MASTER(cr) && ((cr)->duty & DUTY_PP)) || !PAR(cr))
 
 //! The node id for this rank
-#define RANK(cr, nodeid)    (nodeid)
+#define RANK(cr, nodeid) (nodeid)
 
 //! The node id for the master
-#define MASTERRANK(cr)     (0)
+#define MASTERRANK(cr) (0)
 
 /*! \brief Do we use domain decomposition
  *
@@ -144,15 +144,15 @@ struct t_commrec
  * PAR(cr) and DOMAINDECOMP(cr) are not universally synonymous. In
  * particular, DOMAINDECOMP(cr) == true indicates that there is more
  * than one domain, not just that the dd algorithm is active. */
-#define DOMAINDECOMP(cr)   (((cr)->dd != NULL) && PAR(cr))
+#define DOMAINDECOMP(cr) (((cr)->dd != NULL) && PAR(cr))
 
 //! Are we doing multiple independent simulations
-#define MULTISIM(cr)       ((cr)->ms)
+#define MULTISIM(cr) ((cr)->ms)
 
 //! Are we the master node of a multisimulation
-#define MASTERSIM(ms)      ((ms)->sim == 0)
+#define MASTERSIM(ms) ((ms)->sim == 0)
 
 //! The master of all (the node that prints the remaining run time etc.)
-#define MULTIMASTER(cr)    (SIMMASTER(cr) && (!MULTISIM(cr) || MASTERSIM((cr)->ms)))
+#define MULTIMASTER(cr) (SIMMASTER(cr) && (!MULTISIM(cr) || MASTERSIM((cr)->ms)))
 
 #endif

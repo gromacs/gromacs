@@ -36,13 +36,13 @@
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 #if GMX_SIMD_REAL_WIDTH >= NBNXN_CPU_CLUSTER_I_SIZE
-#define STRIDE_S  (GMX_SIMD_REAL_WIDTH)
+#define STRIDE_S (GMX_SIMD_REAL_WIDTH)
 #else
-#define STRIDE_S  NBNXN_CPU_CLUSTER_I_SIZE
+#define STRIDE_S NBNXN_CPU_CLUSTER_I_SIZE
 #endif
 
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
-static gmx_inline void icell_set_x_simd_4xn(int ci,
+static gmx_inline void icell_set_x_simd_4xn(int  ci,
                                             real shx, real shy, real shz,
                                             int gmx_unused stride, const real *x,
                                             nbnxn_list_work_t *work)
@@ -52,18 +52,18 @@ static gmx_inline void icell_set_x_simd_4xn(int ci,
 
     ia = x_ind_ci_simd_4xn(ci);
 
-    store(x_ci_simd +  0 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0 * STRIDE_S    ] + shx) );
-    store(x_ci_simd +  1 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1 * STRIDE_S    ] + shy) );
-    store(x_ci_simd +  2 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2 * STRIDE_S    ] + shz) );
-    store(x_ci_simd +  3 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0 * STRIDE_S + 1] + shx) );
-    store(x_ci_simd +  4 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1 * STRIDE_S + 1] + shy) );
-    store(x_ci_simd +  5 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2 * STRIDE_S + 1] + shz) );
-    store(x_ci_simd +  6 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0 * STRIDE_S + 2] + shx) );
-    store(x_ci_simd +  7 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1 * STRIDE_S + 2] + shy) );
-    store(x_ci_simd +  8 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2 * STRIDE_S + 2] + shz) );
-    store(x_ci_simd +  9 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0 * STRIDE_S + 3] + shx) );
-    store(x_ci_simd + 10 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1 * STRIDE_S + 3] + shy) );
-    store(x_ci_simd + 11 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2 * STRIDE_S + 3] + shz) );
+    store(x_ci_simd + 0 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0 * STRIDE_S] + shx));
+    store(x_ci_simd + 1 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1 * STRIDE_S] + shy));
+    store(x_ci_simd + 2 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2 * STRIDE_S] + shz));
+    store(x_ci_simd + 3 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0 * STRIDE_S + 1] + shx));
+    store(x_ci_simd + 4 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1 * STRIDE_S + 1] + shy));
+    store(x_ci_simd + 5 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2 * STRIDE_S + 1] + shz));
+    store(x_ci_simd + 6 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0 * STRIDE_S + 2] + shx));
+    store(x_ci_simd + 7 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1 * STRIDE_S + 2] + shy));
+    store(x_ci_simd + 8 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2 * STRIDE_S + 2] + shz));
+    store(x_ci_simd + 9 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 0 * STRIDE_S + 3] + shx));
+    store(x_ci_simd + 10 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 1 * STRIDE_S + 3] + shy));
+    store(x_ci_simd + 11 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2 * STRIDE_S + 3] + shz));
 }
 
 /* SIMD code for making a pair list of cell ci vs cell cjf-cjl
@@ -72,9 +72,9 @@ static gmx_inline void icell_set_x_simd_4xn(int ci,
  * This is an accelerated version of make_cluster_list_simple.
  */
 static gmx_inline void make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
-                                                  nbnxn_pairlist_t *nbl,
+                                                  nbnxn_pairlist_t *  nbl,
                                                   int ci, int cjf, int cjl,
-                                                  gmx_bool remove_sub_diag,
+                                                  gmx_bool    remove_sub_diag,
                                                   const real *x_j,
                                                   real rl2, float rbb2,
                                                   int *ndistc)
@@ -143,16 +143,16 @@ static gmx_inline void make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
 
 
             /* Calculate distance */
-            dx_S0 = load(x_ci_simd +  0 * GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S0 = load(x_ci_simd +  1 * GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S0 = load(x_ci_simd +  2 * GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S1 = load(x_ci_simd +  3 * GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S1 = load(x_ci_simd +  4 * GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S1 = load(x_ci_simd +  5 * GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S2 = load(x_ci_simd +  6 * GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S2 = load(x_ci_simd +  7 * GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S2 = load(x_ci_simd +  8 * GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S3 = load(x_ci_simd +  9 * GMX_SIMD_REAL_WIDTH) - jx_S;
+            dx_S0 = load(x_ci_simd + 0 * GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S0 = load(x_ci_simd + 1 * GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S0 = load(x_ci_simd + 2 * GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S1 = load(x_ci_simd + 3 * GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S1 = load(x_ci_simd + 4 * GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S1 = load(x_ci_simd + 5 * GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S2 = load(x_ci_simd + 6 * GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S2 = load(x_ci_simd + 7 * GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S2 = load(x_ci_simd + 8 * GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S3 = load(x_ci_simd + 9 * GMX_SIMD_REAL_WIDTH) - jx_S;
             dy_S3 = load(x_ci_simd + 10 * GMX_SIMD_REAL_WIDTH) - jy_S;
             dz_S3 = load(x_ci_simd + 11 * GMX_SIMD_REAL_WIDTH) - jz_S;
 
@@ -213,16 +213,16 @@ static gmx_inline void make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
             jz_S = load(x_j + xind_l + 2 * STRIDE_S);
 
             /* Calculate distance */
-            dx_S0 = load(x_ci_simd +  0 * GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S0 = load(x_ci_simd +  1 * GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S0 = load(x_ci_simd +  2 * GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S1 = load(x_ci_simd +  3 * GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S1 = load(x_ci_simd +  4 * GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S1 = load(x_ci_simd +  5 * GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S2 = load(x_ci_simd +  6 * GMX_SIMD_REAL_WIDTH) - jx_S;
-            dy_S2 = load(x_ci_simd +  7 * GMX_SIMD_REAL_WIDTH) - jy_S;
-            dz_S2 = load(x_ci_simd +  8 * GMX_SIMD_REAL_WIDTH) - jz_S;
-            dx_S3 = load(x_ci_simd +  9 * GMX_SIMD_REAL_WIDTH) - jx_S;
+            dx_S0 = load(x_ci_simd + 0 * GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S0 = load(x_ci_simd + 1 * GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S0 = load(x_ci_simd + 2 * GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S1 = load(x_ci_simd + 3 * GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S1 = load(x_ci_simd + 4 * GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S1 = load(x_ci_simd + 5 * GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S2 = load(x_ci_simd + 6 * GMX_SIMD_REAL_WIDTH) - jx_S;
+            dy_S2 = load(x_ci_simd + 7 * GMX_SIMD_REAL_WIDTH) - jy_S;
+            dz_S2 = load(x_ci_simd + 8 * GMX_SIMD_REAL_WIDTH) - jz_S;
+            dx_S3 = load(x_ci_simd + 9 * GMX_SIMD_REAL_WIDTH) - jx_S;
             dy_S3 = load(x_ci_simd + 10 * GMX_SIMD_REAL_WIDTH) - jy_S;
             dz_S3 = load(x_ci_simd + 11 * GMX_SIMD_REAL_WIDTH) - jz_S;
 

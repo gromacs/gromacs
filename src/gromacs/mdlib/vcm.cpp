@@ -100,7 +100,8 @@ t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, t_inputrec *ir)
         {
             fprintf(fp, "Center of mass motion removal mode is %s\n",
                     ECOM(vcm->mode));
-            fprintf(fp, "We have the following groups for center of"
+            fprintf(fp,
+                    "We have the following groups for center of"
                     " mass motion removal:\n");
         }
         for (g = 0; (g < vcm->nr); g++)
@@ -123,9 +124,9 @@ static void update_tensor(rvec x, real m0, tensor I)
     real xy, xz, yz;
 
     /* Compute inertia tensor contribution due to this atom */
-    xy         = x[XX] * x[YY] * m0;
-    xz         = x[XX] * x[ZZ] * m0;
-    yz         = x[YY] * x[ZZ] * m0;
+    xy = x[XX] * x[YY] * m0;
+    xz = x[XX] * x[ZZ] * m0;
+    yz = x[YY] * x[ZZ] * m0;
     I[XX][XX] += x[XX] * x[XX] * m0;
     I[YY][YY] += x[YY] * x[YY] * m0;
     I[ZZ][ZZ] += x[ZZ] * x[ZZ] * m0;
@@ -151,7 +152,7 @@ void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
             {
                 /* Reset linear momentum */
                 t_vcm_thread *vcm_t = &vcm->thread_vcm[t * vcm->stride + g];
-                vcm_t->mass = 0;
+                vcm_t->mass         = 0;
                 clear_rvec(vcm_t->p);
                 if (vcm->mode == ecmANGULAR)
                 {
@@ -223,7 +224,6 @@ void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
                 }
             }
         }
-
     }
 }
 
@@ -278,7 +278,7 @@ void do_stopcm_grp(int start, int homenr, unsigned short *group_id,
             }
             if (vcm->mode == ecmANGULAR)
             {
-                /* Subtract angular momentum */
+/* Subtract angular momentum */
 #pragma omp for schedule(static)
                 for (i = start; i < start + homenr; i++)
                 {
@@ -302,15 +302,15 @@ static void get_minv(tensor A, tensor B)
     double fac, rfac;
     tensor tmp;
 
-    tmp[XX][XX] =  A[YY][YY] + A[ZZ][ZZ];
+    tmp[XX][XX] = A[YY][YY] + A[ZZ][ZZ];
     tmp[YY][XX] = -A[XX][YY];
     tmp[ZZ][XX] = -A[XX][ZZ];
     tmp[XX][YY] = -A[XX][YY];
-    tmp[YY][YY] =  A[XX][XX] + A[ZZ][ZZ];
+    tmp[YY][YY] = A[XX][XX] + A[ZZ][ZZ];
     tmp[ZZ][YY] = -A[YY][ZZ];
     tmp[XX][ZZ] = -A[XX][ZZ];
     tmp[YY][ZZ] = -A[YY][ZZ];
-    tmp[ZZ][ZZ] =  A[XX][XX] + A[YY][YY];
+    tmp[ZZ][ZZ] = A[XX][XX] + A[YY][YY];
 
     /* This is a hack to prevent very large determinants */
     rfac = (tmp[XX][XX] + tmp[YY][YY] + tmp[ZZ][ZZ]) / 3;
@@ -409,7 +409,7 @@ void check_cm_grp(FILE *fp, t_vcm *vcm, t_inputrec *ir, real Temp_Max)
             {
                 ekcm += gmx::square(vcm->group_v[g][m]);
             }
-            ekcm   *= 0.5 * vcm->group_mass[g];
+            ekcm *= 0.5 * vcm->group_mass[g];
             Temp_cm = 2 * ekcm / vcm->group_ndf[g];
 
             if ((Temp_cm > Temp_Max) && fp)

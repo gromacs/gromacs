@@ -136,8 +136,8 @@ void *_gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, size_t size)
         {
             GMX_THROW(gmx::InternalError("Out of memory pool memory"));
         }
-        ptr           = mp->freeptr;
-        mp->freeptr  += size_walign;
+        ptr = mp->freeptr;
+        mp->freeptr += size_walign;
         mp->freesize -= size_walign;
         mp->currsize += size_walign;
     }
@@ -178,11 +178,11 @@ void _gmx_sel_mempool_free(gmx_sel_mempool_t *mp, void *ptr)
     GMX_RELEASE_ASSERT(mp->nblocks > 0 && mp->blockstack[mp->nblocks - 1].ptr == ptr,
                        "Invalid order of memory pool free calls");
     mp->nblocks--;
-    size          = mp->blockstack[mp->nblocks].size;
+    size = mp->blockstack[mp->nblocks].size;
     mp->currsize -= size;
     if (mp->buffer)
     {
-        mp->freeptr   = (char *)ptr;
+        mp->freeptr = (char *)ptr;
         mp->freesize += size;
     }
     else
@@ -213,7 +213,7 @@ void _gmx_sel_mempool_alloc_group(gmx_sel_mempool_t *mp, gmx_ana_index_t *g,
                                   int isize)
 {
     void *ptr = _gmx_sel_mempool_alloc(mp, sizeof(*g->index) * isize);
-    g->index = static_cast<int *>(ptr);
+    g->index  = static_cast<int *>(ptr);
 }
 
 void _gmx_sel_mempool_free_group(gmx_sel_mempool_t *mp, gmx_ana_index_t *g)

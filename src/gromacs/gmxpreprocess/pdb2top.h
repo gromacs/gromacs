@@ -46,7 +46,11 @@
 /* this *MUST* correspond to array in pdb2top.c */
 enum
 {
-    ehisA, ehisB, ehisH, ehis1, ehisNR
+    ehisA,
+    ehisB,
+    ehisH,
+    ehis1,
+    ehisNR
 };
 extern const char *hh[ehisNR];
 
@@ -74,7 +78,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                         int nrtp, t_restp rtp[],
                         int nres, t_resinfo *resinfo,
-                        int nterpairs,
+                        int           nterpairs,
                         t_hackblock **ntdb, t_hackblock **ctdb,
                         int *rn, int *rc);
 /* Get the database entries for the nres residues in resinfo
@@ -94,7 +98,7 @@ void print_top_comment(FILE *out, const char *filename, const char *ffdir, gmx_b
 void print_top_header(FILE *out, const char *filename, gmx_bool bITP,
                       const char *ffdir, real mHmult);
 
-void print_top_mols(FILE *out,
+void print_top_mols(FILE *      out,
                     const char *title, const char *ffdir, const char *water,
                     int nincl, char **incls,
                     int nmol, t_mols *mols);
@@ -114,7 +118,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              gmx_bool bAllowMissing,
              gmx_bool bVsites, gmx_bool bVsiteAromatics,
              const char *ffdir,
-             real mHmult,
+             real        mHmult,
              int nssbonds, t_ssbond ssbonds[],
              real long_bond_dist, real short_bond_dist,
              gmx_bool bDeuterate, gmx_bool bChargeGroups, gmx_bool bCmap,

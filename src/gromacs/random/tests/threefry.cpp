@@ -55,7 +55,7 @@ namespace gmx
 namespace
 {
 
-class ThreeFry2x64Test : public ::testing::TestWithParam<std::vector<gmx_uint64_t> >
+class ThreeFry2x64Test : public ::testing::TestWithParam<std::vector<gmx_uint64_t>>
 {
 };
 
@@ -114,9 +114,7 @@ TEST_P(ThreeFry2x64Test, Using40Rounds)
  *  The 2x64 flavors of ThreeFry64 will use the first four values, while
  *  the 4x64 version uses all eight.
  */
-const std::vector<gmx_uint64_t> bitsZero {{
-                                              0, 0, 0, 0
-                                          }};
+const std::vector<gmx_uint64_t> bitsZero{ { 0, 0, 0, 0 } };
 
 
 /*! \brief Constant array of integers with all bits set to one.
@@ -125,10 +123,8 @@ const std::vector<gmx_uint64_t> bitsZero {{
  *  The 2x64 flavors of ThreeFry64 will use the first four values, while
  *  the 4x64 version uses all eight.
  */
-const std::vector<gmx_uint64_t> bitsOne {{
-                                             0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL,
-                                             0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL
-                                         }};
+const std::vector<gmx_uint64_t> bitsOne{ { 0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL,
+                                           0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL } };
 
 /*! \brief Constant array of integers with bitpattern from Pi.
  *
@@ -136,15 +132,13 @@ const std::vector<gmx_uint64_t> bitsOne {{
  *  The 2x64 flavors of ThreeFry64 will use the first four values, while
  *  the 4x64 version uses all eight.
  */
-const std::vector<gmx_uint64_t> bitsPi {{
-                                            0x243f6a8885a308d3ULL, 0x13198a2e03707344ULL,
-                                            0xa4093822299f31d0ULL, 0x082efa98ec4e6c89ULL
-                                        }};
+const std::vector<gmx_uint64_t> bitsPi{ { 0x243f6a8885a308d3ULL, 0x13198a2e03707344ULL,
+                                          0xa4093822299f31d0ULL, 0x082efa98ec4e6c89ULL } };
 
 // Test the known ansers for the ThreeFry random function when the argument
 // is (1) all zero, (2) all ones, (3) the bits of pi, for a bunch of different flavors of ThreeFry.
 INSTANTIATE_TEST_CASE_P(KnownAnswersTest, ThreeFry2x64Test,
-                            ::testing::Values(bitsZero, bitsOne, bitsPi));
+                        ::testing::Values(bitsZero, bitsOne, bitsPi));
 
 
 // ThreeFry2x64 tests
@@ -154,9 +148,10 @@ TEST_F(ThreeFry2x64Test, Logical)
     gmx::ThreeFry2x64<10> rngB(123456, gmx::RandomDomain::Other);
     gmx::ThreeFry2x64<10> rngC(123456, gmx::RandomDomain::Other);
 
-    rngB();              // draw just once first, so block is the same, but index has changed
+    rngB(); // draw just once first, so block is the same, but index has changed
     EXPECT_NE(rngA, rngB);
-    rngC(); rngC();      // two draws: next block, but index is the same
+    rngC();
+    rngC(); // two draws: next block, but index is the same
     EXPECT_NE(rngA, rngC);
     rngA();
     EXPECT_EQ(rngA, rngB);
@@ -243,6 +238,6 @@ TEST_F(ThreeFry2x64Test, ExhaustInternalCounter)
     EXPECT_THROW_GMX(rngA(), gmx::InternalError);
 }
 
-}      // namespace anonymous
+} // namespace anonymous
 
-}      // namespace gmx
+} // namespace gmx

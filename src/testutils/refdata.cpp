@@ -131,7 +131,7 @@ public:
     bool bInUse_;
 };
 
-}       // namespace internal
+} // namespace internal
 
 /********************************************************************
  * Internal helpers
@@ -142,7 +142,7 @@ namespace
 
 //! Convenience typedef for a smart pointer to TestReferenceDataImpl.
 typedef std::shared_ptr<internal::TestReferenceDataImpl>
-    TestReferenceDataImplPointer;
+        TestReferenceDataImplPointer;
 
 /*! \brief
  * Global reference data instance.
@@ -262,21 +262,22 @@ void checkUnusedEntries(const ReferenceDataEntry &root, const std::string &rootP
             paths = joinStrings(unusedPaths.begin(), unusedPaths.end(), "\n  ");
             paths = "  " + paths;
         }
-        ADD_FAILURE() << "Reference data items not used in test:" << std::endl << paths;
+        ADD_FAILURE() << "Reference data items not used in test:" << std::endl
+                      << paths;
     }
 }
 
-}       // namespace
+} // namespace
 
 void initReferenceData(IOptionsContainer *options)
 {
     // Needs to correspond to the enum order in refdata.h.
-    const char *const refDataEnum[] =
-    { "check", "create", "update-changed", "update-all" };
+    const char *const refDataEnum[] = { "check", "create", "update-changed", "update-all" };
     options->addOption(
             EnumOption<ReferenceDataMode>("ref-data")
-                .enumValue(refDataEnum).store(&g_referenceDataMode)
-                .description("Operation mode for tests that use reference data"));
+                    .enumValue(refDataEnum)
+                    .store(&g_referenceDataMode)
+                    .description("Operation mode for tests that use reference data"));
     ::testing::UnitTest::GetInstance()->listeners().Append(
             new ReferenceDataTestEventListener);
 }
@@ -293,11 +294,11 @@ TestReferenceDataImpl::TestReferenceDataImpl(
     : updateMismatchingEntries_(false), bSelfTestMode_(bSelfTestMode), bInUse_(false)
 {
     const std::string dirname
-        = bSelfTestMode
-            ? TestFileManager::getGlobalOutputTempDirectory()
-            : TestFileManager::getInputDataDirectory();
+            = bSelfTestMode
+                      ? TestFileManager::getGlobalOutputTempDirectory()
+                      : TestFileManager::getInputDataDirectory();
     const std::string filename = TestFileManager::getTestSpecificFileName(".xml");
-    fullFilename_ = Path::join(dirname, "refdata", filename);
+    fullFilename_              = Path::join(dirname, "refdata", filename);
 
     switch (mode)
     {
@@ -365,7 +366,7 @@ void TestReferenceDataImpl::onTestEnd(bool testPassed)
     }
 }
 
-}       // namespace internal
+} // namespace internal
 
 
 /********************************************************************
@@ -381,29 +382,29 @@ class TestReferenceChecker::Impl
 {
 public:
     //! String constant for naming XML elements for boolean values.
-    static const char * const cBooleanNodeName;
+    static const char *const cBooleanNodeName;
     //! String constant for naming XML elements for string values.
-    static const char * const cStringNodeName;
+    static const char *const cStringNodeName;
     //! String constant for naming XML elements for unsigned char values.
-    static const char * const cUCharNodeName;
+    static const char *const cUCharNodeName;
     //! String constant for naming XML elements for integer values.
-    static const char * const cIntegerNodeName;
+    static const char *const cIntegerNodeName;
     //! String constant for naming XML elements for int64 values.
-    static const char * const cInt64NodeName;
+    static const char *const cInt64NodeName;
     //! String constant for naming XML elements for unsigned int64 values.
-    static const char * const cUInt64NodeName;
+    static const char *const cUInt64NodeName;
     //! String constant for naming XML elements for floating-point values.
-    static const char * const cRealNodeName;
+    static const char *const cRealNodeName;
     //! String constant for naming XML attribute for value identifiers.
-    static const char * const cIdAttrName;
+    static const char *const cIdAttrName;
     //! String constant for naming compounds for vectors.
-    static const char * const cVectorType;
+    static const char *const cVectorType;
     //! String constant for naming compounds for key-value tree objects.
-    static const char * const cObjectType;
+    static const char *const cObjectType;
     //! String constant for naming compounds for sequences.
-    static const char * const cSequenceType;
+    static const char *const cSequenceType;
     //! String constant for value identifier for sequence length.
-    static const char * const cSequenceLengthName;
+    static const char *const cSequenceLengthName;
 
     //! Creates a checker that does nothing.
     explicit Impl(bool initialized);
@@ -571,7 +572,7 @@ TestReferenceChecker::Impl::Impl(bool initialized)
 }
 
 
-TestReferenceChecker::Impl::Impl(const std::string &path,
+TestReferenceChecker::Impl::Impl(const std::string & path,
                                  ReferenceDataEntry *compareRootEntry,
                                  ReferenceDataEntry *outputRootEntry,
                                  bool updateMismatchingEntries, bool bSelfTestMode,
@@ -588,15 +589,15 @@ TestReferenceChecker::Impl::Impl(const std::string &path,
 std::string TestReferenceChecker::Impl::appendPath(const char *id) const
 {
     return id != nullptr
-           ? formatEntryPath(path_, id)
-           : formatSequenceEntryPath(path_, seqIndex_);
+                   ? formatEntryPath(path_, id)
+                   : formatSequenceEntryPath(path_, seqIndex_);
 }
 
 
 ReferenceDataEntry *TestReferenceChecker::Impl::findEntry(const char *id)
 {
     ReferenceDataEntry::ChildIterator entry = compareRootEntry_->findChild(id, lastFoundEntry_);
-    seqIndex_ = (id == nullptr) ? seqIndex_ + 1 : -1;
+    seqIndex_                               = (id == nullptr) ? seqIndex_ + 1 : -1;
     if (compareRootEntry_->isValidChild(entry))
     {
         lastFoundEntry_ = entry;
@@ -653,8 +654,8 @@ ReferenceDataEntry *TestReferenceChecker::Impl::findOrCreateEntry(
         ReferenceDataEntry expected(type, id);
         checker.fillEntry(&expected);
         result << std::endl
-        << "String value: '" << expected.value() << "'" << std::endl
-        << " Ref. string: '" << entry->value() << "'";
+               << "String value: '" << expected.value() << "'" << std::endl
+               << " Ref. string: '" << entry->value() << "'";
     }
     return result;
 }
@@ -686,7 +687,7 @@ TestReferenceChecker TestReferenceData::rootChecker()
     if (!impl_->bInUse_ && !impl_->compareRootEntry_)
     {
         ADD_FAILURE() << "Reference data file not found: "
-        << impl_->fullFilename_;
+                      << impl_->fullFilename_;
     }
     impl_->bInUse_ = true;
     if (!impl_->compareRootEntry_)
@@ -767,15 +768,15 @@ bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
         return bPresent;
     }
     ReferenceDataEntry::ChildIterator entry
-        = impl_->compareRootEntry_->findChild(id, impl_->lastFoundEntry_);
+            = impl_->compareRootEntry_->findChild(id, impl_->lastFoundEntry_);
     const bool bFound
-        = impl_->compareRootEntry_->isValidChild(entry);
+            = impl_->compareRootEntry_->isValidChild(entry);
     if (bFound != bPresent)
     {
         ADD_FAILURE() << "Mismatch while checking reference data item '"
-        << impl_->appendPath(id) << "'\n"
-        << "Expected: " << (bPresent ? "it is present.\n" : "it is absent.\n")
-        << "  Actual: " << (bFound ? "it is present." : "it is absent.");
+                      << impl_->appendPath(id) << "'\n"
+                      << "Expected: " << (bPresent ? "it is present.\n" : "it is absent.\n")
+                      << "  Actual: " << (bFound ? "it is present." : "it is absent.");
     }
     if (bFound && bPresent)
     {
@@ -837,15 +838,16 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
  */
 static void throwIfNonEmptyAndOnlyWhitespace(const std::string &s, const char *id)
 {
-    if (!s.empty() && std::all_of(s.cbegin(), s.cend(), [](const char &c){ return std::isspace(c); }))
+    if (!s.empty() && std::all_of(s.cbegin(), s.cend(), [](const char &c) { return std::isspace(c); }))
     {
         std::string message("String '" + s + "' with ");
         message += (id != nullptr) ? "null " : "";
         message += "ID ";
         message += (id != nullptr) ? "" : id;
-        message += " cannot be handled. We must refuse to write a refdata String"
-            "field for a non-empty string that contains only whitespace, "
-            "because it will not be read correctly by TinyXML2.";
+        message +=
+                " cannot be handled. We must refuse to write a refdata String"
+                "field for a non-empty string that contains only whitespace, "
+                "because it will not be read correctly by TinyXML2.";
         GMX_THROW(TestException(message));
     }
 }

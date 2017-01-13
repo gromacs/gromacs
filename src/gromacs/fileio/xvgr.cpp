@@ -70,7 +70,7 @@ static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
 {
     /* Supported greek letter names and corresponding xmgrace/xmgr symbols */
     const char *sym[]  = { "beta", "chi", "delta", "eta", "lambda", "mu", "omega", "phi", "psi", "rho", "theta", nullptr };
-    const char  symc[] = { 'b',    'c',   'd',     'h',   'l',      'm',  'w',     'f',   'y',   'r',   'q',     '\0' };
+    const char  symc[] = { 'b', 'c', 'd', 'h', 'l', 'm', 'w', 'f', 'y', 'r', 'q', '\0' };
     int         xvgf;
     gmx_bool    bXVGR;
     int         g, b, i;
@@ -207,7 +207,7 @@ static char *xvgrstr(const char *gmx, const gmx_output_env_t *oenv,
                             break;
                     }
                     g += std::strlen(sym[i]);
-                    b  = std::strlen(buf);
+                    b = std::strlen(buf);
                 }
                 else
                 {
@@ -328,14 +328,16 @@ void xvgr_world(FILE *out, real xmin, real ymin, real xmax, real ymax,
 {
     if (output_env_get_print_xvgr_codes(oenv))
     {
-        fprintf(out, "@ world xmin %g\n"
+        fprintf(out,
+                "@ world xmin %g\n"
                 "@ world ymin %g\n"
                 "@ world xmax %g\n"
-                "@ world ymax %g\n", xmin, ymin, xmax, ymax);
+                "@ world ymax %g\n",
+                xmin, ymin, xmax, ymax);
     }
 }
 
-void xvgr_legend(FILE *out, int nsets, const char** setname,
+void xvgr_legend(FILE *out, int nsets, const char **setname,
                  const gmx_output_env_t *oenv)
 {
     int  i;
@@ -369,7 +371,7 @@ void xvgr_legend(FILE *out, int nsets, const char** setname,
 }
 
 void xvgr_new_dataset(FILE *out, int nr_first, int nsets,
-                      const char **setname,
+                      const char **           setname,
                       const gmx_output_env_t *oenv)
 {
     int  i;
@@ -416,7 +418,7 @@ static const char *LocTypeStr[] = { "view", "world" };
 static const char *BoxFillStr[] = { "none", "color", "pattern" };
 
 void xvgr_box(FILE *out,
-              int LocType,
+              int   LocType,
               real xmin, real ymin, real xmax, real ymax,
               int LineStyle, int LineWidth, int LineColor,
               int BoxFill, int BoxColor, int BoxPattern, const gmx_output_env_t *oenv)
@@ -440,8 +442,8 @@ void xvgr_box(FILE *out,
 /* reads a line into ptr, adjusting len and renewing ptr if neccesary */
 static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
 {
-    int len_remaining = *len;   /* remaining amount of allocated bytes in buf */
-    int curp          = 0;      /* current position in buf to read into */
+    int len_remaining = *len; /* remaining amount of allocated bytes in buf */
+    int curp          = 0;    /* current position in buf to read into */
 
     do
     {
@@ -450,7 +452,7 @@ static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
             if (*len + STRLEN < maxlen)
             {
                 /* This line is longer than len characters, let's increase len! */
-                *len          += STRLEN;
+                *len += STRLEN;
                 len_remaining += STRLEN;
                 srenew(*ptr, *len);
             }
@@ -466,7 +468,7 @@ static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
             /* if last line, skip */
             return nullptr;
         }
-        curp         += len_remaining - 1; /* overwrite the nul char in next iteration */
+        curp += len_remaining - 1; /* overwrite the nul char in next iteration */
         len_remaining = 1;
     } while ((std::strchr(*ptr, '\n') == nullptr) && (!feof(fp)));
 
@@ -507,7 +509,7 @@ static int wordcount(char *ptr)
             {
                 n++;
             }
-            else if ((i > 0)  && (!is[cur] && is[prev]))
+            else if ((i > 0) && (!is[cur] && is[prev]))
             {
                 n++;
             }
@@ -557,11 +559,11 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
     double **yy = nullptr;
     char *   tmpbuf;
     int      len = STRLEN;
-    *ny  = 0;
-    nny  = 0;
-    nx   = 0;
-    maxx = 0;
-    fp   = gmx_fio_fopen(fn, "r");
+    *ny          = 0;
+    nny          = 0;
+    nx           = 0;
+    maxx         = 0;
+    fp           = gmx_fio_fopen(fn, "r");
 
     snew(tmpbuf, len);
     if (subtitle != nullptr)
@@ -783,7 +785,8 @@ real **read_xvg_time(const char *fn,
                     }
                     else if (a == 1)
                     {
-                        fprintf(stderr, "Found only 1 number on line, "
+                        fprintf(stderr,
+                                "Found only 1 number on line, "
                                 "assuming no time is present.\n");
                         bHaveT = FALSE;
                         if (nsets_in > 1)
@@ -883,7 +886,8 @@ real **read_xvg_time(const char *fn,
                     {
                         if (a != narg)
                         {
-                            fprintf(stderr, "Invalid line in %s:\n%s"
+                            fprintf(stderr,
+                                    "Invalid line in %s:\n%s"
                                     "Using zeros for the last %d sets\n",
                                     fn, line0, narg - a);
                         }

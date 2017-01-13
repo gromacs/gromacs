@@ -48,7 +48,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 
 void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
-             int nChargePerturbed,
+             int  nChargePerturbed,
              dvec mu, dvec mu_B)
 {
     int    i, end, m;
@@ -57,8 +57,8 @@ void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
     end = start + homenr;
 
     mu_x = mu_y = mu_z = 0.0;
-#pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
-    num_threads(gmx_omp_nthreads_get(emntDefault))
+#pragma omp parallel for reduction(+ : mu_x, mu_y, mu_z) schedule(static) \
+                                           num_threads(gmx_omp_nthreads_get(emntDefault))
     for (i = start; i < end; i++)
     {
         // Trivial OpenMP region that cannot throw
@@ -78,8 +78,8 @@ void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
     if (nChargePerturbed)
     {
         mu_x = mu_y = mu_z = 0.0;
-#pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
-        num_threads(gmx_omp_nthreads_get(emntDefault))
+#pragma omp parallel for reduction(+ : mu_x, mu_y, mu_z) schedule(static) \
+                                           num_threads(gmx_omp_nthreads_get(emntDefault))
         for (i = start; i < end; i++)
         {
             // Trivial OpenMP region that cannot throw

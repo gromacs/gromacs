@@ -55,7 +55,7 @@ void nbnxn_free_aligned(void *ptr);
 void nbnxn_realloc_void(void **ptr,
                         int nbytes_copy, int nbytes_new,
                         nbnxn_alloc_t *ma,
-                        nbnxn_free_t  *mf);
+                        nbnxn_free_t * mf);
 
 /* Reallocate the nbnxn_atomdata_t for a size of n atoms */
 void nbnxn_atomdata_realloc(nbnxn_atomdata_t *nbat, int n);
@@ -69,7 +69,10 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
 
 enum
 {
-    enbnxninitcombruleDETECT, enbnxninitcombruleGEOM, enbnxninitcombruleLB, enbnxninitcombruleNONE
+    enbnxninitcombruleDETECT,
+    enbnxninitcombruleGEOM,
+    enbnxninitcombruleLB,
+    enbnxninitcombruleNONE
 };
 
 /* Initialize the non-bonded atom data structure.
@@ -78,15 +81,15 @@ enum
  * to the atom data structure.
  * enbnxninitcombrule sets what combination rule data gets stored in nbat.
  */
-void nbnxn_atomdata_init(FILE *fp,
+void nbnxn_atomdata_init(FILE *            fp,
                          nbnxn_atomdata_t *nbat,
-                         int nb_kernel_type,
-                         int enbnxninitcombrule,
+                         int               nb_kernel_type,
+                         int               enbnxninitcombrule,
                          int ntype, const real *nbfp,
-                         int n_energygroups,
-                         int nout,
+                         int            n_energygroups,
+                         int            nout,
                          nbnxn_alloc_t *alloc,
-                         nbnxn_free_t  *free);
+                         nbnxn_free_t * free);
 
 /* Copy the atom data to the non-bonded atom data structure */
 void nbnxn_atomdata_set(nbnxn_atomdata_t *   nbat,

@@ -109,7 +109,7 @@ void computeBoundingBox(int posCount, const rvec x[], rvec origin, rvec size)
     rvec_sub(maxBound, origin, size);
 }
 
-}   // namespace
+} // namespace
 
 namespace internal
 {
@@ -122,9 +122,9 @@ class AnalysisNeighborhoodSearchImpl
 {
 public:
     typedef AnalysisNeighborhoodPairSearch::ImplPointer
-        PairSearchImplPointer;
+            PairSearchImplPointer;
     typedef std::vector<PairSearchImplPointer> PairSearchList;
-    typedef std::vector<std::vector<int> > CellList;
+    typedef std::vector<std::vector<int>>      CellList;
 
     explicit AnalysisNeighborhoodSearchImpl(real cutoff);
     ~AnalysisNeighborhoodSearchImpl();
@@ -399,8 +399,8 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
     cutoff_   = cutoff;
     if (cutoff_ <= 0)
     {
-        cutoff_   = cutoff2_ = GMX_REAL_MAX;
-        bTryGrid_ = false;
+        cutoff_ = cutoff2_ = GMX_REAL_MAX;
+        bTryGrid_          = false;
     }
     else
     {
@@ -484,20 +484,20 @@ bool AnalysisNeighborhoodSearchImpl::checkGridSearchEfficiency(bool bForce)
         {
             if (range[dd] >= cellCount - 1)
             {
-                range[dd]     = cellCount - 1;
+                range[dd] = cellCount - 1;
                 coveredCells *= cellCount;
             }
             else if (coveredCount > cellCount)
             {
                 // The sum of range+1, range+2, ..., range+N/2, ... range+1.
                 coveredCells *= range[dd]
-                    + static_cast<real>((cellCount + 1) / 2 * (cellCount / 2 + 1)) / cellCount;
+                                + static_cast<real>((cellCount + 1) / 2 * (cellCount / 2 + 1)) / cellCount;
             }
             else
             {
                 // The sum of range+1, ..., 2*range+1, ..., 2*range+1, ... range+1.
                 coveredCells *= coveredCount
-                    - static_cast<real>(range[dd] * (range[dd] + 1)) / cellCount;
+                                - static_cast<real>(range[dd] * (range[dd] + 1)) / cellCount;
             }
         }
     }
@@ -576,7 +576,7 @@ bool AnalysisNeighborhoodSearchImpl::initGridCells(
             }
         }
         totalCellCount *= cellCount;
-        ncelldim_[dd]   = cellCount;
+        ncelldim_[dd] = cellCount;
     }
     if (totalCellCount <= 3)
     {
@@ -626,7 +626,7 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(
             return false;
     }
 
-    bool   bSingleCell[DIM] = {false, false, bXY_};
+    bool   bSingleCell[DIM] = { false, false, bXY_ };
     matrix box;
     copy_mat(pbc.box, box);
     // TODO: In principle, we could use the bounding box for periodic
@@ -765,34 +765,34 @@ void AnalysisNeighborhoodSearchImpl::initCellRange(
                 if (currCell[ZZ] < 0)
                 {
                     startOffset += cellShiftZY_;
-                    endOffset   += cellShiftZY_;
+                    endOffset += cellShiftZY_;
                 }
                 else if (currCell[ZZ] >= ncelldim_[ZZ])
                 {
                     startOffset -= cellShiftZY_;
-                    endOffset   -= cellShiftZY_;
+                    endOffset -= cellShiftZY_;
                 }
                 break;
             case XX:
                 if (currCell[ZZ] < 0)
                 {
                     startOffset += cellShiftZX_;
-                    endOffset   += cellShiftZX_;
+                    endOffset += cellShiftZX_;
                 }
                 else if (currCell[ZZ] >= ncelldim_[ZZ])
                 {
                     startOffset -= cellShiftZX_;
-                    endOffset   -= cellShiftZX_;
+                    endOffset -= cellShiftZX_;
                 }
                 if (currCell[YY] < 0)
                 {
                     startOffset += cellShiftYX_;
-                    endOffset   += cellShiftYX_;
+                    endOffset += cellShiftYX_;
                 }
                 else if (currCell[YY] >= ncelldim_[YY])
                 {
                     startOffset -= cellShiftYX_;
-                    endOffset   -= cellShiftYX_;
+                    endOffset -= cellShiftYX_;
                 }
                 break;
         }
@@ -822,7 +822,7 @@ bool AnalysisNeighborhoodSearchImpl::nextCell(
     int dim = 0;
     while (dim < DIM)
     {
-next:
+    next:
         ++cell[dim];
         if (cell[dim] > upperBound[dim])
         {
@@ -888,8 +888,8 @@ void AnalysisNeighborhoodSearchImpl::init(
         if (pbc->ePBC != epbcXY && pbc->ePBC != epbcXYZ)
         {
             std::string message
-                = formatString("Computations in the XY plane are not supported with PBC type '%s'",
-                               epbc_names[pbc->ePBC]);
+                    = formatString("Computations in the XY plane are not supported with PBC type '%s'",
+                                   epbc_names[pbc->ePBC]);
             GMX_THROW(NotImplementedError(message));
         }
         if (pbc->ePBC == epbcXYZ
@@ -972,7 +972,7 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
     if (testIndex_ >= 0 && testIndex_ < testPosCount_)
     {
         const int index
-            = (testIndices_ != nullptr ? testIndices_[testIndex] : testIndex);
+                = (testIndices_ != nullptr ? testIndices_[testIndex] : testIndex);
         if (search_.bGrid_)
         {
             search_.mapPointToGridCell(testPositions_[index], testcell_, xtest_);
@@ -990,8 +990,8 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
             if (exclIndex < search_.excls_->nr)
             {
                 const int startIndex = search_.excls_->index[exclIndex];
-                nexcl_ = search_.excls_->index[exclIndex + 1] - startIndex;
-                excl_  = &search_.excls_->a[startIndex];
+                nexcl_               = search_.excls_->index[exclIndex + 1] - startIndex;
+                excl_                = &search_.excls_->a[startIndex];
             }
             else
             {
@@ -1021,7 +1021,7 @@ bool AnalysisNeighborhoodPairSearchImpl::isExcluded(int j)
     if (exclind_ < nexcl_)
     {
         const int index
-            = (search_.refIndices_ != nullptr ? search_.refIndices_[j] : j);
+                = (search_.refIndices_ != nullptr ? search_.refIndices_[j] : j);
         const int refId = search_.refExclusionIds_[index];
         while (exclind_ < nexcl_ && excl_[exclind_] < refId)
         {
@@ -1083,9 +1083,9 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                     rvec_sub(search_.xref_[i], xtest_, dx);
                     rvec_sub(dx, shift, dx);
                     const real r2
-                        = search_.bXY_
-                            ? dx[XX] * dx[XX] + dx[YY] * dx[YY]
-                            : norm2(dx);
+                            = search_.bXY_
+                                      ? dx[XX] * dx[XX] + dx[YY] * dx[YY]
+                                      : norm2(dx);
                     if (r2 <= search_.cutoff2_)
                     {
                         if (action(i, r2, dx))
@@ -1120,9 +1120,9 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                     rvec_sub(search_.xref_[i], xtest_, dx);
                 }
                 const real r2
-                    = search_.bXY_
-                        ? dx[XX] * dx[XX] + dx[YY] * dx[YY]
-                        : norm2(dx);
+                        = search_.bXY_
+                                  ? dx[XX] * dx[XX] + dx[YY] * dx[YY]
+                                  : norm2(dx);
                 if (r2 <= search_.cutoff2_)
                 {
                     if (action(i, r2, dx))
@@ -1153,7 +1153,7 @@ void AnalysisNeighborhoodPairSearchImpl::initFoundPair(
     }
 }
 
-}   // namespace internal
+} // namespace internal
 
 namespace
 {
@@ -1223,7 +1223,7 @@ private:
     GMX_DISALLOW_ASSIGN(MindistAction);
 };
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * AnalysisNeighborhood::Impl
@@ -1233,7 +1233,7 @@ class AnalysisNeighborhood::Impl
 {
 public:
     typedef AnalysisNeighborhoodSearch::ImplPointer SearchImplPointer;
-    typedef std::vector<SearchImplPointer> SearchList;
+    typedef std::vector<SearchImplPointer>          SearchList;
 
     Impl()
         : cutoff_(0), excls_(nullptr), mode_(eSearchMode_Automatic), bXY_(false)
@@ -1350,8 +1350,8 @@ AnalysisNeighborhood::SearchMode AnalysisNeighborhoodSearch::mode() const
 {
     GMX_RELEASE_ASSERT(impl_, "Accessing an invalid search object");
     return (impl_->usesGridSearch()
-            ? AnalysisNeighborhood::eSearchMode_Grid
-            : AnalysisNeighborhood::eSearchMode_Simple);
+                    ? AnalysisNeighborhood::eSearchMode_Grid
+                    : AnalysisNeighborhood::eSearchMode_Simple);
 }
 
 bool AnalysisNeighborhoodSearch::isWithin(
@@ -1371,7 +1371,7 @@ real AnalysisNeighborhoodSearch::minimumDistance(
     pairSearch.startSearch(positions);
     real          minDist2     = impl_->cutoffSquared();
     int           closestPoint = -1;
-    rvec          dx           = {0.0, 0.0, 0.0};
+    rvec          dx           = { 0.0, 0.0, 0.0 };
     MindistAction action(&closestPoint, &minDist2, &dx);
     (void)pairSearch.searchNext(action);
     return std::sqrt(minDist2);
@@ -1385,7 +1385,7 @@ AnalysisNeighborhoodPair AnalysisNeighborhoodSearch::nearestPoint(
     pairSearch.startSearch(positions);
     real          minDist2     = impl_->cutoffSquared();
     int           closestPoint = -1;
-    rvec          dx           = {0.0, 0.0, 0.0};
+    rvec          dx           = { 0.0, 0.0, 0.0 };
     MindistAction action(&closestPoint, &minDist2, &dx);
     (void)pairSearch.searchNext(action);
     return AnalysisNeighborhoodPair(closestPoint, 0, minDist2, dx);

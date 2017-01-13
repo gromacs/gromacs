@@ -158,7 +158,7 @@ static void divide_bondeds_by_locality(int                 ntype,
              * index f_min) to thread t-1 by increasing ind.
              */
             ind[f_min] += ild[f_min].nat + 1;
-            nat_sum    += ild[f_min].nat;
+            nat_sum += ild[f_min].nat;
 
             /* Update the first unassigned atom index for this type */
             if (ind[f_min] < ild[f_min].il->nr)
@@ -255,7 +255,7 @@ static void divide_bondeds_over_threads(t_idef *idef,
                      */
                     while (nr_t > 0 && nr_t < idef->il[f].nr
                            && idef->iparams[idef->il[f].iatoms[nr_t]].disres.label
-                           == idef->iparams[idef->il[f].iatoms[nr_t - nat1]].disres.label)
+                                      == idef->iparams[idef->il[f].iatoms[nr_t - nat1]].disres.label)
                     {
                         nr_t += nat1;
                     }
@@ -303,7 +303,7 @@ static void divide_bondeds_over_threads(t_idef *idef,
                     fprintf(debug, " %4d",
                             (idef->il_thread_division[f * (nthread + 1) + t + 1]
                              - idef->il_thread_division[f * (nthread + 1) + t])
-                            / (1 + NRAL(f)));
+                                    / (1 + NRAL(f)));
                 }
                 fprintf(debug, "\n");
             }
@@ -312,8 +312,8 @@ static void divide_bondeds_over_threads(t_idef *idef,
 }
 
 //! Construct a reduction mask for which parts (blocks) of the force array are touched on which thread task
-static void calc_bonded_reduction_mask(int natoms,
-                                       f_thread_t *f_thread,
+static void calc_bonded_reduction_mask(int           natoms,
+                                       f_thread_t *  f_thread,
                                        const t_idef *idef,
                                        int thread, int nthread)
 {
@@ -333,10 +333,10 @@ static void calc_bonded_reduction_mask(int natoms,
     if (nblock > f_thread->block_nalloc)
     {
         f_thread->block_nalloc = over_alloc_large(nblock);
-        srenew(f_thread->mask,        f_thread->block_nalloc);
+        srenew(f_thread->mask, f_thread->block_nalloc);
         srenew(f_thread->block_index, f_thread->block_nalloc);
         sfree_aligned(f_thread->f);
-        snew_aligned(f_thread->f,     f_thread->block_nalloc * reduction_block_size, 128);
+        snew_aligned(f_thread->f, f_thread->block_nalloc * reduction_block_size, 128);
     }
 
     gmx_bitmask_t *mask = f_thread->mask;
@@ -401,7 +401,7 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
         return;
     }
 
-    /* Determine to which blocks each thread's bonded force calculation
+/* Determine to which blocks each thread's bonded force calculation
      * contributes. Store this as a mask for each thread.
      */
 #pragma omp parallel for num_threads(bt->nthreads) schedule(static)
@@ -423,7 +423,7 @@ void setup_bonded_threading(t_forcerec *fr, t_idef *idef)
     {
         bt->block_nalloc = over_alloc_large(nblock_tot);
         srenew(bt->block_index, bt->block_nalloc);
-        srenew(bt->mask,        bt->block_nalloc);
+        srenew(bt->mask, bt->block_nalloc);
     }
     bt->nblock_used = 0;
     for (int b = 0; b < nblock_tot; b++)

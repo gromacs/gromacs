@@ -50,7 +50,7 @@ t_hackblock **filter_ter(int nrtp, t_restp rtp[],
                          int nb, t_hackblock tb[],
                          const char *resname,
                          const char *rtpname,
-                         int *nret);
+                         int *       nret);
 /* Return a list of pointers to blocks that match residue name */
 
 t_hackblock *choose_ter(int nb, t_hackblock **tb, const char *title);

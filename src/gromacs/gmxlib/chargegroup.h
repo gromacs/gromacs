@@ -58,10 +58,10 @@ void calc_cgcm(FILE *log, int cg0, int cg1, const t_block *cgs,
  * is used.
  */
 
-void put_charge_groups_in_box (FILE *log, int cg0, int cg1,
-                               int ePBC, matrix box, t_block *cgs,
-                               rvec pos[],
-                               rvec cg_cm[]);
+void put_charge_groups_in_box(FILE *log, int cg0, int cg1,
+                              int ePBC, matrix box, t_block *cgs,
+                              rvec pos[],
+                              rvec cg_cm[]);
 /* This routine puts charge groups in the periodic box, keeping them
  * together.
  */

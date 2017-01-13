@@ -138,7 +138,7 @@ public:
         {
             const int ii = index[i];
             GMX_ASSERT(ii >= 0 && ii <= static_cast<int>(mapToFrameAtoms_.size())
-                       && mapToFrameAtoms_[ii] != -1,
+                               && mapToFrameAtoms_[ii] != -1,
                        "Invalid input atom index");
             tmpFrameAtoms_[i] = mapToFrameAtoms_[ii];
         }
@@ -234,16 +234,16 @@ struct gmx_ana_poscalc_t
     gmx::PositionCalculationCollection::Impl *coll;
 };
 
-const char * const gmx::PositionCalculationCollection::typeEnumValues[] = {
+const char *const gmx::PositionCalculationCollection::typeEnumValues[] = {
     "atom",
-    "res_com",       "res_cog",
-    "mol_com",       "mol_cog",
+    "res_com", "res_cog",
+    "mol_com", "mol_cog",
     "whole_res_com", "whole_res_cog",
     "whole_mol_com", "whole_mol_cog",
-    "part_res_com",  "part_res_cog",
-    "part_mol_com",  "part_mol_cog",
-    "dyn_res_com",   "dyn_res_cog",
-    "dyn_mol_com",   "dyn_mol_cog",
+    "part_res_com", "part_res_cog",
+    "part_mol_com", "part_mol_cog",
+    "dyn_res_com", "dyn_res_cog",
+    "dyn_mol_com", "dyn_mol_cog",
     nullptr,
 };
 
@@ -257,11 +257,16 @@ static e_index_t index_type_for_poscalc(e_poscalc_t type)
 {
     switch (type)
     {
-        case POS_ATOM:    return INDEX_ATOM;
-        case POS_RES:     return INDEX_RES;
-        case POS_MOL:     return INDEX_MOL;
-        case POS_ALL:     return INDEX_ALL;
-        case POS_ALL_PBC: return INDEX_ALL;
+        case POS_ATOM:
+            return INDEX_ATOM;
+        case POS_RES:
+            return INDEX_RES;
+        case POS_MOL:
+            return INDEX_MOL;
+        case POS_ALL:
+            return INDEX_ALL;
+        case POS_ALL_PBC:
+            return INDEX_ALL;
     }
     return INDEX_UNKNOWN;
 }
@@ -289,15 +294,15 @@ PositionCalculationCollection::RequiredTopologyInfo requiredTopologyInfo(e_posca
     return PositionCalculationCollection::RequiredTopologyInfo::None;
 }
 
-}   // namespace
+} // namespace
 
 // static
-void PositionCalculationCollection::typeFromEnum(const char *post,
+void PositionCalculationCollection::typeFromEnum(const char * post,
                                                  e_poscalc_t *type, int *flags)
 {
     if (post[0] == 'a')
     {
-        *type   = POS_ATOM;
+        *type = POS_ATOM;
         *flags &= ~(POS_MASS | POS_COMPLMAX | POS_COMPLWHOLE);
         return;
     }
@@ -308,18 +313,18 @@ void PositionCalculationCollection::typeFromEnum(const char *post,
     {
         *flags &= ~POS_COMPLMAX;
         *flags |= POS_COMPLWHOLE;
-        ptr     = post + 6;
+        ptr = post + 6;
     }
     else if (post[0] == 'p')
     {
         *flags &= ~POS_COMPLWHOLE;
         *flags |= POS_COMPLMAX;
-        ptr     = post + 5;
+        ptr = post + 5;
     }
     else if (post[0] == 'd')
     {
         *flags &= ~(POS_COMPLMAX | POS_COMPLWHOLE);
-        ptr     = post + 4;
+        ptr = post + 4;
     }
 
     if (ptr[0] == 'r')
@@ -481,22 +486,42 @@ void PositionCalculationCollection::printTree(FILE *fp) const
         fprintf(fp, "%2d ", i);
         switch (pc->type)
         {
-            case POS_ATOM:    fprintf(fp, "ATOM");    break;
-            case POS_RES:     fprintf(fp, "RES");     break;
-            case POS_MOL:     fprintf(fp, "MOL");     break;
-            case POS_ALL:     fprintf(fp, "ALL");     break;
-            case POS_ALL_PBC: fprintf(fp, "ALL_PBC"); break;
+            case POS_ATOM:
+                fprintf(fp, "ATOM");
+                break;
+            case POS_RES:
+                fprintf(fp, "RES");
+                break;
+            case POS_MOL:
+                fprintf(fp, "MOL");
+                break;
+            case POS_ALL:
+                fprintf(fp, "ALL");
+                break;
+            case POS_ALL_PBC:
+                fprintf(fp, "ALL_PBC");
+                break;
         }
         if (pc->itype != index_type_for_poscalc(pc->type))
         {
             fprintf(fp, " (");
             switch (pc->itype)
             {
-                case INDEX_UNKNOWN: fprintf(fp, "???");  break;
-                case INDEX_ATOM:    fprintf(fp, "ATOM"); break;
-                case INDEX_RES:     fprintf(fp, "RES");  break;
-                case INDEX_MOL:     fprintf(fp, "MOL");  break;
-                case INDEX_ALL:     fprintf(fp, "ALL");  break;
+                case INDEX_UNKNOWN:
+                    fprintf(fp, "???");
+                    break;
+                case INDEX_ATOM:
+                    fprintf(fp, "ATOM");
+                    break;
+                case INDEX_RES:
+                    fprintf(fp, "RES");
+                    break;
+                case INDEX_MOL:
+                    fprintf(fp, "MOL");
+                    break;
+                case INDEX_ALL:
+                    fprintf(fp, "ALL");
+                    break;
             }
             fprintf(fp, ")");
         }
@@ -729,7 +754,7 @@ static void set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool
     /* Set the type to POS_ATOM if the calculation in fact is such. */
     if (pc->b.nr == pc->b.nra)
     {
-        pc->type   = POS_ATOM;
+        pc->type = POS_ATOM;
         pc->flags &= ~(POS_MASS | POS_COMPLMAX | POS_COMPLWHOLE);
     }
     /* Set the POS_COMPLWHOLE flag if the calculation in fact always uses
@@ -932,7 +957,7 @@ static void merge_to_base(gmx_ana_poscalc_t *base, gmx_ana_poscalc_t *pc)
             base->b.index[bo] = i + 1;
             --bo;
         }
-        base->b.nr           += bnr;
+        base->b.nr += bnr;
         base->b.nalloc_index += bnr;
         sfree(base->b.a);
         base->b.nra      = g.isize;

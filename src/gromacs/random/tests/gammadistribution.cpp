@@ -108,7 +108,7 @@ TEST(GammaDistributionTest, AltParam)
     gmx::ThreeFry2x64<8>                     rngA(123456, gmx::RandomDomain::Other);
     gmx::ThreeFry2x64<8>                     rngB(123456, gmx::RandomDomain::Other);
     gmx::GammaDistribution<real>             distA(2.0, 5.0);
-    gmx::GammaDistribution<real>             distB;  // default parameters
+    gmx::GammaDistribution<real>             distB; // default parameters
     gmx::GammaDistribution<real>::param_type paramA(2.0, 5.0);
 
     EXPECT_NE(distA(rngA), distB(rngB));
@@ -119,6 +119,6 @@ TEST(GammaDistributionTest, AltParam)
     EXPECT_REAL_EQ_TOL(distA(rngA), distB(rngB, paramA), gmx::test::ulpTolerance(0));
 }
 
-}      // namespace anonymous
+} // namespace anonymous
 
-}      // namespace gmx
+} // namespace gmx

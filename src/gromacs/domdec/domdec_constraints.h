@@ -56,7 +56,7 @@ void dd_clear_local_constraint_indices(gmx_domdec_t *dd);
 /*! \brief Sets up communication and atom indices for all local+connected constraints */
 int dd_make_local_constraints(struct gmx_domdec_t *dd, int at_start,
                               const struct gmx_mtop_t *mtop,
-                              const int *cginfo,
+                              const int *              cginfo,
                               gmx_constr_t constr, int nrec,
                               struct t_ilist *il_local);
 

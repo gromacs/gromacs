@@ -61,27 +61,27 @@
 #endif /* GMX_NBNXN_SIMD_2XNN */
 
 #ifdef CALC_ENERGIES
-void nbnxn_kernel_ElecEw_VdwLJPSw_VF_2xnn(const nbnxn_pairlist_t    gmx_unused *nbl,
-                                          const nbnxn_atomdata_t    gmx_unused *nbat,
+void nbnxn_kernel_ElecEw_VdwLJPSw_VF_2xnn(const nbnxn_pairlist_t gmx_unused *nbl,
+                                          const nbnxn_atomdata_t gmx_unused *nbat,
                                           const interaction_const_t gmx_unused *ic,
-                                          rvec                      gmx_unused *shift_vec,
-                                          real                      gmx_unused *f,
-                                          real                      gmx_unused *fshift,
-                                          real                      gmx_unused *Vvdw,
-                                          real                      gmx_unused *Vc)
-#else /* CALC_ENERGIES */
-void nbnxn_kernel_ElecEw_VdwLJPSw_VF_2xnn(const nbnxn_pairlist_t    gmx_unused *nbl,
-                                          const nbnxn_atomdata_t    gmx_unused *nbat,
+                                          rvec gmx_unused *shift_vec,
+                                          real gmx_unused *f,
+                                          real gmx_unused *fshift,
+                                          real gmx_unused *Vvdw,
+                                          real gmx_unused *Vc)
+#else  /* CALC_ENERGIES */
+void nbnxn_kernel_ElecEw_VdwLJPSw_VF_2xnn(const nbnxn_pairlist_t gmx_unused *nbl,
+                                          const nbnxn_atomdata_t gmx_unused *nbat,
                                           const interaction_const_t gmx_unused *ic,
-                                          rvec                      gmx_unused *shift_vec,
-                                          real                      gmx_unused *f,
-                                          real                      gmx_unused *fshift)
+                                          rvec gmx_unused *shift_vec,
+                                          real gmx_unused *f,
+                                          real gmx_unused *fshift)
 #endif /* CALC_ENERGIES */
 #ifdef GMX_NBNXN_SIMD_2XNN
 #include "gromacs/mdlib/nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn_outer.h"
-#else /* GMX_NBNXN_SIMD_2XNN */
+#else  /* GMX_NBNXN_SIMD_2XNN */
 {
-/* No need to call gmx_incons() here, because the only function
+    /* No need to call gmx_incons() here, because the only function
  * that calls this one is also compiled conditionally. When
  * GMX_NBNXN_SIMD_2XNN is not defined, it will call no kernel functions and
  * instead call gmx_incons().

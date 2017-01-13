@@ -129,7 +129,7 @@ void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, char *tit
     }
     ps_font(out, efontHELV, fontsize);
     ps_rotate(out, rot0);
-    for (i = 0; (i < nres); )
+    for (i = 0; (i < nres);)
     {
         if (bPh[i])
         {
@@ -145,7 +145,7 @@ void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, char *tit
 
         if ((i % 18) == 0)
         {
-            inner  = outer;
+            inner = outer;
             outer += ring;
         }
     }
@@ -190,7 +190,7 @@ void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
     ps_font(out, efontHELV, fontsize);
 
     ps_rotate(out, rot0);
-    for (i = 0; (i < nres); )
+    for (i = 0; (i < nres);)
     {
         if ((i % 5) == 4)
         {
@@ -206,7 +206,7 @@ void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
 
         if ((i % (2 * angle)) == 0)
         {
-            inner  = outer;
+            inner = outer;
             outer += ring;
         }
     }
@@ -215,7 +215,7 @@ void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
 
 int gmx_wheel(int argc, char *argv[])
 {
-    const char *      desc[] = {
+    const char *desc[] = {
         "[THISMODULE] plots a helical wheel representation of your sequence.",
         "The input sequence is in the [REF].dat[ref] file where the first line contains",
         "the number of residues and each consecutive line contains a residue "
@@ -226,19 +226,15 @@ int gmx_wheel(int argc, char *argv[])
     static gmx_bool   bNum  = TRUE;
     static char *     title = nullptr;
     static int        r0    = 1;
-    t_pargs           pa [] = {
-        { "-r0",  FALSE, etINT, {&r0},
-          "The first residue number in the sequence" },
-        { "-rot0", FALSE, etREAL, {&rot0},
-          "Rotate around an angle initially (90 degrees makes sense)" },
-        { "-T",   FALSE, etSTR, {&title},
-          "Plot a title in the center of the wheel (must be shorter than 10 characters, or it will overwrite the wheel)" },
-        { "-nn",  FALSE, etBOOL, {&bNum},
-          "Toggle numbers" }
+    t_pargs           pa[]  = {
+        { "-r0", FALSE, etINT, { &r0 }, "The first residue number in the sequence" },
+        { "-rot0", FALSE, etREAL, { &rot0 }, "Rotate around an angle initially (90 degrees makes sense)" },
+        { "-T", FALSE, etSTR, { &title }, "Plot a title in the center of the wheel (must be shorter than 10 characters, or it will overwrite the wheel)" },
+        { "-nn", FALSE, etBOOL, { &bNum }, "Toggle numbers" }
     };
-    t_filenm          fnm[] = {
-        { efDAT, "-f", nullptr,  ffREAD  },
-        { efEPS, "-o", nullptr,  ffWRITE }
+    t_filenm fnm[] = {
+        { efDAT, "-f", nullptr, ffREAD },
+        { efEPS, "-o", nullptr, ffWRITE }
     };
 #define NFILE asize(fnm)
 

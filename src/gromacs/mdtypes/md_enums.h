@@ -65,7 +65,9 @@ extern const char *yesno_names[BOOL_NR + 1];
 //! \brief The two compartments for CompEL setups.
 enum eCompartment
 {
-    eCompA, eCompB, eCompNR
+    eCompA,
+    eCompB,
+    eCompNR
 };
 
 /*! \brief The channels that define with their COM the compartment boundaries in CompEL setups.
@@ -74,7 +76,9 @@ enum eCompartment
  */
 enum eChannel
 {
-    eChan0, eChan1, eChanNR
+    eChan0,
+    eChan1,
+    eChanNR
 };
 
 /*! \brief Temperature coupling type
@@ -83,7 +87,14 @@ enum eChannel
  */
 enum
 {
-    etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENMASSIVE, etcVRESCALE, etcNR
+    etcNO,
+    etcBERENDSEN,
+    etcNOSEHOOVER,
+    etcYES,
+    etcANDERSEN,
+    etcANDERSENMASSIVE,
+    etcVRESCALE,
+    etcNR
 };
 //! Strings corresponding to temperatyre coupling types
 extern const char *etcoupl_names[etcNR + 1];
@@ -98,7 +109,12 @@ extern const char *etcoupl_names[etcNR + 1];
  */
 enum
 {
-    epcNO, epcBERENDSEN, epcPARRINELLORAHMAN, epcISOTROPIC, epcMTTK, epcNR
+    epcNO,
+    epcBERENDSEN,
+    epcPARRINELLORAHMAN,
+    epcISOTROPIC,
+    epcMTTK,
+    epcNR
 };
 //! String corresponding to pressure coupling algorithm
 extern const char *epcoupl_names[epcNR + 1];
@@ -108,14 +124,25 @@ extern const char *epcoupl_names[epcNR + 1];
 //! Flat-bottom posres geometries
 enum
 {
-    efbposresZERO, efbposresSPHERE, efbposresCYLINDER, efbposresX, efbposresY, efbposresZ,
-    efbposresCYLINDERX, efbposresCYLINDERY, efbposresCYLINDERZ, efbposresNR
+    efbposresZERO,
+    efbposresSPHERE,
+    efbposresCYLINDER,
+    efbposresX,
+    efbposresY,
+    efbposresZ,
+    efbposresCYLINDERX,
+    efbposresCYLINDERY,
+    efbposresCYLINDERZ,
+    efbposresNR
 };
 
 //! Relative coordinate scaling type for position restraints.
 enum
 {
-    erscNO, erscALL, erscCOM, erscNR
+    erscNO,
+    erscALL,
+    erscCOM,
+    erscNR
 };
 //! String corresponding to relativ coordinate scaling.
 extern const char *erefscaling_names[erscNR + 1];
@@ -125,21 +152,39 @@ extern const char *erefscaling_names[erscNR + 1];
 //! Trotter decomposition extended variable parts.
 enum
 {
-    etrtNONE, etrtNHC, etrtBAROV, etrtBARONHC, etrtNHC2, etrtBAROV2, etrtBARONHC2,
-    etrtVELOCITY1, etrtVELOCITY2, etrtPOSITION, etrtSKIPALL, etrtNR
+    etrtNONE,
+    etrtNHC,
+    etrtBAROV,
+    etrtBARONHC,
+    etrtNHC2,
+    etrtBAROV2,
+    etrtBARONHC2,
+    etrtVELOCITY1,
+    etrtVELOCITY2,
+    etrtPOSITION,
+    etrtSKIPALL,
+    etrtNR
 };
 
 //! Sequenced parts of the trotter decomposition.
 enum
 {
-    ettTSEQ0,  ettTSEQ1,  ettTSEQ2,  ettTSEQ3,  ettTSEQ4, ettTSEQMAX
+    ettTSEQ0,
+    ettTSEQ1,
+    ettTSEQ2,
+    ettTSEQ3,
+    ettTSEQ4,
+    ettTSEQMAX
 };
 
 //! Pressure coupling type
 enum
 {
-    epctISOTROPIC, epctSEMIISOTROPIC, epctANISOTROPIC,
-    epctSURFACETENSION, epctNR
+    epctISOTROPIC,
+    epctSEMIISOTROPIC,
+    epctANISOTROPIC,
+    epctSURFACETENSION,
+    epctNR
 };
 //! String corresponding to pressure coupling type
 extern const char *epcoupltype_names[epctNR + 1];
@@ -149,12 +194,14 @@ extern const char *epcoupltype_names[epctNR + 1];
 //! \\brief Cutoff scheme
 enum
 {
-    ecutsVERLET, ecutsGROUP, ecutsNR
+    ecutsVERLET,
+    ecutsGROUP,
+    ecutsNR
 };
 //! String corresponding to cutoff scheme
 extern const char *ecutscheme_names[ecutsNR + 1];
 //! Macro to select the right string for cutoff scheme
-#define ECUTSCHEME(e)  enum_name(e, ecutsNR, ecutscheme_names)
+#define ECUTSCHEME(e) enum_name(e, ecutsNR, ecutscheme_names)
 
 /*! \brief Coulomb / VdW interaction modifiers.
  *
@@ -163,7 +210,13 @@ extern const char *ecutscheme_names[ecutsNR + 1];
  */
 enum eintmod
 {
-    eintmodPOTSHIFT_VERLET, eintmodPOTSHIFT, eintmodNONE, eintmodPOTSWITCH, eintmodEXACTCUTOFF, eintmodFORCESWITCH, eintmodNR
+    eintmodPOTSHIFT_VERLET,
+    eintmodPOTSHIFT,
+    eintmodNONE,
+    eintmodPOTSWITCH,
+    eintmodEXACTCUTOFF,
+    eintmodFORCESWITCH,
+    eintmodNR
 };
 //! String corresponding to interaction modifiers
 extern const char *eintmod_names[eintmodNR + 1];
@@ -178,28 +231,45 @@ extern const char *eintmod_names[eintmodNR + 1];
  */
 enum
 {
-    eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD,
-    eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC_UNSUPPORTED, eelENCADSHIFT,
-    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
+    eelCUT,
+    eelRF,
+    eelGRF,
+    eelPME,
+    eelEWALD,
+    eelP3M_AD,
+    eelPOISSON,
+    eelSWITCH,
+    eelSHIFT,
+    eelUSER,
+    eelGB_NOTUSED,
+    eelRF_NEC_UNSUPPORTED,
+    eelENCADSHIFT,
+    eelPMEUSER,
+    eelPMESWITCH,
+    eelPMEUSERSWITCH,
+    eelRF_ZERO,
+    eelNR
 };
 //! String corresponding to Coulomb treatment
 extern const char *eel_names[eelNR + 1];
 //! Macro for correct string for Coulomb treatment
-#define EELTYPE(e)     enum_name(e, eelNR, eel_names)
+#define EELTYPE(e) enum_name(e, eelNR, eel_names)
 
 //! Ewald geometry.
 enum
 {
-    eewg3D, eewg3DC, eewgNR
+    eewg3D,
+    eewg3DC,
+    eewgNR
 };
 //! String corresponding to Ewald geometry
 extern const char *eewg_names[eewgNR + 1];
 
 //! Macro telling us whether we use reaction field
-#define EEL_RF(e) ((e) == eelRF || (e) == eelGRF || (e) == eelRF_NEC_UNSUPPORTED || (e) == eelRF_ZERO )
+#define EEL_RF(e) ((e) == eelRF || (e) == eelGRF || (e) == eelRF_NEC_UNSUPPORTED || (e) == eelRF_ZERO)
 
 //! Macro telling us whether we use PME
-#define EEL_PME(e)  ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) == eelPMEUSERSWITCH || (e) == eelP3M_AD)
+#define EEL_PME(e) ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) == eelPMEUSERSWITCH || (e) == eelP3M_AD)
 //! Macro telling us whether we use PME or full Ewald
 #define EEL_PME_EWALD(e) (EEL_PME(e) || (e) == eelEWALD)
 //! Macro telling us whether we use full electrostatics of any sort
@@ -210,18 +280,25 @@ extern const char *eewg_names[eewgNR + 1];
 //! Van der Waals interaction treatment
 enum
 {
-    evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT,
-    evdwPME, evdwNR
+    evdwCUT,
+    evdwSWITCH,
+    evdwSHIFT,
+    evdwUSER,
+    evdwENCADSHIFT,
+    evdwPME,
+    evdwNR
 };
 //! String corresponding to Van der Waals treatment
 extern const char *evdw_names[evdwNR + 1];
 //! Macro for selecting correct string for VdW treatment
-#define EVDWTYPE(e)    enum_name(e, evdwNR, evdw_names)
+#define EVDWTYPE(e) enum_name(e, evdwNR, evdw_names)
 
 //! Type of long-range VdW treatment of combination rules
 enum
 {
-    eljpmeGEOM, eljpmeLB, eljpmeNR
+    eljpmeGEOM,
+    eljpmeLB,
+    eljpmeNR
 };
 //! String for LJPME combination rule treatment
 extern const char *eljpme_names[eljpmeNR + 1];
@@ -234,12 +311,14 @@ extern const char *eljpme_names[eljpmeNR + 1];
 //! Neighborsearching algorithm
 enum
 {
-    ensGRID, ensSIMPLE, ensNR
+    ensGRID,
+    ensSIMPLE,
+    ensNR
 };
 //! String corresponding to neighborsearching
 extern const char *ens_names[ensNR + 1];
 //! Macro for correct NS algorithm
-#define ENS(e)         enum_name(e, ensNR, ens_names)
+#define ENS(e) enum_name(e, ensNR, ens_names)
 
 /*! \brief Integrator algorithm
  *
@@ -251,12 +330,24 @@ extern const char *ens_names[ensNR + 1];
  */
 enum
 {
-    eiMD, eiSteep, eiCG, eiBD, eiSD2_REMOVED, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
+    eiMD,
+    eiSteep,
+    eiCG,
+    eiBD,
+    eiSD2_REMOVED,
+    eiNM,
+    eiLBFGS,
+    eiTPI,
+    eiTPIC,
+    eiSD1,
+    eiVV,
+    eiVVAK,
+    eiNR
 };
 //! Name of the integrator algorithm
 extern const char *ei_names[eiNR + 1];
 //! Macro returning integrator string
-#define EI(e)          enum_name(e, eiNR, ei_names)
+#define EI(e) enum_name(e, eiNR, ei_names)
 //! Do we use velocity Verlet
 #define EI_VV(e) ((e) == eiVV || (e) == eiVVAK)
 //! Do we use molecular dynamics
@@ -278,7 +369,9 @@ extern const char *ei_names[eiNR + 1];
 //! Constraint algorithm
 enum
 {
-    econtLINCS, econtSHAKE, econtNR
+    econtLINCS,
+    econtSHAKE,
+    econtNR
 };
 //! String corresponding to constraint algorithm
 extern const char *econstr_names[econtNR + 1];
@@ -288,52 +381,67 @@ extern const char *econstr_names[econtNR + 1];
 //! Distance restraint refinement algorithm
 enum
 {
-    edrNone, edrSimple, edrEnsemble, edrNR
+    edrNone,
+    edrSimple,
+    edrEnsemble,
+    edrNR
 };
 //! String corresponding to distance restraint algorithm
 extern const char *edisre_names[edrNR + 1];
 //! Macro to select the right disre algorithm string
-#define EDISRETYPE(e)  enum_name(e, edrNR, edisre_names)
+#define EDISRETYPE(e) enum_name(e, edrNR, edisre_names)
 
 //! Distance restraints weighting type
 enum
 {
-    edrwConservative, edrwEqual, edrwNR
+    edrwConservative,
+    edrwEqual,
+    edrwNR
 };
 //! String corresponding to distance restraint weighting
 extern const char *edisreweighting_names[edrwNR + 1];
 //! Macro corresponding to dr weighting
-#define EDISREWEIGHTING(e)  enum_name(e, edrwNR, edisreweighting_names)
+#define EDISREWEIGHTING(e) enum_name(e, edrwNR, edisreweighting_names)
 
 //! Combination rule algorithm.
 enum
 {
-    eCOMB_NONE, eCOMB_GEOMETRIC, eCOMB_ARITHMETIC, eCOMB_GEOM_SIG_EPS, eCOMB_NR
+    eCOMB_NONE,
+    eCOMB_GEOMETRIC,
+    eCOMB_ARITHMETIC,
+    eCOMB_GEOM_SIG_EPS,
+    eCOMB_NR
 };
 //! String for combination rule algorithm
 extern const char *ecomb_names[eCOMB_NR + 1];
 //! Macro to select the comb rule string
-#define ECOMBNAME(e)   enum_name(e, eCOMB_NR, ecomb_names)
+#define ECOMBNAME(e) enum_name(e, eCOMB_NR, ecomb_names)
 
 //! Van der Waals potential.
 enum
 {
-    eNBF_NONE, eNBF_LJ, eNBF_BHAM, eNBF_NR
+    eNBF_NONE,
+    eNBF_LJ,
+    eNBF_BHAM,
+    eNBF_NR
 };
 //! String corresponding to Van der Waals potential
 extern const char *enbf_names[eNBF_NR + 1];
 //! Macro for correct VdW potential string
-#define ENBFNAME(e)    enum_name(e, eNBF_NR, enbf_names)
+#define ENBFNAME(e) enum_name(e, eNBF_NR, enbf_names)
 
 //! Simulated tempering methods.
 enum
 {
-    esimtempGEOMETRIC, esimtempEXPONENTIAL, esimtempLINEAR, esimtempNR
+    esimtempGEOMETRIC,
+    esimtempEXPONENTIAL,
+    esimtempLINEAR,
+    esimtempNR
 };
 //! String corresponding to simulated tempering
 extern const char *esimtemp_names[esimtempNR + 1];
 //! Macro for correct tempering string
-#define ESIMTEMP(e)    enum_name(e, esimtempNR, esimtemp_names)
+#define ESIMTEMP(e) enum_name(e, esimtempNR, esimtemp_names)
 
 /*! \brief Free energy perturbation type
  *
@@ -346,17 +454,29 @@ extern const char *esimtemp_names[esimtempNR + 1];
  */
 enum
 {
-    efepNO, efepYES, efepSTATIC, efepSLOWGROWTH, efepEXPANDED, efepNR
+    efepNO,
+    efepYES,
+    efepSTATIC,
+    efepSLOWGROWTH,
+    efepEXPANDED,
+    efepNR
 };
 //! String corresponding to FEP type.
 extern const char *efep_names[efepNR + 1];
 //! Macro corresponding to FEP string.
-#define EFEPTYPE(e)    enum_name(e, efepNR, efep_names)
+#define EFEPTYPE(e) enum_name(e, efepNR, efep_names)
 
 //! Free energy pertubation coupling types.
 enum
 {
-    efptFEP, efptMASS, efptCOUL, efptVDW, efptBONDED, efptRESTRAINT, efptTEMPERATURE, efptNR
+    efptFEP,
+    efptMASS,
+    efptCOUL,
+    efptVDW,
+    efptBONDED,
+    efptRESTRAINT,
+    efptTEMPERATURE,
+    efptNR
 };
 //! String for FEP coupling type
 extern const char *efpt_names[efptNR + 1];
@@ -371,7 +491,11 @@ extern const char *efpt_singular_names[efptNR + 1];
  */
 enum
 {
-    edHdLPrintEnergyNO, edHdLPrintEnergyTOTAL, edHdLPrintEnergyPOTENTIAL, edHdLPrintEnergyYES, edHdLPrintEnergyNR
+    edHdLPrintEnergyNO,
+    edHdLPrintEnergyTOTAL,
+    edHdLPrintEnergyPOTENTIAL,
+    edHdLPrintEnergyYES,
+    edHdLPrintEnergyNR
 };
 //! String corresponding to printing of free energy
 extern const char *edHdLPrintEnergy_names[edHdLPrintEnergyNR + 1];
@@ -388,7 +512,13 @@ extern const char *edHdLPrintEnergy_names[edHdLPrintEnergyNR + 1];
  */
 enum
 {
-    elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsWL, elamstatsWWL, elamstatsNR
+    elamstatsNO,
+    elamstatsMETROPOLIS,
+    elamstatsBARKER,
+    elamstatsMINVAR,
+    elamstatsWL,
+    elamstatsWWL,
+    elamstatsNR
 };
 //! String corresponding to lambda weights
 extern const char *elamstats_names[elamstatsNR + 1];
@@ -409,7 +539,12 @@ extern const char *elamstats_names[elamstatsNR + 1];
  */
 enum
 {
-    elmcmoveNO, elmcmoveMETROPOLIS, elmcmoveBARKER, elmcmoveGIBBS, elmcmoveMETGIBBS, elmcmoveNR
+    elmcmoveNO,
+    elmcmoveMETROPOLIS,
+    elmcmoveBARKER,
+    elmcmoveGIBBS,
+    elmcmoveMETGIBBS,
+    elmcmoveNR
 };
 //! String corresponding to lambda moves
 extern const char *elmcmove_names[elmcmoveNR + 1];
@@ -428,7 +563,14 @@ extern const char *elmcmove_names[elmcmoveNR + 1];
  */
 enum
 {
-    elmceqNO, elmceqYES, elmceqWLDELTA, elmceqNUMATLAM, elmceqSTEPS, elmceqSAMPLES, elmceqRATIO, elmceqNR
+    elmceqNO,
+    elmceqYES,
+    elmceqWLDELTA,
+    elmceqNUMATLAM,
+    elmceqSTEPS,
+    elmceqSAMPLES,
+    elmceqRATIO,
+    elmceqNR
 };
 //! String corresponding to equilibrium algorithm
 extern const char *elmceq_names[elmceqNR + 1];
@@ -439,7 +581,9 @@ extern const char *elmceq_names[elmceqNR + 1];
  */
 enum
 {
-    esepdhdlfileYES, esepdhdlfileNO, esepdhdlfileNR
+    esepdhdlfileYES,
+    esepdhdlfileNO,
+    esepdhdlfileNR
 };
 //! String corresponding to separate DHDL file selection
 extern const char *separate_dhdl_file_names[esepdhdlfileNR + 1];
@@ -452,7 +596,9 @@ extern const char *separate_dhdl_file_names[esepdhdlfileNR + 1];
  */
 enum
 {
-    edhdlderivativesYES, edhdlderivativesNO, edhdlderivativesNR
+    edhdlderivativesYES,
+    edhdlderivativesNO,
+    edhdlderivativesNR
 };
 //! String for DHDL derivatives
 extern const char *dhdl_derivatives_names[edhdlderivativesNR + 1];
@@ -465,47 +611,63 @@ extern const char *dhdl_derivatives_names[edhdlderivativesNR + 1];
  */
 enum
 {
-    esolNO, esolSPC, esolTIP4P, esolNR
+    esolNO,
+    esolSPC,
+    esolTIP4P,
+    esolNR
 };
 //! String corresponding to solvent type
 extern const char *esol_names[esolNR + 1];
 //! Macro lest we print the wrong solvent model string
-#define ESOLTYPE(e)    enum_name(e, esolNR, esol_names)
+#define ESOLTYPE(e) enum_name(e, esolNR, esol_names)
 
 //! Dispersion correction.
 enum
 {
-    edispcNO, edispcEnerPres, edispcEner, edispcAllEnerPres, edispcAllEner, edispcNR
+    edispcNO,
+    edispcEnerPres,
+    edispcEner,
+    edispcAllEnerPres,
+    edispcAllEner,
+    edispcNR
 };
 //! String corresponding to dispersion corrections
 extern const char *edispc_names[edispcNR + 1];
 //! Macro for dispcorr string
-#define EDISPCORR(e)   enum_name(e, edispcNR, edispc_names)
+#define EDISPCORR(e) enum_name(e, edispcNR, edispc_names)
 
 //! Center of mass motion removal algorithm.
 enum
 {
-    ecmLINEAR, ecmANGULAR, ecmNO, ecmNR
+    ecmLINEAR,
+    ecmANGULAR,
+    ecmNO,
+    ecmNR
 };
 //! String corresponding to COM removal
 extern const char *ecm_names[ecmNR + 1];
 //! Macro for COM removal string
-#define ECOM(e)        enum_name(e, ecmNR, ecm_names)
+#define ECOM(e) enum_name(e, ecmNR, ecm_names)
 
 //! Algorithm for simulated annealing.
 enum
 {
-    eannNO, eannSINGLE, eannPERIODIC, eannNR
+    eannNO,
+    eannSINGLE,
+    eannPERIODIC,
+    eannNR
 };
 //! String for simulated annealing
 extern const char *eann_names[eannNR + 1];
 //! And macro for simulated annealing string
-#define EANNEAL(e)      enum_name(e, eannNR, eann_names)
+#define EANNEAL(e) enum_name(e, eannNR, eann_names)
 
 //! Implicit solvent algorithms.
 enum
 {
-    eisNO, eisGBSA, eisNR
+    eisNO,
+    eisGBSA,
+    eisNR
 };
 //! String corresponding to implicit solvent.
 extern const char *eis_names[eisNR + 1];
@@ -515,7 +677,10 @@ extern const char *eis_names[eisNR + 1];
 //! Algorithms for calculating GB radii.
 enum
 {
-    egbSTILL, egbHCT, egbOBC, egbNR
+    egbSTILL,
+    egbHCT,
+    egbOBC,
+    egbNR
 };
 //! String for GB algorithm name.
 extern const char *egb_names[egbNR + 1];
@@ -525,7 +690,10 @@ extern const char *egb_names[egbNR + 1];
 //! Surface area algorithm for implicit solvent.
 enum
 {
-    esaAPPROX, esaNO, esaSTILL, esaNR
+    esaAPPROX,
+    esaNO,
+    esaSTILL,
+    esaNR
 };
 //! String corresponding to surface area algorithm.
 extern const char *esa_names[esaNR + 1];
@@ -535,62 +703,89 @@ extern const char *esa_names[esaNR + 1];
 //! Wall types.
 enum
 {
-    ewt93, ewt104, ewtTABLE, ewt126, ewtNR
+    ewt93,
+    ewt104,
+    ewtTABLE,
+    ewt126,
+    ewtNR
 };
 //! String corresponding to wall type
 extern const char *ewt_names[ewtNR + 1];
 //! Macro for wall type string
-#define EWALLTYPE(e)   enum_name(e, ewtNR, ewt_names)
+#define EWALLTYPE(e) enum_name(e, ewtNR, ewt_names)
 
 //! Pulling algorithm.
 enum
 {
-    epullUMBRELLA, epullCONSTRAINT, epullCONST_F, epullFLATBOTTOM, epullFLATBOTTOMHIGH, epullEXTERNAL, epullNR
+    epullUMBRELLA,
+    epullCONSTRAINT,
+    epullCONST_F,
+    epullFLATBOTTOM,
+    epullFLATBOTTOMHIGH,
+    epullEXTERNAL,
+    epullNR
 };
 //! String for pulling algorithm
 extern const char *epull_names[epullNR + 1];
 //! Macro for pulling string
-#define EPULLTYPE(e)   enum_name(e, epullNR, epull_names)
+#define EPULLTYPE(e) enum_name(e, epullNR, epull_names)
 
 //! Control of pull groups
 enum
 {
-    epullgDIST, epullgDIR, epullgCYL, epullgDIRPBC, epullgDIRRELATIVE, epullgANGLE, epullgDIHEDRAL, epullgANGLEAXIS, epullgNR
+    epullgDIST,
+    epullgDIR,
+    epullgCYL,
+    epullgDIRPBC,
+    epullgDIRRELATIVE,
+    epullgANGLE,
+    epullgDIHEDRAL,
+    epullgANGLEAXIS,
+    epullgNR
 };
 //! String for pull groups
 extern const char *epullg_names[epullgNR + 1];
 //! Macro for pull group string
-#define EPULLGEOM(e)   enum_name(e, epullgNR, epullg_names)
+#define EPULLGEOM(e) enum_name(e, epullgNR, epullg_names)
 
 //! Enforced rotation groups.
 enum
 {
-    erotgISO, erotgISOPF,
-    erotgPM, erotgPMPF,
-    erotgRM, erotgRMPF,
-    erotgRM2, erotgRM2PF,
-    erotgFLEX, erotgFLEXT,
-    erotgFLEX2, erotgFLEX2T,
+    erotgISO,
+    erotgISOPF,
+    erotgPM,
+    erotgPMPF,
+    erotgRM,
+    erotgRMPF,
+    erotgRM2,
+    erotgRM2PF,
+    erotgFLEX,
+    erotgFLEXT,
+    erotgFLEX2,
+    erotgFLEX2T,
     erotgNR
 };
 //! Rotation group names
 extern const char *erotg_names[erotgNR + 1];
 //! Macro for rot group names
-#define EROTGEOM(e)    enum_name(e, erotgNR, erotg_names)
+#define EROTGEOM(e) enum_name(e, erotgNR, erotg_names)
 //! String for rotation group origin names
 extern const char *erotg_originnames[erotgNR + 1];
 //! Macro for rot group origin names
-#define EROTORIGIN(e)  enum_name(e, erotgOriginNR, erotg_originnames)
+#define EROTORIGIN(e) enum_name(e, erotgOriginNR, erotg_originnames)
 
 //! Rotation group fitting type
 enum
 {
-    erotgFitRMSD, erotgFitNORM, erotgFitPOT, erotgFitNR
+    erotgFitRMSD,
+    erotgFitNORM,
+    erotgFitPOT,
+    erotgFitNR
 };
 //! String corresponding to rotation group fitting
 extern const char *erotg_fitnames[erotgFitNR + 1];
 //! Macro for rot group fit names
-#define EROTFIT(e)     enum_name(e, erotgFitNR, erotg_fitnames)
+#define EROTFIT(e) enum_name(e, erotgFitNR, erotg_fitnames)
 
 /*! \brief Direction along which ion/water swaps happen
  *
@@ -598,12 +793,16 @@ extern const char *erotg_fitnames[erotgFitNR + 1];
  */
 enum eSwaptype
 {
-    eswapNO, eswapX, eswapY, eswapZ, eSwapTypesNR
+    eswapNO,
+    eswapX,
+    eswapY,
+    eswapZ,
+    eSwapTypesNR
 };
 //! Names for swapping
 extern const char *eSwapTypes_names[eSwapTypesNR + 1];
 //! Macro for swapping string
-#define ESWAPTYPE(e)   enum_name(e, eSwapTypesNR, eSwapTypes_names)
+#define ESWAPTYPE(e) enum_name(e, eSwapTypesNR, eSwapTypes_names)
 
 /*! \brief Swap group splitting type
  *
@@ -612,7 +811,10 @@ extern const char *eSwapTypes_names[eSwapTypesNR + 1];
  */
 enum
 {
-    eGrpSplit0, eGrpSplit1, eGrpSolvent, eSwapFixedGrpNR
+    eGrpSplit0,
+    eGrpSplit1,
+    eGrpSolvent,
+    eSwapFixedGrpNR
 };
 //! String for swap group splitting
 extern const char *eSwapFixedGrp_names[eSwapFixedGrpNR + 1];
@@ -620,32 +822,49 @@ extern const char *eSwapFixedGrp_names[eSwapFixedGrpNR + 1];
 //! QMMM methods.
 enum
 {
-    eQMmethodAM1, eQMmethodPM3, eQMmethodRHF,
-    eQMmethodUHF, eQMmethodDFT, eQMmethodB3LYP, eQMmethodMP2, eQMmethodCASSCF, eQMmethodB3LYPLAN,
-    eQMmethodDIRECT, eQMmethodNR
+    eQMmethodAM1,
+    eQMmethodPM3,
+    eQMmethodRHF,
+    eQMmethodUHF,
+    eQMmethodDFT,
+    eQMmethodB3LYP,
+    eQMmethodMP2,
+    eQMmethodCASSCF,
+    eQMmethodB3LYPLAN,
+    eQMmethodDIRECT,
+    eQMmethodNR
 };
 //! String corresponding to QMMM methods
 extern const char *eQMmethod_names[eQMmethodNR + 1];
 //! Macro to pick QMMM method name
-#define EQMMETHOD(e)   enum_name(e, eQMmethodNR, eQMmethod_names)
+#define EQMMETHOD(e) enum_name(e, eQMmethodNR, eQMmethod_names)
 
 //! QMMM basis function for QM part
 enum
 {
-    eQMbasisSTO3G, eQMbasisSTO3G2, eQMbasis321G,
-    eQMbasis321Gp, eQMbasis321dGp, eQMbasis621G,
-    eQMbasis631G, eQMbasis631Gp, eQMbasis631dGp,
-    eQMbasis6311G, eQMbasisNR
+    eQMbasisSTO3G,
+    eQMbasisSTO3G2,
+    eQMbasis321G,
+    eQMbasis321Gp,
+    eQMbasis321dGp,
+    eQMbasis621G,
+    eQMbasis631G,
+    eQMbasis631Gp,
+    eQMbasis631dGp,
+    eQMbasis6311G,
+    eQMbasisNR
 };
 //! Name for QMMM basis function
 extern const char *eQMbasis_names[eQMbasisNR + 1];
 //! Macro to pick right basis function string
-#define EQMBASIS(e)    enum_name(e, eQMbasisNR, eQMbasis_names)
+#define EQMBASIS(e) enum_name(e, eQMbasisNR, eQMbasis_names)
 
 //! QMMM scheme
 enum
 {
-    eQMMMschemenormal, eQMMMschemeoniom, eQMMMschemeNR
+    eQMMMschemenormal,
+    eQMMMschemeoniom,
+    eQMMMschemeNR
 };
 //! QMMMM scheme names
 extern const char *eQMMMscheme_names[eQMMMschemeNR + 1];

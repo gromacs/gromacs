@@ -71,20 +71,23 @@ static char **   incl  = nullptr;
 /* enum used for handling ifdefs */
 enum
 {
-    eifTRUE, eifFALSE, eifIGNORE, eifNR
+    eifTRUE,
+    eifFALSE,
+    eifIGNORE,
+    eifNR
 };
 
 typedef struct gmx_cpp
 {
-    FILE *            fp;
-    char *            path, *cwd;
-    char *            fn;
-    int               line_len;
-    char *            line;
-    int               line_nr;
-    int               nifdef;
-    int *             ifdefs;
-    struct   gmx_cpp *child, *parent;
+    FILE *          fp;
+    char *          path, *cwd;
+    char *          fn;
+    int             line_len;
+    char *          line;
+    int             line_nr;
+    int             nifdef;
+    int *           ifdefs;
+    struct gmx_cpp *child, *parent;
 } gmx_cpp;
 
 static gmx_bool is_word_end(char c)
@@ -795,7 +798,7 @@ char *cpp_error(gmx_cpp_t *handlep, int status)
         "Invalid file handle",
         "File not open", "Unknown error", "Error status out of range"
     };
-    gmx_cpp_t   handle = (gmx_cpp_t)*handlep;
+    gmx_cpp_t handle = (gmx_cpp_t)*handlep;
 
     if (!handle)
     {

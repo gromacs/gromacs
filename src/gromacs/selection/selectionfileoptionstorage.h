@@ -68,10 +68,10 @@ public:
     SelectionFileOptionStorage(const SelectionFileOption &settings,
                                SelectionOptionManager *   manager);
 
-    virtual OptionInfo &optionInfo() { return info_; }
-    virtual std::string typeString() const { return "file"; }
-    virtual int valueCount() const { return 0; }
-    virtual std::vector<Variant> defaultValues() const { return {}; }
+    virtual OptionInfo &             optionInfo() { return info_; }
+    virtual std::string              typeString() const { return "file"; }
+    virtual int                      valueCount() const { return 0; }
+    virtual std::vector<Variant>     defaultValues() const { return {}; }
     virtual std::vector<std::string> defaultValuesAsStrings() const { return {}; }
     virtual std::vector<Variant>
     normalizeValues(const std::vector<Variant> &values) const { return values; }

@@ -113,8 +113,8 @@ TEST_F(Simd4FloatingpointTest, abs)
 
 TEST_F(Simd4FloatingpointTest, neg)
 {
-    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_m1_m2_m3, -rSimd4_1_2_3);   // fneg(x)=-x
-    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_1_2_3,   -rSimd4_m1_m2_m3); // fneg(-x)=x
+    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_m1_m2_m3, -rSimd4_1_2_3); // fneg(x)=-x
+    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_1_2_3, -rSimd4_m1_m2_m3); // fneg(-x)=x
 }
 
 #if GMX_SIMD_HAVE_LOGICAL
@@ -297,11 +297,11 @@ TEST_F(Simd4FloatingpointTest, dotProduct)
 {
     Simd4Real v1 = setSimd4RealFrom3R(1, 4, 5);
     Simd4Real v2 = setSimd4RealFrom3R(3, 8, 2);
-#    if GMX_DOUBLE
+#if GMX_DOUBLE
     EXPECT_DOUBLE_EQ(45.0, dotProduct(v1, v2));
-#    else
+#else
     EXPECT_FLOAT_EQ(45.0, dotProduct(v1, v2));
-#    endif
+#endif
 }
 
 TEST_F(Simd4FloatingpointTest, transpose)
@@ -309,10 +309,11 @@ TEST_F(Simd4FloatingpointTest, transpose)
     Simd4Real v0, v1, v2, v3;
     int       i;
     // aligned pointers
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH) p0[4 * GMX_SIMD4_WIDTH];
-    real * p1 = p0 + GMX_SIMD4_WIDTH;
-    real * p2 = p0 + 2 * GMX_SIMD4_WIDTH;
-    real * p3 = p0 + 3 * GMX_SIMD4_WIDTH;
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)
+    p0[4 * GMX_SIMD4_WIDTH];
+    real *p1 = p0 + GMX_SIMD4_WIDTH;
+    real *p2 = p0 + 2 * GMX_SIMD4_WIDTH;
+    real *p3 = p0 + 3 * GMX_SIMD4_WIDTH;
 
     // Assign data with tens as row, single-digit as column
     for (i = 0; i < 4; i++)
@@ -344,13 +345,13 @@ TEST_F(Simd4FloatingpointTest, transpose)
     }
 }
 
-#endif      // GMX_SIMD4_HAVE_REAL
+#endif // GMX_SIMD4_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace
+} // namespace
 
 #endif // GMX_SIMD

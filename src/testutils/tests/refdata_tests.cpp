@@ -200,7 +200,7 @@ void checkCustomVector(TestReferenceChecker *checker, const dvec &value)
 
 TEST(ReferenceDataTest, HandlesSequenceOfCustomData)
 {
-    const dvec seq[] = { {-3, 4, 5}, {-2.3, 5, 0} };
+    const dvec seq[] = { { -3, 4, 5 }, { -2.3, 5, 0 } };
 
     {
         TestReferenceData    data(gmx::test::erefdataUpdateAll);
@@ -477,13 +477,14 @@ TEST(ReferenceDataTest, HandlesMissingReferenceDataFile)
     const int seq[5] = { -1, 3, 5, 2, 4 };
 
     EXPECT_NONFATAL_FAILURE({
-                                TestReferenceData data(gmx::test::erefdataCompare);
-                                TestReferenceChecker checker(data.rootChecker());
-                                checker.checkInteger(1, "int");
-                                checker.checkDouble(0.5, "real");
-                                checker.checkString("Test", "string");
-                                checker.checkSequenceArray(5, seq, "seq");
-                            }, "");
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkInteger(1, "int");
+        checker.checkDouble(0.5, "real");
+        checker.checkString("Test", "string");
+        checker.checkSequenceArray(5, seq, "seq");
+    },
+                            "");
 }
 
 

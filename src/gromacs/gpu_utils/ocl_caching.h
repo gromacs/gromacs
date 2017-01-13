@@ -96,8 +96,7 @@ makeProgramFromCache(const std::string &filename,
  * \throws InternalError  if an OpenCL error was encountered
  *         FileIOError    if the file could not be opened
  */
-void
-writeBinaryToCache(cl_program program, const std::string &filename);
+void writeBinaryToCache(cl_program program, const std::string &filename);
 
 } // namespace
 } // namespace

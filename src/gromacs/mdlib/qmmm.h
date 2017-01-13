@@ -50,38 +50,38 @@ struct t_QMMMrec;
 
 typedef struct
 {
-    int       nrQMatoms;               /* total nr of QM atoms              */
-    rvec *    xQM;                     /* shifted to center of box          */
-    int *     indexQM;                 /* atom i = atom indexQM[i] in mdrun */
-    int *     atomicnumberQM;          /* atomic numbers of QM atoms        */
-    real *    QMcharges;               /* atomic charges of QM atoms(ONIOM) */
+    int       nrQMatoms;      /* total nr of QM atoms              */
+    rvec *    xQM;            /* shifted to center of box          */
+    int *     indexQM;        /* atom i = atom indexQM[i] in mdrun */
+    int *     atomicnumberQM; /* atomic numbers of QM atoms        */
+    real *    QMcharges;      /* atomic charges of QM atoms(ONIOM) */
     int *     shiftQM;
-    int       QMcharge;                /* charge of the QM system           */
-    int       multiplicity;            /* multipicity (no of unpaired eln)  */
-    int       QMmethod;                /* see enums.h for all methods       */
-    int       QMbasis;                 /* see enums.h for all bases         */
-    int       nelectrons;              /* total number of elecs in QM region*/
-    gmx_bool  bTS;                     /* Optimize a TS, only steep, no md  */
-    gmx_bool  bOPT;                    /* Optimize QM subsys, only steep, no md  */
-    gmx_bool *frontatoms;              /* qm atoms on the QM side of a QM-MM bond */
+    int       QMcharge;     /* charge of the QM system           */
+    int       multiplicity; /* multipicity (no of unpaired eln)  */
+    int       QMmethod;     /* see enums.h for all methods       */
+    int       QMbasis;      /* see enums.h for all bases         */
+    int       nelectrons;   /* total number of elecs in QM region*/
+    gmx_bool  bTS;          /* Optimize a TS, only steep, no md  */
+    gmx_bool  bOPT;         /* Optimize QM subsys, only steep, no md  */
+    gmx_bool *frontatoms;   /* qm atoms on the QM side of a QM-MM bond */
     /* Gaussian specific stuff */
-    int      nQMcpus;                  /* no. of CPUs used for the QM calc. */
-    int      QMmem;                    /* memory for the gaussian calc.     */
-    int      accuracy;                 /* convergence criterium (E(-x))     */
-    gmx_bool cpmcscf;                  /* using cpmcscf(l1003)*/
+    int      nQMcpus;  /* no. of CPUs used for the QM calc. */
+    int      QMmem;    /* memory for the gaussian calc.     */
+    int      accuracy; /* convergence criterium (E(-x))     */
+    gmx_bool cpmcscf;  /* using cpmcscf(l1003)*/
     char *   gauss_dir;
     char *   gauss_exe;
     char *   devel_dir;
-    char *   orca_basename;           /* basename for I/O with orca        */
-    char *   orca_dir;                /* directory for ORCA                */
+    char *   orca_basename; /* basename for I/O with orca        */
+    char *   orca_dir;      /* directory for ORCA                */
     real *   c6;
     real *   c12;
     /* Surface hopping stuff */
-    gmx_bool bSH;               /* surface hopping (diabatic only)   */
-    real     SAon;              /* at which energy gap the SA starts */
-    real     SAoff;             /* at which energy gap the SA stops  */
-    int      SAsteps;           /* stepwise switchinng on the SA     */
-    int      SAstep;            /* current state of SA               */
+    gmx_bool bSH;     /* surface hopping (diabatic only)   */
+    real     SAon;    /* at which energy gap the SA starts */
+    real     SAoff;   /* at which energy gap the SA stops  */
+    int      SAsteps; /* stepwise switchinng on the SA     */
+    int      SAstep;  /* current state of SA               */
     int      CIdim;
     real *   CIvec1;
     real *   CIvec2;
@@ -94,12 +94,12 @@ typedef struct
 
 typedef struct
 {
-    int   nrMMatoms;            /* nr of MM atoms, updated every step*/
-    rvec *xMM;                  /* shifted to center of box          */
-    int * indexMM;              /* atom i = atom indexMM[I] in mdrun */
-    real *MMcharges;            /* MM point charges in std QMMM calc.*/
+    int   nrMMatoms; /* nr of MM atoms, updated every step*/
+    rvec *xMM;       /* shifted to center of box          */
+    int * indexMM;   /* atom i = atom indexMM[I] in mdrun */
+    real *MMcharges; /* MM point charges in std QMMM calc.*/
     int * shiftMM;
-    int * MMatomtype;           /* only important for semi-emp.      */
+    int * MMatomtype; /* only important for semi-emp.      */
     real  scalefactor;
     /* gaussian specific stuff */
     real *c6;
@@ -109,10 +109,10 @@ typedef struct
 
 typedef struct t_QMMMrec
 {
-    int       QMMMscheme;       /* ONIOM (multi-layer) or normal          */
-    int       nrQMlayers;       /* number of QM layers (total layers +1 (MM)) */
-    t_QMrec **qm;               /* atoms and run params for each QM group */
-    t_MMrec * mm;               /* there can only be one MM subsystem !   */
+    int       QMMMscheme; /* ONIOM (multi-layer) or normal          */
+    int       nrQMlayers; /* number of QM layers (total layers +1 (MM)) */
+    t_QMrec **qm;         /* atoms and run params for each QM group */
+    t_MMrec * mm;         /* there can only be one MM subsystem !   */
 } t_QMMMrec;
 
 void atomic_number(int nr, char ***atomtype, int *nucnum);

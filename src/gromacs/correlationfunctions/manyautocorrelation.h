@@ -68,6 +68,6 @@
  * \return fft error code, or zero if everything went fine (see fft/fft.h)
  * \throws gmx::InconsistentInputError if the input is inconsistent.
  */
-int many_auto_correl(std::vector<std::vector<real> > *c);
+int many_auto_correl(std::vector<std::vector<real>> *c);
 
 #endif

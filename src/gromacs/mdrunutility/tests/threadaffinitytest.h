@@ -106,7 +106,7 @@ public:
     {
         using ::testing::Return;
         EXPECT_CALL(affinityAccess_, setCurrentThreadAffinityToCore(core))
-            .WillOnce(Return(false));
+                .WillOnce(Return(false));
     }
 
     void setAffinity(int nthread_local)

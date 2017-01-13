@@ -78,22 +78,22 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
 /*! \brief Mysterious CMAP coefficient matrix */
 const int cmap_coeff_matrix[] = {
-    1, 0, -3,  2, 0, 0,  0,  0, -3,  0,  9, -6,  2,  0, -6,  4,
-    0, 0,  0,  0, 0, 0,  0,  0,  3,  0, -9,  6, -2,  0,  6, -4,
-    0, 0,  0,  0, 0, 0,  0,  0,  0,  0,  9, -6,  0,  0, -6,  4,
-    0, 0,  3, -2, 0, 0,  0,  0,  0,  0, -9,  6,  0,  0,  6, -4,
-    0, 0,  0,  0, 1, 0, -3,  2, -2,  0,  6, -4,  1,  0, -3,  2,
-    0, 0,  0,  0, 0, 0,  0,  0, -1,  0,  3, -2,  1,  0, -3,  2,
-    0, 0,  0,  0, 0, 0,  0,  0,  0,  0, -3,  2,  0,  0,  3, -2,
-    0, 0,  0,  0, 0, 0,  3, -2,  0,  0, -6,  4,  0,  0,  3, -2,
-    0, 1, -2,  1, 0, 0,  0,  0,  0, -3,  6, -3,  0,  2, -4,  2,
-    0, 0,  0,  0, 0, 0,  0,  0,  0,  3, -6,  3,  0, -2,  4, -2,
-    0, 0,  0,  0, 0, 0,  0,  0,  0,  0, -3,  3,  0,  0,  2, -2,
-    0, 0, -1,  1, 0, 0,  0,  0,  0,  0,  3, -3,  0,  0, -2,  2,
-    0, 0,  0,  0, 0, 1, -2,  1,  0, -2,  4, -2,  0,  1, -2,  1,
-    0, 0,  0,  0, 0, 0,  0,  0,  0, -1,  2, -1,  0,  1, -2,  1,
-    0, 0,  0,  0, 0, 0,  0,  0,  0,  0,  1, -1,  0,  0, -1,  1,
-    0, 0,  0,  0, 0, 0, -1,  1,  0,  0,  2, -2,  0,  0, -1,  1
+    1, 0, -3, 2, 0, 0, 0, 0, -3, 0, 9, -6, 2, 0, -6, 4,
+    0, 0, 0, 0, 0, 0, 0, 0, 3, 0, -9, 6, -2, 0, 6, -4,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, -6, 0, 0, -6, 4,
+    0, 0, 3, -2, 0, 0, 0, 0, 0, 0, -9, 6, 0, 0, 6, -4,
+    0, 0, 0, 0, 1, 0, -3, 2, -2, 0, 6, -4, 1, 0, -3, 2,
+    0, 0, 0, 0, 0, 0, 0, 0, -1, 0, 3, -2, 1, 0, -3, 2,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -3, 2, 0, 0, 3, -2,
+    0, 0, 0, 0, 0, 0, 3, -2, 0, 0, -6, 4, 0, 0, 3, -2,
+    0, 1, -2, 1, 0, 0, 0, 0, 0, -3, 6, -3, 0, 2, -4, 2,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 3, -6, 3, 0, -2, 4, -2,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -3, 3, 0, 0, 2, -2,
+    0, 0, -1, 1, 0, 0, 0, 0, 0, 0, 3, -3, 0, 0, -2, 2,
+    0, 0, 0, 0, 0, 1, -2, 1, 0, -2, 4, -2, 0, 1, -2, 1,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, -1, 2, -1, 0, 1, -2, 1,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, 0, 0, -1, 1,
+    0, 0, 0, 0, 0, 0, -1, 1, 0, 0, 2, -2, 0, 0, -1, 1
 };
 
 
@@ -124,7 +124,7 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
  * Note: the potential is referenced to be +cb at infinite separation
  *       and zero at the equilibrium distance!
  */
-real morse_bonds(int nbonds,
+real morse_bonds(int           nbonds,
                  const t_iatom forceatoms[], const t_iparams forceparams[],
                  const rvec x[], rvec4 f[], rvec fshift[],
                  const t_pbc *pbc, const t_graph *g,
@@ -141,7 +141,7 @@ real morse_bonds(int nbonds,
     ivec       dt;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -155,10 +155,10 @@ real morse_bonds(int nbonds,
         beB = forceparams[type].morse.betaB;
         cbB = forceparams[type].morse.cbB;
 
-        L1 = one - lambda;                          /* 1 */
-        b0 = L1 * b0A + lambda * b0B;               /* 3 */
-        be = L1 * beA + lambda * beB;               /* 3 */
-        cb = L1 * cbA + lambda * cbB;               /* 3 */
+        L1 = one - lambda;            /* 1 */
+        b0 = L1 * b0A + lambda * b0B; /* 3 */
+        be = L1 * beA + lambda * beB; /* 3 */
+        cb = L1 * cbA + lambda * cbB; /* 3 */
 
         ki   = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3          */
         dr2  = iprod(dx, dx);                       /*   5          */
@@ -172,11 +172,11 @@ real morse_bonds(int nbonds,
             continue;
         }
 
-        omtemp   = one - temp;                                                                                                       /*   1          */
-        cbomtemp = cb * omtemp;                                                                                                      /*   1          */
-        vbond    = cbomtemp * omtemp;                                                                                                /*   1          */
-        fbond    = -two*be*temp*cbomtemp*gmx::invsqrt(dr2);                                                                          /*   9          */
-        vtot    += vbond;                                                                                                            /*   1          */
+        omtemp   = one - temp;                                      /*   1          */
+        cbomtemp = cb * omtemp;                                     /*   1          */
+        vbond    = cbomtemp * omtemp;                               /*   1          */
+        fbond    = -two * be * temp * cbomtemp * gmx::invsqrt(dr2); /*   9          */
+        vtot += vbond;                                              /*   1          */
 
         *dvdlambda += (cbB - cbA) * omtemp * omtemp - (2 - 2 * omtemp) * omtemp * cb * ((b0B - b0A) * be - (beB - beA) * (dr - b0)); /* 15 */
 
@@ -186,20 +186,20 @@ real morse_bonds(int nbonds,
             ki = IVEC2IS(dt);
         }
 
-        for (m = 0; (m < DIM); m++)                    /*  15          */
+        for (m = 0; (m < DIM); m++) /*  15          */
         {
-            fij                 = fbond * dx[m];
-            f[ai][m]           += fij;
-            f[aj][m]           -= fij;
-            fshift[ki][m]      += fij;
+            fij = fbond * dx[m];
+            f[ai][m] += fij;
+            f[aj][m] -= fij;
+            fshift[ki][m] += fij;
             fshift[CENTRAL][m] -= fij;
         }
-    }                                         /*  83 TOTAL    */
+    } /*  83 TOTAL    */
     return vtot;
 }
 
 //! \cond
-real cubic_bonds(int nbonds,
+real cubic_bonds(int           nbonds,
                  const t_iatom forceatoms[], const t_iparams forceparams[],
                  const rvec x[], rvec4 f[], rvec fshift[],
                  const t_pbc *pbc, const t_graph *g,
@@ -216,7 +216,7 @@ real cubic_bonds(int nbonds,
     ivec       dt;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -226,15 +226,15 @@ real cubic_bonds(int nbonds,
         kb   = forceparams[type].cubic.kb;
         kcub = forceparams[type].cubic.kcub;
 
-        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx);      /*   3          */
-        dr2 = iprod(dx, dx);                            /*   5          */
+        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3          */
+        dr2 = iprod(dx, dx);                       /*   5          */
 
         if (dr2 == 0.0)
         {
             continue;
         }
 
-        dr     = dr2 * gmx::invsqrt(dr2);                    /*  10          */
+        dr     = dr2 * gmx::invsqrt(dr2); /*  10          */
         dist   = dr - b0;
         kdist  = kb * dist;
         kdist2 = kdist * dist;
@@ -242,26 +242,26 @@ real cubic_bonds(int nbonds,
         vbond = kdist2 + kcub * kdist2 * dist;
         fbond = -(two * kdist + three * kdist2 * kcub) / dr;
 
-        vtot += vbond;        /* 21 */
+        vtot += vbond; /* 21 */
 
         if (g)
         {
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
             ki = IVEC2IS(dt);
         }
-        for (m = 0; (m < DIM); m++)                    /*  15          */
+        for (m = 0; (m < DIM); m++) /*  15          */
         {
-            fij                 = fbond * dx[m];
-            f[ai][m]           += fij;
-            f[aj][m]           -= fij;
-            fshift[ki][m]      += fij;
+            fij = fbond * dx[m];
+            f[ai][m] += fij;
+            f[aj][m] -= fij;
+            fshift[ki][m] += fij;
             fshift[CENTRAL][m] -= fij;
         }
-    }                                         /*  54 TOTAL    */
+    } /*  54 TOTAL    */
     return vtot;
 }
 
-real FENE_bonds(int nbonds,
+real FENE_bonds(int           nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
                 const rvec x[], rvec4 f[], rvec fshift[],
                 const t_pbc *pbc, const t_graph *g,
@@ -278,7 +278,7 @@ real FENE_bonds(int nbonds,
     ivec       dt;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -287,8 +287,8 @@ real FENE_bonds(int nbonds,
         bm = forceparams[type].fene.bm;
         kb = forceparams[type].fene.kb;
 
-        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx);      /*   3          */
-        dr2 = iprod(dx, dx);                            /*   5          */
+        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3          */
+        dr2 = iprod(dx, dx);                       /*   5          */
 
         if (dr2 == 0.0)
         {
@@ -308,25 +308,25 @@ real FENE_bonds(int nbonds,
 
         omdr2obm2 = one - dr2 / bm2;
 
-        vbond = -half*kb*bm2*std::log(omdr2obm2);
+        vbond = -half * kb * bm2 * std::log(omdr2obm2);
         fbond = -kb / omdr2obm2;
 
-        vtot += vbond;        /* 35 */
+        vtot += vbond; /* 35 */
 
         if (g)
         {
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
             ki = IVEC2IS(dt);
         }
-        for (m = 0; (m < DIM); m++)                    /*  15          */
+        for (m = 0; (m < DIM); m++) /*  15          */
         {
-            fij                 = fbond * dx[m];
-            f[ai][m]           += fij;
-            f[aj][m]           -= fij;
-            fshift[ki][m]      += fij;
+            fij = fbond * dx[m];
+            f[ai][m] += fij;
+            f[aj][m] -= fij;
+            fshift[ki][m] += fij;
             fshift[CENTRAL][m] -= fij;
         }
-    }                                         /*  58 TOTAL    */
+    } /*  58 TOTAL    */
     return vtot;
 }
 
@@ -357,7 +357,7 @@ real harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
 }
 
 
-real bonds(int nbonds,
+real bonds(int           nbonds,
            const t_iatom forceatoms[], const t_iparams forceparams[],
            const rvec x[], rvec4 f[], rvec fshift[],
            const t_pbc *pbc, const t_graph *g,
@@ -371,15 +371,15 @@ real bonds(int nbonds,
     ivec dt;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
         aj   = forceatoms[i++];
 
-        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx);  /*   3      */
-        dr2 = iprod(dx, dx);                        /*   5		*/
-        dr  = dr2 * gmx::invsqrt(dr2);              /*  10		*/
+        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3      */
+        dr2 = iprod(dx, dx);                       /*   5		*/
+        dr  = dr2 * gmx::invsqrt(dr2);             /*  10		*/
 
         *dvdlambda += harmonic(forceparams[type].harmonic.krA,
                                forceparams[type].harmonic.krB,
@@ -393,7 +393,7 @@ real bonds(int nbonds,
         }
 
 
-        vtot  += vbond;             /* 1*/
+        vtot += vbond;              /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
 #ifdef DEBUG
         if (debug)
@@ -407,19 +407,19 @@ real bonds(int nbonds,
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
             ki = IVEC2IS(dt);
         }
-        for (m = 0; (m < DIM); m++)     /*  15		*/
+        for (m = 0; (m < DIM); m++) /*  15		*/
         {
-            fij                 = fbond * dx[m];
-            f[ai][m]           += fij;
-            f[aj][m]           -= fij;
-            fshift[ki][m]      += fij;
+            fij = fbond * dx[m];
+            f[ai][m] += fij;
+            f[aj][m] -= fij;
+            fshift[ki][m] += fij;
             fshift[CENTRAL][m] -= fij;
         }
-    }               /* 59 TOTAL	*/
+    } /* 59 TOTAL	*/
     return vtot;
 }
 
-real restraint_bonds(int nbonds,
+real restraint_bonds(int           nbonds,
                      const t_iatom forceatoms[], const t_iparams forceparams[],
                      const rvec x[], rvec4 f[], rvec fshift[],
                      const t_pbc *pbc, const t_graph *g,
@@ -438,32 +438,32 @@ real restraint_bonds(int nbonds,
     L1 = 1.0 - lambda;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
         aj   = forceatoms[i++];
 
-        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx);  /*   3      */
-        dr2 = iprod(dx, dx);                        /*   5		*/
-        dr  = dr2 * gmx::invsqrt(dr2);              /*  10		*/
+        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3      */
+        dr2 = iprod(dx, dx);                       /*   5		*/
+        dr  = dr2 * gmx::invsqrt(dr2);             /*  10		*/
 
         low  = L1 * forceparams[type].restraint.lowA + lambda * forceparams[type].restraint.lowB;
-        dlow =   -forceparams[type].restraint.lowA +        forceparams[type].restraint.lowB;
+        dlow = -forceparams[type].restraint.lowA + forceparams[type].restraint.lowB;
         up1  = L1 * forceparams[type].restraint.up1A + lambda * forceparams[type].restraint.up1B;
-        dup1 =   -forceparams[type].restraint.up1A +        forceparams[type].restraint.up1B;
+        dup1 = -forceparams[type].restraint.up1A + forceparams[type].restraint.up1B;
         up2  = L1 * forceparams[type].restraint.up2A + lambda * forceparams[type].restraint.up2B;
-        dup2 =   -forceparams[type].restraint.up2A +        forceparams[type].restraint.up2B;
-        k    = L1 * forceparams[type].restraint.kA   + lambda * forceparams[type].restraint.kB;
-        dk   =   -forceparams[type].restraint.kA   +        forceparams[type].restraint.kB;
+        dup2 = -forceparams[type].restraint.up2A + forceparams[type].restraint.up2B;
+        k    = L1 * forceparams[type].restraint.kA + lambda * forceparams[type].restraint.kB;
+        dk   = -forceparams[type].restraint.kA + forceparams[type].restraint.kB;
         /* 24 */
 
         if (dr < low)
         {
-            drh         = dr - low;
-            drh2        = drh * drh;
-            vbond       = 0.5 * k * drh2;
-            fbond       = -k * drh;
+            drh   = dr - low;
+            drh2  = drh * drh;
+            vbond = 0.5 * k * drh2;
+            fbond = -k * drh;
             *dvdlambda += 0.5 * dk * drh2 - k * dlow * drh;
         } /* 11 */
         else if (dr <= up1)
@@ -473,20 +473,20 @@ real restraint_bonds(int nbonds,
         }
         else if (dr <= up2)
         {
-            drh         = dr - up1;
-            drh2        = drh * drh;
-            vbond       = 0.5 * k * drh2;
-            fbond       = -k * drh;
+            drh   = dr - up1;
+            drh2  = drh * drh;
+            vbond = 0.5 * k * drh2;
+            fbond = -k * drh;
             *dvdlambda += 0.5 * dk * drh2 - k * dup1 * drh;
         } /* 11	*/
         else
         {
-            drh         = dr - up2;
-            vbond       = k * (up2 - up1) * (0.5 * (up2 - up1) + drh);
-            fbond       = -k * (up2 - up1);
+            drh   = dr - up2;
+            vbond = k * (up2 - up1) * (0.5 * (up2 - up1) + drh);
+            fbond = -k * (up2 - up1);
             *dvdlambda += dk * (up2 - up1) * (0.5 * (up2 - up1) + drh)
-                + k * (dup2 - dup1) * (up2 - up1 + drh)
-                - k * (up2 - up1) * dup2;
+                          + k * (dup2 - dup1) * (up2 - up1 + drh)
+                          - k * (up2 - up1) * dup2;
         }
 
         if (dr2 == 0.0)
@@ -494,7 +494,7 @@ real restraint_bonds(int nbonds,
             continue;
         }
 
-        vtot  += vbond;             /* 1*/
+        vtot += vbond;              /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
 #ifdef DEBUG
         if (debug)
@@ -508,20 +508,20 @@ real restraint_bonds(int nbonds,
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
             ki = IVEC2IS(dt);
         }
-        for (m = 0; (m < DIM); m++)             /*  15		*/
+        for (m = 0; (m < DIM); m++) /*  15		*/
         {
-            fij                 = fbond * dx[m];
-            f[ai][m]           += fij;
-            f[aj][m]           -= fij;
-            fshift[ki][m]      += fij;
+            fij = fbond * dx[m];
+            f[ai][m] += fij;
+            f[aj][m] -= fij;
+            fshift[ki][m] += fij;
             fshift[CENTRAL][m] -= fij;
         }
-    }                   /* 59 TOTAL	*/
+    } /* 59 TOTAL	*/
 
     return vtot;
 }
 
-real polarize(int nbonds,
+real polarize(int           nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
               const rvec x[], rvec4 f[], rvec fshift[],
               const t_pbc *pbc, const t_graph *g,
@@ -535,7 +535,7 @@ real polarize(int nbonds,
     ivec dt;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -546,9 +546,9 @@ real polarize(int nbonds,
             fprintf(debug, "POL: local ai = %d aj = %d ksh = %.3f\n", ai, aj, ksh);
         }
 
-        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx);                          /*   3      */
-        dr2 = iprod(dx, dx);                                                /*   5		*/
-        dr  = std::sqrt(dr2);                                               /*  10		*/
+        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3      */
+        dr2 = iprod(dx, dx);                       /*   5		*/
+        dr  = std::sqrt(dr2);                      /*  10		*/
 
         *dvdlambda += harmonic(ksh, ksh, 0, 0, dr, lambda, &vbond, &fbond); /*  19  */
 
@@ -557,7 +557,7 @@ real polarize(int nbonds,
             continue;
         }
 
-        vtot  += vbond;             /* 1*/
+        vtot += vbond;              /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
 
         if (g)
@@ -565,19 +565,19 @@ real polarize(int nbonds,
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
             ki = IVEC2IS(dt);
         }
-        for (m = 0; (m < DIM); m++)     /*  15		*/
+        for (m = 0; (m < DIM); m++) /*  15		*/
         {
-            fij                 = fbond * dx[m];
-            f[ai][m]           += fij;
-            f[aj][m]           -= fij;
-            fshift[ki][m]      += fij;
+            fij = fbond * dx[m];
+            f[ai][m] += fij;
+            f[aj][m] -= fij;
+            fshift[ki][m] += fij;
             fshift[CENTRAL][m] -= fij;
         }
-    }               /* 59 TOTAL	*/
+    } /* 59 TOTAL	*/
     return vtot;
 }
 
-real anharm_polarize(int nbonds,
+real anharm_polarize(int           nbonds,
                      const t_iatom forceatoms[], const t_iparams forceparams[],
                      const rvec x[], rvec4 f[], rvec fshift[],
                      const t_pbc *pbc, const t_graph *g,
@@ -591,7 +591,7 @@ real anharm_polarize(int nbonds,
     ivec dt;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type  = forceatoms[i++];
         ai    = forceatoms[i++];
@@ -604,9 +604,9 @@ real anharm_polarize(int nbonds,
             fprintf(debug, "POL: local ai = %d aj = %d ksh = %.3f\n", ai, aj, ksh);
         }
 
-        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx);                          /*   3      */
-        dr2 = iprod(dx, dx);                                                /*   5		*/
-        dr  = dr2 * gmx::invsqrt(dr2);                                      /*  10		*/
+        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3      */
+        dr2 = iprod(dx, dx);                       /*   5		*/
+        dr  = dr2 * gmx::invsqrt(dr2);             /*  10		*/
 
         *dvdlambda += harmonic(ksh, ksh, 0, 0, dr, lambda, &vbond, &fbond); /*  19  */
 
@@ -617,32 +617,32 @@ real anharm_polarize(int nbonds,
 
         if (dr > drcut)
         {
-            ddr    = dr - drcut;
-            ddr3   = ddr * ddr * ddr;
+            ddr  = dr - drcut;
+            ddr3 = ddr * ddr * ddr;
             vbond += khyp * ddr * ddr3;
             fbond -= 4 * khyp * ddr3;
         }
         fbond *= gmx::invsqrt(dr2); /*   6		*/
-        vtot  += vbond;             /* 1*/
+        vtot += vbond;              /* 1*/
 
         if (g)
         {
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
             ki = IVEC2IS(dt);
         }
-        for (m = 0; (m < DIM); m++)     /*  15		*/
+        for (m = 0; (m < DIM); m++) /*  15		*/
         {
-            fij                 = fbond * dx[m];
-            f[ai][m]           += fij;
-            f[aj][m]           -= fij;
-            fshift[ki][m]      += fij;
+            fij = fbond * dx[m];
+            f[ai][m] += fij;
+            f[aj][m] -= fij;
+            fshift[ki][m] += fij;
             fshift[CENTRAL][m] -= fij;
         }
-    }               /* 72 TOTAL	*/
+    } /* 72 TOTAL	*/
     return vtot;
 }
 
-real water_pol(int nbonds,
+real water_pol(int           nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
                const rvec x[], rvec4 f[], rvec gmx_unused fshift[],
                const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
@@ -734,7 +734,7 @@ real water_pol(int nbonds,
                 proj[m] -= dx[XX] * nW[m];
             }
             dx[YY] = iprod(proj, dHH);
-            /*#define DEBUG*/
+/*#define DEBUG*/
 #ifdef DEBUG
             if (debug)
             {
@@ -755,7 +755,7 @@ real water_pol(int nbonds,
             kdx[XX] = kk[XX] * dx[XX];
             kdx[YY] = kk[YY] * dx[YY];
             kdx[ZZ] = kk[ZZ] * dx[ZZ];
-            vtot   += iprod(dx, kdx);
+            vtot += iprod(dx, kdx);
 
             if (g)
             {
@@ -766,16 +766,16 @@ real water_pol(int nbonds,
             for (m = 0; (m < DIM); m++)
             {
                 /* This is a tensor operation but written out for speed */
-                tx  =  nW[m] * kdx[XX];
+                tx  = nW[m] * kdx[XX];
                 ty  = dHH[m] * kdx[YY];
                 tz  = dOD[m] * kdx[ZZ];
                 fij = -tx - ty - tz;
 #ifdef DEBUG
                 df[m] = fij;
 #endif
-                f[aS][m]           += fij;
-                f[aD][m]           -= fij;
-                fshift[ki][m]      += fij;
+                f[aS][m] += fij;
+                f[aD][m] -= fij;
+                fshift[ki][m] += fij;
                 fshift[CENTRAL][m] -= fij;
             }
 #ifdef DEBUG
@@ -798,7 +798,7 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
     real r12sq, r12_1, r12bar, v0, v1, fscal, ebar, fff;
     int  m, t;
 
-    t = pbc_rvec_sub(pbc, xi, xj, r12);                                           /*  3 */
+    t = pbc_rvec_sub(pbc, xi, xj, r12); /*  3 */
 
     r12sq  = iprod(r12, r12);                                                     /*  5 */
     r12_1  = gmx::invsqrt(r12sq);                                                 /*  5 */
@@ -814,18 +814,18 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
 
     for (m = 0; (m < DIM); m++)
     {
-        fff                 = fscal * r12[m];
-        fi[m]              += fff;
-        fj[m]              -= fff;
-        fshift[t][m]       += fff;
+        fff = fscal * r12[m];
+        fi[m] += fff;
+        fj[m] -= fff;
+        fshift[t][m] += fff;
         fshift[CENTRAL][m] -= fff;
-    }               /* 15 */
+    } /* 15 */
 
     return v0 * v1; /* 1 */
     /* 54 */
 }
 
-real thole_pol(int nbonds,
+real thole_pol(int           nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
                const rvec x[], rvec4 f[], rvec fshift[],
                const t_pbc *pbc, const t_graph gmx_unused *g,
@@ -838,7 +838,7 @@ real thole_pol(int nbonds,
     real q1, q2, qq, a, al1, al2, afac;
     real V = 0;
 
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         a1   = forceatoms[i++];
@@ -852,10 +852,10 @@ real thole_pol(int nbonds,
         al2  = forceparams[type].thole.alpha2;
         qq   = q1 * q2;
         afac = a * gmx::invsixthroot(al1 * al2);
-        V   += do_1_thole(x[a1], x[a2], f[a1], f[a2], pbc, qq, fshift, afac);
-        V   += do_1_thole(x[da1], x[a2], f[da1], f[a2], pbc, -qq, fshift, afac);
-        V   += do_1_thole(x[a1], x[da2], f[a1], f[da2], pbc, -qq, fshift, afac);
-        V   += do_1_thole(x[da1], x[da2], f[da1], f[da2], pbc, qq, fshift, afac);
+        V += do_1_thole(x[a1], x[a2], f[a1], f[a2], pbc, qq, fshift, afac);
+        V += do_1_thole(x[da1], x[a2], f[da1], f[a2], pbc, -qq, fshift, afac);
+        V += do_1_thole(x[a1], x[da2], f[a1], f[da2], pbc, -qq, fshift, afac);
+        V += do_1_thole(x[da1], x[da2], f[da1], f[da2], pbc, qq, fshift, afac);
     }
     /* 290 flops */
     return V;
@@ -872,13 +872,13 @@ real bond_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc,
     *t1 = pbc_rvec_sub(pbc, xi, xj, r_ij); /*  3		*/
     *t2 = pbc_rvec_sub(pbc, xk, xj, r_kj); /*  3		*/
 
-    *costh = cos_angle(r_ij, r_kj);        /* 25		*/
-    th     = std::acos(*costh);            /* 10		*/
+    *costh = cos_angle(r_ij, r_kj); /* 25		*/
+    th     = std::acos(*costh);     /* 10		*/
     /* 41 TOTAL	*/
     return th;
 }
 
-real angles(int nbonds,
+real angles(int           nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
             const rvec x[], rvec4 f[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
@@ -892,7 +892,7 @@ real angles(int nbonds,
     ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
-    for (i = 0; i < nbonds; )
+    for (i = 0; i < nbonds;)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -900,13 +900,13 @@ real angles(int nbonds,
         ak   = forceatoms[i++];
 
         theta = bond_angle(x[ai], x[aj], x[ak], pbc,
-                           r_ij, r_kj, &cos_theta, &t1, &t2);   /*  41		*/
+                           r_ij, r_kj, &cos_theta, &t1, &t2); /*  41		*/
 
         *dvdlambda += harmonic(forceparams[type].harmonic.krA,
                                forceparams[type].harmonic.krB,
                                forceparams[type].harmonic.rA * DEG2RAD,
                                forceparams[type].harmonic.rB * DEG2RAD,
-                               theta, lambda, &va, &dVdt);  /*  21  */
+                               theta, lambda, &va, &dVdt); /*  21  */
         vtot += va;
 
         cos_theta2 = gmx::square(cos_theta);
@@ -928,21 +928,21 @@ real angles(int nbonds,
                         theta * RAD2DEG, va, dVdt);
             }
 #endif
-            nrij2 = iprod(r_ij, r_ij);      /*   5		*/
-            nrkj2 = iprod(r_kj, r_kj);      /*   5		*/
+            nrij2 = iprod(r_ij, r_ij); /*   5		*/
+            nrkj2 = iprod(r_kj, r_kj); /*   5		*/
 
-            nrij_1 = gmx::invsqrt(nrij2);   /*  10		*/
-            nrkj_1 = gmx::invsqrt(nrkj2);   /*  10		*/
+            nrij_1 = gmx::invsqrt(nrij2); /*  10		*/
+            nrkj_1 = gmx::invsqrt(nrkj2); /*  10		*/
 
-            cik = st * nrij_1 * nrkj_1;     /*   2		*/
-            cii = sth * nrij_1 * nrij_1;    /*   2		*/
-            ckk = sth * nrkj_1 * nrkj_1;    /*   2		*/
+            cik = st * nrij_1 * nrkj_1;  /*   2		*/
+            cii = sth * nrij_1 * nrij_1; /*   2		*/
+            ckk = sth * nrkj_1 * nrkj_1; /*   2		*/
 
             for (m = 0; m < DIM; m++)
-            {           /*  39		*/
-                f_i[m]    = -(cik * r_kj[m] - cii * r_ij[m]);
-                f_k[m]    = -(cik * r_ij[m] - ckk * r_kj[m]);
-                f_j[m]    = -f_i[m] - f_k[m];
+            { /*  39		*/
+                f_i[m] = -(cik * r_kj[m] - cii * r_ij[m]);
+                f_k[m] = -(cik * r_ij[m] - ckk * r_kj[m]);
+                f_j[m] = -f_i[m] - f_k[m];
                 f[ai][m] += f_i[m];
                 f[aj][m] += f_j[m];
                 f[ak][m] += f_k[m];
@@ -959,7 +959,7 @@ real angles(int nbonds,
             rvec_inc(fshift[t1], f_i);
             rvec_inc(fshift[CENTRAL], f_j);
             rvec_inc(fshift[t2], f_k);
-        }                                           /* 161 TOTAL	*/
+        } /* 161 TOTAL	*/
     }
 
     return vtot;
@@ -970,7 +970,7 @@ real angles(int nbonds,
 /* As angles, but using SIMD to calculate many angles at once.
  * This routines does not calculate energies and shift forces.
  */
-void angles_noener_simd(int nbonds,
+void angles_noener_simd(int           nbonds,
                         const t_iatom forceatoms[], const t_iparams forceparams[],
                         const rvec x[], rvec4 f[],
                         const t_pbc *pbc, const t_graph gmx_unused *g,
@@ -981,10 +981,14 @@ void angles_noener_simd(int nbonds,
     const int nfa1 = 4;
     int       i, iu, s;
     int       type;
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)   coeff[2 * GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    ai[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    aj[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    ak[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+    coeff[2 * GMX_SIMD_REAL_WIDTH];
     SimdReal deg2rad_S(DEG2RAD);
     SimdReal xi_S, yi_S, zi_S;
     SimdReal xj_S, yj_S, zj_S;
@@ -993,7 +997,7 @@ void angles_noener_simd(int nbonds,
     SimdReal rijx_S, rijy_S, rijz_S;
     SimdReal rkjx_S, rkjy_S, rkjz_S;
     SimdReal one_S(1.0);
-    SimdReal min_one_plus_eps_S(-1.0 + 2.0 * GMX_REAL_EPS);           // Smallest number > -1
+    SimdReal min_one_plus_eps_S(-1.0 + 2.0 * GMX_REAL_EPS); // Smallest number > -1
 
     SimdReal rij_rkj_S;
     SimdReal nrij2_S, nrij_1_S;
@@ -1004,7 +1008,8 @@ void angles_noener_simd(int nbonds,
     SimdReal cik_S, cii_S, ckk_S;
     SimdReal f_ix_S, f_iy_S, f_iz_S;
     SimdReal f_kx_S, f_ky_S, f_kz_S;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9 * GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+    pbc_simd[9 * GMX_SIMD_REAL_WIDTH];
 
     set_pbc_simd(pbc, pbc_simd);
 
@@ -1079,12 +1084,12 @@ void angles_noener_simd(int nbonds,
 
         theta_S = acos(cos_S);
 
-        invsin_S = invsqrt( one_S - cos_S * cos_S );
+        invsin_S = invsqrt(one_S - cos_S * cos_S);
 
         st_S  = k_S * (theta0_S - theta_S) * invsin_S;
         sth_S = st_S * cos_S;
 
-        cik_S = st_S  * nrij_1_S * nrkj_1_S;
+        cik_S = st_S * nrij_1_S * nrkj_1_S;
         cii_S = sth_S * nrij_1_S * nrij_1_S;
         ckk_S = sth_S * nrkj_1_S * nrkj_1_S;
 
@@ -1109,7 +1114,7 @@ void angles_noener_simd(int nbonds,
 
 #endif // GMX_SIMD_HAVE_REAL
 
-real linear_angles(int nbonds,
+real linear_angles(int           nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
                    const rvec x[], rvec4 f[], rvec fshift[],
                    const t_pbc *pbc, const t_graph *g,
@@ -1125,7 +1130,7 @@ real linear_angles(int nbonds,
 
     L1   = 1 - lambda;
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -1148,17 +1153,17 @@ real linear_angles(int nbonds,
         dr2 = 0;
         for (m = 0; (m < DIM); m++)
         {
-            dr        = -a * r_ij[m] - b * r_kj[m];
-            dr2      += dr * dr;
-            dx[m]     = dr;
-            f_i[m]    = a * klin * dr;
-            f_k[m]    = b * klin * dr;
-            f_j[m]    = -(f_i[m] + f_k[m]);
+            dr = -a * r_ij[m] - b * r_kj[m];
+            dr2 += dr * dr;
+            dx[m]  = dr;
+            f_i[m] = a * klin * dr;
+            f_k[m] = b * klin * dr;
+            f_j[m] = -(f_i[m] + f_k[m]);
             f[ai][m] += f_i[m];
             f[aj][m] += f_j[m];
             f[ak][m] += f_k[m];
         }
-        va          = 0.5 * klin * dr2;
+        va = 0.5 * klin * dr2;
         *dvdlambda += 0.5 * (kB - kA) * dr2 + klin * (aB - aA) * iprod(dx, r_ik);
 
         vtot += va;
@@ -1175,11 +1180,11 @@ real linear_angles(int nbonds,
         rvec_inc(fshift[t1], f_i);
         rvec_inc(fshift[CENTRAL], f_j);
         rvec_inc(fshift[t2], f_k);
-    }                                         /* 57 TOTAL	*/
+    } /* 57 TOTAL	*/
     return vtot;
 }
 
-real urey_bradley(int nbonds,
+real urey_bradley(int           nbonds,
                   const t_iatom forceatoms[], const t_iparams forceparams[],
                   const rvec x[], rvec4 f[], rvec fshift[],
                   const t_pbc *pbc, const t_graph *g,
@@ -1195,7 +1200,7 @@ real urey_bradley(int nbonds,
     ivec jt, dt_ij, dt_kj, dt_ik;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -1211,18 +1216,18 @@ real urey_bradley(int nbonds,
         kUBB = forceparams[type].u_b.kUBB;
 
         theta = bond_angle(x[ai], x[aj], x[ak], pbc,
-                           r_ij, r_kj, &cos_theta, &t1, &t2);                      /*  41		*/
+                           r_ij, r_kj, &cos_theta, &t1, &t2); /*  41		*/
 
         *dvdlambda += harmonic(kthA, kthB, th0A, th0B, theta, lambda, &va, &dVdt); /*  21  */
-        vtot       += va;
+        vtot += va;
 
-        ki  = pbc_rvec_sub(pbc, x[ai], x[ak], r_ik);                                /*   3      */
-        dr2 = iprod(r_ik, r_ik);                                                    /*   5		*/
-        dr  = dr2 * gmx::invsqrt(dr2);                                              /*  10		*/
+        ki  = pbc_rvec_sub(pbc, x[ai], x[ak], r_ik); /*   3      */
+        dr2 = iprod(r_ik, r_ik);                     /*   5		*/
+        dr  = dr2 * gmx::invsqrt(dr2);               /*  10		*/
 
         *dvdlambda += harmonic(kUBA, kUBB, r13A, r13B, dr, lambda, &vbond, &fbond); /*  19  */
 
-        cos_theta2 = gmx::square(cos_theta);                                        /*   1		*/
+        cos_theta2 = gmx::square(cos_theta); /*   1		*/
         if (cos_theta2 < 1)
         {
             real st, sth;
@@ -1239,18 +1244,18 @@ real urey_bradley(int nbonds,
                         theta * RAD2DEG, va, dVdt);
             }
 #endif
-            nrkj2 = iprod(r_kj, r_kj);  /*   5		*/
+            nrkj2 = iprod(r_kj, r_kj); /*   5		*/
             nrij2 = iprod(r_ij, r_ij);
 
             cik = st * gmx::invsqrt(nrkj2 * nrij2); /*  12		*/
             cii = sth / nrij2;                      /*  10		*/
             ckk = sth / nrkj2;                      /*  10		*/
 
-            for (m = 0; (m < DIM); m++)             /*  39		*/
+            for (m = 0; (m < DIM); m++) /*  39		*/
             {
-                f_i[m]    = -(cik * r_kj[m] - cii * r_ij[m]);
-                f_k[m]    = -(cik * r_ij[m] - ckk * r_kj[m]);
-                f_j[m]    = -f_i[m] - f_k[m];
+                f_i[m] = -(cik * r_kj[m] - cii * r_ij[m]);
+                f_k[m] = -(cik * r_ij[m] - ckk * r_kj[m]);
+                f_j[m] = -f_i[m] - f_k[m];
                 f[ai][m] += f_i[m];
                 f[aj][m] += f_j[m];
                 f[ak][m] += f_k[m];
@@ -1267,14 +1272,14 @@ real urey_bradley(int nbonds,
             rvec_inc(fshift[t1], f_i);
             rvec_inc(fshift[CENTRAL], f_j);
             rvec_inc(fshift[t2], f_k);
-        }                                       /* 161 TOTAL	*/
+        } /* 161 TOTAL	*/
         /* Time for the bond calculations */
         if (dr2 == 0.0)
         {
             continue;
         }
 
-        vtot  += vbond;             /* 1*/
+        vtot += vbond;              /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
 
         if (g)
@@ -1282,19 +1287,19 @@ real urey_bradley(int nbonds,
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, ak), dt_ik);
             ki = IVEC2IS(dt_ik);
         }
-        for (m = 0; (m < DIM); m++)     /*  15		*/
+        for (m = 0; (m < DIM); m++) /*  15		*/
         {
-            fik                 = fbond * r_ik[m];
-            f[ai][m]           += fik;
-            f[ak][m]           -= fik;
-            fshift[ki][m]      += fik;
+            fik = fbond * r_ik[m];
+            f[ai][m] += fik;
+            f[ak][m] -= fik;
+            fshift[ki][m] += fik;
             fshift[CENTRAL][m] -= fik;
         }
     }
     return vtot;
 }
 
-real quartic_angles(int nbonds,
+real quartic_angles(int           nbonds,
                     const t_iatom forceatoms[], const t_iparams forceparams[],
                     const rvec x[], rvec4 f[], rvec fshift[],
                     const t_pbc *pbc, const t_graph *g,
@@ -1308,7 +1313,7 @@ real quartic_angles(int nbonds,
     ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -1316,7 +1321,7 @@ real quartic_angles(int nbonds,
         ak   = forceatoms[i++];
 
         theta = bond_angle(x[ai], x[aj], x[ak], pbc,
-                           r_ij, r_kj, &cos_theta, &t1, &t2);  /*  41		*/
+                           r_ij, r_kj, &cos_theta, &t1, &t2); /*  41		*/
 
         dt = theta - forceparams[type].qangle.theta * DEG2RAD; /* 2          */
 
@@ -1325,16 +1330,16 @@ real quartic_angles(int nbonds,
         dtp  = 1.0;
         for (j = 1; j <= 4; j++)
         {
-            c     = forceparams[type].qangle.c[j];
+            c = forceparams[type].qangle.c[j];
             dVdt -= j * c * dtp;
-            dtp  *= dt;
-            va   += c * dtp;
+            dtp *= dt;
+            va += c * dtp;
         }
         /* 20 */
 
         vtot += va;
 
-        cos_theta2 = gmx::square(cos_theta);            /*   1		*/
+        cos_theta2 = gmx::square(cos_theta); /*   1		*/
         if (cos_theta2 < 1)
         {
             int  m;
@@ -1352,18 +1357,18 @@ real quartic_angles(int nbonds,
                         theta * RAD2DEG, va, dVdt);
             }
 #endif
-            nrkj2 = iprod(r_kj, r_kj);  /*   5		*/
+            nrkj2 = iprod(r_kj, r_kj); /*   5		*/
             nrij2 = iprod(r_ij, r_ij);
 
             cik = st * gmx::invsqrt(nrkj2 * nrij2); /*  12		*/
             cii = sth / nrij2;                      /*  10		*/
             ckk = sth / nrkj2;                      /*  10		*/
 
-            for (m = 0; (m < DIM); m++)             /*  39		*/
+            for (m = 0; (m < DIM); m++) /*  39		*/
             {
-                f_i[m]    = -(cik * r_kj[m] - cii * r_ij[m]);
-                f_k[m]    = -(cik * r_ij[m] - ckk * r_kj[m]);
-                f_j[m]    = -f_i[m] - f_k[m];
+                f_i[m] = -(cik * r_kj[m] - cii * r_ij[m]);
+                f_k[m] = -(cik * r_ij[m] - ckk * r_kj[m]);
+                f_j[m] = -f_i[m] - f_k[m];
                 f[ai][m] += f_i[m];
                 f[aj][m] += f_j[m];
                 f[ak][m] += f_k[m];
@@ -1380,7 +1385,7 @@ real quartic_angles(int nbonds,
             rvec_inc(fshift[t1], f_i);
             rvec_inc(fshift[CENTRAL], f_j);
             rvec_inc(fshift[t2], f_k);
-        }                                       /* 153 TOTAL	*/
+        } /* 153 TOTAL	*/
     }
     return vtot;
 }
@@ -1396,12 +1401,12 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
     *t2 = pbc_rvec_sub(pbc, xk, xj, r_kj); /*  3		*/
     *t3 = pbc_rvec_sub(pbc, xk, xl, r_kl); /*  3		*/
 
-    cprod(r_ij, r_kj, m);                  /*  9        */
-    cprod(r_kj, r_kl, n);                  /*  9		*/
-    phi     = gmx_angle(m, n);             /* 49 (assuming 25 for atan2) */
-    ipr     = iprod(r_ij, n);              /*  5        */
+    cprod(r_ij, r_kj, m);      /*  9        */
+    cprod(r_kj, r_kl, n);      /*  9		*/
+    phi     = gmx_angle(m, n); /* 49 (assuming 25 for atan2) */
+    ipr     = iprod(r_ij, n);  /*  5        */
     (*sign) = (ipr < 0.0) ? -1.0 : 1.0;
-    phi     = (*sign) * phi;               /*  1		*/
+    phi     = (*sign) * phi; /*  1		*/
     /* 82 TOTAL	*/
     return phi;
 }
@@ -1416,7 +1421,7 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
 static gmx_inline void dih_angle_simd(const rvec *x,
                                       const int *ai, const int *aj, const int *ak, const int *al,
                                       const real *pbc_simd,
-                                      SimdReal *phi_S,
+                                      SimdReal *  phi_S,
                                       SimdReal *mx_S, SimdReal *my_S, SimdReal *mz_S,
                                       SimdReal *nx_S, SimdReal *ny_S, SimdReal *nz_S,
                                       SimdReal *nrkj_m2_S,
@@ -1551,9 +1556,9 @@ void do_dih_fup(int i, int j, int k, int l, real ddphi,
         svmul(a, m, f_i);              /*  3	*/
         b = ddphi * nrkj / iprn;       /* 11	*/
         svmul(b, n, f_l);              /*  3  */
-        p  = iprod(r_ij, r_kj);        /*  5	*/
+        p = iprod(r_ij, r_kj);         /*  5	*/
         p *= nrkj_2;                   /*  1	*/
-        q  = iprod(r_kl, r_kj);        /*  5	*/
+        q = iprod(r_kl, r_kj);         /*  5	*/
         q *= nrkj_2;                   /*  1	*/
         svmul(p, f_i, uvec);           /*  3	*/
         svmul(q, f_l, vvec);           /*  3	*/
@@ -1615,9 +1620,9 @@ static void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
         svmul(a, m, f_i);              /*  3	*/
         b = ddphi * nrkj / iprn;       /* 11	*/
         svmul(b, n, f_l);              /*  3  */
-        p  = iprod(r_ij, r_kj);        /*  5	*/
+        p = iprod(r_ij, r_kj);         /*  5	*/
         p *= nrkj_2;                   /*  1	*/
-        q  = iprod(r_kl, r_kj);        /*  5	*/
+        q = iprod(r_kl, r_kj);         /*  5	*/
         q *= nrkj_2;                   /*  1	*/
         svmul(p, f_i, uvec);           /*  3	*/
         svmul(q, f_l, vvec);           /*  3	*/
@@ -1635,7 +1640,7 @@ static void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
 /* As do_dih_fup_noshiftf above, but with SIMD and pre-calculated pre-factors */
 static gmx_inline void gmx_simdcall do_dih_fup_noshiftf_simd(const int *ai, const int *aj, const int *ak, const int *al,
                                                              SimdReal p, SimdReal q,
-                                                             SimdReal f_i_x,  SimdReal f_i_y,  SimdReal f_i_z,
+                                                             SimdReal f_i_x, SimdReal f_i_y, SimdReal f_i_z,
                                                              SimdReal mf_l_x, SimdReal mf_l_y, SimdReal mf_l_z,
                                                              rvec4 f[])
 {
@@ -1664,7 +1669,7 @@ real dopdihs(real cpA, real cpB, real phiA, real phiB, int mult,
     real dph0 = (phiB - phiA) * DEG2RAD;
     real cp   = L1 * cpA + lambda * cpB;
 
-    mdphi =  mult * phi - ph0;
+    mdphi = mult * phi - ph0;
     sdphi = std::sin(mdphi);
     ddphi = -cp * mult * sdphi;
     v1    = 1.0 + std::cos(mdphi);
@@ -1724,7 +1729,7 @@ static real dopdihs_min(real cpA, real cpB, real phiA, real phiB, int mult,
     /* That was 40 flops */
 }
 
-real pdihs(int nbonds,
+real pdihs(int           nbonds,
            const t_iatom forceatoms[], const t_iparams forceparams[],
            const rvec x[], rvec4 f[], rvec fshift[],
            const t_pbc *pbc, const t_graph *g,
@@ -1739,7 +1744,7 @@ real pdihs(int nbonds,
 
     vtot = 0.0;
 
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -1748,7 +1753,7 @@ real pdihs(int nbonds,
         al   = forceatoms[i++];
 
         phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &sign, &t1, &t2, &t3);  /*  84      */
+                        &sign, &t1, &t2, &t3); /*  84      */
         *dvdlambda += dopdihs(forceparams[type].pdihs.cpA,
                               forceparams[type].pdihs.cpB,
                               forceparams[type].pdihs.phiA,
@@ -1769,7 +1774,7 @@ real pdihs(int nbonds,
     return vtot;
 }
 
-void make_dp_periodic(real *dp)  /* 1 flop? */
+void make_dp_periodic(real *dp) /* 1 flop? */
 {
     /* dp cannot be outside (-pi,pi) */
     if (*dp >= M_PI)
@@ -1784,11 +1789,11 @@ void make_dp_periodic(real *dp)  /* 1 flop? */
 }
 
 /* As pdihs above, but without calculating energies and shift forces */
-void pdihs_noener(int nbonds,
+void pdihs_noener(int           nbonds,
                   const t_iatom forceatoms[], const t_iparams forceparams[],
                   const rvec x[], rvec4 f[],
                   const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
-                  real lambda,
+                  real            lambda,
                   const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                   int gmx_unused *global_atom_index)
 {
@@ -1797,7 +1802,7 @@ void pdihs_noener(int nbonds,
     rvec r_ij, r_kj, r_kl, m, n;
     real phi, sign, ddphi_tot, ddphi;
 
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         ai = forceatoms[i + 1];
         aj = forceatoms[i + 2];
@@ -1838,7 +1843,7 @@ void pdihs_noener(int nbonds,
 #if GMX_SIMD_HAVE_REAL
 
 /* As pdihs_noner above, but using SIMD to calculate many dihedrals at once */
-void pdihs_noener_simd(int nbonds,
+void pdihs_noener_simd(int           nbonds,
                        const t_iatom forceatoms[], const t_iparams forceparams[],
                        const rvec x[], rvec4 f[],
                        const t_pbc *pbc, const t_graph gmx_unused *g,
@@ -1849,11 +1854,16 @@ void pdihs_noener_simd(int nbonds,
     const int nfa1 = 5;
     int       i, iu, s;
     int       type;
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    al[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  buf[3 * GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    ai[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    aj[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    ak[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    al[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+    buf[3 * GMX_SIMD_REAL_WIDTH];
     real *   cp, *phi0, *mult;
     SimdReal deg2rad_S(DEG2RAD);
     SimdReal p_S, q_S;
@@ -1865,7 +1875,8 @@ void pdihs_noener_simd(int nbonds,
     SimdReal sin_S, cos_S;
     SimdReal mddphi_S;
     SimdReal sf_i_S, msf_l_S;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9 * GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+    pbc_simd[9 * GMX_SIMD_REAL_WIDTH];
 
     /* Extract aligned pointer for parameters and variables */
     cp   = buf + 0 * GMX_SIMD_REAL_WIDTH;
@@ -1952,7 +1963,7 @@ void pdihs_noener_simd(int nbonds,
  * the RB potential instead of a harmonic potential.
  * This function can replace rbdihs() when no energy and virial are needed.
  */
-void rbdihs_noener_simd(int nbonds,
+void rbdihs_noener_simd(int           nbonds,
                         const t_iatom forceatoms[], const t_iparams forceparams[],
                         const rvec x[], rvec4 f[],
                         const t_pbc *pbc, const t_graph gmx_unused *g,
@@ -1963,11 +1974,16 @@ void rbdihs_noener_simd(int nbonds,
     const int nfa1 = 5;
     int       i, iu, s, j;
     int       type;
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ai[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    aj[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    ak[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)    al[GMX_SIMD_REAL_WIDTH];
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH) parm[NR_RBDIHS * GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    ai[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    aj[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    ak[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(int, GMX_SIMD_REAL_WIDTH)
+    al[GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+    parm[NR_RBDIHS * GMX_SIMD_REAL_WIDTH];
 
     SimdReal p_S, q_S;
     SimdReal phi_S;
@@ -1978,7 +1994,8 @@ void rbdihs_noener_simd(int nbonds,
     SimdReal parm_S, c_S;
     SimdReal sin_S, cos_S;
     SimdReal sf_i_S, msf_l_S;
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)    pbc_simd[9 * GMX_SIMD_REAL_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+    pbc_simd[9 * GMX_SIMD_REAL_WIDTH];
 
     SimdReal pi_S(M_PI);
     SimdReal one_S(1.0);
@@ -2009,7 +2026,7 @@ void rbdihs_noener_simd(int nbonds,
                 for (j = 1; j < NR_RBDIHS; j++)
                 {
                     parm[j * GMX_SIMD_REAL_WIDTH + s]
-                        = forceparams[type].rbdihs.rbcA[j];
+                            = forceparams[type].rbdihs.rbcA[j];
                 }
 
                 if (iu + nfa1 < nbonds)
@@ -2080,7 +2097,7 @@ void rbdihs_noener_simd(int nbonds,
 #endif // GMX_SIMD_HAVE_REAL
 
 
-real idihs(int nbonds,
+real idihs(int           nbonds,
            const t_iatom forceatoms[], const t_iparams forceparams[],
            const rvec x[], rvec4 f[], rvec fshift[],
            const t_pbc *pbc, const t_graph *g,
@@ -2097,7 +2114,7 @@ real idihs(int nbonds,
     L1        = 1.0 - lambda;
     dvdl_term = 0;
     vtot      = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -2106,7 +2123,7 @@ real idihs(int nbonds,
         al   = forceatoms[i++];
 
         phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &sign, &t1, &t2, &t3);  /*  84		*/
+                        &sign, &t1, &t2, &t3); /*  84		*/
 
         /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
          * force changes if we just apply a normal harmonic.
@@ -2137,7 +2154,7 @@ real idihs(int nbonds,
 
         do_dih_fup(ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n,
                    f, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
-        /* 218 TOTAL	*/
+                                                      /* 218 TOTAL	*/
 #ifdef DEBUG
         if (debug)
         {
@@ -2151,7 +2168,7 @@ real idihs(int nbonds,
     return vtot;
 }
 
-static real low_angres(int nbonds,
+static real low_angres(int           nbonds,
                        const t_iatom forceatoms[], const t_iparams forceparams[],
                        const rvec x[], rvec4 f[], rvec fshift[],
                        const t_pbc *pbc, const t_graph *g,
@@ -2161,25 +2178,25 @@ static real low_angres(int nbonds,
     int  i, m, type, ai, aj, ak, al;
     int  t1, t2;
     real phi, cos_phi, cos_phi2, vid, vtot, dVdphi;
-    rvec r_ij, r_kl, f_i, f_k = {0, 0, 0};
+    rvec r_ij, r_kl, f_i, f_k = { 0, 0, 0 };
     real st, sth, nrij2, nrkl2, c, cij, ckl;
 
     ivec dt;
     t2 = 0; /* avoid warning with gcc-3.3. It is never used uninitialized */
 
     vtot = 0.0;
-    ak   = al = 0; /* to avoid warnings */
-    for (i = 0; i < nbonds; )
+    ak = al = 0; /* to avoid warnings */
+    for (i = 0; i < nbonds;)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
         aj   = forceatoms[i++];
-        t1   = pbc_rvec_sub(pbc, x[aj], x[ai], r_ij);       /*  3		*/
+        t1   = pbc_rvec_sub(pbc, x[aj], x[ai], r_ij); /*  3		*/
         if (!bZAxis)
         {
             ak = forceatoms[i++];
             al = forceatoms[i++];
-            t2 = pbc_rvec_sub(pbc, x[al], x[ak], r_kl);    /*  3		*/
+            t2 = pbc_rvec_sub(pbc, x[al], x[ak], r_kl); /*  3		*/
         }
         else
         {
@@ -2200,26 +2217,26 @@ static real low_angres(int nbonds,
 
         vtot += vid;
 
-        cos_phi2 = gmx::square(cos_phi);                /*   1		*/
+        cos_phi2 = gmx::square(cos_phi); /*   1		*/
         if (cos_phi2 < 1)
         {
-            st    = -dVdphi*gmx::invsqrt(1 - cos_phi2); /*  12		*/
-            sth   = st * cos_phi;                       /*   1		*/
-            nrij2 = iprod(r_ij, r_ij);                  /*   5		*/
-            nrkl2 = iprod(r_kl, r_kl);                  /*   5          */
+            st    = -dVdphi * gmx::invsqrt(1 - cos_phi2); /*  12		*/
+            sth   = st * cos_phi;                         /*   1		*/
+            nrij2 = iprod(r_ij, r_ij);                    /*   5		*/
+            nrkl2 = iprod(r_kl, r_kl);                    /*   5          */
 
-            c   = st * gmx::invsqrt(nrij2 * nrkl2);     /*  11		*/
-            cij = sth / nrij2;                          /*  10		*/
-            ckl = sth / nrkl2;                          /*  10		*/
+            c   = st * gmx::invsqrt(nrij2 * nrkl2); /*  11		*/
+            cij = sth / nrij2;                      /*  10		*/
+            ckl = sth / nrkl2;                      /*  10		*/
 
-            for (m = 0; m < DIM; m++)                   /*  18+18       */
+            for (m = 0; m < DIM; m++) /*  18+18       */
             {
-                f_i[m]    = (c * r_kl[m] - cij * r_ij[m]);
+                f_i[m] = (c * r_kl[m] - cij * r_ij[m]);
                 f[ai][m] += f_i[m];
                 f[aj][m] -= f_i[m];
                 if (!bZAxis)
                 {
-                    f_k[m]    = (c * r_ij[m] - ckl * r_kl[m]);
+                    f_k[m] = (c * r_ij[m] - ckl * r_kl[m]);
                     f[ak][m] += f_k[m];
                     f[al][m] -= f_k[m];
                 }
@@ -2248,7 +2265,7 @@ static real low_angres(int nbonds,
     return vtot; /*  184 / 157 (bZAxis)  total  */
 }
 
-real angres(int nbonds,
+real angres(int           nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
             const rvec x[], rvec4 f[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
@@ -2260,7 +2277,7 @@ real angres(int nbonds,
                       lambda, dvdlambda, FALSE);
 }
 
-real angresz(int nbonds,
+real angresz(int           nbonds,
              const t_iatom forceatoms[], const t_iparams forceparams[],
              const rvec x[], rvec4 f[], rvec fshift[],
              const t_pbc *pbc, const t_graph *g,
@@ -2272,13 +2289,13 @@ real angresz(int nbonds,
                       lambda, dvdlambda, TRUE);
 }
 
-real dihres(int nbonds,
+real dihres(int           nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
             const rvec x[], rvec4 f[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
             real lambda, real *dvdlambda,
             const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-            int gmx_unused  *global_atom_index)
+            int gmx_unused *global_atom_index)
 {
     real vtot = 0;
     int  ai, aj, ak, al, i, k, type, t1, t2, t3;
@@ -2291,7 +2308,7 @@ real dihres(int nbonds,
     d2r = DEG2RAD;
     k   = 0;
 
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -2345,7 +2362,7 @@ real dihres(int nbonds,
 
         if (ddp != 0.0)
         {
-            ddp2  = ddp * ddp;
+            ddp2 = ddp * ddp;
             vtot += 0.5 * kfac * ddp2;
             ddphi = kfac * ddp;
 
@@ -2360,7 +2377,7 @@ real dihres(int nbonds,
                 *dvdlambda += kfac * ddp * ((dphiB - dphiA) - (phi0B - phi0A));
             }
             do_dih_fup(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
-                       f, fshift, pbc, g, x, t1, t2, t3);      /* 112		*/
+                       f, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
         }
     }
     return vtot;
@@ -2370,9 +2387,9 @@ real dihres(int nbonds,
 real unimplemented(int gmx_unused nbonds,
                    const t_iatom gmx_unused forceatoms[], const t_iparams gmx_unused forceparams[],
                    const rvec gmx_unused x[], rvec4 gmx_unused f[], rvec gmx_unused fshift[],
-                   const t_pbc gmx_unused *pbc, const t_graph  gmx_unused *g,
+                   const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
                    real gmx_unused lambda, real gmx_unused *dvdlambda,
-                   const t_mdatoms  gmx_unused *md, t_fcdata gmx_unused *fcd,
+                   const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                    int gmx_unused *global_atom_index)
 {
     gmx_impl("*** you are using a not implemented function");
@@ -2380,7 +2397,7 @@ real unimplemented(int gmx_unused nbonds,
     return 0.0; /* To make the compiler happy */
 }
 
-real restrangles(int nbonds,
+real restrangles(int           nbonds,
                  const t_iatom forceatoms[], const t_iparams forceparams[],
                  const rvec x[], rvec4 f[], rvec fshift[],
                  const t_pbc *pbc, const t_graph *g,
@@ -2397,7 +2414,7 @@ real restrangles(int nbonds,
     rvec delta_ante, delta_post, vec_temp;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -2442,7 +2459,7 @@ real restrangles(int nbonds,
          * {\sin^2\theta_i}\f] ({eq:ReB} and ref \cite{MonicaGoga2013} from the manual).
          * For more explanations see comments file "restcbt.h". */
 
-        compute_factors_restangles(type, forceparams,  delta_ante, delta_post,
+        compute_factors_restangles(type, forceparams, delta_ante, delta_post,
                                    &prefactor, &ratio_ante, &ratio_post, &v);
 
         /*   Forces are computed per component */
@@ -2483,7 +2500,7 @@ real restrangles(int nbonds,
 }
 
 
-real restrdihs(int nbonds,
+real restrdihs(int           nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
                const rvec x[], rvec4 f[], rvec fshift[],
                const t_pbc *pbc, const t_graph *g,
@@ -2497,7 +2514,7 @@ real restrdihs(int nbonds,
     ivec jt, dt_ij, dt_kj, dt_lj;
     int  t1, t2, t3;
     real v, vtot;
-    rvec delta_ante,  delta_crnt, delta_post, vec_temp;
+    rvec delta_ante, delta_crnt, delta_post, vec_temp;
     real factor_phi_ai_ante, factor_phi_ai_crnt, factor_phi_ai_post;
     real factor_phi_aj_ante, factor_phi_aj_crnt, factor_phi_aj_post;
     real factor_phi_ak_ante, factor_phi_ak_crnt, factor_phi_ak_post;
@@ -2506,7 +2523,7 @@ real restrdihs(int nbonds,
 
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -2551,7 +2568,6 @@ real restrdihs(int nbonds,
         vtot += v;
 
 
-
         /*    Updating the forces */
 
         rvec_inc(f[ai], f_i);
@@ -2584,14 +2600,13 @@ real restrdihs(int nbonds,
         rvec_inc(fshift[CENTRAL], f_j);
         rvec_inc(fshift[t2], f_k);
         rvec_inc(fshift[t3], f_l);
-
     }
 
     return vtot;
 }
 
 
-real cbtdihs(int nbonds,
+real cbtdihs(int           nbonds,
              const t_iatom forceatoms[], const t_iparams forceparams[],
              const rvec x[], rvec4 f[], rvec fshift[],
              const t_pbc *pbc, const t_graph *g,
@@ -2612,10 +2627,8 @@ real cbtdihs(int nbonds,
     rvec f_theta_post_aj, f_theta_post_ak, f_theta_post_al;
 
 
-
-
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -2699,7 +2712,7 @@ real cbtdihs(int nbonds,
     return vtot;
 }
 
-real rbdihs(int nbonds,
+real rbdihs(int           nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
             const rvec x[], rvec4 f[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
@@ -2721,7 +2734,7 @@ real rbdihs(int nbonds,
     real       dvdl_term = 0;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -2730,7 +2743,7 @@ real rbdihs(int nbonds,
         al   = forceatoms[i++];
 
         phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &sign, &t1, &t2, &t3);  /*  84		*/
+                        &sign, &t1, &t2, &t3); /*  84		*/
 
         /* Change to polymer convention */
         if (phi < c0)
@@ -2739,8 +2752,7 @@ real rbdihs(int nbonds,
         }
         else
         {
-            phi -= M_PI;    /*   1		*/
-
+            phi -= M_PI; /*   1		*/
         }
         cos_phi = std::cos(phi);
         /* Beware of accuracy loss, cannot use 1-sqrt(cos^2) ! */
@@ -2756,43 +2768,43 @@ real rbdihs(int nbonds,
         /* Calculate the energy */
         /* Calculate the derivative */
 
-        v          = parm[0];
+        v = parm[0];
         dvdl_term += (parmB[0] - parmA[0]);
-        ddphi      = c0;
-        cosfac     = c1;
+        ddphi  = c0;
+        cosfac = c1;
 
-        rbp        = parm[1];
-        rbpBA      = parmB[1] - parmA[1];
-        ddphi     += rbp * cosfac;
-        cosfac    *= cos_phi;
-        v         += cosfac * rbp;
+        rbp   = parm[1];
+        rbpBA = parmB[1] - parmA[1];
+        ddphi += rbp * cosfac;
+        cosfac *= cos_phi;
+        v += cosfac * rbp;
         dvdl_term += cosfac * rbpBA;
-        rbp        = parm[2];
-        rbpBA      = parmB[2] - parmA[2];
-        ddphi     += c2 * rbp * cosfac;
-        cosfac    *= cos_phi;
-        v         += cosfac * rbp;
+        rbp   = parm[2];
+        rbpBA = parmB[2] - parmA[2];
+        ddphi += c2 * rbp * cosfac;
+        cosfac *= cos_phi;
+        v += cosfac * rbp;
         dvdl_term += cosfac * rbpBA;
-        rbp        = parm[3];
-        rbpBA      = parmB[3] - parmA[3];
-        ddphi     += c3 * rbp * cosfac;
-        cosfac    *= cos_phi;
-        v         += cosfac * rbp;
+        rbp   = parm[3];
+        rbpBA = parmB[3] - parmA[3];
+        ddphi += c3 * rbp * cosfac;
+        cosfac *= cos_phi;
+        v += cosfac * rbp;
         dvdl_term += cosfac * rbpBA;
-        rbp        = parm[4];
-        rbpBA      = parmB[4] - parmA[4];
-        ddphi     += c4 * rbp * cosfac;
-        cosfac    *= cos_phi;
-        v         += cosfac * rbp;
+        rbp   = parm[4];
+        rbpBA = parmB[4] - parmA[4];
+        ddphi += c4 * rbp * cosfac;
+        cosfac *= cos_phi;
+        v += cosfac * rbp;
         dvdl_term += cosfac * rbpBA;
-        rbp        = parm[5];
-        rbpBA      = parmB[5] - parmA[5];
-        ddphi     += c5 * rbp * cosfac;
-        cosfac    *= cos_phi;
-        v         += cosfac * rbp;
+        rbp   = parm[5];
+        rbpBA = parmB[5] - parmA[5];
+        ddphi += c5 * rbp * cosfac;
+        cosfac *= cos_phi;
+        v += cosfac * rbp;
         dvdl_term += cosfac * rbpBA;
 
-        ddphi = -ddphi * sin_phi;         /*  11		*/
+        ddphi = -ddphi * sin_phi; /*  11		*/
 
         do_dih_fup(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n,
                    f, fshift, pbc, g, x, t1, t2, t3); /* 112		*/
@@ -2842,17 +2854,16 @@ static int cmap_setup_grid_index(int ip, int grid_spacing, int *ipm1, int *ipp1,
     *ipp2 = ip2;
 
     return ip;
-
 }
 
-real cmap_dihs(int nbonds,
+real cmap_dihs(int           nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
                const gmx_cmap_t *cmap_grid,
                const rvec x[], rvec4 f[], rvec fshift[],
                const struct t_pbc *pbc, const struct t_graph *g,
                real gmx_unused lambda, real gmx_unused *dvdlambda,
                const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-               int  gmx_unused *global_atom_index)
+               int gmx_unused *global_atom_index)
 {
     int i, j, k, n, idx;
     int ai, aj, ak, al, am;
@@ -2887,16 +2898,16 @@ real cmap_dihs(int nbonds,
     const real *cmapd;
 
     int loop_index[4][4] = {
-        {0, 4, 8, 12},
-        {1, 5, 9, 13},
-        {2, 6, 10, 14},
-        {3, 7, 11, 15}
+        { 0, 4, 8, 12 },
+        { 1, 5, 9, 13 },
+        { 2, 6, 10, 14 },
+        { 3, 7, 11, 15 }
     };
 
     /* Total CMAP energy */
     vtot = 0;
 
-    for (n = 0; n < nbonds; )
+    for (n = 0; n < nbonds;)
     {
         /* Five atoms are involved in the two torsions */
         type = forceatoms[n++];
@@ -2917,7 +2928,7 @@ real cmap_dihs(int nbonds,
         a1l = al;
 
         phi1 = dih_angle(x[a1i], x[a1j], x[a1k], x[a1l], pbc, r1_ij, r1_kj, r1_kl, m1, n1,
-                         &sign1, &t11, &t21, &t31);   /* 84 */
+                         &sign1, &t11, &t21, &t31); /* 84 */
 
         cos_phi1 = std::cos(phi1);
 
@@ -2931,9 +2942,9 @@ real cmap_dihs(int nbonds,
 
         pbc_rvec_sub(pbc, x[a1l], x[a1k], h1);
 
-        ra21 = iprod(a1, a1);        /* 5 */
-        rb21 = iprod(b1, b1);        /* 5 */
-        rg21 = iprod(r1_kj, r1_kj);  /* 5 */
+        ra21 = iprod(a1, a1);       /* 5 */
+        rb21 = iprod(b1, b1);       /* 5 */
+        rg21 = iprod(r1_kj, r1_kj); /* 5 */
         rg1  = sqrt(rg21);
 
         rgr1  = 1.0 / rg1;
@@ -2978,7 +2989,7 @@ real cmap_dihs(int nbonds,
         a2l = am;
 
         phi2 = dih_angle(x[a2i], x[a2j], x[a2k], x[a2l], pbc, r2_ij, r2_kj, r2_kl, m2, n2,
-                         &sign2, &t12, &t22, &t32);  /* 84 */
+                         &sign2, &t12, &t22, &t32); /* 84 */
 
         cos_phi2 = std::cos(phi2);
 
@@ -2992,9 +3003,9 @@ real cmap_dihs(int nbonds,
 
         pbc_rvec_sub(pbc, x[a2l], x[a2k], h2);
 
-        ra22 = iprod(a2, a2);          /* 5 */
-        rb22 = iprod(b2, b2);          /* 5 */
-        rg22 = iprod(r2_kj, r2_kj);    /* 5 */
+        ra22 = iprod(a2, a2);       /* 5 */
+        rb22 = iprod(b2, b2);       /* 5 */
+        rg22 = iprod(r2_kj, r2_kj); /* 5 */
         rg2  = sqrt(rg22);
 
         rgr2  = 1.0 / rg2;
@@ -3128,14 +3139,14 @@ real cmap_dihs(int nbonds,
             l2 = loop_index[i][2];
             l3 = loop_index[i][1];
 
-            e   = tt * e    + ((tc[i * 4 + 3] * tu + tc[i * 4 + 2]) * tu + tc[i * 4 + 1]) * tu + tc[i * 4];
-            df1 = tu * df1  + (3.0 * tc[l1] * tt + 2.0 * tc[l2]) * tt + tc[l3];
-            df2 = tt * df2  + (3.0 * tc[i * 4 + 3] * tu + 2.0 * tc[i * 4 + 2]) * tu + tc[i * 4 + 1];
+            e   = tt * e + ((tc[i * 4 + 3] * tu + tc[i * 4 + 2]) * tu + tc[i * 4 + 1]) * tu + tc[i * 4];
+            df1 = tu * df1 + (3.0 * tc[l1] * tt + 2.0 * tc[l2]) * tt + tc[l3];
+            df2 = tt * df2 + (3.0 * tc[i * 4 + 3] * tu + 2.0 * tc[i * 4 + 2]) * tu + tc[i * 4 + 1];
         }
 
         fac = RAD2DEG / dx;
-        df1 = df1   * fac;
-        df2 = df2   * fac;
+        df1 = df1 * fac;
+        df2 = df2 * fac;
 
         /* CMAP energy */
         vtot += e;
@@ -3154,13 +3165,13 @@ real cmap_dihs(int nbonds,
             dtg1[i] = fga1 * a1[i] - hgb1 * b1[i];
             dth1[i] = gbb1 * b1[i];
 
-            f1[i] = df1  * dtf1[i];
-            g1[i] = df1  * dtg1[i];
-            h1[i] = df1  * dth1[i];
+            f1[i] = df1 * dtf1[i];
+            g1[i] = df1 * dtg1[i];
+            h1[i] = df1 * dth1[i];
 
-            f1_i[i] =  f1[i];
+            f1_i[i] = f1[i];
             f1_j[i] = -f1[i] - g1[i];
-            f1_k[i] =  h1[i] + g1[i];
+            f1_k[i] = h1[i] + g1[i];
             f1_l[i] = -h1[i];
 
             f[a1i][i] = f[a1i][i] + f1_i[i];
@@ -3183,13 +3194,13 @@ real cmap_dihs(int nbonds,
             dtg2[i] = fga2 * a2[i] - hgb2 * b2[i];
             dth2[i] = gbb2 * b2[i];
 
-            f2[i] = df2  * dtf2[i];
-            g2[i] = df2  * dtg2[i];
-            h2[i] = df2  * dth2[i];
+            f2[i] = df2 * dtf2[i];
+            g2[i] = df2 * dtg2[i];
+            h2[i] = df2 * dth2[i];
 
-            f2_i[i] =  f2[i];
+            f2_i[i] = f2[i];
             f2_j[i] = -f2[i] - g2[i];
-            f2_k[i] =  h2[i] + g2[i];
+            f2_k[i] = h2[i] + g2[i];
             f2_l[i] = -h2[i];
 
             f[a2i][i] = f[a2i][i] + f2_i[i]; /* f2[i] */
@@ -3202,17 +3213,17 @@ real cmap_dihs(int nbonds,
         if (g)
         {
             copy_ivec(SHIFT_IVEC(g, a1j), jt1);
-            ivec_sub(SHIFT_IVEC(g, a1i),  jt1, dt1_ij);
-            ivec_sub(SHIFT_IVEC(g, a1k),  jt1, dt1_kj);
-            ivec_sub(SHIFT_IVEC(g, a1l),  jt1, dt1_lj);
+            ivec_sub(SHIFT_IVEC(g, a1i), jt1, dt1_ij);
+            ivec_sub(SHIFT_IVEC(g, a1k), jt1, dt1_kj);
+            ivec_sub(SHIFT_IVEC(g, a1l), jt1, dt1_lj);
             t11 = IVEC2IS(dt1_ij);
             t21 = IVEC2IS(dt1_kj);
             t31 = IVEC2IS(dt1_lj);
 
             copy_ivec(SHIFT_IVEC(g, a2j), jt2);
-            ivec_sub(SHIFT_IVEC(g, a2i),  jt2, dt2_ij);
-            ivec_sub(SHIFT_IVEC(g, a2k),  jt2, dt2_kj);
-            ivec_sub(SHIFT_IVEC(g, a2l),  jt2, dt2_lj);
+            ivec_sub(SHIFT_IVEC(g, a2i), jt2, dt2_ij);
+            ivec_sub(SHIFT_IVEC(g, a2k), jt2, dt2_kj);
+            ivec_sub(SHIFT_IVEC(g, a2l), jt2, dt2_lj);
             t12 = IVEC2IS(dt2_ij);
             t22 = IVEC2IS(dt2_kj);
             t32 = IVEC2IS(dt2_lj);
@@ -3274,7 +3285,7 @@ real g96harmonic(real kA, real kB, real xA, real xB, real x, real lambda,
     /* That was 21 flops */
 }
 
-real g96bonds(int nbonds,
+real g96bonds(int           nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
               const rvec x[], rvec4 f[], rvec fshift[],
               const t_pbc *pbc, const t_graph *g,
@@ -3288,14 +3299,14 @@ real g96bonds(int nbonds,
     ivec dt;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
         aj   = forceatoms[i++];
 
-        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx);  /*   3      */
-        dr2 = iprod(dx, dx);                        /*   5		*/
+        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3      */
+        dr2 = iprod(dx, dx);                       /*   5		*/
 
         *dvdlambda += g96harmonic(forceparams[type].harmonic.krA,
                                   forceparams[type].harmonic.krB,
@@ -3303,7 +3314,7 @@ real g96bonds(int nbonds,
                                   forceparams[type].harmonic.rB,
                                   dr2, lambda, &vbond, &fbond);
 
-        vtot += 0.5 * vbond;                        /* 1*/
+        vtot += 0.5 * vbond; /* 1*/
 #ifdef DEBUG
         if (debug)
         {
@@ -3317,15 +3328,15 @@ real g96bonds(int nbonds,
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
             ki = IVEC2IS(dt);
         }
-        for (m = 0; (m < DIM); m++)     /*  15		*/
+        for (m = 0; (m < DIM); m++) /*  15		*/
         {
-            fij                 = fbond * dx[m];
-            f[ai][m]           += fij;
-            f[aj][m]           -= fij;
-            fshift[ki][m]      += fij;
+            fij = fbond * dx[m];
+            f[ai][m] += fij;
+            f[aj][m] -= fij;
+            fshift[ki][m] += fij;
             fshift[CENTRAL][m] -= fij;
         }
-    }               /* 44 TOTAL	*/
+    } /* 44 TOTAL	*/
     return vtot;
 }
 
@@ -3339,12 +3350,12 @@ real g96bond_angle(const rvec xi, const rvec xj, const rvec xk, const t_pbc *pbc
     *t1 = pbc_rvec_sub(pbc, xi, xj, r_ij); /*  3		*/
     *t2 = pbc_rvec_sub(pbc, xk, xj, r_kj); /*  3		*/
 
-    costh = cos_angle(r_ij, r_kj);         /* 25		*/
+    costh = cos_angle(r_ij, r_kj); /* 25		*/
     /* 41 TOTAL	*/
     return costh;
 }
 
-real g96angles(int nbonds,
+real g96angles(int           nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
                const rvec x[], rvec4 f[], rvec fshift[],
                const t_pbc *pbc, const t_graph *g,
@@ -3360,7 +3371,7 @@ real g96angles(int nbonds,
     ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -3380,7 +3391,7 @@ real g96angles(int nbonds,
         rkj_1    = gmx::invsqrt(iprod(r_kj, r_kj));
         rij_2    = rij_1 * rij_1;
         rkj_2    = rkj_1 * rkj_1;
-        rijrkj_1 = rij_1 * rkj_1;                 /* 23 */
+        rijrkj_1 = rij_1 * rkj_1; /* 23 */
 
 #ifdef DEBUG
         if (debug)
@@ -3389,11 +3400,11 @@ real g96angles(int nbonds,
                     cos_theta, va, dVdt);
         }
 #endif
-        for (m = 0; (m < DIM); m++)     /*  42	*/
+        for (m = 0; (m < DIM); m++) /*  42	*/
         {
-            f_i[m]    = dVdt * (r_kj[m] * rijrkj_1 - r_ij[m] * rij_2 * cos_theta);
-            f_k[m]    = dVdt * (r_ij[m] * rijrkj_1 - r_kj[m] * rkj_2 * cos_theta);
-            f_j[m]    = -f_i[m] - f_k[m];
+            f_i[m] = dVdt * (r_kj[m] * rijrkj_1 - r_ij[m] * rij_2 * cos_theta);
+            f_k[m] = dVdt * (r_ij[m] * rijrkj_1 - r_kj[m] * rkj_2 * cos_theta);
+            f_j[m] = -f_i[m] - f_k[m];
             f[ai][m] += f_i[m];
             f[aj][m] += f_j[m];
             f[ak][m] += f_k[m];
@@ -3410,18 +3421,18 @@ real g96angles(int nbonds,
         }
         rvec_inc(fshift[t1], f_i);
         rvec_inc(fshift[CENTRAL], f_j);
-        rvec_inc(fshift[t2], f_k);          /* 9 */
+        rvec_inc(fshift[t2], f_k); /* 9 */
         /* 163 TOTAL	*/
     }
     return vtot;
 }
 
-real cross_bond_bond(int nbonds,
+real cross_bond_bond(int           nbonds,
                      const t_iatom forceatoms[], const t_iparams forceparams[],
                      const rvec x[], rvec4 f[], rvec fshift[],
                      const t_pbc *pbc, const t_graph *g,
                      real gmx_unused lambda, real gmx_unused *dvdlambda,
-                     const t_mdatoms gmx_unused *md, t_fcdata gmx_unused  *fcd,
+                     const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                      int gmx_unused *global_atom_index)
 {
     /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
@@ -3434,7 +3445,7 @@ real cross_bond_bond(int nbonds,
     ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -3457,16 +3468,16 @@ real cross_bond_bond(int nbonds,
         s2 = r2 - r2e;
 
         /* Energy (can be negative!) */
-        vrr   = krr * s1 * s2;
+        vrr = krr * s1 * s2;
         vtot += vrr;
 
         /* Forces */
         svmul(-krr * s2 / r1, r_ij, f_i);
         svmul(-krr * s1 / r2, r_kj, f_k);
 
-        for (m = 0; (m < DIM); m++)     /*  12	*/
+        for (m = 0; (m < DIM); m++) /*  12	*/
         {
-            f_j[m]    = -f_i[m] - f_k[m];
+            f_j[m] = -f_i[m] - f_k[m];
             f[ai][m] += f_i[m];
             f[aj][m] += f_j[m];
             f[ak][m] += f_k[m];
@@ -3484,13 +3495,13 @@ real cross_bond_bond(int nbonds,
         }
         rvec_inc(fshift[t1], f_i);
         rvec_inc(fshift[CENTRAL], f_j);
-        rvec_inc(fshift[t2], f_k);          /* 9 */
+        rvec_inc(fshift[t2], f_k); /* 9 */
         /* 163 TOTAL	*/
     }
     return vtot;
 }
 
-real cross_bond_angle(int nbonds,
+real cross_bond_angle(int           nbonds,
                       const t_iatom forceatoms[], const t_iparams forceparams[],
                       const rvec x[], rvec4 f[], rvec fshift[],
                       const t_pbc *pbc, const t_graph *g,
@@ -3508,7 +3519,7 @@ real cross_bond_angle(int nbonds,
     ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -3535,7 +3546,7 @@ real cross_bond_angle(int nbonds,
         s3 = r3 - r3e;
 
         /* Energy (can be negative!) */
-        vrt   = krt * s3 * (s1 + s2);
+        vrt = krt * s3 * (s1 + s2);
         vtot += vrt;
 
         /* Forces */
@@ -3549,7 +3560,7 @@ real cross_bond_angle(int nbonds,
             f_j[m] = -f_i[m] - f_k[m];
         }
 
-        for (m = 0; (m < DIM); m++)     /*  12	*/
+        for (m = 0; (m < DIM); m++) /*  12	*/
         {
             f[ai][m] += f_i[m];
             f[aj][m] += f_j[m];
@@ -3568,7 +3579,7 @@ real cross_bond_angle(int nbonds,
         }
         rvec_inc(fshift[t1], f_i);
         rvec_inc(fshift[CENTRAL], f_j);
-        rvec_inc(fshift[t2], f_k);          /* 9 */
+        rvec_inc(fshift[t2], f_k); /* 9 */
         /* 163 TOTAL	*/
     }
     return vtot;
@@ -3614,13 +3625,13 @@ static real bonded_tab(const char *type, int table_nr,
     /* That was 22 flops */
 }
 
-real tab_bonds(int nbonds,
+real tab_bonds(int           nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
                const rvec x[], rvec4 f[], rvec fshift[],
                const t_pbc *pbc, const t_graph *g,
                real lambda, real *dvdlambda,
                const t_mdatoms gmx_unused *md, t_fcdata *fcd,
-               int gmx_unused  *global_atom_index)
+               int gmx_unused *global_atom_index)
 {
     int  i, m, ki, ai, aj, type, table;
     real dr, dr2, fbond, vbond, fij, vtot;
@@ -3628,15 +3639,15 @@ real tab_bonds(int nbonds,
     ivec dt;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
         aj   = forceatoms[i++];
 
-        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx);  /*   3      */
-        dr2 = iprod(dx, dx);                        /*   5		*/
-        dr  = dr2 * gmx::invsqrt(dr2);              /*  10		*/
+        ki  = pbc_rvec_sub(pbc, x[ai], x[aj], dx); /*   3      */
+        dr2 = iprod(dx, dx);                       /*   5		*/
+        dr  = dr2 * gmx::invsqrt(dr2);             /*  10		*/
 
         table = forceparams[type].tab.table;
 
@@ -3652,7 +3663,7 @@ real tab_bonds(int nbonds,
         }
 
 
-        vtot  += vbond;             /* 1*/
+        vtot += vbond;              /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
 #ifdef DEBUG
         if (debug)
@@ -3666,24 +3677,24 @@ real tab_bonds(int nbonds,
             ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
             ki = IVEC2IS(dt);
         }
-        for (m = 0; (m < DIM); m++)     /*  15		*/
+        for (m = 0; (m < DIM); m++) /*  15		*/
         {
-            fij                 = fbond * dx[m];
-            f[ai][m]           += fij;
-            f[aj][m]           -= fij;
-            fshift[ki][m]      += fij;
+            fij = fbond * dx[m];
+            f[ai][m] += fij;
+            f[aj][m] -= fij;
+            fshift[ki][m] += fij;
             fshift[CENTRAL][m] -= fij;
         }
-    }               /* 62 TOTAL	*/
+    } /* 62 TOTAL	*/
     return vtot;
 }
 
-real tab_angles(int nbonds,
+real tab_angles(int           nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
                 const rvec x[], rvec4 f[], rvec fshift[],
                 const t_pbc *pbc, const t_graph *g,
                 real lambda, real *dvdlambda,
-                const t_mdatoms gmx_unused  *md, t_fcdata *fcd,
+                const t_mdatoms gmx_unused *md, t_fcdata *fcd,
                 int gmx_unused *global_atom_index)
 {
     int  i, ai, aj, ak, t1, t2, type, table;
@@ -3692,7 +3703,7 @@ real tab_angles(int nbonds,
     ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -3700,7 +3711,7 @@ real tab_angles(int nbonds,
         ak   = forceatoms[i++];
 
         theta = bond_angle(x[ai], x[aj], x[ak], pbc,
-                           r_ij, r_kj, &cos_theta, &t1, &t2);  /*  41		*/
+                           r_ij, r_kj, &cos_theta, &t1, &t2); /*  41		*/
 
         table = forceparams[type].tab.table;
 
@@ -3711,7 +3722,7 @@ real tab_angles(int nbonds,
                                  theta, lambda, &va, &dVdt); /*  22  */
         vtot += va;
 
-        cos_theta2 = gmx::square(cos_theta);            /*   1		*/
+        cos_theta2 = gmx::square(cos_theta); /*   1		*/
         if (cos_theta2 < 1)
         {
             int  m;
@@ -3729,18 +3740,18 @@ real tab_angles(int nbonds,
                         theta * RAD2DEG, va, dVdt);
             }
 #endif
-            nrkj2 = iprod(r_kj, r_kj);  /*   5		*/
+            nrkj2 = iprod(r_kj, r_kj); /*   5		*/
             nrij2 = iprod(r_ij, r_ij);
 
             cik = st * gmx::invsqrt(nrkj2 * nrij2); /*  12		*/
             cii = sth / nrij2;                      /*  10		*/
             ckk = sth / nrkj2;                      /*  10		*/
 
-            for (m = 0; (m < DIM); m++)             /*  39		*/
+            for (m = 0; (m < DIM); m++) /*  39		*/
             {
-                f_i[m]    = -(cik * r_kj[m] - cii * r_ij[m]);
-                f_k[m]    = -(cik * r_ij[m] - ckk * r_kj[m]);
-                f_j[m]    = -f_i[m] - f_k[m];
+                f_i[m] = -(cik * r_kj[m] - cii * r_ij[m]);
+                f_k[m] = -(cik * r_ij[m] - ckk * r_kj[m]);
+                f_j[m] = -f_i[m] - f_k[m];
                 f[ai][m] += f_i[m];
                 f[aj][m] += f_j[m];
                 f[ak][m] += f_k[m];
@@ -3757,12 +3768,12 @@ real tab_angles(int nbonds,
             rvec_inc(fshift[t1], f_i);
             rvec_inc(fshift[CENTRAL], f_j);
             rvec_inc(fshift[t2], f_k);
-        }                                       /* 169 TOTAL	*/
+        } /* 169 TOTAL	*/
     }
     return vtot;
 }
 
-real tab_dihs(int nbonds,
+real tab_dihs(int           nbonds,
               const t_iatom forceatoms[], const t_iparams forceparams[],
               const rvec x[], rvec4 f[], rvec fshift[],
               const t_pbc *pbc, const t_graph *g,
@@ -3776,7 +3787,7 @@ real tab_dihs(int nbonds,
     real phi, sign, ddphi, vpd, vtot;
 
     vtot = 0.0;
-    for (i = 0; (i < nbonds); )
+    for (i = 0; (i < nbonds);)
     {
         type = forceatoms[i++];
         ai   = forceatoms[i++];
@@ -3785,7 +3796,7 @@ real tab_dihs(int nbonds,
         al   = forceatoms[i++];
 
         phi = dih_angle(x[ai], x[aj], x[ak], x[al], pbc, r_ij, r_kj, r_kl, m, n,
-                        &sign, &t1, &t2, &t3);  /*  84  */
+                        &sign, &t1, &t2, &t3); /*  84  */
 
         table = forceparams[type].tab.table;
 

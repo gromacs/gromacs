@@ -118,7 +118,7 @@ public:
     typename OptionType::InfoType *addOption(const OptionType &settings)
     {
         OptionInfo *info
-            = addOptionImpl(static_cast<const AbstractOption &>(settings));
+                = addOptionImpl(static_cast<const AbstractOption &>(settings));
         GMX_ASSERT(info->isType<typename OptionType::InfoType>(),
                    "Mismatching option info type declaration and implementation");
         return info->toType<typename OptionType::InfoType>();

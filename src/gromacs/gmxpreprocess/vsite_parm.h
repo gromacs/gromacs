@@ -43,11 +43,11 @@
 
 struct gmx_moltype_t;
 
-int set_vsites(gmx_bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
+int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                t_params plist[]);
 /* set parameters for virtual sites, return number of virtual sites */
 
-void set_vsites_ptype(gmx_bool bVerbose,  gmx_moltype_t *molt);
+void set_vsites_ptype(gmx_bool bVerbose, gmx_moltype_t *molt);
 /* set ptype to VSite for virtual sites */
 
 /*! \brief Clean up the bonded interactions

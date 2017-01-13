@@ -86,9 +86,7 @@ static void print_gpu_detection_stats(const gmx::MDLogger & mdlog,
     if (ngpu > 0)
     {
         std::string gpuDesc = sprint_gpus(gpu_info);
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "%d GPU%s detected%s:\n%s",
-                ngpu, (ngpu > 1) ? "s" : "", onhost, gpuDesc.c_str());
+        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("%d GPU%s detected%s:\n%s", ngpu, (ngpu > 1) ? "s" : "", onhost, gpuDesc.c_str());
     }
     else
     {
@@ -115,7 +113,8 @@ static void assign_rank_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
     GMX_RELEASE_ASSERT(gpu_opt, "Invalid gpu_opt pointer passed");
     GMX_RELEASE_ASSERT(nrank >= 1,
                        gmx::formatString("Invalid limit (%d) for the number of GPUs (detected %d compatible GPUs)",
-                                         rank, gpu_opt->n_dev_compatible).c_str());
+                                         rank, gpu_opt->n_dev_compatible)
+                               .c_str());
 
     if (gpu_opt->n_dev_compatible == 0)
     {
@@ -167,8 +166,8 @@ static void assign_rank_gpu_ids(gmx_gpu_opt_t *gpu_opt, int nrank, int rank)
 
 void gmx_select_rank_gpu_ids(const gmx::MDLogger &mdlog, const t_commrec *cr,
                              const gmx_gpu_info_t *gpu_info,
-                             gmx_bool bForceUseGPU,
-                             gmx_gpu_opt_t *gpu_opt)
+                             gmx_bool              bForceUseGPU,
+                             gmx_gpu_opt_t *       gpu_opt)
 {
     int  i;
     char sbuf[STRLEN], stmp[STRLEN];

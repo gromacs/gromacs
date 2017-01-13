@@ -125,7 +125,7 @@ void cmp_rvecs(FILE *fp, const char *title, int n, const rvec x1[], const rvec x
         {
             for (m = 0; m < DIM; m++)
             {
-                d    = x1[i][m] - x2[i][m];
+                d = x1[i][m] - x2[i][m];
                 ssd += d * d;
             }
         }

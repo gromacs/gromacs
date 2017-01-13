@@ -157,18 +157,18 @@ static void print5(FILE *fp)
     fprintf(fp, "\n");
 }
 
-static void check_viol(FILE *log,
+static void check_viol(FILE *   log,
                        t_ilist *disres, t_iparams forceparams[],
                        rvec x[], rvec4 f[],
                        t_pbc *pbc, t_graph *g, t_dr_result dr[],
                        int clust_id, int isize, int index[], real vvindex[],
                        t_fcdata *fcd)
 {
-    t_iatom *        forceatoms;
-    int              i, j, nat, n, type, nviol, ndr, label;
-    real             rt, mviol, tviol, viol, lam, dvdl, drt;
-    rvec *           fshift;
-    static  gmx_bool bFirst = TRUE;
+    t_iatom *       forceatoms;
+    int             i, j, nat, n, type, nviol, ndr, label;
+    real            rt, mviol, tviol, viol, lam, dvdl, drt;
+    rvec *          fshift;
+    static gmx_bool bFirst = TRUE;
 
     lam   = 0;
     dvdl  = 0;
@@ -186,7 +186,7 @@ static void check_viol(FILE *log,
         vvindex[j] = 0;
     }
     nat = interaction_function[F_DISRES].nratoms + 1;
-    for (i = 0; (i < disres->nr); )
+    for (i = 0; (i < disres->nr);)
     {
         type  = forceatoms[i];
         n     = 0;
@@ -207,23 +207,23 @@ static void check_viol(FILE *log,
                  && (forceparams[forceatoms[i + n]].disres.label == label));
 
         calc_disres_R_6(nullptr, n, &forceatoms[i],
-                        (const rvec*)x, pbc, fcd, nullptr);
+                        (const rvec *)x, pbc, fcd, nullptr);
 
         if (fcd->disres.Rt_6[0] <= 0)
         {
             gmx_fatal(FARGS, "ndr = %d, rt_6 = %f", ndr, fcd->disres.Rt_6[0]);
         }
 
-        rt                        = gmx::invsixthroot(fcd->disres.Rt_6[0]);
-        dr[clust_id].aver1[ndr]  += rt;
-        dr[clust_id].aver2[ndr]  += gmx::square(rt);
-        drt                       = 1.0 / gmx::power3(rt);
+        rt = gmx::invsixthroot(fcd->disres.Rt_6[0]);
+        dr[clust_id].aver1[ndr] += rt;
+        dr[clust_id].aver2[ndr] += gmx::square(rt);
+        drt = 1.0 / gmx::power3(rt);
         dr[clust_id].aver_3[ndr] += drt;
         dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[0];
 
         snew(fshift, SHIFTS);
         interaction_function[F_DISRES].ifunc(n, &forceatoms[i], forceparams,
-                                             (const rvec*)x, f, fshift,
+                                             (const rvec *)x, f, fshift,
                                              pbc, g, lam, &dvdl, nullptr, fcd, nullptr);
         sfree(fshift);
         viol = fcd->disres.sumviol;
@@ -365,7 +365,7 @@ static void dump_viol(FILE *log, int ndr, t_dr_stats *drs, gmx_bool bLinear)
     fprintf(log, "Restr. Core     Up1     <r>   <rT3>   <rT6>  <viol><violT3><violT6>\n");
     for (i = 0; (i < ndr); i++)
     {
-        if (bLinear  && (drs[i].viol == 0))
+        if (bLinear && (drs[i].viol == 0))
         {
             break;
         }
@@ -461,7 +461,8 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
         }
         if (dr[k].nframes != (clust->index[k + 1] - clust->index[k]))
         {
-            gmx_fatal(FARGS, "Inconsistency in cluster %s.\n"
+            gmx_fatal(FARGS,
+                      "Inconsistency in cluster %s.\n"
                       "Found %d frames in trajectory rather than the expected %d\n",
                       clust_name[k], dr[k].nframes,
                       clust->index[k + 1] - clust->index[k]);
@@ -496,12 +497,12 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
             drs[i].viol   = std::max(0.0, static_cast<double>(drs[i].r - drs[i].up1));
             drs[i].violT3 = std::max(0.0, static_cast<double>(drs[i].rT3 - drs[i].up1));
             drs[i].violT6 = std::max(0.0, static_cast<double>(drs[i].rT6 - drs[i].up1));
-            sumV         += drs[i].viol;
-            sumVT3       += drs[i].violT3;
-            sumVT6       += drs[i].violT6;
-            maxV          = std::max(maxV, static_cast<double>(drs[i].viol));
-            maxVT3        = std::max(maxVT3, static_cast<double>(drs[i].violT3));
-            maxVT6        = std::max(maxVT6, static_cast<double>(drs[i].violT6));
+            sumV += drs[i].viol;
+            sumVT3 += drs[i].violT3;
+            sumVT6 += drs[i].violT6;
+            maxV   = std::max(maxV, static_cast<double>(drs[i].viol));
+            maxVT3 = std::max(maxVT3, static_cast<double>(drs[i].violT3));
+            maxVT6 = std::max(maxVT6, static_cast<double>(drs[i].violT6));
         }
         if (std::strcmp(clust_name[k], "1000") == 0)
         {
@@ -510,7 +511,6 @@ static void dump_clust_stats(FILE *fp, int ndr, t_ilist *disres,
         fprintf(fp, "%-10s%6d%8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n",
                 clust_name[k],
                 dr[k].nframes, sumV, maxV, sumVT3, maxVT3, sumVT6, maxVT6);
-
     }
     fflush(fp);
     sfree(drs);
@@ -559,7 +559,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
             {
                 resnr[a_offset + a] = n_res + atoms->atom[a].resind;
             }
-            n_res    += atoms->nres;
+            n_res += atoms->nres;
             a_offset += atoms->nr;
         }
     }
@@ -632,11 +632,11 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
             {
                 fprintf(debug, "DR %d, atoms %d, %d, distance %g\n", i, ai, aj, rav);
             }
-            rviol           = std::max(static_cast<real>(0.0), rav - idef->iparams[tp].disres.up1);
+            rviol = std::max(static_cast<real>(0.0), rav - idef->iparams[tp].disres.up1);
             matrix[ri][rj] += w_dr[i] * rviol;
             matrix[rj][ri] += w_dr[i] * rviol;
-            hi              = std::max(hi, matrix[ri][rj]);
-            hi              = std::max(hi, matrix[rj][ri]);
+            hi = std::max(hi, matrix[ri][rj]);
+            hi = std::max(hi, matrix[rj][ri]);
         }
     }
 
@@ -659,7 +659,7 @@ static void dump_disre_matrix(const char *fn, t_dr_result *dr, int ndr,
 
 int gmx_disre(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes violations of distance restraints.",
         "The program always",
         "computes the instantaneous violations rather than time-averaged,",
@@ -681,14 +681,10 @@ int gmx_disre(int argc, char *argv[])
     static real     max_dr  = 0;
     static gmx_bool bThird  = TRUE;
     t_pargs         pa[]    = {
-        { "-ntop", FALSE, etINT,  {&ntop},
-          "Number of large violations that are stored in the log file every step" },
-        { "-maxdr", FALSE, etREAL, {&max_dr},
-          "Maximum distance violation in matrix output. If less than or equal to 0 the maximum will be determined by the data." },
-        { "-nlevels", FALSE, etINT, {&nlevels},
-          "Number of levels in the matrix output" },
-        { "-third", FALSE, etBOOL, {&bThird},
-          "Use inverse third power averaging or linear for matrix output" }
+        { "-ntop", FALSE, etINT, { &ntop }, "Number of large violations that are stored in the log file every step" },
+        { "-maxdr", FALSE, etREAL, { &max_dr }, "Maximum distance violation in matrix output. If less than or equal to 0 the maximum will be determined by the data." },
+        { "-nlevels", FALSE, etINT, { &nlevels }, "Number of levels in the matrix output" },
+        { "-third", FALSE, etBOOL, { &bThird }, "Use inverse third power averaging or linear for matrix output" }
     };
 
     FILE *            out = nullptr, *aver = nullptr, *numv = nullptr, *maxxv = nullptr, *xvg = nullptr;
@@ -724,16 +720,16 @@ int gmx_disre(int argc, char *argv[])
     t_filenm fnm[] = {
         { efTPR, nullptr, nullptr, ffREAD },
         { efTRX, "-f", nullptr, ffREAD },
-        { efXVG, "-ds", "drsum",  ffWRITE },
+        { efXVG, "-ds", "drsum", ffWRITE },
         { efXVG, "-da", "draver", ffWRITE },
-        { efXVG, "-dn", "drnum",  ffWRITE },
-        { efXVG, "-dm", "drmax",  ffWRITE },
-        { efXVG, "-dr", "restr",  ffWRITE },
-        { efLOG, "-l",  "disres", ffWRITE },
-        { efNDX, nullptr,  "viol",   ffOPTRD },
-        { efPDB, "-q",  "viol",   ffOPTWR },
-        { efNDX, "-c",  "clust",  ffOPTRD },
-        { efXPM, "-x",  "matrix", ffOPTWR }
+        { efXVG, "-dn", "drnum", ffWRITE },
+        { efXVG, "-dm", "drmax", ffWRITE },
+        { efXVG, "-dr", "restr", ffWRITE },
+        { efLOG, "-l", "disres", ffWRITE },
+        { efNDX, nullptr, "viol", ffOPTRD },
+        { efPDB, "-q", "viol", ffOPTWR },
+        { efNDX, "-c", "clust", ffOPTRD },
+        { efXPM, "-x", "matrix", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -809,7 +805,7 @@ int gmx_disre(int argc, char *argv[])
             snew(leg[i], 12);
             sprintf(leg[i], "index %d", index[i]);
         }
-        xvgr_legend(xvg, isize, (const char**)leg, oenv);
+        xvgr_legend(xvg, isize, (const char **)leg, oenv);
     }
     else
     {
@@ -912,7 +908,7 @@ int gmx_disre(int argc, char *argv[])
                 }
                 fprintf(xvg, "\n");
             }
-            fprintf(out,  "%10g  %10g\n", t, dr.sumv);
+            fprintf(out, "%10g  %10g\n", t, dr.sumv);
             fprintf(aver, "%10g  %10g\n", t, dr.averv);
             fprintf(maxxv, "%10g  %10g\n", t, dr.maxv);
             fprintf(numv, "%10g  %10d\n", t, dr.nv);

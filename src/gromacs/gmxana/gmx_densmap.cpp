@@ -60,7 +60,7 @@
 
 int gmx_densmap(int argc, char *argv[])
 {
-    const char *       desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes 2D number-density maps.",
         "It can make planar and axial-radial density maps.",
         "The output [REF].xpm[ref] file can be visualized with for instance xv",
@@ -94,39 +94,26 @@ int gmx_densmap(int argc, char *argv[])
         "from zero to the maximum density, you can set the maximum",
         "with the option [TT]-dmax[tt]."
     };
-    static int         n1      = 0, n2 = 0;
-    static real        xmin    = -1, xmax = -1, bin = 0.02, dmin = 0, dmax = 0, amax = 0, rmax = 0;
+    static int         n1 = 0, n2 = 0;
+    static real        xmin = -1, xmax = -1, bin = 0.02, dmin = 0, dmax = 0, amax = 0, rmax = 0;
     static gmx_bool    bMirror = FALSE, bSums = FALSE;
     static const char *eaver[] = { nullptr, "z", "y", "x", nullptr };
     static const char *eunit[] = { nullptr, "nm-3", "nm-2", "count", nullptr };
 
-    t_pargs           pa[] = {
-        { "-bin", FALSE, etREAL, {&bin},
-          "Grid size (nm)" },
-        { "-aver", FALSE, etENUM, {eaver},
-          "The direction to average over" },
-        { "-xmin", FALSE, etREAL, {&xmin},
-          "Minimum coordinate for averaging" },
-        { "-xmax", FALSE, etREAL, {&xmax},
-          "Maximum coordinate for averaging" },
-        { "-n1", FALSE, etINT, {&n1},
-          "Number of grid cells in the first direction" },
-        { "-n2", FALSE, etINT, {&n2},
-          "Number of grid cells in the second direction" },
-        { "-amax", FALSE, etREAL, {&amax},
-          "Maximum axial distance from the center"},
-        { "-rmax", FALSE, etREAL, {&rmax},
-          "Maximum radial distance" },
-        { "-mirror", FALSE, etBOOL, {&bMirror},
-          "Add the mirror image below the axial axis" },
-        { "-sums", FALSE, etBOOL, {&bSums},
-          "Print density sums (1D map) to stdout" },
-        { "-unit", FALSE, etENUM, {eunit},
-          "Unit for the output" },
-        { "-dmin", FALSE, etREAL, {&dmin},
-          "Minimum density in output"},
-        { "-dmax", FALSE, etREAL, {&dmax},
-          "Maximum density in output (0 means calculate it)"},
+    t_pargs pa[] = {
+        { "-bin", FALSE, etREAL, { &bin }, "Grid size (nm)" },
+        { "-aver", FALSE, etENUM, { eaver }, "The direction to average over" },
+        { "-xmin", FALSE, etREAL, { &xmin }, "Minimum coordinate for averaging" },
+        { "-xmax", FALSE, etREAL, { &xmax }, "Maximum coordinate for averaging" },
+        { "-n1", FALSE, etINT, { &n1 }, "Number of grid cells in the first direction" },
+        { "-n2", FALSE, etINT, { &n2 }, "Number of grid cells in the second direction" },
+        { "-amax", FALSE, etREAL, { &amax }, "Maximum axial distance from the center" },
+        { "-rmax", FALSE, etREAL, { &rmax }, "Maximum radial distance" },
+        { "-mirror", FALSE, etBOOL, { &bMirror }, "Add the mirror image below the axial axis" },
+        { "-sums", FALSE, etBOOL, { &bSums }, "Print density sums (1D map) to stdout" },
+        { "-unit", FALSE, etENUM, { eunit }, "Unit for the output" },
+        { "-dmin", FALSE, etREAL, { &dmin }, "Minimum density in output" },
+        { "-dmax", FALSE, etREAL, { &dmax }, "Maximum density in output (0 means calculate it)" },
     };
     gmx_bool          bXmin, bXmax, bRadial;
     FILE *            fp;
@@ -144,16 +131,16 @@ int gmx_densmap(int argc, char *argv[])
     int **            ind = nullptr, *index;
     real **           grid, maxgrid, m1, m2, box1, box2, *tickx, *tickz, invcellvol;
     real              invspa = 0, invspz = 0, axial, r, vol_old, vol, rowsum;
-    int               nlev   = 51;
-    t_rgb             rlo    = {1, 1, 1}, rhi = {0, 0, 0};
+    int               nlev = 51;
+    t_rgb             rlo = { 1, 1, 1 }, rhi = { 0, 0, 0 };
     gmx_output_env_t *oenv;
     const char *      label[] = { "x (nm)", "y (nm)", "z (nm)" };
     t_filenm          fnm[]   = {
-        { efTRX, "-f",   nullptr,       ffREAD },
-        { efTPS, nullptr,   nullptr,       ffOPTRD },
-        { efNDX, nullptr,   nullptr,       ffOPTRD },
-        { efDAT, "-od",  "densmap",   ffOPTWR },
-        { efXPM, "-o",   "densmap",   ffWRITE }
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffOPTRD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efDAT, "-od", "densmap", ffOPTWR },
+        { efXPM, "-o", "densmap", ffWRITE }
     };
 #define NFILE asize(fnm)
     int npargs;
@@ -230,9 +217,21 @@ int gmx_densmap(int argc, char *argv[])
 
     switch (eaver[0][0])
     {
-        case 'x': cav = XX; c1 = YY; c2 = ZZ; break;
-        case 'y': cav = YY; c1 = XX; c2 = ZZ; break;
-        case 'z': cav = ZZ; c1 = XX; c2 = YY; break;
+        case 'x':
+            cav = XX;
+            c1  = YY;
+            c2  = ZZ;
+            break;
+        case 'y':
+            cav = YY;
+            c1  = XX;
+            c2  = ZZ;
+            break;
+        case 'z':
+            cav = ZZ;
+            c1  = XX;
+            c2  = YY;
+            break;
     }
 
     read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
@@ -277,8 +276,8 @@ int gmx_densmap(int argc, char *argv[])
     {
         if (!bRadial)
         {
-            box1      += box[c1][c1];
-            box2      += box[c2][c2];
+            box1 += box[c1][c1];
+            box2 += box[c2][c2];
             invcellvol = n1 * n2;
             if (nmpower == -3)
             {
@@ -395,9 +394,15 @@ int gmx_densmap(int argc, char *argv[])
             {
                 switch (nmpower)
                 {
-                    case -3: vol = M_PI * (j + 1) * (j + 1) / (invspz * invspz * invspa); break;
-                    case -2: vol =            (j + 1) / (invspz * invspa);        break;
-                    default: vol =             j + 1;                         break;
+                    case -3:
+                        vol = M_PI * (j + 1) * (j + 1) / (invspz * invspz * invspa);
+                        break;
+                    case -2:
+                        vol = (j + 1) / (invspz * invspa);
+                        break;
+                    default:
+                        vol = j + 1;
+                        break;
                 }
                 if (bMirror)
                 {

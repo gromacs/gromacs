@@ -142,7 +142,7 @@ static void pull_reduce_double(t_commrec *  cr,
 
 static void pull_set_pbcatom(t_commrec *cr, pull_group_work_t *pgrp,
                              rvec *x,
-                             rvec x_pbc)
+                             rvec  x_pbc)
 {
     int a;
 
@@ -285,7 +285,7 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                     {
                         /* Determine the radial components */
                         dr[m] = dx[m] - inp * dir[m];
-                        dr2  += dr[m] * dr[m];
+                        dr2 += dr[m] * dr[m];
                     }
                     dr2_rel = dr2 * inv_cyl_r2;
 
@@ -298,10 +298,10 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                         if (pdyna->nat_loc >= pdyna->nalloc_loc)
                         {
                             pdyna->nalloc_loc = over_alloc_large(pdyna->nat_loc + 1);
-                            srenew(pdyna->ind_loc,    pdyna->nalloc_loc);
+                            srenew(pdyna->ind_loc, pdyna->nalloc_loc);
                             srenew(pdyna->weight_loc, pdyna->nalloc_loc);
-                            srenew(pdyna->mdw,        pdyna->nalloc_loc);
-                            srenew(pdyna->dv,         pdyna->nalloc_loc);
+                            srenew(pdyna->mdw, pdyna->nalloc_loc);
+                            srenew(pdyna->dv, pdyna->nalloc_loc);
                         }
                         pdyna->ind_loc[pdyna->nat_loc] = ii;
 
@@ -314,9 +314,9 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
                         weight                            = 1 + (-2 + dr2_rel) * dr2_rel;
                         dweight_r                         = (-4 + 4 * dr2_rel) * inv_cyl_r2;
                         pdyna->weight_loc[pdyna->nat_loc] = weight;
-                        sum_a                            += mass * weight * inp;
-                        wmass                            += mass * weight;
-                        wwmass                           += mass * weight * weight;
+                        sum_a += mass * weight * inp;
+                        wmass += mass * weight;
+                        wwmass += mass * weight * weight;
                         dsvmul(mass * dweight_r, dr, mdw);
                         copy_dvec(mdw, pdyna->mdw[pdyna->nat_loc]);
                         /* Currently we only have the axial component of the
@@ -382,9 +382,9 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
             pcrd->cyl_dev = 0;
             for (m = 0; m < DIM; m++)
             {
-                g_x[m]         = pgrp->x[m] - pcrd->vec[m] * pcrd->value_ref;
-                dist           = -pcrd->vec[m] * comm->dbuf_cyl[c * stride + 2] * pdyna->mwscale;
-                pdyna->x[m]    = g_x[m] - dist;
+                g_x[m]      = pgrp->x[m] - pcrd->vec[m] * pcrd->value_ref;
+                dist        = -pcrd->vec[m] * comm->dbuf_cyl[c * stride + 2] * pdyna->mwscale;
+                pdyna->x[m] = g_x[m] - dist;
                 pcrd->cyl_dev += dist;
             }
             /* Now we know the exact COM of the cylinder reference group,
@@ -395,7 +395,8 @@ static void make_cyl_refgrps(t_commrec *cr, struct pull_t *pull, t_mdatoms *md,
             for (m = 0; m < DIM; m++)
             {
                 pcrd->ffrad[m] = (comm->dbuf_cyl[c * stride + 6 + m]
-                                  + comm->dbuf_cyl[c * stride + 3 + m] * pcrd->cyl_dev) / wmass;
+                                  + comm->dbuf_cyl[c * stride + 3 + m] * pcrd->cyl_dev)
+                                 / wmass;
             }
 
             if (debug)
@@ -425,9 +426,9 @@ static double atan2_0_2pi(double y, double x)
 static void sum_com_part(const pull_group_work_t *pgrp,
                          int ind_start, int ind_end,
                          const rvec *x, const rvec *xp,
-                         const real *mass,
-                         const t_pbc *pbc,
-                         const rvec x_pbc,
+                         const real *    mass,
+                         const t_pbc *   pbc,
+                         const rvec      x_pbc,
                          pull_sum_com_t *sum_com)
 {
     double sum_wm   = 0;
@@ -441,16 +442,16 @@ static void sum_com_part(const pull_group_work_t *pgrp,
         real wm;
         if (pgrp->weight_loc == nullptr)
         {
-            wm      = mass[ii];
+            wm = mass[ii];
             sum_wm += wm;
         }
         else
         {
             real w;
 
-            w        = pgrp->weight_loc[i];
-            wm       = w * mass[ii];
-            sum_wm  += wm;
+            w  = pgrp->weight_loc[i];
+            wm = w * mass[ii];
+            sum_wm += wm;
             sum_wwm += wm * w;
         }
         if (pgrp->epgrppbc == epgrppbcNONE)
@@ -505,7 +506,7 @@ static void sum_com_part_cosweight(const pull_group_work_t *pgrp,
                                    int ind_start, int ind_end,
                                    int cosdim, real twopi_box,
                                    const rvec *x, const rvec *xp,
-                                   const real *mass,
+                                   const real *    mass,
                                    pull_sum_com_t *sum_com)
 {
     /* Cosine weighting geometry */
@@ -524,8 +525,8 @@ static void sum_com_part_cosweight(const pull_group_work_t *pgrp,
         /* Determine cos and sin sums */
         real cw = std::cos(x[ii][cosdim] * twopi_box);
         real sw = std::sin(x[ii][cosdim] * twopi_box);
-        sum_cm  += static_cast<double>(cw * m);
-        sum_sm  += static_cast<double>(sw * m);
+        sum_cm += static_cast<double>(cw * m);
+        sum_sm += static_cast<double>(sw * m);
         sum_ccm += static_cast<double>(cw * cw * m);
         sum_csm += static_cast<double>(cw * sw * m);
         sum_ssm += static_cast<double>(sw * sw * m);
@@ -549,7 +550,7 @@ static void sum_com_part_cosweight(const pull_group_work_t *pgrp,
 }
 
 /* calculates center of mass of selection index from all coordinates x */
-void pull_calc_coms(t_commrec *cr,
+void pull_calc_coms(t_commrec *    cr,
                     struct pull_t *pull, t_mdatoms *md, t_pbc *pbc, double t,
                     rvec x[], rvec *xp)
 {
@@ -665,7 +666,7 @@ void pull_calc_coms(t_commrec *cr,
                     /* Reduce the thread contributions to sum_com[0] */
                     for (int t = 1; t < pull->nthreads; t++)
                     {
-                        sum_com->sum_wm  += pull->sum_com[t].sum_wm;
+                        sum_com->sum_wm += pull->sum_com[t].sum_wm;
                         sum_com->sum_wwm += pull->sum_com[t].sum_wwm;
                         dvec_inc(sum_com->sum_wmx, pull->sum_com[t].sum_wmx);
                         dvec_inc(sum_com->sum_wmxp, pull->sum_com[t].sum_wmxp);
@@ -678,7 +679,7 @@ void pull_calc_coms(t_commrec *cr,
                 }
 
                 /* Copy local sums to a buffer for global summing */
-                copy_dvec(sum_com->sum_wmx,  comm->dbuf[g * 3]);
+                copy_dvec(sum_com->sum_wmx, comm->dbuf[g * 3]);
                 copy_dvec(sum_com->sum_wmxp, comm->dbuf[g * 3 + 1]);
                 comm->dbuf[g * 3 + 2][0] = sum_com->sum_wm;
                 comm->dbuf[g * 3 + 2][1] = sum_com->sum_wwm;
@@ -686,7 +687,7 @@ void pull_calc_coms(t_commrec *cr,
             }
             else
             {
-                /* Cosine weighting geometry.
+/* Cosine weighting geometry.
                  * This uses a slab of the system, thus we always have many
                  * atoms in the pull groups. Therefore, always use threads.
                  */
@@ -705,8 +706,8 @@ void pull_calc_coms(t_commrec *cr,
                 pull_sum_com_t *sum_com = &pull->sum_com[0];
                 for (int t = 1; t < pull->nthreads; t++)
                 {
-                    sum_com->sum_cm  += pull->sum_com[t].sum_cm;
-                    sum_com->sum_sm  += pull->sum_com[t].sum_sm;
+                    sum_com->sum_cm += pull->sum_com[t].sum_cm;
+                    sum_com->sum_sm += pull->sum_com[t].sum_sm;
                     sum_com->sum_ccm += pull->sum_com[t].sum_ccm;
                     sum_com->sum_csm += pull->sum_com[t].sum_csm;
                     sum_com->sum_ssm += pull->sum_com[t].sum_ssm;
@@ -715,9 +716,9 @@ void pull_calc_coms(t_commrec *cr,
                 }
 
                 /* Copy local sums to a buffer for global summing */
-                comm->dbuf[g * 3    ][0] = sum_com->sum_cm;
-                comm->dbuf[g * 3    ][1] = sum_com->sum_sm;
-                comm->dbuf[g * 3    ][2] = 0;
+                comm->dbuf[g * 3][0]     = sum_com->sum_cm;
+                comm->dbuf[g * 3][1]     = sum_com->sum_sm;
+                comm->dbuf[g * 3][2]     = 0;
                 comm->dbuf[g * 3 + 1][0] = sum_com->sum_ccm;
                 comm->dbuf[g * 3 + 1][1] = sum_com->sum_csm;
                 comm->dbuf[g * 3 + 1][2] = sum_com->sum_ssm;
@@ -755,7 +756,7 @@ void pull_calc_coms(t_commrec *cr,
                 /* Divide by the total mass */
                 for (m = 0; m < DIM; m++)
                 {
-                    pgrp->x[m] = comm->dbuf[g * 3  ][m] * pgrp->mwscale;
+                    pgrp->x[m] = comm->dbuf[g * 3][m] * pgrp->mwscale;
                     if (xp)
                     {
                         pgrp->xp[m] = comm->dbuf[g * 3 + 1][m] * pgrp->mwscale;
@@ -784,7 +785,8 @@ void pull_calc_coms(t_commrec *cr,
                 wmass  = sqrt(csw * csw + snw * snw);
                 wwmass = (comm->dbuf[g * 3 + 1][0] * csw * csw
                           + comm->dbuf[g * 3 + 1][1] * csw * snw
-                          + comm->dbuf[g * 3 + 1][2] * snw * snw) / (wmass * wmass);
+                          + comm->dbuf[g * 3 + 1][2] * snw * snw)
+                         / (wmass * wmass);
 
                 pgrp->mwscale = 1.0 / wmass;
                 pgrp->wscale  = wmass / wwmass;
@@ -796,7 +798,7 @@ void pull_calc_coms(t_commrec *cr,
                 {
                     ii                  = pgrp->ind_loc[i];
                     pgrp->weight_loc[i] = csw * cos(twopi_box * x[ii][pull->cosdim])
-                        + snw * sin(twopi_box * x[ii][pull->cosdim]);
+                                          + snw * sin(twopi_box * x[ii][pull->cosdim]);
                 }
                 if (xp)
                 {

@@ -134,7 +134,7 @@ public:
                 const std::string &currentLine = lines_[nextLineIndex_];
                 const size_t       prevOffset  = nextLineOffset_;
                 const size_t       nextOffset
-                    = wrapper.findNextLine(currentLine, prevOffset);
+                        = wrapper.findNextLine(currentLine, prevOffset);
                 if (nextOffset >= currentLine.size())
                 {
                     ++nextLineIndex_;
@@ -283,7 +283,7 @@ void TextTableFormatter::setColumnFirstLineOffset(int index, int firstLine)
 {
     GMX_ASSERT(firstLine >= 0, "Invalid first line");
     Impl::ColumnData &column = impl_->columnData(index);
-    column.firstLine_ = firstLine;
+    column.firstLine_        = firstLine;
 }
 
 std::string TextTableFormatter::formatRow()
@@ -295,7 +295,7 @@ std::string TextTableFormatter::formatRow()
     {
         size_t totalWidth = 0;
         result.append(impl_->firstColumnIndent_, ' ');
-        for (column  = impl_->columns_.begin();
+        for (column = impl_->columns_.begin();
              column != impl_->columns_.end();
              ++column)
         {
@@ -323,7 +323,7 @@ std::string TextTableFormatter::formatRow()
     std::vector<std::string> columnLines;
     int                      currentWidth    = 0;
     bool                     bFoldLastColumn = false;
-    for (column  = impl_->columns_.begin();
+    for (column = impl_->columns_.begin();
          column != impl_->columns_.end();
          ++column)
     {
@@ -354,7 +354,7 @@ std::string TextTableFormatter::formatRow()
             && columnLines.size() >= lines.size() + column->lines_.size())
         {
             bFoldLastColumn = true;
-            currentWidth   += column->width();
+            currentWidth += column->width();
             break;
         }
         // Add columnLines into lines.
@@ -390,7 +390,7 @@ std::string TextTableFormatter::formatRow()
     {
         Impl::ColumnList::reference lastColumn = impl_->columns_.back();
         const int                   totalIndent
-            = impl_->firstColumnIndent_ + impl_->foldLastColumnToNextLineIndent_;
+                = impl_->firstColumnIndent_ + impl_->foldLastColumnToNextLineIndent_;
         lastColumn.startFormatting();
         currentWidth -= impl_->foldLastColumnToNextLineIndent_;
         while (lastColumn.hasLinesRemaining())

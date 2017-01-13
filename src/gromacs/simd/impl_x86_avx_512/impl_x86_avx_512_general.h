@@ -41,7 +41,7 @@
 namespace gmx
 {
 
-static inline void simdPrefetch(const void * m)
+static inline void simdPrefetch(const void *m)
 {
     _mm_prefetch(reinterpret_cast<const char *>(m), _MM_HINT_T0);
 }
@@ -67,7 +67,6 @@ static inline __mmask16 avx512Int2Mask(short i)
 {
     return static_cast<__mmask16>(i);
 }
-
 }
 
 #endif // GMX_SIMD_IMPL_X86_AVX_512_GENERAL_H

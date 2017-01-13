@@ -40,6 +40,6 @@
 
 #include "gromacs/gmxpreprocess/topio.h"
 
-void make_shake (t_params plist[], t_atoms *atoms, int nshake);
+void make_shake(t_params plist[], t_atoms *atoms, int nshake);
 
 #endif

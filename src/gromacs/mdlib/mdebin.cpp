@@ -77,11 +77,11 @@ static const char *tricl_boxs_nm[] = {
 
 static const char *vol_nm[] = { "Volume" };
 
-static const char *dens_nm[] = {"Density" };
+static const char *dens_nm[] = { "Density" };
 
-static const char *pv_nm[] = {"pV" };
+static const char *pv_nm[] = { "pV" };
 
-static const char *enthalpy_nm[] = {"Enthalpy" };
+static const char *enthalpy_nm[] = { "Enthalpy" };
 
 static const char *boxvel_nm[] = {
     "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
@@ -157,7 +157,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
 
     bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
     b14   = (gmx_mtop_ftype_count(mtop, F_LJ14) > 0
-             || gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0);
+           || gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0);
 
     ncon           = gmx_mtop_ftype_count(mtop, F_CONSTR);
     nset           = gmx_mtop_ftype_count(mtop, F_SETTLE);
@@ -222,7 +222,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             md->bEner[i] = FALSE;
         }
         else if ((i == F_DVDL_COUL && ir->fepvals->separate_dvdl[efptCOUL])
-                 || (i == F_DVDL_VDW  && ir->fepvals->separate_dvdl[efptVDW])
+                 || (i == F_DVDL_VDW && ir->fepvals->separate_dvdl[efptVDW])
                  || (i == F_DVDL_BONDED && ir->fepvals->separate_dvdl[efptBONDED])
                  || (i == F_DVDL_RESTRAINT && ir->fepvals->separate_dvdl[efptRESTRAINT])
                  || (i == F_DKDL && ir->fepvals->separate_dvdl[efptMASS])
@@ -235,7 +235,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         {
             md->bEner[i] = FALSE;
         }
-        else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES)  || (i == F_EQM))
+        else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES) || (i == F_EQM))
         {
             md->bEner[i] = TRUE;
         }
@@ -325,12 +325,12 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                                 md->bTricl ? NTRICLBOXS : NBOXS,
                                 md->bTricl ? tricl_boxs_nm : boxs_nm,
                                 unit_length);
-        md->ivol  = get_ebin_space(md->ebin, 1, vol_nm,  unit_volume);
+        md->ivol  = get_ebin_space(md->ebin, 1, vol_nm, unit_volume);
         md->idens = get_ebin_space(md->ebin, 1, dens_nm, unit_density_SI);
         if (md->bDiagPres)
         {
-            md->ipv       = get_ebin_space(md->ebin, 1, pv_nm,   unit_energy);
-            md->ienthalpy = get_ebin_space(md->ebin, 1, enthalpy_nm,   unit_energy);
+            md->ipv       = get_ebin_space(md->ebin, 1, pv_nm, unit_energy);
+            md->ienthalpy = get_ebin_space(md->ebin, 1, enthalpy_nm, unit_energy);
         }
     }
     if (md->bConstrVir)
@@ -364,7 +364,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         md->bEInd[i] = FALSE;
     }
     md->bEInd[egCOULSR] = TRUE;
-    md->bEInd[egLJSR  ] = TRUE;
+    md->bEInd[egLJSR]   = TRUE;
 
     if (bBHAM)
     {
@@ -434,7 +434,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
     md->nNHC = ir->opts.nhchainlength; /* shorthand for number of NH chains */
     if (md->bMTTK)
     {
-        md->nTCP = 1;  /* assume only one possible coupling system for barostat
+        md->nTCP = 1; /* assume only one possible coupling system for barostat
                           for now */
     }
     else
@@ -500,7 +500,7 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
                 {
                     for (i = 0; (i < md->nTCP); i++)
                     {
-                        bufi = baro_nm[0];  /* All barostat DOF's together for now. */
+                        bufi = baro_nm[0]; /* All barostat DOF's together for now. */
                         for (j = 0; (j < md->nNHC); j++)
                         {
                             sprintf(buf, "Xi-%d-%s", j, bufi);
@@ -665,7 +665,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
 {
     FILE *      fp;
     const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
-    *lambdastate     = "\\lambda state";
+               *lambdastate = "\\lambda state";
     char        title[STRLEN], label_x[STRLEN], label_y[STRLEN];
     int         i, nps, nsets, nsets_de, nsetsbegin;
     int         n_lambda_terms = 0;
@@ -713,7 +713,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
     }
     if ((ir->efep != efepSLOWGROWTH) && (ir->efep != efepEXPANDED))
     {
-        if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
+        if ((fep->init_lambda >= 0) && (n_lambda_terms == 1))
         {
             /* compatibility output */
             sprintf(&(buf[bufplace]), "%s = %.4f", lambda, fep->init_lambda);
@@ -744,12 +744,12 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
 
     if (fep->n_lambda > 0 && (expand->elmcmove > elmcmoveNO))
     {
-        nsets += 1;   /*add fep state for expanded ensemble */
+        nsets += 1; /*add fep state for expanded ensemble */
     }
 
     if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
     {
-        nsets += 1;  /* add energy to the dhdl as well */
+        nsets += 1; /* add energy to the dhdl as well */
     }
 
     nsetsextend = nsets;
@@ -760,7 +760,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                              lambda, and only output when init_lambda is not
                              set in order to maintain compatibility of the
                              dhdl.xvg file) */
-        write_pV     = TRUE;
+        write_pV = TRUE;
     }
     snew(setname, nsetsextend);
 
@@ -769,7 +769,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         /* state for the fep_vals, if we have alchemical sampling */
         sprintf(buf, "%s", "Thermodynamic state");
         setname[s] = gmx_strdup(buf);
-        s         += 1;
+        s += 1;
     }
 
     if (fep->edHdLPrintEnergy != edHdLPrintEnergyNO)
@@ -785,7 +785,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                 sprintf(buf, "%s (%s)", "Total Energy", unit_energy);
         }
         setname[s] = gmx_strdup(buf);
-        s         += 1;
+        s += 1;
     }
 
     if (fep->dhdl_derivatives == edhdlderivativesYES)
@@ -795,7 +795,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
             if (fep->separate_dvdl[i])
             {
 
-                if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
+                if ((fep->init_lambda >= 0) && (n_lambda_terms == 1))
                 {
                     /* compatibility output */
                     sprintf(buf, "%s %s %.4f", dhdl, lambda, fep->init_lambda);
@@ -811,7 +811,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
                             lam);
                 }
                 setname[s] = gmx_strdup(buf);
-                s         += 1;
+                s += 1;
             }
         }
     }
@@ -824,7 +824,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
 
         if (expand->elmcmove > elmcmoveNO)
         {
-            nsetsbegin = 1;  /* for including the expanded ensemble */
+            nsetsbegin = 1; /* for including the expanded ensemble */
         }
         else
         {
@@ -840,7 +840,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         for (i = fep->lambda_start_n; i < fep->lambda_stop_n; i++)
         {
             print_lambda_vector(fep, i, FALSE, FALSE, lambda_vec_str);
-            if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
+            if ((fep->init_lambda >= 0) && (n_lambda_terms == 1))
             {
                 /* for compatible dhdl.xvg files */
                 nps = sprintf(buf, "%s %s %s", deltag, lambda, lambda_vec_str);
@@ -863,7 +863,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         if (write_pV)
         {
             sprintf(buf, "pV (%s)", unit_energy);
-            setname[nsetsextend - 1] = gmx_strdup(buf);  /* the first entry after
+            setname[nsetsextend - 1] = gmx_strdup(buf); /* the first entry after
                                                             nsets */
         }
 
@@ -1110,8 +1110,9 @@ void upd_mdebin(t_mdebin *      md,
                 /* MRS: is this right, given the way we have defined the exchange probabilities? */
                 /* is this even useful to have at all? */
                 md->dE[i] += (md->temperatures[i]
-                              / md->temperatures[state->fep_state] - 1.0)
-                    * enerd->term[F_EKIN];
+                                      / md->temperatures[state->fep_state]
+                              - 1.0)
+                             * enerd->term[F_EKIN];
             }
         }
 
@@ -1163,7 +1164,7 @@ void upd_mdebin(t_mdebin *      md,
                 && (enerd->n_lambda > 0)
                 && (fep->init_lambda < 0))
             {
-                fprintf(md->fp_dhdl, " %#.8g", pv);  /* PV term only needed when
+                fprintf(md->fp_dhdl, " %#.8g", pv); /* PV term only needed when
                                                         there are alternate state
                                                         lambda and we're not in
                                                         compatibility mode */
@@ -1180,7 +1181,7 @@ void upd_mdebin(t_mdebin *      md,
                 {
                     /* assumes F_DVDL is first */
                     store_dhdl[idhdl] = enerd->term[F_DVDL + i];
-                    idhdl            += 1;
+                    idhdl += 1;
                 }
             }
             store_energy = enerd->term[F_ETOT];
@@ -1235,15 +1236,16 @@ void print_ebin_header(FILE *log, gmx_int64_t steps, double time)
 {
     char buf[22];
 
-    fprintf(log, "   %12s   %12s\n"
+    fprintf(log,
+            "   %12s   %12s\n"
             "   %12s   %12.5f\n\n",
             "Step", "Time", gmx_step_str(steps, buf), time);
 }
 
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
-                FILE *log,
+                FILE *      log,
                 gmx_int64_t step, double time,
-                int mode,
+                int       mode,
                 t_mdebin *md, t_fcdata *fcd,
                 gmx_groups_t *groups, t_grpopts *opts)
 {
@@ -1287,7 +1289,8 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
                 block[enxOR] = fcd->orires.otav;
                 id[enxOR]    = enxOR;
                 nr[enxORI]   = (fcd->orires.oinsl != fcd->orires.otav)
-                    ? fcd->orires.nr : 0;
+                                     ? fcd->orires.nr
+                                     : 0;
                 block[enxORI] = fcd->orires.oinsl;
                 id[enxORI]    = enxORI;
                 nr[enxORT]    = fcd->orires.nex * 12;
@@ -1490,12 +1493,11 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
             }
         }
     }
-
 }
 
-void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)
+void update_energyhistory(energyhistory_t *enerhist, t_mdebin *mdebin)
 {
-    const t_ebin * const ebin = mdebin->ebin;
+    const t_ebin *const ebin = mdebin->ebin;
 
     enerhist->nsteps     = ebin->nsteps;
     enerhist->nsum       = ebin->nsum;
@@ -1531,12 +1533,12 @@ void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin)
     }
 }
 
-void restore_energyhistory_from_state(t_mdebin *        mdebin,
-                                      energyhistory_t * enerhist)
+void restore_energyhistory_from_state(t_mdebin *       mdebin,
+                                      energyhistory_t *enerhist)
 {
     unsigned int nener = static_cast<unsigned int>(mdebin->ebin->nener);
 
-    if ((enerhist->nsum     > 0 && nener != enerhist->ener_sum.size())
+    if ((enerhist->nsum > 0 && nener != enerhist->ener_sum.size())
         || (enerhist->nsum_sim > 0 && nener != enerhist->ener_sum_sim.size()))
     {
         gmx_fatal(FARGS, "Mismatch between number of energies in run input (%d) and checkpoint file (%u or %u).",
@@ -1551,11 +1553,11 @@ void restore_energyhistory_from_state(t_mdebin *        mdebin,
     for (int i = 0; i < mdebin->ebin->nener; i++)
     {
         mdebin->ebin->e[i].eav
-            = (enerhist->nsum > 0 ? enerhist->ener_ave[i] : 0);
+                = (enerhist->nsum > 0 ? enerhist->ener_ave[i] : 0);
         mdebin->ebin->e[i].esum
-            = (enerhist->nsum > 0 ? enerhist->ener_sum[i] : 0);
+                = (enerhist->nsum > 0 ? enerhist->ener_sum[i] : 0);
         mdebin->ebin->e_sim[i].esum
-            = (enerhist->nsum_sim > 0 ? enerhist->ener_sum_sim[i] : 0);
+                = (enerhist->nsum_sim > 0 ? enerhist->ener_sum_sim[i] : 0);
     }
     if (mdebin->dhc)
     {

@@ -81,27 +81,27 @@ enum
 
 typedef struct
 {
-    gmx_int64_t orig_sim_steps;      /* Number of steps to be done in the real simulation  */
-    int         n_entries;           /* Number of entries in arrays                        */
-    real        volume;              /* The volume of the box                              */
-    matrix      recipbox;            /* The reciprocal box                                 */
-    int         natoms;              /* The number of atoms in the MD system               */
-    real *      fac;                 /* The scaling factor                                 */
-    real *      rcoulomb;            /* The coulomb radii [0...nr_inputfiles]              */
-    real *      rvdw;                /* The vdW radii                                      */
-    int *       nkx, *nky, *nkz;     /* Number of k vectors in each spatial dimension      */
-    real *      fourier_sp;          /* Fourierspacing                                     */
-    real *      ewald_rtol;          /* Real space tolerance for Ewald, determines         */
-                                     /* the real/reciprocal space relative weight          */
-    real *   ewald_beta;             /* Splitting parameter [1/nm]                         */
-    real     fracself;               /* fraction of particles for SI error                 */
-    real     q2all;                  /* sum ( q ^2 )                                       */
-    real     q2allnr;                /* nr of charges                                      */
-    int *    pme_order;              /* Interpolation order for PME (bsplines)             */
-    char **  fn_out;                 /* Name of the output tpr file                        */
-    real *   e_dir;                  /* Direct space part of PME error with these settings */
-    real *   e_rec;                  /* Reciprocal space part of PME error                 */
-    gmx_bool bTUNE;                  /* flag for tuning */
+    gmx_int64_t orig_sim_steps;  /* Number of steps to be done in the real simulation  */
+    int         n_entries;       /* Number of entries in arrays                        */
+    real        volume;          /* The volume of the box                              */
+    matrix      recipbox;        /* The reciprocal box                                 */
+    int         natoms;          /* The number of atoms in the MD system               */
+    real *      fac;             /* The scaling factor                                 */
+    real *      rcoulomb;        /* The coulomb radii [0...nr_inputfiles]              */
+    real *      rvdw;            /* The vdW radii                                      */
+    int *       nkx, *nky, *nkz; /* Number of k vectors in each spatial dimension      */
+    real *      fourier_sp;      /* Fourierspacing                                     */
+    real *      ewald_rtol;      /* Real space tolerance for Ewald, determines         */
+                                 /* the real/reciprocal space relative weight          */
+    real *   ewald_beta;         /* Splitting parameter [1/nm]                         */
+    real     fracself;           /* fraction of particles for SI error                 */
+    real     q2all;              /* sum ( q ^2 )                                       */
+    real     q2allnr;            /* nr of charges                                      */
+    int *    pme_order;          /* Interpolation order for PME (bsplines)             */
+    char **  fn_out;             /* Name of the output tpr file                        */
+    real *   e_dir;              /* Direct space part of PME error with these settings */
+    real *   e_rec;              /* Reciprocal space part of PME error                 */
+    gmx_bool bTUNE;              /* flag for tuning */
 } t_inputinfo;
 
 
@@ -120,7 +120,7 @@ static gmx_bool is_charge(real charge)
 
 
 /* calculate charge density */
-static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
+static void calc_q2all(const gmx_mtop_t *mtop, /* molecular topology */
                        real *q2all, real *q2allnr)
 {
     int             imol, iatom; /* indices for loops */
@@ -138,13 +138,13 @@ static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
     nrq_all = 0;                                   /* total number of charges in the system */
     for (imol = 0; imol < mtop->nmolblock; imol++) /* Loop over molecule types */
     {
-        q2_mol   = 0.0;                            /* q squared value of this molecule */
-        nrq_mol  = 0;                              /* number of charges this molecule carries */
+        q2_mol   = 0.0; /* q squared value of this molecule */
+        nrq_mol  = 0;   /* number of charges this molecule carries */
         molecule = &(mtop->moltype[imol]);
         molblock = &(mtop->molblock[imol]);
         for (iatom = 0; iatom < molblock->natoms_mol; iatom++) /* Loop over atoms in this molecule */
         {
-            qi = molecule->atoms.atom[iatom].q;                /* Charge of this atom */
+            qi = molecule->atoms.atom[iatom].q; /* Charge of this atom */
             /* Is this charge worth to be considered? */
             if (is_charge(qi))
             {
@@ -153,7 +153,7 @@ static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
             }
         }
         /* Multiply with the number of molecules present of this type and add */
-        q2_all  += q2_mol * molblock->nmol;
+        q2_all += q2_mol * molblock->nmol;
         nrq_all += nrq_mol * molblock->nmol;
 #ifdef DEBUG
         fprintf(stderr, "Molecule %2d (%5d atoms) q2_mol=%10.3e nr.mol.charges=%5d (%6dx)  q2_all=%10.3e  tot.charges=%d\n",
@@ -163,14 +163,12 @@ static void calc_q2all(const gmx_mtop_t *mtop,   /* molecular topology */
 
     *q2all   = q2_all;
     *q2allnr = nrq_all;
-
 }
 
 
 /* Estimate the direct space part error of the SPME Ewald sum */
 static real estimate_direct(
-        t_inputinfo *info
-        )
+        t_inputinfo *info)
 {
     real e_dir     = 0; /* Error estimate */
     real beta      = 0; /* Splitting parameter (1/nm) */
@@ -180,8 +178,8 @@ static real estimate_direct(
     beta      = info->ewald_beta[0];
     r_coulomb = info->rcoulomb[0];
 
-    e_dir  = 2.0 * info->q2all * gmx::invsqrt( info->q2allnr  *  r_coulomb * info->volume );
-    e_dir *= exp (-beta * beta * r_coulomb * r_coulomb);
+    e_dir = 2.0 * info->q2all * gmx::invsqrt(info->q2allnr * r_coulomb * info->volume);
+    e_dir *= exp(-beta * beta * r_coulomb * r_coulomb);
 
     return ONE_4PI_EPS0 * e_dir;
 }
@@ -191,9 +189,9 @@ static real estimate_direct(
 /* the following 4 functions determine polynomials required for the reciprocal error estimate */
 
 static inline real eps_poly1(
-        real m,          /* grid coordinate in certain direction */
-        real K,          /* grid size in corresponding direction */
-        real n)          /* spline interpolation order of the SPME */
+        real m, /* grid coordinate in certain direction */
+        real K, /* grid size in corresponding direction */
+        real n) /* spline interpolation order of the SPME */
 {
     int  i;
     real nom   = 0; /* nominator */
@@ -207,30 +205,29 @@ static inline real eps_poly1(
 
     for (i = -SUMORDER; i < 0; i++)
     {
-        tmp  = m / K + i;
+        tmp = m / K + i;
         tmp *= 2.0 * M_PI;
-        nom += std::pow( tmp, -n );
+        nom += std::pow(tmp, -n);
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
-        tmp  = m / K + i;
+        tmp = m / K + i;
         tmp *= 2.0 * M_PI;
-        nom += std::pow( tmp, -n );
+        nom += std::pow(tmp, -n);
     }
 
-    tmp   = m / K;
-    tmp  *= 2.0 * M_PI;
-    denom = std::pow( tmp, -n ) + nom;
+    tmp = m / K;
+    tmp *= 2.0 * M_PI;
+    denom = std::pow(tmp, -n) + nom;
 
     return -nom / denom;
-
 }
 
 static inline real eps_poly2(
-        real m,          /* grid coordinate in certain direction */
-        real K,          /* grid size in corresponding direction */
-        real n)          /* spline interpolation order of the SPME */
+        real m, /* grid coordinate in certain direction */
+        real K, /* grid size in corresponding direction */
+        real n) /* spline interpolation order of the SPME */
 {
     int  i;
     real nom   = 0; /* nominator */
@@ -244,33 +241,32 @@ static inline real eps_poly2(
 
     for (i = -SUMORDER; i < 0; i++)
     {
-        tmp  = m / K + i;
+        tmp = m / K + i;
         tmp *= 2.0 * M_PI;
-        nom += std::pow( tmp, -2 * n );
+        nom += std::pow(tmp, -2 * n);
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
-        tmp  = m / K + i;
+        tmp = m / K + i;
         tmp *= 2.0 * M_PI;
-        nom += std::pow( tmp, -2 * n );
+        nom += std::pow(tmp, -2 * n);
     }
 
     for (i = -SUMORDER; i < SUMORDER + 1; i++)
     {
-        tmp    = m / K + i;
-        tmp   *= 2.0 * M_PI;
-        denom += std::pow( tmp, -n );
+        tmp = m / K + i;
+        tmp *= 2.0 * M_PI;
+        denom += std::pow(tmp, -n);
     }
     tmp = eps_poly1(m, K, n);
     return nom / denom / denom + tmp * tmp;
-
 }
 
 static inline real eps_poly3(
-        real m,          /* grid coordinate in certain direction */
-        real K,          /* grid size in corresponding direction */
-        real n)          /* spline interpolation order of the SPME */
+        real m, /* grid coordinate in certain direction */
+        real K, /* grid size in corresponding direction */
+        real n) /* spline interpolation order of the SPME */
 {
     int  i;
     real nom   = 0; /* nominator */
@@ -284,33 +280,32 @@ static inline real eps_poly3(
 
     for (i = -SUMORDER; i < 0; i++)
     {
-        tmp  = m / K + i;
+        tmp = m / K + i;
         tmp *= 2.0 * M_PI;
-        nom += i * std::pow( tmp, -2 * n );
+        nom += i * std::pow(tmp, -2 * n);
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
-        tmp  = m / K + i;
+        tmp = m / K + i;
         tmp *= 2.0 * M_PI;
-        nom += i * std::pow( tmp, -2 * n );
+        nom += i * std::pow(tmp, -2 * n);
     }
 
     for (i = -SUMORDER; i < SUMORDER + 1; i++)
     {
-        tmp    = m / K + i;
-        tmp   *= 2.0 * M_PI;
-        denom += std::pow( tmp, -n );
+        tmp = m / K + i;
+        tmp *= 2.0 * M_PI;
+        denom += std::pow(tmp, -n);
     }
 
     return 2.0 * M_PI * nom / denom / denom;
-
 }
 
 static inline real eps_poly4(
-        real m,          /* grid coordinate in certain direction */
-        real K,          /* grid size in corresponding direction */
-        real n)          /* spline interpolation order of the SPME */
+        real m, /* grid coordinate in certain direction */
+        real K, /* grid size in corresponding direction */
+        real n) /* spline interpolation order of the SPME */
 {
     int  i;
     real nom   = 0; /* nominator */
@@ -324,35 +319,34 @@ static inline real eps_poly4(
 
     for (i = -SUMORDER; i < 0; i++)
     {
-        tmp  = m / K + i;
+        tmp = m / K + i;
         tmp *= 2.0 * M_PI;
-        nom += i * i * std::pow( tmp, -2 * n );
+        nom += i * i * std::pow(tmp, -2 * n);
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
-        tmp  = m / K + i;
+        tmp = m / K + i;
         tmp *= 2.0 * M_PI;
-        nom += i * i * std::pow( tmp, -2 * n );
+        nom += i * i * std::pow(tmp, -2 * n);
     }
 
     for (i = -SUMORDER; i < SUMORDER + 1; i++)
     {
-        tmp    = m / K + i;
-        tmp   *= 2.0 * M_PI;
-        denom += std::pow( tmp, -n );
+        tmp = m / K + i;
+        tmp *= 2.0 * M_PI;
+        denom += std::pow(tmp, -n);
     }
 
     return 4.0 * M_PI * M_PI * nom / denom / denom;
-
 }
 
 static inline real eps_self(
-        real m,       /* grid coordinate in certain direction */
-        real K,       /* grid size in corresponding direction */
-        rvec rboxv,   /* reciprocal box vector */
-        real n,       /* spline interpolation order of the SPME */
-        rvec x)       /* coordinate of charge */
+        real m,     /* grid coordinate in certain direction */
+        real K,     /* grid size in corresponding direction */
+        rvec rboxv, /* reciprocal box vector */
+        real n,     /* spline interpolation order of the SPME */
+        rvec x)     /* coordinate of charge */
 {
     int  i;
     real tmp    = 0; /* temporary variables for computations */
@@ -373,29 +367,28 @@ static inline real eps_self(
 
     for (i = -SUMORDER; i < 0; i++)
     {
-        tmp    = -std::sin(2.0 * M_PI * i * K * rcoord);
-        tmp1   = 2.0 * M_PI * m / K + 2.0 * M_PI * i;
-        tmp2   = std::pow(tmp1, -n);
-        nom   += tmp * tmp2 * i;
+        tmp  = -std::sin(2.0 * M_PI * i * K * rcoord);
+        tmp1 = 2.0 * M_PI * m / K + 2.0 * M_PI * i;
+        tmp2 = std::pow(tmp1, -n);
+        nom += tmp * tmp2 * i;
         denom += tmp2;
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
-        tmp    = -std::sin(2.0 * M_PI * i * K * rcoord);
-        tmp1   = 2.0 * M_PI * m / K + 2.0 * M_PI * i;
-        tmp2   = std::pow(tmp1, -n);
-        nom   += tmp * tmp2 * i;
+        tmp  = -std::sin(2.0 * M_PI * i * K * rcoord);
+        tmp1 = 2.0 * M_PI * m / K + 2.0 * M_PI * i;
+        tmp2 = std::pow(tmp1, -n);
+        nom += tmp * tmp2 * i;
         denom += tmp2;
     }
 
 
-    tmp    = 2.0 * M_PI * m / K;
-    tmp1   = pow(tmp, -n);
+    tmp  = 2.0 * M_PI * m / K;
+    tmp1 = pow(tmp, -n);
     denom += tmp1;
 
     return 2.0 * M_PI * nom / denom * K;
-
 }
 
 #undef SUMORDER
@@ -422,35 +415,35 @@ static void calc_recipbox(matrix box, matrix recipbox)
 
 /* Estimate the reciprocal space part error of the SPME Ewald sum. */
 static real estimate_reciprocal(
-        t_inputinfo *     info,
-        rvec              x[],  /* array of particles */
-        real              q[],  /* array of charges */
-        int               nr,   /* number of charges = size of the charge array */
-        FILE  gmx_unused *fp_out,
-        gmx_bool          bVerbose,
-        int               seed,      /* The seed for the random number generator */
-        int *             nsamples,  /* Return the number of samples used if Monte Carlo
+        t_inputinfo *info,
+        rvec         x[], /* array of particles */
+        real         q[], /* array of charges */
+        int          nr,  /* number of charges = size of the charge array */
+        FILE gmx_unused *fp_out,
+        gmx_bool         bVerbose,
+        int              seed,     /* The seed for the random number generator */
+        int *            nsamples, /* Return the number of samples used if Monte Carlo
                                       * algorithm is used for self energy error estimate */
-        t_commrec *       cr)
+        t_commrec *      cr)
 {
-    real     e_rec   = 0;  /* reciprocal error estimate */
-    real     e_rec1  = 0;  /* Error estimate term 1*/
-    real     e_rec2  = 0;  /* Error estimate term 2*/
-    real     e_rec3  = 0;  /* Error estimate term 3 */
-    real     e_rec3x = 0;  /* part of Error estimate term 3 in x */
-    real     e_rec3y = 0;  /* part of Error estimate term 3 in y */
-    real     e_rec3z = 0;  /* part of Error estimate term 3 in z */
+    real     e_rec   = 0; /* reciprocal error estimate */
+    real     e_rec1  = 0; /* Error estimate term 1*/
+    real     e_rec2  = 0; /* Error estimate term 2*/
+    real     e_rec3  = 0; /* Error estimate term 3 */
+    real     e_rec3x = 0; /* part of Error estimate term 3 in x */
+    real     e_rec3y = 0; /* part of Error estimate term 3 in y */
+    real     e_rec3z = 0; /* part of Error estimate term 3 in z */
     int      i, ci;
-    int      nx, ny, nz;   /* grid coordinates */
-    real     q2_all = 0;   /* sum of squared charges */
-    rvec     gridpx;       /* reciprocal grid point in x direction*/
-    rvec     gridpxy;      /* reciprocal grid point in x and y direction*/
-    rvec     gridp;        /* complete reciprocal grid point in 3 directions*/
-    rvec     tmpvec;       /* template to create points from basis vectors */
-    rvec     tmpvec2;      /* template to create points from basis vectors */
-    real     coeff  = 0;   /* variable to compute coefficients of the error estimate */
-    real     coeff2 = 0;   /* variable to compute coefficients of the error estimate */
-    real     tmp    = 0;   /* variables to compute different factors from vectors */
+    int      nx, ny, nz; /* grid coordinates */
+    real     q2_all = 0; /* sum of squared charges */
+    rvec     gridpx;     /* reciprocal grid point in x direction*/
+    rvec     gridpxy;    /* reciprocal grid point in x and y direction*/
+    rvec     gridp;      /* complete reciprocal grid point in 3 directions*/
+    rvec     tmpvec;     /* template to create points from basis vectors */
+    rvec     tmpvec2;    /* template to create points from basis vectors */
+    real     coeff  = 0; /* variable to compute coefficients of the error estimate */
+    real     coeff2 = 0; /* variable to compute coefficients of the error estimate */
+    real     tmp    = 0; /* variables to compute different factors from vectors */
     real     tmp1   = 0;
     real     tmp2   = 0;
     gmx_bool bFraction;
@@ -522,7 +515,6 @@ static real estimate_reciprocal(
     {
 
         fprintf(stderr, "Calculating reciprocal error part 1 ...");
-
     }
 
     for (nx = startlocal; nx <= stoplocal; nx++)
@@ -534,19 +526,19 @@ static real estimate_reciprocal(
             rvec_add(gridpx, tmpvec, gridpxy);
             for (nz = -info->nkz[0] / 2; nz < info->nkz[0] / 2 + 1; nz++)
             {
-                if (0 == nx &&  0 == ny &&  0 == nz)
+                if (0 == nx && 0 == ny && 0 == nz)
                 {
                     continue;
                 }
                 svmul(nz, info->recipbox[ZZ], tmpvec);
                 rvec_add(gridpxy, tmpvec, gridp);
-                tmp    = norm2(gridp);
-                coeff  = std::exp(-1.0 * M_PI * M_PI * tmp / info->ewald_beta[0] / info->ewald_beta[0] );
+                tmp   = norm2(gridp);
+                coeff = std::exp(-1.0 * M_PI * M_PI * tmp / info->ewald_beta[0] / info->ewald_beta[0]);
                 coeff /= 2.0 * M_PI * info->volume * tmp;
                 coeff2 = tmp;
 
 
-                tmp  = eps_poly2(nx, info->nkx[0], info->pme_order[0]);
+                tmp = eps_poly2(nx, info->nkx[0], info->pme_order[0]);
                 tmp += eps_poly2(ny, info->nkx[0], info->pme_order[0]);
                 tmp += eps_poly2(nz, info->nkx[0], info->pme_order[0]);
 
@@ -565,54 +557,53 @@ static real estimate_reciprocal(
 
                 tmp += 2.0 * tmp1 * tmp2;
 
-                tmp1  = eps_poly1(nx, info->nkx[0], info->pme_order[0]);
+                tmp1 = eps_poly1(nx, info->nkx[0], info->pme_order[0]);
                 tmp1 += eps_poly1(ny, info->nky[0], info->pme_order[0]);
                 tmp1 += eps_poly1(nz, info->nkz[0], info->pme_order[0]);
 
                 tmp += tmp1 * tmp1;
 
-                e_rec1 += 32.0 * M_PI * M_PI * coeff * coeff * coeff2 * tmp  * q2_all * q2_all / nr;
+                e_rec1 += 32.0 * M_PI * M_PI * coeff * coeff * coeff2 * tmp * q2_all * q2_all / nr;
 
-                tmp1  = eps_poly3(nx, info->nkx[0], info->pme_order[0]);
+                tmp1 = eps_poly3(nx, info->nkx[0], info->pme_order[0]);
                 tmp1 *= info->nkx[0];
-                tmp2  = iprod(gridp, info->recipbox[XX]);
+                tmp2 = iprod(gridp, info->recipbox[XX]);
 
                 tmp = tmp1 * tmp2;
 
-                tmp1  = eps_poly3(ny, info->nky[0], info->pme_order[0]);
+                tmp1 = eps_poly3(ny, info->nky[0], info->pme_order[0]);
                 tmp1 *= info->nky[0];
-                tmp2  = iprod(gridp, info->recipbox[YY]);
+                tmp2 = iprod(gridp, info->recipbox[YY]);
 
                 tmp += tmp1 * tmp2;
 
-                tmp1  = eps_poly3(nz, info->nkz[0], info->pme_order[0]);
+                tmp1 = eps_poly3(nz, info->nkz[0], info->pme_order[0]);
                 tmp1 *= info->nkz[0];
-                tmp2  = iprod(gridp, info->recipbox[ZZ]);
+                tmp2 = iprod(gridp, info->recipbox[ZZ]);
 
                 tmp += tmp1 * tmp2;
 
                 tmp *= 4.0 * M_PI;
 
-                tmp1  = eps_poly4(nx, info->nkx[0], info->pme_order[0]);
+                tmp1 = eps_poly4(nx, info->nkx[0], info->pme_order[0]);
                 tmp1 *= norm2(info->recipbox[XX]);
                 tmp1 *= info->nkx[0] * info->nkx[0];
 
                 tmp += tmp1;
 
-                tmp1  = eps_poly4(ny, info->nky[0], info->pme_order[0]);
+                tmp1 = eps_poly4(ny, info->nky[0], info->pme_order[0]);
                 tmp1 *= norm2(info->recipbox[YY]);
                 tmp1 *= info->nky[0] * info->nky[0];
 
                 tmp += tmp1;
 
-                tmp1  = eps_poly4(nz, info->nkz[0], info->pme_order[0]);
+                tmp1 = eps_poly4(nz, info->nkz[0], info->pme_order[0]);
                 tmp1 *= norm2(info->recipbox[ZZ]);
                 tmp1 *= info->nkz[0] * info->nkz[0];
 
                 tmp += tmp1;
 
                 e_rec2 += 4.0 * coeff * coeff * tmp * q2_all * q2_all / nr;
-
             }
         }
         if (MASTER(cr))
@@ -620,7 +611,6 @@ static real estimate_reciprocal(
             fprintf(stderr, "\rCalculating reciprocal error part 1 ... %3.0f%%", 100.0 * (nx - startlocal + 1) / (x_per_core));
             fflush(stderr);
         }
-
     }
 
     if (MASTER(cr))
@@ -629,7 +619,7 @@ static real estimate_reciprocal(
     }
 
     /* Use just a fraction of all charges to estimate the self energy error term? */
-    bFraction =  (info->fracself > 0.0) && (info->fracself < 1.0);
+    bFraction = (info->fracself > 0.0) && (info->fracself < 1.0);
 
     if (bFraction)
     {
@@ -646,8 +636,8 @@ static real estimate_reciprocal(
         x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / cr->nnodes));
     }
 
-    startlocal = x_per_core *  cr->nodeid;
-    stoplocal  = std::min(startlocal + x_per_core, xtot);  /* min needed if xtot == nr */
+    startlocal = x_per_core * cr->nodeid;
+    stoplocal  = std::min(startlocal + x_per_core, xtot); /* min needed if xtot == nr */
 
     if (bFraction)
     {
@@ -718,13 +708,12 @@ static real estimate_reciprocal(
 
                     svmul(nz, info->recipbox[ZZ], tmpvec);
                     rvec_add(gridpxy, tmpvec, gridp);
-                    tmp      = norm2(gridp);
-                    coeff    = std::exp(-1.0 * M_PI * M_PI * tmp / info->ewald_beta[0] / info->ewald_beta[0] );
-                    coeff   /= tmp;
+                    tmp   = norm2(gridp);
+                    coeff = std::exp(-1.0 * M_PI * M_PI * tmp / info->ewald_beta[0] / info->ewald_beta[0]);
+                    coeff /= tmp;
                     e_rec3x += coeff * eps_self(nx, info->nkx[0], info->recipbox[XX], info->pme_order[0], x[ci]);
                     e_rec3y += coeff * eps_self(ny, info->nky[0], info->recipbox[YY], info->pme_order[0], x[ci]);
                     e_rec3z += coeff * eps_self(nz, info->nkz[0], info->recipbox[ZZ], info->pme_order[0], x[ci]);
-
                 }
             }
         }
@@ -738,7 +727,7 @@ static real estimate_reciprocal(
         svmul(e_rec3z, info->recipbox[ZZ], tmpvec);
         rvec_inc(tmpvec2, tmpvec);
 
-        e_rec3 += q[ci] * q[ci] * q[ci] * q[ci] * norm2(tmpvec2) / ( xtot * M_PI * info->volume * M_PI * info->volume);
+        e_rec3 += q[ci] * q[ci] * q[ci] * q[ci] * norm2(tmpvec2) / (xtot * M_PI * info->volume * M_PI * info->volume);
         if (MASTER(cr))
         {
             fprintf(stderr, "\rCalculating reciprocal error part 2 ... %3.0f%%",
@@ -855,7 +844,6 @@ static int prepare_x_q(real *q[], rvec *x[], const gmx_mtop_t *mtop, const rvec 
 }
 
 
-
 /* Read in the tpr file and save information we need later in info */
 static void read_tpr_file(const char *fn_sim_tpr, t_inputinfo *info, t_state *state, gmx_mtop_t *mtop, t_inputrec *ir, real user_beta, real fracself)
 {
@@ -934,7 +922,7 @@ static void estimate_PME_error(t_inputinfo *info, const t_state *state,
     int   ncharges;        /* The number of atoms with charges */
     int   nsamples;        /* The number of samples used for the calculation of the
                             * self-energy error term */
-    int i = 0;
+    int   i = 0;
 
     if (MASTER(cr))
     {
@@ -957,7 +945,6 @@ static void estimate_PME_error(t_inputinfo *info, const t_state *state,
         fprintf(fp_out, "Fourier grid (nx,ny,nz) : %d x %d x %d\n",
                 info->nkx[0], info->nky[0], info->nkz[0]);
         fflush(fp_out);
-
     }
 
     if (PAR(cr))
@@ -1024,8 +1011,8 @@ static void estimate_PME_error(t_inputinfo *info, const t_state *state,
         while (std::abs(derr / std::min(erec, edir)) > 1e-4)
         {
 
-            beta                = info->ewald_beta[0];
-            beta               -= derr * (info->ewald_beta[0] - beta0) / (derr - derr0);
+            beta = info->ewald_beta[0];
+            beta -= derr * (info->ewald_beta[0] - beta0) / (derr - derr0);
             beta0               = info->ewald_beta[0];
             info->ewald_beta[0] = beta;
             derr0               = derr;
@@ -1066,11 +1053,8 @@ static void estimate_PME_error(t_inputinfo *info, const t_state *state,
             fprintf(fp_out, "Ewald_rtol              : %g\n", info->ewald_rtol[0]);
             fprintf(fp_out, "Ewald parameter beta    : %g\n", info->ewald_beta[0]);
             fflush(fp_out);
-
         }
-
     }
-
 }
 
 
@@ -1087,13 +1071,13 @@ int gmx_pme_error(int argc, char *argv[])
         "indicated by the flag [TT]-self[tt].[PAR]",
     };
 
-    real          fs        = 0.0;   /* 0 indicates: not set by the user */
+    real          fs        = 0.0; /* 0 indicates: not set by the user */
     real          user_beta = -1.0;
     real          fracself  = 1.0;
     t_inputinfo   info;
-    t_state       state;          /* The state from the tpr input file */
-    gmx_mtop_t    mtop;           /* The topology from the tpr input file */
-    t_inputrec *  ir = nullptr;   /* The inputrec from the tpr file */
+    t_state       state;        /* The state from the tpr input file */
+    gmx_mtop_t    mtop;         /* The topology from the tpr input file */
+    t_inputrec *  ir = nullptr; /* The inputrec from the tpr file */
     FILE *        fp = nullptr;
     t_commrec *   cr;
     unsigned long PCA_Flags;
@@ -1103,24 +1087,19 @@ int gmx_pme_error(int argc, char *argv[])
 
 
     static t_filenm fnm[] = {
-        { efTPR, "-s",     nullptr,    ffREAD },
-        { efOUT, "-o",    "error",  ffWRITE },
-        { efTPR, "-so",   "tuned",  ffOPTWR }
+        { efTPR, "-s", nullptr, ffREAD },
+        { efOUT, "-o", "error", ffWRITE },
+        { efTPR, "-so", "tuned", ffOPTWR }
     };
 
     gmx_output_env_t *oenv = nullptr;
 
     t_pargs pa[] = {
-        { "-beta",     FALSE, etREAL, {&user_beta},
-          "If positive, overwrite ewald_beta from [REF].tpr[ref] file with this value" },
-        { "-tune",     FALSE, etBOOL, {&bTUNE},
-          "Tune the splitting parameter such that the error is equally distributed between real and reciprocal space" },
-        { "-self",     FALSE, etREAL, {&fracself},
-          "If between 0.0 and 1.0, determine self interaction error from just this fraction of the charged particles" },
-        { "-seed",     FALSE, etINT,  {&seed},
-          "Random number seed used for Monte Carlo algorithm when [TT]-self[tt] is set to a value between 0.0 and 1.0" },
-        { "-v",        FALSE, etBOOL, {&bVerbose},
-          "Be loud and noisy" }
+        { "-beta", FALSE, etREAL, { &user_beta }, "If positive, overwrite ewald_beta from [REF].tpr[ref] file with this value" },
+        { "-tune", FALSE, etBOOL, { &bTUNE }, "Tune the splitting parameter such that the error is equally distributed between real and reciprocal space" },
+        { "-self", FALSE, etREAL, { &fracself }, "If between 0.0 and 1.0, determine self interaction error from just this fraction of the charged particles" },
+        { "-seed", FALSE, etINT, { &seed }, "Random number seed used for Monte Carlo algorithm when [TT]-self[tt] is set to a value between 0.0 and 1.0" },
+        { "-v", FALSE, etBOOL, { &bVerbose }, "Be loud and noisy" }
     };
 
 
@@ -1172,7 +1151,7 @@ int gmx_pme_error(int argc, char *argv[])
         info.nky[0] = 0;
         info.nkz[0] = 0;
         calc_grid(stdout, state.box, info.fourier_sp[0], &(info.nkx[0]), &(info.nky[0]), &(info.nkz[0]));
-        if ( (ir->nkx != info.nkx[0]) || (ir->nky != info.nky[0]) || (ir->nkz != info.nkz[0]) )
+        if ((ir->nkx != info.nkx[0]) || (ir->nky != info.nky[0]) || (ir->nkz != info.nkz[0]))
         {
             gmx_fatal(FARGS, "Wrong fourierspacing %f nm, input file grid = %d x %d x %d, computed grid = %d x %d x %d",
                       fs, ir->nkx, ir->nky, ir->nkz, info.nkx[0], info.nky[0], info.nkz[0]);

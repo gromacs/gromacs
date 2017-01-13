@@ -82,7 +82,7 @@ void acceptOptionsGroup(const internal::OptionSectionImpl::Group &group, Visitor
     }
 }
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * OptionsIterator

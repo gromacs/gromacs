@@ -224,7 +224,7 @@ private:
     GMX_DISALLOW_COPY_AND_ASSIGN(SelectionData);
 };
 
-}   // namespace internal
+} // namespace internal
 
 /*! \brief
  * Provides access to a single selection.
@@ -294,7 +294,8 @@ public:
      * assigned results in undefined behavior.
      * isValid() returns `false` for the selection until it is initialized.
      */
-    Selection() : sel_(nullptr) {}
+    Selection()
+        : sel_(nullptr) {}
     /*! \brief
      * Creates a new selection object.
      *
@@ -302,7 +303,8 @@ public:
      *
      * Only for internal use by the selection module.
      */
-    explicit Selection(internal::SelectionData *sel) : sel_(sel) {}
+    explicit Selection(internal::SelectionData *sel)
+        : sel_(sel) {}
 
     //! Returns whether the selection object is initialized.
     bool isValid() const { return sel_ != nullptr; }
@@ -319,7 +321,7 @@ public:
     }
 
     //! Returns the name of the selection.
-    const char *name() const  { return data().name(); }
+    const char *name() const { return data().name(); }
     //! Returns the string that was parsed to produce this selection.
     const char *selectionText() const { return data().selectionText(); }
     //! Returns true if the size of the selection (posCount()) is dynamic.

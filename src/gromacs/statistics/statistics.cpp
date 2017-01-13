@@ -66,12 +66,12 @@ gmx_stats_t gmx_stats_init()
 
     snew(stats, 1);
 
-    return (gmx_stats_t) stats;
+    return (gmx_stats_t)stats;
 }
 
 int gmx_stats_get_npoints(gmx_stats_t gstats, int *N)
 {
-    gmx_stats *stats = (gmx_stats *) gstats;
+    gmx_stats *stats = (gmx_stats *)gstats;
 
     *N = stats->np;
 
@@ -80,7 +80,7 @@ int gmx_stats_get_npoints(gmx_stats_t gstats, int *N)
 
 void gmx_stats_free(gmx_stats_t gstats)
 {
-    gmx_stats *stats = (gmx_stats *) gstats;
+    gmx_stats *stats = (gmx_stats *)gstats;
 
     sfree(stats->x);
     sfree(stats->y);
@@ -182,7 +182,8 @@ int gmx_stats_add_points(gmx_stats_t gstats, int n, real *x, real *y,
         int ok;
         if ((ok = gmx_stats_add_point(gstats, x[i], y[i],
                                       (nullptr != dx) ? dx[i] : 0,
-                                      (nullptr != dy) ? dy[i] : 0)) != estatsOK)
+                                      (nullptr != dy) ? dy[i] : 0))
+            != estatsOK)
         {
             return ok;
         }
@@ -205,13 +206,13 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
             return estatsNO_POINTS;
         }
 
-        xx   = xx_nw = 0;
-        yy   = yy_nw = 0;
-        yx   = yx_nw = 0;
-        sx   = sx_nw = 0;
-        sy   = sy_nw = 0;
-        wtot = 0;
-        d2   = 0;
+        xx = xx_nw = 0;
+        yy = yy_nw = 0;
+        yx = yx_nw = 0;
+        sx = sx_nw = 0;
+        sy = sy_nw = 0;
+        wtot       = 0;
+        d2         = 0;
         for (int i = 0; (i < N); i++)
         {
             d2 += gmx::square(stats->x[i] - stats->y[i]);
@@ -226,19 +227,19 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
 
             wtot += w;
 
-            xx    += w * gmx::square(stats->x[i]);
+            xx += w * gmx::square(stats->x[i]);
             xx_nw += gmx::square(stats->x[i]);
 
-            yy    += w * gmx::square(stats->y[i]);
+            yy += w * gmx::square(stats->y[i]);
             yy_nw += gmx::square(stats->y[i]);
 
-            yx    += w * stats->y[i] * stats->x[i];
+            yx += w * stats->y[i] * stats->x[i];
             yx_nw += stats->y[i] * stats->x[i];
 
-            sx    += w * stats->x[i];
+            sx += w * stats->x[i];
             sx_nw += stats->x[i];
 
-            sy    += w * stats->y[i];
+            sy += w * stats->y[i];
             sy_nw += stats->y[i];
         }
 
@@ -251,11 +252,11 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
         stats->rmsd = std::sqrt(d2 / N);
 
         /* Correlation coefficient for data */
-        yx_nw       /= N;
-        xx_nw       /= N;
-        yy_nw       /= N;
-        sx_nw       /= N;
-        sy_nw       /= N;
+        yx_nw /= N;
+        xx_nw /= N;
+        yy_nw /= N;
+        sx_nw /= N;
+        sy_nw /= N;
         ssxx         = N * (xx_nw - gmx::square(sx_nw));
         ssyy         = N * (yy_nw - gmx::square(sy_nw));
         ssxy         = N * (yx_nw - (sx_nw * sy_nw));
@@ -288,7 +289,7 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
                 dy = 1;
             }
             chi2aa += gmx::square((stats->y[i] - (stats->aa * stats->x[i])) / dy);
-            chi2   += gmx::square((stats->y[i] - (stats->a * stats->x[i] + stats->b)) / dy);
+            chi2 += gmx::square((stats->y[i] - (stats->a * stats->x[i] + stats->b)) / dy);
         }
         if (N > 2)
         {
@@ -505,7 +506,7 @@ int gmx_stats_dump_xy(gmx_stats_t gstats, FILE *fp)
 int gmx_stats_remove_outliers(gmx_stats_t gstats, double level)
 {
     gmx_stats *stats = gstats;
-    int        iter  = 1, done = 0, ok;
+    int        iter = 1, done = 0, ok;
     real       rmsd, r;
 
     while ((stats->np >= 10) && !done)
@@ -515,7 +516,7 @@ int gmx_stats_remove_outliers(gmx_stats_t gstats, double level)
             return ok;
         }
         done = 1;
-        for (int i = 0; (i < stats->np); )
+        for (int i = 0; (i < stats->np);)
         {
             r = std::abs(stats->x[i] - stats->y[i]);
             if (r > level * rmsd)
@@ -645,8 +646,7 @@ int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nb,
     return estatsOK;
 }
 
-static const char *stats_error[estatsNR] =
-{
+static const char *stats_error[estatsNR] = {
     "All well in STATS land",
     "No points",
     "Not enough memory",

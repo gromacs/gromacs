@@ -60,7 +60,7 @@ std::vector<std::string> splitPathElements(const std::string &path)
     return splitDelimitedString(path.substr(1), '/');
 }
 
-}   // namespace
+} // namespace
 
 KeyValueTreePath::KeyValueTreePath(const std::string &path)
     : path_(splitPathElements(path))

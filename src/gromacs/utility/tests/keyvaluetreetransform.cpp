@@ -117,10 +117,8 @@ TEST_F(TreeValueTransformTest, SimpleTransforms)
     gmx::KeyValueTreeObject input = builder.build();
 
     gmx::KeyValueTreeTransformer transform;
-    transform.rules()->addRule()
-        .from<std::string>("/a").to<int>("/i").transformWith(&gmx::fromStdString<int>);
-    transform.rules()->addRule()
-        .from<std::string>("/b").to<int>("/j").transformWith(&gmx::fromStdString<int>);
+    transform.rules()->addRule().from<std::string>("/a").to<int>("/i").transformWith(&gmx::fromStdString<int>);
+    transform.rules()->addRule().from<std::string>("/b").to<int>("/j").transformWith(&gmx::fromStdString<int>);
 
     testTransform(input, transform);
 }
@@ -133,12 +131,9 @@ TEST_F(TreeValueTransformTest, SimpleTransformsCaseAndDashInsensitive)
     gmx::KeyValueTreeObject input = builder.build();
 
     gmx::KeyValueTreeTransformer transform;
-    transform.rules()->addRule()
-        .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
-    transform.rules()->addRule()
-        .from<std::string>("/Ax").to<int>("/i").transformWith(&gmx::fromStdString<int>);
-    transform.rules()->addRule()
-        .from<std::string>("/B-Y").to<int>("/j").transformWith(&gmx::fromStdString<int>);
+    transform.rules()->addRule().keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+    transform.rules()->addRule().from<std::string>("/Ax").to<int>("/i").transformWith(&gmx::fromStdString<int>);
+    transform.rules()->addRule().from<std::string>("/B-Y").to<int>("/j").transformWith(&gmx::fromStdString<int>);
 
     testTransform(input, transform);
 }
@@ -151,10 +146,8 @@ TEST_F(TreeValueTransformTest, SimpleTransformsToObject)
     gmx::KeyValueTreeObject input = builder.build();
 
     gmx::KeyValueTreeTransformer transform;
-    transform.rules()->addRule()
-        .from<std::string>("/a").to<int>("/foo/i").transformWith(&gmx::fromStdString<int>);
-    transform.rules()->addRule()
-        .from<std::string>("/b").to<int>("/foo/j").transformWith(&gmx::fromStdString<int>);
+    transform.rules()->addRule().from<std::string>("/a").to<int>("/foo/i").transformWith(&gmx::fromStdString<int>);
+    transform.rules()->addRule().from<std::string>("/b").to<int>("/foo/j").transformWith(&gmx::fromStdString<int>);
 
     testTransform(input, transform);
 }
@@ -167,10 +160,8 @@ TEST_F(TreeValueTransformTest, ObjectFromString)
     gmx::KeyValueTreeObject input = builder.build();
 
     gmx::KeyValueTreeTransformer transform;
-    transform.rules()->addRule()
-        .from<std::string>("/a").toObject("/foo").transformWith(
-            [] (gmx::KeyValueTreeObjectBuilder *builder, const std::string &value)
-            {
+    transform.rules()->addRule().from<std::string>("/a").toObject("/foo").transformWith(
+            [](gmx::KeyValueTreeObjectBuilder *builder, const std::string &value) {
                 std::vector<std::string> values = gmx::splitString(value);
                 builder->addValue<int>("a", gmx::fromString<int>(values[0]));
                 builder->addValue<int>("b", gmx::fromString<int>(values[1]));
@@ -187,12 +178,9 @@ TEST_F(TreeValueTransformTest, ObjectFromMultipleStrings)
     gmx::KeyValueTreeObject input = builder.build();
 
     gmx::KeyValueTreeTransformer transform;
-    transform.rules()->addRule()
-        .from<std::string>("/a").to<int>("/foo/a").transformWith(&gmx::fromStdString<int>);
-    transform.rules()->addRule()
-        .from<std::string>("/b").toObject("/foo").transformWith(
-            [] (gmx::KeyValueTreeObjectBuilder *builder, const std::string &value)
-            {
+    transform.rules()->addRule().from<std::string>("/a").to<int>("/foo/a").transformWith(&gmx::fromStdString<int>);
+    transform.rules()->addRule().from<std::string>("/b").toObject("/foo").transformWith(
+            [](gmx::KeyValueTreeObjectBuilder *builder, const std::string &value) {
                 std::vector<std::string> values = gmx::splitString(value);
                 builder->addValue<int>("b", gmx::fromString<int>(values[0]));
                 builder->addValue<int>("c", gmx::fromString<int>(values[1]));
@@ -212,8 +200,7 @@ TEST(TreeValueTransformErrorTest, ConversionError)
     gmx::KeyValueTreeObject input = builder.build();
 
     gmx::KeyValueTreeTransformer transform;
-    transform.rules()->addRule()
-        .from<std::string>("/a").to<int>("/i").transformWith(&gmx::fromStdString<int>);
+    transform.rules()->addRule().from<std::string>("/a").to<int>("/i").transformWith(&gmx::fromStdString<int>);
 
     EXPECT_THROW_GMX(transform.transform(input, nullptr), gmx::InvalidInputError);
 }

@@ -50,18 +50,28 @@ struct gmx_residuetype_t;
 /* must correspond with 'leg' g_chi.c:727 */
 enum
 {
-    edPhi = 0, edPsi, edOmega, edChi1, edChi2, edChi3, edChi4, edChi5, edChi6, edMax
+    edPhi = 0,
+    edPsi,
+    edOmega,
+    edChi1,
+    edChi2,
+    edChi3,
+    edChi4,
+    edChi5,
+    edChi6,
+    edMax
 };
 
 enum
 {
-    edPrintST = 0, edPrintRO
+    edPrintST = 0,
+    edPrintRO
 };
 
 #define NHISTO 360
 #define NONCHI 3
 #define MAXCHI edMax - NONCHI
-#define NROT 4  /* number of rotamers: 1=g(-), 2=t, 3=g(+), 0=other */
+#define NROT 4 /* number of rotamers: 1=g(-), 2=t, 3=g(+), 0=other */
 
 typedef struct
 {
@@ -72,8 +82,8 @@ typedef struct
 {
     char      name[12];
     int       resnr;
-    int       index;      /* Index for amino acids (histograms) */
-    int       j0[edMax];  /* Index in dih array (phi angle is first...) */
+    int       index;     /* Index for amino acids (histograms) */
+    int       j0[edMax]; /* Index in dih array (phi angle is first...) */
     t_dihatms atm;
     int       b[edMax];
     int       ntr[edMax];
@@ -92,7 +102,7 @@ typedef struct
 } t_karplus;
 
 void calc_distribution_props(int nh, int histo[],
-                             real start, int  nkkk, t_karplus kkk[],
+                             real start, int nkkk, t_karplus kkk[],
                              real *S2);
 /* This routine takes a dihedral distribution and calculates
  * coupling constants and dihedral order parameters of it.
@@ -158,15 +168,14 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
  * to each rotamer, the rest goes to rotamer zero */
 
 
-
 void read_ang_dih(const char *trj_fn,
                   gmx_bool bAngles, gmx_bool bSaveAll, gmx_bool bRb, gmx_bool bPBC,
                   int maxangstat, int angstat[],
                   int *nframes, real **time,
                   int isize, int index[],
-                  real **trans_frac,
-                  real **aver_angle,
-                  real *dih[],
+                  real **                 trans_frac,
+                  real **                 aver_angle,
+                  real *                  dih[],
                   const gmx_output_env_t *oenv);
 /*
  * Read a trajectory and calculate angles and dihedrals.
@@ -226,33 +235,33 @@ void do_pp2shifts(FILE *fp, int nframes,
 
 gmx_bool has_dihedral(int Dih, t_dlist *dl);
 
-t_dlist *mk_dlist(FILE *log,
+t_dlist *mk_dlist(FILE *         log,
                   const t_atoms *atoms, int *nlist,
                   gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
                   int maxchi, int r0, struct gmx_residuetype_t *rt);
 
-void pr_dlist(FILE *fp, int nl, t_dlist dl[], real dt,  int printtype,
+void pr_dlist(FILE *fp, int nl, t_dlist dl[], real dt, int printtype,
               gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bOmega, int maxchi);
 
 int pr_trans(FILE *fp, int nl, t_dlist dl[], real dt, int Xi);
 
-void mk_chi_lookup (int **lookup, int maxchi,
-                    int nlist, t_dlist dlist[]);
+void mk_chi_lookup(int **lookup, int maxchi,
+                   int nlist, t_dlist dlist[]);
 
-void mk_multiplicity_lookup (int *multiplicity, int maxchi,
-                             int nlist, t_dlist dlist[], int nangle);
+void mk_multiplicity_lookup(int *multiplicity, int maxchi,
+                            int nlist, t_dlist dlist[], int nangle);
 
-void get_chi_product_traj (real **dih, int nframes,
-                           int nlist, int maxchi, t_dlist dlist[],
-                           real time[], int **lookup, int *multiplicity,
-                           gmx_bool bRb, gmx_bool bNormalize,
-                           real core_frac, gmx_bool bAll, const char *fnall,
-                           const gmx_output_env_t *oenv);
+void get_chi_product_traj(real **dih, int nframes,
+                          int nlist, int maxchi, t_dlist dlist[],
+                          real time[], int **lookup, int *multiplicity,
+                          gmx_bool bRb, gmx_bool bNormalize,
+                          real core_frac, gmx_bool bAll, const char *fnall,
+                          const gmx_output_env_t *oenv);
 
-void print_one (const gmx_output_env_t *oenv, const char *base,
-                const char *name,
-                const char *title, const char *ylabel, int nf,
-                real time[], real data[]);
+void print_one(const gmx_output_env_t *oenv, const char *base,
+               const char *name,
+               const char *title, const char *ylabel, int nf,
+               real time[], real data[]);
 
 /* Routines from g_hbond */
 void analyse_corr(int n, real t[], real ct[], real nt[], real kt[],

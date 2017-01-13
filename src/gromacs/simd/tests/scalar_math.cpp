@@ -204,7 +204,7 @@ TEST(SimdScalarMathTest, pmeForceCorrection)
     real z   = std::sqrt(z2);
     real ref = 2.0 * std::exp(-z2) / (std::sqrt(M_PI) * z2) - std::erf(z) / (z2 * z);
 
-    // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
+// Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #if GMX_DOUBLE
     FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-10));
 #else
@@ -222,7 +222,7 @@ TEST(SimdScalarMathTest, pmePotentialCorrection)
     real z   = std::sqrt(z2);
     real ref = std::erf(z) / z;
 
-    // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
+// Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #if GMX_DOUBLE
     FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-10));
 #else
@@ -406,6 +406,6 @@ TEST(SimdScalarMathTest, pmePotentialCorrectionSingleAccuracy)
 /*! \} */
 /*! \endcond internal */
 
-}      // namespace anonymous
-}      // namespace test
-}      // namespace gmx
+} // namespace anonymous
+} // namespace test
+} // namespace gmx

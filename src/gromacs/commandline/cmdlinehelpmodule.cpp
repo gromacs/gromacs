@@ -130,7 +130,7 @@ private:
     GMX_DISALLOW_COPY_AND_ASSIGN(RootHelpTopic);
 };
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * CommandLineHelpModuleImpl declaration
@@ -145,8 +145,8 @@ public:
                               const CommandLineModuleGroupList &groups);
 
     std::unique_ptr<IHelpExport> createExporter(
-        const std::string &    format,
-        IFileOutputRedirector *redirector);
+            const std::string &    format,
+            IFileOutputRedirector *redirector);
     void exportHelp(IHelpExport *exporter);
 
     RootHelpTopic                     rootTopic_;
@@ -182,7 +182,7 @@ public:
     //! Shorthand for a list of modules contained in a group.
     typedef CommandLineModuleGroupData::ModuleList ModuleGroupContents;
 
-    virtual ~IHelpExport() {};
+    virtual ~IHelpExport(){};
 
     /*! \brief
      * Called once before exporting individual modules.
@@ -200,9 +200,10 @@ public:
      * \param[in] displayName Display name for the module (gmx something).
      */
     virtual void exportModuleHelp(
-        const ICommandLineModule &module,
-        const std::string &       tag,
-        const std::string &       displayName) = 0;
+            const ICommandLineModule &module,
+            const std::string &       tag,
+            const std::string &       displayName)
+            = 0;
     /*! \brief
      * Called after all modules have been exported.
      *
@@ -224,7 +225,8 @@ public:
      * \param[in] modules  List of modules in the group.
      */
     virtual void exportModuleGroup(const char *               title,
-                                   const ModuleGroupContents &modules) = 0;
+                                   const ModuleGroupContents &modules)
+            = 0;
     /*! \brief
      * Called after all module groups have been exported.
      *
@@ -302,8 +304,8 @@ void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
         }
         // TODO: Add <command> [<args>] into the synopsis.
         CommandLineHelpWriter(options)
-            .setHelpText(helpText)
-            .writeHelp(cmdlineContext);
+                .setHelpText(helpText)
+                .writeHelp(cmdlineContext);
     }
     if (context.outputFormat() == eHelpOutputFormat_Console)
     {
@@ -364,9 +366,9 @@ public:
     {
     }
 
-    virtual const char *name() const { return "commands"; }
-    virtual const char *title() const { return "List of available commands"; }
-    virtual bool hasSubTopics() const { return false; }
+    virtual const char *      name() const { return "commands"; }
+    virtual const char *      title() const { return "List of available commands"; }
+    virtual bool              hasSubTopics() const { return false; }
     virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
     {
         return nullptr;
@@ -385,7 +387,7 @@ void CommandsHelpTopic::writeHelp(const HelpWriterContext &context) const
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
         GMX_THROW(NotImplementedError(
-                          "Module list is not implemented for this output format"));
+                "Module list is not implemented for this output format"));
     }
     int                                  maxNameLength = 0;
     const CommandLineModuleMap &         modules       = helpModule_.modules_;
@@ -446,9 +448,9 @@ public:
     {
     }
 
-    virtual const char *name() const { return module_.name(); }
-    virtual const char *title() const { return nullptr; }
-    virtual bool hasSubTopics() const { return false; }
+    virtual const char *      name() const { return module_.name(); }
+    virtual const char *      title() const { return nullptr; }
+    virtual bool              hasSubTopics() const { return false; }
     virtual const IHelpTopic *findSubTopic(const char * /*name*/) const
     {
         return nullptr;
@@ -517,14 +519,14 @@ class HelpExportReStructuredText : public IHelpExport
 public:
     //! Initializes reST exporter.
     HelpExportReStructuredText(
-        const CommandLineHelpModuleImpl &helpModule,
-        IFileOutputRedirector *          outputRedirector);
+            const CommandLineHelpModuleImpl &helpModule,
+            IFileOutputRedirector *          outputRedirector);
 
     virtual void startModuleExport();
     virtual void exportModuleHelp(
-        const ICommandLineModule &module,
-        const std::string &       tag,
-        const std::string &       displayName);
+            const ICommandLineModule &module,
+            const std::string &       tag,
+            const std::string &       displayName);
     virtual void finishModuleExport();
 
     virtual void startModuleGroupExport();
@@ -583,7 +585,7 @@ void HelpExportReStructuredText::exportModuleHelp(
         const std::string &       displayName)
 {
     TextOutputStreamPointer file
-        = outputRedirector_->openTextOutputFile("onlinehelp/" + tag + ".rst");
+            = outputRedirector_->openTextOutputFile("onlinehelp/" + tag + ".rst");
     TextWriter writer(file);
     writer.writeLine(formatString(".. _%s:", displayName.c_str()));
     if (0 == displayName.compare(binaryName_ + " mdrun"))
@@ -709,13 +711,13 @@ public:
 
     virtual void startModuleExport();
     virtual void exportModuleHelp(
-        const ICommandLineModule &module,
-        const std::string &       tag,
-        const std::string &       displayName);
+            const ICommandLineModule &module,
+            const std::string &       tag,
+            const std::string &       displayName);
     virtual void finishModuleExport();
 
     virtual void startModuleGroupExport() {}
-    virtual void exportModuleGroup(const char                * /*title*/,
+    virtual void exportModuleGroup(const char * /*title*/,
                                    const ModuleGroupContents & /*modules*/) {}
     virtual void finishModuleGroupExport() {}
 
@@ -739,8 +741,8 @@ void HelpExportCompletion::startModuleExport()
 
 void HelpExportCompletion::exportModuleHelp(
         const ICommandLineModule &module,
-        const std::string         & /*tag*/,
-        const std::string         & /*displayName*/)
+        const std::string & /*tag*/,
+        const std::string & /*displayName*/)
 {
     modules_.emplace_back(module.name());
     {
@@ -760,7 +762,7 @@ void HelpExportCompletion::finishModuleExport()
     bashWriter_.finishCompletions();
 }
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * CommandLineHelpModuleImpl implementation
@@ -837,21 +839,21 @@ class ModificationCheckingFileOutputStream : public TextOutputStream
 {
 public:
     ModificationCheckingFileOutputStream(
-        const char *           path,
-        IFileOutputRedirector *redirector)
+            const char *           path,
+            IFileOutputRedirector *redirector)
         : path_(path), redirector_(redirector)
     {
     }
 
     virtual void write(const char *str) { contents_.write(str); }
-    virtual void close()
+    virtual void                   close()
     {
         const std::string &newContents = contents_.toString();
         // TODO: Redirect these for unit tests.
         if (File::exists(path_, File::returnFalseOnError))
         {
             const std::string originalContents_
-                = TextReader::readFileToString(path_);
+                    = TextReader::readFileToString(path_);
             if (originalContents_ == newContents)
             {
                 return;
@@ -875,7 +877,7 @@ class ModificationCheckingFileOutputRedirector : public IFileOutputRedirector
 {
 public:
     explicit ModificationCheckingFileOutputRedirector(
-        IFileOutputRedirector *redirector)
+            IFileOutputRedirector *redirector)
         : redirector_(redirector)
     {
     }
@@ -894,7 +896,7 @@ private:
     IFileOutputRedirector *redirector_;
 };
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * CommandLineHelpModule
@@ -949,8 +951,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     const char *const exportFormats[] = { "rst", "completion" };
     std::string       exportFormat;
     Options           options;
-    options.addOption(StringOption("export").store(&exportFormat)
-                          .enumValue(exportFormats));
+    options.addOption(StringOption("export").store(&exportFormat).enumValue(exportFormats));
     CommandLineParser(&options).parse(&argc, argv);
     if (!exportFormat.empty())
     {

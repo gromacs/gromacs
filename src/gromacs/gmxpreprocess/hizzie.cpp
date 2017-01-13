@@ -90,7 +90,7 @@ static void chk_allhb(t_atoms *pdba, rvec x[], t_blocka *hb,
     hb->nr  = natom;
     hb->nra = 6 * natom;
 
-    k               = ii = 0;
+    k = ii          = 0;
     hb->index[ii++] = 0;
     for (i = 0; (i < natom); i++)
     {
@@ -313,7 +313,7 @@ void set_histp(t_atoms *pdba, rvec *x, real angle, real dist)
                     i++;
                 }
 
-                if (!((cg == -1 ) || (cd2 == -1) || (ce1 == -1)
+                if (!((cg == -1) || (cd2 == -1) || (ce1 == -1)
                       || (nd1 == -1) || (ne2 == -1)))
                 {
                     calc_ringh(x[nd1], x[cg], x[ce1], xh1);

@@ -76,7 +76,7 @@ public:
     void initFrameIndices(const ConstArrayRef<int> &index);
 
     gmx_mtop_t *topology() { return mtop_; }
-    t_atoms &atoms();
+    t_atoms &   atoms();
     t_trxframe *frame() { return frame_; }
 
 private:

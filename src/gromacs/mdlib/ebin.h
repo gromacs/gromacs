@@ -58,7 +58,10 @@ typedef struct
 
 enum
 {
-    eprNORMAL, eprAVER, eprRMS, eprNR
+    eprNORMAL,
+    eprAVER,
+    eprRMS,
+    eprNR
 };
 
 t_ebin *mk_ebin(void);

@@ -143,6 +143,6 @@ TEST(UniformRealDistributionTest, AltParam)
     EXPECT_REAL_EQ_TOL(valA, valB, gmx::test::ulpTolerance(0));
 }
 
-}      // namespace anonymous
+} // namespace anonymous
 
-}      // namespace gmx
+} // namespace gmx

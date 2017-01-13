@@ -89,7 +89,7 @@ class FreeVolume : public TrajectoryAnalysisModule
 {
 public:
     FreeVolume();
-    virtual ~FreeVolume() {};
+    virtual ~FreeVolume(){};
 
     virtual void initOptions(IOptionsContainer *         options,
                              TrajectoryAnalysisSettings *settings);
@@ -176,28 +176,24 @@ void FreeVolume::initOptions(IOptionsContainer *         options,
     settings->setHelpText(desc);
 
     // Add option for optional output file
-    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&fnFreevol_).defaultBasename("freevolume")
-                           .description("Computed free volume"));
+    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().store(&fnFreevol_).defaultBasename("freevolume").description("Computed free volume"));
 
     // Add option for selecting a subset of atoms
     options->addOption(SelectionOption("select")
-                           .store(&sel_).defaultSelectionText("all")
-                           .onlyAtoms()
-                           .description("Atoms that are considered as part of the excluded volume"));
+                               .store(&sel_)
+                               .defaultSelectionText("all")
+                               .onlyAtoms()
+                               .description("Atoms that are considered as part of the excluded volume"));
 
     // Add option for the probe radius and initialize it
-    options->addOption(DoubleOption("radius").store(&probeRadius_)
-                           .description("Radius of the probe to be inserted (nm, 0 yields the true free volume)"));
+    options->addOption(DoubleOption("radius").store(&probeRadius_).description("Radius of the probe to be inserted (nm, 0 yields the true free volume)"));
 
     // Add option for the random number seed and initialize it to
     // generate a value automatically
-    options->addOption(IntegerOption("seed").store(&seed_)
-                           .description("Seed for random number generator (0 means generate)."));
+    options->addOption(IntegerOption("seed").store(&seed_).description("Seed for random number generator (0 means generate)."));
 
     // Add option to determine number of insertion trials per frame
-    options->addOption(IntegerOption("ninsert").store(&ninsert_)
-                           .description("Number of probe insertions per cubic nm to try for each frame in the trajectory."));
+    options->addOption(IntegerOption("ninsert").store(&ninsert_).description("Number of probe insertions per cubic nm to try for each frame in the trajectory."));
 
     // Control input settings
     settings->setFlags(TrajectoryAnalysisSettings::efRequireTop
@@ -228,7 +224,7 @@ void FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     data_.addModule(plotm_);
 
     // Initiate variable
-    cutoff_ = 0;
+    cutoff_               = 0;
     int            nnovdw = 0;
     gmx_atomprop_t aps    = gmx_atomprop_init();
     t_atoms *      atoms  = &(top.topology()->atoms);
@@ -354,7 +350,6 @@ void FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             // See whether the distance is smaller than allowed
             bOverlap = (norm(dx)
                         < probeRadius_ + vdw_radius_[sel.position(jp).refId()]);
-
         }
 
         if (!bOverlap)
@@ -417,11 +412,11 @@ void FreeVolume::writeOutput()
     printf("Fractional free volume %.3f +/- %.3f\n", FFVaver, FFVerror);
 }
 
-}       // namespace
+} // namespace
 
 const char FreeVolumeInfo::name[] = "freevolume";
 const char FreeVolumeInfo::shortDescription[]
-    = "Calculate free volume";
+        = "Calculate free volume";
 
 TrajectoryAnalysisModulePointer FreeVolumeInfo::create()
 {

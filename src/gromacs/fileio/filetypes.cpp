@@ -45,53 +45,50 @@
 
 enum
 {
-    eftASC, eftXDR, eftTNG, eftGEN, eftNR
+    eftASC,
+    eftXDR,
+    eftTNG,
+    eftGEN,
+    eftNR
 };
 
 /* To support multiple file types with one general (eg TRX) we have
  * these arrays.
  */
-static const int trxs[] =
-{
+static const int trxs[] = {
     efXTC, efTRR, efCPT,
     efGRO, efG96, efPDB, efTNG
 };
 #define NTRXS asize(trxs)
 
-static const int trcompressed[] =
-{
+static const int trcompressed[] = {
     efXTC,
     efTNG
 };
 #define NTRCOMPRESSED asize(trcompressed)
 
-static const int tros[] =
-{
+static const int tros[] = {
     efXTC, efTRR,
     efGRO, efG96, efPDB, efTNG
 };
 #define NTROS asize(tros)
 
-static const int trns[] =
-{
+static const int trns[] = {
     efTRR, efCPT,
     efTNG
 };
 #define NTRNS asize(trns)
 
-static const int stos[] =
-{ efGRO, efG96, efPDB, efBRK, efENT, efESP };
+static const int stos[] = { efGRO, efG96, efPDB, efBRK, efENT, efESP };
 #define NSTOS asize(stos)
 
-static const int stxs[] =
-{
+static const int stxs[] = {
     efGRO, efG96, efPDB, efBRK, efENT, efESP,
     efTPR
 };
 #define NSTXS asize(stxs)
 
-static const int tpss[] =
-{
+static const int tpss[] = {
     efTPR,
     efGRO, efG96, efPDB, efBRK, efENT
 };
@@ -109,8 +106,7 @@ typedef struct
 } t_deffile;
 
 /* this array should correspond to the enum in filetypes.h */
-static const t_deffile deffile[efNR] =
-{
+static const t_deffile deffile[efNR] = {
     { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters" },
     { eftGEN, ".???", "traj", "-f", "Trajectory", NTRXS, trxs },
     { eftGEN, ".???", "trajout", "-f", "Trajectory", NTROS, tros },
@@ -118,43 +114,45 @@ static const t_deffile deffile[efNR] =
       "Full precision trajectory", NTRNS, trns },
     { eftXDR, ".trr", "traj", nullptr, "Trajectory in portable xdr format" },
     { eftGEN, ".???", "traj_comp", nullptr,
-      "Compressed trajectory (tng format or portable xdr format)", NTRCOMPRESSED, trcompressed},
+      "Compressed trajectory (tng format or portable xdr format)", NTRCOMPRESSED, trcompressed },
     { eftXDR, ".xtc", "traj", nullptr,
       "Compressed trajectory (portable xdr format): xtc" },
     { eftTNG, ".tng", "traj", nullptr,
       "Trajectory file (tng format)" },
-    { eftXDR, ".edr", "ener",   nullptr, "Energy file"},
+    { eftXDR, ".edr", "ener", nullptr, "Energy file" },
     { eftGEN, ".???", "conf", "-c", "Structure file", NSTXS, stxs },
     { eftGEN, ".???", "out", "-o", "Structure file", NSTOS, stos },
     { eftASC, ".gro", "conf", "-c", "Coordinate file in Gromos-87 format" },
     { eftASC, ".g96", "conf", "-c", "Coordinate file in Gromos-96 format" },
-    { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"},
-    { eftASC, ".brk", "eiwit",  "-f", "Brookhaven data bank file"},
+    { eftASC, ".pdb", "eiwit", "-f", "Protein data bank file" },
+    { eftASC, ".brk", "eiwit", "-f", "Brookhaven data bank file" },
     { eftASC, ".ent", "eiwit", "-f", "Entry in the protein date bank" },
     { eftASC, ".esp", "conf", "-f", "Coordinate file in Espresso format" },
-    { eftASC, ".pqr", "state",  "-o", "Coordinate file for MEAD"},
-    { eftXDR, ".cpt", "state",  "-cp", "Checkpoint file"},
-    { eftASC, ".log", "run",    "-l", "Log file"},
-    { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"},
-    { eftASC, ".out", "hello",  "-o", "Generic output file"},
-    { eftASC, ".ndx", "index",  "-n", "Index file", },
-    { eftASC, ".top", "topol",  "-p", "Topology file"},
-    { eftASC, ".itp", "topinc", nullptr, "Include file for topology"},
+    { eftASC, ".pqr", "state", "-o", "Coordinate file for MEAD" },
+    { eftXDR, ".cpt", "state", "-cp", "Checkpoint file" },
+    { eftASC, ".log", "run", "-l", "Log file" },
+    { eftASC, ".xvg", "graph", "-o", "xvgr/xmgr file" },
+    { eftASC, ".out", "hello", "-o", "Generic output file" },
+    {
+            eftASC, ".ndx", "index", "-n", "Index file",
+    },
+    { eftASC, ".top", "topol", "-p", "Topology file" },
+    { eftASC, ".itp", "topinc", nullptr, "Include file for topology" },
     { eftGEN, ".???", "topol", "-s", "Structure+mass(db)", NTPSS, tpss },
-    { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"},
-    { eftASC, ".tex", "doc",    "-o", "LaTeX file"},
+    { eftXDR, ".tpr", "topol", "-s", "Portable xdr run input file" },
+    { eftASC, ".tex", "doc", "-o", "LaTeX file" },
     { eftASC, ".rtp", "residue", nullptr, "Residue Type file used by pdb2gmx" },
     { eftASC, ".atp", "atomtp", nullptr, "Atomtype file used by pdb2gmx" },
-    { eftASC, ".hdb", "polar",  nullptr, "Hydrogen data base"},
-    { eftASC, ".dat", "nnnice", nullptr, "Generic data file"},
-    { eftASC, ".dlg", "user",   nullptr, "Dialog Box data for ngmx"},
+    { eftASC, ".hdb", "polar", nullptr, "Hydrogen data base" },
+    { eftASC, ".dat", "nnnice", nullptr, "Generic data file" },
+    { eftASC, ".dlg", "user", nullptr, "Dialog Box data for ngmx" },
     { eftASC, ".map", "ss", nullptr, "File that maps matrix data to colors" },
     { eftASC, ".eps", "plot", nullptr, "Encapsulated PostScript (tm) file" },
-    { eftASC, ".mat", "ss",     nullptr, "Matrix Data file"},
-    { eftASC, ".m2p", "ps",     nullptr, "Input file for mat2ps"},
-    { eftXDR, ".mtx", "hessian", "-m", "Hessian matrix"},
-    { eftASC, ".edi", "sam",    nullptr, "ED sampling input"},
-    { eftASC, ".cub", "pot",  nullptr, "Gaussian cube file" },
+    { eftASC, ".mat", "ss", nullptr, "Matrix Data file" },
+    { eftASC, ".m2p", "ps", nullptr, "Input file for mat2ps" },
+    { eftXDR, ".mtx", "hessian", "-m", "Hessian matrix" },
+    { eftASC, ".edi", "sam", nullptr, "ED sampling input" },
+    { eftASC, ".cub", "pot", nullptr, "Gaussian cube file" },
     { eftASC, ".xpm", "root", nullptr, "X PixMap compatible matrix file" },
     { eftASC, "", "rundir", nullptr, "Run directory" }
 };

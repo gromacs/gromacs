@@ -55,12 +55,10 @@ init_warning(gmx_bool bAllowWarnings, int maxwarning);
  * a -maxwarn command line option.
  */
 
-void
-set_warning_line(warninp_t wi, const char *fn, int line);
+void set_warning_line(warninp_t wi, const char *fn, int line);
 /* Set filename and linenumber for the warning */
 
-int
-get_warning_line(warninp_t wi);
+int get_warning_line(warninp_t wi);
 /* Get linenumber for the warning */
 
 
@@ -68,8 +66,7 @@ const char *
 get_warning_file(warninp_t wi);
 /* Get filename for the warning */
 
-void
-warning(warninp_t wi, const char *s);
+void warning(warninp_t wi, const char *s);
 /* Issue a warning, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn_warn (local) is incremented.
@@ -79,8 +76,7 @@ warning(warninp_t wi, const char *s);
  * otherwise warning_note should be called.
  */
 
-void
-warning_note(warninp_t wi, const char *s);
+void warning_note(warninp_t wi, const char *s);
 /* Issue a note, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn_note (local) is incremented.
@@ -88,8 +84,7 @@ warning_note(warninp_t wi, const char *s);
  * but 100% ok for other systems.
  */
 
-void
-warning_error(warninp_t wi, const char *s);
+void warning_error(warninp_t wi, const char *s);
 /* Issue an error, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn_error (local) is incremented.
@@ -105,14 +100,12 @@ gmx_noreturn void warning_error_and_exit(warninp_t wi, const char *s, int f_errn
 gmx_bool warning_errors_exist(warninp_t wi);
 /* Return whether any error-level warnings were issued to wi. */
 
-void
-check_warning_error(warninp_t wi, int f_errno, const char *file, int line);
+void check_warning_error(warninp_t wi, int f_errno, const char *file, int line);
 /* When warning_error has been called at least once gmx_fatal is called,
  * otherwise does nothing.
  */
 
-void
-done_warning(warninp_t wi, int f_errno, const char *file, int line);
+void done_warning(warninp_t wi, int f_errno, const char *file, int line);
 /* Should be called when finished processing the input file.
  * Prints the number of notes and warnings
  * and generates a fatal error when errors were found or too many
@@ -120,17 +113,14 @@ done_warning(warninp_t wi, int f_errno, const char *file, int line);
  * Frees the data structure pointed to by wi.
  */
 
-void
-free_warning(warninp_t wi);
+void free_warning(warninp_t wi);
 /* Frees the data structure pointed to by wi. */
 
-void
-_too_few(warninp_t wi, const char *fn, int line);
+void _too_few(warninp_t wi, const char *fn, int line);
 #define too_few(wi) _too_few(wi, __FILE__, __LINE__)
 /* Issue a warning stating 'Too few parameters' */
 
-void
-_incorrect_n_param(warninp_t wi, const char *fn, int line);
+void _incorrect_n_param(warninp_t wi, const char *fn, int line);
 #define incorrect_n_param(wi) _incorrect_n_param(wi, __FILE__, __LINE__)
 /* Issue a warning stating 'Incorrect number of parameters' */
 

@@ -260,7 +260,6 @@ std::string replaceInternal(const std::string &input, const char *from, const ch
                 matchPos = input.find(from, matchPos + 1);
                 continue;
             }
-
         }
         result.append(input, inputPos, matchPos - inputPos);
         result.append(to);
@@ -271,7 +270,7 @@ std::string replaceInternal(const std::string &input, const char *from, const ch
     return result;
 }
 
-}   // namespace
+} // namespace
 
 std::string replaceAll(const std::string &input, const char *from, const char *to)
 {
@@ -333,9 +332,9 @@ size_t TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
 
     int    indent = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
     size_t lastAllowedBreakPoint
-        = (settings_.lineLength() > 0
-           ? std::min(lineStart + settings_.lineLength() - indent, inputLength)
-           : inputLength);
+            = (settings_.lineLength() > 0
+                       ? std::min(lineStart + settings_.lineLength() - indent, inputLength)
+                       : inputLength);
     // Ignore trailing whitespace.
     lastAllowedBreakPoint += std::strspn(input + lastAllowedBreakPoint, " ");
     size_t lineEnd = lineStart;
@@ -343,7 +342,7 @@ size_t TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
     {
         const char *nextBreakPtr = std::strpbrk(input + lineEnd, " \n");
         size_t      nextBreak
-            = (nextBreakPtr != nullptr ? nextBreakPtr - input : inputLength);
+                = (nextBreakPtr != nullptr ? nextBreakPtr - input : inputLength);
         if (nextBreak > lastAllowedBreakPoint && lineEnd > lineStart)
         {
             break;

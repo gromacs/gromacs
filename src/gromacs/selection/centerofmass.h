@@ -90,14 +90,11 @@ struct t_pbc;
  * \param[in]  index  Indices of atoms.
  * \param[out] xout   COG position for the indexed atoms.
  */
-void
-gmx_calc_cog(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[], rvec xout);
+void gmx_calc_cog(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[], rvec xout);
 /** Calculate a single center of mass. */
-void
-gmx_calc_com(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[], rvec xout);
+void gmx_calc_com(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[], rvec xout);
 /** Calculate force on a single center of geometry. */
-void
-gmx_calc_cog_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[], rvec fout);
+void gmx_calc_cog_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[], rvec fout);
 /*! \brief
  * Calculate force on a single center of mass.
  *
@@ -107,29 +104,23 @@ gmx_calc_cog_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[], r
  * \param[in]  index  Indices of atoms.
  * \param[out] fout   Force on the COM position for the indexed atoms.
  */
-void
-gmx_calc_com_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[], rvec fout);
+void gmx_calc_com_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[], rvec fout);
 /** Calculate a single center of mass/geometry. */
-void
-gmx_calc_comg(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[],
-              bool bMass, rvec xout);
+void gmx_calc_comg(const gmx_mtop_t *top, rvec x[], int nrefat, const int index[],
+                   bool bMass, rvec xout);
 /** Calculate force on a single center of mass/geometry. */
-void
-gmx_calc_comg_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[],
-                bool bMass, rvec fout);
+void gmx_calc_comg_f(const gmx_mtop_t *top, rvec f[], int nrefat, const int index[],
+                     bool bMass, rvec fout);
 
 /** Calculate a single center of geometry iteratively, taking PBC into account. */
-void
-gmx_calc_cog_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
-                 int nrefat, const int index[], rvec xout);
+void gmx_calc_cog_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
+                      int nrefat, const int index[], rvec xout);
 /** Calculate a single center of mass iteratively, taking PBC into account. */
-void
-gmx_calc_com_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
-                 int nrefat, const int index[], rvec xout);
+void gmx_calc_com_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
+                      int nrefat, const int index[], rvec xout);
 /** Calculate a single center of mass/geometry iteratively with PBC. */
-void
-gmx_calc_comg_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
-                  int nrefat, const int index[], bool bMass, rvec xout);
+void gmx_calc_comg_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
+                       int nrefat, const int index[], bool bMass, rvec xout);
 
 /*! \brief
  * Calculate centers of geometry for a blocked index.
@@ -140,17 +131,14 @@ gmx_calc_comg_pbc(const gmx_mtop_t *top, rvec x[], const t_pbc *pbc,
  * \param[in]  index Indices of atoms.
  * \param[out] xout  \p block->nr COG positions.
  */
-void
-gmx_calc_cog_block(const gmx_mtop_t *top, rvec x[], const t_block *block,
-                   const int index[], rvec xout[]);
+void gmx_calc_cog_block(const gmx_mtop_t *top, rvec x[], const t_block *block,
+                        const int index[], rvec xout[]);
 /** Calculate centers of mass for a blocked index. */
-void
-gmx_calc_com_block(const gmx_mtop_t *top, rvec x[], const t_block *block,
-                   const int index[], rvec xout[]);
+void gmx_calc_com_block(const gmx_mtop_t *top, rvec x[], const t_block *block,
+                        const int index[], rvec xout[]);
 /** Calculate forces on centers of geometry for a blocked index. */
-void
-gmx_calc_cog_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block,
-                     const int index[], rvec fout[]);
+void gmx_calc_cog_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block,
+                          const int index[], rvec fout[]);
 /*! \brief
  * Calculate forces on centers of mass for a blocked index.
  *
@@ -160,24 +148,19 @@ gmx_calc_cog_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block,
  * \param[in]  index Indices of atoms.
  * \param[out] fout  \p block->nr Forces on COM positions.
  */
-void
-gmx_calc_com_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block,
-                     const int index[], rvec fout[]);
+void gmx_calc_com_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block,
+                          const int index[], rvec fout[]);
 /** Calculate centers of mass/geometry for a blocked index. */
-void
-gmx_calc_comg_block(const gmx_mtop_t *top, rvec x[], const t_block *block,
-                    const int index[], bool bMass, rvec xout[]);
+void gmx_calc_comg_block(const gmx_mtop_t *top, rvec x[], const t_block *block,
+                         const int index[], bool bMass, rvec xout[]);
 /** Calculate forces on centers of mass/geometry for a blocked index. */
-void
-gmx_calc_comg_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block,
-                      const int index[], bool bMass, rvec fout[]);
+void gmx_calc_comg_f_block(const gmx_mtop_t *top, rvec f[], const t_block *block,
+                           const int index[], bool bMass, rvec fout[]);
 /** Calculate centers of mass/geometry for a set of blocks; */
-void
-gmx_calc_comg_blocka(const gmx_mtop_t *top, rvec x[], const t_blocka *block,
-                     bool bMass, rvec xout[]);
+void gmx_calc_comg_blocka(const gmx_mtop_t *top, rvec x[], const t_blocka *block,
+                          bool bMass, rvec xout[]);
 /** Calculate forces on centers of mass/geometry for a set of blocks; */
-void
-gmx_calc_comg_f_blocka(const gmx_mtop_t *top, rvec x[], const t_blocka *block,
-                       bool bMass, rvec xout[]);
+void gmx_calc_comg_f_blocka(const gmx_mtop_t *top, rvec x[], const t_blocka *block,
+                            bool bMass, rvec xout[]);
 
 #endif

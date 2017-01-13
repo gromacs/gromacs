@@ -57,7 +57,7 @@ int gmx_within_tol(double f1,
                    double tol)
 {
     /* The or-equal is important - otherwise we return false if f1==f2==0 */
-    if (fabs(f1 - f2) <= tol * 0.5 * (fabs(f1) + fabs(f2)) )
+    if (fabs(f1 - f2) <= tol * 0.5 * (fabs(f1) + fabs(f2)))
     {
         return 1;
     }
@@ -128,9 +128,9 @@ int gmx_feenableexcept()
     unsigned int  excepts = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
     static fenv_t fenv;
     unsigned int  new_excepts = excepts & FE_ALL_EXCEPT,
-                  old_excepts; // previous masks
+                 old_excepts; // previous masks
 
-    if (fegetenv (&fenv) )
+    if (fegetenv(&fenv))
     {
         return -1;
     }
@@ -138,9 +138,9 @@ int gmx_feenableexcept()
 
     // unmask
     fenv.__control &= ~new_excepts;
-    fenv.__mxcsr   &= ~(new_excepts << 7);
+    fenv.__mxcsr &= ~(new_excepts << 7);
 
-    return ( fesetenv (&fenv) ? -1 : old_excepts );
+    return (fesetenv(&fenv) ? -1 : old_excepts);
 #else
     return -1;
 #endif

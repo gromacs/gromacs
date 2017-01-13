@@ -77,7 +77,7 @@ public:
 
 private:
     virtual AbstractOptionStorage *createStorage(
-        const OptionManagerContainer &managers) const;
+            const OptionManagerContainer &managers) const;
 };
 
 /*! \libinternal \brief

@@ -54,8 +54,10 @@
 namespace gmx
 {
 
-template <class T> class RepeatingOptionSectionHandle;
-template <class T> class RepeatingOptionSectionStorage;
+template <class T>
+class RepeatingOptionSectionHandle;
+template <class T>
+class RepeatingOptionSectionStorage;
 
 /*! \brief
  * Declares an option section that creates a structure for each instance.
@@ -135,8 +137,8 @@ private:
     }
 
     //! Final storage location for the section structures.
-    const std::unique_ptr<IOptionValueStore<T> > store_;
-    T                                            defaultValues_;
+    const std::unique_ptr<IOptionValueStore<T>> store_;
+    T                                           defaultValues_;
     /*! \brief
      * Stores the values for the current in-process section.
      *
@@ -185,7 +187,7 @@ public:
     //! Wraps a given section storage object.
     explicit RepeatingOptionSectionHandle(internal::OptionSectionImpl *section)
         : AbstractOptionSectionHandle(section),
-          storage_(getStorage<RepeatingOptionSectionStorage<T> >(section))
+          storage_(getStorage<RepeatingOptionSectionStorage<T>>(section))
     {
     }
 

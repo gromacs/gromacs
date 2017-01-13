@@ -45,7 +45,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-t_dlist *mk_dlist(FILE *log,
+t_dlist *mk_dlist(FILE *         log,
                   const t_atoms *atoms, int *nlist,
                   gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bHChi,
                   int maxchi, int r0, gmx_residuetype_t *rt)
@@ -62,7 +62,7 @@ t_dlist *mk_dlist(FILE *log,
     {
         nc[i] = 0;
     }
-    i =  0;
+    i = 0;
     while (i < atoms->nr)
     {
         int ires = atoms->atom[i].resind;
@@ -80,7 +80,7 @@ t_dlist *mk_dlist(FILE *log,
         {
             if ((std::strcmp(*(atoms->atomname[i]), "H") == 0)
                 || (std::strcmp(*(atoms->atomname[i]), "H1") == 0)
-                || (std::strcmp(*(atoms->atomname[i]), "HN") == 0) )
+                || (std::strcmp(*(atoms->atomname[i]), "HN") == 0))
             {
                 atm.H = i;
             }
@@ -124,8 +124,8 @@ t_dlist *mk_dlist(FILE *log,
                 atm.Cn[4] = i;
             }
             /* by grs - split the Cn[4] into 2 bits to check allowing dih to H */
-            else if (bHChi && ((std::strcmp(*(atoms->atomname[i]), "HG")  == 0)
-                               || (std::strcmp(*(atoms->atomname[i]), "HG1")  == 0)) )
+            else if (bHChi && ((std::strcmp(*(atoms->atomname[i]), "HG") == 0)
+                               || (std::strcmp(*(atoms->atomname[i]), "HG1") == 0)))
             {
                 atm.Cn[4] = i;
             }
@@ -227,7 +227,8 @@ t_dlist *mk_dlist(FILE *log,
              * another machine, the residue type will be unknown. */
             if (dl[nl].index == -1)
             {
-                gmx_fatal(FARGS, "Unknown residue %s when searching for residue type.\n"
+                gmx_fatal(FARGS,
+                          "Unknown residue %s when searching for residue type.\n"
                           "Maybe you need to add a custom residue in residuetypes.dat.",
                           thisres, __FILE__, __LINE__);
             }
@@ -237,8 +238,10 @@ t_dlist *mk_dlist(FILE *log,
         }
         else if (debug)
         {
-            fprintf(debug, "Could not find N atom but could find other atoms"
-                    " in residue %s%d\n", thisres, ires + r0);
+            fprintf(debug,
+                    "Could not find N atom but could find other atoms"
+                    " in residue %s%d\n",
+                    thisres, ires + r0);
         }
     }
     fprintf(stderr, "\n");
@@ -323,8 +326,8 @@ gmx_bool has_dihedral(int Dih, t_dlist *dl)
         case edChi5:
         case edChi6:
             ddd = Dih - edChi1;
-            b   = ((dl->atm.Cn[ddd] != -1) &&  (dl->atm.Cn[ddd + 1] != -1)
-                   && (dl->atm.Cn[ddd + 2] != -1) && (dl->atm.Cn[ddd + 3] != -1));
+            b   = ((dl->atm.Cn[ddd] != -1) && (dl->atm.Cn[ddd + 1] != -1)
+                 && (dl->atm.Cn[ddd + 2] != -1) && (dl->atm.Cn[ddd + 3] != -1));
             break;
         default:
             pr_dlist(stdout, 1, dl, 1, 0, TRUE, TRUE, TRUE, TRUE, MAXCHI);
@@ -376,12 +379,14 @@ void pr_dlist(FILE *fp, int nl, t_dlist dl[], real dt, int printtype,
         fprintf(fp, "Residue %s\n", dl[i].name);
         if (printtype == edPrintST)
         {
-            fprintf(fp, " Angle [   AI,   AJ,   AK,   AL]  #tr/ns  S^2D  \n"
+            fprintf(fp,
+                    " Angle [   AI,   AJ,   AK,   AL]  #tr/ns  S^2D  \n"
                     "--------------------------------------------\n");
         }
         else
         {
-            fprintf(fp, " Angle [   AI,   AJ,   AK,   AL]  rotamers  0  g(-)  t  g(+)\n"
+            fprintf(fp,
+                    " Angle [   AI,   AJ,   AK,   AL]  rotamers  0  g(-)  t  g(+)\n"
                     "--------------------------------------------\n");
         }
         if (bPhi)
@@ -405,7 +410,7 @@ void pr_dlist(FILE *fp, int nl, t_dlist dl[], real dt, int printtype,
         }
         for (Xi = 0; Xi < MAXCHI; Xi++)
         {
-            if (bChi && (Xi < maxchi) && (dl[i].atm.Cn[Xi + 3] != -1) )
+            if (bChi && (Xi < maxchi) && (dl[i].atm.Cn[Xi + 3] != -1))
             {
                 fprintf(fp, "   Chi%d[%5d,%5d,%5d,%5d]", Xi + 1, 1 + dl[i].atm.Cn[Xi],
                         1 + dl[i].atm.Cn[Xi + 1], 1 + dl[i].atm.Cn[Xi + 2],
@@ -416,7 +421,6 @@ void pr_dlist(FILE *fp, int nl, t_dlist dl[], real dt, int printtype,
         fprintf(fp, "\n");
     }
 }
-
 
 
 int pr_trans(FILE *fp, int nl, t_dlist dl[], real dt, int Xi)

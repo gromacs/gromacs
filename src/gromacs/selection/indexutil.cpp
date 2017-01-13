@@ -71,7 +71,8 @@
 struct gmx_ana_indexgrps_t
 {
     //! Initializes an empty set of groups.
-    explicit gmx_ana_indexgrps_t(int nr) : nr(nr), g(nullptr)
+    explicit gmx_ana_indexgrps_t(int nr)
+        : nr(nr), g(nullptr)
     {
         names.reserve(nr);
         snew(g, nr);
@@ -239,7 +240,7 @@ bool gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, std::string *destName,
  */
 bool gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
                             gmx_ana_indexgrps_t *src,
-                            const char *name)
+                            const char *         name)
 {
     const char **names;
 
@@ -878,7 +879,7 @@ void gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_
         t->nalloc_index = g->isize + 1;
     }
     /* Clear counters */
-    t->nr = 0;
+    t->nr    = 0;
     int id   = -1;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
@@ -915,8 +916,8 @@ void gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_
                         }
                         int first_mol_atom = top->molblock[molb].globalAtomStart;
                         first_mol_atom += molnr * top->molblock[molb].natoms_mol;
-                        first_atom      = first_mol_atom + first_atom + 1;
-                        last_atom       = first_mol_atom + last_atom - 1;
+                        first_atom = first_mol_atom + first_atom + 1;
+                        last_atom  = first_mol_atom + last_atom - 1;
                         for (int j = first_atom; j <= last_atom; ++j)
                         {
                             t->a[t->nra++] = j;
@@ -976,7 +977,7 @@ bool gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const t_block *b)
             ++bi;
         }
         /* If not found, or if too large, return */
-        if (bi == b->nr || i + b->index[bi + 1] -  b->index[bi] > g->isize)
+        if (bi == b->nr || i + b->index[bi + 1] - b->index[bi] > g->isize)
         {
             return false;
         }
@@ -1016,7 +1017,7 @@ bool gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
             ++bi;
         }
         /* If not found, or if too large, return */
-        if (bi == b->nr || i + b->index[bi + 1] -  b->index[bi] > g->isize)
+        if (bi == b->nr || i + b->index[bi + 1] - b->index[bi] > g->isize)
         {
             return false;
         }
@@ -1159,17 +1160,17 @@ void gmx_ana_indexmap_reserve(gmx_ana_indexmap_t *m, int nr, int isize)
 {
     if (m->mapb.nalloc_index < nr + 1)
     {
-        srenew(m->refid,      nr);
-        srenew(m->mapid,      nr);
-        srenew(m->orgid,      nr);
+        srenew(m->refid, nr);
+        srenew(m->mapid, nr);
+        srenew(m->orgid, nr);
         srenew(m->mapb.index, nr + 1);
-        srenew(m->b.index,    nr + 1);
+        srenew(m->b.index, nr + 1);
         m->mapb.nalloc_index = nr + 1;
         m->b.nalloc_index    = nr + 1;
     }
     if (m->b.nalloc_a < isize)
     {
-        srenew(m->b.a,        isize);
+        srenew(m->b.a, isize);
         m->b.nalloc_a = isize;
     }
 }
@@ -1309,9 +1310,9 @@ void gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bo
         dest->type  = src->type;
         dest->b.nr  = src->b.nr;
         dest->b.nra = src->b.nra;
-        std::memcpy(dest->orgid,      src->orgid,      dest->b.nr * sizeof(*dest->orgid));
-        std::memcpy(dest->b.index,    src->b.index,   (dest->b.nr + 1) * sizeof(*dest->b.index));
-        std::memcpy(dest->b.a,        src->b.a,        dest->b.nra * sizeof(*dest->b.a));
+        std::memcpy(dest->orgid, src->orgid, dest->b.nr * sizeof(*dest->orgid));
+        std::memcpy(dest->b.index, src->b.index, (dest->b.nr + 1) * sizeof(*dest->b.index));
+        std::memcpy(dest->b.a, src->b.a, dest->b.nra * sizeof(*dest->b.a));
     }
     dest->mapb.nr  = src->mapb.nr;
     dest->mapb.nra = src->mapb.nra;
@@ -1328,8 +1329,8 @@ void gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bo
     {
         dest->mapb.a = src->mapb.a;
     }
-    std::memcpy(dest->refid,      src->refid,      dest->mapb.nr * sizeof(*dest->refid));
-    std::memcpy(dest->mapid,      src->mapid,      dest->mapb.nr * sizeof(*dest->mapid));
+    std::memcpy(dest->refid, src->refid, dest->mapb.nr * sizeof(*dest->refid));
+    std::memcpy(dest->mapid, src->mapid, dest->mapb.nr * sizeof(*dest->mapid));
     std::memcpy(dest->mapb.index, src->mapb.index, (dest->mapb.nr + 1) * sizeof(*dest->mapb.index));
     dest->bStatic = src->bStatic;
 }

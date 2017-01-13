@@ -127,7 +127,7 @@ gmx_bool zoom_3d(t_3dview *view, real fac)
     dr2 = 0;
     for (i = 0; (i < DIM); i++)
     {
-        dr   = view->eye[i];
+        dr = view->eye[i];
         dr2 += dr * dr;
     }
     dr1 = std::sqrt(dr2);
@@ -156,7 +156,7 @@ static void init_rotate_3d(t_3dview *view)
 
     for (i = 0; (i < DIM); i++)
     {
-        gmx_mat4_init_rotation(i,  rot, view->RotP[i]);
+        gmx_mat4_init_rotation(i, rot, view->RotP[i]);
         gmx_mat4_init_rotation(i, -rot, view->RotM[i]);
 #ifdef DEBUG
         gmx_mat4_print(debug, "RotP", view->RotP[i]);

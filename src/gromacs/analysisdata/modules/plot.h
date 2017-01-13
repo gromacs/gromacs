@@ -205,7 +205,7 @@ public:
      * Multiple calls to setLegend() and/or appendLegend() are added
      * together.
      */
-    void setLegend(int nsets, const char * const *setname);
+    void setLegend(int nsets, const char *const *setname);
     /*! \brief
      * Add a legend string for the next data set.
      *
@@ -327,10 +327,10 @@ private:
 
 //! Smart pointer to manage an AnalysisDataPlotModule object.
 typedef std::shared_ptr<AnalysisDataPlotModule>
-    AnalysisDataPlotModulePointer;
+        AnalysisDataPlotModulePointer;
 //! Smart pointer to manage an AnalysisDataVectorPlotModule object.
 typedef std::shared_ptr<AnalysisDataVectorPlotModule>
-    AnalysisDataVectorPlotModulePointer;
+        AnalysisDataVectorPlotModulePointer;
 
 } // namespace gmx
 

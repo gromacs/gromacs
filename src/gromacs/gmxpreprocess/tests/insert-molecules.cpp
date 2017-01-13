@@ -70,7 +70,7 @@ public:
         rootChecker.checkString(args.toString(), "CommandLine");
 
         ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(
-                          &gmx::InsertMoleculesInfo::create, &cmdline));
+                             &gmx::InsertMoleculesInfo::create, &cmdline));
 
         checkOutputFiles();
     }

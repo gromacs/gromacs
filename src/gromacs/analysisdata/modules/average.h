@@ -143,7 +143,7 @@ private:
 
 //! Smart pointer to manage an AnalysisDataAverageModule object.
 typedef std::shared_ptr<AnalysisDataAverageModule>
-    AnalysisDataAverageModulePointer;
+        AnalysisDataAverageModulePointer;
 
 /*! \brief
  * Data module for averaging of columns for each frame.
@@ -189,7 +189,7 @@ private:
 
 //! Smart pointer to manage an AnalysisDataFrameAverageModule object.
 typedef std::shared_ptr<AnalysisDataFrameAverageModule>
-    AnalysisDataFrameAverageModulePointer;
+        AnalysisDataFrameAverageModulePointer;
 
 } // namespace gmx
 

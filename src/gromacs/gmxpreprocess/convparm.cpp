@@ -92,14 +92,14 @@ static void set_ljparams(int comb, double reppow, double v, double w,
     {
         if (v >= 0)
         {
-            *c6  = 4*w*gmx::power6(v);
-            *c12 = 4*w*std::pow(v, reppow);
+            *c6  = 4 * w * gmx::power6(v);
+            *c12 = 4 * w * std::pow(v, reppow);
         }
         else
         {
             /* Interpret negative sigma as c6=0 and c12 with -sigma */
             *c6  = 0;
-            *c12 = 4*w*std::pow(-v, reppow);
+            *c12 = 4 * w * std::pow(-v, reppow);
         }
     }
     else
@@ -336,8 +336,10 @@ static int assign_param(t_functype ftype, t_iparams *newparam,
             newparam->fbposres.geom = round_check(old[0], 0, ftype, "geometry");
             if (!(newparam->fbposres.geom > efbposresZERO && newparam->fbposres.geom < efbposresNR))
             {
-                gmx_fatal(FARGS, "Invalid geometry for flat-bottomed position restraint.\n"
-                          "Expected number between 1 and %d. Found %d\n", efbposresNR - 1,
+                gmx_fatal(FARGS,
+                          "Invalid geometry for flat-bottomed position restraint.\n"
+                          "Expected number between 1 and %d. Found %d\n",
+                          efbposresNR - 1,
                           newparam->fbposres.geom);
             }
             newparam->fbposres.r        = old[1];
@@ -465,7 +467,7 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
     int       type;
     int       rc;
 
-    if ( (rc = assign_param(ftype, &newparam, forceparams, comb, reppow)) < 0)
+    if ((rc = assign_param(ftype, &newparam, forceparams, comb, reppow)) < 0)
     {
         /* -1 means this interaction is all-zero and should not be added */
         return rc;
@@ -482,10 +484,10 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
                     /* Occasionally, the way the 1-3 reference distance is
                      * computed can lead to non-binary-identical results, but I
                      * don't know why. */
-                    if ((gmx_within_tol(newparam.gb.sar,  ffparams->iparams[type].gb.sar,  1e-6))
-                        && (gmx_within_tol(newparam.gb.st,   ffparams->iparams[type].gb.st,   1e-6))
-                        && (gmx_within_tol(newparam.gb.pi,   ffparams->iparams[type].gb.pi,   1e-6))
-                        && (gmx_within_tol(newparam.gb.gbr,  ffparams->iparams[type].gb.gbr,  1e-6))
+                    if ((gmx_within_tol(newparam.gb.sar, ffparams->iparams[type].gb.sar, 1e-6))
+                        && (gmx_within_tol(newparam.gb.st, ffparams->iparams[type].gb.st, 1e-6))
+                        && (gmx_within_tol(newparam.gb.pi, ffparams->iparams[type].gb.pi, 1e-6))
+                        && (gmx_within_tol(newparam.gb.gbr, ffparams->iparams[type].gb.gbr, 1e-6))
                         && (gmx_within_tol(newparam.gb.bmlt, ffparams->iparams[type].gb.bmlt, 1e-6)))
                     {
                         return type;
@@ -523,7 +525,7 @@ static void append_interaction(t_ilist *ilist,
 {
     int i, where1;
 
-    where1     = ilist->nr;
+    where1 = ilist->nr;
     ilist->nr += nral + 1;
 
     ilist->iatoms[where1++] = type;
@@ -535,7 +537,7 @@ static void append_interaction(t_ilist *ilist,
 
 static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
                            gmx_ffparams_t *ffparams, t_ilist *il,
-                           int *maxtypes,
+                           int *    maxtypes,
                            gmx_bool bNB, gmx_bool bAppend)
 {
     int k, type, nr, nral, delta, start;
@@ -589,9 +591,9 @@ void convert_params(int atnr, t_params nbtypes[],
     ffp->iparams  = nullptr;
     ffp->reppow   = reppow;
 
-    enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,    comb, reppow, ffp, nullptr,
+    enter_function(&(nbtypes[F_LJ]), (t_functype)F_LJ, comb, reppow, ffp, nullptr,
                    &maxtypes, TRUE, TRUE);
-    enter_function(&(nbtypes[F_BHAM]), (t_functype)F_BHAM,  comb, reppow, ffp, nullptr,
+    enter_function(&(nbtypes[F_BHAM]), (t_functype)F_BHAM, comb, reppow, ffp, nullptr,
                    &maxtypes, TRUE, TRUE);
 
     for (mt = 0; mt < mtop->nmoltype; mt++)
@@ -611,7 +613,7 @@ void convert_params(int atnr, t_params nbtypes[],
             {
                 enter_function(&(plist[i]), (t_functype)i, comb, reppow,
                                ffp, &molt->ilist[i],
-                               &maxtypes, FALSE, (i == F_POSRES  || i == F_FBPOSRES));
+                               &maxtypes, FALSE, (i == F_POSRES || i == F_FBPOSRES));
             }
         }
     }

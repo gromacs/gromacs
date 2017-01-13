@@ -87,14 +87,14 @@ static void atom_not_found(int fatal_errno, const char *file, int line,
 }
 
 int search_atom(const char *type, int start,
-                t_atoms *atoms,
+                t_atoms *   atoms,
                 const char *bondtype, gmx_bool bAllowMissing)
 {
-    int             i, resind = -1;
-    gmx_bool        bPrevious, bNext;
-    int             natoms = atoms->nr;
-    t_atom *        at     = atoms->atom;
-    char ** const * anm    = atoms->atomname;
+    int           i, resind = -1;
+    gmx_bool      bPrevious, bNext;
+    int           natoms = atoms->nr;
+    t_atom *      at     = atoms->atom;
+    char **const *anm    = atoms->atomname;
 
     bPrevious = (strchr(type, '-') != nullptr);
     bNext     = (strchr(type, '+') != nullptr);
@@ -120,7 +120,7 @@ int search_atom(const char *type, int start,
         {
             if (anm[i] && gmx_strcasecmp(type, *(anm[i])) == 0)
             {
-                return (int) i;
+                return (int)i;
             }
         }
         if (!(bNext && at[start].resind == at[natoms - 1].resind))
@@ -140,7 +140,7 @@ int search_atom(const char *type, int start,
         {
             if (gmx_strcasecmp(type, *(anm[i])) == 0)
             {
-                return (int) i;
+                return (int)i;
             }
         }
         if (start > 0)
@@ -152,7 +152,7 @@ int search_atom(const char *type, int start,
 }
 
 int search_res_atom(const char *type, int resind,
-                    t_atoms *atoms,
+                    t_atoms *   atoms,
                     const char *bondtype, gmx_bool bAllowMissing)
 {
     int i;

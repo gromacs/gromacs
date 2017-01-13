@@ -56,9 +56,9 @@ struct t_state;
 
 /* Initialization function, also predicts the initial shell postions.
  */
-gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
+gmx_shellfc_t *init_shell_flexcon(FILE *      fplog,
                                   gmx_mtop_t *mtop, int nflexcon,
-                                  int nstcalcenergy,
+                                  int  nstcalcenergy,
                                   bool usingDomainDecomposition);
 
 /* Get the local shell with domain decomposition */
@@ -70,17 +70,17 @@ void relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
                          gmx_int64_t mdstep, t_inputrec *inputrec,
                          gmx_bool bDoNS, int force_flags,
                          gmx_localtop_t *top,
-                         gmx_constr *constr,
+                         gmx_constr *    constr,
                          gmx_enerdata_t *enerd, t_fcdata *fcd,
                          t_state *state, PaddedRVecVector *f,
-                         tensor force_vir,
+                         tensor     force_vir,
                          t_mdatoms *md,
                          t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                         t_graph *graph,
-                         gmx_groups_t *groups,
+                         t_graph *      graph,
+                         gmx_groups_t * groups,
                          gmx_shellfc_t *shfc,
-                         t_forcerec *fr,
-                         gmx_bool bBornRadii,
+                         t_forcerec *   fr,
+                         gmx_bool       bBornRadii,
                          double t, rvec mu_tot,
                          gmx_vsite_t *vsite);
 

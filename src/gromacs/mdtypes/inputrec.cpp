@@ -57,12 +57,12 @@
 #include "gromacs/utility/txtdump.h"
 
 //! Macro to select a bool name
-#define EBOOL(e)       gmx::boolToString(e)
+#define EBOOL(e) gmx::boolToString(e)
 
 /* The minimum number of integration steps required for reasonably accurate
  * integration of first and second order coupling algorithms.
  */
-const int nstmin_berendsen_tcouple =  5;
+const int nstmin_berendsen_tcouple = 5;
 const int nstmin_berendsen_pcouple = 10;
 const int nstmin_harmonic          = 20;
 
@@ -669,7 +669,8 @@ static void pr_swap(FILE *fp, int indent, const t_swapcoords *swap)
     /* Enums for better readability of the code */
     enum
     {
-        eCompA = 0, eCompB
+        eCompA = 0,
+        eCompB
     };
 
 
@@ -982,7 +983,7 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
     int  i, j;
     char buf1[256], buf2[256];
 
-    cmp_int(fp, "inputrec->grpopts.ngtc", -1,  opt1->ngtc, opt2->ngtc);
+    cmp_int(fp, "inputrec->grpopts.ngtc", -1, opt1->ngtc, opt2->ngtc);
     cmp_int(fp, "inputrec->grpopts.ngacc", -1, opt1->ngacc, opt2->ngacc);
     cmp_int(fp, "inputrec->grpopts.ngfrz", -1, opt1->ngfrz, opt2->ngfrz);
     cmp_int(fp, "inputrec->grpopts.ngener", -1, opt1->ngener, opt2->ngener);
@@ -1173,7 +1174,8 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_real(fp, "inputrec->rcoulomb_switch", -1, ir1->rcoulomb_switch, ir2->rcoulomb_switch, ftol, abstol);
     cmp_real(fp, "inputrec->rcoulomb", -1, ir1->rcoulomb, ir2->rcoulomb, ftol, abstol);
     cmp_int(fp, "inputrec->vdwtype", -1, ir1->vdwtype, ir2->vdwtype);
-    cmp_int(fp, "inputrec->vdw_modifier", -1, ir1->vdw_modifier, ir2->vdw_modifier);  cmp_real(fp, "inputrec->rvdw_switch", -1, ir1->rvdw_switch, ir2->rvdw_switch, ftol, abstol);
+    cmp_int(fp, "inputrec->vdw_modifier", -1, ir1->vdw_modifier, ir2->vdw_modifier);
+    cmp_real(fp, "inputrec->rvdw_switch", -1, ir1->rvdw_switch, ir2->rvdw_switch, ftol, abstol);
     cmp_real(fp, "inputrec->rvdw", -1, ir1->rvdw, ir2->rvdw, ftol, abstol);
     cmp_real(fp, "inputrec->epsilon_r", -1, ir1->epsilon_r, ir2->epsilon_r, ftol, abstol);
     cmp_real(fp, "inputrec->epsilon_rf", -1, ir1->epsilon_rf, ir2->epsilon_rf, ftol, abstol);
@@ -1282,8 +1284,8 @@ gmx_bool inputrecDynamicBox(const t_inputrec *ir)
 
 gmx_bool inputrecPreserveShape(const t_inputrec *ir)
 {
-    return  (ir->epc != epcNO && ir->deform[XX][XX] == 0
-             && (ir->epct == epctISOTROPIC || ir->epct == epctSEMIISOTROPIC));
+    return (ir->epc != epcNO && ir->deform[XX][XX] == 0
+            && (ir->epct == epctISOTROPIC || ir->epct == epctSEMIISOTROPIC));
 }
 
 gmx_bool inputrecNeedMutot(const t_inputrec *ir)
@@ -1300,18 +1302,18 @@ gmx_bool inputrecExclForces(const t_inputrec *ir)
 
 gmx_bool inputrecNptTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) )
-             && (ir->epc == epcMTTK) && (ir->etc == etcNOSEHOOVER) );
+    return (((ir->eI == eiVV) || (ir->eI == eiVVAK))
+            && (ir->epc == epcMTTK) && (ir->etc == etcNOSEHOOVER));
 }
 
 gmx_bool inputrecNvtTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) )
-             && (ir->epc != epcMTTK) && (ir->etc == etcNOSEHOOVER) );
+    return (((ir->eI == eiVV) || (ir->eI == eiVVAK))
+            && (ir->epc != epcMTTK) && (ir->etc == etcNOSEHOOVER));
 }
 
 gmx_bool inputrecNphTrotter(const t_inputrec *ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) )
-             && (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
+    return (((ir->eI == eiVV) || (ir->eI == eiVVAK))
+            && (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER));
 }

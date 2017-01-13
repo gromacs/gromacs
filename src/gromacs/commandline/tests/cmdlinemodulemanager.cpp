@@ -64,7 +64,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
     const char *const cmdline[] = {
         "test", "module", "-flag", "yes"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     initManager(args, "test");
     MockModule &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
@@ -73,7 +73,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
     using ::testing::ElementsAreArray;
     EXPECT_CALL(mod1, init(_));
     EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
+            .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
@@ -84,7 +84,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
     const char *const cmdline[] = {
         "test", "help", "module"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     initManager(args, "test");
     MockModule &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
@@ -101,7 +101,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
     const char *const cmdline[] = {
         "test", "module", "-h"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     initManager(args, "test");
     MockModule &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
@@ -118,7 +118,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSingleModule)
     const char *const cmdline[] = {
         "g_module", "-h"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     initManager(args, "g_module");
     MockModule mod(nullptr, nullptr);
     manager().setSingleModule(&mod);
@@ -135,7 +135,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     const char *const cmdline[] = {
         "test", "test", "-flag", "yes"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     initManager(args, "test");
     MockModule &mod1 = addModule("test", "Test module");
     addModule("other", "Second module");
@@ -144,7 +144,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     using ::testing::ElementsAreArray;
     EXPECT_CALL(mod1, init(_));
     EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
+            .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);

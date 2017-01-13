@@ -58,20 +58,17 @@ gmx_walltime_accounting_t
 walltime_accounting_init(int numOpenMPThreads);
 
 //! Destructor
-void
-walltime_accounting_destroy(gmx_walltime_accounting_t walltime_accounting);
+void walltime_accounting_destroy(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief
  * Record initial time stamps, e.g. at run end or counter re-initalization time
  */
-void
-walltime_accounting_start(gmx_walltime_accounting_t walltime_accounting);
+void walltime_accounting_start(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief
  * Measure and cache the elapsed wall-clock time since
  * walltime_accounting_start() */
-void
-walltime_accounting_end(gmx_walltime_accounting_t walltime_accounting);
+void walltime_accounting_end(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief
  * Measure and return the elapsed wall-clock time since
@@ -98,9 +95,8 @@ walltime_accounting_get_nsteps_done(gmx_walltime_accounting_t walltime_accountin
 /*! \brief Set the number of integration steps done
  *
  * TODO consider whether this should get done in walltime_accounting_end */
-void
-walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t walltime_accounting,
-                                    gmx_int64_t               nsteps_done);
+void walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t walltime_accounting,
+                                         gmx_int64_t               nsteps_done);
 
 /*! \brief
  * Calls system timing routines (e.g. clock_gettime) to get the (fractional)
@@ -114,4 +110,4 @@ double gmx_gettime();
 }
 #endif
 
-#endif  /* GMX_TIMING_WALLTIME_ACCOUNTING_H */
+#endif /* GMX_TIMING_WALLTIME_ACCOUNTING_H */

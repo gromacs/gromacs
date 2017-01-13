@@ -168,7 +168,11 @@ void dump_nm2type(FILE *fp, int nnm, t_nm2type nm2t[])
 
 enum
 {
-    ematchNone, ematchWild, ematchElem, ematchExact, ematchNR
+    ematchNone,
+    ematchWild,
+    ematchElem,
+    ematchExact,
+    ematchNR
 };
 
 static int match_str(const char *atom, const char *template_string)
@@ -311,12 +315,14 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
                     }
                     if ((nqual[cur][ematchExact]
                          + nqual[cur][ematchElem]
-                         + nqual[cur][ematchWild]) == nb)
+                         + nqual[cur][ematchWild])
+                        == nb)
                     {
                         if ((nqual[cur][ematchExact] > nqual[prev][ematchExact]) ||
 
                             ((nqual[cur][ematchExact] == nqual[prev][ematchExact])
-                             && (nqual[cur][ematchElem] > nqual[prev][ematchElem])) ||
+                             && (nqual[cur][ematchElem] > nqual[prev][ematchElem]))
+                            ||
 
                             ((nqual[cur][ematchExact] == nqual[prev][ematchExact])
                              && (nqual[cur][ematchElem] == nqual[prev][ematchElem])
@@ -341,9 +347,9 @@ int nm2type(int nnm, t_nm2type nm2t[], struct t_symtab *tab, t_atoms *atoms,
             if ((k = get_atomtype_type(type, atype)) == NOTSET)
             {
                 atoms->atom[i].qB = alpha;
-                atoms->atom[i].m  = atoms->atom[i].mB = mm;
-                k                 = add_atomtype(atype, tab, &(atoms->atom[i]), type, param,
-                                                 atoms->atom[i].type, 0, 0, 0, atomnr, 0, 0);
+                atoms->atom[i].m = atoms->atom[i].mB = mm;
+                k                                    = add_atomtype(atype, tab, &(atoms->atom[i]), type, param,
+                                 atoms->atom[i].type, 0, 0, 0, atomnr, 0, 0);
             }
             atoms->atom[i].type  = k;
             atoms->atom[i].typeB = k;

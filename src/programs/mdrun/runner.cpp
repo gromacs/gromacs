@@ -134,8 +134,8 @@ tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
  * the number of threads will get lowered.
  */
-#define MIN_ATOMS_PER_MPI_THREAD    90
-#define MIN_ATOMS_PER_GPU           900
+#define MIN_ATOMS_PER_MPI_THREAD 90
+#define MIN_ATOMS_PER_GPU 900
 
 struct mdrunner_arglist
 {
@@ -181,14 +181,14 @@ static void mdrunner_start_fn(void *arg)
 {
     try
     {
-        struct mdrunner_arglist *mda = (struct mdrunner_arglist*)arg;
+        struct mdrunner_arglist *mda = (struct mdrunner_arglist *)arg;
         struct mdrunner_arglist  mc  = *mda; /* copy the arg list to make sure
                                                 that it's thread-local. This doesn't
                                                 copy pointed-to items, of course,
                                                 but those are all const. */
-        t_commrec *cr;                       /* we need a local version of this */
-        FILE *     fplog = nullptr;
-        t_filenm * fnm;
+        t_commrec *              cr;         /* we need a local version of this */
+        FILE *                   fplog = nullptr;
+        t_filenm *               fnm;
 
         fnm = dup_tfn(mc.nfile, mc.fnm);
 
@@ -220,7 +220,7 @@ static void mdrunner_start_fn(void *arg)
 static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          FILE *fplog, t_commrec *cr, int nfile,
                                          const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-                                         int nstglobalcomm,
+                                         int  nstglobalcomm,
                                          ivec ddxyz, int dd_rank_order, int npme,
                                          real rdd, real rconstr,
                                          const char *dddlb_opt, real dlb_scale,
@@ -286,7 +286,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     /* now spawn new threads that start mdrunner_start_fn(), while
        the main thread returns, we set thread affinity later */
     ret = tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi, TMPI_AFFINITY_NONE,
-                       mdrunner_start_fn, (void*)(mda) );
+                       mdrunner_start_fn, (void *)(mda));
     if (ret != TMPI_SUCCESS)
     {
         return nullptr;
@@ -308,7 +308,7 @@ static const int nbnxnReferenceNstlist = 10;
 //! The values to try when switching
 const int nstlist_try[] = { 20, 25, 40 };
 //! Number of elements in the neighborsearch list trials.
-#define NNSTL  sizeof(nstlist_try) / sizeof(nstlist_try[0])
+#define NNSTL sizeof(nstlist_try) / sizeof(nstlist_try[0])
 /* Increase nstlist until the non-bonded cost increases more than listfac_ok,
  * but never more than listfac_max.
  * A standard (protein+)water system at 300K with PME ewald_rtol=1e-5
@@ -484,7 +484,7 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
             {
                 gmx_incons("Changing nstlist with domain decomposition and unbounded dimensions is not implemented yet");
             }
-            t_state state_tmp {};
+            t_state state_tmp{};
             copy_mat(box, state_tmp.box);
             bDD = change_dd_cutoff(cr, &state_tmp, ir, rlist_new);
         }
@@ -695,7 +695,7 @@ static gmx::LoggerOwner buildLogger(FILE *fplog, const t_commrec *cr)
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const gmx_output_env_t *oenv, gmx_bool bVerbose,
-             int nstglobalcomm,
+             int  nstglobalcomm,
              ivec ddxyz, int dd_rank_order, int npme, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
@@ -708,7 +708,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_bool                  bForceUseGPU, bTryUseGPU, bRerunMD;
     t_inputrec *              inputrec;
     matrix                    box;
-    gmx_ddbox_t               ddbox = {0};
+    gmx_ddbox_t               ddbox = { 0 };
     int                       npme_major, npme_minor;
     t_nrnb *                  nrnb;
     gmx_mtop_t *              mtop          = nullptr;
@@ -744,9 +744,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     bool doMembed = opt2bSet("-membed", nfile, fnm);
-    bRerunMD     = (Flags & MD_RERUN);
-    bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
-    bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
+    bRerunMD      = (Flags & MD_RERUN);
+    bForceUseGPU  = (strncmp(nbpu_opt, "gpu", 3) == 0);
+    bTryUseGPU    = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
 
     // Here we assume that SIMMASTER(cr) does not change even after the
     // threads are started.
@@ -771,7 +771,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         please_cite(fplog, "Berendsen95a");
     }
 
-    std::unique_ptr<t_state> stateInstance = std::unique_ptr<t_state>(new t_state {});
+    std::unique_ptr<t_state> stateInstance = std::unique_ptr<t_state>(new t_state{});
     t_state *                state         = stateInstance.get();
 
     if (SIMMASTER(cr))
@@ -921,8 +921,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                   "but %s was not started through mpirun/mpiexec or only one rank was requested through mpirun/mpiexec"
 #endif
 #endif
-                  , output_env_get_program_display_name(oenv)
-                  );
+                  ,
+                  output_env_get_program_display_name(oenv));
     }
 
     if (bRerunMD
@@ -1054,8 +1054,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         ed = ed_open(mtop->natoms, &state->edsamstate, nfile, fnm, Flags, oenv, cr);
     }
 
-    if (PAR(cr) && !(EI_TPI(inputrec->eI)
-                     || inputrec->eI == eiNM))
+    if (PAR(cr) && !(EI_TPI(inputrec->eI) || inputrec->eI == eiNM))
     {
         cr->dd = init_domain_decomposition(fplog, cr, Flags, ddxyz, npme,
                                            dd_rank_order,
@@ -1100,15 +1099,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                 "multi-simulation job. Setup for this simulation:\n",
                 cr->ms->sim, cr->ms->nsim);
     }
-    GMX_LOG(mdlog.warning).appendTextFormatted(
-            "Using %d MPI %s\n",
-            cr->nnodes,
+    GMX_LOG(mdlog.warning).appendTextFormatted("Using %d MPI %s\n", cr->nnodes,
 #if GMX_THREAD_MPI
-            cr->nnodes == 1 ? "thread" : "threads"
+                                               cr->nnodes == 1 ? "thread" : "threads"
 #else
-            cr->nnodes == 1 ? "process" : "processes"
+                                               cr->nnodes == 1 ? "process" : "processes"
 #endif
-            );
+                                               );
     fflush(stderr);
 #endif
 
@@ -1346,9 +1343,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             /* Initialize pull code */
             inputrec->pull_work
-                = init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
-                            mtop, cr, oenv, inputrec->fepvals->init_lambda,
-                            EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags);
+                    = init_pull(fplog, inputrec->pull, inputrec, nfile, fnm,
+                                mtop, cr, oenv, inputrec->fepvals->init_lambda,
+                                EI_DYNAMICS(inputrec->eI) && MASTER(cr), Flags);
         }
 
         if (inputrec->bRot)
@@ -1371,19 +1368,19 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         }
 
         /* Now do whatever the user wants us to do (how flexible...) */
-        my_integrator(inputrec->eI) (fplog, cr, mdlog, nfile, fnm,
-                                     oenv, bVerbose,
-                                     nstglobalcomm,
-                                     vsite, constr,
-                                     nstepout, inputrec, mtop,
-                                     fcd, state, &energyHistory,
-                                     mdatoms, nrnb, wcycle, ed, fr,
-                                     repl_ex_nst, repl_ex_nex, repl_ex_seed,
-                                     membed,
-                                     cpt_period, max_hours,
-                                     imdport,
-                                     Flags,
-                                     walltime_accounting);
+        my_integrator(inputrec->eI)(fplog, cr, mdlog, nfile, fnm,
+                                    oenv, bVerbose,
+                                    nstglobalcomm,
+                                    vsite, constr,
+                                    nstepout, inputrec, mtop,
+                                    fcd, state, &energyHistory,
+                                    mdatoms, nrnb, wcycle, ed, fr,
+                                    repl_ex_nst, repl_ex_nex, repl_ex_seed,
+                                    membed,
+                                    cpt_period, max_hours,
+                                    imdport,
+                                    Flags,
+                                    walltime_accounting);
 
         if (inputrec->bRot)
         {
@@ -1394,7 +1391,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         {
             finish_pull(inputrec->pull_work);
         }
-
     }
     else
     {

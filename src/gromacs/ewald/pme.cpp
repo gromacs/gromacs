@@ -274,15 +274,15 @@ static void destroy_atomcomm(pme_atomcomm_t *atc)
 }
 
 /*! \brief Initialize data structure for communication */
-static void init_overlap_comm(pme_overlap_t * ol,
-                              int             norder,
+static void init_overlap_comm(pme_overlap_t *ol,
+                              int            norder,
 #if GMX_MPI
-                              MPI_Comm        comm,
+                              MPI_Comm comm,
 #endif
-                              int             nnodes,
-                              int             nodeid,
-                              int             ndata,
-                              int             commplainsize)
+                              int nnodes,
+                              int nodeid,
+                              int ndata,
+                              int commplainsize)
 {
     int              b, i;
     pme_grid_comm_t *pgc;
@@ -318,7 +318,7 @@ static void init_overlap_comm(pme_overlap_t * ol,
          * spatially uniform along dimension x or y, we need to round
          * s2g0 down and s2g1 up.
          */
-        ol->s2g0[i] = ( i   * ndata + 0       ) / nnodes;
+        ol->s2g0[i] = (i * ndata + 0) / nnodes;
         ol->s2g1[i] = ((i + 1) * ndata + nnodes - 1) / nnodes + norder - 1;
 
         if (debug)
@@ -340,7 +340,7 @@ static void init_overlap_comm(pme_overlap_t * ol,
         bCont = FALSE;
         for (i = 0; i < nnodes; i++)
         {
-            if ((i + b <  nnodes && ol->s2g1[i] > ol->s2g0[i + b])
+            if ((i + b < nnodes && ol->s2g1[i] > ol->s2g0[i + b])
                 || (i + b >= nnodes && ol->s2g1[i] > ol->s2g0[i + b - nnodes] + ndata))
             {
                 bCont = TRUE;
@@ -368,13 +368,13 @@ static void init_overlap_comm(pme_overlap_t * ol,
         if (ol->send_id[b] < nodeid)
         {
             fft_start += ndata;
-            fft_end   += ndata;
+            fft_end += ndata;
         }
         send_index1      = ol->s2g1[nodeid];
         send_index1      = std::min(send_index1, fft_end);
         pgc->send_index0 = fft_start;
         pgc->send_nindex = std::max(0, send_index1 - pgc->send_index0);
-        ol->send_size   += pgc->send_nindex;
+        ol->send_size += pgc->send_nindex;
 
         /* We always start receiving to the first index of our slab */
         fft_start   = ol->s2g0[ol->nodeid];
@@ -418,10 +418,10 @@ static void destroy_overlap_comm(const pme_overlap_t *ol)
 
 void gmx_pme_check_restrictions(int pme_order,
                                 int nkx, int nky, int nkz,
-                                int nnodes_major,
-                                int nnodes_minor,
-                                gmx_bool bUseThreads,
-                                gmx_bool bFatal,
+                                int       nnodes_major,
+                                int       nnodes_minor,
+                                gmx_bool  bUseThreads,
+                                gmx_bool  bFatal,
                                 gmx_bool *bValidSettings)
 {
     if (pme_order > PME_ORDER_MAX)
@@ -553,7 +553,6 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
             pme->ndecompdim   = 1;
             pme->nodeid_major = pme->nodeid;
             pme->nodeid_minor = 0;
-
         }
         else if (nnodes_major == 1)
         {
@@ -575,9 +574,9 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
 
 #if GMX_MPI
             MPI_Comm_split(pme->mpi_comm, pme->nodeid % nnodes_minor,
-                           pme->nodeid, &pme->mpi_comm_d[0]);  /* My communicator along major dimension */
+                           pme->nodeid, &pme->mpi_comm_d[0]); /* My communicator along major dimension */
             MPI_Comm_split(pme->mpi_comm, pme->nodeid / nnodes_minor,
-                           pme->nodeid, &pme->mpi_comm_d[1]);  /* My communicator along minor dimension */
+                           pme->nodeid, &pme->mpi_comm_d[1]); /* My communicator along minor dimension */
 
             MPI_Comm_rank(pme->mpi_comm_d[0], &pme->nodeid_major);
             MPI_Comm_size(pme->mpi_comm_d[0], &pme->nnodes_major);
@@ -718,9 +717,9 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
      * The allocated size (pmegrid_n?) might be slightly larger.
      */
     pme->pmegrid_nx = pme->overlap[0].s2g1[pme->nodeid_major]
-        - pme->overlap[0].s2g0[pme->nodeid_major];
+                      - pme->overlap[0].s2g0[pme->nodeid_major];
     pme->pmegrid_ny = pme->overlap[1].s2g1[pme->nodeid_minor]
-        - pme->overlap[1].s2g0[pme->nodeid_minor];
+                      - pme->overlap[1].s2g0[pme->nodeid_minor];
     pme->pmegrid_nz_base = pme->nkz;
     pme->pmegrid_nz      = pme->pmegrid_nz_base + pme->pme_order - 1;
     set_grid_alignment(&pme->pmegrid_nz, pme->pme_order);
@@ -764,8 +763,8 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
 
     for (i = 0; i < pme->ngrids; ++i)
     {
-        if ((i <  DO_Q && pme->doCoulomb && (i == 0
-                                             || bFreeEnergy_q))
+        if ((i < DO_Q && pme->doCoulomb && (i == 0
+                                            || bFreeEnergy_q))
             || (i >= DO_Q && pme->doLJ && (i == 2
                                            || bFreeEnergy_lj
                                            || ir->ljpme_combination_rule == eljpmeLB)))
@@ -783,7 +782,6 @@ int gmx_pme_init(struct gmx_pme_t **pmedata,
                                     &pme->fftgrid[i], &pme->cfftgrid[i],
                                     pme->mpi_comm_d,
                                     bReproducible, pme->nthread);
-
         }
     }
 
@@ -924,17 +922,17 @@ static void calc_next_lb_coeffs(struct gmx_pme_t *pme, real *local_sigma)
 }
 
 int gmx_pme_do(struct gmx_pme_t *pme,
-               int start,       int homenr,
-               rvec x[],        rvec f[],
-               real chargeA[],  real chargeB[],
-               real c6A[],      real c6B[],
-               real sigmaA[],   real sigmaB[],
-               matrix box,      t_commrec *cr,
-               int  maxshift_x, int maxshift_y,
-               t_nrnb *nrnb,    gmx_wallcycle_t wcycle,
-               matrix vir_q,    matrix vir_lj,
-               real *energy_q,  real *energy_lj,
-               real lambda_q,   real lambda_lj,
+               int start, int homenr,
+               rvec x[], rvec f[],
+               real chargeA[], real chargeB[],
+               real c6A[], real c6B[],
+               real sigmaA[], real sigmaB[],
+               matrix box, t_commrec *cr,
+               int maxshift_x, int maxshift_y,
+               t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+               matrix vir_q, matrix vir_lj,
+               real *energy_q, real *energy_lj,
+               real lambda_q, real lambda_lj,
                real *dvdlambda_q, real *dvdlambda_lj,
                int flags)
 {
@@ -1022,8 +1020,8 @@ int gmx_pme_do(struct gmx_pme_t *pme,
          * If grid_index < 2 we should be doing electrostatic PME
          * If grid_index >= 2 we should be doing LJ-PME
          */
-        if ((grid_index <  DO_Q && (!pme->doCoulomb
-                                    || (grid_index == 1 && !pme->bFEP_q)))
+        if ((grid_index < DO_Q && (!pme->doCoulomb
+                                   || (grid_index == 1 && !pme->bFEP_q)))
             || (grid_index >= DO_Q && (!pme->doLJ
                                        || (grid_index == 3 && !pme->bFEP_lj))))
         {
@@ -1036,10 +1034,18 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         pfft_setup = pme->pfft_setup[grid_index];
         switch (grid_index)
         {
-            case 0: coefficient = chargeA + start; break;
-            case 1: coefficient = chargeB + start; break;
-            case 2: coefficient = c6A + start; break;
-            case 3: coefficient = c6B + start; break;
+            case 0:
+                coefficient = chargeA + start;
+                break;
+            case 1:
+                coefficient = chargeB + start;
+                break;
+            case 2:
+                coefficient = c6A + start;
+                break;
+            case 3:
+                coefficient = c6B + start;
+                break;
         }
 
         grid = pmegrid->grid.grid;
@@ -1048,7 +1054,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
         {
             fprintf(debug, "PME: number of ranks = %d, rank = %d\n",
                     cr->nnodes, cr->nodeid);
-            fprintf(debug, "Grid = %p\n", (void*)grid);
+            fprintf(debug, "Grid = %p\n", (void *)grid);
             if (grid == nullptr)
             {
                 gmx_fatal(FARGS, "No grid!");
@@ -1093,7 +1099,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             {
                 wrap_periodic_pmegrid(pme, grid);
 
-                /* sum contributions to local grid from other nodes */
+/* sum contributions to local grid from other nodes */
 #if GMX_MPI
                 if (pme->nnodes > 1)
                 {
@@ -1118,7 +1124,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
              */
         }
 
-        /* Here we start a large thread parallel region */
+/* Here we start a large thread parallel region */
 #pragma omp parallel num_threads(pme->nthread) private(thread)
         {
             try
@@ -1149,18 +1155,18 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     if (grid_index < DO_Q)
                     {
                         loop_count
-                            = solve_pme_yzx(pme, cfftgrid,
-                                            box[XX][XX] * box[YY][YY] * box[ZZ][ZZ],
-                                            bCalcEnerVir,
-                                            pme->nthread, thread);
+                                = solve_pme_yzx(pme, cfftgrid,
+                                                box[XX][XX] * box[YY][YY] * box[ZZ][ZZ],
+                                                bCalcEnerVir,
+                                                pme->nthread, thread);
                     }
                     else
                     {
                         loop_count
-                            = solve_pme_lj_yzx(pme, &cfftgrid, FALSE,
-                                               box[XX][XX] * box[YY][YY] * box[ZZ][ZZ],
-                                               bCalcEnerVir,
-                                               pme->nthread, thread);
+                                = solve_pme_lj_yzx(pme, &cfftgrid, FALSE,
+                                                   box[XX][XX] * box[YY][YY] * box[ZZ][ZZ],
+                                                   bCalcEnerVir,
+                                                   pme->nthread, thread);
                     }
 
                     if (thread == 0)
@@ -1190,7 +1196,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         if (pme->nodeid == 0)
                         {
                             real ntot = pme->nkx * pme->nky * pme->nkz;
-                            npme = static_cast<int>(ntot * std::log(ntot) / std::log(2.0));
+                            npme      = static_cast<int>(ntot * std::log(ntot) / std::log(2.0));
                             inc_nrnb(nrnb, eNR_FFT, 2 * npme);
                         }
 
@@ -1202,7 +1208,8 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
                     copy_fftgrid_to_pmegrid(pme, fftgrid, grid, grid_index, pme->nthread, thread);
                 }
-            } GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+            }
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
         /* End of thread parallel section.
          * With MPI we have to synchronize here before gmx_sum_qgrid_dd.
@@ -1210,7 +1217,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
 
         if (bBackFFT)
         {
-            /* distribute local grid to all nodes */
+/* distribute local grid to all nodes */
 #if GMX_MPI
             if (pme->nnodes > 1)
             {
@@ -1374,7 +1381,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     if (pme->nthread == 1)
                     {
                         wrap_periodic_pmegrid(pme, grid);
-                        /* sum contributions to local grid from other nodes */
+/* sum contributions to local grid from other nodes */
 #if GMX_MPI
                         if (pme->nnodes > 1)
                         {
@@ -1386,7 +1393,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                     }
                     wallcycle_stop(wcycle, ewcPME_SPREADGATHER);
                 }
-                /*Here we start a large thread parallel region*/
+/*Here we start a large thread parallel region*/
 #pragma omp parallel num_threads(pme->nthread) private(thread)
                 {
                     try
@@ -1415,7 +1422,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             }
             if (flags & GMX_PME_SOLVE)
             {
-                /* solve in k-space for our local cells */
+/* solve in k-space for our local cells */
 #pragma omp parallel num_threads(pme->nthread) private(thread)
                 {
                     try
@@ -1428,10 +1435,10 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         }
 
                         loop_count
-                            = solve_pme_lj_yzx(pme, &pme->cfftgrid[2], TRUE,
-                                               box[XX][XX] * box[YY][YY] * box[ZZ][ZZ],
-                                               bCalcEnerVir,
-                                               pme->nthread, thread);
+                                = solve_pme_lj_yzx(pme, &pme->cfftgrid[2], TRUE,
+                                                   box[XX][XX] * box[YY][YY] * box[ZZ][ZZ],
+                                                   bCalcEnerVir,
+                                                   pme->nthread, thread);
                         if (thread == 0)
                         {
                             wallcycle_stop(wcycle, ewcLJPME);
@@ -1487,7 +1494,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                                 if (pme->nodeid == 0)
                                 {
                                     real ntot = pme->nkx * pme->nky * pme->nkz;
-                                    npme = static_cast<int>(ntot * std::log(ntot) / std::log(2.0));
+                                    npme      = static_cast<int>(ntot * std::log(ntot) / std::log(2.0));
                                     inc_nrnb(nrnb, eNR_FFT, 2 * npme);
                                 }
                                 wallcycle_start(wcycle, ewcPME_SPREADGATHER);
@@ -1498,7 +1505,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
                     } /*#pragma omp parallel*/
 
-                    /* distribute local grid to all nodes */
+/* distribute local grid to all nodes */
 #if GMX_MPI
                     if (pme->nnodes > 1)
                     {
@@ -1515,7 +1522,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
                         where();
                         bClearF = (bFirst && PAR(cr));
                         scale   = pme->bFEP ? (fep_state < 1 ? 1.0 - lambda_lj : lambda_lj) : 1.0;
-                        scale  *= lb_scale_factor[grid_index - 2];
+                        scale *= lb_scale_factor[grid_index - 2];
 
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
                         for (thread = 0; thread < pme->nthread; thread++)
@@ -1580,14 +1587,14 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             }
             else
             {
-                *energy_q     = (1.0 - lambda_q) * energy_AB[0] + lambda_q * energy_AB[1];
+                *energy_q = (1.0 - lambda_q) * energy_AB[0] + lambda_q * energy_AB[1];
                 *dvdlambda_q += energy_AB[1] - energy_AB[0];
                 for (i = 0; i < DIM; i++)
                 {
                     for (j = 0; j < DIM; j++)
                     {
                         vir_q[i][j] += (1.0 - lambda_q) * vir_AB[0][i][j]
-                            + lambda_q * vir_AB[1][i][j];
+                                       + lambda_q * vir_AB[1][i][j];
                     }
                 }
             }
@@ -1610,7 +1617,7 @@ int gmx_pme_do(struct gmx_pme_t *pme,
             }
             else
             {
-                *energy_lj     = (1.0 - lambda_lj) * energy_AB[2] + lambda_lj * energy_AB[3];
+                *energy_lj = (1.0 - lambda_lj) * energy_AB[2] + lambda_lj * energy_AB[3];
                 *dvdlambda_lj += energy_AB[3] - energy_AB[2];
                 for (i = 0; i < DIM; i++)
                 {

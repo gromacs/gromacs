@@ -64,8 +64,8 @@ struct t_commrec;
  */
 struct IForceProvider
 {
-    public:
-        /*! \brief Compute forces
+public:
+    /*! \brief Compute forces
          *
          * \todo This is specific for electric fields and needs to be generalized.
          * \param[in]    cr      Communication record for parallel operations
@@ -73,12 +73,14 @@ struct IForceProvider
          * \param[inout] force   The forces
          * \param[in]    t       The actual time in the simulation (ps)
          */
-        virtual void calculateForces(const t_commrec * cr,
-                                     const t_mdatoms * mdatoms,
-                                     PaddedRVecVector *force,
-                                     double            t) = 0;
+    virtual void calculateForces(const t_commrec * cr,
+                                 const t_mdatoms * mdatoms,
+                                 PaddedRVecVector *force,
+                                 double            t)
+            = 0;
 
-    protected: ~IForceProvider() {}
+protected:
+    ~IForceProvider() {}
 };
 #endif
 
@@ -106,29 +108,29 @@ struct gmx_gpu_opt_t;
  * But there is a smaller limit due to the t_excl data structure
  * which is defined in nblist.h.
  */
-#define SET_CGINFO_GID(cgi, gid)     (cgi) = (((cgi)  &  ~255) | (gid))
-#define GET_CGINFO_GID(cgi)        ( (cgi)            &   255)
-#define SET_CGINFO_FEP(cgi)          (cgi) =  ((cgi)  |  (1 << 15))
-#define GET_CGINFO_FEP(cgi)        ( (cgi)            &  (1 << 15))
-#define SET_CGINFO_EXCL_INTRA(cgi)   (cgi) =  ((cgi)  |  (1 << 16))
-#define GET_CGINFO_EXCL_INTRA(cgi) ( (cgi)            &  (1 << 16))
-#define SET_CGINFO_EXCL_INTER(cgi)   (cgi) =  ((cgi)  |  (1 << 17))
-#define GET_CGINFO_EXCL_INTER(cgi) ( (cgi)            &  (1 << 17))
-#define SET_CGINFO_SOLOPT(cgi, opt)  (cgi) = (((cgi)  & ~(3 << 18)) | ((opt) << 18))
-#define GET_CGINFO_SOLOPT(cgi)     (((cgi) >> 18)       &   3)
-#define SET_CGINFO_CONSTR(cgi)       (cgi) =  ((cgi)  |  (1 << 20))
-#define GET_CGINFO_CONSTR(cgi)     ( (cgi)            &  (1 << 20))
-#define SET_CGINFO_SETTLE(cgi)       (cgi) =  ((cgi)  |  (1 << 21))
-#define GET_CGINFO_SETTLE(cgi)     ( (cgi)            &  (1 << 21))
+#define SET_CGINFO_GID(cgi, gid) (cgi) = (((cgi) & ~255) | (gid))
+#define GET_CGINFO_GID(cgi) ((cgi)&255)
+#define SET_CGINFO_FEP(cgi) (cgi) = ((cgi) | (1 << 15))
+#define GET_CGINFO_FEP(cgi) ((cgi) & (1 << 15))
+#define SET_CGINFO_EXCL_INTRA(cgi) (cgi) = ((cgi) | (1 << 16))
+#define GET_CGINFO_EXCL_INTRA(cgi) ((cgi) & (1 << 16))
+#define SET_CGINFO_EXCL_INTER(cgi) (cgi) = ((cgi) | (1 << 17))
+#define GET_CGINFO_EXCL_INTER(cgi) ((cgi) & (1 << 17))
+#define SET_CGINFO_SOLOPT(cgi, opt) (cgi) = (((cgi) & ~(3 << 18)) | ((opt) << 18))
+#define GET_CGINFO_SOLOPT(cgi) (((cgi) >> 18) & 3)
+#define SET_CGINFO_CONSTR(cgi) (cgi) = ((cgi) | (1 << 20))
+#define GET_CGINFO_CONSTR(cgi) ((cgi) & (1 << 20))
+#define SET_CGINFO_SETTLE(cgi) (cgi) = ((cgi) | (1 << 21))
+#define GET_CGINFO_SETTLE(cgi) ((cgi) & (1 << 21))
 /* This bit is only used with bBondComm in the domain decomposition */
-#define SET_CGINFO_BOND_INTER(cgi)   (cgi) =  ((cgi)  |  (1 << 22))
-#define GET_CGINFO_BOND_INTER(cgi) ( (cgi)            &  (1 << 22))
-#define SET_CGINFO_HAS_VDW(cgi)      (cgi) =  ((cgi)  |  (1 << 23))
-#define GET_CGINFO_HAS_VDW(cgi)    ( (cgi)            &  (1 << 23))
-#define SET_CGINFO_HAS_Q(cgi)        (cgi) =  ((cgi)  |  (1 << 24))
-#define GET_CGINFO_HAS_Q(cgi)      ( (cgi)            &  (1 << 24))
-#define SET_CGINFO_NATOMS(cgi, opt)  (cgi) = (((cgi)  & ~(63 << 25)) | ((opt) << 25))
-#define GET_CGINFO_NATOMS(cgi)     (((cgi) >> 25)       &   63)
+#define SET_CGINFO_BOND_INTER(cgi) (cgi) = ((cgi) | (1 << 22))
+#define GET_CGINFO_BOND_INTER(cgi) ((cgi) & (1 << 22))
+#define SET_CGINFO_HAS_VDW(cgi) (cgi) = ((cgi) | (1 << 23))
+#define GET_CGINFO_HAS_VDW(cgi) ((cgi) & (1 << 23))
+#define SET_CGINFO_HAS_Q(cgi) (cgi) = ((cgi) | (1 << 24))
+#define GET_CGINFO_HAS_Q(cgi) ((cgi) & (1 << 24))
+#define SET_CGINFO_NATOMS(cgi, opt) (cgi) = (((cgi) & ~(63 << 25)) | ((opt) << 25))
+#define GET_CGINFO_NATOMS(cgi) (((cgi) >> 25) & 63)
 
 
 /* Value to be used in mdrun for an infinite cut-off.
@@ -140,18 +142,33 @@ struct gmx_gpu_opt_t;
 /* enums for the neighborlist type */
 enum
 {
-    enbvdwNONE, enbvdwLJ, enbvdwBHAM, enbvdwTAB, enbvdwNR
+    enbvdwNONE,
+    enbvdwLJ,
+    enbvdwBHAM,
+    enbvdwTAB,
+    enbvdwNR
 };
 /* OOR is "one over r" -- standard coul */
 enum
 {
-    enbcoulNONE, enbcoulOOR, enbcoulRF, enbcoulTAB, enbcoulGB, enbcoulFEWALD, enbcoulNR
+    enbcoulNONE,
+    enbcoulOOR,
+    enbcoulRF,
+    enbcoulTAB,
+    enbcoulGB,
+    enbcoulFEWALD,
+    enbcoulNR
 };
 
 enum
 {
-    egCOULSR, egLJSR, egBHAMSR,
-    egCOUL14, egLJ14, egGB, egNR
+    egCOULSR,
+    egLJSR,
+    egBHAMSR,
+    egCOUL14,
+    egLJ14,
+    egGB,
+    egNR
 };
 extern const char *egrp_nm[egNR + 1];
 
@@ -163,7 +180,7 @@ typedef struct gmx_grppairener_t
 
 typedef struct gmx_enerdata_t
 {
-    real              term[F_NRE];         /* The energies for all different interaction types */
+    real              term[F_NRE]; /* The energies for all different interaction types */
     gmx_grppairener_t grpp;
     double            dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
     double            dvdl_nonlin[efptNR]; /* Idem, but non-linear dependence                  */
@@ -350,7 +367,7 @@ typedef struct t_forcerec
 #else
     void *forceBufferNoVirialSummation_dummy;
 #endif
-    /* Pointer that points to forceNoVirialSummation when virial is calcaluted,
+/* Pointer that points to forceNoVirialSummation when virial is calcaluted,
      * points to the normal force vector when the virial is not requested
      * or when bF_NoVirSum == FALSE.
      */
@@ -478,11 +495,11 @@ typedef struct t_forcerec
  * been scaled by 6.0 or 12.0 to save flops in the kernels. We have corrected this everywhere
  * in the code, but beware if you are using these macros externally.
  */
-#define C6(nbfp, ntp, ai, aj)     (nbfp)[2 * ((ntp) * (ai) + (aj))]
-#define C12(nbfp, ntp, ai, aj)    (nbfp)[2 * ((ntp) * (ai) + (aj)) + 1]
-#define BHAMC(nbfp, ntp, ai, aj)  (nbfp)[3 * ((ntp) * (ai) + (aj))]
-#define BHAMA(nbfp, ntp, ai, aj)  (nbfp)[3 * ((ntp) * (ai) + (aj)) + 1]
-#define BHAMB(nbfp, ntp, ai, aj)  (nbfp)[3 * ((ntp) * (ai) + (aj)) + 2]
+#define C6(nbfp, ntp, ai, aj) (nbfp)[2 * ((ntp) * (ai) + (aj))]
+#define C12(nbfp, ntp, ai, aj) (nbfp)[2 * ((ntp) * (ai) + (aj)) + 1]
+#define BHAMC(nbfp, ntp, ai, aj) (nbfp)[3 * ((ntp) * (ai) + (aj))]
+#define BHAMA(nbfp, ntp, ai, aj) (nbfp)[3 * ((ntp) * (ai) + (aj)) + 1]
+#define BHAMB(nbfp, ntp, ai, aj) (nbfp)[3 * ((ntp) * (ai) + (aj)) + 2]
 
 #ifdef __cplusplus
 }

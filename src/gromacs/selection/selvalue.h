@@ -48,15 +48,14 @@
 #include "gromacs/utility/real.h"
 
 /** Defines the value type of a different selection objects. */
-typedef enum
-{
-    NO_VALUE,           /**< No value; either an error condition or an boolean
+typedef enum {
+    NO_VALUE,   /**< No value; either an error condition or an boolean
                              parameter. */
-    INT_VALUE,          /**< One or more integer values. */
-    REAL_VALUE,         /**< One or more real values. */
-    STR_VALUE,          /**< One or more string values. */
-    POS_VALUE,          /**< One or more position values. */
-    GROUP_VALUE         /**< One group of atoms. */
+    INT_VALUE,  /**< One or more integer values. */
+    REAL_VALUE, /**< One or more real values. */
+    STR_VALUE,  /**< One or more string values. */
+    POS_VALUE,  /**< One or more position values. */
+    GROUP_VALUE /**< One group of atoms. */
 } e_selvalue_t;
 
 /*! \internal
@@ -79,8 +78,7 @@ typedef struct gmx_ana_selvalue_t
      */
     int nr;
     /** Pointer to the value. */
-    union
-    {
+    union {
         /*! \brief
          * Generic pointer for operations that do not need type information.
          *
@@ -99,7 +97,7 @@ typedef struct gmx_ana_selvalue_t
         struct gmx_ana_index_t *g;
         /** Boolean value (only parameters of type \ref NO_VALUE); */
         bool *b;
-    }                           u;
+    } u;
     /*! \brief
      * Number of elements allocated for the value array.
      */
@@ -114,8 +112,7 @@ typedef struct gmx_ana_selvalue_t
  * The type of \p val is not touched.
  * Any contents of \p val are discarded without freeing.
  */
-void
-_gmx_selvalue_clear(gmx_ana_selvalue_t *val);
+void _gmx_selvalue_clear(gmx_ana_selvalue_t *val);
 /*! \brief
  * Frees memory allocated for a selection value structure.
  *
@@ -125,8 +122,7 @@ _gmx_selvalue_clear(gmx_ana_selvalue_t *val);
  * If memory is not allocated, the value pointers are simply cleared without
  * freeing.
  */
-void
-_gmx_selvalue_free(gmx_ana_selvalue_t *val);
+void _gmx_selvalue_free(gmx_ana_selvalue_t *val);
 /*! \brief
  * Reserve memory for storing selection values.
  *
@@ -142,8 +138,7 @@ _gmx_selvalue_free(gmx_ana_selvalue_t *val);
  * Similarly, for \ref STR_VALUE values, the pointers are set to NULL.
  * For other values, the memory is uninitialized.
  */
-void
-_gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n);
+void _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n);
 /*! \brief
  * Gets and releases the memory pointer for storing selection values.
  *
@@ -154,8 +149,7 @@ _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n);
  * Returns the pointer where values of \p val were stored in \p ptr and
  * \p nalloc, and clears the memory in \p val.
  */
-void
-_gmx_selvalue_getstore_and_release(gmx_ana_selvalue_t *val, void **ptr, int *nalloc);
+void _gmx_selvalue_getstore_and_release(gmx_ana_selvalue_t *val, void **ptr, int *nalloc);
 /*! \brief
  * Sets the memory for storing selection values.
  *
@@ -166,8 +160,7 @@ _gmx_selvalue_getstore_and_release(gmx_ana_selvalue_t *val, void **ptr, int *nal
  * Asserts if \p val had a previous storage that it owned, as that would result
  * in a memory leak.
  */
-void
-_gmx_selvalue_setstore(gmx_ana_selvalue_t *val, void *ptr);
+void _gmx_selvalue_setstore(gmx_ana_selvalue_t *val, void *ptr);
 /*! \brief
  * Sets the memory for storing selection values and marks it for automatic freeing.
  *
@@ -178,7 +171,6 @@ _gmx_selvalue_setstore(gmx_ana_selvalue_t *val, void *ptr);
  * Asserts if \p val had a previous storage that it owned, as that would result
  * in a memory leak.
  */
-void
-_gmx_selvalue_setstore_alloc(gmx_ana_selvalue_t *val, void *ptr, int nalloc);
+void _gmx_selvalue_setstore_alloc(gmx_ana_selvalue_t *val, void *ptr, int nalloc);
 
 #endif

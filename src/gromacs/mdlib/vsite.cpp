@@ -424,7 +424,7 @@ static int constr_vsiten(const t_iatom *ia, const t_iparams ip[],
 
 
 static void construct_vsites_thread(const gmx_vsite_t *vsite,
-                                    rvec x[],
+                                    rvec               x[],
                                     real dt, rvec *v,
                                     const t_iparams ip[], const t_ilist ilist[],
                                     const t_pbc *pbc_null)
@@ -454,7 +454,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
             continue;
         }
 
-        {   // TODO remove me
+        { // TODO remove me
             int nra = interaction_function[ftype].nratoms;
             int inc = 1 + nra;
             int nr  = ilist[ftype].nr;
@@ -470,7 +470,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
                 vsite_pbc = vsite->vsite_pbc_loc[ftype - c_ftypeVsiteStart];
             }
 
-            for (int i = 0; i < nr; )
+            for (int i = 0; i < nr;)
             {
                 int tp = ia[0];
                 /* The vsite and constructing atoms */
@@ -594,7 +594,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
                 }
 
                 /* Increment loop variables */
-                i  += inc;
+                i += inc;
                 ia += inc;
             }
         }
@@ -602,7 +602,7 @@ static void construct_vsites_thread(const gmx_vsite_t *vsite,
 }
 
 void construct_vsites(const gmx_vsite_t *vsite,
-                      rvec x[],
+                      rvec               x[],
                       real dt, rvec *v,
                       const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
@@ -689,7 +689,7 @@ static void spread_vsite2(const t_iatom ia[], real a,
     aj = ia[3];
 
     svmul(1 - a, f[av], fi);
-    svmul(    a, f[av], fj);
+    svmul(a, f[av], fj);
     /* 7 flop */
 
     rvec_inc(f[ai], fi);
@@ -758,8 +758,8 @@ static void spread_vsite3(const t_iatom ia[], real a, real b,
     ak = ia[4];
 
     svmul(1 - a - b, f[av], fi);
-    svmul(        a, f[av], fj);
-    svmul(        b, f[av], fk);
+    svmul(a, f[av], fj);
+    svmul(b, f[av], fk);
     /* 11 flops */
 
     rvec_inc(f[ai], fi);
@@ -842,7 +842,7 @@ static void spread_vsite3FD(const t_iatom ia[], real a, real b,
     /* c is already calculated in constr_vsite3FD
        storing c somewhere will save 26 flops!     */
 
-    a1         = 1 - a;
+    a1 = 1 - a;
     f[ai][XX] += fv[XX] - temp[XX];
     f[ai][YY] += fv[YY] - temp[YY];
     f[ai][ZZ] += fv[ZZ] - temp[ZZ];
@@ -878,12 +878,12 @@ static void spread_vsite3FD(const t_iatom ia[], real a, real b,
         fshift[CENTRAL][XX] += fv[XX] - (1 + a) * temp[XX];
         fshift[CENTRAL][YY] += fv[YY] - (1 + a) * temp[YY];
         fshift[CENTRAL][ZZ] += fv[ZZ] - (1 + a) * temp[ZZ];
-        fshift[    sji][XX] += temp[XX];
-        fshift[    sji][YY] += temp[YY];
-        fshift[    sji][ZZ] += temp[ZZ];
-        fshift[    skj][XX] += a * temp[XX];
-        fshift[    skj][YY] += a * temp[YY];
-        fshift[    skj][ZZ] += a * temp[ZZ];
+        fshift[sji][XX] += temp[XX];
+        fshift[sji][YY] += temp[YY];
+        fshift[sji][ZZ] += temp[ZZ];
+        fshift[skj][XX] += a * temp[XX];
+        fshift[skj][YY] += a * temp[YY];
+        fshift[skj][ZZ] += a * temp[ZZ];
     }
 
     if (VirCorr)
@@ -951,9 +951,9 @@ static void spread_vsite3FAD(const t_iatom ia[], real a, real b,
        storing them somewhere will save 45 flops!     */
 
     fproj = iprod(xij, fv) * invdij2;
-    svmul(fproj,                      xij,  Fpij);        /* proj. f on xij */
+    svmul(fproj, xij, Fpij);                              /* proj. f on xij */
     svmul(iprod(xperp, fv) * invdp * invdp, xperp, Fppp); /* proj. f on xperp */
-    svmul(b1 * fproj,                   xperp, f3);
+    svmul(b1 * fproj, xperp, f3);
     /* 23 flops */
 
     rvec_sub(fv, Fpij, f1); /* f1 = f - Fpij */
@@ -965,16 +965,16 @@ static void spread_vsite3FAD(const t_iatom ia[], real a, real b,
     }
     /* 12 flops */
 
-    c2         = 1 + c1;
+    c2 = 1 + c1;
     f[ai][XX] += fv[XX] - f1[XX] + c1 * f2[XX] + f3[XX];
     f[ai][YY] += fv[YY] - f1[YY] + c1 * f2[YY] + f3[YY];
     f[ai][ZZ] += fv[ZZ] - f1[ZZ] + c1 * f2[ZZ] + f3[ZZ];
-    f[aj][XX] +=          f1[XX] - c2 * f2[XX] - f3[XX];
-    f[aj][YY] +=          f1[YY] - c2 * f2[YY] - f3[YY];
-    f[aj][ZZ] +=          f1[ZZ] - c2 * f2[ZZ] - f3[ZZ];
-    f[ak][XX] +=                      f2[XX];
-    f[ak][YY] +=                      f2[YY];
-    f[ak][ZZ] +=                      f2[ZZ];
+    f[aj][XX] += f1[XX] - c2 * f2[XX] - f3[XX];
+    f[aj][YY] += f1[YY] - c2 * f2[YY] - f3[YY];
+    f[aj][ZZ] += f1[ZZ] - c2 * f2[ZZ] - f3[ZZ];
+    f[ak][XX] += f2[XX];
+    f[ak][YY] += f2[YY];
+    f[ak][ZZ] += f2[ZZ];
     /* 30 Flops */
 
     if (g)
@@ -1001,12 +1001,12 @@ static void spread_vsite3FAD(const t_iatom ia[], real a, real b,
         fshift[CENTRAL][XX] += fv[XX] - f1[XX] - (1 - c1) * f2[XX] + f3[XX];
         fshift[CENTRAL][YY] += fv[YY] - f1[YY] - (1 - c1) * f2[YY] + f3[YY];
         fshift[CENTRAL][ZZ] += fv[ZZ] - f1[ZZ] - (1 - c1) * f2[ZZ] + f3[ZZ];
-        fshift[    sji][XX] +=          f1[XX] -    c1 * f2[XX] - f3[XX];
-        fshift[    sji][YY] +=          f1[YY] -    c1 * f2[YY] - f3[YY];
-        fshift[    sji][ZZ] +=          f1[ZZ] -    c1 * f2[ZZ] - f3[ZZ];
-        fshift[    skj][XX] +=                          f2[XX];
-        fshift[    skj][YY] +=                          f2[YY];
-        fshift[    skj][ZZ] +=                          f2[ZZ];
+        fshift[sji][XX] += f1[XX] - c1 * f2[XX] - f3[XX];
+        fshift[sji][YY] += f1[YY] - c1 * f2[YY] - f3[YY];
+        fshift[sji][ZZ] += f1[ZZ] - c1 * f2[ZZ] - f3[ZZ];
+        fshift[skj][XX] += f2[XX];
+        fshift[skj][YY] += f2[YY];
+        fshift[skj][ZZ] += f2[ZZ];
     }
 
     if (VirCorr)
@@ -1022,9 +1022,9 @@ static void spread_vsite3FAD(const t_iatom ia[], real a, real b,
             {
                 /* Note that xik=xij+xjk, so we have to add xij*f2 */
                 dxdf[i][j]
-                    += -xiv[i] * fv[j]
-                        + xij[i] * (f1[j] + (1 - c2) * f2[j] - f3[j])
-                        + xjk[i] * f2[j];
+                        += -xiv[i] * fv[j]
+                           + xij[i] * (f1[j] + (1 - c2) * f2[j] - f3[j])
+                           + xjk[i] * f2[j];
             }
         }
     }
@@ -1060,13 +1060,13 @@ static void spread_vsite3OUT(const t_iatom ia[], real a, real b, real c,
     cfz = c * fv[ZZ];
     /* 3 Flops */
 
-    fj[XX] = a * fv[XX]     -  xik[ZZ] * cfy +  xik[YY] * cfz;
-    fj[YY] =  xik[ZZ] * cfx + a * fv[YY]     -  xik[XX] * cfz;
-    fj[ZZ] = -xik[YY] * cfx +  xik[XX] * cfy + a * fv[ZZ];
+    fj[XX] = a * fv[XX] - xik[ZZ] * cfy + xik[YY] * cfz;
+    fj[YY] = xik[ZZ] * cfx + a * fv[YY] - xik[XX] * cfz;
+    fj[ZZ] = -xik[YY] * cfx + xik[XX] * cfy + a * fv[ZZ];
 
-    fk[XX] = b * fv[XX]     +  xij[ZZ] * cfy -  xij[YY] * cfz;
-    fk[YY] = -xij[ZZ] * cfx + b * fv[YY]     +  xij[XX] * cfz;
-    fk[ZZ] =  xij[YY] * cfx -  xij[XX] * cfy + b * fv[ZZ];
+    fk[XX] = b * fv[XX] + xij[ZZ] * cfy - xij[YY] * cfz;
+    fk[YY] = -xij[ZZ] * cfx + b * fv[YY] + xij[XX] * cfz;
+    fk[ZZ] = xij[YY] * cfx - xij[XX] * cfy + b * fv[ZZ];
     /* 30 Flops */
 
     f[ai][XX] += fv[XX] - fj[XX] - fk[XX];
@@ -1206,9 +1206,9 @@ static void spread_vsite4FD(const t_iatom ia[], real a, real b, real c,
         for (m = 0; m < DIM; m++)
         {
             fshift[CENTRAL][m] += fv[m] - (1 + a + b) * temp[m];
-            fshift[    sji][m] += temp[m];
-            fshift[    skj][m] += a * temp[m];
-            fshift[    slj][m] += b * temp[m];
+            fshift[sji][m] += temp[m];
+            fshift[skj][m] += a * temp[m];
+            fshift[slj][m] += b * temp[m];
         }
     }
 
@@ -1295,9 +1295,9 @@ static void spread_vsite4FDN(const t_iatom ia[], real a, real b, real c,
     rt[ZZ] *= denom;
     /* 3flops */
 
-    fj[XX] = (        -rm[XX] * rt[XX]) * cfx + ( rab[ZZ] - rm[YY] * rt[XX]) * cfy + (-rab[YY] - rm[ZZ] * rt[XX]) * cfz;
-    fj[YY] = (-rab[ZZ] - rm[XX] * rt[YY]) * cfx + (        -rm[YY] * rt[YY]) * cfy + ( rab[XX] - rm[ZZ] * rt[YY]) * cfz;
-    fj[ZZ] = ( rab[YY] - rm[XX] * rt[ZZ]) * cfx + (-rab[XX] - rm[YY] * rt[ZZ]) * cfy + (        -rm[ZZ] * rt[ZZ]) * cfz;
+    fj[XX] = (-rm[XX] * rt[XX]) * cfx + (rab[ZZ] - rm[YY] * rt[XX]) * cfy + (-rab[YY] - rm[ZZ] * rt[XX]) * cfz;
+    fj[YY] = (-rab[ZZ] - rm[XX] * rt[YY]) * cfx + (-rm[YY] * rt[YY]) * cfy + (rab[XX] - rm[ZZ] * rt[YY]) * cfz;
+    fj[ZZ] = (rab[YY] - rm[XX] * rt[ZZ]) * cfx + (-rab[XX] - rm[YY] * rt[ZZ]) * cfy + (-rm[ZZ] * rt[ZZ]) * cfz;
     /* 30 flops */
 
     cprod(rjb, rm, rt);
@@ -1308,9 +1308,9 @@ static void spread_vsite4FDN(const t_iatom ia[], real a, real b, real c,
     rt[ZZ] *= denom * a;
     /* 3flops */
 
-    fk[XX] = (          -rm[XX] * rt[XX]) * cfx + (-a * rjb[ZZ] - rm[YY] * rt[XX]) * cfy + ( a * rjb[YY] - rm[ZZ] * rt[XX]) * cfz;
-    fk[YY] = ( a * rjb[ZZ] - rm[XX] * rt[YY]) * cfx + (          -rm[YY] * rt[YY]) * cfy + (-a * rjb[XX] - rm[ZZ] * rt[YY]) * cfz;
-    fk[ZZ] = (-a * rjb[YY] - rm[XX] * rt[ZZ]) * cfx + ( a * rjb[XX] - rm[YY] * rt[ZZ]) * cfy + (          -rm[ZZ] * rt[ZZ]) * cfz;
+    fk[XX] = (-rm[XX] * rt[XX]) * cfx + (-a * rjb[ZZ] - rm[YY] * rt[XX]) * cfy + (a * rjb[YY] - rm[ZZ] * rt[XX]) * cfz;
+    fk[YY] = (a * rjb[ZZ] - rm[XX] * rt[YY]) * cfx + (-rm[YY] * rt[YY]) * cfy + (-a * rjb[XX] - rm[ZZ] * rt[YY]) * cfz;
+    fk[ZZ] = (-a * rjb[YY] - rm[XX] * rt[ZZ]) * cfx + (a * rjb[XX] - rm[YY] * rt[ZZ]) * cfy + (-rm[ZZ] * rt[ZZ]) * cfz;
     /* 36 flops */
 
     cprod(rm, rja, rt);
@@ -1321,9 +1321,9 @@ static void spread_vsite4FDN(const t_iatom ia[], real a, real b, real c,
     rt[ZZ] *= denom * b;
     /* 3flops */
 
-    fl[XX] = (          -rm[XX] * rt[XX]) * cfx + ( b * rja[ZZ] - rm[YY] * rt[XX]) * cfy + (-b * rja[YY] - rm[ZZ] * rt[XX]) * cfz;
-    fl[YY] = (-b * rja[ZZ] - rm[XX] * rt[YY]) * cfx + (          -rm[YY] * rt[YY]) * cfy + ( b * rja[XX] - rm[ZZ] * rt[YY]) * cfz;
-    fl[ZZ] = ( b * rja[YY] - rm[XX] * rt[ZZ]) * cfx + (-b * rja[XX] - rm[YY] * rt[ZZ]) * cfy + (          -rm[ZZ] * rt[ZZ]) * cfz;
+    fl[XX] = (-rm[XX] * rt[XX]) * cfx + (b * rja[ZZ] - rm[YY] * rt[XX]) * cfy + (-b * rja[YY] - rm[ZZ] * rt[XX]) * cfz;
+    fl[YY] = (-b * rja[ZZ] - rm[XX] * rt[YY]) * cfx + (-rm[YY] * rt[YY]) * cfy + (b * rja[XX] - rm[ZZ] * rt[YY]) * cfz;
+    fl[ZZ] = (b * rja[YY] - rm[XX] * rt[ZZ]) * cfx + (-b * rja[XX] - rm[YY] * rt[ZZ]) * cfy + (-rm[ZZ] * rt[ZZ]) * cfz;
     /* 36 flops */
 
     f[ai][XX] += fv[XX] - fj[XX] - fk[XX] - fl[XX];
@@ -1444,7 +1444,7 @@ static int vsite_count(const t_ilist *ilist, int ftype)
 }
 
 static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
-                                  const rvec x[],
+                                  const rvec         x[],
                                   rvec f[], rvec *fshift,
                                   gmx_bool VirCorr, matrix dxdf,
                                   t_iparams ip[], const t_ilist ilist[],
@@ -1467,7 +1467,7 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
             continue;
         }
 
-        {   // TODO remove me
+        { // TODO remove me
             int nra = interaction_function[ftype].nratoms;
             int inc = 1 + nra;
             int nr  = ilist[ftype].nr;
@@ -1483,7 +1483,7 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
                 vsite_pbc = vsite->vsite_pbc_loc[ftype - c_ftypeVsiteStart];
             }
 
-            for (int i = 0; i < nr; )
+            for (int i = 0; i < nr;)
             {
                 if (vsite_pbc != nullptr)
                 {
@@ -1545,7 +1545,7 @@ static void spread_vsite_f_thread(const gmx_vsite_t *vsite,
                 clear_rvec(f[ia[1]]);
 
                 /* Increment loop variables */
-                i  += inc;
+                i += inc;
                 ia += inc;
             }
         }
@@ -1569,8 +1569,8 @@ static void clearTaskForceBufferUsedElements(InterdependentTask *idTask)
 }
 
 void spread_vsite_f(const gmx_vsite_t *vsite,
-                    const rvec * gmx_restrict x,
-                    rvec * gmx_restrict f, rvec * gmx_restrict fshift,
+                    const rvec *gmx_restrict x,
+                    rvec *gmx_restrict f, rvec *gmx_restrict fshift,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, const t_idef *idef,
                     int ePBC, gmx_bool bMolPBC, const t_graph *g, const matrix box,
@@ -1674,7 +1674,7 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
                                           tData->idTask.ilist,
                                           g, pbc_null);
 
-                    /* We need a barrier before reducing forces below
+/* We need a barrier before reducing forces below
                      * that have been produced by a different thread above.
                      */
 #pragma omp barrier
@@ -1750,14 +1750,14 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
         dd_move_f_vsites(cr->dd, f, fshift);
     }
 
-    inc_nrnb(nrnb, eNR_VSITE2,   vsite_count(idef->il, F_VSITE2));
-    inc_nrnb(nrnb, eNR_VSITE3,   vsite_count(idef->il, F_VSITE3));
+    inc_nrnb(nrnb, eNR_VSITE2, vsite_count(idef->il, F_VSITE2));
+    inc_nrnb(nrnb, eNR_VSITE3, vsite_count(idef->il, F_VSITE3));
     inc_nrnb(nrnb, eNR_VSITE3FD, vsite_count(idef->il, F_VSITE3FD));
     inc_nrnb(nrnb, eNR_VSITE3FAD, vsite_count(idef->il, F_VSITE3FAD));
     inc_nrnb(nrnb, eNR_VSITE3OUT, vsite_count(idef->il, F_VSITE3OUT));
     inc_nrnb(nrnb, eNR_VSITE4FD, vsite_count(idef->il, F_VSITE4FD));
     inc_nrnb(nrnb, eNR_VSITE4FDN, vsite_count(idef->il, F_VSITE4FDN));
-    inc_nrnb(nrnb, eNR_VSITEN,   vsite_count(idef->il, F_VSITEN));
+    inc_nrnb(nrnb, eNR_VSITEN, vsite_count(idef->il, F_VSITEN));
 }
 
 static int *atom2cg(t_block *cgs)
@@ -1826,7 +1826,7 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
     for (int a = 0; a < cgs->index[cgs->nr]; a++)
     {
         if ((atom && atom[a].ptype != eptVSite)
-            || (md   && md->ptype[a]  != eptVSite))
+            || (md && md->ptype[a] != eptVSite))
         {
             pbc_set[a] = 1;
         }
@@ -1837,7 +1837,7 @@ static int **get_vsite_pbc(const t_iparams *iparams, const t_ilist *ilist,
 
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
-        {   // TODO remove me
+        { // TODO remove me
             int            nral = NRAL(ftype);
             const t_ilist *il   = &ilist[ftype];
             const t_iatom *ia   = il->iatoms;
@@ -1996,7 +1996,7 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
         {
             molt = &mtop->moltype[mt];
             /* Make an atom to charge group index */
-            int *a2cg = atom2cg(&molt->cgs);
+            int *a2cg                 = atom2cg(&molt->cgs);
             vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop->ffparams.iparams,
                                                       molt->ilist,
                                                       molt->atoms.atom, nullptr,
@@ -2005,7 +2005,7 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
         }
 
         snew(vsite->vsite_pbc_loc_nalloc, c_ftypeVsiteEnd - c_ftypeVsiteStart);
-        snew(vsite->vsite_pbc_loc,        c_ftypeVsiteEnd - c_ftypeVsiteStart);
+        snew(vsite->vsite_pbc_loc, c_ftypeVsiteEnd - c_ftypeVsiteStart);
     }
 
     if (bSerial_NoPBC)
@@ -2028,7 +2028,7 @@ gmx_vsite_t *init_vsite(const gmx_mtop_t *mtop, t_commrec *cr,
                 vsite->tData[thread] = new VsiteThread;
 
                 InterdependentTask *idTask = &vsite->tData[thread]->idTask;
-                idTask->nuse = 0;
+                idTask->nuse               = 0;
                 idTask->atomIndex.resize(vsite->nthreads);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -2087,7 +2087,7 @@ static void assignVsitesToThread(VsiteThread *         tData,
         int      nral1 = 1 + NRAL(ftype);
         int      inc   = nral1;
         t_iatom *iat   = ilist[ftype].iatoms;
-        for (int i = 0; i < ilist[ftype].nr; )
+        for (int i = 0; i < ilist[ftype].nr;)
         {
             if (ftype == F_VSITEN)
             {
@@ -2095,7 +2095,7 @@ static void assignVsitesToThread(VsiteThread *         tData,
                 inc = ip[iat[i]].vsiten.n * 3;
             }
 
-            if (iat[1 + i] <  tData->rangeStart
+            if (iat[1 + i] < tData->rangeStart
                 || iat[1 + i] >= tData->rangeEnd)
             {
                 /* This vsite belongs to a different thread */
@@ -2113,7 +2113,7 @@ static void assignVsitesToThread(VsiteThread *         tData,
                 for (int j = i + 2; j < i + nral1; j++)
                 {
                     /* Do a range check to avoid a harmless race on taskIndex */
-                    if (iat[j] <  tData->rangeStart
+                    if (iat[j] < tData->rangeStart
                         || iat[j] >= tData->rangeEnd
                         || taskIndex[iat[j]] != thread)
                     {
@@ -2146,7 +2146,7 @@ static void assignVsitesToThread(VsiteThread *         tData,
                 for (int j = i + 2; j < i + inc; j += 3)
                 {
                     /* Do a range check to avoid a harmless race on taskIndex */
-                    if (iat[j] <  tData->rangeStart
+                    if (iat[j] < tData->rangeStart
                         || iat[j] >= tData->rangeEnd
                         || taskIndex[iat[j]] != thread)
                     {
@@ -2231,7 +2231,7 @@ static void assignVsitesToSingleTask(VsiteThread *    tData,
         t_iatom *iat     = ilist[ftype].iatoms;
         t_ilist *il_task = &tData->ilist[ftype];
 
-        for (int i = 0; i < ilist[ftype].nr; )
+        for (int i = 0; i < ilist[ftype].nr;)
         {
             if (ftype == F_VSITEN)
             {
@@ -2288,7 +2288,7 @@ void split_vsites_over_threads(const t_ilist *  ilist,
         vsite_atom_range = -1;
         for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
         {
-            {   // TODO remove me
+            { // TODO remove me
                 if (ftype != F_VSITEN)
                 {
                     int            nral1 = 1 + NRAL(ftype);
@@ -2317,7 +2317,7 @@ void split_vsites_over_threads(const t_ilist *  ilist,
                         while (i < vs_ind_end)
                         {
                             vsite_atom_range = std::max(vsite_atom_range, iat[i + 2]);
-                            i               += 3;
+                            i += 3;
                         }
                     }
                 }
@@ -2434,7 +2434,7 @@ void split_vsites_over_threads(const t_ilist *  ilist,
             }
 
             /* Assign all vsites that can execute independently on threads */
-            tData->rangeStart =  thread     * natperthread;
+            tData->rangeStart = thread * natperthread;
             if (thread < vsite->nthreads - 1)
             {
                 tData->rangeEnd = (thread + 1) * natperthread;
@@ -2461,7 +2461,7 @@ void split_vsites_over_threads(const t_ilist *  ilist,
                  */
                 InterdependentTask *idTask = &tData->idTask;
 
-                /* Ensure assignVsitesToThread finished on other threads */
+/* Ensure assignVsitesToThread finished on other threads */
 #pragma omp barrier
 
                 idTask->spreadTask.resize(0);
@@ -2524,8 +2524,8 @@ void split_vsites_over_threads(const t_ilist *  ilist,
     for (int th = 0; th < vsite->nthreads + 1; th++)
     {
         nrThreaded
-            += vsiteIlistNrCount(vsite->tData[th]->ilist)
-                + vsiteIlistNrCount(vsite->tData[th]->idTask.ilist);
+                += vsiteIlistNrCount(vsite->tData[th]->ilist)
+                   + vsiteIlistNrCount(vsite->tData[th]->idTask.ilist);
     }
     GMX_ASSERT(nrThreaded == nrOrig, "The number of virtual sites assigned to all thread task has to match the total number of virtual sites");
 #endif
@@ -2539,13 +2539,12 @@ void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
         if (vsite->bHaveChargeGroups)
         {
             /* Make an atom to charge group index */
-            int *a2cg = atom2cg(&top->cgs);
+            int *a2cg            = atom2cg(&top->cgs);
             vsite->vsite_pbc_loc = get_vsite_pbc(top->idef.iparams,
                                                  top->idef.il, nullptr, md,
                                                  &top->cgs, a2cg);
             sfree(a2cg);
         }
-
     }
 
     if (vsite->nthreads > 1)

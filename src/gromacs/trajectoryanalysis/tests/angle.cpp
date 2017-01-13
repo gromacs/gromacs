@@ -60,7 +60,7 @@ using gmx::test::CommandLine;
 
 //! Test fixture for the angle analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::AngleInfo>
-    AngleModuleTest;
+        AngleModuleTest;
 
 TEST_F(AngleModuleTest, ComputesSimpleAngles)
 {
@@ -101,7 +101,7 @@ TEST_F(AngleModuleTest, ComputesVectorPlanePairAngles)
     const char *const cmdline[] = {
         "angle",
         "-g1", "vector", "-group1", "resname RV1 RV2 and name A1 A2",
-        "-g2", "plane",  "-group2", "resname RP1 RP2 and name A1 A2 A3",
+        "-g2", "plane", "-group2", "resname RP1 RP2 and name A1 A2 A3",
         "-binw", "60"
     };
     setTopology("angle.gro");
@@ -124,7 +124,7 @@ TEST_F(AngleModuleTest, ComputesVectorSphereNormalZAxisAngles)
 {
     const char *const cmdline[] = {
         "angle",
-        "-g1", "vector",  "-group1", "resname RV1 RV2 and name A1 A2",
+        "-g1", "vector", "-group1", "resname RV1 RV2 and name A1 A2",
         "-g2", "sphnorm", "-group2", "cog of resname RS",
         "-binw", "60"
     };

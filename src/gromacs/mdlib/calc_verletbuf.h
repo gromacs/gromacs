@@ -48,8 +48,8 @@ extern "C" {
 
 typedef struct
 {
-    int cluster_size_i;   /* Cluster pair-list i-cluster size atom count */
-    int cluster_size_j;   /* Cluster pair-list j-cluster size atom count */
+    int cluster_size_i; /* Cluster pair-list i-cluster size atom count */
+    int cluster_size_j; /* Cluster pair-list j-cluster size atom count */
 } verletbuf_list_setup_t;
 
 
@@ -85,11 +85,11 @@ void verletbuf_get_list_setup(gmx_bool                bSIMD,
  * Returns the pair-list cut-off.
  */
 void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
-                             const t_inputrec *ir,
-                             real reference_temperature,
+                             const t_inputrec *            ir,
+                             real                          reference_temperature,
                              const verletbuf_list_setup_t *list_setup,
-                             int *n_nonlin_vsite,
-                             real *rlist);
+                             int *                         n_nonlin_vsite,
+                             real *                        rlist);
 
 #ifdef __cplusplus
 }

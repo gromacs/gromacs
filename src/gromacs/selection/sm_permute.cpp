@@ -117,8 +117,8 @@ evaluate_permute(const gmx::SelMethodEvalContext &context,
 
 /** Parameters for the \p permute selection modifier. */
 static gmx_ana_selparam_t smparams_permute[] = {
-    {nullptr,       {POS_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
-    {nullptr,       {INT_VALUE, -1, {nullptr}}, nullptr, SPAR_VARNUM},
+    { nullptr, { POS_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_VARNUM },
+    { nullptr, { INT_VALUE, -1, { nullptr } }, nullptr, SPAR_VARNUM },
 };
 
 /** Help text for the \p permute selection modifier. */
@@ -142,27 +142,16 @@ static const char *const help_permute[] = {
 
 /** Selection method data for the \p permute modifier. */
 gmx_ana_selmethod_t sm_permute = {
-    "permute", POS_VALUE, SMETH_MODIFIER,
-    asize(smparams_permute), smparams_permute,
-    &init_data_permute,
-    nullptr,
-    &init_permute,
-    &init_output_permute,
-    &free_data_permute,
-    nullptr,
-    nullptr,
-    &evaluate_permute,
-    {"POSEXPR permute P1 ... PN",
-     "Permuting selections", asize(help_permute), help_permute},
+    "permute", POS_VALUE, SMETH_MODIFIER, asize(smparams_permute), smparams_permute, &init_data_permute, nullptr, &init_permute, &init_output_permute, &free_data_permute, nullptr, nullptr, &evaluate_permute, { "POSEXPR permute P1 ... PN", "Permuting selections", asize(help_permute), help_permute },
 };
 
 static void *init_data_permute(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_permute *data = new t_methoddata_permute();
-    data->n          = 0;
-    data->perm       = nullptr;
-    data->rperm      = nullptr;
-    param[0].val.u.p = &data->p;
+    data->n                    = 0;
+    data->perm                 = nullptr;
+    data->rperm                = nullptr;
+    param[0].val.u.p           = &data->p;
     return data;
 }
 
@@ -176,7 +165,7 @@ static void init_permute(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_s
     if (d->p.count() % d->n != 0)
     {
         GMX_THROW(gmx::InconsistentInputError(
-                          gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
+                gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
     }
     snew(d->rperm, d->n);
     for (i = 0; i < d->n; ++i)
@@ -240,7 +229,7 @@ static void evaluate_permute(const gmx::SelMethodEvalContext & /*context*/,
     if (d->p.count() % d->n != 0)
     {
         GMX_THROW(gmx::InconsistentInputError(
-                          gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
+                gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
     }
     gmx_ana_pos_empty(out->u.p);
     for (i = 0; i < d->p.count(); i += d->n)

@@ -136,9 +136,9 @@ static int first_colour(int fC, egCol Col, t_graph *g, egCol egc[])
 static int mk_sblocks(FILE *fp, t_graph *g, int maxsid, t_sid sid[])
 {
     int    ng, nnodes;
-    int    nW, nG, nB;     /* Number of Grey, Black, White	*/
-    int    fW, fG;         /* First of each category	*/
-    egCol *egc = nullptr;  /* The colour of each node	*/
+    int    nW, nG, nB;    /* Number of Grey, Black, White	*/
+    int    fW, fG;        /* First of each category	*/
+    egCol *egc = nullptr; /* The colour of each node	*/
     int    g0, nblock;
 
     if (!g->nbound)
@@ -282,9 +282,9 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
 
     /* Now merge the overlapping ones */
     ndel = 0;
-    for (k = 0; (k < nsid); )
+    for (k = 0; (k < nsid);)
     {
-        for (j = k + 1; (j < nsid); )
+        for (j = k + 1; (j < nsid);)
         {
             if (ms[j].first <= ms[k].last)
             {
@@ -373,7 +373,7 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
     snew(sid, at_end);
     for (i = at_start; (i < at_end); i++)
     {
-        sid[i].atom =  i;
+        sid[i].atom = i;
         sid[i].sid  = -1;
     }
     nsid = mk_sblocks(fp, g, at_end, sid);

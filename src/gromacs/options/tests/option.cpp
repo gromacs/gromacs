@@ -63,8 +63,7 @@ TEST(OptionsTest, FailsOnNonsafeStorage)
     gmx::Options options;
     int          value = -1;
     using gmx::IntegerOption;
-    ASSERT_THROW_GMX(options.addOption(IntegerOption("name").store(&value)
-                                           .multiValue()),
+    ASSERT_THROW_GMX(options.addOption(IntegerOption("name").store(&value).multiValue()),
                      gmx::APIError);
 }
 

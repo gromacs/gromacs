@@ -67,7 +67,7 @@ using gmx::test::NoTextMatch;
 
 //! Test fixture for the select analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::TrajectoryInfo>
-    TrajectoryModuleTest;
+        TrajectoryModuleTest;
 
 TEST_F(TrajectoryModuleTest, BasicTest)
 {

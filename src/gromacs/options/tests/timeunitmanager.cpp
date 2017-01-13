@@ -112,8 +112,7 @@ TEST(TimeUnitBehaviorTest, DoesNotScaleDefaultValues)
     double       value = 1.5, value2 = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
-    ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("q").store(&value2).timeValue()
-                                              .defaultValueIfSet(2.5)));
+    ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("q").store(&value2).timeValue().defaultValueIfSet(2.5)));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW_GMX(assigner.start());

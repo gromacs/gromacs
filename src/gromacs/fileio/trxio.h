@@ -175,27 +175,24 @@ int check_times(real t);
  */
 
 
-
-
-
 /* For trxframe.flags, used in trxframe read routines.
  * When a READ flag is set, the field will be read when present,
  * but a frame might be returned which does not contain the field.
  * When a NEED flag is set, frames not containing the field will be skipped.
  */
-#define TRX_READ_X    (1 << 0)
-#define TRX_NEED_X    (1 << 1)
-#define TRX_READ_V    (1 << 2)
-#define TRX_NEED_V    (1 << 3)
-#define TRX_READ_F    (1 << 4)
-#define TRX_NEED_F    (1 << 5)
+#define TRX_READ_X (1 << 0)
+#define TRX_NEED_X (1 << 1)
+#define TRX_READ_V (1 << 2)
+#define TRX_NEED_V (1 << 3)
+#define TRX_READ_F (1 << 4)
+#define TRX_NEED_F (1 << 5)
 /* Useful for reading natoms from a trajectory without skipping */
 #define TRX_DONT_SKIP (1 << 6)
 
 /* For trxframe.not_ok */
 #define HEADER_NOT_OK (1 << 0)
-#define DATA_NOT_OK   (1 << 1)
-#define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
+#define DATA_NOT_OK (1 << 1)
+#define FRAME_NOT_OK (HEADER_NOT_OK | DATA_NOT_OK)
 
 int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
                      const char *fn, struct t_trxframe *fr, int flags);

@@ -58,9 +58,18 @@ struct gmx_output_env_t;
  */
 enum
 {
-    effnNONE, effnEXP1, effnEXP2, effnEXPEXP,
-    effnEXP5, effnEXP7, effnEXP9,
-    effnVAC,  effnERF,  effnERREST, effnPRES, effnNR
+    effnNONE,
+    effnEXP1,
+    effnEXP2,
+    effnEXPEXP,
+    effnEXP5,
+    effnEXP7,
+    effnEXP9,
+    effnVAC,
+    effnERF,
+    effnERREST,
+    effnPRES,
+    effnNR
 };
 
 /*! \brief

@@ -49,9 +49,9 @@ const char gmx_residuetype_undefined[] = "Other";
 
 struct gmx_residuetype_t
 {
-    int     n;
-    char ** resname;
-    char ** restype;
+    int    n;
+    char **resname;
+    char **restype;
 };
 
 int gmx_residuetype_init(gmx_residuetype_t **prt)
@@ -108,7 +108,7 @@ int gmx_residuetype_destroy(gmx_residuetype_t *rt)
 /* Return 0 if the name was found, otherwise -1.
  * p_restype is set to a pointer to the type name, or 'Other' if we did not find it.
  */
-int gmx_residuetype_get_type(gmx_residuetype_t *rt, const char * resname, const char ** p_restype)
+int gmx_residuetype_get_type(gmx_residuetype_t *rt, const char *resname, const char **p_restype)
 {
     int i, rc;
 
@@ -125,8 +125,8 @@ int gmx_residuetype_get_type(gmx_residuetype_t *rt, const char * resname, const 
 
 int gmx_residuetype_add(gmx_residuetype_t *rt, const char *newresname, const char *newrestype)
 {
-    int          found;
-    const char * p_oldtype;
+    int         found;
+    const char *p_oldtype;
 
     found = !gmx_residuetype_get_type(rt, newresname, &p_oldtype);
 
@@ -165,7 +165,7 @@ int gmx_residuetype_get_alltypes(gmx_residuetype_t *rt,
 
         for (i = 1; i < rt->n; i++)
         {
-            p = rt->restype[i];
+            p           = rt->restype[i];
             bool bFound = false;
             for (int j = 0; j < n && !bFound; j++)
             {

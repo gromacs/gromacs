@@ -88,7 +88,7 @@ bool readLineImpl(FILE *fp, std::string *line)
     return !result.empty() || !std::feof(fp);
 }
 
-}   // namespace
+} // namespace
 
 namespace internal
 {
@@ -140,7 +140,7 @@ public:
         GMX_RELEASE_ASSERT(bClose_,
                            "Attempted to close a file object that should not be");
         const bool bOk = (std::fclose(fp_) == 0);
-        fp_ = nullptr;
+        fp_            = nullptr;
         if (!bOk)
         {
             GMX_THROW_WITH_ERRNO(
@@ -155,7 +155,7 @@ private:
     bool bClose_;
 };
 
-}   // namespace internal
+} // namespace internal
 
 using internal::FileStreamImpl;
 

@@ -42,6 +42,6 @@ void init_df_history(df_history_t *dfhist, int nlambda);
 
 void done_df_history(df_history_t *dfhist);
 
-void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
+void copy_df_history(df_history_t *df_dest, df_history_t *df_source);
 
 #endif

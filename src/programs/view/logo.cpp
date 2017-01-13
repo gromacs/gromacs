@@ -85,34 +85,34 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
     static t_circle c[] = {
         { 10, YOFFS + 12, CSIZE, &LIGHTGREEN },
         { 20, YOFFS + 22, CSIZE, &LIGHTGREEN },
-        { 20, YOFFS + 34, OSIZE, &LIGHTRED   },
-        { 30, YOFFS + 12, NSIZE, &LIGHTCYAN  },
-        { 30, YOFFS + 2, HSIZE, &WHITE     },
+        { 20, YOFFS + 34, OSIZE, &LIGHTRED },
+        { 30, YOFFS + 12, NSIZE, &LIGHTCYAN },
+        { 30, YOFFS + 2, HSIZE, &WHITE },
         { 40, YOFFS + 22, CSIZE, &LIGHTGREEN },
         { 40, YOFFS + 34, CSIZE, &LIGHTGREEN },
         { 50, YOFFS + 12, CSIZE, &LIGHTGREEN },
-        { 50, YOFFS,    OSIZE, &LIGHTRED   },
-        { 60, YOFFS + 22, NSIZE, &LIGHTCYAN  },
-        { 60, YOFFS + 32, HSIZE, &WHITE     },
+        { 50, YOFFS, OSIZE, &LIGHTRED },
+        { 60, YOFFS + 22, NSIZE, &LIGHTCYAN },
+        { 60, YOFFS + 32, HSIZE, &WHITE },
         { 70, YOFFS + 12, CSIZE, &LIGHTGREEN },
         { 80, YOFFS + 22, CSIZE, &LIGHTGREEN },
-        { 80, YOFFS + 34, OSIZE, &LIGHTRED   },
-        { 90, YOFFS + 12, NSIZE, &LIGHTCYAN  },
-        { 90, YOFFS + 2, HSIZE, &WHITE      },
-        {100, YOFFS + 22, CSIZE, &LIGHTGREEN }
+        { 80, YOFFS + 34, OSIZE, &LIGHTRED },
+        { 90, YOFFS + 12, NSIZE, &LIGHTCYAN },
+        { 90, YOFFS + 2, HSIZE, &WHITE },
+        { 100, YOFFS + 22, CSIZE, &LIGHTGREEN }
     };
-    static int      lines[] = {
+    static int lines[] = {
         0, 1, 1, 2, 1, 3, 3, 4, 3, 5, 5, 6, 5, 7, 7, 8, 7, 9,
         9, 10, 9, 11, 11, 12, 12, 13, 12, 14, 14, 15, 14, 16
     };
 #define COFFS 70
     static t_mess Mess[] = {
-        { "GROMACS",                         0,       20, nullptr },
-        { nullptr,                             16,        9, nullptr },
-        { "Copyright (c) 1991-2013",        COFFS + 2,  9, nullptr },
-        { "D.v.d.Spoel, E.Lindahl, B.Hess", COFFS + 11,  9, nullptr },
-        { "& Groningen University ",        COFFS + 20,  9, nullptr },
-        { "click to dismiss",               COFFS + 31,  8, nullptr }
+        { "GROMACS", 0, 20, nullptr },
+        { nullptr, 16, 9, nullptr },
+        { "Copyright (c) 1991-2013", COFFS + 2, 9, nullptr },
+        { "D.v.d.Spoel, E.Lindahl, B.Hess", COFFS + 11, 9, nullptr },
+        { "& Groningen University ", COFFS + 20, 9, nullptr },
+        { "click to dismiss", COFFS + 31, 8, nullptr }
     };
 #define NMESS asize(Mess)
     int        i;
@@ -133,10 +133,9 @@ static bool LogoCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
         Mess[1].text = gmx_version();
         for (i = 0; (i < NMESS); i++)
         {
-            Mess[i].y  *= hfac;
-            Mess[i].h  *= hfac;
-            Mess[i].fnt = (i == 0) ? logo->bigfont : (i == NMESS - 1) ? x11->font
-                : logo->smallfont;
+            Mess[i].y *= hfac;
+            Mess[i].h *= hfac;
+            Mess[i].fnt = (i == 0) ? logo->bigfont : (i == NMESS - 1) ? x11->font : logo->smallfont;
         }
         bFirst = false;
     }

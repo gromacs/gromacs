@@ -232,7 +232,7 @@ static real *mk_nbfp_combination_rule(const gmx_ffparams_t *idef, int comb_rule)
             c12i = idef->iparams[i * (atnr + 1)].lj.c12;
             c6j  = idef->iparams[j * (atnr + 1)].lj.c6;
             c12j = idef->iparams[j * (atnr + 1)].lj.c12;
-            c6   = std::sqrt(c6i  * c6j);
+            c6   = std::sqrt(c6i * c6j);
             c12  = std::sqrt(c12i * c12j);
             if (comb_rule == eCOMB_ARITHMETIC
                 && !gmx_numzero(c6) && !gmx_numzero(c12))
@@ -398,8 +398,8 @@ static void check_solvent_cg(const gmx_moltype_t *  molt,
 
 
         /* We can only match SPC with 3 atoms and TIP4p with 4 atoms */
-        if ( (solvent_parameters[k].model == esolSPC   && nj != 3)
-             || (solvent_parameters[k].model == esolTIP4P && nj != 4) )
+        if ((solvent_parameters[k].model == esolSPC && nj != 3)
+            || (solvent_parameters[k].model == esolTIP4P && nj != 4))
         {
             match = FALSE;
         }
@@ -421,7 +421,7 @@ static void check_solvent_cg(const gmx_moltype_t *  molt,
             /* Congratulations! We have a matched solvent.
              * Flag it with this type for later processing.
              */
-            *cg_sp                       = k;
+            *cg_sp = k;
             solvent_parameters[k].count += nmol;
 
             /* We are done with this charge group */
@@ -458,7 +458,7 @@ static void check_solvent_cg(const gmx_moltype_t *  molt,
             {
                 /* Standard LJ */
                 has_vdw[j] = (has_vdw[j]
-                              || (C6(fr->nbfp, fr->ntype, tjA, k)  != 0.0)
+                              || (C6(fr->nbfp, fr->ntype, tjA, k) != 0.0)
                               || (C12(fr->nbfp, fr->ntype, tjA, k) != 0.0));
             }
         }
@@ -474,9 +474,9 @@ static void check_solvent_cg(const gmx_moltype_t *  molt,
          */
         if (has_vdw[1] == FALSE
             && has_vdw[2] == FALSE
-            && tmp_charge[0]  != 0
-            && tmp_charge[1]  != 0
-            && tmp_charge[2]  == tmp_charge[1])
+            && tmp_charge[0] != 0
+            && tmp_charge[1] != 0
+            && tmp_charge[2] == tmp_charge[1])
         {
             srenew(solvent_parameters, *n_solvent_parameters + 1);
             solvent_parameters[*n_solvent_parameters].model = esolSPC;
@@ -500,10 +500,10 @@ static void check_solvent_cg(const gmx_moltype_t *  molt,
         if (has_vdw[1] == FALSE
             && has_vdw[2] == FALSE
             && has_vdw[3] == FALSE
-            && tmp_charge[0]  == 0
-            && tmp_charge[1]  != 0
-            && tmp_charge[2]  == tmp_charge[1]
-            && tmp_charge[3]  != 0)
+            && tmp_charge[0] == 0
+            && tmp_charge[1] != 0
+            && tmp_charge[2] == tmp_charge[1]
+            && tmp_charge[3] != 0)
         {
             srenew(solvent_parameters, *n_solvent_parameters + 1);
             solvent_parameters[*n_solvent_parameters].model = esolTIP4P;
@@ -522,10 +522,10 @@ static void check_solvent_cg(const gmx_moltype_t *  molt,
     *solvent_parameters_p = solvent_parameters;
 }
 
-static void check_solvent(FILE *             fp,
-                          const gmx_mtop_t * mtop,
-                          t_forcerec *       fr,
-                          cginfo_mb_t *      cginfo_mb)
+static void check_solvent(FILE *            fp,
+                          const gmx_mtop_t *mtop,
+                          t_forcerec *      fr,
+                          cginfo_mb_t *     cginfo_mb)
 {
     const t_block *       cgs;
     const gmx_moltype_t * molt;
@@ -564,7 +564,8 @@ static void check_solvent(FILE *             fp,
             {
                 check_solvent_cg(molt, cg_mol, nmol,
                                  mtop->groups.grpnr[egcQMMM]
-                                 ? mtop->groups.grpnr[egcQMMM] + at_offset + am : nullptr,
+                                         ? mtop->groups.grpnr[egcQMMM] + at_offset + am
+                                         : nullptr,
                                  &mtop->groups.grps[egcQMMM],
                                  fr,
                                  &n_solvent_parameters, &solvent_parameters,
@@ -633,7 +634,9 @@ static void check_solvent(FILE *             fp,
 
 enum
 {
-    acNONE = 0, acCONSTRAINT, acSETTLE
+    acNONE = 0,
+    acCONSTRAINT,
+    acSETTLE
 };
 
 static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
@@ -664,9 +667,9 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
         for (j = 0; j < fr->ntype; j++)
         {
             type_VDW[ai] = type_VDW[ai]
-                || fr->bBHAM
-                || C6(fr->nbfp, fr->ntype, ai, j) != 0
-                || C12(fr->nbfp, fr->ntype, ai, j) != 0;
+                           || fr->bBHAM
+                           || C6(fr->nbfp, fr->ntype, ai, j) != 0
+                           || C12(fr->nbfp, fr->ntype, ai, j) != 0;
         }
     }
 
@@ -697,7 +700,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                 a0 = cgs->index[cg];
                 a1 = cgs->index[cg + 1];
                 if (ggrpnr(&mtop->groups, egcENER, a_offset + am + a0)
-                    != ggrpnr(&mtop->groups, egcENER, a_offset   + a0))
+                    != ggrpnr(&mtop->groups, egcENER, a_offset + a0))
                 {
                     bId = FALSE;
                 }
@@ -706,7 +709,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                     for (ai = a0; ai < a1; ai++)
                     {
                         if (mtop->groups.grpnr[egcQMMM][a_offset + am + ai]
-                            != mtop->groups.grpnr[egcQMMM][a_offset   + ai])
+                            != mtop->groups.grpnr[egcQMMM][a_offset + ai])
                         {
                             bId = FALSE;
                         }
@@ -737,7 +740,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                     for (a = 0; a < nral; a++)
                     {
                         a_con[molt->ilist[ftype].iatoms[ia + 1 + a]]
-                            = (ftype == F_SETTLE ? acSETTLE : acCONSTRAINT);
+                                = (ftype == F_SETTLE ? acSETTLE : acCONSTRAINT);
                     }
                 }
             }
@@ -775,8 +778,8 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                     /* Check VDW and electrostatic interactions */
                     bHaveVDW = bHaveVDW || (type_VDW[molt->atoms.atom[ai].type]
                                             || type_VDW[molt->atoms.atom[ai].typeB]);
-                    bHaveQ = bHaveQ    || (molt->atoms.atom[ai].q != 0
-                                           || molt->atoms.atom[ai].qB != 0);
+                    bHaveQ = bHaveQ || (molt->atoms.atom[ai].q != 0
+                                        || molt->atoms.atom[ai].qB != 0);
 
                     bHavePerturbedAtoms = bHavePerturbedAtoms || (PERTURBED(molt->atoms.atom[ai]) != 0);
 
@@ -858,7 +861,7 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
         sfree(a_con);
 
         cg_offset += molb->nmol * cgs->nr;
-        a_offset  += molb->nmol * cgs->index[cgs->nr];
+        a_offset += molb->nmol * cgs->index[cgs->nr];
     }
     sfree(bExcl);
 
@@ -873,7 +876,8 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
     {
         if (fplog)
         {
-            fprintf(fplog, "Found environment variable GMX_NO_SOLV_OPT.\n"
+            fprintf(fplog,
+                    "Found environment variable GMX_NO_SOLV_OPT.\n"
                     "Disabling all solvent optimization\n");
         }
         fr->solvent_opt = esolNO;
@@ -911,7 +915,7 @@ static int *cginfo_expand(int nmb, cginfo_mb_t *cgi_mb)
             mb++;
         }
         cginfo[cg]
-            = cgi_mb[mb].cginfo[(cg - cgi_mb[mb].cg_start) % cgi_mb[mb].cg_mod];
+                = cgi_mb[mb].cginfo[(cg - cgi_mb[mb].cg_start) % cgi_mb[mb].cg_mod];
     }
 
     return cginfo;
@@ -933,10 +937,10 @@ static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
         atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
         for (i = 0; i < atoms->nr; i++)
         {
-            q      = atoms->atom[i].q;
-            qsum  += nmol * q;
+            q = atoms->atom[i].q;
+            qsum += nmol * q;
             q2sum += nmol * q * q;
-            c6     = mtop->ffparams.iparams[atoms->atom[i].type * (mtop->ffparams.atnr + 1)].lj.c6;
+            c6 = mtop->ffparams.iparams[atoms->atom[i].type * (mtop->ffparams.atnr + 1)].lj.c6;
             c6sum += nmol * c6;
         }
     }
@@ -955,10 +959,10 @@ static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
             atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
             for (i = 0; i < atoms->nr; i++)
             {
-                q      = atoms->atom[i].qB;
-                qsum  += nmol * q;
+                q = atoms->atom[i].qB;
+                qsum += nmol * q;
                 q2sum += nmol * q * q;
-                c6     = mtop->ffparams.iparams[atoms->atom[i].typeB * (mtop->ffparams.atnr + 1)].lj.c6;
+                c6 = mtop->ffparams.iparams[atoms->atom[i].typeB * (mtop->ffparams.atnr + 1)].lj.c6;
                 c6sum += nmol * c6;
             }
             fr->qsum[1]  = qsum;
@@ -1025,7 +1029,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
             for (tpj = 0; tpj < ntp; ++tpj)
             {
                 C6(nbfp_comb, ntp, tpi, tpj)
-                                              = C6(nbfp, ntp, tpi, tpj) - C6(nbfp_comb, ntp, tpi, tpj);
+                        = C6(nbfp, ntp, tpi, tpj) - C6(nbfp_comb, ntp, tpi, tpj);
                 C12(nbfp_comb, ntp, tpi, tpj) = C12(nbfp, ntp, tpi, tpj);
             }
         }
@@ -1065,8 +1069,8 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                     else
                     {
                         /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                        csix    += npair_ij *   C6(nbfp, ntp, tpi, tpj) / 6.0;
-                        ctwelve += npair_ij *  C12(nbfp, ntp, tpi, tpj) / 12.0;
+                        csix += npair_ij * C6(nbfp, ntp, tpi, tpj) / 6.0;
+                        ctwelve += npair_ij * C12(nbfp, ntp, tpi, tpj) / 12.0;
                     }
                     npair += npair_ij;
                 }
@@ -1116,7 +1120,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                             else
                             {
                                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                                csix    -= nmol * C6 (nbfp, ntp, tpi, tpj) / 6.0;
+                                csix -= nmol * C6(nbfp, ntp, tpi, tpj) / 6.0;
                                 ctwelve -= nmol * C12(nbfp, ntp, tpi, tpj) / 12.0;
                             }
                             nexcl += nmol;
@@ -1131,7 +1135,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
              * with the rest of the system.
              */
             atoms_tpi
-                = &mtop->moltype[mtop->molblock[mtop->nmolblock - 1].type].atoms;
+                    = &mtop->moltype[mtop->molblock[mtop->nmolblock - 1].type].atoms;
 
             npair = 0;
             for (mb = 0; mb < mtop->nmolblock; mb++)
@@ -1179,7 +1183,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
                         else
                         {
                             /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                            csix    += nmolc * C6 (nbfp, ntp, tpi, tpj) / 6.0;
+                            csix += nmolc * C6(nbfp, ntp, tpi, tpj) / 6.0;
                             ctwelve += nmolc * C12(nbfp, ntp, tpi, tpj) / 12.0;
                         }
                         npair += nmolc;
@@ -1195,7 +1199,7 @@ void set_avcsixtwelve(FILE *fplog, t_forcerec *fr, const gmx_mtop_t *mtop)
         }
         else
         {
-            csix    /= npair - nexcl;
+            csix /= npair - nexcl;
             ctwelve /= npair - nexcl;
         }
         if (debug)
@@ -1287,7 +1291,7 @@ static void set_bham_b_max(FILE *fplog, t_forcerec *fr,
     }
 }
 
-static void make_nbf_tables(FILE *fp,
+static void make_nbf_tables(FILE *      fp,
                             t_forcerec *fr, real rtab,
                             const char *tabfn, char *eg1, char *eg2,
                             t_nblists *nbl)
@@ -1426,8 +1430,8 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t *mtop,
 static bondedtable_t *make_bonded_tables(FILE *fplog,
                                          int ftype1, int ftype2,
                                          const gmx_mtop_t *mtop,
-                                         const t_filenm *tabbfnm,
-                                         const char *tabext)
+                                         const t_filenm *  tabbfnm,
+                                         const char *      tabext)
 {
     int            ncount, *count;
     bondedtable_t *tab;
@@ -1523,20 +1527,18 @@ gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *
     gmx_bool bAllvsAll;
 
     bAllvsAll
-        = (
-                ir->rlist == 0
-                && ir->rcoulomb == 0
-                && ir->rvdw == 0
-                && ir->ePBC == epbcNONE
-                && ir->vdwtype == evdwCUT
-                && ir->coulombtype == eelCUT
-                && ir->efep == efepNO
-                && (ir->implicit_solvent == eisNO
-                    || (ir->implicit_solvent == eisGBSA && (ir->gb_algorithm == egbSTILL
-                                                            || ir->gb_algorithm == egbHCT
-                                                            || ir->gb_algorithm == egbOBC)))
-                && getenv("GMX_NO_ALLVSALL") == nullptr
-                );
+            = (ir->rlist == 0
+               && ir->rcoulomb == 0
+               && ir->rvdw == 0
+               && ir->ePBC == epbcNONE
+               && ir->vdwtype == evdwCUT
+               && ir->coulombtype == eelCUT
+               && ir->efep == efepNO
+               && (ir->implicit_solvent == eisNO
+                   || (ir->implicit_solvent == eisGBSA && (ir->gb_algorithm == egbSTILL
+                                                           || ir->gb_algorithm == egbHCT
+                                                           || ir->gb_algorithm == egbOBC)))
+               && getenv("GMX_NO_ALLVSALL") == nullptr);
 
     if (bAllvsAll && ir->opts.ngener > 1)
     {
@@ -1643,7 +1645,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
             *kernel_type = nbnxnk4xN_SIMD_2xNN;
         }
 #endif
-#endif  /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
+#endif /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
 
 
         if (getenv("GMX_NBNXN_SIMD_4XN") != nullptr)
@@ -1663,7 +1665,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
 #endif
         }
 
-        /* Analytical Ewald exclusion correction is only an option in
+/* Analytical Ewald exclusion correction is only an option in
          * the SIMD kernel.
          * Since table lookup's don't parallelize with SIMD, analytical
          * will probably always be faster for a SIMD width of 8 or more.
@@ -1671,7 +1673,7 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
          * On BlueGene/Q, this is faster regardless of precision.
          * In single precision, this is faster on Bulldozer.
          */
-#if GMX_SIMD_REAL_WIDTH >= 8    \
+#if GMX_SIMD_REAL_WIDTH >= 8 \
         || (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE) || GMX_SIMD_IBM_QPX
         *ewald_excl = ewaldexclAnalytical;
 #endif
@@ -1683,7 +1685,6 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
         {
             *ewald_excl = ewaldexclAnalytical;
         }
-
     }
 #endif // GMX_SIMD
 }
@@ -1708,8 +1709,12 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
             returnvalue = "not available";
 #endif // GMX_SIMD
             break;
-        case nbnxnk8x8x8_GPU: returnvalue    = "GPU"; break;
-        case nbnxnk8x8x8_PlainC: returnvalue = "plain C"; break;
+        case nbnxnk8x8x8_GPU:
+            returnvalue = "GPU";
+            break;
+        case nbnxnk8x8x8_PlainC:
+            returnvalue = "plain C";
+            break;
 
         case nbnxnkNR:
         default:
@@ -1941,7 +1946,7 @@ static void force_switch_constants(real p,
      * force/p   = r^-(p+1) + c2*r^2 + c3*r^3
      * potential = r^-p + c2/3*r^3 + c3/4*r^4 + cpot
      */
-    sc->c2   =  ((p + 1) * rsw - (p + 4) * rc) / (pow(rc, p + 2) * gmx::square(rc - rsw));
+    sc->c2   = ((p + 1) * rsw - (p + 4) * rc) / (pow(rc, p + 2) * gmx::square(rc - rsw));
     sc->c3   = -((p + 1) * rsw - (p + 3) * rc) / (pow(rc, p + 2) * gmx::power3(rc - rsw));
     sc->cpot = -pow(rc, -p) + p * sc->c2 / 3 * gmx::power3(rc - rsw) + p * sc->c3 / 4 * gmx::power4(rc - rsw);
 }
@@ -1958,8 +1963,8 @@ static void potential_switch_constants(real rsw, real rc,
      * potential *= sw
      */
     sc->c3 = -10 / gmx::power3(rc - rsw);
-    sc->c4 =  15 / gmx::power4(rc - rsw);
-    sc->c5 =  -6 / gmx::power5(rc - rsw);
+    sc->c4 = 15 / gmx::power4(rc - rsw);
+    sc->c5 = -6 / gmx::power5(rc - rsw);
 }
 
 /*! \brief Construct interaction constants
@@ -2243,7 +2248,7 @@ static void init_nb_verlet(FILE *               fp,
                        cr->nodeid,
                        (nbv->ngrp > 1) && !bHybridGPURun);
 
-        /* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
+/* With tMPI + GPUs some ranks may be sharing GPU(s) and therefore
          * also sharing texture references. To keep the code simple, we don't
          * treat texture references as shared resources, but this means that
          * the coulomb_tab and nbfp texture refs will get updated by multiple threads.
@@ -2260,7 +2265,7 @@ static void init_nb_verlet(FILE *               fp,
         {
             gmx_barrier(cr);
         }
-#endif  /* GMX_THREAD_MPI */
+#endif /* GMX_THREAD_MPI */
 
         if ((env = getenv("GMX_NB_MIN_CI")) != nullptr)
         {
@@ -2287,7 +2292,6 @@ static void init_nb_verlet(FILE *               fp,
                         nbv->min_ci_balanced);
             }
         }
-
     }
 
     *nb_verlet = nbv;
@@ -2450,7 +2454,7 @@ void init_forcerec(FILE *               fp,
         bNoSolvOpt = TRUE;
     }
 
-    if ( (getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr) || (getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr) )
+    if ((getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr) || (getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr))
     {
         fr->use_simd_kernels = FALSE;
         if (fp != nullptr)
@@ -2491,8 +2495,9 @@ void init_forcerec(FILE *               fp,
 
     if (fr->cutoff_scheme == ecutsGROUP)
     {
-        const char *note = "NOTE: This file uses the deprecated 'group' cutoff_scheme. This will be\n"
-            "removed in a future release when 'verlet' supports all interaction forms.\n";
+        const char *note =
+                "NOTE: This file uses the deprecated 'group' cutoff_scheme. This will be\n"
+                "removed in a future release when 'verlet' supports all interaction forms.\n";
 
         if (MASTER(cr))
         {
@@ -2949,7 +2954,7 @@ void init_forcerec(FILE *               fp,
 #if GMX_DOUBLE
         fr->gbtabscale = 2000;
 #else
-        fr->gbtabscale = 500;
+        fr->gbtabscale  = 500;
 #endif
 
         fr->gbtabr = 100;
@@ -3214,9 +3219,9 @@ void init_forcerec(FILE *               fp,
     }
 }
 
-#define pr_real(fp, r) fprintf(fp, "%s: %e\n",#r, r)
-#define pr_int(fp, i)  fprintf((fp), "%s: %d\n",#i, i)
-#define pr_bool(fp, b) fprintf((fp), "%s: %s\n",#b, gmx::boolToString(b))
+#define pr_real(fp, r) fprintf(fp, "%s: %e\n", #r, r)
+#define pr_int(fp, i) fprintf((fp), "%s: %d\n", #i, i)
+#define pr_bool(fp, b) fprintf((fp), "%s: %s\n", #b, gmx::boolToString(b))
 
 void pr_forcerec(FILE *fp, t_forcerec *fr)
 {
@@ -3261,7 +3266,7 @@ void free_gpu_resources(const t_forcerec *    fr,
         /* stop the GPU profiler (only CUDA) */
         stopGpuProfiler();
 
-        /* With tMPI we need to wait for all ranks to finish deallocation before
+/* With tMPI we need to wait for all ranks to finish deallocation before
          * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing
          * GPU and context.
          *
@@ -3276,7 +3281,7 @@ void free_gpu_resources(const t_forcerec *    fr,
         {
             gmx_barrier(cr);
         }
-#endif  /* GMX_THREAD_MPI */
+#endif /* GMX_THREAD_MPI */
 
         /* uninitialize GPU (by destroying the context) */
         if (!free_cuda_gpu(cr->rank_pp_intranode, gpu_err_str, gpu_info, gpu_opt))

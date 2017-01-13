@@ -114,7 +114,7 @@ const double g_positions[] = {
 };
 
 //! Simple cubic simulation box to use in tests
-matrix g_box = {{real(1.86206), 0, 0}, {0, real(1.86206), 0}, {0, 0, real(1.86206)}};
+matrix g_box = { { real(1.86206), 0, 0 }, { 0, real(1.86206), 0 }, { 0, 0, real(1.86206) } };
 
 //! Convenience typedef
 typedef std::tuple<int, bool, bool, bool> SettleTestParameters;
@@ -142,9 +142,9 @@ public:
     t_pbc pbcXYZ_;
 
     //! Constructor
-    SettleTest() :
-        updatedPositions_(std::begin(g_positions), std::end(g_positions)),
-        velocities_(updatedPositions_.size(), 0)
+    SettleTest()
+        : updatedPositions_(std::begin(g_positions), std::end(g_positions)),
+          velocities_(updatedPositions_.size(), 0)
     {
         set_pbc(&pbcNone_, epbcNONE, g_box);
         set_pbc(&pbcXYZ_, epbcXYZ, g_box);
@@ -222,8 +222,8 @@ TEST_P(SettleTest, SatisfiesConstraints)
     mtop->ffparams.ntypes = 1;
     snew(mtop->ffparams.iparams, mtop->ffparams.ntypes);
     const unique_cptr<t_iparams> iparamsGuard(mtop->ffparams.iparams);
-    const real                   dOH = 0.09572;
-    const real                   dHH = 0.15139;
+    const real                   dOH              = 0.09572;
+    const real                   dHH              = 0.15139;
     mtop->ffparams.iparams[settleType].settle.doh = dOH;
     mtop->ffparams.iparams[settleType].settle.dhh = dHH;
 
@@ -253,8 +253,8 @@ TEST_P(SettleTest, SatisfiesConstraints)
 
     // Run the test
     bool       errorOccured;
-    tensor     virial             = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-    int        numThreads         = 1, threadIndex = 0;
+    tensor     virial     = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+    int        numThreads = 1, threadIndex = 0;
     const real reciprocalTimeStep = 1.0 / 0.002;
     csettle(settled, numThreads, threadIndex,
             usePbc ? &pbcXYZ_ : &pbcNone_,
@@ -269,19 +269,19 @@ TEST_P(SettleTest, SatisfiesConstraints)
     // SETTLE produces constrained coordinates consistent with
     // sensible sampling needs to be tested at a much higher level.
     FloatingPointTolerance tolerance
-        = relativeToleranceAsPrecisionDependentUlp(dOH * dOH, 80, 380);
+            = relativeToleranceAsPrecisionDependentUlp(dOH * dOH, 80, 380);
 
     // Verify the updated coordinates match the requirements
     int positionIndex = 0, velocityIndex = 0;
     for (int i = 0; i < numSettles; ++i)
     {
-        rvec positionO  {
+        rvec positionO{
             updatedPositions_[positionIndex++], updatedPositions_[positionIndex++], updatedPositions_[positionIndex++]
         };
-        rvec positionH1 {
+        rvec positionH1{
             updatedPositions_[positionIndex++], updatedPositions_[positionIndex++], updatedPositions_[positionIndex++]
         };
-        rvec positionH2 {
+        rvec positionH2{
             updatedPositions_[positionIndex++], updatedPositions_[positionIndex++], updatedPositions_[positionIndex++]
         };
 
@@ -315,10 +315,10 @@ TEST_P(SettleTest, SatisfiesConstraints)
 // hardware SIMD widths), and whether or not we use PBC, velocities or
 // calculate the virial contribution.
 INSTANTIATE_TEST_CASE_P(WithParameters, SettleTest,
-                            ::testing::Combine(::testing::Values(1, 4, 7),
-                                                   ::testing::Bool(),
-                                                   ::testing::Bool(),
-                                                   ::testing::Bool()));
+                        ::testing::Combine(::testing::Values(1, 4, 7),
+                                           ::testing::Bool(),
+                                           ::testing::Bool(),
+                                           ::testing::Bool()));
 
 } // namespace
 } // namespace

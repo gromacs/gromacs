@@ -63,16 +63,16 @@ class ManyAutocorrelationTest : public ::testing::Test
 {
 };
 
-TEST_F (ManyAutocorrelationTest, Empty)
+TEST_F(ManyAutocorrelationTest, Empty)
 {
-    std::vector<std::vector<real> > c;
+    std::vector<std::vector<real>> c;
     EXPECT_THROW_GMX(many_auto_correl(&c), gmx::InconsistentInputError);
 }
 
 #ifndef NDEBUG
-TEST_F (ManyAutocorrelationTest, DifferentLength)
+TEST_F(ManyAutocorrelationTest, DifferentLength)
 {
-    std::vector<std::vector<real> > c;
+    std::vector<std::vector<real>> c;
     c.resize(3);
     c[0].resize(10);
     c[1].resize(10);
@@ -80,7 +80,5 @@ TEST_F (ManyAutocorrelationTest, DifferentLength)
     EXPECT_THROW_GMX(many_auto_correl(&c), gmx::InconsistentInputError);
 }
 #endif
-
 }
-
 }

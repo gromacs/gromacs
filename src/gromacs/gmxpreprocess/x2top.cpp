@@ -70,12 +70,12 @@ char atp[7] = "HCNOSX";
 #define NATP (asize(atp) - 1)
 
 double blen[NATP][NATP] = {
-    {  0.00,  0.108, 0.105, 0.10, 0.10, 0.10 },
-    {  0.108, 0.15,  0.14,  0.14, 0.16, 0.14 },
-    {  0.105, 0.14,  0.14,  0.14, 0.16, 0.14 },
-    {  0.10,  0.14,  0.14,  0.14, 0.17, 0.14 },
-    {  0.10,  0.16,  0.16,  0.17, 0.20, 0.17 },
-    {  0.10,  0.14,  0.14,  0.14, 0.17, 0.17 }
+    { 0.00, 0.108, 0.105, 0.10, 0.10, 0.10 },
+    { 0.108, 0.15, 0.14, 0.14, 0.16, 0.14 },
+    { 0.105, 0.14, 0.14, 0.14, 0.16, 0.14 },
+    { 0.10, 0.14, 0.14, 0.14, 0.17, 0.14 },
+    { 0.10, 0.16, 0.16, 0.17, 0.20, 0.17 },
+    { 0.10, 0.14, 0.14, 0.14, 0.17, 0.17 }
 };
 
 #define MARGIN_FAC 1.1
@@ -149,7 +149,7 @@ void mk_bonds(int nnm, t_nm2type nmt[],
                 b.ai() = i;
                 b.aj() = j;
                 b.c0() = std::sqrt(dx2);
-                add_param_to_list (bond, &b);
+                add_param_to_list(bond, &b);
                 nbond[i]++;
                 nbond[j]++;
                 if (debug)
@@ -178,9 +178,9 @@ int *set_cgnr(t_atoms *atoms, gmx_bool bUsePDBcharge, real *qtot, real *mtot)
         {
             atoms->atom[i].q = atoms->pdbinfo[i].bfac;
         }
-        qt     += atoms->atom[i].q;
-        *qtot  += atoms->atom[i].q;
-        *mtot  += atoms->atom[i].m;
+        qt += atoms->atom[i].q;
+        *qtot += atoms->atom[i].q;
+        *mtot += atoms->atom[i].m;
         cgnr[i] = n;
         if (is_int(qt))
         {
@@ -243,7 +243,7 @@ void lo_set_force_const(t_params *plist, real c[], int nrfp, gmx_bool bRound,
             if (bDih)
             {
                 c[0] *= c[2];
-                c[0]  = ((int)(c[0] + 3600)) % 360;
+                c[0] = ((int)(c[0] + 3600)) % 360;
                 if (c[0] > 180)
                 {
                     c[0] -= 360;
@@ -397,7 +397,7 @@ static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
 
 int gmx_x2top(int argc, char *argv[])
 {
-    const char *      desc[] = {
+    const char *desc[] = {
         "[THISMODULE] generates a primitive topology from a coordinate file.",
         "The program assumes all hydrogens are present when defining",
         "the hybridization from the atom name and the number of bonds.",
@@ -418,7 +418,7 @@ int gmx_x2top(int argc, char *argv[])
         "one of the short names above on the command line instead. In that",
         "case [THISMODULE] just looks for the corresponding file.[PAR]",
     };
-    const char *      bugs[] = {
+    const char *bugs[] = {
         "The atom type selection is primitive. Virtually no chemical knowledge is used",
         "Periodic boundary conditions screw up the bonding",
         "No improper dihedrals are generated",
@@ -433,11 +433,11 @@ int gmx_x2top(int argc, char *argv[])
     t_mols            mymol;
     int               nnm;
     char              forcefield[32], ffdir[STRLEN];
-    rvec *            x;  /* coordinates? */
+    rvec *            x; /* coordinates? */
     int *             nbonds, *cgnr;
     int               bts[] = { 1, 1, 1, 2 };
-    matrix            box;     /* box length matrix */
-    int               natoms;  /* number of atoms in one molecule  */
+    matrix            box;    /* box length matrix */
+    int               natoms; /* number of atoms in one molecule  */
     int               epbc;
     gmx_bool          bRTP, bTOP, bOPLS;
     t_symtab          symtab;
@@ -446,9 +446,9 @@ int gmx_x2top(int argc, char *argv[])
     gmx_output_env_t *oenv;
 
     t_filenm fnm[] = {
-        { efSTX, "-f", "conf", ffREAD  },
-        { efTOP, "-o", "out",  ffOPTWR },
-        { efRTP, "-r", "out",  ffOPTWR }
+        { efSTX, "-f", "conf", ffREAD },
+        { efTOP, "-o", "out", ffOPTWR },
+        { efRTP, "-r", "out", ffOPTWR }
     };
 #define NFILE asize(fnm)
     static real        kb = 4e5, kt = 400, kp = 5;
@@ -457,42 +457,27 @@ int gmx_x2top(int argc, char *argv[])
     static gmx_bool    bGenerateHH14Interactions     = TRUE;
     static gmx_bool    bKeepAllGeneratedDihedrals    = FALSE;
     static int         nrexcl                        = 3;
-    static gmx_bool    bParam                        = TRUE, bRound = TRUE;
-    static gmx_bool    bPairs                        = TRUE, bPBC = TRUE;
-    static gmx_bool    bUsePDBcharge                 = FALSE, bVerbose = FALSE;
-    static const char *molnm                         = "ICE";
-    static const char *ff                            = "oplsaa";
-    t_pargs            pa[]                          = {
-        { "-ff",     FALSE, etSTR, {&ff},
-          "Force field for your simulation. Type \"select\" for interactive selection." },
-        { "-v",      FALSE, etBOOL, {&bVerbose},
-          "Generate verbose output in the top file." },
-        { "-nexcl", FALSE, etINT,  {&nrexcl},
-          "Number of exclusions" },
-        { "-H14",    FALSE, etBOOL, {&bGenerateHH14Interactions},
-          "Use 3rd neighbour interactions for hydrogen atoms" },
-        { "-alldih", FALSE, etBOOL, {&bKeepAllGeneratedDihedrals},
-          "Generate all proper dihedrals" },
-        { "-remdih", FALSE, etBOOL, {&bRemoveDihedralIfWithImproper},
-          "Remove dihedrals on the same bond as an improper" },
-        { "-pairs",  FALSE, etBOOL, {&bPairs},
-          "Output 1-4 interactions (pairs) in topology file" },
-        { "-name",   FALSE, etSTR,  {&molnm},
-          "Name of your molecule" },
-        { "-pbc",    FALSE, etBOOL, {&bPBC},
-          "Use periodic boundary conditions." },
-        { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
-          "Use the B-factor supplied in a [REF].pdb[ref] file for the atomic charges" },
-        { "-param", FALSE, etBOOL, {&bParam},
-          "Print parameters in the output" },
-        { "-round",  FALSE, etBOOL, {&bRound},
-          "Round off measured values" },
-        { "-kb",    FALSE, etREAL, {&kb},
-          "Bonded force constant (kJ/mol/nm^2)" },
-        { "-kt",    FALSE, etREAL, {&kt},
-          "Angle force constant (kJ/mol/rad^2)" },
-        { "-kp",    FALSE, etREAL, {&kp},
-          "Dihedral angle force constant (kJ/mol/rad^2)" }
+    static gmx_bool    bParam = TRUE, bRound = TRUE;
+    static gmx_bool    bPairs = TRUE, bPBC = TRUE;
+    static gmx_bool    bUsePDBcharge = FALSE, bVerbose = FALSE;
+    static const char *molnm = "ICE";
+    static const char *ff    = "oplsaa";
+    t_pargs            pa[]  = {
+        { "-ff", FALSE, etSTR, { &ff }, "Force field for your simulation. Type \"select\" for interactive selection." },
+        { "-v", FALSE, etBOOL, { &bVerbose }, "Generate verbose output in the top file." },
+        { "-nexcl", FALSE, etINT, { &nrexcl }, "Number of exclusions" },
+        { "-H14", FALSE, etBOOL, { &bGenerateHH14Interactions }, "Use 3rd neighbour interactions for hydrogen atoms" },
+        { "-alldih", FALSE, etBOOL, { &bKeepAllGeneratedDihedrals }, "Generate all proper dihedrals" },
+        { "-remdih", FALSE, etBOOL, { &bRemoveDihedralIfWithImproper }, "Remove dihedrals on the same bond as an improper" },
+        { "-pairs", FALSE, etBOOL, { &bPairs }, "Output 1-4 interactions (pairs) in topology file" },
+        { "-name", FALSE, etSTR, { &molnm }, "Name of your molecule" },
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "Use periodic boundary conditions." },
+        { "-pdbq", FALSE, etBOOL, { &bUsePDBcharge }, "Use the B-factor supplied in a [REF].pdb[ref] file for the atomic charges" },
+        { "-param", FALSE, etBOOL, { &bParam }, "Print parameters in the output" },
+        { "-round", FALSE, etBOOL, { &bRound }, "Round off measured values" },
+        { "-kb", FALSE, etREAL, { &kb }, "Bonded force constant (kJ/mol/nm^2)" },
+        { "-kt", FALSE, etREAL, { &kt }, "Angle force constant (kJ/mol/rad^2)" },
+        { "-kp", FALSE, etREAL, { &kp }, "Dihedral angle force constant (kJ/mol/rad^2)" }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
@@ -533,7 +518,7 @@ int gmx_x2top(int argc, char *argv[])
     snew(top, 1);
     read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, nullptr, box, FALSE);
     t_atoms *atoms = &top->atoms;
-    natoms = atoms->nr;
+    natoms         = atoms->nr;
     if (atoms->pdbinfo == nullptr)
     {
         snew(atoms->pdbinfo, natoms);

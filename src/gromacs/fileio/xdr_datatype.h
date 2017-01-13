@@ -38,14 +38,12 @@
 #define GMX_FILEIO_XDR_DATATYPE_H
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /* the xdr data types; note that there is no data type 'real' because
    here we deal with the types as they are actually written to disk.  */
-typedef enum
-{
+typedef enum {
     xdr_datatype_int,
     xdr_datatype_float,
     xdr_datatype_double,

@@ -176,7 +176,7 @@ void computeMassesAndCharges(const gmx_mtop_t *top, const gmx_ana_pos_t &pos,
         {
             const int     index = pos.m.mapb.a[i];
             const t_atom &atom  = mtopGetAtomParameters(top, index, &molb);
-            mass   += atom.m;
+            mass += atom.m;
             charge += atom.q;
         }
         masses->push_back(mass);
@@ -184,7 +184,7 @@ void computeMassesAndCharges(const gmx_mtop_t *top, const gmx_ana_pos_t &pos,
     }
 }
 
-}       // namespace
+} // namespace
 
 bool SelectionData::hasSortedAtomIndices() const
 {
@@ -230,8 +230,8 @@ void SelectionData::updateCoveredFractionForFrame()
 {
     if (isCoveredFractionDynamic())
     {
-        real cfrac = _gmx_selelem_estimate_coverfrac(rootElement());
-        coveredFraction_         = cfrac;
+        real cfrac       = _gmx_selelem_estimate_coverfrac(rootElement());
+        coveredFraction_ = cfrac;
         averageCoveredFraction_ += cfrac;
     }
 }
@@ -257,7 +257,7 @@ void SelectionData::restoreOriginalPositions(const gmx_mtop_t *top)
     }
 }
 
-}   // namespace internal
+} // namespace internal
 
 /********************************************************************
  * Selection
@@ -293,9 +293,10 @@ int Selection::initOriginalIdsToGroup(const gmx_mtop_t *top, e_index_t type)
         GMX_ASSERT(type == INDEX_RES || type == INDEX_MOL,
                    "Expected that only grouping by residue/molecule would fail");
         std::string message
-            = formatString("Cannot group selection '%s' into %s, because some "
-                           "positions have atoms from more than one such group.",
-                           name(), type == INDEX_MOL ? "molecules" : "residues");
+                = formatString(
+                        "Cannot group selection '%s' into %s, because some "
+                        "positions have atoms from more than one such group.",
+                        name(), type == INDEX_MOL ? "molecules" : "residues");
         GMX_THROW(InconsistentInputError(message));
     }
 }
@@ -304,7 +305,7 @@ int Selection::initOriginalIdsToGroup(const gmx_mtop_t *top, e_index_t type)
 void Selection::printInfo(FILE *fp) const
 {
     fprintf(fp, "\"%s\" (%d position%s, %d atom%s%s)", name(),
-            posCount(),  posCount()  == 1 ? "" : "s",
+            posCount(), posCount() == 1 ? "" : "s",
             atomCount(), atomCount() == 1 ? "" : "s",
             isDynamic() ? ", dynamic" : "");
     fprintf(fp, "\n");

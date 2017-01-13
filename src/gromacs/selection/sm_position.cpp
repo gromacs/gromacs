@@ -133,58 +133,28 @@ evaluate_pos(const gmx::SelMethodEvalContext &context,
 
 /** Parameters for position keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_pos[] = {
-    {nullptr,   {GROUP_VALUE, 1, {nullptr}}, nullptr, SPAR_DYNAMIC},
+    { nullptr, { GROUP_VALUE, 1, { nullptr } }, nullptr, SPAR_DYNAMIC },
 };
 
 /** Parameters for the \p cog and \p com selection methods. */
 static gmx_ana_selparam_t smparams_com[] = {
-    {"of",   {GROUP_VALUE, 1, {nullptr}}, nullptr, SPAR_DYNAMIC},
-    {"pbc",  {NO_VALUE,    0, {nullptr}}, nullptr, 0},
+    { "of", { GROUP_VALUE, 1, { nullptr } }, nullptr, SPAR_DYNAMIC },
+    { "pbc", { NO_VALUE, 0, { nullptr } }, nullptr, 0 },
 };
 
 /** Selection method data for position keyword evaluation. */
 gmx_ana_selmethod_t sm_keyword_pos = {
-    "kw_pos", POS_VALUE, SMETH_DYNAMIC | SMETH_VARNUMVAL | SMETH_ALLOW_UNSORTED,
-    asize(smparams_keyword_pos), smparams_keyword_pos,
-    &init_data_pos,
-    &set_poscoll_pos,
-    &init_kwpos,
-    &init_output_pos,
-    &free_data_pos,
-    nullptr,
-    &evaluate_pos,
-    nullptr,
-    {nullptr, nullptr, 0, nullptr},
+    "kw_pos", POS_VALUE, SMETH_DYNAMIC | SMETH_VARNUMVAL | SMETH_ALLOW_UNSORTED, asize(smparams_keyword_pos), smparams_keyword_pos, &init_data_pos, &set_poscoll_pos, &init_kwpos, &init_output_pos, &free_data_pos, nullptr, &evaluate_pos, nullptr, { nullptr, nullptr, 0, nullptr },
 };
 
 /** Selection method data for the \p cog method. */
 gmx_ana_selmethod_t sm_cog = {
-    "cog", POS_VALUE, SMETH_DYNAMIC | SMETH_SINGLEVAL,
-    asize(smparams_com), smparams_com,
-    &init_data_pos,
-    &set_poscoll_pos,
-    &init_cog,
-    &init_output_pos,
-    &free_data_pos,
-    nullptr,
-    &evaluate_pos,
-    nullptr,
-    {"cog of ATOM_EXPR [pbc]", nullptr, 0, nullptr},
+    "cog", POS_VALUE, SMETH_DYNAMIC | SMETH_SINGLEVAL, asize(smparams_com), smparams_com, &init_data_pos, &set_poscoll_pos, &init_cog, &init_output_pos, &free_data_pos, nullptr, &evaluate_pos, nullptr, { "cog of ATOM_EXPR [pbc]", nullptr, 0, nullptr },
 };
 
 /** Selection method data for the \p com method. */
 gmx_ana_selmethod_t sm_com = {
-    "com", POS_VALUE, SMETH_REQMASS | SMETH_DYNAMIC | SMETH_SINGLEVAL,
-    asize(smparams_com), smparams_com,
-    &init_data_pos,
-    &set_poscoll_pos,
-    &init_com,
-    &init_output_pos,
-    &free_data_pos,
-    nullptr,
-    &evaluate_pos,
-    nullptr,
-    {"com of ATOM_EXPR [pbc]", nullptr, 0, nullptr},
+    "com", POS_VALUE, SMETH_REQMASS | SMETH_DYNAMIC | SMETH_SINGLEVAL, asize(smparams_com), smparams_com, &init_data_pos, &set_poscoll_pos, &init_com, &init_output_pos, &free_data_pos, nullptr, &evaluate_pos, nullptr, { "com of ATOM_EXPR [pbc]", nullptr, 0, nullptr },
 };
 
 /*!
@@ -340,9 +310,9 @@ static void init_com(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selpa
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
-    d->flags  = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
+    d->flags = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
     d->flags |= POS_MASS;
-    d->pc     = d->pcc->createCalculation(d->bPBC ? POS_ALL_PBC : POS_ALL, d->flags);
+    d->pc = d->pcc->createCalculation(d->bPBC ? POS_ALL_PBC : POS_ALL, d->flags);
     gmx_ana_poscalc_set_maxindex(d->pc, &d->g);
 }
 

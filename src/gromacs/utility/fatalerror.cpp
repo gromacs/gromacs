@@ -95,7 +95,7 @@ void _where(const char *file, int line)
 {
     static gmx_bool bFirst = TRUE;
     static int      nskip  = -1;
-    static int      nwhere =  0;
+    static int      nwhere = 0;
     FILE *          fp;
     char *          temp;
 
@@ -169,16 +169,16 @@ static const char *gmx_strerror(const char *key)
         const char *msg;
     };
     ErrorKeyEntry map[] = {
-        { "call",   "Routine should not have been called" },
-        { "comm",   "Communication (parallel processing) problem" },
-        { "fatal",  "Fatal error" },
-        { "file",   "File input/output error" },
-        { "impl",   "Implementation restriction" },
+        { "call", "Routine should not have been called" },
+        { "comm", "Communication (parallel processing) problem" },
+        { "fatal", "Fatal error" },
+        { "file", "File input/output error" },
+        { "impl", "Implementation restriction" },
         { "incons", "Software inconsistency error" },
-        { "input",  "Input error or input inconsistency" },
-        { "mem",    "Memory allocation/freeing error" },
-        { "open",   "Cannot open file" },
-        { "range",  "Range checking error" }
+        { "input", "Input error or input inconsistency" },
+        { "mem", "Memory allocation/freeing error" },
+        { "open", "Cannot open file" },
+        { "range", "Range checking error" }
     };
 
     if (key == nullptr)
@@ -300,8 +300,10 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
             buf[0] = '\0';
         }
 
-        sprintf(buf + strlen(buf), "Variable %s has value %d. It should have been "
-                "within [ %d .. %d ]\n", var, n, n_min, n_max);
+        sprintf(buf + strlen(buf),
+                "Variable %s has value %d. It should have been "
+                "within [ %d .. %d ]\n",
+                var, n, n_min, n_max);
 
         _gmx_error("range", buf, file, line);
     }

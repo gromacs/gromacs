@@ -127,8 +127,8 @@ static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds,
 static void get_bondeds(int nrat, t_iatom atoms[],
                         at2vsitebond_t *at2vb,
                         int *nrbond, t_mybonded **bonds,
-                        int *nrang,  t_mybonded **angles,
-                        int *nridih, t_mybonded **idihs )
+                        int *nrang, t_mybonded **angles,
+                        int *nridih, t_mybonded **idihs)
 {
     int      k, i, ftype, nrcheck;
     t_param *param;
@@ -143,9 +143,15 @@ static void get_bondeds(int nrat, t_iatom atoms[],
             /* abuse nrcheck to see if we're adding bond, angle or idih */
             switch (nrcheck)
             {
-                case 2: enter_bonded(nrcheck, nrbond, bonds, param); break;
-                case 3: enter_bonded(nrcheck, nrang, angles, param); break;
-                case 4: enter_bonded(nrcheck, nridih, idihs, param); break;
+                case 2:
+                    enter_bonded(nrcheck, nrbond, bonds, param);
+                    break;
+                case 3:
+                    enter_bonded(nrcheck, nrang, angles, param);
+                    break;
+                case 4:
+                    enter_bonded(nrcheck, nridih, idihs, param);
+                    break;
             }
         }
     }
@@ -294,8 +300,8 @@ static void done_at2vsitecon(int natoms, at2vsitecon_t *at2vc)
 /* for debug */
 static void print_bad(FILE *fp,
                       int nrbond, t_mybonded *bonds,
-                      int nrang,  t_mybonded *angles,
-                      int nridih, t_mybonded *idihs )
+                      int nrang, t_mybonded *angles,
+                      int nridih, t_mybonded *idihs)
 {
     int i;
 
@@ -340,7 +346,7 @@ static void print_param(FILE *fp, int ftype, int i, t_param *param)
     static int prev_i     = NOTSET;
     int        j;
 
-    if ( (ftype != prev_ftype) || (i != prev_i) )
+    if ((ftype != prev_ftype) || (i != prev_i))
     {
         pass       = 0;
         prev_ftype = ftype;
@@ -366,8 +372,8 @@ static real get_bond_length(int nrbond, t_mybonded bonds[],
     for (i = 0; i < nrbond && (bondlen == NOTSET); i++)
     {
         /* check both ways */
-        if ( ( (ai == bonds[i].ai()) && (aj == bonds[i].aj()) )
-             || ( (ai == bonds[i].aj()) && (aj == bonds[i].ai()) ) )
+        if (((ai == bonds[i].ai()) && (aj == bonds[i].aj()))
+            || ((ai == bonds[i].aj()) && (aj == bonds[i].ai())))
         {
             bondlen = bonds[i].c; /* note: bonds[i].c might be NOTSET */
         }
@@ -385,8 +391,8 @@ static real get_angle(int nrang, t_mybonded angles[],
     for (i = 0; i < nrang && (angle == NOTSET); i++)
     {
         /* check both ways */
-        if ( ( (ai == angles[i].ai()) && (aj == angles[i].aj()) && (ak == angles[i].ak()) )
-             || ( (ai == angles[i].ak()) && (aj == angles[i].aj()) && (ak == angles[i].ai()) ) )
+        if (((ai == angles[i].ai()) && (aj == angles[i].aj()) && (ak == angles[i].ak()))
+            || ((ai == angles[i].ak()) && (aj == angles[i].aj()) && (ak == angles[i].ai())))
         {
             angle = DEG2RAD * angles[i].c;
         }
@@ -421,7 +427,7 @@ static char *get_atomtype_name_AB(t_atom *atom, gpp_atomtype_t atype)
 static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
                                   t_param *param, t_atoms *at,
                                   int nrbond, t_mybonded *bonds,
-                                  int nrang,  t_mybonded *angles )
+                                  int nrang, t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
@@ -444,10 +450,10 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
         fprintf(debug, "\n");
     }
     bXH3
-        = ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MNH", 3) == 0)
-            && (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MNH", 3) == 0) )
-            || ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MCH3", 4) == 0)
-                 && (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MCH3", 4) == 0) );
+            = ((gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MNH", 3) == 0)
+               && (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MNH", 3) == 0))
+              || ((gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MCH3", 4) == 0)
+                  && (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MCH3", 4) == 0));
 
     bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
     bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
@@ -473,34 +479,35 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
 
         /* calculate common things */
         rM = 0.5 * bMM;
-        dM = std::sqrt( gmx::square(bCM) - gmx::square(rM) );
+        dM = std::sqrt(gmx::square(bCM) - gmx::square(rM));
 
         /* are we dealing with the X atom? */
         if (param->ai() == aN)
         {
             /* this is trivial */
             a = b = 0.5 * bCN / dM;
-
         }
         else
         {
             /* get other bondlengths and angles: */
             bNH    = get_bond_length(nrbond, bonds, aN, param->ai());
-            aCNH   = get_angle      (nrang, angles, param->aj(), aN, param->ai());
+            aCNH   = get_angle(nrang, angles, param->aj(), aN, param->ai());
             bError = bError || (bNH == NOTSET) || (aCNH == NOTSET);
 
             /* calculate */
             dH = bCN - bNH * std::cos(aCNH);
             rH = bNH * std::sin(aCNH);
 
-            a = 0.5 * ( dH / dM + rH / rM );
-            b = 0.5 * ( dH / dM - rH / rM );
+            a = 0.5 * (dH / dM + rH / rM);
+            b = 0.5 * (dH / dM - rH / rM);
         }
     }
     else
     {
-        gmx_fatal(FARGS, "calc_vsite3_param not implemented for the general case "
-                  "(atom %d)", param->ai() + 1);
+        gmx_fatal(FARGS,
+                  "calc_vsite3_param not implemented for the general case "
+                  "(atom %d)",
+                  param->ai() + 1);
     }
 
     param->c0() = a;
@@ -517,7 +524,7 @@ static gmx_bool calc_vsite3_param(gpp_atomtype_t atype,
 
 static gmx_bool calc_vsite3fd_param(t_param *param,
                                     int nrbond, t_mybonded *bonds,
-                                    int nrang,  t_mybonded *angles)
+                                    int nrang, t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
@@ -530,10 +537,10 @@ static gmx_bool calc_vsite3fd_param(t_param *param,
     bij    = get_bond_length(nrbond, bonds, param->ai(), param->aj());
     bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
     bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
-    aijk   = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
-    aijl   = get_angle      (nrang, angles, param->ai(), param->aj(), param->al());
+    aijk   = get_angle(nrang, angles, param->ai(), param->aj(), param->ak());
+    aijl   = get_angle(nrang, angles, param->ai(), param->aj(), param->al());
     bError = (bij == NOTSET) || (bjk == NOTSET) || (bjl == NOTSET)
-        || (aijk == NOTSET) || (aijl == NOTSET);
+             || (aijk == NOTSET) || (aijl == NOTSET);
 
     rk          = bjk * std::sin(aijk);
     rl          = bjl * std::sin(aijl);
@@ -550,7 +557,7 @@ static gmx_bool calc_vsite3fd_param(t_param *param,
 
 static gmx_bool calc_vsite3fad_param(t_param *param,
                                      int nrbond, t_mybonded *bonds,
-                                     int nrang,  t_mybonded *angles)
+                                     int nrang, t_mybonded *angles)
 {
     /* i = virtual site          |
      * j = 1st bonded heavy atom | i-j
@@ -561,10 +568,10 @@ static gmx_bool calc_vsite3fad_param(t_param *param,
     gmx_bool bSwapParity, bError;
     real     bij, aijk;
 
-    bSwapParity = ( param->c1() == -1 );
+    bSwapParity = (param->c1() == -1);
 
     bij    = get_bond_length(nrbond, bonds, param->ai(), param->aj());
-    aijk   = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
+    aijk   = get_angle(nrang, angles, param->ai(), param->aj(), param->ak());
     bError = (bij == NOTSET) || (aijk == NOTSET);
 
     param->c1() = bij;            /* 'bond'-length for fixed distance vsite */
@@ -586,7 +593,7 @@ static gmx_bool calc_vsite3fad_param(t_param *param,
 static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
                                      t_param *param, t_atoms *at,
                                      int nrbond, t_mybonded *bonds,
-                                     int nrang,  t_mybonded *angles)
+                                     int nrang, t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j
@@ -610,13 +617,13 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
         fprintf(debug, "\n");
     }
     bXH3
-        = ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MNH", 3) == 0)
-            && (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MNH", 3) == 0) )
-            || ( (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MCH3", 4) == 0)
-                 && (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MCH3", 4) == 0) );
+            = ((gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MNH", 3) == 0)
+               && (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MNH", 3) == 0))
+              || ((gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->ak()], atype), "MCH3", 4) == 0)
+                  && (gmx_strncasecmp(get_atomtype_name_AB(&at->atom[param->al()], atype), "MCH3", 4) == 0));
 
     /* check if construction parity must be swapped */
-    bSwapParity = ( param->c1() == -1 );
+    bSwapParity = (param->c1() == -1);
 
     bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
     bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
@@ -639,9 +646,9 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
         bCM    = bjk;
         bCN    = get_bond_length(nrbond, bonds, param->aj(), aN);
         bNH    = get_bond_length(nrbond, bonds, aN, param->ai());
-        aCNH   = get_angle      (nrang, angles, param->aj(), aN, param->ai());
+        aCNH   = get_angle(nrang, angles, param->aj(), aN, param->ai());
         bError = bError
-            || (bMM == NOTSET) || (bCN == NOTSET) || (bNH == NOTSET) || (aCNH == NOTSET);
+                 || (bMM == NOTSET) || (bCN == NOTSET) || (bNH == NOTSET) || (aCNH == NOTSET);
 
         /* calculate */
         dH = bCN - bNH * std::cos(aCNH);
@@ -650,31 +657,30 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
         rHx = rH * std::cos(DEG2RAD * 30);
         rHy = rH * std::sin(DEG2RAD * 30);
         rM  = 0.5 * bMM;
-        dM  = std::sqrt( gmx::square(bCM) - gmx::square(rM) );
-        a   = 0.5 * ( (dH / dM) - (rHy / rM) );
-        b   = 0.5 * ( (dH / dM) + (rHy / rM) );
+        dM  = std::sqrt(gmx::square(bCM) - gmx::square(rM));
+        a   = 0.5 * ((dH / dM) - (rHy / rM));
+        b   = 0.5 * ((dH / dM) + (rHy / rM));
         c   = rHx / (2 * dM * rM);
-
     }
     else
     {
         /* this is the general construction */
 
         bij    = get_bond_length(nrbond, bonds, param->ai(), param->aj());
-        aijk   = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
-        aijl   = get_angle      (nrang, angles, param->ai(), param->aj(), param->al());
-        akjl   = get_angle      (nrang, angles, param->ak(), param->aj(), param->al());
+        aijk   = get_angle(nrang, angles, param->ai(), param->aj(), param->ak());
+        aijl   = get_angle(nrang, angles, param->ai(), param->aj(), param->al());
+        akjl   = get_angle(nrang, angles, param->ak(), param->aj(), param->al());
         bError = bError
-            || (bij == NOTSET) || (aijk == NOTSET) || (aijl == NOTSET) || (akjl == NOTSET);
+                 || (bij == NOTSET) || (aijk == NOTSET) || (aijl == NOTSET) || (akjl == NOTSET);
 
         pijk = std::cos(aijk) * bij;
         pijl = std::cos(aijl) * bij;
-        a    = ( pijk + (pijk * std::cos(akjl) - pijl) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjk;
-        b    = ( pijl + (pijl * std::cos(akjl) - pijk) * std::cos(akjl) / gmx::square(std::sin(akjl)) ) / bjl;
-        c    = -std::sqrt( gmx::square(bij)
-                           - ( gmx::square(pijk) - 2 * pijk * pijl * std::cos(akjl) + gmx::square(pijl) )
-                           / gmx::square(std::sin(akjl)) )
-            / ( bjk * bjl * std::sin(akjl) );
+        a    = (pijk + (pijk * std::cos(akjl) - pijl) * std::cos(akjl) / gmx::square(std::sin(akjl))) / bjk;
+        b    = (pijl + (pijl * std::cos(akjl) - pijk) * std::cos(akjl) / gmx::square(std::sin(akjl))) / bjl;
+        c    = -std::sqrt(gmx::square(bij)
+                       - (gmx::square(pijk) - 2 * pijk * pijl * std::cos(akjl) + gmx::square(pijl))
+                                 / gmx::square(std::sin(akjl)))
+            / (bjk * bjl * std::sin(akjl));
     }
 
     param->c0() = a;
@@ -685,7 +691,7 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
     }
     else
     {
-        param->c2() =  c;
+        param->c2() = c;
     }
     if (debug)
     {
@@ -697,7 +703,7 @@ static gmx_bool calc_vsite3out_param(gpp_atomtype_t atype,
 
 static gmx_bool calc_vsite4fd_param(t_param *param,
                                     int nrbond, t_mybonded *bonds,
-                                    int nrang,  t_mybonded *angles)
+                                    int nrang, t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j-m
@@ -712,14 +718,14 @@ static gmx_bool calc_vsite4fd_param(t_param *param,
     bjk    = get_bond_length(nrbond, bonds, param->aj(), param->ak());
     bjl    = get_bond_length(nrbond, bonds, param->aj(), param->al());
     bjm    = get_bond_length(nrbond, bonds, param->aj(), param->am());
-    aijk   = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
-    aijl   = get_angle      (nrang, angles, param->ai(), param->aj(), param->al());
-    aijm   = get_angle      (nrang, angles, param->ai(), param->aj(), param->am());
-    akjm   = get_angle      (nrang, angles, param->ak(), param->aj(), param->am());
-    akjl   = get_angle      (nrang, angles, param->ak(), param->aj(), param->al());
+    aijk   = get_angle(nrang, angles, param->ai(), param->aj(), param->ak());
+    aijl   = get_angle(nrang, angles, param->ai(), param->aj(), param->al());
+    aijm   = get_angle(nrang, angles, param->ai(), param->aj(), param->am());
+    akjm   = get_angle(nrang, angles, param->ak(), param->aj(), param->am());
+    akjl   = get_angle(nrang, angles, param->ak(), param->aj(), param->al());
     bError = (bij == NOTSET) || (bjk == NOTSET) || (bjl == NOTSET) || (bjm == NOTSET)
-        || (aijk == NOTSET) || (aijl == NOTSET) || (aijm == NOTSET) || (akjm == NOTSET)
-        || (akjl == NOTSET);
+             || (aijk == NOTSET) || (aijl == NOTSET) || (aijm == NOTSET) || (akjm == NOTSET)
+             || (akjl == NOTSET);
 
     if (!bError)
     {
@@ -732,15 +738,17 @@ static gmx_bool calc_vsite4fd_param(t_param *param,
         {
             fprintf(stderr, "virtual site %d: angle ijk = %f, angle ijl = %f, angle ijm = %f\n",
                     param->ai() + 1, RAD2DEG * aijk, RAD2DEG * aijl, RAD2DEG * aijm);
-            gmx_fatal(FARGS, "invalid construction in calc_vsite4fd for atom %d: "
-                      "cosakl=%f, cosakm=%f\n", param->ai() + 1, cosakl, cosakm);
+            gmx_fatal(FARGS,
+                      "invalid construction in calc_vsite4fd for atom %d: "
+                      "cosakl=%f, cosakm=%f\n",
+                      param->ai() + 1, cosakl, cosakm);
         }
         sinakl = std::sqrt(1 - gmx::square(cosakl));
         sinakm = std::sqrt(1 - gmx::square(cosakm));
 
         /* note: there is a '+' because of the way the sines are calculated */
-        cl = -pk / ( pl * cosakl - pk + pl * sinakl * (pm * cosakm - pk) / (pm * sinakm) );
-        cm = -pk / ( pm * cosakm - pk + pm * sinakm * (pl * cosakl - pk) / (pl * sinakl) );
+        cl = -pk / (pl * cosakl - pk + pl * sinakl * (pm * cosakm - pk) / (pm * sinakm));
+        cm = -pk / (pm * cosakm - pk + pm * sinakm * (pl * cosakl - pk) / (pl * sinakl));
 
         param->c0() = cl;
         param->c1() = cm;
@@ -758,7 +766,7 @@ static gmx_bool calc_vsite4fd_param(t_param *param,
 
 static gmx_bool calc_vsite4fdn_param(t_param *param,
                                      int nrbond, t_mybonded *bonds,
-                                     int nrang,  t_mybonded *angles)
+                                     int nrang, t_mybonded *angles)
 {
     /* i = virtual site          |    ,k
      * j = 1st bonded heavy atom | i-j-m
@@ -773,31 +781,33 @@ static gmx_bool calc_vsite4fdn_param(t_param *param,
     bjk  = get_bond_length(nrbond, bonds, param->aj(), param->ak());
     bjl  = get_bond_length(nrbond, bonds, param->aj(), param->al());
     bjm  = get_bond_length(nrbond, bonds, param->aj(), param->am());
-    aijk = get_angle      (nrang, angles, param->ai(), param->aj(), param->ak());
-    aijl = get_angle      (nrang, angles, param->ai(), param->aj(), param->al());
-    aijm = get_angle      (nrang, angles, param->ai(), param->aj(), param->am());
+    aijk = get_angle(nrang, angles, param->ai(), param->aj(), param->ak());
+    aijl = get_angle(nrang, angles, param->ai(), param->aj(), param->al());
+    aijm = get_angle(nrang, angles, param->ai(), param->aj(), param->am());
 
     bError = (bij == NOTSET) || (bjk == NOTSET) || (bjl == NOTSET) || (bjm == NOTSET)
-        || (aijk == NOTSET) || (aijl == NOTSET) || (aijm == NOTSET);
+             || (aijk == NOTSET) || (aijl == NOTSET) || (aijm == NOTSET);
 
     if (!bError)
     {
 
         /* Calculate component of bond j-k along the direction i-j */
-        pk = -bjk*std::cos(aijk);
+        pk = -bjk * std::cos(aijk);
 
         /* Calculate component of bond j-l along the direction i-j */
-        pl = -bjl*std::cos(aijl);
+        pl = -bjl * std::cos(aijl);
 
         /* Calculate component of bond j-m along the direction i-j */
-        pm = -bjm*std::cos(aijm);
+        pm = -bjm * std::cos(aijm);
 
         if (fabs(pl) < 1000 * GMX_REAL_MIN || fabs(pm) < 1000 * GMX_REAL_MIN)
         {
             fprintf(stderr, "virtual site %d: angle ijk = %f, angle ijl = %f, angle ijm = %f\n",
                     param->ai() + 1, RAD2DEG * aijk, RAD2DEG * aijl, RAD2DEG * aijm);
-            gmx_fatal(FARGS, "invalid construction in calc_vsite4fdn for atom %d: "
-                      "pl=%f, pm=%f\n", param->ai() + 1, pl, pm);
+            gmx_fatal(FARGS,
+                      "invalid construction in calc_vsite4fdn for atom %d: "
+                      "pl=%f, pm=%f\n",
+                      param->ai() + 1, pl, pm);
         }
 
         a = pk / pl;
@@ -816,7 +826,6 @@ static gmx_bool calc_vsite4fdn_param(t_param *param,
 
     return bError;
 }
-
 
 
 int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
@@ -876,17 +885,19 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                     }
 
                     nrbond = nrang = nridih = 0;
-                    bonds  = nullptr;
-                    angles = nullptr;
-                    idihs  = nullptr;
+                    bonds                   = nullptr;
+                    angles                  = nullptr;
+                    idihs                   = nullptr;
                     nrset++;
                     /* now set the vsite parameters: */
                     get_bondeds(NRAL(ftype), plist[ftype].param[i].a, at2vb,
-                                &nrbond, &bonds, &nrang,  &angles, &nridih, &idihs);
+                                &nrbond, &bonds, &nrang, &angles, &nridih, &idihs);
                     if (debug)
                     {
-                        fprintf(debug, "Found %d bonds, %d angles and %d idihs "
-                                "for virtual site %d (%s)\n", nrbond, nrang, nridih,
+                        fprintf(debug,
+                                "Found %d bonds, %d angles and %d idihs "
+                                "for virtual site %d (%s)\n",
+                                nrbond, nrang, nridih,
                                 plist[ftype].param[i].ai() + 1,
                                 interaction_function[ftype].longname);
                         print_bad(debug, nrbond, bonds, nrang, angles, nridih, idihs);
@@ -895,36 +906,37 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                     {
                         case F_VSITE3:
                             bERROR
-                                = calc_vsite3_param(atype, &(plist[ftype].param[i]), atoms,
-                                                    nrbond, bonds, nrang, angles);
+                                    = calc_vsite3_param(atype, &(plist[ftype].param[i]), atoms,
+                                                        nrbond, bonds, nrang, angles);
                             break;
                         case F_VSITE3FD:
                             bERROR
-                                = calc_vsite3fd_param(&(plist[ftype].param[i]),
-                                                      nrbond, bonds, nrang, angles);
+                                    = calc_vsite3fd_param(&(plist[ftype].param[i]),
+                                                          nrbond, bonds, nrang, angles);
                             break;
                         case F_VSITE3FAD:
                             bERROR
-                                = calc_vsite3fad_param(&(plist[ftype].param[i]),
-                                                       nrbond, bonds, nrang, angles);
+                                    = calc_vsite3fad_param(&(plist[ftype].param[i]),
+                                                           nrbond, bonds, nrang, angles);
                             break;
                         case F_VSITE3OUT:
                             bERROR
-                                = calc_vsite3out_param(atype, &(plist[ftype].param[i]), atoms,
-                                                       nrbond, bonds, nrang, angles);
+                                    = calc_vsite3out_param(atype, &(plist[ftype].param[i]), atoms,
+                                                           nrbond, bonds, nrang, angles);
                             break;
                         case F_VSITE4FD:
                             bERROR
-                                = calc_vsite4fd_param(&(plist[ftype].param[i]),
-                                                      nrbond, bonds, nrang, angles);
+                                    = calc_vsite4fd_param(&(plist[ftype].param[i]),
+                                                          nrbond, bonds, nrang, angles);
                             break;
                         case F_VSITE4FDN:
                             bERROR
-                                = calc_vsite4fdn_param(&(plist[ftype].param[i]),
-                                                       nrbond, bonds, nrang, angles);
+                                    = calc_vsite4fdn_param(&(plist[ftype].param[i]),
+                                                           nrbond, bonds, nrang, angles);
                             break;
                         default:
-                            gmx_fatal(FARGS, "Automatic parameter generation not supported "
+                            gmx_fatal(FARGS,
+                                      "Automatic parameter generation not supported "
                                       "for %s atom %d",
                                       interaction_function[ftype].longname,
                                       plist[ftype].param[i].ai() + 1);
@@ -932,7 +944,8 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                     } /* switch */
                     if (bERROR)
                     {
-                        gmx_fatal(FARGS, "Automatic parameter generation not supported "
+                        gmx_fatal(FARGS,
+                                  "Automatic parameter generation not supported "
                                   "for %s atom %d for this bonding configuration",
                                   interaction_function[ftype].longname,
                                   plist[ftype].param[i].ai() + 1);
@@ -948,7 +961,6 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                         nrset, plist[ftype].nr, interaction_function[ftype].longname);
             }
         } /* if IF_VSITE */
-
     }
     done_at2vsitebond(atoms->nr, at2vb);
 
@@ -985,18 +997,17 @@ void set_vsites_ptype(gmx_bool bVerbose, gmx_moltype_t *molt)
                         (nrd / (nra + 1)), interaction_function[ftype].longname);
             }
 
-            for (i = 0; (i < nrd); )
+            for (i = 0; (i < nrd);)
             {
                 /* The virtual site */
                 avsite                         = ia[1];
                 molt->atoms.atom[avsite].ptype = eptVSite;
 
-                i  += nra + 1;
+                i += nra + 1;
                 ia += nra + 1;
             }
         }
     }
-
 }
 
 typedef struct
@@ -1072,12 +1083,12 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
             if (vsite_type[atom] != NOTSET && vsite_type[atom] != F_VSITEN)
             {
                 nvsite++;
-                bThisFD = ( (pindex[atom].ftype == F_VSITE3FD )
-                            || (pindex[atom].ftype == F_VSITE3FAD)
-                            || (pindex[atom].ftype == F_VSITE4FD )
-                            || (pindex[atom].ftype == F_VSITE4FDN ) );
-                bThisOUT = ( (pindex[atom].ftype == F_VSITE3OUT)
-                             && (interaction_function[cftype].flags & IF_CONSTRAINT) );
+                bThisFD = ((pindex[atom].ftype == F_VSITE3FD)
+                           || (pindex[atom].ftype == F_VSITE3FAD)
+                           || (pindex[atom].ftype == F_VSITE4FD)
+                           || (pindex[atom].ftype == F_VSITE4FDN));
+                bThisOUT = ((pindex[atom].ftype == F_VSITE3OUT)
+                            && (interaction_function[cftype].flags & IF_CONSTRAINT));
                 bAllFD = bAllFD && bThisFD;
                 if (bThisFD || bThisOUT)
                 {
@@ -1209,7 +1220,7 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                 }
             }
 
-            if (!( bAllFD && bFirstTwo ) )
+            if (!(bAllFD && bFirstTwo))
             {
                 /* Two atom bonded interactions include constraints.
                  * We need to remove constraints between vsite pairs that have
@@ -1228,10 +1239,10 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
                             for (j = 0; (j < plist[ftype].nr) && !bPresent; j++)
                             {
                                 /* all constraints until one matches */
-                                bPresent = ( ( (plist[ftype].param[j].ai() == at1)
-                                               && (plist[ftype].param[j].aj() == at2) )
-                                             || ( (plist[ftype].param[j].ai() == at2)
-                                                  && (plist[ftype].param[j].aj() == at1) ) );
+                                bPresent = (((plist[ftype].param[j].ai() == at1)
+                                             && (plist[ftype].param[j].aj() == at2))
+                                            || ((plist[ftype].param[j].ai() == at2)
+                                                && (plist[ftype].param[j].aj() == at1)));
                             }
                         }
                     }
@@ -1286,13 +1297,14 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
     }
     if (nOut)
     {
-        fprintf(stderr, "Warning: removed %d %ss with vsite with %s construction\n"
+        fprintf(stderr,
+                "Warning: removed %d %ss with vsite with %s construction\n"
                 "         This vsite construction does not guarantee constant "
                 "bond-length\n"
                 "         If the constructions were generated by pdb2gmx ignore "
                 "this warning\n",
                 nOut, interaction_function[cftype].longname,
-                interaction_function[F_VSITE3OUT].longname );
+                interaction_function[F_VSITE3OUT].longname);
     }
     ps->nr = kept_i;
 }
@@ -1396,7 +1408,7 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
             }
         }
 
-        if (!( bAll3FAD && bFirstTwo ) )
+        if (!(bAll3FAD && bFirstTwo))
         {
             /* check if all constructing atoms are constrained together */
             for (m = 0; m < vsnral && !bKeep; m++) /* all constr. atoms */
@@ -1578,7 +1590,7 @@ void clean_vsite_bondeds(t_params *plist, int natoms, gmx_bool bRmVSiteBds)
         if (interaction_function[ftype].flags & IF_VSITE)
         {
             nvsite += plist[ftype].nr;
-            i       = 0;
+            i = 0;
             while (i < plist[ftype].nr)
             {
                 vsite = plist[ftype].param[i].ai();
@@ -1646,27 +1658,27 @@ void clean_vsite_bondeds(t_params *plist, int natoms, gmx_bool bRmVSiteBds)
             {
                 fprintf(debug, "atom %d vsite_type %s\n", i,
                         vsite_type[i] == NOTSET ? "NOTSET"
-                        : interaction_function[vsite_type[i]].name);
+                                                : interaction_function[vsite_type[i]].name);
             }
         }
 
         /* remove interactions that include virtual sites */
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            if ( ( ( interaction_function[ftype].flags & IF_BOND ) && bRmVSiteBds )
-                 || ( interaction_function[ftype].flags & IF_CONSTRAINT ) )
+            if (((interaction_function[ftype].flags & IF_BOND) && bRmVSiteBds)
+                || (interaction_function[ftype].flags & IF_CONSTRAINT))
             {
-                if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT) )
+                if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT))
                 {
-                    clean_vsite_bonds (plist, pindex, ftype, vsite_type);
+                    clean_vsite_bonds(plist, pindex, ftype, vsite_type);
                 }
                 else if (interaction_function[ftype].flags & IF_ATYPE)
                 {
                     clean_vsite_angles(plist, pindex, ftype, vsite_type, at2vc);
                 }
-                else if ( (ftype == F_PDIHS) || (ftype == F_IDIHS) )
+                else if ((ftype == F_PDIHS) || (ftype == F_IDIHS))
                 {
-                    clean_vsite_dihs  (plist, pindex, ftype, vsite_type);
+                    clean_vsite_dihs(plist, pindex, ftype, vsite_type);
                 }
             }
         }

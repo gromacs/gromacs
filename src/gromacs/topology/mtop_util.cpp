@@ -87,10 +87,10 @@ static void finalizeMolblocks(gmx_mtop_t *mtop)
     {
         gmx_molblock_t *molb         = &mtop->molblock[mb];
         int             numResPerMol = mtop->moltype[molb->type].atoms.nres;
-        molb->globalAtomStart    = atomIndex;
-        molb->globalResidueStart = residueIndex;
-        atomIndex               += molb->nmol * molb->natoms_mol;
-        residueIndex            += molb->nmol * numResPerMol;
+        molb->globalAtomStart        = atomIndex;
+        molb->globalResidueStart     = residueIndex;
+        atomIndex += molb->nmol * molb->natoms_mol;
+        residueIndex += molb->nmol * numResPerMol;
         molb->globalAtomEnd      = atomIndex;
         molb->residueNumberStart = residueNumberStart;
         if (numResPerMol <= mtop->maxres_renum)
@@ -173,8 +173,8 @@ int ncg_mtop(const gmx_mtop_t *mtop)
     for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         ncg
-            += mtop->molblock[mb].nmol
-                * mtop->moltype[mtop->molblock[mb].type].cgs.nr;
+                += mtop->molblock[mb].nmol
+                   * mtop->moltype[mtop->molblock[mb].type].cgs.nr;
     }
 
     return ncg;
@@ -186,8 +186,8 @@ int gmx_mtop_nres(const gmx_mtop_t *mtop)
     for (int mb = 0; mb < mtop->nmolblock; ++mb)
     {
         nres
-            += mtop->molblock[mb].nmol
-                * mtop->moltype[mtop->molblock[mb].type].atoms.nres;
+                += mtop->molblock[mb].nmol
+                   * mtop->moltype[mtop->molblock[mb].type].atoms.nres;
     }
     return nres;
 }
@@ -233,7 +233,7 @@ gmx_mtop_atomloop_all_t gmx_mtop_atomloop_all_init(const gmx_mtop_t *mtop)
     aloop->mtop   = mtop;
     aloop->mblock = 0;
     aloop->atoms
-                     = &mtop->moltype[mtop->molblock[aloop->mblock].type].atoms;
+            = &mtop->moltype[mtop->molblock[aloop->mblock].type].atoms;
     aloop->mol       = 0;
     aloop->maxresnr  = mtop->maxresnr;
     aloop->at_local  = -1;
@@ -410,7 +410,7 @@ gmx_bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
     }
 
     *ilist_mol
-        = iloop->mtop->moltype[iloop->mtop->molblock[iloop->mblock].type].ilist;
+            = iloop->mtop->moltype[iloop->mtop->molblock[iloop->mblock].type].ilist;
 
     *nmol = iloop->mtop->molblock[iloop->mblock].nmol;
 
@@ -484,7 +484,7 @@ gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
     }
 
     *ilist_mol
-        = iloop->mtop->moltype[iloop->mtop->molblock[iloop->mblock].type].ilist;
+            = iloop->mtop->moltype[iloop->mtop->molblock[iloop->mblock].type].ilist;
 
     *atnr_offset = iloop->a_offset;
 
@@ -533,8 +533,8 @@ t_block gmx_mtop_global_cgs(const gmx_mtop_t *mtop)
             for (cg = 0; cg < cgs_mol->nr; cg++)
             {
                 cgs_gl.index[cgs_gl.nr + 1]
-                    = cgs_gl.index[cgs_gl.nr]
-                        + cgs_mol->index[cg + 1] - cgs_mol->index[cg];
+                        = cgs_gl.index[cgs_gl.nr]
+                          + cgs_mol->index[cg + 1] - cgs_mol->index[cg];
                 cgs_gl.nr++;
             }
         }
@@ -562,10 +562,10 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
     }
     else
     {
-        dest->haveMass    = dest->haveMass    && src->haveMass;
-        dest->haveType    = dest->haveType    && src->haveType;
-        dest->haveCharge  = dest->haveCharge  && src->haveCharge;
-        dest->haveBState  = dest->haveBState  && src->haveBState;
+        dest->haveMass    = dest->haveMass && src->haveMass;
+        dest->haveType    = dest->haveType && src->haveType;
+        dest->haveCharge  = dest->haveCharge && src->haveCharge;
+        dest->haveBState  = dest->haveBState && src->haveBState;
         dest->havePdbInfo = dest->havePdbInfo && src->havePdbInfo;
     }
 
@@ -596,29 +596,29 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
     /* residue information */
     for (l = dest->nres, j = 0; (j < copies); j++, l += src->nres)
     {
-        memcpy((char *) &(dest->resinfo[l]), (char *) &(src->resinfo[0]),
+        memcpy((char *)&(dest->resinfo[l]), (char *)&(src->resinfo[0]),
                (size_t)(src->nres * sizeof(src->resinfo[0])));
     }
 
     for (l = destnr, j = 0; (j < copies); j++, l += srcnr)
     {
-        memcpy((char *) &(dest->atom[l]), (char *) &(src->atom[0]),
+        memcpy((char *)&(dest->atom[l]), (char *)&(src->atom[0]),
                (size_t)(srcnr * sizeof(src->atom[0])));
-        memcpy((char *) &(dest->atomname[l]), (char *) &(src->atomname[0]),
+        memcpy((char *)&(dest->atomname[l]), (char *)&(src->atomname[0]),
                (size_t)(srcnr * sizeof(src->atomname[0])));
         if (dest->haveType)
         {
-            memcpy((char *) &(dest->atomtype[l]), (char *) &(src->atomtype[0]),
+            memcpy((char *)&(dest->atomtype[l]), (char *)&(src->atomtype[0]),
                    (size_t)(srcnr * sizeof(src->atomtype[0])));
             if (dest->haveBState)
             {
-                memcpy((char *) &(dest->atomtypeB[l]), (char *) &(src->atomtypeB[0]),
+                memcpy((char *)&(dest->atomtypeB[l]), (char *)&(src->atomtypeB[0]),
                        (size_t)(srcnr * sizeof(src->atomtypeB[0])));
             }
         }
         if (dest->havePdbInfo)
         {
-            memcpy((char *) &(dest->pdbinfo[l]), (char *) &(src->pdbinfo[0]),
+            memcpy((char *)&(dest->pdbinfo[l]), (char *)&(src->pdbinfo[0]),
                    (size_t)(srcnr * sizeof(src->pdbinfo[0])));
         }
     }
@@ -646,7 +646,7 @@ static void atomcat(t_atoms *dest, t_atoms *src, int copies,
     }
 
     dest->nres += copies * src->nres;
-    dest->nr   += copies * src->nr;
+    dest->nr += copies * src->nr;
 }
 
 t_atoms gmx_mtop_global_atoms(const gmx_mtop_t *mtop)
@@ -691,7 +691,7 @@ static void blockcat(t_block *dest, t_block *src, int copies)
         }
         nra += src->index[src->nr];
     }
-    dest->nr             += copies * src->nr;
+    dest->nr += copies * src->nr;
     dest->index[dest->nr] = nra;
 }
 
@@ -727,7 +727,7 @@ static void blockacat(t_blocka *dest, t_blocka *src, int copies,
         {
             dest->a[l++] = dnum + src->a[i];
         }
-        dnum     += snum;
+        dnum += snum;
         dest->nr += src->nr;
     }
     dest->index[dest->nr] = dest->nra;
@@ -745,7 +745,7 @@ static void ilistcat(int ftype, t_ilist *dest, t_ilist *src, int copies,
 
     for (c = 0; c < copies; c++)
     {
-        for (i = 0; i < src->nr; )
+        for (i = 0; i < src->nr;)
         {
             dest->iatoms[dest->nr++] = src->iatoms[i++];
             for (a = 0; a < nral; a++)

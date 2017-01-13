@@ -83,26 +83,24 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 {
     GMX_UNUSED_VALUE(options);
 #if GMX_OPENMP
-    options->addOption(IntegerOption("nt_omp").store(&g_numOpenMPThreads)
-                           .description("Number of OpenMP threads for child mdrun calls"));
+    options->addOption(IntegerOption("nt_omp").store(&g_numOpenMPThreads).description("Number of OpenMP threads for child mdrun calls"));
 #endif
 }
 //! \endcond
-
 }
 
-SimulationRunner::SimulationRunner(IntegrationTestFixture *fixture) :
-    fixture_(fixture),
-    topFileName_(),
-    groFileName_(),
-    fullPrecisionTrajectoryFileName_(),
-    ndxFileName_(),
-    mdpInputFileName_(fixture_->fileManager_.getTemporaryFilePath("input.mdp")),
-    mdpOutputFileName_(fixture_->fileManager_.getTemporaryFilePath("output.mdp")),
-    tprFileName_(fixture_->fileManager_.getTemporaryFilePath(".tpr")),
-    logFileName_(fixture_->fileManager_.getTemporaryFilePath(".log")),
-    edrFileName_(fixture_->fileManager_.getTemporaryFilePath(".edr")),
-    nsteps_(-2)
+SimulationRunner::SimulationRunner(IntegrationTestFixture *fixture)
+    : fixture_(fixture),
+      topFileName_(),
+      groFileName_(),
+      fullPrecisionTrajectoryFileName_(),
+      ndxFileName_(),
+      mdpInputFileName_(fixture_->fileManager_.getTemporaryFilePath("input.mdp")),
+      mdpOutputFileName_(fixture_->fileManager_.getTemporaryFilePath("output.mdp")),
+      tprFileName_(fixture_->fileManager_.getTemporaryFilePath(".tpr")),
+      logFileName_(fixture_->fileManager_.getTemporaryFilePath(".log")),
+      edrFileName_(fixture_->fileManager_.getTemporaryFilePath(".edr")),
+      nsteps_(-2)
 {
 #if GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
@@ -218,11 +216,11 @@ int SimulationRunner::callMdrun(const CommandLine &callerRef)
     }
 
 #if GMX_MPI
-#  if GMX_GPU != GMX_GPU_NONE
+#if GMX_GPU != GMX_GPU_NONE
     const int   numGpusNeeded = getNumberOfTestMpiRanks();
     std::string gpuIdString(numGpusNeeded, '0');
     caller.addOption("-gpu_id", gpuIdString.c_str());
-#  endif
+#endif
 #endif
 
 #if GMX_THREAD_MPI
@@ -273,7 +271,8 @@ MdrunTestFixtureBase::~MdrunTestFixtureBase()
 
 // ====
 
-MdrunTestFixture::MdrunTestFixture() : runner_(this)
+MdrunTestFixture::MdrunTestFixture()
+    : runner_(this)
 {
 }
 

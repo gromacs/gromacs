@@ -114,7 +114,7 @@ public:
 
 protected:
     //! Smart pointer for managing the final storage interface.
-    typedef std::unique_ptr<IOptionValueStore<T> > StorePointer;
+    typedef std::unique_ptr<IOptionValueStore<T>> StorePointer;
 
     /*! \brief
      * Initializes the storage from option settings.
@@ -260,7 +260,7 @@ protected:
      * The non-const variant should only be used from processAll() in
      * derived classes if necessary.
      */
-    ArrayRef<T>      values() { return store_->values(); }
+    ArrayRef<T> values() { return store_->values(); }
     //! Provides derived classes access to the current list of values.
     ConstArrayRef<T> values() const { return store_->values(); }
 
@@ -392,7 +392,8 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
       store_(createStore(settings.storeVector_,
                          settings.store_, settings.countptr_,
                          (settings.isVector()
-                          ? settings.maxValueCount_ : settings.minValueCount_)))
+                                  ? settings.maxValueCount_
+                                  : settings.minValueCount_)))
 {
     if (hasFlag(efOption_NoDefaultValue)
         && (settings.defaultValue_ != nullptr
@@ -424,7 +425,7 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const AbstractOption &settings,
 
 
 template <typename T>
-std::unique_ptr<IOptionValueStore<T> > OptionStorageTemplate<T>::createStore(
+std::unique_ptr<IOptionValueStore<T>> OptionStorageTemplate<T>::createStore(
         ValueList *storeVector, T *store, int *storeCount, int initialCount)
 {
     if (storeVector != nullptr)

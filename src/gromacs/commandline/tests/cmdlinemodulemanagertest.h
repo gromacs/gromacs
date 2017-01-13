@@ -77,9 +77,9 @@ public:
     virtual const char *name() const { return name_; }
     virtual const char *shortDescription() const { return descr_; }
 
-    MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings * settings));
+    MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
     MOCK_METHOD2(run, int(int argc, char *argv[]));
-    MOCK_CONST_METHOD1(writeHelp, void(const gmx::CommandLineHelpContext & context));
+    MOCK_CONST_METHOD1(writeHelp, void(const gmx::CommandLineHelpContext &context));
 
     //! Sets the expected display name for writeHelp() calls.
     void setExpectedDisplayName(const char *expected)
@@ -107,8 +107,8 @@ public:
     MockOptionsModule();
     ~MockOptionsModule();
 
-    MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings * settings));
-    MOCK_METHOD2(initOptions, void(gmx::IOptionsContainer * options, gmx::ICommandLineOptionsModuleSettings * settings));
+    MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
+    MOCK_METHOD2(initOptions, void(gmx::IOptionsContainer *options, gmx::ICommandLineOptionsModuleSettings *settings));
     MOCK_METHOD0(optionsFinished, void());
     MOCK_METHOD0(run, int());
 };

@@ -164,7 +164,7 @@ void gmx_tng_open(const char *      filename,
 
 void gmx_tng_close(tng_trajectory_t *tng)
 {
-    /* We have to check that tng is set because
+/* We have to check that tng is set because
      * tng_util_trajectory_close wants to return a NULL in it, and
      * gives a fatal error if it is NULL. */
 #if GMX_USE_TNG
@@ -202,7 +202,7 @@ static void addTngMoleculeFromTopology(tng_trajectory_t tng,
         if (atoms->nres > 0)
         {
             const t_resinfo *resInfo      = &atoms->resinfo[at->resind];
-            char             chainName[2] = {resInfo->chainid, 0};
+            char             chainName[2] = { resInfo->chainid, 0 };
             tng_atom_t       tngAtom      = nullptr;
             t_atom *         prevAtom;
 
@@ -221,8 +221,7 @@ static void addTngMoleculeFromTopology(tng_trajectory_t tng,
             {
                 /* If this is the first atom or if the chain changed add
                  * the chain to the TNG molecular system. */
-                if (!prevAtom || resInfo->chainid
-                    != atoms->resinfo[prevAtom->resind].chainid)
+                if (!prevAtom || resInfo->chainid != atoms->resinfo[prevAtom->resind].chainid)
                 {
                     tng_molecule_chain_add(tng, *tngMol, chainName,
                                            &tngChain);
@@ -254,7 +253,7 @@ void gmx_tng_add_mtop(tng_trajectory_t  tng,
     {
         tng_molecule_t       tngMol = nullptr;
         const gmx_moltype_t *molType
-            = &mtop->moltype[mtop->molblock[molIndex].type];
+                = &mtop->moltype[mtop->molblock[molIndex].type];
 
         /* Add a molecule to the TNG trajectory with the same name as the
          * current molecule. */
@@ -369,7 +368,7 @@ static void set_writing_intervals(tng_trajectory_t  tng,
                                                                      const gmx_int64_t,
                                                                      const gmx_int64_t,
                                                                      const gmx_int64_t,
-                                                                     const char*,
+                                                                     const char *,
                                                                      const char,
                                                                      const char);
 #if GMX_DOUBLE
@@ -462,9 +461,11 @@ static void set_writing_intervals(tng_trajectory_t  tng,
                              TNG_GZIP_COMPRESSION);
         if (gcd < lowest / 10)
         {
-            gmx_warning("The lowest common denominator of trajectory output is "
-                        "every %d step(s), whereas the shortest output interval "
-                        "is every %d steps.", gcd, lowest);
+            gmx_warning(
+                    "The lowest common denominator of trajectory output is "
+                    "every %d step(s), whereas the shortest output interval "
+                    "is every %d steps.",
+                    gcd, lowest);
         }
     }
 }
@@ -729,16 +730,16 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
     typedef tng_function_status (*write_data_func_pointer)(tng_trajectory_t,
                                                            const gmx_int64_t,
                                                            const double,
-                                                           const real*,
+                                                           const real *,
                                                            const gmx_int64_t,
                                                            const gmx_int64_t,
-                                                           const char*,
+                                                           const char *,
                                                            const char,
                                                            const char);
 #if GMX_DOUBLE
     static write_data_func_pointer write_data = tng_util_generic_with_time_double_write;
 #else
-    static write_data_func_pointer write_data = tng_util_generic_with_time_write;
+    static write_data_func_pointer    write_data           = tng_util_generic_with_time_write;
 #endif
     double      elapsedSeconds = elapsedPicoSeconds * PICO;
     gmx_int64_t nParticles;
@@ -778,7 +779,8 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                        reinterpret_cast<const real *>(x),
                        3, TNG_TRAJ_POSITIONS, "POSITIONS",
                        TNG_PARTICLE_BLOCK_DATA,
-                       compression) != TNG_SUCCESS)
+                       compression)
+            != TNG_SUCCESS)
         {
             gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
         }
@@ -790,7 +792,8 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                        reinterpret_cast<const real *>(v),
                        3, TNG_TRAJ_VELOCITIES, "VELOCITIES",
                        TNG_PARTICLE_BLOCK_DATA,
-                       compression) != TNG_SUCCESS)
+                       compression)
+            != TNG_SUCCESS)
         {
             gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
         }
@@ -804,7 +807,8 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                        reinterpret_cast<const real *>(f),
                        3, TNG_TRAJ_FORCES, "FORCES",
                        TNG_PARTICLE_BLOCK_DATA,
-                       TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
+                       TNG_GZIP_COMPRESSION)
+            != TNG_SUCCESS)
         {
             gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
         }
@@ -816,7 +820,8 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                    reinterpret_cast<const real *>(box),
                    9, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
                    TNG_NON_PARTICLE_BLOCK_DATA,
-                   TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
+                   TNG_GZIP_COMPRESSION)
+        != TNG_SUCCESS)
     {
         gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
     }
@@ -825,7 +830,8 @@ void gmx_fwrite_tng(tng_trajectory_t tng,
                    reinterpret_cast<const real *>(&lambda),
                    1, TNG_GMX_LAMBDA, "LAMBDAS",
                    TNG_NON_PARTICLE_BLOCK_DATA,
-                   TNG_GZIP_COMPRESSION) != TNG_SUCCESS)
+                   TNG_GZIP_COMPRESSION)
+        != TNG_SUCCESS)
     {
         gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
     }
@@ -886,14 +892,12 @@ void gmx_prepare_tng_writing(const char *      filename,
 #if GMX_USE_TNG
     /* FIXME after 5.0: Currently only standard block types are read */
     const int          defaultNumIds              = 5;
-    static gmx_int64_t fallbackIds[defaultNumIds] =
-    {
+    static gmx_int64_t fallbackIds[defaultNumIds] = {
         TNG_TRAJ_BOX_SHAPE, TNG_TRAJ_POSITIONS,
         TNG_TRAJ_VELOCITIES, TNG_TRAJ_FORCES,
         TNG_GMX_LAMBDA
     };
-    static char fallbackNames[defaultNumIds][32] =
-    {
+    static char fallbackNames[defaultNumIds][32] = {
         "BOX SHAPE", "POSITIONS", "VELOCITIES",
         "FORCES", "LAMBDAS"
     };
@@ -902,7 +906,7 @@ void gmx_prepare_tng_writing(const char *      filename,
                                                                      const gmx_int64_t,
                                                                      const gmx_int64_t,
                                                                      const gmx_int64_t,
-                                                                     const char*,
+                                                                     const char *,
                                                                      const char,
                                                                      const char);
 #if GMX_DOUBLE
@@ -970,7 +974,6 @@ void gmx_prepare_tng_writing(const char *      filename,
                 }
             }
         }
-
     }
     else
     {
@@ -1270,8 +1273,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t input,
     int                 size, blockDependency;
     double              prec;
     const int           defaultNumIds                       = 5;
-    static gmx_int64_t  fallbackRequestedIds[defaultNumIds] =
-    {
+    static gmx_int64_t  fallbackRequestedIds[defaultNumIds] = {
         TNG_TRAJ_BOX_SHAPE, TNG_TRAJ_POSITIONS,
         TNG_TRAJ_VELOCITIES, TNG_TRAJ_FORCES,
         TNG_GMX_LAMBDA
@@ -1398,7 +1400,7 @@ gmx_bool gmx_read_next_tng_frame(tng_trajectory_t input,
             case TNG_TRAJ_VELOCITIES:
                 srenew(fr->v, fr->natoms);
                 convert_array_to_real_array(values,
-                                            (real *) fr->v,
+                                            (real *)fr->v,
                                             getDistanceScaleFactor(input),
                                             fr->natoms,
                                             DIM,
@@ -1646,11 +1648,11 @@ gmx_bool gmx_get_tng_data_next_frame_of_block_type(tng_trajectory_t input,
         *nAtoms = 1; /* There are not actually any atoms, but it is used for
                         allocating memory */
         stat    = tng_util_non_particle_data_next_frame_read(input,
-                                                             blockId,
-                                                             &data,
-                                                             &datatype,
-                                                             frameNumber,
-                                                             frameTime);
+                                                          blockId,
+                                                          &data,
+                                                          &datatype,
+                                                          frameNumber,
+                                                          frameTime);
     }
     if (stat == TNG_CRITICAL)
     {

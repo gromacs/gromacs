@@ -65,18 +65,18 @@ namespace internal
 
 void throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)> &function,
                                                    const std::function<double(double)> &derivative,
-                                                   const std::pair<real, real>          &range)
+                                                   const std::pair<real, real> &range)
 {
     // Since the numerical derivative will evaluate extra points
     // we shrink the interval slightly to avoid calling the function with values
     // outside the range specified.
-    double                    h = std::cbrt(GMX_DOUBLE_EPS);             // ideal spacing
+    double h = std::cbrt(GMX_DOUBLE_EPS); // ideal spacing
     std::pair<double, double> newRange(range.first + h, range.second - h);
-    const int                 points       = 1000;                       // arbitrary
-    double                    dx           = (newRange.second - newRange.first) / points;
-    bool                      isConsistent = true;
-    double                    minFail      = newRange.second;
-    double                    maxFail      = newRange.first;
+    const int points       = 1000; // arbitrary
+    double    dx           = (newRange.second - newRange.first) / points;
+    bool      isConsistent = true;
+    double    minFail      = newRange.second;
+    double    maxFail      = newRange.first;
 
     for (double x = newRange.first; x <= newRange.second; x += dx)
     {
@@ -108,8 +108,8 @@ void throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(do
 
 void throwUnlessDerivativeIsConsistentWithFunction(ConstArrayRef<double> function,
                                                    ConstArrayRef<double> derivative,
-                                                   double inputSpacing,
-                                                   const std::pair<real, real>  &range)
+                                                   double                inputSpacing,
+                                                   const std::pair<real, real> &range)
 {
     std::size_t firstIndex   = range.first / inputSpacing;
     std::size_t lastIndex    = range.second / inputSpacing;
@@ -156,14 +156,14 @@ void throwUnlessDerivativeIsConsistentWithFunction(ConstArrayRef<double> functio
  * \param[in]    spacing       Value of h.
  * \param[inout] minQuotient   Current minimum of such quotients, updated if this quotient is smaller.
  */
-static void updateMinQuotientOfFunctionAndSecondDerivative(double   previousPoint,
-                                                           double   thisPoint,
-                                                           double   nextPoint,
-                                                           double   spacing,
-                                                           double * minQuotient)
+static void updateMinQuotientOfFunctionAndSecondDerivative(double  previousPoint,
+                                                           double  thisPoint,
+                                                           double  nextPoint,
+                                                           double  spacing,
+                                                           double *minQuotient)
 {
-    double value            = std::abs( thisPoint );
-    double secondDerivative = std::abs( (previousPoint - 2.0 * thisPoint + nextPoint) / (spacing * spacing ) );
+    double value            = std::abs(thisPoint);
+    double secondDerivative = std::abs((previousPoint - 2.0 * thisPoint + nextPoint) / (spacing * spacing));
 
     // Make sure we do not divide by zero. This limit is arbitrary,
     // but it doesnt matter since this point will have a very large value,
@@ -175,16 +175,16 @@ static void updateMinQuotientOfFunctionAndSecondDerivative(double   previousPoin
 
 
 real findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(double)> &f,
-                                                       const std::pair<real, real>           &range)
+                                                       const std::pair<real, real> &range)
 {
     // Since the numerical second derivative will evaluate extra points
     // we shrink the interval slightly to avoid calling the function with values
     // outside the range specified.
-    double                    h = std::pow( GMX_DOUBLE_EPS, 0.25 );
+    double h = std::pow(GMX_DOUBLE_EPS, 0.25);
     std::pair<double, double> newRange(range.first + h, range.second - h);
-    const int                 points      = 1000;  // arbitrary
-    double                    dx          = (newRange.second - newRange.first) / points;
-    double                    minQuotient = GMX_REAL_MAX;
+    const int points      = 1000; // arbitrary
+    double    dx          = (newRange.second - newRange.first) / points;
+    double    minQuotient = GMX_REAL_MAX;
 
     for (double x = newRange.first; x <= newRange.second; x += dx)
     {
@@ -194,16 +194,12 @@ real findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<doubl
 }
 
 
-
-
-
-
 real findSmallestQuotientOfFunctionAndSecondDerivative(ConstArrayRef<double> function,
-                                                       double inputSpacing,
-                                                       const std::pair<real, real>   &range)
+                                                       double                inputSpacing,
+                                                       const std::pair<real, real> &range)
 {
 
-    std::size_t firstIndex  = range.first  / inputSpacing;
+    std::size_t firstIndex  = range.first / inputSpacing;
     std::size_t lastIndex   = range.second / inputSpacing;
     double      minQuotient = GMX_REAL_MAX;
 
@@ -213,7 +209,6 @@ real findSmallestQuotientOfFunctionAndSecondDerivative(ConstArrayRef<double> fun
     }
     return static_cast<real>(minQuotient);
 }
-
 
 
 /*! \brief Update minQuotient if the ratio of this function value and its third derivative is smaller
@@ -229,15 +224,15 @@ real findSmallestQuotientOfFunctionAndSecondDerivative(ConstArrayRef<double> fun
  * \param[in]    spacing               Value of h.
  * \param[inout] minQuotient   Current minimum of such quotients, updated if this quotient is smaller.
  */
-static void updateMinQuotientOfFunctionAndThirdDerivative(double   previousPreviousPoint,
-                                                          double   previousPoint,
-                                                          double   thisPoint,
-                                                          double   nextPoint,
-                                                          double   nextNextPoint,
-                                                          double   spacing,
-                                                          double * minQuotient)
+static void updateMinQuotientOfFunctionAndThirdDerivative(double  previousPreviousPoint,
+                                                          double  previousPoint,
+                                                          double  thisPoint,
+                                                          double  nextPoint,
+                                                          double  nextNextPoint,
+                                                          double  spacing,
+                                                          double *minQuotient)
 {
-    double value           = std::abs( thisPoint );
+    double value           = std::abs(thisPoint);
     double thirdDerivative = std::abs((nextNextPoint - 2 * nextPoint + 2 * previousPoint - previousPreviousPoint) / (2 * spacing * spacing * spacing));
 
     // Make sure we do not divide by zero. This limit is arbitrary,
@@ -250,16 +245,16 @@ static void updateMinQuotientOfFunctionAndThirdDerivative(double   previousPrevi
 
 
 real findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(double)> &f,
-                                                      const std::pair<real, real>           &range)
+                                                      const std::pair<real, real> &range)
 {
     // Since the numerical second derivative will evaluate extra points
     // we shrink the interval slightly to avoid calling the function with values
     // outside the range specified.
-    double                    h = std::pow( GMX_DOUBLE_EPS, 0.2 );            // optimal spacing for 3rd derivative
+    double h = std::pow(GMX_DOUBLE_EPS, 0.2); // optimal spacing for 3rd derivative
     std::pair<double, double> newRange(range.first + 2 * h, range.second - 2 * h);
-    const int                 points      = 1000;                             // arbitrary
-    double                    dx          = (newRange.second - newRange.first) / points;
-    double                    minQuotient = GMX_REAL_MAX;
+    const int points      = 1000; // arbitrary
+    double    dx          = (newRange.second - newRange.first) / points;
+    double    minQuotient = GMX_REAL_MAX;
 
     for (double x = newRange.first; x <= newRange.second; x += dx)
     {
@@ -270,11 +265,11 @@ real findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double
 
 
 real findSmallestQuotientOfFunctionAndThirdDerivative(ConstArrayRef<double> function,
-                                                      double inputSpacing,
-                                                      const std::pair<real, real>   &range)
+                                                      double                inputSpacing,
+                                                      const std::pair<real, real> &range)
 {
 
-    std::size_t firstIndex  = range.first  / inputSpacing;
+    std::size_t firstIndex  = range.first / inputSpacing;
     std::size_t lastIndex   = range.second / inputSpacing;
     double      minQuotient = GMX_REAL_MAX;
 
@@ -284,7 +279,6 @@ real findSmallestQuotientOfFunctionAndThirdDerivative(ConstArrayRef<double> func
     }
     return static_cast<real>(minQuotient);
 }
-
 
 
 std::vector<double>
@@ -300,9 +294,9 @@ vectorSecondDerivative(ConstArrayRef<double> f, double spacing)
 
     // 5-point formula evaluated for points 0,1
     i    = 0;
-    d[i] = (11 * f[i + 4] - 56 * f[i + 3] + 114 * f[i + 2] - 104 * f[i + 1] + 35 * f[i]) / ( 12 * spacing * spacing);
+    d[i] = (11 * f[i + 4] - 56 * f[i + 3] + 114 * f[i + 2] - 104 * f[i + 1] + 35 * f[i]) / (12 * spacing * spacing);
     i    = 1;
-    d[i] = (-f[i + 3] + 4 * f[i + 2] + 6 * f[i + 1] - 20 * f[i] + 11 * f[i - 1]) / ( 12 * spacing * spacing);
+    d[i] = (-f[i + 3] + 4 * f[i + 2] + 6 * f[i + 1] - 20 * f[i] + 11 * f[i - 1]) / (12 * spacing * spacing);
 
     for (std::size_t i = 2; i < d.size() - 2; i++)
     {
@@ -312,15 +306,14 @@ vectorSecondDerivative(ConstArrayRef<double> f, double spacing)
 
     // 5-point formula evaluated for points 3,4
     i    = d.size() - 2;
-    d[i] = (11 * f[i + 1] - 20 * f[i] + 6 * f[i - 1] + 4 * f[i - 2] - f[i - 3]) / ( 12 * spacing * spacing);
+    d[i] = (11 * f[i + 1] - 20 * f[i] + 6 * f[i - 1] + 4 * f[i - 2] - f[i - 3]) / (12 * spacing * spacing);
     i    = d.size() - 1;
-    d[i] = (35 * f[i] - 104 * f[i - 1] + 114 * f[i - 2] - 56 * f[i - 3] + 11 * f[i - 4]) / ( 12 * spacing * spacing);
+    d[i] = (35 * f[i] - 104 * f[i - 1] + 114 * f[i - 2] - 56 * f[i - 3] + 11 * f[i - 4]) / (12 * spacing * spacing);
 
     return d;
 }
 
 
+} // namespace internal
 
-}  // namespace internal
-
-}  // namespace gmx
+} // namespace gmx

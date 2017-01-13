@@ -196,7 +196,7 @@ private:
  */
 template <class ModuleInfo>
 class TrajectoryAnalysisModuleTestFixture
-    : public AbstractTrajectoryAnalysisModuleTestFixture
+        : public AbstractTrajectoryAnalysisModuleTestFixture
 {
 protected:
     virtual TrajectoryAnalysisModulePointer createModule()

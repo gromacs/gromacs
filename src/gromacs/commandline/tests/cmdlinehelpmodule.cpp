@@ -72,7 +72,7 @@ TEST_F(CommandLineHelpModuleTest, PrintsGeneralHelp)
     const char *const cmdline[] = {
         "test"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     initManager(args, "test");
     addModule("module", "First module");
     addModule("other", "Second module");
@@ -88,7 +88,7 @@ TEST_F(CommandLineHelpModuleTest, PrintsHelpOnTopic)
     const char *const cmdline[] = {
         "test", "help", "topic"
     };
-    CommandLine       args(cmdline);
+    CommandLine args(cmdline);
     initManager(args, "test");
     addModule("module", "First module");
     MockHelpTopic &topic = addHelpTopic("topic", "Test topic");

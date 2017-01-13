@@ -119,7 +119,7 @@ float floatFromString(const char *str)
     const double value = std::strtod(str, &endptr);
     if (errno == ERANGE
         || value < -std::numeric_limits<float>::max()
-        || value >  std::numeric_limits<float>::max())
+        || value > std::numeric_limits<float>::max())
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
                                     + "'; it causes an overflow/underflow"));

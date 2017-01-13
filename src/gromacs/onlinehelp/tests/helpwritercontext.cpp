@@ -69,7 +69,7 @@ public:
     {
         gmx::HelpWriterContext context(nullptr, format);
         std::string            result
-            = context.substituteMarkupAndWrapToString(settings_, text);
+                = context.substituteMarkupAndWrapToString(settings_, text);
         if (id == nullptr)
         {
             switch (format)

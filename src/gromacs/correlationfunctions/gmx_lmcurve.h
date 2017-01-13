@@ -46,10 +46,10 @@
 #include <lmstruct.h>
 
 //! Calls lmmin with the given data, with callback function \c f.
-void gmx_lmcurve( const int n_par, double *par, const int m_dat,
-                  const double *t, const double *y, const double *dy,
-                  double (*f)(double t, const double *par ),
-                  const lm_control_struct *control,
-                  lm_status_struct *status );
+void gmx_lmcurve(const int n_par, double *par, const int m_dat,
+                 const double *t, const double *y, const double *dy,
+                 double (*f)(double t, const double *par),
+                 const lm_control_struct *control,
+                 lm_status_struct *       status);
 
 #endif

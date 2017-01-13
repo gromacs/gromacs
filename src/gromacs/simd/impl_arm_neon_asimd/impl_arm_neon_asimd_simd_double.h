@@ -52,10 +52,12 @@ class SimdDouble
 public:
     SimdDouble() {}
 
-    SimdDouble(double d) : simdInternal_(vdupq_n_f64(d)) {}
+    SimdDouble(double d)
+        : simdInternal_(vdupq_n_f64(d)) {}
 
     // Internal utility constructor to simplify return statements
-    SimdDouble(float64x2_t simd) : simdInternal_(simd) {}
+    SimdDouble(float64x2_t simd)
+        : simdInternal_(simd) {}
 
     float64x2_t simdInternal_;
 };
@@ -65,10 +67,12 @@ class SimdDInt32
 public:
     SimdDInt32() {}
 
-    SimdDInt32(std::int32_t i) : simdInternal_(vdup_n_s32(i)) {}
+    SimdDInt32(std::int32_t i)
+        : simdInternal_(vdup_n_s32(i)) {}
 
     // Internal utility constructor to simplify return statements
-    SimdDInt32(int32x2_t simd) : simdInternal_(simd) {}
+    SimdDInt32(int32x2_t simd)
+        : simdInternal_(simd) {}
 
     int32x2_t simdInternal_;
 };
@@ -78,10 +82,12 @@ class SimdDBool
 public:
     SimdDBool() {}
 
-    SimdDBool(bool b) : simdInternal_(vdupq_n_u64( b ? 0xFFFFFFFFFFFFFFFF : 0)) {}
+    SimdDBool(bool b)
+        : simdInternal_(vdupq_n_u64(b ? 0xFFFFFFFFFFFFFFFF : 0)) {}
 
     // Internal utility constructor to simplify return statements
-    SimdDBool(uint64x2_t simd) : simdInternal_(simd) {}
+    SimdDBool(uint64x2_t simd)
+        : simdInternal_(simd) {}
 
     uint64x2_t simdInternal_;
 };
@@ -91,10 +97,12 @@ class SimdDIBool
 public:
     SimdDIBool() {}
 
-    SimdDIBool(bool b) : simdInternal_(vdup_n_u32( b ? 0xFFFFFFFF : 0)) {}
+    SimdDIBool(bool b)
+        : simdInternal_(vdup_n_u32(b ? 0xFFFFFFFF : 0)) {}
 
     // Internal utility constructor to simplify return statements
-    SimdDIBool(uint32x2_t simd) : simdInternal_(simd) {}
+    SimdDIBool(uint32x2_t simd)
+        : simdInternal_(simd) {}
 
     uint32x2_t simdInternal_;
 };
@@ -103,7 +111,7 @@ static inline SimdDouble gmx_simdcall simdLoad(const double *m)
 {
     assert(std::size_t(m) % 16 == 0);
     return {
-               vld1q_f64(m)
+        vld1q_f64(m)
     };
 }
 
@@ -116,7 +124,7 @@ static inline void gmx_simdcall store(double *m, SimdDouble a)
 static inline SimdDouble gmx_simdcall simdLoadU(const double *m)
 {
     return {
-               vld1q_f64(m)
+        vld1q_f64(m)
     };
 }
 
@@ -128,19 +136,19 @@ static inline void gmx_simdcall storeU(double *m, SimdDouble a)
 static inline SimdDouble gmx_simdcall setZeroD()
 {
     return {
-               vdupq_n_f64(0.0)
+        vdupq_n_f64(0.0)
     };
 }
 
-static inline SimdDInt32 gmx_simdcall simdLoadDI(const std::int32_t * m)
+static inline SimdDInt32 gmx_simdcall simdLoadDI(const std::int32_t *m)
 {
     assert(std::size_t(m) % 8 == 0);
     return {
-               vld1_s32(m)
+        vld1_s32(m)
     };
 }
 
-static inline void gmx_simdcall store(std::int32_t * m, SimdDInt32 a)
+static inline void gmx_simdcall store(std::int32_t *m, SimdDInt32 a)
 {
     assert(std::size_t(m) % 8 == 0);
     vst1_s32(m, a.simdInternal_);
@@ -149,11 +157,11 @@ static inline void gmx_simdcall store(std::int32_t * m, SimdDInt32 a)
 static inline SimdDInt32 gmx_simdcall simdLoadUDI(const std::int32_t *m)
 {
     return {
-               vld1_s32(m)
+        vld1_s32(m)
     };
 }
 
-static inline void gmx_simdcall storeU(std::int32_t * m, SimdDInt32 a)
+static inline void gmx_simdcall storeU(std::int32_t *m, SimdDInt32 a)
 {
     vst1_s32(m, a.simdInternal_);
 }
@@ -161,12 +169,12 @@ static inline void gmx_simdcall storeU(std::int32_t * m, SimdDInt32 a)
 static inline SimdDInt32 gmx_simdcall setZeroDI()
 {
     return {
-               vdup_n_s32(0)
+        vdup_n_s32(0)
     };
 }
 
-template <int index> gmx_simdcall
-static inline std::int32_t extract(SimdDInt32 a)
+template <int                           index>
+gmx_simdcall static inline std::int32_t extract(SimdDInt32 a)
 {
     return vget_lane_s32(a.simdInternal_, index);
 }
@@ -174,112 +182,112 @@ static inline std::int32_t extract(SimdDInt32 a)
 static inline SimdDouble gmx_simdcall operator&(SimdDouble a, SimdDouble b)
 {
     return {
-               float64x2_t(vandq_s64(int64x2_t(a.simdInternal_), int64x2_t(b.simdInternal_)))
+        float64x2_t(vandq_s64(int64x2_t(a.simdInternal_), int64x2_t(b.simdInternal_)))
     };
 }
 
 static inline SimdDouble gmx_simdcall andNot(SimdDouble a, SimdDouble b)
 {
     return {
-               float64x2_t(vbicq_s64(int64x2_t(b.simdInternal_), int64x2_t(a.simdInternal_)))
+        float64x2_t(vbicq_s64(int64x2_t(b.simdInternal_), int64x2_t(a.simdInternal_)))
     };
 }
 
 static inline SimdDouble gmx_simdcall operator|(SimdDouble a, SimdDouble b)
 {
     return {
-               float64x2_t(vorrq_s64(int64x2_t(a.simdInternal_), int64x2_t(b.simdInternal_)))
+        float64x2_t(vorrq_s64(int64x2_t(a.simdInternal_), int64x2_t(b.simdInternal_)))
     };
 }
 
 static inline SimdDouble gmx_simdcall operator^(SimdDouble a, SimdDouble b)
 {
     return {
-               float64x2_t(veorq_s64(int64x2_t(a.simdInternal_), int64x2_t(b.simdInternal_)))
+        float64x2_t(veorq_s64(int64x2_t(a.simdInternal_), int64x2_t(b.simdInternal_)))
     };
 }
 
 static inline SimdDouble gmx_simdcall operator+(SimdDouble a, SimdDouble b)
 {
     return {
-               vaddq_f64(a.simdInternal_, b.simdInternal_)
+        vaddq_f64(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall operator-(SimdDouble a, SimdDouble b)
 {
     return {
-               vsubq_f64(a.simdInternal_, b.simdInternal_)
+        vsubq_f64(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall operator-(SimdDouble x)
 {
     return {
-               vnegq_f64(x.simdInternal_)
+        vnegq_f64(x.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall operator*(SimdDouble a, SimdDouble b)
 {
     return {
-               vmulq_f64(a.simdInternal_, b.simdInternal_)
+        vmulq_f64(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall fma(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
-               vfmaq_f64(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+        vfmaq_f64(c.simdInternal_, b.simdInternal_, a.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall fms(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
-               vnegq_f64(vfmsq_f64(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+        vnegq_f64(vfmsq_f64(c.simdInternal_, b.simdInternal_, a.simdInternal_))
     };
 }
 
 static inline SimdDouble gmx_simdcall fnma(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
-               vfmsq_f64(c.simdInternal_, b.simdInternal_, a.simdInternal_)
+        vfmsq_f64(c.simdInternal_, b.simdInternal_, a.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall fnms(SimdDouble a, SimdDouble b, SimdDouble c)
 {
     return {
-               vnegq_f64(vfmaq_f64(c.simdInternal_, b.simdInternal_, a.simdInternal_))
+        vnegq_f64(vfmaq_f64(c.simdInternal_, b.simdInternal_, a.simdInternal_))
     };
 }
 
 static inline SimdDouble gmx_simdcall rsqrt(SimdDouble x)
 {
     return {
-               vrsqrteq_f64(x.simdInternal_)
+        vrsqrteq_f64(x.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall rsqrtIter(SimdDouble lu, SimdDouble x)
 {
     return {
-               vmulq_f64(lu.simdInternal_, vrsqrtsq_f64(vmulq_f64(lu.simdInternal_, lu.simdInternal_), x.simdInternal_))
+        vmulq_f64(lu.simdInternal_, vrsqrtsq_f64(vmulq_f64(lu.simdInternal_, lu.simdInternal_), x.simdInternal_))
     };
 }
 
 static inline SimdDouble gmx_simdcall rcp(SimdDouble x)
 {
     return {
-               vrecpeq_f64(x.simdInternal_)
+        vrecpeq_f64(x.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall rcpIter(SimdDouble lu, SimdDouble x)
 {
     return {
-               vmulq_f64(lu.simdInternal_, vrecpsq_f64(lu.simdInternal_, x.simdInternal_))
+        vmulq_f64(lu.simdInternal_, vrecpsq_f64(lu.simdInternal_, x.simdInternal_))
     };
 }
 
@@ -288,7 +296,7 @@ static inline SimdDouble gmx_simdcall maskAdd(SimdDouble a, SimdDouble b, SimdDB
     float64x2_t addend = float64x2_t(vandq_u64(uint64x2_t(b.simdInternal_), m.simdInternal_));
 
     return {
-               vaddq_f64(a.simdInternal_, addend)
+        vaddq_f64(a.simdInternal_, addend)
     };
 }
 
@@ -296,7 +304,7 @@ static inline SimdDouble gmx_simdcall maskzMul(SimdDouble a, SimdDouble b, SimdD
 {
     float64x2_t prod = vmulq_f64(a.simdInternal_, b.simdInternal_);
     return {
-               float64x2_t(vandq_u64(uint64x2_t(prod), m.simdInternal_))
+        float64x2_t(vandq_u64(uint64x2_t(prod), m.simdInternal_))
     };
 }
 
@@ -305,14 +313,14 @@ static inline SimdDouble gmx_simdcall maskzFma(SimdDouble a, SimdDouble b, SimdD
     float64x2_t prod = vfmaq_f64(c.simdInternal_, b.simdInternal_, a.simdInternal_);
 
     return {
-               float64x2_t(vandq_u64(uint64x2_t(prod), m.simdInternal_))
+        float64x2_t(vandq_u64(uint64x2_t(prod), m.simdInternal_))
     };
 }
 
 static inline SimdDouble gmx_simdcall maskzRsqrt(SimdDouble x, SimdDBool m)
 {
-    // The result will always be correct since we mask the result with m, but
-    // for debug builds we also want to make sure not to generate FP exceptions
+// The result will always be correct since we mask the result with m, but
+// for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
     x.simdInternal_ = vbslq_f64(m.simdInternal_, vdupq_n_f64(1.0, x.simdInternal_);
 #endif
@@ -323,8 +331,8 @@ static inline SimdDouble gmx_simdcall maskzRsqrt(SimdDouble x, SimdDBool m)
 
 static inline SimdDouble gmx_simdcall maskzRcp(SimdDouble x, SimdDBool m)
 {
-    // The result will always be correct since we mask the result with m, but
-    // for debug builds we also want to make sure not to generate FP exceptions
+// The result will always be correct since we mask the result with m, but
+// for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
     x.simdInternal_ = vbslq_f64(m.simdInternal_, vdupq_n_f64(1.0, x.simdInternal_);
 #endif
@@ -336,53 +344,53 @@ static inline SimdDouble gmx_simdcall maskzRcp(SimdDouble x, SimdDBool m)
 static inline SimdDouble gmx_simdcall abs(SimdDouble x)
 {
     return {
-               vabsq_f64( x.simdInternal_ )
+        vabsq_f64(x.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall max(SimdDouble a, SimdDouble b)
 {
     return {
-               vmaxq_f64(a.simdInternal_, b.simdInternal_)
+        vmaxq_f64(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall min(SimdDouble a, SimdDouble b)
 {
     return {
-               vminq_f64(a.simdInternal_, b.simdInternal_)
+        vminq_f64(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall round(SimdDouble x)
 {
     return {
-               vrndnq_f64(x.simdInternal_)
+        vrndnq_f64(x.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall trunc(SimdDouble x)
 {
     return {
-               vrndq_f64( x.simdInternal_ )
+        vrndq_f64(x.simdInternal_)
     };
 }
 
-static inline SimdDouble frexp(SimdDouble value, SimdDInt32 * exponent)
+static inline SimdDouble frexp(SimdDouble value, SimdDInt32 *exponent)
 {
-    const float64x2_t exponentMask = float64x2_t( vdupq_n_s64(0x7FF0000000000000LL) );
-    const float64x2_t mantissaMask = float64x2_t( vdupq_n_s64(0x800FFFFFFFFFFFFFLL) );
+    const float64x2_t exponentMask = float64x2_t(vdupq_n_s64(0x7FF0000000000000LL));
+    const float64x2_t mantissaMask = float64x2_t(vdupq_n_s64(0x800FFFFFFFFFFFFFLL));
 
     const int64x2_t   exponentBias = vdupq_n_s64(1022); // add 1 to make our definition identical to frexp()
     const float64x2_t half         = vdupq_n_f64(0.5);
     int64x2_t         iExponent;
 
-    iExponent               = vandq_s64( int64x2_t(value.simdInternal_), int64x2_t(exponentMask) );
+    iExponent               = vandq_s64(int64x2_t(value.simdInternal_), int64x2_t(exponentMask));
     iExponent               = vsubq_s64(vshrq_n_s64(iExponent, 52), exponentBias);
     exponent->simdInternal_ = vmovn_s64(iExponent);
 
     return {
-               float64x2_t(vorrq_s64(vandq_s64(int64x2_t(value.simdInternal_), int64x2_t(mantissaMask)), int64x2_t(half)))
+        float64x2_t(vorrq_s64(vandq_s64(int64x2_t(value.simdInternal_), int64x2_t(mantissaMask)), int64x2_t(half)))
     };
 }
 
@@ -395,7 +403,7 @@ static inline SimdDouble ldexp(SimdDouble value, SimdDInt32 exponent)
     iExponent = vshlq_n_s64(vaddq_s64(iExponent, exponentBias), 52);
 
     return {
-               vmulq_f64(value.simdInternal_, float64x2_t(iExponent))
+        vmulq_f64(value.simdInternal_, float64x2_t(iExponent))
     };
 }
 
@@ -408,49 +416,49 @@ static inline double gmx_simdcall reduce(SimdDouble a)
 static inline SimdDBool gmx_simdcall operator==(SimdDouble a, SimdDouble b)
 {
     return {
-               vceqq_f64(a.simdInternal_, b.simdInternal_)
+        vceqq_f64(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdDBool gmx_simdcall operator!=(SimdDouble a, SimdDouble b)
 {
     return {
-               vreinterpretq_u64_u32(vmvnq_u32(vreinterpretq_u32_u64(vceqq_f64(a.simdInternal_, b.simdInternal_))))
+        vreinterpretq_u64_u32(vmvnq_u32(vreinterpretq_u32_u64(vceqq_f64(a.simdInternal_, b.simdInternal_))))
     };
 }
 
 static inline SimdDBool gmx_simdcall operator<(SimdDouble a, SimdDouble b)
 {
     return {
-               vcltq_f64(a.simdInternal_, b.simdInternal_)
+        vcltq_f64(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdDBool gmx_simdcall operator<=(SimdDouble a, SimdDouble b)
 {
     return {
-               vcleq_f64(a.simdInternal_, b.simdInternal_)
+        vcleq_f64(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdDBool gmx_simdcall testBits(SimdDouble a)
 {
     return {
-               vtstq_s64( int64x2_t(a.simdInternal_), int64x2_t(a.simdInternal_) )
+        vtstq_s64(int64x2_t(a.simdInternal_), int64x2_t(a.simdInternal_))
     };
 }
 
 static inline SimdDBool gmx_simdcall operator&&(SimdDBool a, SimdDBool b)
 {
     return {
-               vandq_u64(a.simdInternal_, b.simdInternal_)
+        vandq_u64(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdDBool gmx_simdcall operator||(SimdDBool a, SimdDBool b)
 {
     return {
-               vorrq_u64(a.simdInternal_, b.simdInternal_)
+        vorrq_u64(a.simdInternal_, b.simdInternal_)
     };
 }
 
@@ -553,7 +561,7 @@ static inline SimdDIBool gmx_simdcall operator==(SimdDInt32 a, SimdDInt32 b)
 static inline SimdDIBool gmx_simdcall testBits(SimdDInt32 a)
 {
     return {
-        vtst_s32( a.simdInternal_, a.simdInternal_)
+        vtst_s32(a.simdInternal_, a.simdInternal_)
     };
 }
 
@@ -652,6 +660,6 @@ static inline SimdFloat gmx_simdcall cvtDD2F(SimdDouble d0, SimdDouble d1)
     };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD_DOUBLE_H

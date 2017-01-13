@@ -164,7 +164,7 @@ bool isTitleUnderline(const std::string &text, size_t index)
     return false;
 }
 
-}    // namespace
+} // namespace
 
 /********************************************************************
  * RstParagraphIterator

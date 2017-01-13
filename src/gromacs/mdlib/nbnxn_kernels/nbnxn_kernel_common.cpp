@@ -107,18 +107,18 @@ void reduce_energies_over_lists(const nbnxn_atomdata_t *nbat,
         for (i = 0; i < nbat->nenergrp; i++)
         {
             /* Reduce the diagonal terms */
-            ind        = i * nbat->nenergrp + i;
+            ind = i * nbat->nenergrp + i;
             Vvdw[ind] += nbat->out[nb].Vvdw[ind];
-            Vc[ind]   += nbat->out[nb].Vc[ind];
+            Vc[ind] += nbat->out[nb].Vc[ind];
 
             /* Reduce the off-diagonal terms */
             for (j = i + 1; j < nbat->nenergrp; j++)
             {
                 /* The output should contain only one off-diagonal part */
-                ind        = i * nbat->nenergrp + j;
-                indr       = j * nbat->nenergrp + i;
+                ind  = i * nbat->nenergrp + j;
+                indr = j * nbat->nenergrp + i;
                 Vvdw[ind] += nbat->out[nb].Vvdw[ind] + nbat->out[nb].Vvdw[indr];
-                Vc[ind]   += nbat->out[nb].Vc[ind]   + nbat->out[nb].Vc[indr];
+                Vc[ind] += nbat->out[nb].Vc[ind] + nbat->out[nb].Vc[indr];
             }
         }
     }

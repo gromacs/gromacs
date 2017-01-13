@@ -48,12 +48,19 @@ class MDLogger;
 }
 
 /** Enum values corresponding to multithreaded algorithmic modules. */
-typedef enum module_nth
-{
+typedef enum module_nth {
     /* Default is meant to be used in OMP regions outside the named
      * algorithmic modules listed below. */
-    emntDefault, emntDomdec, emntPairsearch, emntNonbonded,
-    emntBonded, emntPME,  emntUpdate, emntVSITE, emntLINCS, emntSETTLE,
+    emntDefault,
+    emntDomdec,
+    emntPairsearch,
+    emntNonbonded,
+    emntBonded,
+    emntPME,
+    emntUpdate,
+    emntVSITE,
+    emntLINCS,
+    emntSETTLE,
     emntNR
 } module_nth_t;
 
@@ -64,9 +71,9 @@ typedef enum module_nth
  * available with tMPI).
  * This function should caled only once during the initialization of mdrun. */
 void gmx_omp_nthreads_init(const gmx::MDLogger &fplog, t_commrec *cr,
-                           int nthreads_hw_avail,
-                           int omp_nthreads_req,
-                           int omp_nthreads_pme_req,
+                           int      nthreads_hw_avail,
+                           int      omp_nthreads_req,
+                           int      omp_nthreads_pme_req,
                            gmx_bool bCurrNodePMEOnly,
                            gmx_bool bFullOmpSupport);
 

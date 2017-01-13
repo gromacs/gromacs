@@ -67,63 +67,55 @@
 #include "gromacs/utility/smalloc.h"
 
 /* print to two file pointers at once (i.e. stderr and log) */
-static gmx_inline
-void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
+static gmx_inline void lo_ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 {
     fprintf(fp1, "%s", buf);
     fprintf(fp2, "%s", buf);
 }
 
 /* just print a prepared buffer to fp1 and fp2 */
-static gmx_inline
-void ffprintf(FILE *fp1, FILE *fp2, const char *buf)
+static gmx_inline void ffprintf(FILE *fp1, FILE *fp2, const char *buf)
 {
     lo_ffprintf(fp1, fp2, buf);
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static gmx_inline
-void ffprintf_d(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg)
+static gmx_inline void ffprintf_d(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg)
 {
     sprintf(buf, fmt, arg);
     lo_ffprintf(fp1, fp2, buf);
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static gmx_inline
-void ffprintf_g(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg)
+static gmx_inline void ffprintf_g(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg)
 {
     sprintf(buf, fmt, arg);
     lo_ffprintf(fp1, fp2, buf);
 }
 
 /* prepare buffer with one argument, then print to fp1 and fp2 */
-static gmx_inline
-void ffprintf_s(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg)
+static gmx_inline void ffprintf_s(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg)
 {
     sprintf(buf, fmt, arg);
     lo_ffprintf(fp1, fp2, buf);
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static gmx_inline
-void ffprintf_dd(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg1, int arg2)
+static gmx_inline void ffprintf_dd(FILE *fp1, FILE *fp2, char *buf, const char *fmt, int arg1, int arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
     lo_ffprintf(fp1, fp2, buf);
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static gmx_inline
-void ffprintf_gg(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg1, real arg2)
+static gmx_inline void ffprintf_gg(FILE *fp1, FILE *fp2, char *buf, const char *fmt, real arg1, real arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
     lo_ffprintf(fp1, fp2, buf);
 }
 
 /* prepare buffer with two arguments, then print to fp1 and fp2 */
-static gmx_inline
-void ffprintf_ss(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg1, const char *arg2)
+static gmx_inline void ffprintf_ss(FILE *fp1, FILE *fp2, char *buf, const char *fmt, const char *arg1, const char *arg2)
 {
     sprintf(buf, fmt, arg1, arg2);
     lo_ffprintf(fp1, fp2, buf);
@@ -178,7 +170,7 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
     printf("Using random seed %d.\n", seed);
 
     iswap = jswap = -1;
-    enorm = m->mat[0][0];
+    enorm         = m->mat[0][0];
     for (i = 0; (i < m->n1); i++)
     {
         for (j = 0; (j < m->nn); j++)
@@ -322,7 +314,7 @@ static real rms_dist(int isize, real **d, real **d_r)
     {
         for (j = i + 1; (j < isize); j++)
         {
-            r   = d[i][j] - d_r[i][j];
+            r = d[i][j] - d_r[i][j];
             r2 += r * r;
         }
     }
@@ -510,7 +502,7 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
             snew(nnb[i], M + 1);
             for (j = k = 0; (k < M) && (j < n1) && (mat[i][row[j].j] < rmsdcut); j++)
             {
-                if (row[j].j  != i)
+                if (row[j].j != i)
                 {
                     nnb[i][k] = row[j].j;
                     k++;
@@ -640,7 +632,7 @@ static void jarvis_patrick(int n1, real **mat, int M, int P,
     sfree(nnb);
 }
 
-static void dump_nnb (FILE *fp, const char *title, int n1, t_nnb *nnb)
+static void dump_nnb(FILE *fp, const char *title, int n1, t_nnb *nnb)
 {
     int i, j;
 
@@ -803,7 +795,7 @@ rvec **read_whole_trj(const char *fn, int isize, int index[], int skip,
         i++;
     } while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "Allocated %lu bytes for frames\n",
-            (unsigned long) (max_nf * isize * sizeof(**xx)));
+            (unsigned long)(max_nf * isize * sizeof(**xx)));
     fprintf(stderr, "Read %d frames from trajectory %s\n", i0, fn);
     *nframe = i0;
     sfree(x);
@@ -948,8 +940,10 @@ static void ana_trans(t_clusters *clust, int nf,
             maxtrans = static_cast<int>(std::max(static_cast<real>(maxtrans), trans[clust->cl[i] - 1][clust->cl[i - 1] - 1]));
         }
     }
-    ffprintf_dd(stderr, log, buf, "Counted %d transitions in total, "
-                "max %d between two specific clusters\n", ntranst, maxtrans);
+    ffprintf_dd(stderr, log, buf,
+                "Counted %d transitions in total, "
+                "max %d between two specific clusters\n",
+                ntranst, maxtrans);
     if (transfn)
     {
         fp = gmx_ffopen(transfn, "w");
@@ -1107,7 +1101,7 @@ static void analyze_clusters(int nf, t_clusters *clust, real **rmsd,
             {
                 structure[nstr] = i1;
                 nstr++;
-                if (trxfn && (bAverage || write_ncl) )
+                if (trxfn && (bAverage || write_ncl))
                 {
                     if (bFit)
                     {
@@ -1303,7 +1297,7 @@ static void convert_mat(t_matrix *mat, t_mat *rms)
         for (j = i; j < mat->nx; j++)
         {
             rms->sumrms += rms->mat[i][j];
-            rms->maxrms  = std::max(rms->maxrms, rms->mat[i][j]);
+            rms->maxrms = std::max(rms->maxrms, rms->mat[i][j]);
             if (j != i)
             {
                 rms->minrms = std::min(rms->minrms, rms->mat[i][j]);
@@ -1420,84 +1414,72 @@ int gmx_cluster(int argc, char *argv[])
     };
     enum
     {
-        m_null, m_linkage, m_jarvis_patrick,
-        m_monte_carlo, m_diagonalize, m_gromos, m_nr
+        m_null,
+        m_linkage,
+        m_jarvis_patrick,
+        m_monte_carlo,
+        m_diagonalize,
+        m_gromos,
+        m_nr
     };
     /* Set colors for plotting: white = zero RMS, black = maximum */
-    static t_rgb      rlo_top  = { 1.0, 1.0, 1.0 };
-    static t_rgb      rhi_top  = { 0.0, 0.0, 0.0 };
-    static t_rgb      rlo_bot  = { 1.0, 1.0, 1.0 };
-    static t_rgb      rhi_bot  = { 0.0, 0.0, 1.0 };
-    static int        nlevels  = 40, skip = 1;
+    static t_rgb      rlo_top = { 1.0, 1.0, 1.0 };
+    static t_rgb      rhi_top = { 0.0, 0.0, 0.0 };
+    static t_rgb      rlo_bot = { 1.0, 1.0, 1.0 };
+    static t_rgb      rhi_bot = { 0.0, 0.0, 1.0 };
+    static int        nlevels = 40, skip = 1;
     static real       scalemax = -1.0, rmsdcut = 0.1, rmsmin = 0.0;
     gmx_bool          bRMSdist = FALSE, bBinary = FALSE, bAverage = FALSE, bFit = TRUE;
-    static int        niter    = 10000, nrandom = 0, seed = 0, write_ncl = 0, write_nst = 1, minstruct = 1;
-    static real       kT       = 1e-3;
-    static int        M        = 10, P = 3;
+    static int        niter = 10000, nrandom = 0, seed = 0, write_ncl = 0, write_nst = 1, minstruct = 1;
+    static real       kT = 1e-3;
+    static int        M = 10, P = 3;
     gmx_output_env_t *oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
-    t_pargs  pa[] = {
-        { "-dista", FALSE, etBOOL, {&bRMSdist},
-          "Use RMSD of distances instead of RMS deviation" },
-        { "-nlevels", FALSE, etINT,  {&nlevels},
-          "Discretize RMSD matrix in this number of levels" },
-        { "-cutoff", FALSE, etREAL, {&rmsdcut},
-          "RMSD cut-off (nm) for two structures to be neighbor" },
-        { "-fit",   FALSE, etBOOL, {&bFit},
-          "Use least squares fitting before RMSD calculation" },
-        { "-max",   FALSE, etREAL, {&scalemax},
-          "Maximum level in RMSD matrix" },
-        { "-skip",  FALSE, etINT,  {&skip},
-          "Only analyze every nr-th frame" },
-        { "-av",    FALSE, etBOOL, {&bAverage},
-          "Write average iso middle structure for each cluster" },
-        { "-wcl",   FALSE, etINT,  {&write_ncl},
-          "Write the structures for this number of clusters to numbered files" },
-        { "-nst",   FALSE, etINT,  {&write_nst},
-          "Only write all structures if more than this number of structures per cluster" },
-        { "-rmsmin", FALSE, etREAL, {&rmsmin},
-          "minimum rms difference with rest of cluster for writing structures" },
-        { "-method", FALSE, etENUM, {methodname},
-          "Method for cluster determination" },
-        { "-minstruct", FALSE, etINT, {&minstruct},
-          "Minimum number of structures in cluster for coloring in the [REF].xpm[ref] file" },
-        { "-binary", FALSE, etBOOL, {&bBinary},
+    t_pargs pa[] = {
+        { "-dista", FALSE, etBOOL, { &bRMSdist }, "Use RMSD of distances instead of RMS deviation" },
+        { "-nlevels", FALSE, etINT, { &nlevels }, "Discretize RMSD matrix in this number of levels" },
+        { "-cutoff", FALSE, etREAL, { &rmsdcut }, "RMSD cut-off (nm) for two structures to be neighbor" },
+        { "-fit", FALSE, etBOOL, { &bFit }, "Use least squares fitting before RMSD calculation" },
+        { "-max", FALSE, etREAL, { &scalemax }, "Maximum level in RMSD matrix" },
+        { "-skip", FALSE, etINT, { &skip }, "Only analyze every nr-th frame" },
+        { "-av", FALSE, etBOOL, { &bAverage }, "Write average iso middle structure for each cluster" },
+        { "-wcl", FALSE, etINT, { &write_ncl }, "Write the structures for this number of clusters to numbered files" },
+        { "-nst", FALSE, etINT, { &write_nst }, "Only write all structures if more than this number of structures per cluster" },
+        { "-rmsmin", FALSE, etREAL, { &rmsmin }, "minimum rms difference with rest of cluster for writing structures" },
+        { "-method", FALSE, etENUM, { methodname }, "Method for cluster determination" },
+        { "-minstruct", FALSE, etINT, { &minstruct }, "Minimum number of structures in cluster for coloring in the [REF].xpm[ref] file" },
+        { "-binary", FALSE, etBOOL, { &bBinary },
           "Treat the RMSD matrix as consisting of 0 and 1, where the cut-off "
           "is given by [TT]-cutoff[tt]" },
-        { "-M",     FALSE, etINT,  {&M},
+        { "-M", FALSE, etINT, { &M },
           "Number of nearest neighbors considered for Jarvis-Patrick algorithm, "
           "0 is use cutoff" },
-        { "-P",     FALSE, etINT,  {&P},
-          "Number of identical nearest neighbors required to form a cluster" },
-        { "-seed",  FALSE, etINT,  {&seed},
-          "Random number seed for Monte Carlo clustering algorithm (0 means generate)" },
-        { "-niter", FALSE, etINT,  {&niter},
-          "Number of iterations for MC" },
-        { "-nrandom", FALSE, etINT,  {&nrandom},
-          "The first iterations for MC may be done complete random, to shuffle the frames" },
-        { "-kT",    FALSE, etREAL, {&kT},
+        { "-P", FALSE, etINT, { &P }, "Number of identical nearest neighbors required to form a cluster" },
+        { "-seed", FALSE, etINT, { &seed }, "Random number seed for Monte Carlo clustering algorithm (0 means generate)" },
+        { "-niter", FALSE, etINT, { &niter }, "Number of iterations for MC" },
+        { "-nrandom", FALSE, etINT, { &nrandom }, "The first iterations for MC may be done complete random, to shuffle the frames" },
+        { "-kT", FALSE, etREAL, { &kT },
           "Boltzmann weighting factor for Monte Carlo optimization "
           "(zero turns off uphill steps)" },
-        { "-pbc", FALSE, etBOOL,
-          { &bPBC }, "PBC check" }
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "PBC check" }
     };
     t_filenm fnm[] = {
-        { efTRX, "-f",     nullptr,        ffOPTRD },
-        { efTPS, "-s",     nullptr,        ffOPTRD },
-        { efNDX, nullptr,     nullptr,        ffOPTRD },
-        { efXPM, "-dm",   "rmsd",       ffOPTRD },
-        { efXPM, "-om",   "rmsd-raw",   ffWRITE },
-        { efXPM, "-o",    "rmsd-clust", ffWRITE },
-        { efLOG, "-g",    "cluster",    ffWRITE },
-        { efXVG, "-dist", "rmsd-dist",  ffOPTWR },
-        { efXVG, "-ev",   "rmsd-eig",   ffOPTWR },
-        { efXVG, "-conv", "mc-conv",    ffOPTWR },
-        { efXVG, "-sz",   "clust-size", ffOPTWR},
-        { efXPM, "-tr",   "clust-trans", ffOPTWR},
-        { efXVG, "-ntr",  "clust-trans", ffOPTWR},
-        { efXVG, "-clid", "clust-id",   ffOPTWR},
-        { efTRX, "-cl",   "clusters.pdb", ffOPTWR }
+        { efTRX, "-f", nullptr, ffOPTRD },
+        { efTPS, "-s", nullptr, ffOPTRD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXPM, "-dm", "rmsd", ffOPTRD },
+        { efXPM, "-om", "rmsd-raw", ffWRITE },
+        { efXPM, "-o", "rmsd-clust", ffWRITE },
+        { efLOG, "-g", "cluster", ffWRITE },
+        { efXVG, "-dist", "rmsd-dist", ffOPTWR },
+        { efXVG, "-ev", "rmsd-eig", ffOPTWR },
+        { efXVG, "-conv", "mc-conv", ffOPTWR },
+        { efXVG, "-sz", "clust-size", ffOPTWR },
+        { efXPM, "-tr", "clust-trans", ffOPTWR },
+        { efXVG, "-ntr", "clust-trans", ffOPTWR },
+        { efXVG, "-clid", "clust-id", ffOPTWR },
+        { efTRX, "-cl", "clusters.pdb", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -1516,7 +1498,7 @@ int gmx_cluster(int argc, char *argv[])
         || opt2parg_bSet("-wcl", asize(pa), pa)
         || opt2parg_bSet("-nst", asize(pa), pa)
         || opt2parg_bSet("-rmsmin", asize(pa), pa)
-        || opt2bSet("-cl", NFILE, fnm) )
+        || opt2bSet("-cl", NFILE, fnm))
     {
         trx_out_fn = opt2fn("-cl", NFILE, fnm);
     }
@@ -1532,9 +1514,11 @@ int gmx_cluster(int argc, char *argv[])
     }
     if (trx_out_fn && !bReadTraj)
     {
-        fprintf(stderr, "\nWarning: "
+        fprintf(stderr,
+                "\nWarning: "
                 "cannot write cluster structures without reading trajectory\n"
-                "         ignoring option -cl %s\n", trx_out_fn);
+                "         ignoring option -cl %s\n",
+                trx_out_fn);
     }
 
     method = 1;
@@ -1548,7 +1532,7 @@ int gmx_cluster(int argc, char *argv[])
     }
 
     bAnalyze = (method == m_linkage || method == m_jarvis_patrick
-                || method == m_gromos );
+                || method == m_gromos);
 
     /* Open log file */
     log = ftp2FILE(efLOG, NFILE, fnm, "w");
@@ -1590,7 +1574,7 @@ int gmx_cluster(int argc, char *argv[])
     }
     else /* method != m_jarvis */
     {
-        bUseRmsdCut = ( bBinary || method == m_linkage || method == m_gromos );
+        bUseRmsdCut = (bBinary || method == m_linkage || method == m_gromos);
     }
     if (bUseRmsdCut && method != m_jarvis_patrick)
     {
@@ -1707,8 +1691,10 @@ int gmx_cluster(int argc, char *argv[])
         }
         if (bReadTraj && bAnalyze && (readmat[0].nx != nf))
         {
-            gmx_fatal(FARGS, "Matrix size (%dx%d) does not match the number of "
-                      "frames (%d)", readmat[0].nx, readmat[0].ny, nf);
+            gmx_fatal(FARGS,
+                      "Matrix size (%dx%d) does not match the number of "
+                      "frames (%d)",
+                      readmat[0].nx, readmat[0].ny, nf);
         }
 
         nf = readmat[0].nx;
@@ -1725,7 +1711,7 @@ int gmx_cluster(int argc, char *argv[])
 
         nlevels = readmat[0].nmap;
     }
-    else   /* !bReadMat */
+    else /* !bReadMat */
     {
         rms  = init_mat(nf, method == m_diagonalize);
         nrms = (static_cast<gmx_int64_t>(nf) * static_cast<gmx_int64_t>(nf - 1)) / 2;
@@ -1750,7 +1736,10 @@ int gmx_cluster(int argc, char *argv[])
                     set_mat_entry(rms, i1, i2, rmsd);
                 }
                 nrms -= nf - i1 - 1;
-                fprintf(stderr, "\r# RMSD calculations left: " "%" GMX_PRId64 "   ", nrms);
+                fprintf(stderr,
+                        "\r# RMSD calculations left: "
+                        "%" GMX_PRId64 "   ",
+                        nrms);
                 fflush(stderr);
             }
             sfree(x1);
@@ -1776,7 +1765,10 @@ int gmx_cluster(int argc, char *argv[])
                     set_mat_entry(rms, i1, i2, rms_dist(isize, d1, d2));
                 }
                 nrms -= nf - i1 - 1;
-                fprintf(stderr, "\r# RMSD calculations left: " "%" GMX_PRId64 "   ", nrms);
+                fprintf(stderr,
+                        "\r# RMSD calculations left: "
+                        "%" GMX_PRId64 "   ",
+                        nrms);
                 fflush(stderr);
             }
             /* Clean up work arrays */
@@ -1795,17 +1787,19 @@ int gmx_cluster(int argc, char *argv[])
     ffprintf_g(stderr, log, buf, "Average RMSD is %g\n", 2 * rms->sumrms / (nf * (nf - 1)));
     ffprintf_d(stderr, log, buf, "Number of structures for matrix %d\n", nf);
     ffprintf_g(stderr, log, buf, "Energy of the matrix is %g.\n", mat_energy(rms));
-    if (bUseRmsdCut && (rmsdcut < rms->minrms || rmsdcut > rms->maxrms) )
+    if (bUseRmsdCut && (rmsdcut < rms->minrms || rmsdcut > rms->maxrms))
     {
-        fprintf(stderr, "WARNING: rmsd cutoff %g is outside range of rmsd values "
-                "%g to %g\n", rmsdcut, rms->minrms, rms->maxrms);
+        fprintf(stderr,
+                "WARNING: rmsd cutoff %g is outside range of rmsd values "
+                "%g to %g\n",
+                rmsdcut, rms->minrms, rms->maxrms);
     }
-    if (bAnalyze && (rmsmin < rms->minrms) )
+    if (bAnalyze && (rmsmin < rms->minrms))
     {
         fprintf(stderr, "WARNING: rmsd minimum %g is below lowest rmsd value %g\n",
                 rmsmin, rms->minrms);
     }
-    if (bAnalyze && (rmsmin > rmsdcut) )
+    if (bAnalyze && (rmsmin > rmsdcut))
     {
         fprintf(stderr, "WARNING: rmsd minimum %g is above rmsd cutoff %g\n",
                 rmsmin, rmsdcut);

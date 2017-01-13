@@ -70,14 +70,14 @@ struct t_inputrec;
 
 //@{
 //! Grid indices for A state for charge and Lennard-Jones C6
-#define PME_GRID_QA    0
-#define PME_GRID_C6A   2
+#define PME_GRID_QA 0
+#define PME_GRID_C6A 2
 //@}
 
 //@{
 /*! \brief Flags that indicate the number of PME grids in use */
-#define DO_Q           2 /* Electrostatic grids have index q<2 */
-#define DO_Q_AND_LJ    4 /* non-LB LJ grids have index 2 <= q < 4 */
+#define DO_Q 2           /* Electrostatic grids have index q<2 */
+#define DO_Q_AND_LJ 4    /* non-LB LJ grids have index 2 <= q < 4 */
 #define DO_Q_AND_LJ_LB 9 /* With LB rules we need a total of 2+7 grids */
 //@}
 
@@ -126,7 +126,7 @@ typedef struct
     int send_nindex;
     int recv_index0;
     int recv_nindex;
-    int recv_size;   /* Receive buffer width, used with OpenMP */
+    int recv_size; /* Receive buffer width, used with OpenMP */
 } pme_grid_comm_t;
 
 /*! \brief Data structure for grid overlap communication */
@@ -171,35 +171,35 @@ typedef struct
 /*! \brief Data structure for coordinating transfer between PP and PME ranks*/
 typedef struct
 {
-    int dimind;             /* The index of the dimension, 0=x, 1=y */
+    int dimind; /* The index of the dimension, 0=x, 1=y */
     int nslab;
     int nodeid;
 #if GMX_MPI
     MPI_Comm mpi_comm;
 #endif
 
-    int *node_dest;         /* The nodes to send x and q to with DD */
-    int *node_src;          /* The nodes to receive x and q from with DD */
-    int *buf_index;         /* Index for commnode into the buffers */
+    int *node_dest; /* The nodes to send x and q to with DD */
+    int *node_src;  /* The nodes to receive x and q from with DD */
+    int *buf_index; /* Index for commnode into the buffers */
 
     int maxshift;
 
     int   npd;
     int   pd_nalloc;
     int * pd;
-    int * count;            /* The number of atoms to send to each node */
+    int * count; /* The number of atoms to send to each node */
     int **count_thread;
-    int * rcount;           /* The number of atoms to receive */
+    int * rcount; /* The number of atoms to receive */
 
-    int      n;
-    int      nalloc;
-    rvec *   x;
-    real *   coefficient;
-    rvec *   f;
-    gmx_bool bSpread;       /* These coordinates are used for spreading */
-    int      pme_order;
-    ivec *   idx;
-    rvec *   fractx;            /* Fractional coordinate relative to
+    int             n;
+    int             nalloc;
+    rvec *          x;
+    real *          coefficient;
+    rvec *          f;
+    gmx_bool        bSpread; /* These coordinates are used for spreading */
+    int             pme_order;
+    ivec *          idx;
+    rvec *          fractx; /* Fractional coordinate relative to
                                  * the lower cell boundary
                                  */
     int             nthread;
@@ -240,39 +240,39 @@ struct pme_solve_work_t;
 /*! \brief Master PME data structure */
 typedef struct gmx_pme_t
 {
-    int ndecompdim;           /* The number of decomposition dimensions */
-    int nodeid;               /* Our nodeid in mpi->mpi_comm */
+    int ndecompdim; /* The number of decomposition dimensions */
+    int nodeid;     /* Our nodeid in mpi->mpi_comm */
     int nodeid_major;
     int nodeid_minor;
-    int nnodes;              /* The number of nodes doing PME */
+    int nnodes; /* The number of nodes doing PME */
     int nnodes_major;
     int nnodes_minor;
 
     MPI_Comm mpi_comm;
-    MPI_Comm mpi_comm_d[2];      /* Indexed on dimension, 0=x, 1=y */
+    MPI_Comm mpi_comm_d[2]; /* Indexed on dimension, 0=x, 1=y */
 #if GMX_MPI
-    MPI_Datatype rvec_mpi;       /* the pme vector's MPI type */
+    MPI_Datatype rvec_mpi; /* the pme vector's MPI type */
 #endif
 
-    gmx_bool bUseThreads;     /* Does any of the PME ranks have nthread>1 ?  */
-    int      nthread;         /* The number of threads doing PME on our rank */
+    gmx_bool bUseThreads; /* Does any of the PME ranks have nthread>1 ?  */
+    int      nthread;     /* The number of threads doing PME on our rank */
 
-    gmx_bool bPPnode;         /* Node also does particle-particle forces */
-    bool     doCoulomb;       /* Apply PME to electrostatics */
-    bool     doLJ;            /* Apply PME to Lennard-Jones r^-6 interactions */
-    gmx_bool bFEP;            /* Compute Free energy contribution */
+    gmx_bool bPPnode;   /* Node also does particle-particle forces */
+    bool     doCoulomb; /* Apply PME to electrostatics */
+    bool     doLJ;      /* Apply PME to Lennard-Jones r^-6 interactions */
+    gmx_bool bFEP;      /* Compute Free energy contribution */
     gmx_bool bFEP_q;
     gmx_bool bFEP_lj;
-    int      nkx, nky, nkz;   /* Grid dimensions */
-    gmx_bool bP3M;            /* Do P3M: optimize the influence function */
+    int      nkx, nky, nkz; /* Grid dimensions */
+    gmx_bool bP3M;          /* Do P3M: optimize the influence function */
     int      pme_order;
-    real     ewaldcoeff_q;    /* Ewald splitting coefficient for Coulomb */
-    real     ewaldcoeff_lj;   /* Ewald splitting coefficient for r^-6 */
+    real     ewaldcoeff_q;  /* Ewald splitting coefficient for Coulomb */
+    real     ewaldcoeff_lj; /* Ewald splitting coefficient for r^-6 */
     real     epsilon_r;
 
-    int ljpme_combination_rule;         /* Type of combination rule in LJ-PME */
+    int ljpme_combination_rule; /* Type of combination rule in LJ-PME */
 
-    int ngrids;                         /* number of grids we maintain for pmegrid, (c)fftgrid and pfft_setups*/
+    int ngrids; /* number of grids we maintain for pmegrid, (c)fftgrid and pfft_setups*/
 
     pmegrids_t pmegrid[DO_Q_AND_LJ_LB]; /* Grids on which we do spreading/interpolation,
                                          * includes overlap Grid indices are ordered as
@@ -295,11 +295,11 @@ typedef struct gmx_pme_t
     /* Work data for spreading and gathering */
     pme_spline_work *spline_work;
 
-    real **fftgrid;                    /* Grids for FFT. With 1D FFT decomposition this can be a pointer */
+    real **fftgrid; /* Grids for FFT. With 1D FFT decomposition this can be a pointer */
     /* inside the interpolation grid, but separate for 2D PME decomp. */
     int fftgrid_nx, fftgrid_ny, fftgrid_nz;
 
-    t_complex **cfftgrid;               /* Grids for complex FFT data */
+    t_complex **cfftgrid; /* Grids for complex FFT data */
 
     int cfftgrid_nx, cfftgrid_ny, cfftgrid_nz;
 
@@ -308,7 +308,7 @@ typedef struct gmx_pme_t
     int * nnx, *nny, *nnz;
     real *fshx, *fshy, *fshz;
 
-    pme_atomcomm_t atc[2];            /* Indexed on decomposition index */
+    pme_atomcomm_t atc[2]; /* Indexed on decomposition index */
     matrix         recipbox;
     splinevec      bsp_mod;
     /* Buffers to store data for local atoms for L-B combination rule
@@ -317,22 +317,22 @@ typedef struct gmx_pme_t
      * local atoms (in parallel).  lb_buf2 is only used in parallel,
      * and stores the sigma values for local atoms. */
     real *lb_buf1, *lb_buf2;
-    int   lb_buf_nalloc;                 /* Allocation size for the above buffers. */
+    int   lb_buf_nalloc; /* Allocation size for the above buffers. */
 
-    pme_overlap_t overlap[2];            /* Indexed on dimension, 0=x, 1=y */
+    pme_overlap_t overlap[2]; /* Indexed on dimension, 0=x, 1=y */
 
-    pme_atomcomm_t atc_energy;           /* Only for gmx_pme_calc_energy */
+    pme_atomcomm_t atc_energy; /* Only for gmx_pme_calc_energy */
 
-    rvec *bufv;                          /* Communication buffer */
-    real *bufr;                          /* Communication buffer */
-    int   buf_nalloc;                    /* The communication buffer size */
+    rvec *bufv;       /* Communication buffer */
+    real *bufr;       /* Communication buffer */
+    int   buf_nalloc; /* The communication buffer size */
 
     /* thread local work data for solve_pme */
     struct pme_solve_work_t *solve_work;
 
     /* Work data for sum_qgrid */
-    real * sum_qgrid_tmp;
-    real * sum_qgrid_dd_tmp;
+    real *sum_qgrid_tmp;
+    real *sum_qgrid_dd_tmp;
 } t_gmx_pme_t;
 
 //! @endcond
@@ -348,10 +348,10 @@ typedef struct gmx_pme_t
  */
 void gmx_pme_check_restrictions(int pme_order,
                                 int nkx, int nky, int nkz,
-                                int nnodes_major,
-                                int nnodes_minor,
-                                gmx_bool bUseThreads,
-                                gmx_bool bFatal,
+                                int       nnodes_major,
+                                int       nnodes_minor,
+                                gmx_bool  bUseThreads,
+                                gmx_bool  bFatal,
                                 gmx_bool *bValidSettings);
 
 /*! \brief Initialize the PME-only side of the PME <-> PP communication */
@@ -378,14 +378,14 @@ enum
  * pmerecvqxRESETCOUNTERS: *step is set
  */
 int gmx_pme_recv_coeffs_coords(struct gmx_pme_pp *pme_pp,
-                               int *natoms,
+                               int *              natoms,
                                real **chargeA, real **chargeB,
                                real **sqrt_c6A, real **sqrt_c6B,
                                real **sigmaA, real **sigmaB,
                                matrix box, rvec **x, rvec **f,
                                int *maxshift_x, int *maxshift_y,
                                real *lambda_q, real *lambda_lj,
-                               gmx_bool *bEnerVir,
+                               gmx_bool *   bEnerVir,
                                gmx_int64_t *step,
                                ivec grid_size, real *ewaldcoeff_q, real *ewaldcoeff_lj);
 

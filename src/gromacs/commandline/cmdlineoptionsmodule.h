@@ -51,7 +51,8 @@
 namespace gmx
 {
 
-template <typename T> class ConstArrayRef;
+template <typename T>
+class ConstArrayRef;
 
 class CommandLineModuleManager;
 class ICommandLineModule;
@@ -61,7 +62,7 @@ class IOptionsContainer;
 
 //! Smart pointer to manage an ICommandLineOptionsModule.
 typedef std::unique_ptr<ICommandLineOptionsModule>
-    ICommandLineOptionsModulePointer;
+        ICommandLineOptionsModulePointer;
 
 /*! \brief
  * Settings to pass information between a CommandLineOptionsModule and generic
@@ -101,7 +102,8 @@ public:
      * as owned by the options module after this call.
      */
     virtual void addOptionsBehavior(
-        const std::shared_ptr<IOptionsBehavior> &behavior) = 0;
+            const std::shared_ptr<IOptionsBehavior> &behavior)
+            = 0;
 
 protected:
     // Disallow deletion through the interface.
@@ -243,7 +245,8 @@ public:
      * stored in member variables.
      */
     virtual void initOptions(IOptionsContainer *                options,
-                             ICommandLineOptionsModuleSettings *settings) = 0;
+                             ICommandLineOptionsModuleSettings *settings)
+            = 0;
     /*! \brief
      * Called after all option values have been set.
      *

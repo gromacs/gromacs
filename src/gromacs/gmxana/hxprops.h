@@ -49,8 +49,7 @@ struct t_atom;
 struct t_resinfo;
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 #define PHI_AHX (-55.0)
@@ -72,11 +71,24 @@ typedef struct
 
 enum
 {
-    efhRAD,  efhTWIST, efhRISE, efhLEN,
-    efhDIP,  efhRMS,   efhRMSA, efhCD222,
-    efhPPRMS, efhCPHI,  efhPHI,  efhPSI,
-    efhHB3,  efhHB4,   efhHB5,  efhJCA,
-    efhAHX,  efhNR
+    efhRAD,
+    efhTWIST,
+    efhRISE,
+    efhLEN,
+    efhDIP,
+    efhRMS,
+    efhRMSA,
+    efhCD222,
+    efhPPRMS,
+    efhCPHI,
+    efhPHI,
+    efhPSI,
+    efhHB3,
+    efhHB4,
+    efhHB5,
+    efhJCA,
+    efhAHX,
+    efhNR
 };
 
 extern real ahx_len(int gnx, int index[], rvec x[]);

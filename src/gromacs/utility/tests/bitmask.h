@@ -46,7 +46,7 @@
 #include "gromacs/utility/bitmask.h"
 
 //! Implemenation of BITMASK_CLASSNAME
-#define BITMASK_CLASSNAME_(S) BitmaskTest ## S
+#define BITMASK_CLASSNAME_(S) BitmaskTest##S
 //! Returns name of Bitmask test fixture class
 #define BITMASK_CLASSNAME(S) BITMASK_CLASSNAME_(S)
 //! Implementation of BITMASK_TEST_P
@@ -54,7 +54,8 @@
 //! Defines a parameterized bitmask test
 #define BITMASK_TEST_P(T) BITMASK_TEST_P_(BITMASK_CLASSNAME(BITMASK_SIZE), T)
 
-class BITMASK_CLASSNAME(BITMASK_SIZE) : public ::testing::TestWithParam<int>
+class BITMASK_CLASSNAME(BITMASK_SIZE)
+    : public ::testing::TestWithParam<int>
 {
 };
 

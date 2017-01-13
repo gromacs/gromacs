@@ -71,9 +71,9 @@ public:
     virtual int flags() const;
 
     MOCK_METHOD2(parallelDataStarted,
-                 bool(AbstractAnalysisData              * data,
+                 bool(AbstractAnalysisData *             data,
                       const AnalysisDataParallelOptions &options));
-    MOCK_METHOD1(dataStarted, void(AbstractAnalysisData * data));
+    MOCK_METHOD1(dataStarted, void(AbstractAnalysisData *data));
     MOCK_METHOD1(frameStarted, void(const AnalysisDataFrameHeader &header));
     MOCK_METHOD1(pointsAdded, void(const AnalysisDataPointSetRef &points));
     MOCK_METHOD1(frameFinished, void(const AnalysisDataFrameHeader &header));
@@ -100,7 +100,7 @@ private:
 
 //! Smart pointer to manage an MockAnalysisDataModule object.
 typedef std::shared_ptr<MockAnalysisDataModule>
-    MockAnalysisDataModulePointer;
+        MockAnalysisDataModulePointer;
 
 } // namespace test
 } // namespace gmx

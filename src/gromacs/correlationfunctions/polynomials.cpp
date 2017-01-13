@@ -67,7 +67,7 @@ real LegendreP(real x, unsigned int m)
             break;
         case 3:
             x2         = x * x;
-            polynomial = (5 * x2 * x - 3 * x ) * 0.5;
+            polynomial = (5 * x2 * x - 3 * x) * 0.5;
             break;
         case 4:
             x2         = x * x;

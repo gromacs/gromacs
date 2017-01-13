@@ -419,8 +419,7 @@ erfinv(double x);
  *  \return The inverse of the error function if the argument is inside the
  *          range, +/- infinity if it is exactly 1.0 or -1.0, and NaN otherwise.
  */
-float
-erfinv(float x);
+float erfinv(float x);
 
 } // namespace gmx
 

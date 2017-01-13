@@ -73,7 +73,7 @@ using gmx::test::XvgMatch;
 
 //! Test fixture for the `sasa` analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::SasaInfo>
-    SasaModuleTest;
+        SasaModuleTest;
 
 TEST_F(SasaModuleTest, BasicTest)
 {

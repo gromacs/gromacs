@@ -100,14 +100,14 @@ static void calc_int_dist(double *intd, rvec *x, int i0, int i1)
         {
             d += distance2(x[ii], x[ii + bd]);
         }
-        d            /= ml - bd;
+        d /= ml - bd;
         intd[bd - 1] += d;
     }
 }
 
 int gmx_polystat(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] plots static properties of polymers as a function of time",
         "and prints the average.[PAR]",
         "By default it determines the average end-to-end distance and radii",
@@ -132,21 +132,19 @@ int gmx_polystat(int argc, char *argv[])
         "the average cos reaches a value of 1/e. This point is determined",
         "by a linear interpolation of [LOG]<cos>[log]."
     };
-    static gmx_bool bMW  = TRUE, bPC = FALSE;
+    static gmx_bool bMW = TRUE, bPC = FALSE;
     t_pargs         pa[] = {
-        { "-mw", FALSE, etBOOL, {&bMW},
-          "Use the mass weighting for radii of gyration" },
-        { "-pc", FALSE, etBOOL, {&bPC},
-          "Plot average eigenvalues" }
+        { "-mw", FALSE, etBOOL, { &bMW }, "Use the mass weighting for radii of gyration" },
+        { "-pc", FALSE, etBOOL, { &bPC }, "Plot average eigenvalues" }
     };
 
     t_filenm fnm[] = {
-        { efTPR, nullptr, nullptr,  ffREAD  },
-        { efTRX, "-f", nullptr,  ffREAD  },
-        { efNDX, nullptr, nullptr,  ffOPTRD },
-        { efXVG, "-o", "polystat",  ffWRITE },
+        { efTPR, nullptr, nullptr, ffREAD },
+        { efTRX, "-f", nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, "-o", "polystat", ffWRITE },
         { efXVG, "-v", "polyvec", ffOPTWR },
-        { efXVG, "-p", "persist",  ffOPTWR },
+        { efXVG, "-p", "persist", ffOPTWR },
         { efXVG, "-i", "intdist", ffOPTWR }
     };
 #define NFILE asize(fnm)
@@ -160,8 +158,8 @@ int gmx_polystat(int argc, char *argv[])
     real              t;
     rvec *            x, *bond = nullptr;
     matrix            box;
-    int               natoms, i, j, frame, ind0, ind1, a, d, d2, ord[DIM] = {0};
-    dvec              cm, sum_eig = {0, 0, 0};
+    int               natoms, i, j, frame, ind0, ind1, a, d, d2, ord[DIM] = { 0 };
+    dvec              cm, sum_eig = { 0, 0, 0 };
     double **         gyr, **gyr_all, eig[DIM], **eigv;
     double            sum_eed2, sum_eed2_tot, sum_gyro, sum_gyro_tot, sum_pers_tot;
     int *             ninp    = nullptr;
@@ -175,8 +173,8 @@ int gmx_polystat(int argc, char *argv[])
         "<R\\sg\\N> eig1", "<R\\sg\\N> eig2", "<R\\sg\\N> eig3",
         "<R\\sg\\N eig1>", "<R\\sg\\N eig2>", "<R\\sg\\N eig3>"
     };
-    char **           legp, buf[STRLEN];
-    gmx_rmpbc_t       gpbc = nullptr;
+    char **     legp, buf[STRLEN];
+    gmx_rmpbc_t gpbc = nullptr;
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
@@ -237,7 +235,7 @@ int gmx_polystat(int argc, char *argv[])
                 legp[d * DIM + d2] = gmx_strdup(buf);
             }
         }
-        xvgr_legend(outv, DIM * DIM, (const char**)legp, oenv);
+        xvgr_legend(outv, DIM * DIM, (const char **)legp, oenv);
     }
     else
     {
@@ -361,7 +359,7 @@ int gmx_polystat(int argc, char *argv[])
             {
                 for (d2 = 0; d2 < DIM; d2++)
                 {
-                    gyr[d][d2]      = gyr[d][d2] / mmol - cm[d] * cm[d2];
+                    gyr[d][d2] = gyr[d][d2] / mmol - cm[d] * cm[d2];
                     gyr_all[d][d2] += gyr[d][d2];
                 }
             }
@@ -452,7 +450,7 @@ int gmx_polystat(int argc, char *argv[])
             {
                 /* Do linear interpolation on a log scale */
                 pers = i - 2.0
-                    + 2.0 * (std::log(sum_inp[i - 2]) + 1.0) / (std::log(sum_inp[i - 2]) - std::log(sum_inp[i]));
+                       + 2.0 * (std::log(sum_inp[i - 2]) + 1.0) / (std::log(sum_inp[i - 2]) - std::log(sum_inp[i]));
             }
             fprintf(outp, "%10.3f %8.4f\n", t * output_env_get_time_factor(oenv), pers);
             sum_pers_tot += pers;

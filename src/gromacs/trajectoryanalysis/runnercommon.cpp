@@ -211,7 +211,7 @@ void TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
         return;
     }
     time_unit_t time_unit
-        = static_cast<time_unit_t>(settings_.timeUnit() + 1);
+            = static_cast<time_unit_t>(settings_.timeUnit() + 1);
     output_env_init(&oenv_, getProgramContext(), time_unit, FALSE, exvgNONE, 0);
 
     int frflags = settings_.frflags();
@@ -233,8 +233,8 @@ void TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
             if (fr->natoms > topologyAtomCount)
             {
                 const std::string message
-                    = formatString("Trajectory (%d atoms) does not match topology (%d atoms)",
-                                   fr->natoms, topologyAtomCount);
+                        = formatString("Trajectory (%d atoms) does not match topology (%d atoms)",
+                                       fr->natoms, topologyAtomCount);
                 GMX_THROW(InconsistentInputError(message));
             }
         }
@@ -279,9 +279,9 @@ void TrajectoryAnalysisRunnerCommon::Impl::initFrameIndexGroup()
     if (trajectoryGroup_.atomCount() != fr->natoms)
     {
         const std::string message = formatString(
-                    "Selection specified with -fgroup has %d atoms, but "
-                    "the trajectory (-f) has %d atoms.",
-                    trajectoryGroup_.atomCount(), fr->natoms);
+                "Selection specified with -fgroup has %d atoms, but "
+                "the trajectory (-f) has %d atoms.",
+                trajectoryGroup_.atomCount(), fr->natoms);
         GMX_THROW(InconsistentInputError(message));
     }
     fr->bIndex = TRUE;
@@ -334,29 +334,34 @@ void TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
 
     // Add common file name arguments.
     options->addOption(FileNameOption("f")
-                           .filetype(eftTrajectory).inputFile()
-                           .store(&impl_->trjfile_)
-                           .defaultBasename("traj")
-                           .description("Input trajectory or single configuration"));
+                               .filetype(eftTrajectory)
+                               .inputFile()
+                               .store(&impl_->trjfile_)
+                               .defaultBasename("traj")
+                               .description("Input trajectory or single configuration"));
     options->addOption(FileNameOption("s")
-                           .filetype(eftTopology).inputFile()
-                           .store(&impl_->topfile_)
-                           .defaultBasename("topol")
-                           .description("Input structure"));
+                               .filetype(eftTopology)
+                               .inputFile()
+                               .store(&impl_->topfile_)
+                               .defaultBasename("topol")
+                               .description("Input structure"));
 
     // Add options for trajectory time control.
     options->addOption(DoubleOption("b")
-                           .store(&impl_->startTime_).storeIsSet(&impl_->bStartTimeSet_)
-                           .timeValue()
-                           .description("First frame (%t) to read from trajectory"));
+                               .store(&impl_->startTime_)
+                               .storeIsSet(&impl_->bStartTimeSet_)
+                               .timeValue()
+                               .description("First frame (%t) to read from trajectory"));
     options->addOption(DoubleOption("e")
-                           .store(&impl_->endTime_).storeIsSet(&impl_->bEndTimeSet_)
-                           .timeValue()
-                           .description("Last frame (%t) to read from trajectory"));
+                               .store(&impl_->endTime_)
+                               .storeIsSet(&impl_->bEndTimeSet_)
+                               .timeValue()
+                               .description("Last frame (%t) to read from trajectory"));
     options->addOption(DoubleOption("dt")
-                           .store(&impl_->deltaTime_).storeIsSet(&impl_->bDeltaTimeSet_)
-                           .timeValue()
-                           .description("Only use frame if t MOD dt == first time (%t)"));
+                               .store(&impl_->deltaTime_)
+                               .storeIsSet(&impl_->bDeltaTimeSet_)
+                               .timeValue()
+                               .description("Only use frame if t MOD dt == first time (%t)"));
 
     // Add time unit option.
     timeUnitBehavior->setTimeUnitFromEnvironment();
@@ -364,10 +369,11 @@ void TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
     timeUnitBehavior->setTimeUnitStore(&impl_->settings_.impl_->timeUnit);
 
     options->addOption(SelectionOption("fgroup")
-                           .store(&impl_->trajectoryGroup_)
-                           .onlySortedAtoms().onlyStatic()
-                           .description("Atoms stored in the trajectory file "
-                                        "(if not set, assume first N atoms)"));
+                               .store(&impl_->trajectoryGroup_)
+                               .onlySortedAtoms()
+                               .onlyStatic()
+                               .description("Atoms stored in the trajectory file "
+                                            "(if not set, assume first N atoms)"));
 
     // Add plot options.
     settings.impl_->plotSettings.initOptions(options);
@@ -375,13 +381,11 @@ void TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
     // Add common options for trajectory processing.
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserRmPBC))
     {
-        options->addOption(BooleanOption("rmpbc").store(&settings.impl_->bRmPBC)
-                               .description("Make molecules whole for each frame"));
+        options->addOption(BooleanOption("rmpbc").store(&settings.impl_->bRmPBC).description("Make molecules whole for each frame"));
     }
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserPBC))
     {
-        options->addOption(BooleanOption("pbc").store(&settings.impl_->bPBC)
-                               .description("Use periodic boundary conditions for distance calculation"));
+        options->addOption(BooleanOption("pbc").store(&settings.impl_->bPBC).description("Use periodic boundary conditions for distance calculation"));
     }
 }
 
@@ -418,7 +422,7 @@ void TrajectoryAnalysisRunnerCommon::optionsFinished()
 void TrajectoryAnalysisRunnerCommon::initTopology()
 {
     const bool topologyRequired
-        = impl_->settings_.hasFlag(TrajectoryAnalysisSettings::efRequireTop);
+            = impl_->settings_.hasFlag(TrajectoryAnalysisSettings::efRequireTop);
     impl_->initTopology(topologyRequired);
 }
 

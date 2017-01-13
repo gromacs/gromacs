@@ -91,7 +91,7 @@ static inline float copysign(float x, float y)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void invsqrtPair(float x0,    float x1,
+static inline void invsqrtPair(float x0, float x1,
                                float *out0, float *out1)
 {
     *out0 = invsqrt(x0);
@@ -465,7 +465,7 @@ static inline double copysign(double x, double y)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void invsqrtPair(double x0,    double x1,
+static inline void invsqrtPair(double x0, double x1,
                                double *out0, double *out1)
 {
     *out0 = invsqrt(x0);
@@ -863,7 +863,7 @@ static inline double invsqrtSingleAccuracy(double x)
  *       write templated SIMD/non-SIMD code. For clarity it should not be used
  *       outside such code.
  */
-static inline void invsqrtPairSingleAccuracy(double x0,    double x1,
+static inline void invsqrtPairSingleAccuracy(double x0, double x1,
                                              double *out0, double *out1)
 {
     *out0 = invsqrt(static_cast<float>(x0));
@@ -1221,7 +1221,6 @@ static inline double pmePotentialCorrectionSingleAccuracy(double z2)
 
     return polyVN0 / polyVD0;
 }
-
 
 
 } // namespace gmx

@@ -58,7 +58,8 @@ namespace
 class TextWriterTest : public gmx::test::StringTestBase
 {
 public:
-    TextWriterTest() : writer_(&stream_)
+    TextWriterTest()
+        : writer_(&stream_)
     {
     }
 

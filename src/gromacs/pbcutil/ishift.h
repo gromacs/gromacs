@@ -43,14 +43,14 @@
 #define N_BOX_Z (2 * D_BOX_Z + 1)
 #define N_BOX_Y (2 * D_BOX_Y + 1)
 #define N_BOX_X (2 * D_BOX_X + 1)
-#define N_IVEC  (N_BOX_Z * N_BOX_Y * N_BOX_X)
+#define N_IVEC (N_BOX_Z * N_BOX_Y * N_BOX_X)
 #define CENTRAL (N_IVEC / 2)
-#define SHIFTS  N_IVEC
+#define SHIFTS N_IVEC
 
 #define XYZ2IS(x, y, z) (N_BOX_X * (N_BOX_Y * ((z) + D_BOX_Z) + (y) + D_BOX_Y) + (x) + D_BOX_X)
-#define IVEC2IS(iv)   (XYZ2IS((iv)[XX], (iv)[YY], (iv)[ZZ]))
-#define IS2X(iv)      (((iv) % N_BOX_X) - D_BOX_X)
-#define IS2Y(iv)      ((((iv) / N_BOX_X) % N_BOX_Y) - D_BOX_Y)
-#define IS2Z(iv)      ((iv) / (N_BOX_X * N_BOX_Y) - D_BOX_Z)
+#define IVEC2IS(iv) (XYZ2IS((iv)[XX], (iv)[YY], (iv)[ZZ]))
+#define IS2X(iv) (((iv) % N_BOX_X) - D_BOX_X)
+#define IS2Y(iv) ((((iv) / N_BOX_X) % N_BOX_Y) - D_BOX_Y)
+#define IS2Z(iv) ((iv) / (N_BOX_X * N_BOX_Y) - D_BOX_Z)
 
 #endif

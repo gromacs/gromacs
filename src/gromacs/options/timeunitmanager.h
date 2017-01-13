@@ -65,13 +65,13 @@ class Options;
  */
 enum TimeUnit
 {
-    TimeUnit_fs,                    //!< Femtoseconds.
-    TimeUnit_ps,                    //!< Picoseconds.
-    TimeUnit_ns,                    //!< Nanoseconds.
-    TimeUnit_us,                    //!< Microseconds.
-    TimeUnit_ms,                    //!< Milliseconds.
-    TimeUnit_s,                     //!< Seconds.
-    TimeUnit_Default = TimeUnit_ps  //!< Default time unit.
+    TimeUnit_fs,                   //!< Femtoseconds.
+    TimeUnit_ps,                   //!< Picoseconds.
+    TimeUnit_ns,                   //!< Nanoseconds.
+    TimeUnit_us,                   //!< Microseconds.
+    TimeUnit_ms,                   //!< Milliseconds.
+    TimeUnit_s,                    //!< Seconds.
+    TimeUnit_Default = TimeUnit_ps //!< Default time unit.
 };
 
 /*! \brief

@@ -57,4 +57,4 @@ extern t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick);
 
 extern void done_logo(t_x11 *x11, t_logo *logo);
 
-#endif  /* _logo_h */
+#endif /* _logo_h */

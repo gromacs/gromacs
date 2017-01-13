@@ -85,15 +85,17 @@ static t_acf acf;
 
 enum
 {
-    enNorm, enCos, enSin
+    enNorm,
+    enCos,
+    enSin
 };
 
 /*! \brief Routine to compute ACF using FFT. */
 static void low_do_four_core(int nframes, real c1[], real cfour[],
                              int nCos)
 {
-    int                             i = 0;
-    std::vector<std::vector<real> > data;
+    int                            i = 0;
+    std::vector<std::vector<real>> data;
     data.resize(1);
     data[0].resize(nframes, 0);
     switch (nCos)
@@ -381,7 +383,7 @@ static void do_four_core(unsigned long mode, int nframes,
         low_do_four_core(nframes, ctmp, cfour, enSin);
         for (j = 0; (j < nframes); j++)
         {
-            c1[j]  += cfour[j];
+            c1[j] += cfour[j];
             csum[j] = c1[j];
         }
     }
@@ -681,7 +683,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
                             i, sum);
                 }
             }
-            Ctav  += sum;
+            Ctav += sum;
             Ct2av += sum * sum;
             if (debug)
             {
@@ -694,7 +696,7 @@ void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv, const char *t
         }
         if (nitem > 1)
         {
-            Ctav  /= nitem;
+            Ctav /= nitem;
             Ct2av /= nitem;
             printf("Average correlation time %.3f Std. Dev. %.3f Error %.3f (ps)\n",
                    Ctav, std::sqrt((Ct2av - gmx::square(Ctav))),
@@ -713,23 +715,15 @@ static const char *Leg[] = { nullptr, "0", "1", "2", "3", nullptr };
 
 t_pargs *add_acf_pargs(int *npargs, t_pargs *pa)
 {
-    t_pargs  acfpa[] = {
-        { "-acflen",     FALSE, etINT,  {&acf.nout},
-          "Length of the ACF, default is half the number of frames" },
-        { "-normalize", FALSE, etBOOL, {&acf.bNormalize},
-          "Normalize ACF" },
-        { "-fftcorr",  FALSE, etBOOL, {&acf.bFour},
-          "HIDDENUse fast fourier transform for correlation function" },
-        { "-nrestart", FALSE, etINT,  {&acf.nrestart},
-          "HIDDENNumber of frames between time origins for ACF when no FFT is used" },
-        { "-P",        FALSE, etENUM, {Leg},
-          "Order of Legendre polynomial for ACF (0 indicates none)" },
-        { "-fitfn",    FALSE, etENUM, {s_ffn},
-          "Fit function" },
-        { "-beginfit", FALSE, etREAL, {&acf.tbeginfit},
-          "Time where to begin the exponential fit of the correlation function" },
-        { "-endfit",   FALSE, etREAL, {&acf.tendfit},
-          "Time where to end the exponential fit of the correlation function, -1 is until the end" },
+    t_pargs acfpa[] = {
+        { "-acflen", FALSE, etINT, { &acf.nout }, "Length of the ACF, default is half the number of frames" },
+        { "-normalize", FALSE, etBOOL, { &acf.bNormalize }, "Normalize ACF" },
+        { "-fftcorr", FALSE, etBOOL, { &acf.bFour }, "HIDDENUse fast fourier transform for correlation function" },
+        { "-nrestart", FALSE, etINT, { &acf.nrestart }, "HIDDENNumber of frames between time origins for ACF when no FFT is used" },
+        { "-P", FALSE, etENUM, { Leg }, "Order of Legendre polynomial for ACF (0 indicates none)" },
+        { "-fitfn", FALSE, etENUM, { s_ffn }, "Fit function" },
+        { "-beginfit", FALSE, etREAL, { &acf.tbeginfit }, "Time where to begin the exponential fit of the correlation function" },
+        { "-endfit", FALSE, etREAL, { &acf.tendfit }, "Time where to end the exponential fit of the correlation function, -1 is until the end" },
     };
     t_pargs *ppa;
     int      i, npa;

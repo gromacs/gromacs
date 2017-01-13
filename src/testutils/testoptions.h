@@ -162,20 +162,20 @@ void initTestOptions(IOptionsContainer *options);
  * \hideinitializer
  */
 /* *INDENT-ON* */
-#define GMX_TEST_OPTIONS(name, options) \
-    class name : public ::gmx::test::TestOptionsProvider \
-    { \
-    public: \
-        name() \
-        { \
-            ::gmx::test::registerTestOptions(#name, this); \
-        } \
-        virtual void initOptions(::gmx::IOptionsContainer * options); \
-    }; \
-    \
-    static name s_ ## name ## Instance; \
-    \
-    void name::initOptions(::gmx::IOptionsContainer * options)
+#define GMX_TEST_OPTIONS(name, options)                              \
+    class name : public ::gmx::test::TestOptionsProvider             \
+    {                                                                \
+    public:                                                          \
+        name()                                                       \
+        {                                                            \
+            ::gmx::test::registerTestOptions(#name, this);           \
+        }                                                            \
+        virtual void initOptions(::gmx::IOptionsContainer *options); \
+    };                                                               \
+                                                                     \
+    static name s_##name##Instance;                                  \
+                                                                     \
+    void name::initOptions(::gmx::IOptionsContainer *options)
 
 } // namespace test
 } // namespace gmx

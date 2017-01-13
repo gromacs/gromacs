@@ -53,7 +53,7 @@ typedef struct
 
 extern t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
                                           t_id GroupID, int nrb, t_id rb[],
-                                          int nSelect,
+                                          int   nSelect,
                                           char *szRB[], int x0, int y0);
 /* This routine creates a radio button group at the
  * specified position. The return values is a pointer to an
@@ -77,4 +77,4 @@ extern t_dlg *ReadDlg(t_x11 *x11, Window Parent, const char *title,
                       DlgCallback *cb, void *data);
 /* Read a dialog box from a template file */
 
-#endif  /* _xdlghi_h */
+#endif /* _xdlghi_h */

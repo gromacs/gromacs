@@ -51,18 +51,18 @@ typedef struct
 
 typedef struct
 {
-    t_windata wd;      /* The window struct				*/
-    t_mentry *m;       /* The menu entry				*/
-    Window    Parent;  /* Parent window id				*/
+    t_windata wd;     /* The window struct				*/
+    t_mentry *m;      /* The menu entry				*/
+    Window    Parent; /* Parent window id				*/
 } t_child;
 
 typedef struct
 {
-    t_windata wd;           /* The window struct                */
-    Window    Parent;       /* The parent of the menu                   */
-    int       nitem;        /* The number of menu items			*/
-    t_child * item;         /* Array of child windows                   */
-    bool      bGrabbed;     /* Did this menu grab the pointer?              */
+    t_windata wd;       /* The window struct                */
+    Window    Parent;   /* The parent of the menu                   */
+    int       nitem;    /* The number of menu items			*/
+    t_child * item;     /* Array of child windows                   */
+    bool      bGrabbed; /* Did this menu grab the pointer?              */
 } t_menu;
 
 extern t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
@@ -107,4 +107,4 @@ extern int menu_width(t_menu *m);
 extern int menu_height(t_menu *m);
 /* Return the height of the window */
 
-#endif  /* _popup_h */
+#endif /* _popup_h */

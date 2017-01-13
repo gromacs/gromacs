@@ -112,9 +112,9 @@ static int init_gb_nblist(int natoms, t_nblist *nl)
     nl->jjnr   = nullptr;
     /*nl->nltype      = nltype;*/
 
-    srenew(nl->iinr,   nl->maxnri);
-    srenew(nl->gid,    nl->maxnri);
-    srenew(nl->shift,  nl->maxnri);
+    srenew(nl->iinr, nl->maxnri);
+    srenew(nl->gid, nl->maxnri);
+    srenew(nl->shift, nl->maxnri);
     srenew(nl->jindex, nl->maxnri + 1);
 
     nl->jindex[0] = 0;
@@ -141,8 +141,8 @@ static int init_gb_still(const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
 
     for (i = 0; i < natoms; i++)
     {
-        born->gpol_globalindex[i] = born->vsolv_globalindex[i]
-                                  = born->gb_radius_globalindex[i] = 0;
+        born->gpol_globalindex[i]                = born->vsolv_globalindex[i]
+                = born->gb_radius_globalindex[i] = 0;
     }
 
     /* Compute atomic solvation volumes for Still method */
@@ -189,7 +189,7 @@ static int init_gb_still(const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
         if (born->use_globalindex[j] == 1)
         {
             born->gpol_globalindex[j] = -0.5 * ONE_4PI_EPS0
-                / (atype->gb_radius[atoms->atom[j].type] - doffset + STILL_P1);
+                                        / (atype->gb_radius[atoms->atom[j].type] - doffset + STILL_P1);
         }
     }
 
@@ -205,9 +205,9 @@ static int init_gb_still(const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
         r4 = r * r * r * r;
 
         born->gpol_globalindex[ia] = born->gpol_globalindex[ia]
-            + STILL_P2 * born->vsolv_globalindex[ib] / r4;
+                                     + STILL_P2 * born->vsolv_globalindex[ib] / r4;
         born->gpol_globalindex[ib] = born->gpol_globalindex[ib]
-            + STILL_P2 * born->vsolv_globalindex[ia] / r4;
+                                     + STILL_P2 * born->vsolv_globalindex[ia] / r4;
     }
 
     /* 1-3 */
@@ -221,9 +221,9 @@ static int init_gb_still(const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
         r4 = r * r * r * r;
 
         born->gpol_globalindex[ia] = born->gpol_globalindex[ia]
-            + STILL_P3 * born->vsolv_globalindex[ib] / r4;
+                                     + STILL_P3 * born->vsolv_globalindex[ib] / r4;
         born->gpol_globalindex[ib] = born->gpol_globalindex[ib]
-            + STILL_P3 * born->vsolv_globalindex[ia] / r4;
+                                     + STILL_P3 * born->vsolv_globalindex[ia] / r4;
     }
 
     sfree(vsol);
@@ -255,17 +255,17 @@ int init_gb(gmx_genborn_t **p_born,
     born->nr = natoms;
 
     snew(born->drobc, natoms);
-    snew(born->bRad,  natoms);
+    snew(born->bRad, natoms);
 
     /* Allocate memory for the global data arrays */
     snew(born->param_globalindex, natoms + 3);
-    snew(born->gpol_globalindex,  natoms + 3);
+    snew(born->gpol_globalindex, natoms + 3);
     snew(born->vsolv_globalindex, natoms + 3);
     snew(born->gb_radius_globalindex, natoms + 3);
-    snew(born->use_globalindex,    natoms + 3);
+    snew(born->use_globalindex, natoms + 3);
 
     snew(fr->invsqrta, natoms);
-    snew(fr->dvda,     natoms);
+    snew(fr->dvda, natoms);
 
     fr->dadx              = nullptr;
     fr->dadx_rawptr       = nullptr;
@@ -294,7 +294,7 @@ int init_gb(gmx_genborn_t **p_born,
         }
 
         /* If we have a Vsite, put vs_globalindex[i]=0 */
-        if (C6 (fr->nbfp, fr->ntype, jj, jj) == 0
+        if (C6(fr->nbfp, fr->ntype, jj, jj) == 0
             && C12(fr->nbfp, fr->ntype, jj, jj) == 0
             && atoms.atom[i].q == 0)
         {
@@ -356,7 +356,6 @@ int init_gb(gmx_genborn_t **p_born,
 
     return 0;
 }
-
 
 
 static int calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
@@ -440,14 +439,14 @@ static int calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 term  = 0.5 * (1.0 - cosq);
                 ccf   = term * term;
                 sinq  = 1.0 - cosq * cosq;
-                dccf  = 2.0*term*sinq*gmx::invsqrt(sinq) * theta;
+                dccf  = 2.0 * term * sinq * gmx::invsqrt(sinq) * theta;
             }
 
-            prod                       = STILL_P4 * vaj;
-            icf4                       = ccf * idr4;
-            icf6                       = (4 * ccf - dccf) * idr6;
+            prod = STILL_P4 * vaj;
+            icf4 = ccf * idr4;
+            icf6 = (4 * ccf - dccf) * idr6;
             born->gpol_still_work[aj] += prod_ai * icf4;
-            gpi                        = gpi + prod * icf4;
+            gpi = gpi + prod * icf4;
 
             /* Save ai->aj and aj->ai chain rule terms */
             fr->dadx[n++] = prod * icf6;
@@ -482,7 +481,6 @@ static int calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
     }
 
     return 0;
-
 }
 
 
@@ -586,7 +584,7 @@ static int calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 log_term = std::log(uij * lij_inv);
 
                 tmp = lij - uij + 0.25 * dr * diff2 + (0.5 * rinv) * log_term
-                    + prod * (-diff2);
+                      + prod * (-diff2);
 
                 if (rai < sk - dr)
                 {
@@ -623,17 +621,17 @@ static int calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                     dlij = 0.0;
                 }
 
-                lij2 = lij  * lij;
+                lij2 = lij * lij;
                 lij3 = lij2 * lij;
 
                 uij  = 1.0 / (dr + sk_ai);
-                uij2 = uij  * uij;
+                uij2 = uij * uij;
                 uij3 = uij2 * uij;
 
                 diff2 = uij2 - lij2;
 
                 lij_inv  = gmx::invsqrt(lij2);
-                sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
+                sk2      = sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
                 sk2_rinv = sk2 * rinv;
                 prod     = 0.25 * sk2_rinv;
 
@@ -642,7 +640,7 @@ static int calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 log_term = std::log(uij * lij_inv);
 
                 tmp = lij - uij + 0.25 * dr * diff2 + (0.5 * rinv) * log_term
-                    + prod * (-diff2);
+                      + prod * (-diff2);
 
                 if (raj < sk_ai - dr)
                 {
@@ -654,7 +652,7 @@ static int calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 t2 = -0.5 * uij2 - 0.25 * sk2_rinv * uij3 + 0.25 * (uij * rinv + uij3 * dr);
                 t3 = 0.125 * (1.0 + sk2_rinv * rinv) * (-diff2) + 0.25 * log_term * rinv * rinv;
 
-                dadx_val = (dlij * t1 + t2 + t3) * rinv; /* rb2 is moved to chainrule    */
+                dadx_val = (dlij * t1 + t2 + t3) * rinv;         /* rb2 is moved to chainrule    */
                 /* fr->dadx[n++] = (dlij*t1+duij*t2+t3)*rinv; */ /* rb2 is moved to chainrule    */
 
                 born->gpol_hct_work[aj] += 0.5 * tmp;
@@ -784,9 +782,9 @@ static int calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 }
 
                 uij  = 1.0 / (dr + sk);
-                lij2 = lij  * lij;
+                lij2 = lij * lij;
                 lij3 = lij2 * lij;
-                uij2 = uij  * uij;
+                uij2 = uij * uij;
                 uij3 = uij2 * uij;
 
                 diff2 = uij2 - lij2;
@@ -833,17 +831,17 @@ static int calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                     dlij = 0.0;
                 }
 
-                lij2 = lij  * lij;
+                lij2 = lij * lij;
                 lij3 = lij2 * lij;
 
                 uij  = 1.0 / (dr + sk_ai);
-                uij2 = uij  * uij;
+                uij2 = uij * uij;
                 uij3 = uij2 * uij;
 
                 diff2 = uij2 - lij2;
 
                 lij_inv  = gmx::invsqrt(lij2);
-                sk2      =  sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
+                sk2      = sk2_ai; /* sk2_ai = sk_ai * sk_ai in i loop above */
                 sk2_rinv = sk2 * rinv;
                 prod     = 0.25 * sk2_rinv;
 
@@ -864,17 +862,14 @@ static int calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
                 dadx_val = (dlij * t1 + t2 + t3) * rinv; /* rb2 is moved to chainrule    */
 
                 born->gpol_hct_work[aj] += 0.5 * tmp;
-
             }
             else
             {
                 dadx_val = 0.0;
             }
             fr->dadx[n++] = dadx_val;
-
         }
         born->gpol_hct_work[ai] += sum_ai;
-
     }
 
     /* Parallel summations */
@@ -892,7 +887,7 @@ static int calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
             rai      = rai - doffset;
             rai_inv  = 1.0 / rai;
             sum_ai   = rai * born->gpol_hct_work[i];
-            sum_ai2  = sum_ai  * sum_ai;
+            sum_ai2  = sum_ai * sum_ai;
             sum_ai3  = sum_ai2 * sum_ai;
 
             tsum          = tanh(born->obc_alpha * sum_ai - born->obc_beta * sum_ai2 + born->obc_gamma * sum_ai3);
@@ -915,13 +910,11 @@ static int calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, gmx_localtop_t *top,
     }
 
     return 0;
-
 }
 
 
-
 int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top,
-                rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb)
+                rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb *nrnb)
 {
     int cnt;
     int ndadx;
@@ -933,7 +926,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
          */
         fr->nalloc_dadx = 2 * (md->homenr + 12) * (md->nr / 2 + 1 + 12);
         snew(fr->dadx_rawptr, fr->nalloc_dadx);
-        fr->dadx = (real *) (((size_t) fr->dadx_rawptr + 16) & (~((size_t) 15)));
+        fr->dadx = (real *)(((size_t)fr->dadx_rawptr + 16) & (~((size_t)15)));
     }
     else
     {
@@ -950,7 +943,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
         {
             fr->nalloc_dadx = over_alloc_large(ndadx) + 3;
             srenew(fr->dadx_rawptr, fr->nalloc_dadx);
-            fr->dadx = (real *) (((size_t) fr->dadx_rawptr + 16) & (~((size_t) 15)));
+            fr->dadx = (real *)(((size_t)fr->dadx_rawptr + 16) & (~((size_t)15)));
         }
     }
 
@@ -977,7 +970,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
         return 0;
     }
 
-    /* Switch for determining which algorithm to use for Born radii calculation */
+/* Switch for determining which algorithm to use for Born radii calculation */
 #if GMX_DOUBLE
 
     switch (ir->gb_algorithm)
@@ -1039,7 +1032,6 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
 }
 
 
-
 real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtabscale,
                   real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
                   real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph)
@@ -1069,7 +1061,7 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
     {
         forceatoms = idef->il[j].iatoms;
 
-        for (i = 0; i < idef->il[j].nr; )
+        for (i = 0; i < idef->il[j].nr;)
         {
             /* To avoid reading in the interaction type, we just increment i to pass over
              * the types in the forceatoms array, this saves some memory accesses
@@ -1108,7 +1100,7 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
             dvda[aj] = dvda[aj] + dvdatmp * isaj * isaj;
             dvda[ai] = dvda[ai] + dvdatmp * isai * isai;
             vctot    = vctot + vgb;
-            fgb      = -(fijC) * rinv11;
+            fgb      = -(fijC)*rinv11;
 
             if (graph)
             {
@@ -1116,12 +1108,12 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
                 ki = IVEC2IS(dt);
             }
 
-            for (m = 0; (m < DIM); m++)             /*  15		*/
+            for (m = 0; (m < DIM); m++) /*  15		*/
             {
-                fscal               = fgb * dx[m];
-                f[ai][m]           += fscal;
-                f[aj][m]           -= fscal;
-                fshift[ki][m]      += fscal;
+                fscal = fgb * dx[m];
+                f[ai][m] += fscal;
+                f[aj][m] -= fscal;
+                fshift[ki][m] += fscal;
                 fshift[CENTRAL][m] -= fscal;
             }
         }
@@ -1145,7 +1137,6 @@ real calc_gb_selfcorrections(t_commrec *cr, int natoms,
     {
         at0 = 0;
         at1 = natoms;
-
     }
 
     /* Scale the electrostatics by gb_epsilon_solvent */
@@ -1160,20 +1151,19 @@ real calc_gb_selfcorrections(t_commrec *cr, int natoms,
 
         if (born->use[ai] == 1)
         {
-            rai       = born->bRad[ai];
-            rai_inv   = 1.0 / rai;
-            q         = charge[ai];
-            q2        = q * q;
-            fi        = facel * q2;
-            e         = fi * rai_inv;
-            derb      = 0.5 * e * rai_inv * rai_inv;
+            rai     = born->bRad[ai];
+            rai_inv = 1.0 / rai;
+            q       = charge[ai];
+            q2      = q * q;
+            fi      = facel * q2;
+            e       = fi * rai_inv;
+            derb    = 0.5 * e * rai_inv * rai_inv;
             dvda[ai] += derb * rai;
-            vtot     -= 0.5 * e;
+            vtot -= 0.5 * e;
         }
     }
 
     return vtot;
-
 }
 
 real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *born, gmx_localtop_t *top,
@@ -1220,7 +1210,6 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *
 
     return es;
 }
-
 
 
 real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[], rvec t[], rvec fshift[],
@@ -1331,7 +1320,6 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
         fshift[shift][0] = fshift[shift][0] + fix1;
         fshift[shift][1] = fshift[shift][1] + fiy1;
         fshift[shift][2] = fshift[shift][2] + fiz1;
-
     }
 
     return 0;
@@ -1427,7 +1415,6 @@ static gbtmpnbl_t *find_gbtmplist(struct gbtmpnbls *lists, int shift)
                 lists->list[i].aj        = nullptr;
                 lists->list[i].aj_nalloc = 0;
             }
-
         }
 
         lists->list[lists->nlist].shift = shift;
@@ -1657,7 +1644,7 @@ void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
         /* Arrays specific to different gb algorithms */
         if (gb_algorithm == egbSTILL)
         {
-            srenew(born->gpol,  nalloc + 3);
+            srenew(born->gpol, nalloc + 3);
             srenew(born->vsolv, nalloc + 3);
             srenew(born->gb_radius, nalloc + 3);
             for (i = born->nalloc; (i < nalloc + 3); i++)
@@ -1679,7 +1666,7 @@ void make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm)
         }
 
         /* All gb-algorithms use the array for vsites exclusions */
-        srenew(born->use,    nalloc + 3);
+        srenew(born->use, nalloc + 3);
         for (i = born->nalloc; (i < nalloc + 3); i++)
         {
             born->use[i] = 0;

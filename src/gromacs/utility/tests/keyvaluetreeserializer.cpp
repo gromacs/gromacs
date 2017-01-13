@@ -134,7 +134,7 @@ public:
         {
             RefDataReadSerializer   serializer(&checker, "Stream");
             gmx::KeyValueTreeObject output
-                = gmx::deserializeKeyValueTree(&serializer);
+                    = gmx::deserializeKeyValueTree(&serializer);
             checker.checkKeyValueTreeObject(output, "Input");
         }
     }

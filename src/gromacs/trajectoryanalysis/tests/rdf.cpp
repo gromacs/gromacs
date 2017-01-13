@@ -71,7 +71,7 @@ using gmx::test::NoTextMatch;
 
 //! Test fixture for the `rdf` analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::RdfInfo>
-    RdfModuleTest;
+        RdfModuleTest;
 
 TEST_F(RdfModuleTest, BasicTest)
 {

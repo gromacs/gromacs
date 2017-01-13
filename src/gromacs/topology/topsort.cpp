@@ -63,32 +63,32 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
         case F_ANGLES:
         case F_G96ANGLES:
         case F_IDIHS:
-            bPert = (ip->harmonic.rA  != ip->harmonic.rB
+            bPert = (ip->harmonic.rA != ip->harmonic.rB
                      || ip->harmonic.krA != ip->harmonic.krB);
             break;
         case F_MORSE:
-            bPert = (ip->morse.b0A  != ip->morse.b0B
-                     || ip->morse.cbA  != ip->morse.cbB
-                     || ip->morse.betaA  != ip->morse.betaB);
+            bPert = (ip->morse.b0A != ip->morse.b0B
+                     || ip->morse.cbA != ip->morse.cbB
+                     || ip->morse.betaA != ip->morse.betaB);
             break;
         case F_RESTRBONDS:
-            bPert = (ip->restraint.lowA  != ip->restraint.lowB
-                     || ip->restraint.up1A  != ip->restraint.up1B
-                     || ip->restraint.up2A  != ip->restraint.up2B
-                     || ip->restraint.kA    != ip->restraint.kB);
+            bPert = (ip->restraint.lowA != ip->restraint.lowB
+                     || ip->restraint.up1A != ip->restraint.up1B
+                     || ip->restraint.up2A != ip->restraint.up2B
+                     || ip->restraint.kA != ip->restraint.kB);
             break;
         case F_UREY_BRADLEY:
-            bPert = (ip->u_b.thetaA  != ip->u_b.thetaB
+            bPert = (ip->u_b.thetaA != ip->u_b.thetaB
                      || ip->u_b.kthetaA != ip->u_b.kthetaB
-                     || ip->u_b.r13A    != ip->u_b.r13B
-                     || ip->u_b.kUBA    != ip->u_b.kUBB);
+                     || ip->u_b.r13A != ip->u_b.r13B
+                     || ip->u_b.kUBA != ip->u_b.kUBB);
             break;
         case F_PDIHS:
         case F_PIDIHS:
         case F_ANGRES:
         case F_ANGRESZ:
             bPert = (ip->pdihs.phiA != ip->pdihs.phiB
-                     || ip->pdihs.cpA  != ip->pdihs.cpB);
+                     || ip->pdihs.cpA != ip->pdihs.cpB);
             break;
         case F_RBDIHS:
             bPert = FALSE;
@@ -111,7 +111,7 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
             for (i = 0; i < DIM; i++)
             {
                 if (ip->posres.pos0A[i] != ip->posres.pos0B[i]
-                    || ip->posres.fcA[i]   != ip->posres.fcB[i])
+                    || ip->posres.fcA[i] != ip->posres.fcB[i])
                 {
                     bPert = TRUE;
                 }
@@ -123,7 +123,7 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
                      || (ip->dihres.kfacA != ip->dihres.kfacB));
             break;
         case F_LJ14:
-            bPert = (ip->lj14.c6A  != ip->lj14.c6B
+            bPert = (ip->lj14.c6A != ip->lj14.c6B
                      || ip->lj14.c12A != ip->lj14.c12B);
             break;
         case F_CMAP:

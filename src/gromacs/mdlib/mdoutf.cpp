@@ -62,7 +62,7 @@ struct gmx_mdoutf
     t_fileio *       fp_xtc;
     tng_trajectory_t tng;
     tng_trajectory_t tng_low_prec;
-    int              x_compression_precision;  /* only used by XTC output */
+    int              x_compression_precision; /* only used by XTC output */
     ener_file_t      fp_ene;
     const char *     fn_cpt;
     gmx_bool         bKeepAndNumCPT;
@@ -73,7 +73,7 @@ struct gmx_mdoutf
     FILE *           fp_dhdl;
     int              natoms_global;
     int              natoms_x_compressed;
-    gmx_groups_t *   groups;  /* for compressed position writing */
+    gmx_groups_t *   groups; /* for compressed position writing */
     gmx_wallcycle_t  wcycle;
     rvec *           f_global;
 };
@@ -86,7 +86,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
 {
     gmx_mdoutf_t of;
     const char * appendMode = "a+", *writeMode = "w+", *filemode;
-    gmx_bool     bAppendFiles, bCiteTng = FALSE;
+    gmx_bool     bAppendFiles, bCiteTng        = FALSE;
     int          i;
 
     snew(of, 1);
@@ -138,13 +138,12 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         }
         if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
 #ifndef GMX_FAHCORE
-            &&
-            !(EI_DYNAMICS(ir->eI)
-              && ir->nstxout == 0
-              && ir->nstvout == 0
-              && ir->nstfout == 0)
+            && !(EI_DYNAMICS(ir->eI)
+                 && ir->nstxout == 0
+                 && ir->nstvout == 0
+                 && ir->nstfout == 0)
 #endif
-            )
+                    )
         {
             const char *filename;
             filename = ftp2fn(efTRN, nfile, fnm);
@@ -180,7 +179,7 @@ gmx_mdoutf_t init_mdoutf(FILE *fplog, int nfile, const t_filenm fnm[],
         of->fn_cpt = opt2fn("-cpo", nfile, fnm);
 
         if ((ir->efep != efepNO || ir->bSimTemp) && ir->fepvals->nstdhdl > 0
-            && (ir->fepvals->separate_dhdl_file == esepdhdlfileYES )
+            && (ir->fepvals->separate_dhdl_file == esepdhdlfileYES)
             && EI_DYNAMICS(ir->eI))
         {
             if (bAppendFiles)
@@ -241,11 +240,11 @@ gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of)
 
 void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mdoutf_t of,
-                                      int mdof_flags,
-                                      gmx_mtop_t *top_global,
+                                      int          mdof_flags,
+                                      gmx_mtop_t * top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      energyhistory_t *energyHistory,
+                                      energyhistory_t * energyHistory,
                                       PaddedRVecVector *f_local)
 {
     rvec *f_global;
@@ -362,7 +361,8 @@ void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                 }
             }
             if (write_xtc(of->fp_xtc, of->natoms_x_compressed, step, t,
-                          state_local->box, xxtc, of->x_compression_precision) == 0)
+                          state_local->box, xxtc, of->x_compression_precision)
+                == 0)
             {
                 gmx_fatal(FARGS, "XTC error - maybe you are out of disk space?");
             }

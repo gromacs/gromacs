@@ -68,9 +68,10 @@ namespace gmx
 namespace test
 {
 
-MultiSimTest::MultiSimTest() : size_(gmx_node_num()),
-                               rank_(gmx_node_rank()),
-                               mdrunCaller_(new CommandLine)
+MultiSimTest::MultiSimTest()
+    : size_(gmx_node_num()),
+      rank_(gmx_node_rank()),
+      mdrunCaller_(new CommandLine)
 {
     runner_.mdpInputFileName_  = fileManager_.getTemporaryFilePath(formatString("input%d.mdp", rank_));
     runner_.mdpOutputFileName_ = fileManager_.getTemporaryFilePath(formatString("output%d.mdp", rank_));
@@ -97,32 +98,33 @@ void MultiSimTest::organizeMdpFile(const char *controlVariable,
     const real  baseTemperature = 298;
     const real  basePressure    = 1;
     std::string mdpFileContents
-        = formatString("nsteps = %d\n"
-                       "nstlog = 1\n"
-                       "nstcalcenergy = 1\n"
-                       "tcoupl = v-rescale\n"
-                       "tc-grps = System\n"
-                       "tau-t = 1\n"
-                       "ref-t = %f\n"
-                       // pressure coupling (if active)
-                       "tau-p = 1\n"
-                       "ref-p = %f\n"
-                       "compressibility = 4.5e-5\n"
-                       // velocity generation
-                       "gen-vel = yes\n"
-                       "gen-temp = %f\n"
-                       // control variable specification
-                       "%s\n",
-                       numSteps,
-                       baseTemperature + 0.0001 * rank_,
-                       basePressure * std::pow(1.01, rank_),
-                       /* Set things up so that the initial KE decreases with
+            = formatString(
+                    "nsteps = %d\n"
+                    "nstlog = 1\n"
+                    "nstcalcenergy = 1\n"
+                    "tcoupl = v-rescale\n"
+                    "tc-grps = System\n"
+                    "tau-t = 1\n"
+                    "ref-t = %f\n"
+                    // pressure coupling (if active)
+                    "tau-p = 1\n"
+                    "ref-p = %f\n"
+                    "compressibility = 4.5e-5\n"
+                    // velocity generation
+                    "gen-vel = yes\n"
+                    "gen-temp = %f\n"
+                    // control variable specification
+                    "%s\n",
+                    numSteps,
+                    baseTemperature + 0.0001 * rank_,
+                    basePressure * std::pow(1.01, rank_),
+                    /* Set things up so that the initial KE decreases with
                           increasing replica number, so that the (identical)
                           starting PE decreases on the first step more for the
                           replicas with higher number, which will tend to force
                           replica exchange to occur. */
-                       std::max(baseTemperature - 10 * rank_, real(0)),
-                       controlVariable);
+                    std::max(baseTemperature - 10 * rank_, real(0)),
+                    controlVariable);
     runner_.useStringAsMdpFile(mdpFileContents);
 }
 
@@ -167,7 +169,7 @@ void MultiSimTest::runMaxhTest()
     // The actual output checkpoint file gets a rank suffix, so
     // handle that in the expected result.
     std::string expectedCptFileName
-        = Path::concatenateBeforeExtension(runner_.cptFileName_, formatString("%d", rank_));
+            = Path::concatenateBeforeExtension(runner_.cptFileName_, formatString("%d", rank_));
     helper.runFirstMdrun(expectedCptFileName);
     helper.runSecondMdrun();
 }

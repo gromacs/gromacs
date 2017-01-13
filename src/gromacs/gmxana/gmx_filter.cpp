@@ -79,17 +79,13 @@ int gmx_filter(int argc, char *argv[])
         "the coordinates in the structure file."
     };
 
-    static int        nf      = 10;
-    static gmx_bool   bNoJump = TRUE, bFit = FALSE, bLowAll = FALSE;
-    t_pargs           pa[]    = {
-        { "-nf", FALSE, etINT, {&nf},
-          "Sets the filter length as well as the output interval for low-pass filtering" },
-        { "-all", FALSE, etBOOL, {&bLowAll},
-          "Write all low-pass filtered frames" },
-        { "-nojump", FALSE, etBOOL, {&bNoJump},
-          "Remove jumps of atoms across the box" },
-        { "-fit", FALSE, etBOOL, {&bFit},
-          "Fit all frames to a reference structure" }
+    static int      nf      = 10;
+    static gmx_bool bNoJump = TRUE, bFit = FALSE, bLowAll = FALSE;
+    t_pargs         pa[] = {
+        { "-nf", FALSE, etINT, { &nf }, "Sets the filter length as well as the output interval for low-pass filtering" },
+        { "-all", FALSE, etBOOL, { &bLowAll }, "Write all low-pass filtered frames" },
+        { "-nojump", FALSE, etBOOL, { &bNoJump }, "Remove jumps of atoms across the box" },
+        { "-fit", FALSE, etBOOL, { &bFit }, "Fit all frames to a reference structure" }
     };
     const char *      topfile, *lowfile, *highfile;
     gmx_bool          bTop = FALSE;
@@ -112,10 +108,10 @@ int gmx_filter(int argc, char *argv[])
 
 #define NLEG asize(leg)
     t_filenm fnm[] = {
-        { efTRX, "-f", nullptr, ffREAD  },
+        { efTRX, "-f", nullptr, ffREAD },
         { efTPS, nullptr, nullptr, ffOPTRD },
         { efNDX, nullptr, nullptr, ffOPTRD },
-        { efTRO, "-ol", "lowpass",  ffOPTWR },
+        { efTRO, "-ol", "lowpass", ffOPTWR },
         { efTRO, "-oh", "highpass", ffOPTWR }
     };
 #define NFILE asize(fnm)
@@ -175,7 +171,7 @@ int gmx_filter(int argc, char *argv[])
     for (i = 0; i < nffr; i++)
     {
         filt[i] = std::cos(2 * M_PI * (i - nf + 1) / static_cast<real>(flen)) + 1;
-        sum    += filt[i];
+        sum += filt[i];
     }
     fprintf(stdout, "filter weights:");
     for (i = 0; i < nffr; i++)

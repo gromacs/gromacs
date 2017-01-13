@@ -101,7 +101,7 @@ namespace gmx
 static inline SimdFloat gmx_simdcall copysign(SimdFloat x, SimdFloat y)
 {
 #if GMX_SIMD_HAVE_LOGICAL
-    return abs(x) | ( SimdFloat(GMX_FLOAT_NEGZERO) & y );
+    return abs(x) | (SimdFloat(GMX_FLOAT_NEGZERO) & y);
 #else
     return blend(abs(x), -abs(x), y < setZero());
 #endif
@@ -122,7 +122,7 @@ static inline SimdFloat gmx_simdcall rsqrtIter(SimdFloat lu, SimdFloat x)
 {
     SimdFloat tmp1 = x * lu;
     SimdFloat tmp2 = SimdFloat(-0.5f) * lu;
-    tmp1 = fma(tmp1, lu, SimdFloat(-3.0f));
+    tmp1           = fma(tmp1, lu, SimdFloat(-3.0f));
     return tmp1 * tmp2;
 }
 #endif
@@ -157,7 +157,7 @@ static inline SimdFloat gmx_simdcall invsqrt(SimdFloat x)
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
  */
-static inline void gmx_simdcall invsqrtPair(SimdFloat x0,    SimdFloat x1,
+static inline void gmx_simdcall invsqrtPair(SimdFloat x0, SimdFloat x1,
                                             SimdFloat *out0, SimdFloat *out1)
 {
     *out0 = invsqrt(x0);
@@ -303,7 +303,7 @@ static inline SimdFloat gmx_simdcall log(SimdFloat x)
     fExp = fExp - selectByMask(one, m);
     x    = x * blend(one, two, m);
 
-    x  = (x - one) * inv( x + one );
+    x  = (x - one) * inv(x + one);
     x2 = x * x;
 
     p = fma(CL9, x2, CL7);
@@ -480,7 +480,7 @@ static inline SimdFloat gmx_simdcall erf(SimdFloat x)
 
     // No need for a floating-point sieve here (as in erfc), since erf()
     // will never return values that are extremely small for large args.
-    expmx2 = exp( -y * y );
+    expmx2 = exp(-y * y);
 
     pB1 = fma(CB9, w2, CB7);
     pB0 = fma(CB8, w2, CB6);
@@ -572,7 +572,7 @@ static inline SimdFloat gmx_simdcall erfc(SimdFloat x)
     const SimdFloat one(1.0f);
     const SimdFloat two(2.0f);
 
-    /* We need to use a small trick here, since we cannot assume all SIMD
+/* We need to use a small trick here, since we cannot assume all SIMD
      * architectures support integers, and the flag we want (0xfffff000) would
      * evaluate to NaN (i.e., it cannot be expressed as a floating-point num).
      * Instead, we represent the flags 0xf0f0f000 and 0x0f0f0000 as valid
@@ -583,11 +583,12 @@ static inline SimdFloat gmx_simdcall erfc(SimdFloat x)
     const SimdFloat sieve(SimdFloat(-5.965323564e+29f) | SimdFloat(7.05044434e-30f));
 #else
     const int isieve = 0xFFFFF000;
-    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)  mem[GMX_SIMD_FLOAT_WIDTH];
+    GMX_ALIGNED(float, GMX_SIMD_FLOAT_WIDTH)
+    mem[GMX_SIMD_FLOAT_WIDTH];
 
-    union
-    {
-        float f; int i;
+    union {
+        float f;
+        int   i;
     } conv;
     int i;
 #endif
@@ -621,7 +622,7 @@ static inline SimdFloat gmx_simdcall erfc(SimdFloat x)
     w       = t - one;
     t2      = t * t;
     w2      = w * w;
-    /*
+/*
      * We cannot simply calculate exp(-y2) directly in single precision, since
      * that will lose a couple of bits of precision due to the multiplication.
      * Instead, we introduce y=z+w, where the last 12 bits of precision are in w.
@@ -656,7 +657,7 @@ static inline SimdFloat gmx_simdcall erfc(SimdFloat x)
     corr = fma(corr, q, one);
     corr = fma(corr, q, one);
 
-    expmx2 = exp( -z * z );
+    expmx2 = exp(-z * z);
     expmx2 = expmx2 * corr;
 
     pB1 = fma(CB9, w2, CB7);
@@ -716,11 +717,11 @@ static inline void gmx_simdcall sincos(SimdFloat x, SimdFloat *sinval, SimdFloat
     const SimdFloat argred3(-2.56334406825708960298e-12f);
     const SimdFloat two_over_pi(static_cast<float>(2.0f / M_PI));
     const SimdFloat const_sin2(-1.9515295891e-4f);
-    const SimdFloat const_sin1( 8.3321608736e-3f);
+    const SimdFloat const_sin1(8.3321608736e-3f);
     const SimdFloat const_sin0(-1.6666654611e-1f);
-    const SimdFloat const_cos2( 2.443315711809948e-5f);
+    const SimdFloat const_cos2(2.443315711809948e-5f);
     const SimdFloat const_cos1(-1.388731625493765e-3f);
-    const SimdFloat const_cos0( 4.166664568298827e-2f);
+    const SimdFloat const_cos0(4.166664568298827e-2f);
     const SimdFloat half(0.5f);
     const SimdFloat one(1.0f);
     SimdFloat       ssign, csign;
@@ -767,22 +768,22 @@ static inline void gmx_simdcall sincos(SimdFloat x, SimdFloat *sinval, SimdFloat
      * First check if y had the value 2 or 3, set csign if true.
      */
     q = q - half;
-    /* If we have logical operations we can work directly on the signbit, which
+/* If we have logical operations we can work directly on the signbit, which
      * saves instructions. Otherwise we need to represent signs as +1.0/-1.0.
      * Thus, if you are altering defines to debug alternative code paths, the
      * two GMX_SIMD_HAVE_LOGICAL sections in this routine must either both be
      * active or inactive - you will get errors if only one is used.
      */
-#    if GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_LOGICAL
     ssign = ssign & SimdFloat(GMX_FLOAT_NEGZERO);
     csign = andNot(q, SimdFloat(GMX_FLOAT_NEGZERO));
     ssign = ssign ^ csign;
-#    else
+#else
     ssign = copysign(SimdFloat(1.0f), ssign);
     csign = copysign(SimdFloat(1.0f), q);
     csign = -csign;
-    ssign = ssign * csign;      // swap ssign if csign was set.
-#    endif
+    ssign = ssign * csign; // swap ssign if csign was set.
+#endif
     // Check if y had value 1 or 3 (remember we subtracted 0.5 from q)
     m1 = (q < minusquarter);
     m2 = (setZero() <= q);
@@ -790,7 +791,7 @@ static inline void gmx_simdcall sincos(SimdFloat x, SimdFloat *sinval, SimdFloat
     m2 = m2 && m3;
     m  = m1 || m2;
     // where mask is FALSE, swap sign.
-    csign = csign * blend(SimdFloat(-1.0f), one, m);
+    csign   = csign * blend(SimdFloat(-1.0f), one, m);
 #endif
     x  = fma(y, argred0, x);
     x  = fma(y, argred1, x);
@@ -808,7 +809,7 @@ static inline void gmx_simdcall sincos(SimdFloat x, SimdFloat *sinval, SimdFloat
 
     sss = blend(pcos, psin, m);
     ccc = blend(psin, pcos, m);
-    // See comment for GMX_SIMD_HAVE_LOGICAL section above.
+// See comment for GMX_SIMD_HAVE_LOGICAL section above.
 #if GMX_SIMD_HAVE_LOGICAL
     *sinval = sss ^ ssign;
     *cosval = ccc ^ csign;
@@ -891,22 +892,22 @@ static inline SimdFloat gmx_simdcall tan(SimdFloat x)
     SimdFloat       w, q;
     SimdFBool       m1, m2, m3;
 
-    w  = abs(x);
-    z  = fma(w, two_over_pi, half);
-    y  = trunc(z);
-    q  = z * quarter;
-    q  = q - trunc(q);
-    m1 = quarter <= q;
-    m2 = q < half;
-    m3 = threequarter <= q;
-    m1 = m1 && m2;
-    m  = m1 || m3;
-    w  = fma(y, argred0, w);
-    w  = fma(y, argred1, w);
-    w  = fma(y, argred2, w);
-    w  = fma(y, argred3, w);
-    w  = blend(w, -w, m);
-    x  = w * copysign( SimdFloat(1.0), x );
+    w     = abs(x);
+    z     = fma(w, two_over_pi, half);
+    y     = trunc(z);
+    q     = z * quarter;
+    q     = q - trunc(q);
+    m1    = quarter <= q;
+    m2    = q < half;
+    m3    = threequarter <= q;
+    m1    = m1 && m2;
+    m     = m1 || m3;
+    w     = fma(y, argred0, w);
+    w     = fma(y, argred1, w);
+    w     = fma(y, argred2, w);
+    w     = fma(y, argred3, w);
+    w     = blend(w, -w, m);
+    x     = w * copysign(SimdFloat(1.0), x);
 #endif
     x2 = x * x;
     p  = fma(CT6, x2, CT5);
@@ -916,7 +917,7 @@ static inline SimdFloat gmx_simdcall tan(SimdFloat x)
     p  = fma(p, x2, CT1);
     p  = fma(x2 * p, x, x);
 
-    p = blend( p, maskzInv(p, m), m);
+    p = blend(p, maskzInv(p, m), m);
     return p;
 }
 
@@ -963,7 +964,7 @@ static inline SimdFloat gmx_simdcall asin(SimdFloat x)
     z  = blend(z, q2, m);
 
     m = limitlow < xabs;
-    z = blend( xabs, z, m );
+    z = blend(xabs, z, m);
     z = copysign(z, x);
 
     return z;
@@ -989,7 +990,7 @@ static inline SimdFloat gmx_simdcall acos(SimdFloat x)
     m2   = setZero() < x;
 
     z  = fnma(half, xabs, half);
-    m3 = xabs <  one;
+    m3 = xabs < one;
     z  = z * maskzInvsqrt(z, m3);
     z  = blend(x, z, m1);
     z  = asin(z);
@@ -1015,11 +1016,11 @@ static inline SimdFloat gmx_simdcall atan(SimdFloat x)
     const SimdFloat CA15(-0.01595690287649631500244f);
     const SimdFloat CA13(0.04250498861074447631836f);
     const SimdFloat CA11(-0.07489009201526641845703f);
-    const SimdFloat CA9 (0.1063479334115982055664f);
-    const SimdFloat CA7 (-0.1420273631811141967773f);
-    const SimdFloat CA5 (0.1999269574880599975585f);
-    const SimdFloat CA3 (-0.3333310186862945556640f);
-    const SimdFloat one (1.0f);
+    const SimdFloat CA9(0.1063479334115982055664f);
+    const SimdFloat CA7(-0.1420273631811141967773f);
+    const SimdFloat CA5(0.1999269574880599975585f);
+    const SimdFloat CA3(-0.3333310186862945556640f);
+    const SimdFloat one(1.0f);
     SimdFloat       x2, x3, x4, pA, pB;
     SimdFBool       m, m2;
 
@@ -1203,7 +1204,6 @@ static inline SimdFloat gmx_simdcall pmeForceCorrection(SimdFloat z2)
 }
 
 
-
 /*! \brief Calculate the potential correction due to PME analytically in SIMD float.
  *
  * \param z2 \f$(r \beta)^2\f$ - see below for details.
@@ -1324,7 +1324,7 @@ static inline SimdDouble gmx_simdcall rsqrtIter(SimdDouble lu, SimdDouble x)
 {
     SimdDouble tmp1 = x * lu;
     SimdDouble tmp2 = SimdDouble(-0.5) * lu;
-    tmp1 = fma(tmp1, lu, SimdDouble(-3.0));
+    tmp1            = fma(tmp1, lu, SimdDouble(-3.0));
     return tmp1 * tmp2;
 }
 #endif
@@ -1362,14 +1362,14 @@ static inline SimdDouble gmx_simdcall invsqrt(SimdDouble x)
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
  */
-static inline void gmx_simdcall invsqrtPair(SimdDouble x0,    SimdDouble x1,
+static inline void gmx_simdcall invsqrtPair(SimdDouble x0, SimdDouble x1,
                                             SimdDouble *out0, SimdDouble *out1)
 {
 #if GMX_SIMD_HAVE_FLOAT && (GMX_SIMD_FLOAT_WIDTH == 2 * GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22)
     SimdFloat  xf  = cvtDD2F(x0, x1);
     SimdFloat  luf = rsqrt(xf);
     SimdDouble lu0, lu1;
-    // Intermediate target is single - mantissa+1 bits
+// Intermediate target is single - mantissa+1 bits
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = rsqrtIter(luf, xf);
 #endif
@@ -1380,7 +1380,7 @@ static inline void gmx_simdcall invsqrtPair(SimdDouble x0,    SimdDouble x1,
     luf = rsqrtIter(luf, xf);
 #endif
     cvtF2DD(luf, &lu0, &lu1);
-    // Last iteration(s) performed in double - if we had 22 bits, this gets us to 44 (~1e-15)
+// Last iteration(s) performed in double - if we had 22 bits, this gets us to 44 (~1e-15)
 #if (GMX_SIMD_ACCURACY_BITS_SINGLE < GMX_SIMD_ACCURACY_BITS_DOUBLE)
     lu0 = rsqrtIter(lu0, x0);
     lu1 = rsqrtIter(lu1, x1);
@@ -1549,7 +1549,7 @@ static inline SimdDouble gmx_simdcall log(SimdDouble x)
     fExp = fExp - selectByMask(one, m);
     x    = x * blend(one, two, m);
 
-    x  = (x - one) * inv( x + one );
+    x  = (x - one) * inv(x + one);
     x2 = x * x;
 
     p = fma(CL15, x2, CL13);
@@ -1809,7 +1809,7 @@ static inline SimdDouble gmx_simdcall erf(SimdDouble x)
     PolyCQ0 = fma(PolyCQ0, w2, one);
     PolyCQ0 = fma(PolyCQ1, w, PolyCQ0);
 
-    expmx2 = exp( -x2 );
+    expmx2 = exp(-x2);
 
     // The denominator polynomial can be zero outside the range
     res_erfcC = PolyCP0 * maskzInv(PolyCQ0, notmask_erf);
@@ -1968,7 +1968,7 @@ static inline SimdDouble gmx_simdcall erfc(SimdDouble x)
     PolyCQ0 = fma(PolyCQ0, w2, one);
     PolyCQ0 = fma(PolyCQ1, w, PolyCQ0);
 
-    expmx2 = exp( -x2 );
+    expmx2 = exp(-x2);
 
     // The denominator polynomial can be zero outside the range
     res_erfcC = PolyCP0 * maskzInv(PolyCQ0, notmask_erf);
@@ -2008,19 +2008,19 @@ static inline void gmx_simdcall sincos(SimdDouble x, SimdDouble *sinval, SimdDou
     const SimdDouble argred2(-2 * 1.1258708853173288931e-18);
     const SimdDouble argred3(-2 * 1.7607799325916000908e-27);
     const SimdDouble two_over_pi(2.0 / M_PI);
-    const SimdDouble const_sin5( 1.58938307283228937328511e-10);
+    const SimdDouble const_sin5(1.58938307283228937328511e-10);
     const SimdDouble const_sin4(-2.50506943502539773349318e-08);
-    const SimdDouble const_sin3( 2.75573131776846360512547e-06);
+    const SimdDouble const_sin3(2.75573131776846360512547e-06);
     const SimdDouble const_sin2(-0.000198412698278911770864914);
-    const SimdDouble const_sin1( 0.0083333333333191845961746);
+    const SimdDouble const_sin1(0.0083333333333191845961746);
     const SimdDouble const_sin0(-0.166666666666666130709393);
 
     const SimdDouble const_cos7(-1.13615350239097429531523e-11);
-    const SimdDouble const_cos6( 2.08757471207040055479366e-09);
+    const SimdDouble const_cos6(2.08757471207040055479366e-09);
     const SimdDouble const_cos5(-2.75573144028847567498567e-07);
-    const SimdDouble const_cos4( 2.48015872890001867311915e-05);
+    const SimdDouble const_cos4(2.48015872890001867311915e-05);
     const SimdDouble const_cos3(-0.00138888888888714019282329);
-    const SimdDouble const_cos2( 0.0416666666666665519592062);
+    const SimdDouble const_cos2(0.0416666666666665519592062);
     const SimdDouble half(0.5);
     const SimdDouble one(1.0);
     SimdDouble       ssign, csign;
@@ -2066,22 +2066,22 @@ static inline void gmx_simdcall sincos(SimdDouble x, SimdDouble *sinval, SimdDou
      * First check if y had the value 2 or 3, set csign if true.
      */
     q = q - half;
-    /* If we have logical operations we can work directly on the signbit, which
+/* If we have logical operations we can work directly on the signbit, which
      * saves instructions. Otherwise we need to represent signs as +1.0/-1.0.
      * Thus, if you are altering defines to debug alternative code paths, the
      * two GMX_SIMD_HAVE_LOGICAL sections in this routine must either both be
      * active or inactive - you will get errors if only one is used.
      */
-#    if GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_LOGICAL
     ssign = ssign & SimdDouble(GMX_DOUBLE_NEGZERO);
     csign = andNot(q, SimdDouble(GMX_DOUBLE_NEGZERO));
     ssign = ssign ^ csign;
-#    else
+#else
     ssign = copysign(SimdDouble(1.0), ssign);
     csign = copysign(SimdDouble(1.0), q);
     csign = -csign;
-    ssign = ssign * csign;      // swap ssign if csign was set.
-#    endif
+    ssign = ssign * csign; // swap ssign if csign was set.
+#endif
     // Check if y had value 1 or 3 (remember we subtracted 0.5 from q)
     m1   = (q < minusquarter);
     m2   = (setZero() <= q);
@@ -2089,7 +2089,7 @@ static inline void gmx_simdcall sincos(SimdDouble x, SimdDouble *sinval, SimdDou
     m2   = m2 && m3;
     mask = m1 || m2;
     // where mask is FALSE, swap sign.
-    csign = csign * blend(SimdDouble(-1.0), one, mask);
+    csign   = csign * blend(SimdDouble(-1.0), one, mask);
 #endif
     x  = fma(y, argred0, x);
     x  = fma(y, argred1, x);
@@ -2114,7 +2114,7 @@ static inline void gmx_simdcall sincos(SimdDouble x, SimdDouble *sinval, SimdDou
 
     sss = blend(pcos, psin, mask);
     ccc = blend(psin, pcos, mask);
-    // See comment for GMX_SIMD_HAVE_LOGICAL section above.
+// See comment for GMX_SIMD_HAVE_LOGICAL section above.
 #if GMX_SIMD_HAVE_LOGICAL
     *sinval = sss ^ ssign;
     *cosval = ccc ^ csign;
@@ -2221,8 +2221,8 @@ static inline SimdDouble gmx_simdcall tan(SimdDouble x)
     w  = fma(y, argred2, w);
     w  = fma(y, argred3, w);
 
-    w = blend(w, -w, m);
-    x = w * copysign( SimdDouble(1.0), x );
+    w     = blend(w, -w, m);
+    x     = w * copysign(SimdDouble(1.0), x);
 #endif
     x2 = x * x;
     p  = fma(CT15, x2, CT14);
@@ -2241,7 +2241,7 @@ static inline SimdDouble gmx_simdcall tan(SimdDouble x)
     p  = fma(p, x2, CT1);
     p  = fma(x2, p * x, x);
 
-    p = blend( p, maskzInv(p, m), m);
+    p = blend(p, maskzInv(p, m), m);
     return p;
 }
 
@@ -2309,7 +2309,7 @@ static inline SimdDouble gmx_simdcall asin(SimdDouble x)
 
     // S, SA = zz2
     SB = fma(S3, zz2, S1);
-    SA = zz2 +  S2;
+    SA = zz2 + S2;
     SA = fma(SA, zz2, S0);
     SA = fma(SB, zz, SA);
 
@@ -2330,8 +2330,8 @@ static inline SimdDouble gmx_simdcall asin(SimdDouble x)
     RA = RA * zz;
     PA = PA * ww;
 
-    nom   = blend( PA, RA, mask );
-    denom = blend( QA, SA, mask );
+    nom   = blend(PA, RA, mask);
+    denom = blend(QA, SA, mask);
 
     mask2 = (limit2 < xabs);
     q     = nom * maskzInv(denom, mask2);
@@ -2346,9 +2346,9 @@ static inline SimdDouble gmx_simdcall asin(SimdDouble x)
     w = xabs * q;
     w = w + xabs;
 
-    z = blend( w, z, mask );
+    z = blend(w, z, mask);
 
-    z = blend( xabs, z, mask2 );
+    z = blend(xabs, z, mask2);
 
     z = copysign(z, x);
 
@@ -2373,7 +2373,7 @@ static inline SimdDouble gmx_simdcall acos(SimdDouble x)
     mask1 = (half < x);
     z1    = half * (one - x);
     z1    = sqrt(z1);
-    z     = blend( x, z1, mask1 );
+    z     = blend(x, z1, mask1);
 
     z = asin(z);
 
@@ -2565,7 +2565,6 @@ static inline SimdDouble gmx_simdcall pmeForceCorrection(SimdDouble z2)
 }
 
 
-
 /*! \brief Calculate the potential correction due to PME analytically in SIMD double.
  *
  * \param z2 This should be the value \f$(r \beta)^2\f$, where r is your
@@ -2700,14 +2699,14 @@ static inline SimdDouble maskzInvsqrtSingleAccuracy(SimdDouble x, SimdDBool m)
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
  */
-static inline void gmx_simdcall invsqrtPairSingleAccuracy(SimdDouble x0,    SimdDouble x1,
+static inline void gmx_simdcall invsqrtPairSingleAccuracy(SimdDouble x0, SimdDouble x1,
                                                           SimdDouble *out0, SimdDouble *out1)
 {
 #if GMX_SIMD_HAVE_FLOAT && (GMX_SIMD_FLOAT_WIDTH == 2 * GMX_SIMD_DOUBLE_WIDTH) && (GMX_SIMD_RSQRT_BITS < 22)
     SimdFloat  xf  = cvtDD2F(x0, x1);
     SimdFloat  luf = rsqrt(xf);
     SimdDouble lu0, lu1;
-    // Intermediate target is single - mantissa+1 bits
+// Intermediate target is single - mantissa+1 bits
 #if (GMX_SIMD_RSQRT_BITS < GMX_SIMD_ACCURACY_BITS_SINGLE)
     luf = rsqrtIter(luf, xf);
 #endif
@@ -2808,7 +2807,7 @@ static inline SimdDouble gmx_simdcall logSingleAccuracy(SimdDouble x)
     fexp = fexp - selectByMask(one, mask);
     x    = x * blend(one, two, mask);
 
-    x  = (x - one) * invSingleAccuracy( x + one );
+    x  = (x - one) * invSingleAccuracy(x + one);
     x2 = x * x;
 
     p = fma(CL9, x2, CL7);
@@ -2883,7 +2882,7 @@ static inline SimdDouble gmx_simdcall expSingleAccuracy(SimdDouble x)
 
     y         = x * argscale;
     iy        = cvtR2I(y);
-    intpart   = round(y);        // use same rounding algorithm here
+    intpart   = round(y); // use same rounding algorithm here
     valuemask = (abs(y) <= arglimit);
 
     // Extended precision arithmetics not needed since
@@ -2975,7 +2974,7 @@ static inline SimdDouble gmx_simdcall erfSingleAccuracy(SimdDouble x)
     t2      = t * t;
     w2      = w * w;
 
-    expmx2 = expSingleAccuracy( -y * y );
+    expmx2 = expSingleAccuracy(-y * y);
 
     pB1 = fma(CB9, w2, CB7);
     pB0 = fma(CB8, w2, CB6);
@@ -3093,7 +3092,7 @@ static inline SimdDouble gmx_simdcall erfcSingleAccuracy(SimdDouble x)
     t2      = t * t;
     w2      = w * w;
 
-    expmx2 = expSingleAccuracy( -y * y );
+    expmx2 = expSingleAccuracy(-y * y);
 
     pB1 = fma(CB9, w2, CB7);
     pB0 = fma(CB8, w2, CB6);
@@ -3148,11 +3147,11 @@ static inline void gmx_simdcall sinCosSingleAccuracy(SimdDouble x, SimdDouble *s
     const SimdDouble argred2(2 * 1.1258708853173288931e-18);
     const SimdDouble two_over_pi(2.0 / M_PI);
     const SimdDouble const_sin2(-1.9515295891e-4);
-    const SimdDouble const_sin1( 8.3321608736e-3);
+    const SimdDouble const_sin1(8.3321608736e-3);
     const SimdDouble const_sin0(-1.6666654611e-1);
-    const SimdDouble const_cos2( 2.443315711809948e-5);
+    const SimdDouble const_cos2(2.443315711809948e-5);
     const SimdDouble const_cos1(-1.388731625493765e-3);
-    const SimdDouble const_cos0( 4.166664568298827e-2);
+    const SimdDouble const_cos0(4.166664568298827e-2);
 
     const SimdDouble half(0.5);
     const SimdDouble one(1.0);
@@ -3200,22 +3199,22 @@ static inline void gmx_simdcall sinCosSingleAccuracy(SimdDouble x, SimdDouble *s
      * First check if y had the value 2 or 3, set csign if true.
      */
     q = q - half;
-    /* If we have logical operations we can work directly on the signbit, which
+/* If we have logical operations we can work directly on the signbit, which
      * saves instructions. Otherwise we need to represent signs as +1.0/-1.0.
      * Thus, if you are altering defines to debug alternative code paths, the
      * two GMX_SIMD_HAVE_LOGICAL sections in this routine must either both be
      * active or inactive - you will get errors if only one is used.
      */
-#    if GMX_SIMD_HAVE_LOGICAL
+#if GMX_SIMD_HAVE_LOGICAL
     ssign = ssign & SimdDouble(GMX_DOUBLE_NEGZERO);
     csign = andNot(q, SimdDouble(GMX_DOUBLE_NEGZERO));
     ssign = ssign ^ csign;
-#    else
+#else
     ssign = copysign(SimdDouble(1.0), ssign);
     csign = copysign(SimdDouble(1.0), q);
     csign = -csign;
-    ssign = ssign * csign;      // swap ssign if csign was set.
-#    endif
+    ssign = ssign * csign; // swap ssign if csign was set.
+#endif
     // Check if y had value 1 or 3 (remember we subtracted 0.5 from q)
     m1   = (q < minusquarter);
     m2   = (setZero() <= q);
@@ -3223,7 +3222,7 @@ static inline void gmx_simdcall sinCosSingleAccuracy(SimdDouble x, SimdDouble *s
     m2   = m2 && m3;
     mask = m1 || m2;
     // where mask is FALSE, swap sign.
-    csign = csign * blend(SimdDouble(-1.0), one, mask);
+    csign   = csign * blend(SimdDouble(-1.0), one, mask);
 #endif
     x  = fnma(y, argred0, x);
     x  = fnma(y, argred1, x);
@@ -3240,7 +3239,7 @@ static inline void gmx_simdcall sinCosSingleAccuracy(SimdDouble x, SimdDouble *s
 
     sss = blend(pcos, psin, mask);
     ccc = blend(psin, pcos, mask);
-    // See comment for GMX_SIMD_HAVE_LOGICAL section above.
+// See comment for GMX_SIMD_HAVE_LOGICAL section above.
 #if GMX_SIMD_HAVE_LOGICAL
     *sinval = sss ^ ssign;
     *cosval = ccc ^ csign;
@@ -3336,7 +3335,7 @@ static inline SimdDouble gmx_simdcall tanSingleAccuracy(SimdDouble x)
     w    = fnma(y, argred2, w);
 
     w = blend(w, -w, mask);
-    x = w * copysign( SimdDouble(1.0), x );
+    x = w * copysign(SimdDouble(1.0), x);
 #endif
     x2 = x * x;
     p  = fma(CT6, x2, CT5);
@@ -3346,7 +3345,7 @@ static inline SimdDouble gmx_simdcall tanSingleAccuracy(SimdDouble x)
     p  = fma(p, x2, CT1);
     p  = fma(x2, p * x, x);
 
-    p = blend( p, maskzInvSingleAccuracy(p, mask), mask);
+    p = blend(p, maskzInvSingleAccuracy(p, mask), mask);
     return p;
 }
 
@@ -3393,7 +3392,7 @@ static inline SimdDouble gmx_simdcall asinSingleAccuracy(SimdDouble x)
     z  = blend(z, q2, mask);
 
     mask = (limitlow < xabs);
-    z    = blend( xabs, z, mask );
+    z    = blend(xabs, z, mask);
     z    = copysign(z, x);
 
     return z;
@@ -3629,7 +3628,6 @@ static SimdDouble gmx_simdcall pmeForceCorrectionSingleAccuracy(SimdDouble z2)
 }
 
 
-
 /*! \brief Analytical PME potential correction, double SIMD data, single accuracy.
  *
  * \param z2 \f$(r \beta)^2\f$ - see below for details.
@@ -3726,7 +3724,7 @@ static inline Simd4Float gmx_simdcall rsqrtIter(Simd4Float lu, Simd4Float x)
 {
     Simd4Float tmp1 = x * lu;
     Simd4Float tmp2 = Simd4Float(-0.5f) * lu;
-    tmp1 = fma(tmp1, lu, Simd4Float(-3.0f));
+    tmp1            = fma(tmp1, lu, Simd4Float(-3.0f));
     return tmp1 * tmp2;
 }
 
@@ -3754,7 +3752,6 @@ static inline Simd4Float gmx_simdcall invsqrt(Simd4Float x)
 #endif // GMX_SIMD4_HAVE_FLOAT
 
 
-
 #if GMX_SIMD4_HAVE_DOUBLE
 /*************************************************************************
  * DOUBLE PRECISION SIMD4 MATH FUNCTIONS - JUST A SMALL SUBSET SUPPORTED *
@@ -3773,7 +3770,7 @@ static inline Simd4Double gmx_simdcall rsqrtIter(Simd4Double lu, Simd4Double x)
 {
     Simd4Double tmp1 = x * lu;
     Simd4Double tmp2 = Simd4Double(-0.5f) * lu;
-    tmp1 = fma(tmp1, lu, Simd4Double(-3.0f));
+    tmp1             = fma(tmp1, lu, Simd4Double(-3.0f));
     return tmp1 * tmp2;
 }
 
@@ -3826,7 +3823,6 @@ static inline Simd4Double gmx_simdcall invsqrtSingleAccuracy(Simd4Double x)
 }
 
 
-
 #endif // GMX_SIMD4_HAVE_DOUBLE
 
 /*! \} */
@@ -3868,7 +3864,7 @@ static inline SimdFloat maskzInvsqrtSingleAccuracy(SimdFloat x, SimdFBool m)
  *  In particular for double precision we can sometimes calculate square root
  *  pairs slightly faster by using single precision until the very last step.
  */
-static inline void gmx_simdcall invsqrtPairSingleAccuracy(SimdFloat x0,    SimdFloat x1,
+static inline void gmx_simdcall invsqrtPairSingleAccuracy(SimdFloat x0, SimdFloat x1,
                                                           SimdFloat *out0, SimdFloat *out1)
 {
     return invsqrtPair(x0, x1, out0, out1);
@@ -4099,6 +4095,6 @@ static inline Simd4Float gmx_simdcall invsqrtSingleAccuracy(Simd4Float x)
 
 #endif // GMX_SIMD
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_SIMD_MATH_H

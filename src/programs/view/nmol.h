@@ -51,8 +51,8 @@ extern t_molwin *init_mw(t_x11 *x11, Window Parent,
 extern void map_mw(t_x11 *x11, t_molwin *mw);
 
 extern void z_fill(t_manager *man, real *zz);
-extern int  compare_obj(const void *a, const void *b);
-extern int  filter_vis(t_manager *man);
+extern int compare_obj(const void *a, const void *b);
+extern int filter_vis(t_manager *man);
 extern void set_sizes(t_manager *man);
 
 extern bool toggle_hydrogen(t_x11 *x11, t_molwin *mw);
@@ -63,10 +63,10 @@ extern bool toggle_hydrogen(t_x11 *x11, t_molwin *mw);
 extern void set_bond_type(t_x11 *x11, t_molwin *mw, int bt);
 /* Set the state of the atoms drawing. */
 
-extern void set_box_type (t_x11 *x11, t_molwin *mw, int bt);
+extern void set_box_type(t_x11 *x11, t_molwin *mw, int bt);
 /* Set the type of box or none (bt = 0)
  */
 
 extern void done_mw(t_x11 *x11, t_molwin *mw);
 
-#endif  /* _nmol_h */
+#endif /* _nmol_h */

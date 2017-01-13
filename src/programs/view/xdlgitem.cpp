@@ -76,7 +76,7 @@ static void ShowCaret(t_x11 *x11, t_dlgitem *dlgitem)
 
         et = &(dlgitem->u.edittext);
         x  = XTextWidth(x11->font, dlgitem->win.text, std::strlen(dlgitem->win.text)) + XCARET
-            + XTextWidth(x11->font, (char*) &(et->buf[et->strbegin]), et->pos);
+            + XTextWidth(x11->font, (char *)&(et->buf[et->strbegin]), et->pos);
         y1 = (dlgitem->win.height - XTextHeight(x11->font)) / 2;
         y2 = (dlgitem->win.height - y1);
         y1--, y2++;
@@ -421,7 +421,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
             et->pos = std::strlen(et->buf);
             bp      = gmx_strdup(et->buf);
             xp      = event->xbutton.x - XTextWidth(x11->font, win->text, std::strlen(win->text))
-                - XCARET;
+                 - XCARET;
             while ((et->pos > 0) && (XTextWidth(x11->font, bp, std::strlen(bp)) > xp))
             {
                 et->pos--;
@@ -495,7 +495,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
                     {
                         et->pos++;
                     }
-                    else if ((et->buflen   < (int)strlen(et->buf))
+                    else if ((et->buflen < (int)strlen(et->buf))
                              && (et->strbegin < (int)strlen(et->buf) - et->buflen))
                     {
                         et->strbegin++;
@@ -547,7 +547,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
  * on the dlg box, and if wished resize them.
  *
  ****************************/
-t_dlgitem *CreateButton(t_x11 *x11,
+t_dlgitem *CreateButton(t_x11 *     x11,
                         const char *szLab, bool bDef, t_id id, t_id groupid,
                         int x0, int y0, int w, int h, int bw)
 {
@@ -583,7 +583,7 @@ t_dlgitem *CreateButton(t_x11 *x11,
     return dlgitem;
 }
 
-t_dlgitem *CreateRadioButton(t_x11 *x11,
+t_dlgitem *CreateRadioButton(t_x11 *     x11,
                              const char *szLab, bool bSet, t_id id,
                              t_id groupid,
                              int x0, int y0, int w, int h, int bw)
@@ -609,7 +609,7 @@ t_dlgitem *CreateRadioButton(t_x11 *x11,
     return dlgitem;
 }
 
-t_dlgitem *CreateGroupBox(t_x11 *x11,
+t_dlgitem *CreateGroupBox(t_x11 *     x11,
                           const char *szLab, t_id id,
                           int nitems, t_id items[],
                           int x0, int y0, int w, int h, int bw)
@@ -638,7 +638,7 @@ t_dlgitem *CreateGroupBox(t_x11 *x11,
     return dlgitem;
 }
 
-t_dlgitem *CreateCheckBox(t_x11 *x11,
+t_dlgitem *CreateCheckBox(t_x11 *     x11,
                           const char *szLab, bool bCheckedInitial, t_id id,
                           t_id groupid,
                           int x0, int y0, int w, int h, int bw)
@@ -664,7 +664,7 @@ t_dlgitem *CreateCheckBox(t_x11 *x11,
     return dlgitem;
 }
 
-t_dlgitem *CreatePixmap(Pixmap pm, t_id id,
+t_dlgitem *CreatePixmap(Pixmap pm, t_id       id,
                         t_id /*groupid*/, int x0, int y0, int w, int h, int bw)
 {
     t_dlgitem *dlgitem;
@@ -680,7 +680,7 @@ t_dlgitem *CreatePixmap(Pixmap pm, t_id id,
 }
 
 t_dlgitem *CreateStaticText(t_x11 *x11,
-                            int nlines, const char * const *lines, t_id id,
+                            int nlines, const char *const *lines, t_id id,
                             t_id groupid,
                             int x0, int y0, int w, int h, int bw)
 {
@@ -715,7 +715,7 @@ t_dlgitem *CreateStaticText(t_x11 *x11,
     return dlgitem;
 }
 
-t_dlgitem *CreateEditText(t_x11 *x11,
+t_dlgitem *CreateEditText(t_x11 *     x11,
                           const char *title,
                           int screenbuf, char *buf, t_id id, t_id groupid,
                           int x0, int y0, int w, int h, int bw)

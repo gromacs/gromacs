@@ -75,11 +75,10 @@ void pr_forcerec(FILE *fplog, t_forcerec *fr);
  * \param[in]    natoms_f_novirsum   Number of atoms for which
  *                                   force is to be compute but no virial
  */
-void
-forcerec_set_ranges(t_forcerec *fr,
-                    int ncg_home, int ncg_force,
-                    int natoms_force,
-                    int natoms_force_constr, int natoms_f_novirsum);
+void forcerec_set_ranges(t_forcerec *fr,
+                         int ncg_home, int ncg_force,
+                         int natoms_force,
+                         int natoms_force_constr, int natoms_f_novirsum);
 
 /*! \brief Initiate table constants
  *

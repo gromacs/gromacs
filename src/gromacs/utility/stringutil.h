@@ -201,7 +201,8 @@ public:
      *     be applied to convert values of type T to
      *     string. Exactly one argument to the conversion
      *     specification(s) in `format` is supported. */
-    explicit StringFormatter(const char *format) : format_(format)
+    explicit StringFormatter(const char *format)
+        : format_(format)
     {
     }
 

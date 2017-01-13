@@ -99,7 +99,7 @@ void checkXvgDataPoint(TestReferenceChecker *checker, const std::string &value)
     checker->checkRealFromString(value, nullptr);
 }
 
-}       // namespace
+} // namespace
 
 void checkXvgFile(TextInputStream *       input,
                   TestReferenceChecker *  checker,

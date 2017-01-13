@@ -65,7 +65,7 @@ namespace internal
 {
 class AnalysisDataStorageImpl;
 class AnalysisDataStorageFrameData;
-}   // namespace internal
+} // namespace internal
 
 /*! \libinternal \brief
  * Allows assigning values for a data frame in AnalysisDataStorage.
@@ -205,7 +205,6 @@ public:
     void finishFrame();
 
 private:
-
     /*! \brief
      * Create a new storage frame.
      *
@@ -348,9 +347,9 @@ public:
      * throws any exceptions this method throws.
      */
     void startParallelDataStorage(
-        AbstractAnalysisData *             data,
-        AnalysisDataModuleManager *        modules,
-        const AnalysisDataParallelOptions &options);
+            AbstractAnalysisData *             data,
+            AnalysisDataModuleManager *        modules,
+            const AnalysisDataParallelOptions &options);
     /*! \brief
      * Starts storing a new frame.
      *

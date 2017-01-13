@@ -78,12 +78,16 @@ public:
      * Convenience wrapper for startContext(const char *).
      */
     void startContext(const std::string &name)
-    { startContext(name.c_str()); }
+    {
+        startContext(name.c_str());
+    }
     /*! \brief
      * Adds a new message.
      */
     void append(const char *message)
-    { append(std::string(message)); }
+    {
+        append(std::string(message));
+    }
     /*! \brief
      * Adds a new message.
      */

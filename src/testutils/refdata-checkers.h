@@ -78,7 +78,7 @@ protected:
 class NullChecker : public IReferenceDataEntryChecker
 {
 public:
-    virtual void fillEntry(ReferenceDataEntry *) const {}
+    virtual void                       fillEntry(ReferenceDataEntry *) const {}
     virtual ::testing::AssertionResult checkEntry(const ReferenceDataEntry &, const std::string &) const
     {
         return ::testing::AssertionSuccess();
@@ -195,7 +195,7 @@ class FloatingPointFromStringChecker : public IReferenceDataEntryChecker
 {
 public:
     FloatingPointFromStringChecker(
-        const std::string &value, const FloatingPointTolerance &tolerance)
+            const std::string &value, const FloatingPointTolerance &tolerance)
         : value_(value), tolerance_(tolerance)
     {
     }
@@ -254,7 +254,8 @@ private:
     ValueType *value_;
 };
 
-template <> inline void ValueExtractor<std::string>::extractValue(const std::string &value) const
+template <>
+inline void ValueExtractor<std::string>::extractValue(const std::string &value) const
 {
     *value_ = value;
 }

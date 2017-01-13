@@ -96,7 +96,7 @@ real evaluate_integral(int n, const real x[], const real y[],
 {
     double sum, sum_var, w;
     double sum_tail = 0, sum2_tail = 0;
-    int    j, nsum_tail = 0;
+    int    j, nsum_tail            = 0;
 
     /* Use trapezoidal rule for calculating integral */
     if (n <= 0)
@@ -127,7 +127,7 @@ real evaluate_integral(int n, const real x[], const real y[],
 
         if ((aver_start > 0) && (x[j] >= aver_start))
         {
-            sum_tail  += sum;
+            sum_tail += sum;
             sum2_tail += std::sqrt(sum_var);
             nsum_tail += 1;
         }

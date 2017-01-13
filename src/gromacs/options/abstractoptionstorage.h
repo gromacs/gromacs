@@ -112,7 +112,9 @@ public:
 
     //! Returns true if defaultValueIfSet() value is specified.
     bool defaultValueIfSetExists() const
-    { return hasFlag(efOption_DefaultValueIfSetExists); }
+    {
+        return hasFlag(efOption_DefaultValueIfSetExists);
+    }
     //! Returns the minimum number of values required in one set.
     int minValueCount() const { return minValueCount_; }
     //! Returns the maximum allowed number of values in one set (-1 = no limit).
@@ -134,7 +136,9 @@ public:
      * The default implementation returns an empty string.
      */
     virtual std::string formatExtraDescription() const
-    { return std::string(); }
+    {
+        return std::string();
+    }
     /*! \brief
      * Returns the number of option values added so far.
      */

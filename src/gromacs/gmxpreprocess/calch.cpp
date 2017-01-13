@@ -64,21 +64,21 @@ static void gen_waterhydrogen(int nh, rvec xa[], rvec xh[], int *l)
 #define AA 0.081649
 #define BB 0.0
 #define CC 0.0577350
-    const  dvec matrix1[6] = {
-        { AA,     BB,     CC },
-        { AA,     BB,     CC },
-        { AA,     BB,     CC },
-        { -AA,    BB,     CC },
-        { -AA,    BB,     CC },
-        { BB,     AA,    -CC }
+    const dvec matrix1[6] = {
+        { AA, BB, CC },
+        { AA, BB, CC },
+        { AA, BB, CC },
+        { -AA, BB, CC },
+        { -AA, BB, CC },
+        { BB, AA, -CC }
     };
-    const  dvec matrix2[6] = {
-        { -AA,   BB,   CC },
-        { BB,    AA,  -CC },
-        { BB,   -AA,  -CC },
-        { BB,    AA,  -CC },
-        { BB,   -AA,  -CC },
-        { BB,   -AA,  -CC }
+    const dvec matrix2[6] = {
+        { -AA, BB, CC },
+        { BB, AA, -CC },
+        { BB, -AA, -CC },
+        { BB, AA, -CC },
+        { BB, -AA, -CC },
+        { BB, -AA, -CC }
     };
 #undef AA
 #undef BB
@@ -105,17 +105,17 @@ static void gen_waterhydrogen(int nh, rvec xa[], rvec xh[], int *l)
 
 void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
 {
-#define alfaH   (acos(-1 / 3.0)) /* 109.47 degrees */
-#define alfaHpl (2 * M_PI / 3)   /* 120 degrees */
-#define distH   0.1
+#define alfaH (acos(-1 / 3.0)) /* 109.47 degrees */
+#define alfaHpl (2 * M_PI / 3) /* 120 degrees */
+#define distH 0.1
 
 #define alfaCOM (DEG2RAD * 117)
-#define alfaCO  (DEG2RAD * 121)
+#define alfaCO (DEG2RAD * 121)
 #define alfaCOA (DEG2RAD * 115)
 
-#define distO   0.123
-#define distOA  0.125
-#define distOM  0.136
+#define distO 0.123
+#define distOA 0.125
+#define distOM 0.136
 
     rvec sa, sb, sij;
     real s6, rij, ra, rb, xd;
@@ -137,7 +137,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
                 xd     = xAJ[d];
                 sij[d] = xAI[d] - xd;
                 sb[d]  = xd - xAK[d];
-                rij   += gmx::square(sij[d]);
+                rij += gmx::square(sij[d]);
             }
             rij    = std::sqrt(rij);
             sa[XX] = sij[YY] * sb[ZZ] - sij[ZZ] * sb[YY];
@@ -147,7 +147,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             for (d = 0; (d < DIM); d++)
             {
                 sij[d] = sij[d] / rij;
-                ra    += gmx::square(sa[d]);
+                ra += gmx::square(sa[d]);
             }
             ra = std::sqrt(ra);
             for (d = 0; (d < DIM); d++)
@@ -170,8 +170,8 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             {
                 sij[d] = xAI[d] - xAJ[d];
                 sb[d]  = xAI[d] - xAK[d];
-                rij   += gmx::square(sij[d]);
-                rb    += gmx::square(sb[d]);
+                rij += gmx::square(sij[d]);
+                rb += gmx::square(sb[d]);
             }
             rij = std::sqrt(rij);
             rb  = std::sqrt(rb);
@@ -179,7 +179,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             for (d = 0; (d < DIM); d++)
             {
                 sa[d] = sij[d] / rij + sb[d] / rb;
-                ra   += gmx::square(sa[d]);
+                ra += gmx::square(sa[d]);
             }
             ra = std::sqrt(ra);
             for (d = 0; (d < DIM); d++)
@@ -204,16 +204,16 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             for (d = 0; (d < DIM); d++)
             {
                 xH1[d] = xAI[d] + distH * sin(alfaH) * sb[d] - distH * cos(alfaH) * sij[d];
-                xH2[d] = ( xAI[d]
-                           - distH * sin(alfaH) * 0.5 * sb[d]
-                           + distH * sin(alfaH) * s6 * sa[d]
-                           - distH * cos(alfaH) * sij[d] );
+                xH2[d] = (xAI[d]
+                          - distH * sin(alfaH) * 0.5 * sb[d]
+                          + distH * sin(alfaH) * s6 * sa[d]
+                          - distH * cos(alfaH) * sij[d]);
                 if (xH3[XX] != NOTSET && xH3[YY] != NOTSET && xH3[ZZ] != NOTSET)
                 {
-                    xH3[d] = ( xAI[d]
-                               - distH * sin(alfaH) * 0.5 * sb[d]
-                               - distH * sin(alfaH) * s6 * sa[d]
-                               - distH * cos(alfaH) * sij[d] );
+                    xH3[d] = (xAI[d]
+                              - distH * sin(alfaH) * 0.5 * sb[d]
+                              - distH * sin(alfaH) * s6 * sa[d]
+                              - distH * cos(alfaH) * sij[d]);
                 }
             }
             break;
@@ -252,10 +252,8 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
 
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d] + distH * (cos(alfaH / 2.0) * rBB[d] / bb
-                                           + sin(alfaH / 2.0) * rNN[d] / nn);
-                xH2[d] = xAI[d] + distH * (cos(alfaH / 2.0) * rBB[d] / bb
-                                           - sin(alfaH / 2.0) * rNN[d] / nn);
+                xH1[d] = xAI[d] + distH * (cos(alfaH / 2.0) * rBB[d] / bb + sin(alfaH / 2.0) * rNN[d] / nn);
+                xH2[d] = xAI[d] + distH * (cos(alfaH / 2.0) * rBB[d] / bb - sin(alfaH / 2.0) * rNN[d] / nn);
             }
             break;
         }
@@ -275,14 +273,14 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
                 xH2[d] = xAI[d] + distOM * sin(alfaCOM) * sb[d] - distOM * cos(alfaCOM) * sij[d];
             }
             break;
-        case 9:          /* carboxyl oxygens and hydrogen, -COOH */
+        case 9: /* carboxyl oxygens and hydrogen, -COOH */
         {
             rvec xa2[4]; /* i,j,k,l   */
 
             /* first add two oxygens */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d] - distO * sin(alfaCO ) * sb[d] - distO * cos(alfaCO ) * sij[d];
+                xH1[d] = xAI[d] - distO * sin(alfaCO) * sb[d] - distO * cos(alfaCO) * sij[d];
                 xH2[d] = xAI[d] + distOA * sin(alfaCOA) * sb[d] - distOA * cos(alfaCOA) * sij[d];
             }
 

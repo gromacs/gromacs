@@ -111,41 +111,41 @@ void ns(FILE *          fp,
 static void reduce_thread_energies(tensor vir_q, tensor vir_lj,
                                    real *Vcorr_q, real *Vcorr_lj,
                                    real *dvdl_q, real *dvdl_lj,
-                                   int nthreads,
+                                   int                  nthreads,
                                    ewald_corr_thread_t *ewc_t)
 {
     int t;
 
     for (t = 1; t < nthreads; t++)
     {
-        *Vcorr_q  += ewc_t[t].Vcorr_q;
+        *Vcorr_q += ewc_t[t].Vcorr_q;
         *Vcorr_lj += ewc_t[t].Vcorr_lj;
-        *dvdl_q   += ewc_t[t].dvdl[efptCOUL];
-        *dvdl_lj  += ewc_t[t].dvdl[efptVDW];
+        *dvdl_q += ewc_t[t].dvdl[efptCOUL];
+        *dvdl_lj += ewc_t[t].dvdl[efptVDW];
         m_add(vir_q, ewc_t[t].vir_q, vir_q);
         m_add(vir_lj, ewc_t[t].vir_lj, vir_lj);
     }
 }
 
-void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
-                       t_idef     *idef,    t_commrec  *cr,
-                       t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
-                       t_mdatoms  *md,
-                       rvec       x[],      history_t  *hist,
-                       rvec       f[],
+void do_force_lowlevel(t_forcerec *fr, t_inputrec *ir,
+                       t_idef *idef, t_commrec *cr,
+                       t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                       t_mdatoms *md,
+                       rvec x[], history_t *hist,
+                       rvec            f[],
                        gmx_enerdata_t *enerd,
-                       t_fcdata   *fcd,
+                       t_fcdata *      fcd,
                        gmx_localtop_t *top,
-                       gmx_genborn_t *born,
-                       gmx_bool       bBornRadii,
-                       matrix     box,
-                       t_lambda   *fepvals,
-                       real       *lambda,
-                       t_graph    *graph,
-                       t_blocka   *excl,
-                       rvec       mu_tot[],
-                       int        flags,
-                       float      *cycles_pme)
+                       gmx_genborn_t * born,
+                       gmx_bool        bBornRadii,
+                       matrix          box,
+                       t_lambda *      fepvals,
+                       real *          lambda,
+                       t_graph *       graph,
+                       t_blocka *      excl,
+                       rvec            mu_tot[],
+                       int             flags,
+                       float *         cycles_pme)
 {
     int      i, j;
     int      donb_flags;
@@ -157,7 +157,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     real     dvdl_dum[efptNR], dvdl_nb[efptNR];
 
 #if GMX_MPI
-    double t0 = 0.0, t1, t2, t3;  /* time measurement for coarse load balancing */
+    double t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
 #endif
 
     set_pbc(&pbc, fr->ePBC, box);
@@ -181,10 +181,10 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         enerd->term[F_EQM] = calculate_QMMM(cr, x, f, fr);
     }
 
-    /* Call the short range functions all in one go. */
+/* Call the short range functions all in one go. */
 
 #if GMX_MPI
-    /*#define TAKETIME ((cr->npmenodes) && (fr->timesteps < 12))*/
+/*#define TAKETIME ((cr->npmenodes) && (fr->timesteps < 12))*/
 #define TAKETIME FALSE
     if (TAKETIME)
     {
@@ -287,7 +287,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 #if GMX_MPI
     if (TAKETIME)
     {
-        t1          = MPI_Wtime();
+        t1 = MPI_Wtime();
         fr->t_fnbf += t1 - t0;
     }
 #endif
@@ -360,7 +360,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     }
 
     do_force_listed(wcycle, box, ir->fepvals, cr,
-                    idef, (const rvec *) x, hist, f, fr,
+                    idef, (const rvec *)x, hist, f, fr,
                     &pbc, graph, enerd, nrnb, lambda, md, fcd,
                     DOMAINDECOMP(cr) ? cr->dd->gatindex : nullptr,
                     flags);
@@ -376,8 +376,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
      */
     if (EEL_FULL(fr->eeltype) || EVDW_PME(fr->vdwtype))
     {
-        int  status            = 0;
-        real Vlr_q             = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
+        int  status = 0;
+        real Vlr_q = 0, Vlr_lj = 0, Vcorr_q = 0, Vcorr_lj = 0;
         real dvdl_long_range_q = 0, dvdl_long_range_lj = 0;
 
         bSB = (ir->nwall == 2);
@@ -488,7 +488,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
             }
 
             enerd->dvdl_lin[efptCOUL] += dvdl_long_range_correction_q;
-            enerd->dvdl_lin[efptVDW]  += dvdl_long_range_correction_lj;
+            enerd->dvdl_lin[efptVDW] += dvdl_long_range_correction_lj;
 
             if ((EEL_PME(fr->eeltype) || EVDW_PME(fr->vdwtype)) && (cr->duty & DUTY_PME))
             {
@@ -569,9 +569,9 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
 
         /* Note that with separate PME nodes we get the real energies later */
         enerd->dvdl_lin[efptCOUL] += dvdl_long_range_q;
-        enerd->dvdl_lin[efptVDW]  += dvdl_long_range_lj;
-        enerd->term[F_COUL_RECIP]  = Vlr_q + Vcorr_q;
-        enerd->term[F_LJ_RECIP]    = Vlr_lj + Vcorr_lj;
+        enerd->dvdl_lin[efptVDW] += dvdl_long_range_lj;
+        enerd->term[F_COUL_RECIP] = Vlr_q + Vcorr_q;
+        enerd->term[F_LJ_RECIP]   = Vlr_lj + Vcorr_lj;
         if (debug)
         {
             fprintf(debug, "Vlr_q = %g, Vcorr_q = %g, Vlr_corr_q = %g\n",
@@ -593,8 +593,8 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
         {
             real dvdl_rf_excl = 0;
             enerd->term[F_RF_EXCL]
-                = RF_excl_correction(fr, graph, md, excl, x, f,
-                                     fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
+                    = RF_excl_correction(fr, graph, md, excl, x, f,
+                                         fr->fshift, &pbc, lambda[efptCOUL], &dvdl_rf_excl);
 
             enerd->dvdl_lin[efptCOUL] += dvdl_rf_excl;
         }
@@ -611,7 +611,7 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     {
         t2 = MPI_Wtime();
         MPI_Barrier(cr->mpi_comm_mygroup);
-        t3          = MPI_Wtime();
+        t3 = MPI_Wtime();
         fr->t_wait += t3 - t2;
         if (fr->timesteps == 11)
         {
@@ -629,7 +629,6 @@ void do_force_lowlevel(t_forcerec *fr,      t_inputrec *ir,
     {
         pr_rvecs(debug, 0, "fshift after bondeds", fr->fshift, SHIFTS);
     }
-
 }
 
 void init_enerdata(int ngener, int n_lambda, gmx_enerdata_t *enerd)
@@ -719,7 +718,7 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     /* We have already added 1-2,1-3, and 1-4 terms to F_GBPOL */
     epot[F_GBPOL] += sum_v(grpp->nener, grpp->ener[egGB]);
 
-/* lattice part of LR doesnt belong to any group
+    /* lattice part of LR doesnt belong to any group
  * and has been added earlier
  */
     epot[F_BHAM] = sum_v(grpp->nener, grpp->ener[egBHAMSR]);
@@ -739,8 +738,8 @@ void sum_dhdl(gmx_enerdata_t *enerd, const std::vector<real> *lambda, t_lambda *
     int    i, j, index;
     double dlam;
 
-    enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW];  /* include dispersion correction */
-    enerd->term[F_DVDL]       = 0.0;
+    enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW]; /* include dispersion correction */
+    enerd->term[F_DVDL] = 0.0;
     for (i = 0; i < efptNR; i++)
     {
         if (fepvals->separate_dvdl[i])
@@ -816,7 +815,7 @@ void sum_dhdl(gmx_enerdata_t *enerd, const std::vector<real> *lambda, t_lambda *
         for (j = 0; j < efptNR; j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
-            dlam                           = (fepvals->all_lambda[j][i] - (*lambda)[j]);
+            dlam = (fepvals->all_lambda[j][i] - (*lambda)[j]);
             enerd->enerpart_lambda[i + 1] += dlam * enerd->dvdl_lin[j];
             if (debug)
             {

@@ -59,14 +59,18 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#define FACTOR  1000.0  /* Convert nm^2/ps to 10e-5 cm^2/s */
+#define FACTOR 1000.0 /* Convert nm^2/ps to 10e-5 cm^2/s */
 /* NORMAL = total diffusion coefficient (default). X,Y,Z is diffusion
    coefficient in X,Y,Z direction. LATERAL is diffusion coefficient in
    plane perpendicular to axis
  */
-typedef enum
-{
-    NOT_USED, NORMAL, X, Y, Z, LATERAL
+typedef enum {
+    NOT_USED,
+    NORMAL,
+    X,
+    Y,
+    Z,
+    LATERAL
 } msd_type;
 
 typedef struct
@@ -74,32 +78,32 @@ typedef struct
     real t0;                  /* start time and time increment between  */
     real delta_t;             /* time between restart points */
     real beginfit,            /* the begin/end time for fits as reals between */
-         endfit;              /* 0 and 1 */
-    real dim_factor;          /* the dimensionality factor for the diffusion
+            endfit;           /* 0 and 1 */
+    real          dim_factor; /* the dimensionality factor for the diffusion
                                  constant */
-    real **data;              /* the displacement data. First index is the group
+    real **       data;       /* the displacement data. First index is the group
                                  number, second is frame number */
     real *        time;       /* frame time */
     real *        mass;       /* masses for mass-weighted msd */
     matrix **     datam;
-    rvec **       x0;         /* original positions */
-    rvec *        com;        /* center of mass correction for each frame */
-    gmx_stats_t **lsq;        /* fitting stats for individual molecule msds */
-    msd_type      type;       /* the type of msd to calculate (lateral, etc.)*/
-    int           axis;       /* the axis along which to calculate */
+    rvec **       x0;   /* original positions */
+    rvec *        com;  /* center of mass correction for each frame */
+    gmx_stats_t **lsq;  /* fitting stats for individual molecule msds */
+    msd_type      type; /* the type of msd to calculate (lateral, etc.)*/
+    int           axis; /* the axis along which to calculate */
     int           ncoords;
-    int           nrestart;   /* number of restart points */
-    int           nmol;       /* number of molecules (for bMol) */
-    int           nframes;    /* number of frames */
+    int           nrestart; /* number of restart points */
+    int           nmol;     /* number of molecules (for bMol) */
+    int           nframes;  /* number of frames */
     int           nlast;
-    int           ngrp;       /* number of groups to use for msd calculation */
+    int           ngrp; /* number of groups to use for msd calculation */
     int *         n_offs;
-    int **        ndata;      /* the number of msds (particles/mols) per data
+    int **        ndata; /* the number of msds (particles/mols) per data
                                  point. */
 } t_corr;
 
-typedef real t_calc_func (t_corr *curr, int nx, int index[], int nx0, rvec xc[],
-                          rvec dcom, gmx_bool bTen, matrix mat);
+typedef real t_calc_func(t_corr *curr, int nx, int index[], int nx0, rvec xc[],
+                         rvec dcom, gmx_bool bTen, matrix mat);
 
 static real thistime(t_corr *curr)
 {
@@ -287,7 +291,7 @@ static real calc1_norm(t_corr *curr, int nx, int index[], int nx0, rvec xc[],
                 for (m = 0; (m < DIM); m++)
                 {
                     rv[m] = xc[ix][m] - curr->x0[nx0][ix][m] - dcom[m];
-                    r2   += rv[m] * rv[m];
+                    r2 += rv[m] * rv[m];
                     if (bTen)
                     {
                         for (m2 = 0; m2 <= m; m2++)
@@ -309,7 +313,7 @@ static real calc1_norm(t_corr *curr, int nx, int index[], int nx0, rvec xc[],
                 {
                     if (m != curr->axis)
                     {
-                        r   = xc[ix][m] - curr->x0[nx0][ix][m] - dcom[m];
+                        r = xc[ix][m] - curr->x0[nx0][ix][m] - dcom[m];
                         r2 += r * r;
                     }
                 }
@@ -364,14 +368,14 @@ static real calc_one_mw(t_corr *curr, int ix, int nx0, rvec xc[], real *tm,
         return 0;
     }
     (*tm) += mm;
-    r2     = 0.0;
+    r2 = 0.0;
     switch (curr->type)
     {
         case NORMAL:
             for (m = 0; (m < DIM); m++)
             {
                 rv[m] = xc[ix][m] - curr->x0[nx0][ix][m] - dcom[m];
-                r2   += mm * rv[m] * rv[m];
+                r2 += mm * rv[m] * rv[m];
                 if (bTen)
                 {
                     for (m2 = 0; m2 <= m; m2++)
@@ -393,7 +397,7 @@ static real calc_one_mw(t_corr *curr, int ix, int nx0, rvec xc[], real *tm,
             {
                 if (m != curr->axis)
                 {
-                    r   = xc[ix][m] - curr->x0[nx0][ix][m] - dcom[m];
+                    r = xc[ix][m] - curr->x0[nx0][ix][m] - dcom[m];
                     r2 += mm * r * r;
                 }
             }
@@ -466,7 +470,7 @@ static void prep_data(gmx_bool bMol, int gnx, int index[],
             {
                 rvec_inc(xcur[ind], box[m]);
             }
-            while (xcur[ind][m] - xprev[ind][m] >  hbox[m])
+            while (xcur[ind][m] - xprev[ind][m] > hbox[m])
             {
                 rvec_dec(xcur[ind], box[m]);
             }
@@ -566,8 +570,8 @@ static void printmol(t_corr *curr, const char *fn,
         mol2a   = top->mols.index;
     }
 
-    Dav       = D2av = 0;
-    sqrtD_max = 0;
+    Dav = D2av = 0;
+    sqrtD_max  = 0;
     for (i = 0; (i < curr->nmol); i++)
     {
         lsq1 = gmx_stats_init();
@@ -587,7 +591,7 @@ static void printmol(t_corr *curr, const char *fn,
         {
             D = 0;
         }
-        Dav  += D;
+        Dav += D;
         D2av += gmx::square(D);
         fprintf(out, "%10d  %10g\n", i, D);
         if (pdbinfo)
@@ -607,9 +611,9 @@ static void printmol(t_corr *curr, const char *fn,
     do_view(oenv, fn, "-graphtype bar");
 
     /* Compute variance, stddev and error */
-    Dav  /= curr->nmol;
+    Dav /= curr->nmol;
     D2av /= curr->nmol;
-    VarD  = D2av - gmx::square(Dav);
+    VarD = D2av - gmx::square(Dav);
     printf("<D> = %.4f Std. Dev. = %.4f Error = %.4f\n",
            Dav, std::sqrt(VarD), std::sqrt(VarD / curr->nmol));
 
@@ -643,13 +647,13 @@ int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
               real dt, real t_pdb, rvec **x_pdb, matrix box_pdb,
               const gmx_output_env_t *oenv)
 {
-    rvec *       x[2];      /* the coordinates to read */
-    rvec *       xa[2];     /* the coordinates to calculate displacements for */
-    rvec         com = {0};
+    rvec *       x[2];  /* the coordinates to read */
+    rvec *       xa[2]; /* the coordinates to calculate displacements for */
+    rvec         com = { 0 };
     real         t, t_prev = 0;
     int          natoms, i, j, cur = 0, maxframes = 0;
     t_trxstatus *status;
-#define        prev (1 - cur)
+#define prev (1 - cur)
     matrix      box;
     gmx_bool    bFirst;
     gmx_rmpbc_t gpbc = nullptr;
@@ -822,7 +826,7 @@ int corr_loop(t_corr *curr, const char *fn, const t_topology *top, int ePBC,
             curr->nrestart,
             output_env_conv_time(oenv, dt), output_env_get_time_unit(oenv),
             output_env_conv_time(oenv, curr->time[curr->nframes - 1]),
-            output_env_get_time_unit(oenv) );
+            output_env_get_time_unit(oenv));
 
     if (bMol)
     {
@@ -876,16 +880,16 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
              real dt, real beginfit, real endfit, const gmx_output_env_t *oenv)
 {
     t_corr *msd;
-    int *   gnx;          /* the selected groups' sizes */
-    int **  index;        /* selected groups' indices */
+    int *   gnx;   /* the selected groups' sizes */
+    int **  index; /* selected groups' indices */
     char ** grpname;
     int     i, i0, i1, j, N, nat_trx;
     real *  DD, *SigmaD, a, a2, b, r, chi2;
     rvec *  x;
     matrix  box;
-    int *   gnx_com     = nullptr;        /* the COM removal group size  */
-    int **  index_com   = nullptr;        /* the COM removal group atom indices */
-    char ** grpname_com = nullptr;        /* the COM removal group name */
+    int *   gnx_com     = nullptr; /* the COM removal group size  */
+    int **  index_com   = nullptr; /* the COM removal group atom indices */
+    char ** grpname_com = nullptr; /* the COM removal group name */
 
     snew(gnx, nrgrp);
     snew(index, nrgrp);
@@ -914,10 +918,10 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
                     beginfit, endfit);
 
     nat_trx
-        = corr_loop(msd, trx_file, top, ePBC, mol_file ? gnx[0] : 0, gnx, index,
-                    (mol_file != nullptr) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
-                    bTen, gnx_com, index_com, dt, t_pdb,
-                    pdb_file ? &x : nullptr, box, oenv);
+            = corr_loop(msd, trx_file, top, ePBC, mol_file ? gnx[0] : 0, gnx, index,
+                        (mol_file != nullptr) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
+                        bTen, gnx_com, index_com, dt, t_pdb,
+                        pdb_file ? &x : nullptr, box, oenv);
 
     /* Correct for the number of points */
     for (j = 0; (j < msd->ngrp); j++)
@@ -936,8 +940,10 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
     {
         if (pdb_file && x == nullptr)
         {
-            fprintf(stderr, "\nNo frame found need time tpdb = %g ps\n"
-                    "Can not write %s\n\n", t_pdb, pdb_file);
+            fprintf(stderr,
+                    "\nNo frame found need time tpdb = %g ps\n"
+                    "Can not write %s\n\n",
+                    t_pdb, pdb_file);
         }
         i             = top->atoms.nr;
         top->atoms.nr = nat_trx;
@@ -983,8 +989,10 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
     N = i1 - i0;
     if (N <= 2)
     {
-        fprintf(stdout, "Not enough points for fitting (%d).\n"
-                "Can not determine the diffusion constant.\n", N);
+        fprintf(stdout,
+                "Not enough points for fitting (%d).\n"
+                "Can not determine the diffusion constant.\n",
+                N);
     }
     else
     {
@@ -1003,7 +1011,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
                 SigmaD[j] = 0;
             }
             lsq_y_ax_b(N, &(msd->time[i0]), &(msd->data[j][i0]), &(DD[j]), &b, &r, &chi2);
-            DD[j]     *= FACTOR / msd->dim_factor;
+            DD[j] *= FACTOR / msd->dim_factor;
             SigmaD[j] *= FACTOR / msd->dim_factor;
             if (DD[j] > 0.01 && DD[j] < 1e4)
             {
@@ -1026,7 +1034,7 @@ void do_corr(const char *trx_file, const char *ndx_file, const char *msd_file,
 
 int gmx_msd(int argc, char *argv[])
 {
-    const char *       desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes the mean square displacement (MSD) of atoms from",
         "a set of initial positions. This provides an easy way to compute",
         "the diffusion constant using the Einstein relation.",
@@ -1081,32 +1089,22 @@ int gmx_msd(int argc, char *argv[])
     static gmx_bool    bMW        = TRUE;
     static gmx_bool    bRmCOMM    = FALSE;
     t_pargs            pa[]       = {
-        { "-type",    FALSE, etENUM, {normtype},
-          "Compute diffusion coefficient in one direction" },
-        { "-lateral", FALSE, etENUM, {axtitle},
-          "Calculate the lateral diffusion in a plane perpendicular to" },
-        { "-ten",      FALSE, etBOOL, {&bTen},
-          "Calculate the full tensor" },
-        { "-ngroup",  FALSE, etINT,  {&ngroup},
-          "Number of groups to calculate MSD for" },
-        { "-mw",      FALSE, etBOOL, {&bMW},
-          "Mass weighted MSD" },
-        { "-rmcomm",      FALSE, etBOOL, {&bRmCOMM},
-          "Remove center of mass motion" },
-        { "-tpdb", FALSE, etTIME, {&t_pdb},
-          "The frame to use for option [TT]-pdb[tt] (%t)" },
-        { "-trestart", FALSE, etTIME, {&dt},
-          "Time between restarting points in trajectory (%t)" },
-        { "-beginfit", FALSE, etTIME, {&beginfit},
-          "Start time for fitting the MSD (%t), -1 is 10%" },
-        { "-endfit", FALSE, etTIME, {&endfit},
-          "End time for fitting the MSD (%t), -1 is 90%" }
+        { "-type", FALSE, etENUM, { normtype }, "Compute diffusion coefficient in one direction" },
+        { "-lateral", FALSE, etENUM, { axtitle }, "Calculate the lateral diffusion in a plane perpendicular to" },
+        { "-ten", FALSE, etBOOL, { &bTen }, "Calculate the full tensor" },
+        { "-ngroup", FALSE, etINT, { &ngroup }, "Number of groups to calculate MSD for" },
+        { "-mw", FALSE, etBOOL, { &bMW }, "Mass weighted MSD" },
+        { "-rmcomm", FALSE, etBOOL, { &bRmCOMM }, "Remove center of mass motion" },
+        { "-tpdb", FALSE, etTIME, { &t_pdb }, "The frame to use for option [TT]-pdb[tt] (%t)" },
+        { "-trestart", FALSE, etTIME, { &dt }, "Time between restarting points in trajectory (%t)" },
+        { "-beginfit", FALSE, etTIME, { &beginfit }, "Start time for fitting the MSD (%t), -1 is 10%" },
+        { "-endfit", FALSE, etTIME, { &endfit }, "End time for fitting the MSD (%t), -1 is 90%" }
     };
 
     t_filenm fnm[] = {
-        { efTRX, nullptr, nullptr,  ffREAD },
-        { efTPS, nullptr, nullptr,  ffREAD },
-        { efNDX, nullptr, nullptr,  ffOPTRD },
+        { efTRX, nullptr, nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
         { efXVG, nullptr, "msd", ffWRITE },
         { efXVG, "-mol", "diff_mol", ffOPTWR },
         { efPDB, "-pdb", "diff_mol", ffOPTWR }

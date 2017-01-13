@@ -154,8 +154,8 @@ static bool isPressureCouplingStep(gmx_int64_t step, const t_inputrec *ir)
 /*! \brief Sets the number of different temperature coupling values */
 enum class NumTempScaleValues
 {
-single,       //!< Single T-scaling value (either one group or all values =1)
-multiple      //!< Multiple T-scaling values, need to use T-group indices
+    single,  //!< Single T-scaling value (either one group or all values =1)
+    multiple //!< Multiple T-scaling values, need to use T-group indices
 };
 
 /*! \brief Sets if to apply no or diagonal Parrinello-Rahman pressure scaling
@@ -166,8 +166,8 @@ multiple      //!< Multiple T-scaling values, need to use T-group indices
  */
 enum class ApplyParrinelloRahmanVScaling
 {
-no,           //!< Do not apply velocity scaling (not a PR-coupling run or step)
-diagonal      //!< Apply velocity scaling using a diagonal matrix
+    no,      //!< Do not apply velocity scaling (not a PR-coupling run or step)
+    diagonal //!< Apply velocity scaling using a diagonal matrix
 };
 
 /*! \brief Integrate using leap-frog with T-scaling and optionally diagonal Parrinello-Rahman p-coupling
@@ -194,18 +194,18 @@ diagonal      //!< Apply velocity scaling using a diagonal matrix
  */
 template <NumTempScaleValues            numTempScaleValues,
           ApplyParrinelloRahmanVScaling applyPRVScaling>
-static void updateMdLeapfrogSimple(int                       start,
-                                   int                       nrend,
-                                   real                      dt,
-                                   real                      dtPressureCouple,
-                                   const rvec * gmx_restrict invMassPerDim,
-                                   const t_grp_tcstat *      tcstat,
-                                   const unsigned short *    cTC,
-                                   const rvec                pRVScaleMatrixDiagonal,
-                                   const rvec * gmx_restrict x,
-                                   rvec       * gmx_restrict xprime,
-                                   rvec       * gmx_restrict v,
-                                   const rvec * gmx_restrict f)
+static void updateMdLeapfrogSimple(int         start,
+                                   int         nrend,
+                                   real        dt,
+                                   real        dtPressureCouple,
+                                   const rvec *gmx_restrict invMassPerDim,
+                                   const t_grp_tcstat *     tcstat,
+                                   const unsigned short *   cTC,
+                                   const rvec               pRVScaleMatrixDiagonal,
+                                   const rvec *gmx_restrict x,
+                                   rvec *gmx_restrict xprime,
+                                   rvec *gmx_restrict v,
+                                   const rvec *gmx_restrict f)
 {
     real lambdaGroup;
 
@@ -244,7 +244,9 @@ static void updateMdLeapfrogSimple(int                       start,
 /*! \brief Sets the NEMD acceleration type */
 enum class AccelerationType
 {
-none, group, cosine
+    none,
+    group,
+    cosine
 };
 
 /*! \brief Integrate using leap-frog with support for everything
@@ -267,21 +269,21 @@ none, group, cosine
  * \param[in]    M                      Parrinello-Rahman scaling matrix
  */
 template <AccelerationType accelerationType>
-static void updateMdLeapfrogGeneral(int                         start,
-                                    int                         nrend,
-                                    bool                        doNoseHoover,
-                                    real                        dt,
-                                    real                        dtPressureCouple,
-                                    const t_inputrec *          ir,
-                                    const t_mdatoms *           md,
-                                    const gmx_ekindata_t *      ekind,
-                                    const matrix                box,
-                                    const rvec   * gmx_restrict x,
-                                    rvec         * gmx_restrict xprime,
-                                    rvec         * gmx_restrict v,
-                                    const rvec   * gmx_restrict f,
-                                    const double * gmx_restrict nh_vxi,
-                                    const matrix                M)
+static void updateMdLeapfrogGeneral(int                   start,
+                                    int                   nrend,
+                                    bool                  doNoseHoover,
+                                    real                  dt,
+                                    real                  dtPressureCouple,
+                                    const t_inputrec *    ir,
+                                    const t_mdatoms *     md,
+                                    const gmx_ekindata_t *ekind,
+                                    const matrix          box,
+                                    const rvec *gmx_restrict x,
+                                    rvec *gmx_restrict xprime,
+                                    rvec *gmx_restrict v,
+                                    const rvec *gmx_restrict f,
+                                    const double *gmx_restrict nh_vxi,
+                                    const matrix               M)
 {
     /* This is a version of the leap-frog integrator that supports
      * all combinations of T-coupling, P-coupling and NEMD.
@@ -289,14 +291,14 @@ static void updateMdLeapfrogGeneral(int                         start,
      * Holian et al. Phys Rev E 52(3) : 2338, 1995
      */
 
-    const unsigned short * cTC    = md->cTC;
-    const t_grp_tcstat *   tcstat = ekind->tcstat;
+    const unsigned short *cTC    = md->cTC;
+    const t_grp_tcstat *  tcstat = ekind->tcstat;
 
-    const unsigned short * cACC    = md->cACC;
-    const rvec *           accel   = ir->opts.acc;
-    const t_grp_acc *      grpstat = ekind->grpstat;
+    const unsigned short *cACC    = md->cACC;
+    const rvec *          accel   = ir->opts.acc;
+    const t_grp_acc *     grpstat = ekind->grpstat;
 
-    const rvec * gmx_restrict invMassPerDim = md->invMassPerDim;
+    const rvec *gmx_restrict invMassPerDim = md->invMassPerDim;
 
     /* Initialize group values, changed later when multiple groups are used */
     int  ga       = 0;
@@ -314,7 +316,7 @@ static void updateMdLeapfrogGeneral(int                         start,
         rvec vRel;
         real cosineZ, vCosine;
 #ifdef __INTEL_COMPILER
-#pragma warning( disable : 280 )
+#pragma warning(disable : 280)
 #endif
         switch (accelerationType)
         {
@@ -349,8 +351,9 @@ static void updateMdLeapfrogGeneral(int                         start,
         for (int d = 0; d < DIM; d++)
         {
             real vNew
-                = (lg * vRel[d] + (f[n][d] * invMassPerDim[n][d] * dt - factorNH * vRel[d]
-                                   - dtPressureCouple * iprod(M[d], vRel))) / (1 + factorNH);
+                    = (lg * vRel[d] + (f[n][d] * invMassPerDim[n][d] * dt - factorNH * vRel[d]
+                                       - dtPressureCouple * iprod(M[d], vRel)))
+                      / (1 + factorNH);
             switch (accelerationType)
             {
                 case AccelerationType::none:
@@ -374,20 +377,20 @@ static void updateMdLeapfrogGeneral(int                         start,
 }
 
 /*! \brief Handles the Leap-frog MD x and v integration */
-static void do_update_md(int                         start,
-                         int                         nrend,
-                         gmx_int64_t                 step,
-                         real                        dt,
-                         const t_inputrec *          ir,
-                         const t_mdatoms *           md,
-                         const gmx_ekindata_t *      ekind,
-                         const matrix                box,
-                         const rvec   * gmx_restrict x,
-                         rvec         * gmx_restrict xprime,
-                         rvec         * gmx_restrict v,
-                         const rvec   * gmx_restrict f,
-                         const double * gmx_restrict nh_vxi,
-                         const matrix                M)
+static void do_update_md(int                   start,
+                         int                   nrend,
+                         gmx_int64_t           step,
+                         real                  dt,
+                         const t_inputrec *    ir,
+                         const t_mdatoms *     md,
+                         const gmx_ekindata_t *ekind,
+                         const matrix          box,
+                         const rvec *gmx_restrict x,
+                         rvec *gmx_restrict xprime,
+                         rvec *gmx_restrict v,
+                         const rvec *gmx_restrict f,
+                         const double *gmx_restrict nh_vxi,
+                         const matrix               M)
 {
     GMX_ASSERT(nrend == start || xprime != x, "For SIMD optimization certain compilers need to have xprime != x");
 
@@ -406,21 +409,18 @@ static void do_update_md(int                         start,
     {
         if (!doAcceleration)
         {
-            updateMdLeapfrogGeneral<AccelerationType::none>
-                (start, nrend, doNoseHoover, dt, dtPressureCouple,
-                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
+            updateMdLeapfrogGeneral<AccelerationType::none>(start, nrend, doNoseHoover, dt, dtPressureCouple,
+                                                            ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
         }
         else if (ekind->bNEMD)
         {
-            updateMdLeapfrogGeneral<AccelerationType::group>
-                (start, nrend, doNoseHoover, dt, dtPressureCouple,
-                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
+            updateMdLeapfrogGeneral<AccelerationType::group>(start, nrend, doNoseHoover, dt, dtPressureCouple,
+                                                             ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
         }
         else
         {
-            updateMdLeapfrogGeneral<AccelerationType::cosine>
-                (start, nrend, doNoseHoover, dt, dtPressureCouple,
-                ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
+            updateMdLeapfrogGeneral<AccelerationType::cosine>(start, nrend, doNoseHoover, dt, dtPressureCouple,
+                                                              ir, md, ekind, box, x, xprime, v, f, nh_vxi, M);
         }
     }
     else
@@ -449,38 +449,30 @@ static void do_update_md(int                         start,
 
             if (haveSingleTempScaleValue)
             {
-                updateMdLeapfrogSimple
-                <NumTempScaleValues::single,
-                 ApplyParrinelloRahmanVScaling::diagonal>
-                    (start, nrend, dt, dtPressureCouple,
-                    invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
+                updateMdLeapfrogSimple<NumTempScaleValues::single,
+                                       ApplyParrinelloRahmanVScaling::diagonal>(start, nrend, dt, dtPressureCouple,
+                                                                                invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
             }
             else
             {
-                updateMdLeapfrogSimple
-                <NumTempScaleValues::multiple,
-                 ApplyParrinelloRahmanVScaling::diagonal>
-                    (start, nrend, dt, dtPressureCouple,
-                    invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
+                updateMdLeapfrogSimple<NumTempScaleValues::multiple,
+                                       ApplyParrinelloRahmanVScaling::diagonal>(start, nrend, dt, dtPressureCouple,
+                                                                                invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
             }
         }
         else
         {
             if (haveSingleTempScaleValue)
             {
-                updateMdLeapfrogSimple
-                <NumTempScaleValues::single,
-                 ApplyParrinelloRahmanVScaling::no>
-                    (start, nrend, dt, dtPressureCouple,
-                    invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
+                updateMdLeapfrogSimple<NumTempScaleValues::single,
+                                       ApplyParrinelloRahmanVScaling::no>(start, nrend, dt, dtPressureCouple,
+                                                                          invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
             }
             else
             {
-                updateMdLeapfrogSimple
-                <NumTempScaleValues::multiple,
-                 ApplyParrinelloRahmanVScaling::no>
-                    (start, nrend, dt, dtPressureCouple,
-                    invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
+                updateMdLeapfrogSimple<NumTempScaleValues::multiple,
+                                       ApplyParrinelloRahmanVScaling::no>(start, nrend, dt, dtPressureCouple,
+                                                                          invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
             }
         }
     }
@@ -534,7 +526,7 @@ static void do_update_vv_vel(int start, int nrend, real dt,
 } /* do_update_vv_vel */
 
 static void do_update_vv_pos(int start, int nrend, real dt,
-                             ivec nFreeze[],
+                             ivec           nFreeze[],
                              unsigned short ptype[], unsigned short cFREEZE[],
                              const rvec x[], rvec xprime[], rvec v[],
                              gmx_bool bExtended, real veta)
@@ -622,7 +614,7 @@ static gmx_stochd_t *init_stochd(const t_inputrec *ir)
         for (int gt = 0; gt < ngtc; gt++)
         {
             real reft = std::max<real>(0, opts->ref_t[gt]);
-            if ((opts->tau_t[gt] > 0) && (reft > 0))  /* tau_t or ref_t = 0 means that no randomization is done */
+            if ((opts->tau_t[gt] > 0) && (reft > 0)) /* tau_t or ref_t = 0 means that no randomization is done */
             {
                 sd->randomize_group[gt] = TRUE;
                 sd->boltzfac[gt]        = BOLTZ * opts->ref_t[gt];
@@ -669,7 +661,7 @@ void update_temperature_constants(gmx_update_t *upd, const t_inputrec *ir)
 
 gmx_update_t *init_update(const t_inputrec *ir)
 {
-    gmx_update_t *upd = new(gmx_update_t);
+    gmx_update_t *upd = new (gmx_update_t);
 
     if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc))
     {
@@ -699,9 +691,9 @@ static void do_update_sd1(gmx_stochd_t *sd,
                           unsigned short cFREEZE[], unsigned short cACC[],
                           unsigned short cTC[],
                           const rvec x[], rvec xprime[], rvec v[], const rvec f[],
-                          gmx_bool bDoConstr,
-                          gmx_bool bFirstHalfConstr,
-                          gmx_int64_t step, int seed, int* gatindex)
+                          gmx_bool    bDoConstr,
+                          gmx_bool    bFirstHalfConstr,
+                          gmx_int64_t step, int seed, int *gatindex)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
@@ -710,7 +702,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
     int             n, d;
 
     // Even 0 bits internal counter gives 2x64 ints (more than enough for three table lookups)
-    gmx::ThreeFry2x64<0>                       rng(seed, gmx::RandomDomain::UpdateCoordinates);
+    gmx::ThreeFry2x64<0> rng(seed, gmx::RandomDomain::UpdateCoordinates);
     gmx::TabulatedNormalDistribution<real, 14> dist;
 
     sdc = sd->sdc;
@@ -788,7 +780,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
                     if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
                     {
                         v[n][d]      = v[n][d] + (im * f[n][d] + accel[ga][d]) * dt;
-                        xprime[n][d] = x[n][d] +  v[n][d] * dt;
+                        xprime[n][d] = x[n][d] + v[n][d] * dt;
                     }
                     else
                     {
@@ -844,7 +836,7 @@ static void do_update_bd(int start, int nrend, real dt,
                          const rvec x[], rvec xprime[], rvec v[],
                          const rvec f[], real friction_coefficient,
                          real *rf, gmx_int64_t step, int seed,
-                         int* gatindex)
+                         int *gatindex)
 {
     /* note -- these appear to be full step velocities . . .  */
     int  gf = 0, gt = 0;
@@ -853,7 +845,7 @@ static void do_update_bd(int start, int nrend, real dt,
     int  n, d;
     // Use 1 bit of internal counters to give us 2*2 64-bits values per stream
     // Each 64-bit value is enough for 4 normal distribution table numbers.
-    gmx::ThreeFry2x64<0>                       rng(seed, gmx::RandomDomain::UpdateCoordinates);
+    gmx::ThreeFry2x64<0> rng(seed, gmx::RandomDomain::UpdateCoordinates);
     gmx::TabulatedNormalDistribution<real, 14> dist;
 
     if (friction_coefficient != 0)
@@ -888,7 +880,7 @@ static void do_update_bd(int start, int nrend, real dt,
                 {
                     /* NOTE: invmass = 2/(mass*friction_constant*dt) */
                     vn = 0.5 * invmass[n] * f[n][d] * dt
-                        + std::sqrt(0.5 * invmass[n]) * rf[gt] * dist(rng);
+                         + std::sqrt(0.5 * invmass[n]) * rf[gt] * dist(rng);
                 }
 
                 v[n][d]      = vn;
@@ -904,7 +896,7 @@ static void do_update_bd(int start, int nrend, real dt,
 }
 
 static void dump_it_all(FILE gmx_unused *fp, const char gmx_unused *title,
-                        int gmx_unused natoms,
+                        int gmx_unused   natoms,
                         const gmx_unused PaddedRVecVector *x,
                         const gmx_unused PaddedRVecVector *xp,
                         const gmx_unused PaddedRVecVector *v,
@@ -948,7 +940,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
         if (bEkinAveVel)
         {
             clear_mat(tcstat[g].ekinf);
-            tcstat[g].ekinscalef_nhc = 1.0;   /* need to clear this -- logic is complicated! */
+            tcstat[g].ekinscalef_nhc = 1.0; /* need to clear this -- logic is complicated! */
         }
         else
         {
@@ -1000,7 +992,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
 
             for (d = 0; (d < DIM); d++)
             {
-                v_corrt[d] = v[n][d]  - grpstat[ga].u[d];
+                v_corrt[d] = v[n][d] - grpstat[ga].u[d];
             }
             for (d = 0; (d < DIM); d++)
             {
@@ -1013,7 +1005,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
             if (md->nMassPerturbed && md->bPerturbed[n])
             {
                 *dekindl_sum
-                    += 0.5 * (md->massB[n] - md->massA[n]) * iprod(v_corrt, v_corrt);
+                        += 0.5 * (md->massB[n] - md->massA[n]) * iprod(v_corrt, v_corrt);
             }
         }
     }
@@ -1157,10 +1149,9 @@ void update_ekinstate(ekinstate_t *ekinstate, gmx_ekindata_t *ekind)
     copy_mat(ekind->ekin, ekinstate->ekin_total);
     ekinstate->dekindl = ekind->dekindl;
     ekinstate->mvcos   = ekind->cosacc.mvcos;
-
 }
 
-void restore_ekinstate_from_state(t_commrec *cr,
+void restore_ekinstate_from_state(t_commrec *     cr,
                                   gmx_ekindata_t *ekind, const ekinstate_t *ekinstate)
 {
     int i, n;
@@ -1234,7 +1225,7 @@ static void deform(gmx_update_t *upd,
             if (ir->deform[i][j] != 0)
             {
                 bnew[i][j]
-                    = upd->deformref_box[i][j] + elapsed_time * ir->deform[i][j];
+                        = upd->deformref_box[i][j] + elapsed_time * ir->deform[i][j];
             }
         }
     }
@@ -1351,7 +1342,7 @@ void update_constraints(FILE *            fplog,
                         t_state *         state,
                         gmx_bool          bMolPBC,
                         t_graph *         graph,
-                        PaddedRVecVector *force,     /* forces on home particles */
+                        PaddedRVecVector *force, /* forces on home particles */
                         t_idef *          idef,
                         tensor            vir_part,
                         t_commrec *       cr,
@@ -1462,7 +1453,7 @@ void update_constraints(FILE *            fplog,
             {
                 int start_th, end_th;
 
-                start_th = start + ((nrend - start) * th   ) / nth;
+                start_th = start + ((nrend - start) * th) / nth;
                 end_th   = start + ((nrend - start) * (th + 1)) / nth;
 
                 /* The second part of the SD integration */
@@ -1577,7 +1568,7 @@ void update_constraints(FILE *            fplog,
         dump_it_all(fplog, "After unshift",
                     state->natoms, &state->x, &upd->xp, &state->v, force);
     }
-/* ############# END the update of velocities and positions ######### */
+    /* ############# END the update of velocities and positions ######### */
 }
 
 void update_pcouple_after_coordinates(FILE *            fplog,
@@ -1679,10 +1670,10 @@ void update_pcouple_after_coordinates(FILE *            fplog,
 
 void update_coords(FILE *            fplog,
                    gmx_int64_t       step,
-                   t_inputrec *      inputrec,  /* input record and box stuff	*/
+                   t_inputrec *      inputrec, /* input record and box stuff	*/
                    t_mdatoms *       md,
                    t_state *         state,
-                   PaddedRVecVector *f,    /* forces on home particles */
+                   PaddedRVecVector *f, /* forces on home particles */
                    t_fcdata *        fcd,
                    gmx_ekindata_t *  ekind,
                    matrix            M,
@@ -1731,7 +1722,7 @@ void update_coords(FILE *            fplog,
         {
             int start_th, end_th;
 
-            start_th = start + ((nrend - start) * th   ) / nth;
+            start_th = start + ((nrend - start) * th) / nth;
             end_th   = start + ((nrend - start) * (th + 1)) / nth;
 
             const rvec *x_rvec  = as_rvec_array(state->x.data());
@@ -1804,7 +1795,6 @@ void update_coords(FILE *            fplog,
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
-
 }
 
 
@@ -1836,7 +1826,7 @@ void correct_ekin(FILE *log, int start, int end, rvec v[], rvec vcm, real mass[]
     tm = 0;
     for (i = start; (i < end); i++)
     {
-        m   = mass[i];
+        m = mass[i];
         tm += m;
         for (j = 0; (j < DIM); j++)
         {

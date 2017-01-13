@@ -83,7 +83,7 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
  */
 void readConfAndTopology(const char *infile,
                          bool *haveTopology, gmx_mtop_t *mtop,
-                         int *ePBC,
+                         int *  ePBC,
                          rvec **x, rvec **v, matrix box);
 
 /*! \brief Read a configuration and, when available, a topology from a tpr or structure file.

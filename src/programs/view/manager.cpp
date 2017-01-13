@@ -91,7 +91,7 @@ static void add_bonds(t_manager *man, t_functype func[],
     std::fprintf(stderr, "Going to make bonds from an ilist with %d entries\n", b->nr);
 #endif
     ia = b->iatoms;
-    for (i = 0; (i < b->nr); )
+    for (i = 0; (i < b->nr);)
     {
         type  = ia[0];
         ai    = ia[1];
@@ -126,7 +126,7 @@ static void add_bonds(t_manager *man, t_functype func[],
         std::fprintf(stderr, "Type: %5d, delta: %5d\n", type, delta);
 #endif
         ia += delta + 1;
-        i  += delta + 1;
+        i += delta + 1;
     }
 }
 
@@ -155,7 +155,7 @@ static int which_atom(t_manager *man, int x, int y)
         {
             if (man->bVis[i])
             {
-                return (int) i;
+                return (int)i;
             }
         }
     }
@@ -233,13 +233,15 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom);
 
     man->natom
-        = read_first_x(man->oenv, &man->status, trajectory, &(man->time), &(man->x),
-                       man->box);
+            = read_first_x(man->oenv, &man->status, trajectory, &(man->time), &(man->x),
+                           man->box);
     man->trajfile = gmx_strdup(trajectory);
     if (man->natom > man->top.atoms.nr)
     {
-        gmx_fatal(FARGS, "Topology %s (%d atoms) and trajectory %s (%d atoms) "
-                  "do not match", status, man->top.atoms.nr,
+        gmx_fatal(FARGS,
+                  "Topology %s (%d atoms) and trajectory %s (%d atoms) "
+                  "do not match",
+                  status, man->top.atoms.nr,
                   trajectory, man->natom);
     }
 
@@ -278,7 +280,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     {
         if (!bB[i])
         {
-            add_object(man, eOSingle, (int) i, 0);
+            add_object(man, eOSingle, (int)i, 0);
         }
     }
     sfree(bB);
@@ -568,7 +570,7 @@ void move_man(t_x11 *x11, t_manager *man, int width, int height)
     man->wd.height = height;
 
     /* Move all subwindows, resize only Mol window */
-    x0 = width - EWIDTH - AIR - 4 * BORDER;           /* Starting of ewin etc. */
+    x0 = width - EWIDTH - AIR - 4 * BORDER; /* Starting of ewin etc. */
     y0 = AIR;
 
     /* Mol Window */
@@ -608,7 +610,7 @@ void map_man(t_x11 *x11, t_manager *man)
     show_but(x11, man->bbox);
 }
 
-bool toggle_animate (t_x11 *x11, t_manager *man)
+bool toggle_animate(t_x11 *x11, t_manager *man)
 {
     if (man->status)
     {
@@ -627,7 +629,7 @@ bool toggle_animate (t_x11 *x11, t_manager *man)
     return man->bAnimate;
 }
 
-bool toggle_pbc (t_manager *man)
+bool toggle_pbc(t_manager *man)
 {
     man->bPbc = !man->bPbc;
 
@@ -654,7 +656,7 @@ t_manager *init_man(t_x11 *x11, Window Parent,
                                        man->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, man->wd.self, Parent, ManCallBack, man);
     x11->SetInputMask(x11, man->wd.self, StructureNotifyMask
-                      | ExposureMask | ButtonPressMask);
+                                                 | ExposureMask | ButtonPressMask);
 
     /* The order of creating windows is important for the stacking order */
     /* Mol Window */

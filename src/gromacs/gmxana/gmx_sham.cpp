@@ -90,19 +90,19 @@ static gmx_int64_t indexn(int ndim, const int *ibox, const int *nxyz)
 
 typedef struct
 {
-    int    Nx;      /* x grid points in unit cell */
-    int    Ny;      /* y grid points in unit cell */
-    int    Nz;      /* z grid points in unit cell */
-    int    dmin[3]; /* starting point x,y,z*/
-    int    dmax[3]; /* ending point x,y,z */
-    real   cell[6]; /* usual cell parameters */
-    real * ed;      /* data */
+    int   Nx;      /* x grid points in unit cell */
+    int   Ny;      /* y grid points in unit cell */
+    int   Nz;      /* z grid points in unit cell */
+    int   dmin[3]; /* starting point x,y,z*/
+    int   dmax[3]; /* ending point x,y,z */
+    real  cell[6]; /* usual cell parameters */
+    real *ed;      /* data */
 } XplorMap;
 
-static void lo_write_xplor(XplorMap * map, const char * file)
+static void lo_write_xplor(XplorMap *map, const char *file)
 {
-    FILE * fp;
-    int    z, i, j, n;
+    FILE *fp;
+    int   z, i, j, n;
 
     fp = gmx_ffopen(file, "w");
     /* The REMARKS part is the worst part of the XPLOR format
@@ -212,8 +212,8 @@ typedef struct
 
 static int comp_minima(const void *a, const void *b)
 {
-    t_minimum *ma = (t_minimum *) a;
-    t_minimum *mb = (t_minimum *) b;
+    t_minimum *ma = (t_minimum *)a;
+    t_minimum *mb = (t_minimum *)b;
 
     if (ma->ener < mb->ener)
     {
@@ -229,16 +229,15 @@ static int comp_minima(const void *a, const void *b)
     }
 }
 
-static gmx_inline
-void print_minimum(FILE *fp, int num, const t_minimum *min)
+static gmx_inline void print_minimum(FILE *fp, int num, const t_minimum *min)
 {
     fprintf(fp,
-            "Minimum %d at index " "%" GMX_PRId64 " energy %10.3f\n",
+            "Minimum %d at index "
+            "%" GMX_PRId64 " energy %10.3f\n",
             num, min->index, min->ener);
 }
 
-static gmx_inline
-void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
+static gmx_inline void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
 {
     print_minimum(fp, num, min);
     mm[num].index = min->index;
@@ -246,11 +245,12 @@ void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
 }
 
 static gmx_inline
-gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
-                                     int              dimension_index,
-                                     int              dimension_min,
-                                     int              neighbour_index,
-                                     real *           W)
+        gmx_bool
+        is_local_minimum_from_below(const t_minimum *this_min,
+                                    int              dimension_index,
+                                    int              dimension_min,
+                                    int              neighbour_index,
+                                    real *           W)
 {
     return ((dimension_index == dimension_min)
             || ((dimension_index > dimension_min)
@@ -259,11 +259,12 @@ gmx_bool is_local_minimum_from_below(const t_minimum *this_min,
 }
 
 static gmx_inline
-gmx_bool is_local_minimum_from_above(const t_minimum *this_min,
-                                     int              dimension_index,
-                                     int              dimension_max,
-                                     int              neighbour_index,
-                                     real *           W)
+        gmx_bool
+        is_local_minimum_from_above(const t_minimum *this_min,
+                                    int              dimension_index,
+                                    int              dimension_max,
+                                    int              neighbour_index,
+                                    real *           W)
 {
     return ((dimension_index == dimension_max)
             || ((dimension_index < dimension_max)
@@ -298,9 +299,9 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
                     /* Get the index of this point in the flat array */
                     this_min.index = index2(ibox, i, j);
                     this_min.ener  = W[this_min.index];
-                    if (is_local_minimum_from_below(&this_min, i, 0,         index2(ibox, i - 1, j  ), W)
-                        && is_local_minimum_from_above(&this_min, i, ibox[0] - 1, index2(ibox, i + 1, j  ), W)
-                        && is_local_minimum_from_below(&this_min, j, 0,         index2(ibox, i, j - 1), W)
+                    if (is_local_minimum_from_below(&this_min, i, 0, index2(ibox, i - 1, j), W)
+                        && is_local_minimum_from_above(&this_min, i, ibox[0] - 1, index2(ibox, i + 1, j), W)
+                        && is_local_minimum_from_below(&this_min, j, 0, index2(ibox, i, j - 1), W)
                         && is_local_minimum_from_above(&this_min, j, ibox[1] - 1, index2(ibox, i, j + 1), W))
                     {
                         add_minimum(fp, nmin, &this_min, mm);
@@ -319,11 +320,11 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
                         /* Get the index of this point in the flat array */
                         this_min.index = index3(ibox, i, j, k);
                         this_min.ener  = W[this_min.index];
-                        if (is_local_minimum_from_below(&this_min, i, 0,         index3(ibox, i - 1, j, k  ), W)
-                            && is_local_minimum_from_above(&this_min, i, ibox[0] - 1, index3(ibox, i + 1, j, k  ), W)
-                            && is_local_minimum_from_below(&this_min, j, 0,         index3(ibox, i, j - 1, k  ), W)
-                            && is_local_minimum_from_above(&this_min, j, ibox[1] - 1, index3(ibox, i, j + 1, k  ), W)
-                            && is_local_minimum_from_below(&this_min, k, 0,         index3(ibox, i, j, k - 1), W)
+                        if (is_local_minimum_from_below(&this_min, i, 0, index3(ibox, i - 1, j, k), W)
+                            && is_local_minimum_from_above(&this_min, i, ibox[0] - 1, index3(ibox, i + 1, j, k), W)
+                            && is_local_minimum_from_below(&this_min, j, 0, index3(ibox, i, j - 1, k), W)
+                            && is_local_minimum_from_above(&this_min, j, ibox[1] - 1, index3(ibox, i, j + 1, k), W)
+                            && is_local_minimum_from_below(&this_min, k, 0, index3(ibox, i, j, k - 1), W)
                             && is_local_minimum_from_above(&this_min, k, ibox[2] - 1, index3(ibox, i, j, k + 1), W))
                         {
                             add_minimum(fp, nmin, &this_min, mm);
@@ -368,10 +369,10 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
                     int index = this_point[i];
                     this_point[i]--;
                     bMin = bMin
-                        && is_local_minimum_from_below(&this_min, index, 0,         indexn(ndim, ibox, this_point), W);
+                           && is_local_minimum_from_below(&this_min, index, 0, indexn(ndim, ibox, this_point), W);
                     this_point[i] += 2;
-                    bMin           = bMin
-                        && is_local_minimum_from_above(&this_min, index, ibox[i] - 1, indexn(ndim, ibox, this_point), W);
+                    bMin = bMin
+                           && is_local_minimum_from_above(&this_min, index, ibox[i] - 1, indexn(ndim, ibox, this_point), W);
                     this_point[i]--;
                 }
                 if (bMin)
@@ -598,7 +599,7 @@ static void do_sham(const char *fn, const char *ndx,
         if (P[i] != 0)
         {
             Pmax = std::max(P[i], Pmax);
-            W[i] = -BOLTZ*Tref*std::log(P[i]);
+            W[i] = -BOLTZ * Tref * std::log(P[i]);
             if (W[i] < Wmin)
             {
                 Wmin = W[i];
@@ -633,7 +634,7 @@ static void do_sham(const char *fn, const char *ndx,
         if (P[i] != 0)
         {
             W[i] -= Wmin;
-            S[i]  = E[i] - W[i] - Smin;
+            S[i] = E[i] - W[i] - Smin;
             fprintf(fp, "%5d  %10.5e  %10.5e  %10.5e\n", i, W[i], E[i], S[i]);
         }
         else
@@ -695,10 +696,17 @@ static void do_sham(const char *fn, const char *ndx,
     {
         switch (i)
         {
-            case 0: axis = axis_x; break;
-            case 1: axis = axis_y; break;
-            case 2: axis = axis_z; break;
-            default: break;
+            case 0:
+                axis = axis_x;
+                break;
+            case 1:
+                axis = axis_y;
+                break;
+            case 2:
+                axis = axis_z;
+                break;
+            default:
+                break;
         }
         for (j = 0; j <= ibox[i]; j++)
         {
@@ -824,7 +832,7 @@ static void ehisto(const char *fh, int n, real **enerT, const gmx_output_env_t *
     real *T, bmin, bmax, bwidth;
     int **histo;
 
-    bmin =  1e8;
+    bmin = 1e8;
     bmax = -1e8;
     snew(bindex, n);
     snew(T, n);
@@ -875,7 +883,7 @@ static void ehisto(const char *fh, int n, real **enerT, const gmx_output_env_t *
 
 int gmx_sham(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] makes multi-dimensional free-energy, enthalpy and entropy plots.",
         "[THISMODULE] reads one or more [REF].xvg[ref] files and analyzes data sets.",
         "The basic purpose of [THISMODULE] is to plot Gibbs free energy landscapes",
@@ -916,51 +924,33 @@ int gmx_sham(int argc, char *argv[])
         "is the natural quantity to use, as it will produce bins of the same",
         "volume."
     };
-    static real     tb       = -1, te = -1;
-    static gmx_bool bHaveT   = TRUE, bDer = FALSE;
-    static gmx_bool bSham    = TRUE;
-    static real     Tref     = 298.15, pmin = 0, ttol = 0, pmax = 0, gmax = 0, emin = 0, emax = 0;
-    static rvec     nrdim    = {1, 1, 1};
-    static rvec     nrbox    = {32, 32, 32};
-    static rvec     xmin     = {0, 0, 0}, xmax = {1, 1, 1};
+    static real     tb = -1, te = -1;
+    static gmx_bool bHaveT = TRUE, bDer = FALSE;
+    static gmx_bool bSham = TRUE;
+    static real     Tref = 298.15, pmin = 0, ttol = 0, pmax = 0, gmax = 0, emin = 0, emax = 0;
+    static rvec     nrdim = { 1, 1, 1 };
+    static rvec     nrbox = { 32, 32, 32 };
+    static rvec     xmin = { 0, 0, 0 }, xmax = { 1, 1, 1 };
     static int      nsets_in = 1, nlevels = 25;
-    t_pargs         pa[]     = {
-        { "-time",    FALSE, etBOOL, {&bHaveT},
-          "Expect a time in the input" },
-        { "-b",       FALSE, etREAL, {&tb},
-          "First time to read from set" },
-        { "-e",       FALSE, etREAL, {&te},
-          "Last time to read from set" },
-        { "-ttol",     FALSE, etREAL, {&ttol},
-          "Tolerance on time in appropriate units (usually ps)" },
-        { "-n",       FALSE, etINT, {&nsets_in},
-          "Read this number of sets separated by lines containing only an ampersand" },
-        { "-d",       FALSE, etBOOL, {&bDer},
-          "Use the derivative" },
-        { "-sham",    FALSE, etBOOL, {&bSham},
-          "Turn off energy weighting even if energies are given" },
-        { "-tsham",   FALSE, etREAL, {&Tref},
-          "Temperature for single histogram analysis" },
-        { "-pmin",    FALSE, etREAL, {&pmin},
-          "Minimum probability. Anything lower than this will be set to zero" },
-        { "-dim",     FALSE, etRVEC, {nrdim},
-          "Dimensions for distances, used for volume correction (max 3 values, dimensions > 3 will get the same value as the last)" },
-        { "-ngrid",   FALSE, etRVEC, {nrbox},
-          "Number of bins for energy landscapes (max 3 values, dimensions > 3 will get the same value as the last)" },
-        { "-xmin",    FALSE, etRVEC, {xmin},
-          "Minimum for the axes in energy landscape (see above for > 3 dimensions)" },
-        { "-xmax",    FALSE, etRVEC, {xmax},
-          "Maximum for the axes in energy landscape (see above for > 3 dimensions)" },
-        { "-pmax",    FALSE, etREAL, {&pmax},
-          "Maximum probability in output, default is calculate" },
-        { "-gmax",    FALSE, etREAL, {&gmax},
-          "Maximum free energy in output, default is calculate" },
-        { "-emin",    FALSE, etREAL, {&emin},
-          "Minimum enthalpy in output, default is calculate" },
-        { "-emax",    FALSE, etREAL, {&emax},
-          "Maximum enthalpy in output, default is calculate" },
-        { "-nlevels", FALSE, etINT,  {&nlevels},
-          "Number of levels for energy landscape" },
+    t_pargs         pa[] = {
+        { "-time", FALSE, etBOOL, { &bHaveT }, "Expect a time in the input" },
+        { "-b", FALSE, etREAL, { &tb }, "First time to read from set" },
+        { "-e", FALSE, etREAL, { &te }, "Last time to read from set" },
+        { "-ttol", FALSE, etREAL, { &ttol }, "Tolerance on time in appropriate units (usually ps)" },
+        { "-n", FALSE, etINT, { &nsets_in }, "Read this number of sets separated by lines containing only an ampersand" },
+        { "-d", FALSE, etBOOL, { &bDer }, "Use the derivative" },
+        { "-sham", FALSE, etBOOL, { &bSham }, "Turn off energy weighting even if energies are given" },
+        { "-tsham", FALSE, etREAL, { &Tref }, "Temperature for single histogram analysis" },
+        { "-pmin", FALSE, etREAL, { &pmin }, "Minimum probability. Anything lower than this will be set to zero" },
+        { "-dim", FALSE, etRVEC, { nrdim }, "Dimensions for distances, used for volume correction (max 3 values, dimensions > 3 will get the same value as the last)" },
+        { "-ngrid", FALSE, etRVEC, { nrbox }, "Number of bins for energy landscapes (max 3 values, dimensions > 3 will get the same value as the last)" },
+        { "-xmin", FALSE, etRVEC, { xmin }, "Minimum for the axes in energy landscape (see above for > 3 dimensions)" },
+        { "-xmax", FALSE, etRVEC, { xmax }, "Maximum for the axes in energy landscape (see above for > 3 dimensions)" },
+        { "-pmax", FALSE, etREAL, { &pmax }, "Maximum probability in output, default is calculate" },
+        { "-gmax", FALSE, etREAL, { &gmax }, "Maximum free energy in output, default is calculate" },
+        { "-emin", FALSE, etREAL, { &emin }, "Minimum enthalpy in output, default is calculate" },
+        { "-emax", FALSE, etREAL, { &emax }, "Maximum enthalpy in output, default is calculate" },
+        { "-nlevels", FALSE, etINT, { &nlevels }, "Number of levels for energy landscape" },
     };
 #define NPA asize(pa)
 
@@ -972,18 +962,18 @@ int gmx_sham(int argc, char *argv[])
     gmx_int64_t       num_grid_points;
 
     t_filenm fnm[] = {
-        { efXVG, "-f",    "graph",    ffREAD   },
-        { efXVG, "-ge",   "gibbs",    ffOPTRD  },
-        { efXVG, "-ene",  "esham",    ffOPTRD  },
-        { efXVG, "-dist", "ener",     ffOPTWR  },
-        { efXVG, "-histo", "edist",    ffOPTWR  },
-        { efNDX, "-bin",  "bindex",   ffOPTWR  },
-        { efXPM, "-lp",   "prob",     ffOPTWR  },
-        { efXPM, "-ls",   "gibbs",    ffOPTWR  },
-        { efXPM, "-lsh",  "enthalpy", ffOPTWR  },
-        { efXPM, "-lss",  "entropy",  ffOPTWR  },
-        { efPDB, "-ls3",  "gibbs3",   ffOPTWR  },
-        { efLOG, "-g",    "shamlog",  ffOPTWR  }
+        { efXVG, "-f", "graph", ffREAD },
+        { efXVG, "-ge", "gibbs", ffOPTRD },
+        { efXVG, "-ene", "esham", ffOPTRD },
+        { efXVG, "-dist", "ener", ffOPTWR },
+        { efXVG, "-histo", "edist", ffOPTWR },
+        { efNDX, "-bin", "bindex", ffOPTWR },
+        { efXPM, "-lp", "prob", ffOPTWR },
+        { efXPM, "-ls", "gibbs", ffOPTWR },
+        { efXPM, "-lsh", "enthalpy", ffOPTWR },
+        { efXPM, "-lss", "entropy", ffOPTWR },
+        { efPDB, "-ls3", "gibbs3", ffOPTWR },
+        { efLOG, "-g", "shamlog", ffOPTWR }
     };
 #define NFILE asize(fnm)
 

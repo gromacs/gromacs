@@ -56,8 +56,9 @@ class GmxTraj : public gmx::test::IntegrationTestFixture,
                 public ::testing::WithParamInterface<const char *>
 {
 public:
-    GmxTraj() : groFileName(fileManager_.getInputFilePath("spc2.gro")),
-                xvgFileName(fileManager_.getTemporaryFilePath("spc2.xvg"))
+    GmxTraj()
+        : groFileName(fileManager_.getInputFilePath("spc2.gro")),
+          xvgFileName(fileManager_.getTemporaryFilePath("spc2.xvg"))
     {
     }
 
@@ -66,7 +67,7 @@ public:
         gmx::test::CommandLine caller;
         caller.append("traj");
 
-        caller.addOption("-s",  groFileName);
+        caller.addOption("-s", groFileName);
         caller.addOption("-ox", xvgFileName);
 
         std::string inputTrajectoryFileName = fileManager_.getInputFilePath(fileName);
@@ -152,10 +153,10 @@ const char *trajectoryFileNames[] = {
 
 INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
                         GmxTraj,
-                            ::testing::ValuesIn(gmx::ArrayRef<const char*>(trajectoryFileNames)));
+                        ::testing::ValuesIn(gmx::ArrayRef<const char *>(trajectoryFileNames)));
 
 INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
                         TrjconvWithIndexGroupSubset,
-                            ::testing::ValuesIn(gmx::ArrayRef<const char*>(trajectoryFileNames)));
+                        ::testing::ValuesIn(gmx::ArrayRef<const char *>(trajectoryFileNames)));
 
 } // namespace

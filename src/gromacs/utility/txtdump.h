@@ -50,13 +50,13 @@
 #include "gromacs/utility/real.h"
 
 //! Line width for text dump output.
-#define LINE_WIDTH  80
+#define LINE_WIDTH 80
 //! Right margin for text dump output.
-#define RMARGIN     10
+#define RMARGIN 10
 //! Actual line length for text dump output.
-#define USE_WIDTH   ((LINE_WIDTH)-(RMARGIN))
+#define USE_WIDTH ((LINE_WIDTH) - (RMARGIN))
 //! Default indentation for text dump output.
-#define INDENT      3
+#define INDENT 3
 
 //! Prints an initial indentation for a line.
 int pr_indent(FILE *fp, int n);

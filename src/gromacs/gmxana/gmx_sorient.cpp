@@ -174,25 +174,23 @@ int gmx_sorient(int argc, char *argv[])
     static gmx_bool   bCom = FALSE, bVec23 = FALSE, bPBC = FALSE;
     static real       rmin = 0.0, rmax = 0.5, binwidth = 0.02, rbinw = 0.02;
     t_pargs           pa[] = {
-        { "-com",  FALSE, etBOOL,  {&bCom},
-          "Use the center of mass as the reference position" },
-        { "-v23",  FALSE, etBOOL,  {&bVec23},
-          "Use the vector between atoms 2 and 3" },
-        { "-rmin",  FALSE, etREAL, {&rmin}, "Minimum distance (nm)" },
-        { "-rmax",  FALSE, etREAL, {&rmax}, "Maximum distance (nm)" },
-        { "-cbin",  FALSE, etREAL, {&binwidth}, "Binwidth for the cosine" },
-        { "-rbin",  FALSE, etREAL, {&rbinw}, "Binwidth for r (nm)" },
-        { "-pbc",   FALSE, etBOOL, {&bPBC}, "Check PBC for the center of mass calculation. Only necessary when your reference group consists of several molecules." }
+        { "-com", FALSE, etBOOL, { &bCom }, "Use the center of mass as the reference position" },
+        { "-v23", FALSE, etBOOL, { &bVec23 }, "Use the vector between atoms 2 and 3" },
+        { "-rmin", FALSE, etREAL, { &rmin }, "Minimum distance (nm)" },
+        { "-rmax", FALSE, etREAL, { &rmax }, "Maximum distance (nm)" },
+        { "-cbin", FALSE, etREAL, { &binwidth }, "Binwidth for the cosine" },
+        { "-rbin", FALSE, etREAL, { &rbinw }, "Binwidth for r (nm)" },
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "Check PBC for the center of mass calculation. Only necessary when your reference group consists of several molecules." }
     };
 
     t_filenm fnm[] = {
-        { efTRX, nullptr,  nullptr,  ffREAD },
-        { efTPS, nullptr,  nullptr,  ffREAD },
-        { efNDX, nullptr,  nullptr,  ffOPTRD },
-        { efXVG, nullptr,  "sori",   ffWRITE },
-        { efXVG, "-no", "snor",   ffWRITE },
-        { efXVG, "-ro", "sord",   ffWRITE },
-        { efXVG, "-co", "scum",   ffWRITE },
+        { efTRX, nullptr, nullptr, ffREAD },
+        { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, nullptr, "sori", ffWRITE },
+        { efXVG, "-no", "snor", ffWRITE },
+        { efXVG, "-ro", "sord", ffWRITE },
+        { efXVG, "-co", "scum", ffWRITE },
         { efXVG, "-rc", "scount", ffWRITE }
     };
 #define NFILE asize(fnm)
@@ -376,7 +374,7 @@ int gmx_sorient(int argc, char *argv[])
     nav     = static_cast<real>(ntot) / (nrefgrp * nf);
     normfac = invbw / ntot;
 
-    fprintf(stderr,  "Average nr of molecules between %g and %g nm: %.1f\n",
+    fprintf(stderr, "Average nr of molecules between %g and %g nm: %.1f\n",
             rmin, rmax, nav);
     if (ntot > 0)
     {

@@ -93,19 +93,28 @@ public:
      * \see Selection::setEvaluateVelocities()
      */
     MyClass &evaluateVelocities()
-    { selectionFlags_.set(efSelection_EvaluateVelocities); return me(); }
+    {
+        selectionFlags_.set(efSelection_EvaluateVelocities);
+        return me();
+    }
     /*! \brief
      * Request force evaluation for output positions.
      *
      * \see Selection::setEvaluateForces()
      */
     MyClass &evaluateForces()
-    { selectionFlags_.set(efSelection_EvaluateForces); return me(); }
+    {
+        selectionFlags_.set(efSelection_EvaluateForces);
+        return me();
+    }
     /*! \brief
      * Only accept selections that evaluate to atom positions.
      */
     MyClass &onlyAtoms()
-    { selectionFlags_.set(efSelection_OnlyAtoms); return me(); }
+    {
+        selectionFlags_.set(efSelection_OnlyAtoms);
+        return me();
+    }
     /*! \brief
      * Only accept selections that evaluate to atom positions in sorted order.
      */
@@ -119,7 +128,10 @@ public:
      * Only accept static selections for this option.
      */
     MyClass &onlyStatic()
-    { selectionFlags_.set(efSelection_OnlyStatic); return me(); }
+    {
+        selectionFlags_.set(efSelection_OnlyStatic);
+        return me();
+    }
     /*! \brief
      * Handle dynamic selections for this option with position masks.
      *
@@ -127,7 +139,10 @@ public:
      * \see SelectionPosition::selected()
      */
     MyClass &dynamicMask()
-    { selectionFlags_.set(efSelection_DynamicMask); return me(); }
+    {
+        selectionFlags_.set(efSelection_DynamicMask);
+        return me();
+    }
     /*! \brief
      * Allow specifying an unconditionally empty selection for this option.
      *
@@ -137,7 +152,10 @@ public:
      * dynamic selection evaluates to zero atoms for some frames.
      */
     MyClass &allowEmpty()
-    { selectionFlags_.clear(efSelection_DisallowEmpty); return me(); }
+    {
+        selectionFlags_.clear(efSelection_DisallowEmpty);
+        return me();
+    }
 
     /*! \brief
      * Sets default selection text for the option.
@@ -146,7 +164,10 @@ public:
      * the value of the selection.
      */
     MyClass &defaultSelectionText(const char *text)
-    { defaultText_ = text; return me(); }
+    {
+        defaultText_ = text;
+        return me();
+    }
 
 private:
     // Disable possibility to allow multiple occurrences, since it isn't
@@ -158,7 +179,7 @@ private:
     using MyBase::defaultValueIfSet;
 
     virtual AbstractOptionStorage *createStorage(
-        const OptionManagerContainer &managers) const;
+            const OptionManagerContainer &managers) const;
 
     const char *   defaultText_;
     SelectionFlags selectionFlags_;
@@ -290,7 +311,7 @@ public:
     void setDynamicMask(bool bEnabled);
 
 private:
-    SelectionOptionStorage &option();
+    SelectionOptionStorage &      option();
     const SelectionOptionStorage &option() const;
 };
 

@@ -152,7 +152,8 @@ static void writeOclBuildLog(FILE *             fplog,
     message += "-- Used build options: " + preprocessorOptions + "\n";
     message += "--------------LOG START---------------\n";
     message += buildLog;
-    message += "---------------LOG END----------------\n";;
+    message += "---------------LOG END----------------\n";
+    ;
 
     fputs(message.c_str(), fplog);
 }
@@ -167,7 +168,7 @@ static std::string selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
 {
     std::string compilerOptions;
 
-    if (getenv("GMX_OCL_NOOPT") )
+    if (getenv("GMX_OCL_NOOPT"))
     {
         compilerOptions += " -cl-opt-disable";
     }
@@ -192,7 +193,7 @@ static std::string selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
         }
     }
 
-    if ( ( deviceVendorId == OCL_VENDOR_AMD ) && getenv("GMX_OCL_DEBUG"))
+    if ((deviceVendorId == OCL_VENDOR_AMD) && getenv("GMX_OCL_DEBUG"))
     {
         compilerOptions += " -g";
     }
@@ -224,16 +225,18 @@ static std::string getKernelRootPath()
            root path from the path to the binary that is running. */
         InstallationPrefixInfo info           = getProgramContext().installationPrefix();
         std::string            dataPathSuffix = (info.bSourceLayout
-                                                 ? "src/gromacs/mdlib/nbnxn_ocl"
-                                                 : OCL_INSTALL_DIR);
+                                              ? "src/gromacs/mdlib/nbnxn_ocl"
+                                              : OCL_INSTALL_DIR);
         kernelRootPath = Path::join(info.path, dataPathSuffix);
     }
     else
     {
         if (!Directory::exists(gmxOclFilePath))
         {
-            GMX_THROW(FileIOError(formatString("GMX_OCL_FILE_PATH must point to the directory where OpenCL"
-                                               "kernels are found, but '%s' does not exist", gmxOclFilePath)));
+            GMX_THROW(FileIOError(formatString(
+                    "GMX_OCL_FILE_PATH must point to the directory where OpenCL"
+                    "kernels are found, but '%s' does not exist",
+                    gmxOclFilePath)));
         }
         kernelRootPath = gmxOclFilePath;
     }
@@ -257,7 +260,7 @@ static size_t getWarpSize(cl_context context, cl_device_id deviceId)
 {
     cl_int      cl_error;
     const char *warpSizeKernel = "__kernel void test(__global int* test){test[get_local_id(0)] = 0;}";
-    cl_program  program        = clCreateProgramWithSource(context, 1, (const char**)&warpSizeKernel, NULL, &cl_error);
+    cl_program  program        = clCreateProgramWithSource(context, 1, (const char **)&warpSizeKernel, NULL, &cl_error);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError("Could not create OpenCL program to determine warp size, error was " + ocl_get_error_string(cl_error)));
@@ -276,7 +279,7 @@ static size_t getWarpSize(cl_context context, cl_device_id deviceId)
     }
 
     size_t warpSize = 0;
-    cl_error = clGetKernelWorkGroupInfo(kernel, deviceId, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
+    cl_error        = clGetKernelWorkGroupInfo(kernel, deviceId, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
                                         sizeof(warpSize), &warpSize, NULL);
     if (cl_error != CL_SUCCESS)
     {
@@ -335,7 +338,7 @@ static std::string makeKernelIncludePathOption(const std::string &unescapedKerne
 {
     std::string includePathOption;
 
-    /* Apple does not seem to accept the quoted include paths other
+/* Apple does not seem to accept the quoted include paths other
      * OpenCL implementations are happy with. Since the standard still says
      * it should be quoted, we handle Apple as a special case.
      */
@@ -369,7 +372,7 @@ std::string makePreprocessorOptions(const std::string &kernelRootPath,
     std::string preprocessorOptions;
 
     /* Compose the complete build options */
-    preprocessorOptions  = formatString("-DWARP_SIZE_TEST=%d", static_cast<int>(warpSize));
+    preprocessorOptions = formatString("-DWARP_SIZE_TEST=%d", static_cast<int>(warpSize));
     preprocessorOptions += ' ';
     preprocessorOptions += makeVendorFlavorChoice(deviceVendorId);
     preprocessorOptions += ' ';

@@ -67,7 +67,8 @@ void set_p_string(t_param *p, const char *s)
         }
         else
         {
-            gmx_fatal(FARGS, "Increase MAXSLEN in the grompp code to at least %d,"
+            gmx_fatal(FARGS,
+                      "Increase MAXSLEN in the grompp code to at least %d,"
                       " or shorten your definition of bonds like %s to at most %d",
                       strlen(s) + 1, s, MAXSLEN - 1);
         }
@@ -78,7 +79,7 @@ void set_p_string(t_param *p, const char *s)
     }
 }
 
-void pr_alloc (int extra, t_params *pr)
+void pr_alloc(int extra, t_params *pr)
 {
     int i, j;
 
@@ -151,7 +152,7 @@ void add_param_to_list(t_params *list, t_param *b)
     int j;
 
     /* allocate one position extra */
-    pr_alloc (1, list);
+    pr_alloc(1, list);
 
     /* fill the arrays */
     for (j = 0; (j < MAXFORCEPARAM); j++)
@@ -182,7 +183,7 @@ void init_molinfo(t_molinfo *mol)
 
 /* FREEING MEMORY */
 
-void done_bt (t_params *pl)
+void done_bt(t_params *pl)
 {
     sfree(pl->param);
 }
@@ -191,7 +192,7 @@ void done_mi(t_molinfo *mi)
 {
     int i;
 
-    done_atom (&(mi->atoms));
+    done_atom(&(mi->atoms));
     done_block(&(mi->cgs));
     done_block(&(mi->mols));
     for (i = 0; (i < F_NRE); i++)
@@ -299,26 +300,26 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
     fprintf(out, "; ");
     if (!bDih)
     {
-        fprintf (out, "%3s  %4s", "ai", "aj");
+        fprintf(out, "%3s  %4s", "ai", "aj");
         for (j = 2; (j < nral); j++)
         {
-            fprintf (out, "  %3c%c", 'a', 'i' + j);
+            fprintf(out, "  %3c%c", 'a', 'i' + j);
         }
     }
     else
     {
         for (j = 0; (j < 2); j++)
         {
-            fprintf (out, "%3c%c", 'a', 'i' + dihp[f][j]);
+            fprintf(out, "%3c%c", 'a', 'i' + dihp[f][j]);
         }
     }
 
-    fprintf (out, " funct");
+    fprintf(out, " funct");
     for (j = 0; (j < nrfp); j++)
     {
-        fprintf (out, " %12c%1d", 'c', j);
+        fprintf(out, " %12c%1d", 'c', j);
     }
-    fprintf (out, "\n");
+    fprintf(out, "\n");
 
     /* print bondtypes */
     for (i = 0; (i < bt->nr); i++)
@@ -328,17 +329,17 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
         {
             for (j = 0; (j < nral); j++)
             {
-                fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[j], at));
+                fprintf(out, "%5s ", get_atomtype_name(bt->param[i].a[j], at));
             }
         }
         else
         {
             for (j = 0; (j < 2); j++)
             {
-                fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[dihp[f][j]], at));
+                fprintf(out, "%5s ", get_atomtype_name(bt->param[i].a[dihp[f][j]], at));
             }
         }
-        fprintf (out, "%5d ", bSwapParity ? -f - 1 : f + 1);
+        fprintf(out, "%5d ", bSwapParity ? -f - 1 : f + 1);
 
         if (bt->param[i].s[0])
         {
@@ -348,14 +349,14 @@ void print_bt(FILE *out, directive d, gpp_atomtype_t at,
         {
             for (j = 0; (j < nrfp && (bt->param[i].c[j] != NOTSET)); j++)
             {
-                fprintf (out, "%13.6e ", bt->param[i].c[j]);
+                fprintf(out, "%13.6e ", bt->param[i].c[j]);
             }
         }
 
-        fprintf (out, "\n");
+        fprintf(out, "\n");
     }
-    fprintf (out, "\n");
-    fflush (out);
+    fprintf(out, "\n");
+    fflush(out);
 }
 
 void print_blocka(FILE *out, const char *szName,
@@ -364,20 +365,20 @@ void print_blocka(FILE *out, const char *szName,
 {
     int i, j;
 
-    fprintf (out, "; %s\n", szName);
-    fprintf (out, "; %4s    %s\n", szIndex, szA);
+    fprintf(out, "; %s\n", szName);
+    fprintf(out, "; %4s    %s\n", szIndex, szA);
     for (i = 0; (i < block->nr); i++)
     {
         for (i = 0; (i < block->nr); i++)
         {
-            fprintf (out, "%6d", i + 1);
+            fprintf(out, "%6d", i + 1);
             for (j = block->index[i]; (j < ((int)block->index[i + 1])); j++)
             {
-                fprintf (out, "%5d", block->a[j] + 1);
+                fprintf(out, "%5d", block->a[j] + 1);
             }
-            fprintf (out, "\n");
+            fprintf(out, "\n");
         }
-        fprintf (out, "\n");
+        fprintf(out, "\n");
     }
 }
 
@@ -395,21 +396,21 @@ void print_excl(FILE *out, int natoms, t_excls excls[])
 
     if (have_excl)
     {
-        fprintf (out, "[ %s ]\n", dir2str(d_exclusions));
-        fprintf (out, "; %4s    %s\n", "i", "excluded from i");
+        fprintf(out, "[ %s ]\n", dir2str(d_exclusions));
+        fprintf(out, "; %4s    %s\n", "i", "excluded from i");
         for (i = 0; i < natoms; i++)
         {
             if (excls[i].nr > 0)
             {
-                fprintf (out, "%6d ", i + 1);
+                fprintf(out, "%6d ", i + 1);
                 for (j = 0; j < excls[i].nr; j++)
                 {
-                    fprintf (out, " %5d", excls[i].e[j] + 1);
+                    fprintf(out, " %5d", excls[i].e[j] + 1);
                 }
-                fprintf (out, "\n");
+                fprintf(out, "\n");
             }
         }
-        fprintf (out, "\n");
+        fprintf(out, "\n");
         fflush(out);
     }
 }
@@ -489,8 +490,8 @@ void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
                     at->resinfo[ri].nr,
                     at->resinfo[ri].ic,
                     bRTPresname
-                    ? *(at->resinfo[at->atom[i].resind].rtp)
-                    : *(at->resinfo[at->atom[i].resind].name),
+                            ? *(at->resinfo[at->atom[i].resind].rtp)
+                            : *(at->resinfo[at->atom[i].resind].name),
                     *(at->atomname[i]), cgnr[i],
                     at->atom[i].q, at->atom[i].m);
             if (PERTURBED(at->atom[i]))

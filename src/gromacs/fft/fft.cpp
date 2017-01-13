@@ -62,7 +62,7 @@ struct gmx_many_fft
     gmx_fft_t fft;
 };
 
-typedef struct gmx_many_fft* gmx_many_fft_t;
+typedef struct gmx_many_fft *gmx_many_fft_t;
 
 int gmx_fft_init_many_1d(gmx_fft_t *  pfft,
                          int          nx,
@@ -77,7 +77,7 @@ int gmx_fft_init_many_1d(gmx_fft_t *  pfft,
     }
     *pfft = nullptr;
 
-    if ( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == nullptr)
+    if ((fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == nullptr)
     {
         return ENOMEM;
     }
@@ -103,7 +103,7 @@ int gmx_fft_init_many_1d_real(gmx_fft_t *  pfft,
     }
     *pfft = nullptr;
 
-    if ( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == nullptr)
+    if ((fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == nullptr)
     {
         return ENOMEM;
     }
@@ -116,10 +116,10 @@ int gmx_fft_init_many_1d_real(gmx_fft_t *  pfft,
     return 0;
 }
 
-int gmx_fft_many_1d     (gmx_fft_t              fft,
-                         enum gmx_fft_direction dir,
-                         void *                 in_data,
-                         void *                 out_data)
+int gmx_fft_many_1d(gmx_fft_t              fft,
+                    enum gmx_fft_direction dir,
+                    void *                 in_data,
+                    void *                 out_data)
 {
     gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
     int            i, ret;
@@ -130,16 +130,16 @@ int gmx_fft_many_1d     (gmx_fft_t              fft,
         {
             return ret;
         }
-        in_data  = (real*)in_data + mfft->dist;
-        out_data = (real*)out_data + mfft->dist;
+        in_data  = (real *)in_data + mfft->dist;
+        out_data = (real *)out_data + mfft->dist;
     }
     return 0;
 }
 
-int gmx_fft_many_1d_real     (gmx_fft_t              fft,
-                              enum gmx_fft_direction dir,
-                              void *                 in_data,
-                              void *                 out_data)
+int gmx_fft_many_1d_real(gmx_fft_t              fft,
+                         enum gmx_fft_direction dir,
+                         void *                 in_data,
+                         void *                 out_data)
 {
     gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
     int            i, ret;
@@ -150,8 +150,8 @@ int gmx_fft_many_1d_real     (gmx_fft_t              fft,
         {
             return ret;
         }
-        in_data  = (real*)in_data + mfft->dist;
-        out_data = (real*)out_data + mfft->dist;
+        in_data  = (real *)in_data + mfft->dist;
+        out_data = (real *)out_data + mfft->dist;
     }
     return 0;
 }
@@ -172,10 +172,10 @@ void gmx_many_fft_destroy(gmx_fft_t fft)
 
 #endif //not GMX_FFT_FFTW3
 
-int gmx_fft_transpose_2d(t_complex * in_data,
-                         t_complex * out_data,
-                         int         nx,
-                         int         ny)
+int gmx_fft_transpose_2d(t_complex *in_data,
+                         t_complex *out_data,
+                         int        nx,
+                         int        ny)
 {
     int i, j, k, im, n, ncount, done1, done2;
     int i1, i1c, i2, i2c, kmi, max;

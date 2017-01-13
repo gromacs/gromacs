@@ -74,11 +74,11 @@
 typedef struct
 {
     int nnucl;
-    int shell;                   /* The shell id				*/
-    int nucl1, nucl2, nucl3;     /* The nuclei connected to the shell	*/
-    /* gmx_bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
-    real k;                      /* force constant		        */
-    real k_1;                    /* 1 over force constant		*/
+    int shell;                  /* The shell id				*/
+    int nucl1, nucl2, nucl3;    /* The nuclei connected to the shell	*/
+    /* gmx_bool    bInterCG; */ /* Coupled to nuclei outside cg?        */
+    real k;                     /* force constant		        */
+    real k_1;                   /* 1 over force constant		*/
     rvec xold;
     rvec fold;
     rvec step;
@@ -87,20 +87,20 @@ typedef struct
 struct gmx_shellfc_t
 {
     /* Shell counts, indices, parameters and working data */
-    int      nshell_gl;                  /* The number of shells in the system        */
-    t_shell *shell_gl;                   /* All the shells (for DD only)              */
-    int *    shell_index_gl;             /* Global shell index (for DD only)          */
-    gmx_bool bInterCG;                   /* Are there inter charge-group shells?      */
-    int      nshell;                     /* The number of local shells                */
-    t_shell *shell;                      /* The local shells                          */
-    int      shell_nalloc;               /* The allocation size of shell              */
-    gmx_bool bPredict;                   /* Predict shell positions                   */
-    gmx_bool bRequireInit;               /* Require initialization of shell positions */
-    int      nflexcon;                   /* The number of flexible constraints        */
+    int      nshell_gl;      /* The number of shells in the system        */
+    t_shell *shell_gl;       /* All the shells (for DD only)              */
+    int *    shell_index_gl; /* Global shell index (for DD only)          */
+    gmx_bool bInterCG;       /* Are there inter charge-group shells?      */
+    int      nshell;         /* The number of local shells                */
+    t_shell *shell;          /* The local shells                          */
+    int      shell_nalloc;   /* The allocation size of shell              */
+    gmx_bool bPredict;       /* Predict shell positions                   */
+    gmx_bool bRequireInit;   /* Require initialization of shell positions */
+    int      nflexcon;       /* The number of flexible constraints        */
 
     /* Temporary arrays, should be fixed size 2 when fully converted to C++ */
-    PaddedRVecVector *x;                 /* Array for iterative minimization          */
-    PaddedRVecVector *f;                 /* Array for iterative minimization          */
+    PaddedRVecVector *x; /* Array for iterative minimization          */
+    PaddedRVecVector *f; /* Array for iterative minimization          */
 
     /* Flexible constraint working data */
     rvec *       acc_dir;                /* Acceleration direction for flexcon        */
@@ -249,7 +249,7 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
  * \param[in]  mtop  Molecular topology.
  * \returns Array holding the number of particles of a type
  */
-static std::array<int, eptNR> countPtypes(FILE *      fplog,
+static std::array<int, eptNR> countPtypes(FILE *fplog,
                                           gmx_mtop_t *mtop)
 {
     std::array<int, eptNR> nptype = { { 0 } };
@@ -292,9 +292,9 @@ static std::array<int, eptNR> countPtypes(FILE *      fplog,
     return nptype;
 }
 
-gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
+gmx_shellfc_t *init_shell_flexcon(FILE *      fplog,
                                   gmx_mtop_t *mtop, int nflexcon,
-                                  int nstcalcenergy,
+                                  int  nstcalcenergy,
                                   bool usingDomainDecomposition)
 {
     gmx_shellfc_t *shfc;
@@ -305,7 +305,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     int  ns, nshell, nsi;
     int  i, j, type, mb, a_offset, cg, mol, ftype, nra;
     real qS, alpha;
-    int  aS, aN = 0;                      /* Shell and nucleus */
+    int  aS, aN = 0; /* Shell and nucleus */
     int  bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
     t_iatom *               ia;
@@ -325,8 +325,8 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     }
 
     snew(shfc, 1);
-    shfc->x = new PaddedRVecVector[2] {};
-    shfc->f = new PaddedRVecVector[2] {};
+    shfc->x        = new PaddedRVecVector[2]{};
+    shfc->f        = new PaddedRVecVector[2]{};
     shfc->nflexcon = nflexcon;
 
     if (nshell == 0)
@@ -406,7 +406,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
             for (j = 0; (j < NBT); j++)
             {
                 ia = molt->ilist[bondtypes[j]].iatoms;
-                for (i = 0; (i < molt->ilist[bondtypes[j]].nr); )
+                for (i = 0; (i < molt->ilist[bondtypes[j]].nr);)
                 {
                     type  = ia[0];
                     ftype = ffparams->functype[type];
@@ -434,8 +434,8 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                             }
                             break;
                         case F_WATER_POL:
-                            aN = ia[4];    /* Dummy */
-                            aS = ia[5];    /* Shell */
+                            aN = ia[4]; /* Dummy */
+                            aS = ia[5]; /* Shell */
                             break;
                         default:
                             gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
@@ -462,7 +462,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                             gmx_fatal(FARGS, "Weird stuff in %s, %d", __FILE__, __LINE__);
                         }
 
-                        if      (shell[nsi].nucl1 == -1)
+                        if (shell[nsi].nucl1 == -1)
                         {
                             shell[nsi].nucl1 = a_offset + aN;
                         }
@@ -504,7 +504,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                     gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %d", qS, atom[aS].qB, aS + 1, mb + 1);
                                 }
                                 shell[nsi].k += gmx::square(qS) * ONE_4PI_EPS0
-                                    / ffparams->iparams[type].polarize.alpha;
+                                                / ffparams->iparams[type].polarize.alpha;
                                 break;
                             case F_WATER_POL:
                                 if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS * 10))
@@ -513,7 +513,8 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                                 }
                                 alpha = (ffparams->iparams[type].wpol.al_x
                                          + ffparams->iparams[type].wpol.al_y
-                                         + ffparams->iparams[type].wpol.al_z) / 3.0;
+                                         + ffparams->iparams[type].wpol.al_z)
+                                        / 3.0;
                                 shell[nsi].k += gmx::square(qS) * ONE_4PI_EPS0 / alpha;
                                 break;
                             default:
@@ -522,7 +523,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                         shell[nsi].nnucl++;
                     }
                     ia += nra + 1;
-                    i  += nra + 1;
+                    i += nra + 1;
                 }
             }
             a_offset += molt->atoms.nr;
@@ -707,9 +708,9 @@ static void directional_sd(const PaddedRVecVector *xold, PaddedRVecVector *xnew,
     }
 }
 
-static void shell_pos_sd(const PaddedRVecVector * gmx_restrict xcur,
-                         PaddedRVecVector * gmx_restrict xnew,
-                         const PaddedRVecVector *f,
+static void shell_pos_sd(const PaddedRVecVector *gmx_restrict xcur,
+                         PaddedRVecVector *gmx_restrict xnew,
+                         const PaddedRVecVector *       f,
                          int ns, t_shell s[], int count)
 {
     const real step_scale_min       = 0.8,
@@ -744,7 +745,7 @@ static void shell_pos_sd(const PaddedRVecVector * gmx_restrict xcur,
             for (d = 0; d < DIM; d++)
             {
                 dx = (*xcur)[shell][d] - s[i].xold[d];
-                df =    (*f)[shell][d] - s[i].fold[d];
+                df = (*f)[shell][d] - s[i].fold[d];
                 /* -dx/df gets used to generate an interpolated value, but would
                  * cause a NaN if df were binary-equal to zero. Values close to
                  * zero won't cause problems (because of the min() and max()), so
@@ -756,8 +757,8 @@ static void shell_pos_sd(const PaddedRVecVector * gmx_restrict xcur,
                      * step_scale_min to step_scale_max, as k_est goes from 0 to
                      * step_scale_multiple * s[i].step[d] */
                     s[i].step[d]
-                        = step_scale_min * s[i].step[d]
-                            + step_scale_increment * std::min(step_scale_multiple * s[i].step[d], std::max(k_est, zero));
+                            = step_scale_min * s[i].step[d]
+                              + step_scale_increment * std::min(step_scale_multiple * s[i].step[d], std::max(k_est, zero));
                 }
                 else
                 {
@@ -779,7 +780,7 @@ static void shell_pos_sd(const PaddedRVecVector * gmx_restrict xcur,
             }
         }
         copy_rvec((*xcur)[shell], s[i].xold);
-        copy_rvec((*f)[shell],   s[i].fold);
+        copy_rvec((*f)[shell], s[i].fold);
 
         do_1pos3((*xnew)[shell], (*xcur)[shell], (*f)[shell], s[i].step);
 
@@ -958,8 +959,8 @@ static void init_adir(FILE *log, gmx_shellfc_t *shfc,
         for (d = 0; d < DIM; d++)
         {
             xnew[n][d]
-                = -(2 * x[n][d] - xnold[n][d] - xnew[n][d]) / gmx::square(dt)
-                    - f[n][d] * md->invmass[n];
+                    = -(2 * x[n][d] - xnold[n][d] - xnew[n][d]) / gmx::square(dt)
+                      - f[n][d] * md->invmass[n];
         }
         clear_rvec(acc_dir[n]);
     }
@@ -975,17 +976,17 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                          gmx_int64_t mdstep, t_inputrec *inputrec,
                          gmx_bool bDoNS, int force_flags,
                          gmx_localtop_t *top,
-                         gmx_constr_t constr,
+                         gmx_constr_t    constr,
                          gmx_enerdata_t *enerd, t_fcdata *fcd,
                          t_state *state, PaddedRVecVector *f,
-                         tensor force_vir,
+                         tensor     force_vir,
                          t_mdatoms *md,
                          t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                         t_graph *graph,
-                         gmx_groups_t *groups,
+                         t_graph *      graph,
+                         gmx_groups_t * groups,
                          gmx_shellfc_t *shfc,
-                         t_forcerec *fr,
-                         gmx_bool bBornRadii,
+                         t_forcerec *   fr,
+                         gmx_bool       bBornRadii,
                          double t, rvec mu_tot,
                          gmx_vsite_t *vsite)
 {
@@ -1001,7 +1002,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     int      nat, dd_ac0, dd_ac1 = 0, i;
     int      homenr = md->homenr, end = homenr, cg0, cg1;
     int      nflexcon, number_steps, d, Min = 0, count = 0;
-#define  Try (1 - Min)             /* At start Try = 1 */
+#define Try (1 - Min) /* At start Try = 1 */
 
     bCont        = (mdstep == inputrec->init_step) && inputrec->bContinuation;
     bInit        = (mdstep == inputrec->init_step) || shfc->bRequireInit;
@@ -1087,7 +1088,7 @@ void relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
             for (d = 0; d < DIM; d++)
             {
                 shfc->x_old[i][d]
-                    = state->x[i][d] - state->v[i][d] * inputrec->delta_t;
+                        = state->x[i][d] - state->v[i][d] * inputrec->delta_t;
             }
         }
     }

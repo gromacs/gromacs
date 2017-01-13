@@ -56,19 +56,18 @@
  *  algorithmic module in mdrun. */
 typedef struct
 {
-    int gnth;               /**< Global num. of threads per PP or PP+PME process/tMPI thread. */
-    int gnth_pme;           /**< Global num. of threads per PME only process/tMPI thread. */
+    int gnth;     /**< Global num. of threads per PP or PP+PME process/tMPI thread. */
+    int gnth_pme; /**< Global num. of threads per PME only process/tMPI thread. */
 
-    int      nth[emntNR];   /**< Number of threads for each module, indexed with module_nth_t */
-    gmx_bool initialized;   /**< TRUE if the module as been initialized. */
+    int      nth[emntNR]; /**< Number of threads for each module, indexed with module_nth_t */
+    gmx_bool initialized; /**< TRUE if the module as been initialized. */
 } omp_module_nthreads_t;
 
 /** Names of environment variables to set the per module number of threads.
  *
  *  Indexed with the values of module_nth_t.
  * */
-static const char *modth_env_var[emntNR] =
-{
+static const char *modth_env_var[emntNR] = {
     "GMX_DEFAULT_NUM_THREADS should never be set",
     "GMX_DOMDEC_NUM_THREADS", "GMX_PAIRSEARCH_NUM_THREADS",
     "GMX_NONBONDED_NUM_THREADS", "GMX_LISTED_FORCES_NUM_THREADS",
@@ -78,8 +77,7 @@ static const char *modth_env_var[emntNR] =
 };
 
 /** Names of the modules. */
-static const char *mod_name[emntNR] =
-{
+static const char *mod_name[emntNR] = {
     "default", "domain decomposition", "pair search", "non-bonded",
     "bonded", "PME", "update", "LINCS", "SETTLE"
 };
@@ -92,7 +90,7 @@ static const char *mod_name[emntNR] =
  *  All fields are initialized to 0 which should result in errors if
  *  the init call is omitted.
  * */
-static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0}, FALSE};
+static omp_module_nthreads_t modth = { 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0, 0 }, FALSE };
 
 
 /** Determine the number of threads for module \p mod.
@@ -140,9 +138,10 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
          * OMP_NUM_THREADS also has to be set */
         if (bFullOmpSupport && getenv("OMP_NUM_THREADS") == nullptr)
         {
-            gmx_warning("%s=%d is set, the default number of threads also "
-                        "needs to be set with OMP_NUM_THREADS!",
-                        modth_env_var[m], nth);
+            gmx_warning(
+                    "%s=%d is set, the default number of threads also "
+                    "needs to be set with OMP_NUM_THREADS!",
+                    modth_env_var[m], nth);
         }
 
         /* with the group scheme warn if any env var except PME is set */
@@ -150,9 +149,10 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
         {
             if (m != emntPME)
             {
-                gmx_warning("%s=%d is set, but OpenMP multithreading is not "
-                            "supported in %s!",
-                            modth_env_var[m], nth, mod_name[m]);
+                gmx_warning(
+                        "%s=%d is set, but OpenMP multithreading is not "
+                        "supported in %s!",
+                        modth_env_var[m], nth, mod_name[m]);
                 nth = 1;
             }
         }
@@ -160,9 +160,7 @@ static void pick_module_nthreads(const gmx::MDLogger &mdlog, int m,
         /* only babble if we are really overriding with a different value */
         if ((bSepPME && m == emntPME && nth != modth.gnth_pme) || (nth != modth.gnth))
         {
-            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "%s=%d set, overriding the default number of %s threads",
-                    modth_env_var[m], nth, mod_name[m]);
+            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted("%s=%d set, overriding the default number of %s threads", modth_env_var[m], nth, mod_name[m]);
         }
     }
     else
@@ -233,10 +231,10 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
                                             int                  nthreads_hw_avail,
                                             int                  omp_nthreads_req,
                                             int                  omp_nthreads_pme_req,
-                                            gmx_bool gmx_unused  bThisNodePMEOnly,
-                                            gmx_bool             bFullOmpSupport,
-                                            int                  nppn,
-                                            gmx_bool             bSepPME)
+                                            gmx_bool gmx_unused bThisNodePMEOnly,
+                                            gmx_bool            bFullOmpSupport,
+                                            int                 nppn,
+                                            gmx_bool            bSepPME)
 {
     int   nth;
     char *env;
@@ -365,7 +363,7 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger &mdlog,
             gmx_omp_set_num_threads(modth.gnth_pme);
         }
         else
-#endif      /* GMX_THREAD_MPI */
+#endif /* GMX_THREAD_MPI */
         {
             if (bFullOmpSupport)
             {
@@ -408,16 +406,16 @@ static void reportOpenmpSettings(const gmx::MDLogger &mdlog,
         int buf_in[4], buf_out[4];
 
         buf_in[0] = -modth.gnth;
-        buf_in[1] =  modth.gnth;
+        buf_in[1] = modth.gnth;
         buf_in[2] = -modth.gnth_pme;
-        buf_in[3] =  modth.gnth_pme;
+        buf_in[3] = modth.gnth_pme;
 
         MPI_Allreduce(buf_in, buf_out, 4, MPI_INT, MPI_MAX, cr->mpi_comm_mysim);
 
         nth_min     = -buf_out[0];
-        nth_max     =  buf_out[1];
+        nth_max     = buf_out[1];
         nth_pme_min = -buf_out[2];
-        nth_pme_max =  buf_out[3];
+        nth_pme_max = buf_out[3];
     }
     else
 #endif
@@ -433,32 +431,22 @@ static void reportOpenmpSettings(const gmx::MDLogger &mdlog,
     {
         if (nth_max == nth_min)
         {
-            GMX_LOG(mdlog.warning).appendTextFormatted(
-                    "Using %d OpenMP thread%s %s",
-                    nth_min, nth_min > 1 ? "s" : "",
-                    cr->nnodes > 1 ? mpi_str : "");
+            GMX_LOG(mdlog.warning).appendTextFormatted("Using %d OpenMP thread%s %s", nth_min, nth_min > 1 ? "s" : "", cr->nnodes > 1 ? mpi_str : "");
         }
         else
         {
-            GMX_LOG(mdlog.warning).appendTextFormatted(
-                    "Using %d - %d OpenMP threads %s",
-                    nth_min, nth_max, mpi_str);
+            GMX_LOG(mdlog.warning).appendTextFormatted("Using %d - %d OpenMP threads %s", nth_min, nth_max, mpi_str);
         }
     }
     if (bSepPME && (nth_pme_min != nth_min || nth_pme_max != nth_max))
     {
         if (nth_pme_max == nth_pme_min)
         {
-            GMX_LOG(mdlog.warning).appendTextFormatted(
-                    "Using %d OpenMP thread%s %s for PME",
-                    nth_pme_min, nth_pme_min > 1 ? "s" : "",
-                    cr->nnodes > 1 ? mpi_str : "");
+            GMX_LOG(mdlog.warning).appendTextFormatted("Using %d OpenMP thread%s %s for PME", nth_pme_min, nth_pme_min > 1 ? "s" : "", cr->nnodes > 1 ? mpi_str : "");
         }
         else
         {
-            GMX_LOG(mdlog.warning).appendTextFormatted(
-                    "Using %d - %d OpenMP threads %s for PME",
-                    nth_pme_min, nth_pme_max, mpi_str);
+            GMX_LOG(mdlog.warning).appendTextFormatted("Using %d - %d OpenMP threads %s for PME", nth_pme_min, nth_pme_max, mpi_str);
         }
     }
     GMX_LOG(mdlog.warning);
@@ -508,9 +496,9 @@ static void issueOversubscriptionWarning(const gmx::MDLogger &mdlog,
 }
 
 void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
-                           int nthreads_hw_avail,
-                           int omp_nthreads_req,
-                           int omp_nthreads_pme_req,
+                           int      nthreads_hw_avail,
+                           int      omp_nthreads_req,
+                           int      omp_nthreads_pme_req,
                            gmx_bool bThisNodePMEOnly,
                            gmx_bool bFullOmpSupport)
 {
@@ -522,8 +510,8 @@ void gmx_omp_nthreads_init(const gmx::MDLogger &mdlog, t_commrec *cr,
     /* number of MPI processes/threads per physical node */
     nppn = cr->nrank_intranode;
 
-    bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME))
-        || (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
+    bSepPME = ((cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME))
+              || (!(cr->duty & DUTY_PP) && (cr->duty & DUTY_PME));
 
     manage_number_of_openmp_threads(mdlog, cr, bOMP,
                                     nthreads_hw_avail,

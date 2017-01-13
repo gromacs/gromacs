@@ -76,7 +76,8 @@ public:
     {
     public:
         Entry() = default;
-        explicit Entry(const KeyValueTreePath &path) : sourcePath_(path) {}
+        explicit Entry(const KeyValueTreePath &path)
+            : sourcePath_(path) {}
 
         Entry *getOrCreateChildEntry(const std::string &key)
         {
@@ -104,7 +105,7 @@ public:
             }
         }
 
-        KeyValueTreePath             sourcePath_;
+        KeyValueTreePath sourcePath_;
         std::map<std::string, Entry> childEntries_;
     };
 
@@ -121,7 +122,7 @@ public:
             entry = &iter->second;
         }
         GMX_RELEASE_ASSERT(entry->childEntries_.empty()
-                           && !entry->sourcePath_.empty(),
+                                   && !entry->sourcePath_.empty(),
                            "Requested path not uniquely mapped");
         return entry->sourcePath_;
     }
@@ -132,7 +133,7 @@ private:
     Entry rootEntry_;
 };
 
-}   // namespace
+} // namespace
 
 namespace internal
 {
@@ -148,7 +149,7 @@ public:
     {
     public:
         typedef std::function<void(KeyValueTreeValueBuilder *, const KeyValueTreeValue &)>
-            TransformFunction;
+                TransformFunction;
         typedef std::map<std::string, Rule, StringCompare> ChildRuleMap;
 
         explicit Rule(StringCompareType keyMatchType)
@@ -344,7 +345,7 @@ void KeyValueTreeTransformerImpl::Transformer::applyTransformedValue(
     }
 }
 
-}   // namespace internal
+} // namespace internal
 
 /********************************************************************
  * KeyValueTreeTransformer
@@ -391,7 +392,8 @@ class KeyValueTreeTransformRuleBuilder::Data
 public:
     typedef internal::KeyValueTreeTransformerImpl::Rule Rule;
 
-    Data() : keyMatchType_(StringCompareType::Exact) {}
+    Data()
+        : keyMatchType_(StringCompareType::Exact) {}
 
     void createRule(internal::KeyValueTreeTransformerImpl *impl)
     {
@@ -471,21 +473,19 @@ void KeyValueTreeTransformRuleBuilder::addTransformToVariant(
         std::function<Variant(const Variant &)> transform)
 {
     data_->transform_
-        = [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)
-            {
-                builder->setVariantValue(transform(value.asVariant()));
-            };
+            = [transform](KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value) {
+                  builder->setVariantValue(transform(value.asVariant()));
+              };
 }
 
 void KeyValueTreeTransformRuleBuilder::addTransformToObject(
         std::function<void(KeyValueTreeObjectBuilder *, const Variant &)> transform)
 {
     data_->transform_
-        = [transform] (KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value)
-            {
-                KeyValueTreeObjectBuilder obj = builder->createObject();
-                transform(&obj, value.asVariant());
-            };
+            = [transform](KeyValueTreeValueBuilder *builder, const KeyValueTreeValue &value) {
+                  KeyValueTreeObjectBuilder obj = builder->createObject();
+                  transform(&obj, value.asVariant());
+              };
 }
 
 } // namespace gmx

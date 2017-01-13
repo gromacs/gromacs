@@ -94,18 +94,18 @@ void done_mdoutf(gmx_mdoutf_t of, const t_inputrec *ir);
  */
 void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
                                       gmx_mdoutf_t of,
-                                      int mdof_flags,
-                                      gmx_mtop_t *top_global,
+                                      int          mdof_flags,
+                                      gmx_mtop_t * top_global,
                                       gmx_int64_t step, double t,
                                       t_state *state_local, t_state *state_global,
-                                      energyhistory_t *energyHistory,
+                                      energyhistory_t * energyHistory,
                                       PaddedRVecVector *f_local);
 
-#define MDOF_X            (1 << 0)
-#define MDOF_V            (1 << 1)
-#define MDOF_F            (1 << 2)
+#define MDOF_X (1 << 0)
+#define MDOF_V (1 << 1)
+#define MDOF_F (1 << 2)
 #define MDOF_X_COMPRESSED (1 << 3)
-#define MDOF_CPT          (1 << 4)
-#define MDOF_IMD          (1 << 5)
+#define MDOF_CPT (1 << 4)
+#define MDOF_IMD (1 << 5)
 
 #endif

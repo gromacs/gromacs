@@ -292,7 +292,7 @@ int ifunc_index(directive d, int type)
     return -1;
 }
 
-const char *dir2str (directive d)
+const char *dir2str(directive d)
 {
     if (d < d_maxdir)
     {
@@ -304,7 +304,7 @@ const char *dir2str (directive d)
     }
 }
 
-directive str2dir (char *dstr)
+directive str2dir(char *dstr)
 {
     int  d;
     char buf[STRLEN], *ptr;
@@ -422,10 +422,9 @@ void DS_Init(DirStack **DS)
         }
     }
     *DS = nullptr;
-
 }
 
-void DS_Done (DirStack **DS)
+void DS_Done(DirStack **DS)
 {
     DirStack *D;
 
@@ -433,11 +432,11 @@ void DS_Done (DirStack **DS)
     {
         D   = *DS;
         *DS = (*DS)->prev;
-        sfree (D);
+        sfree(D);
     }
 }
 
-void DS_Push (DirStack **DS, directive d)
+void DS_Push(DirStack **DS, directive d)
 {
     DirStack *D;
 

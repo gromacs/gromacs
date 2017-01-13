@@ -96,35 +96,35 @@
  */
 
 #if GMX_SIMD_X86_SSE2
-#    include "impl_x86_sse2/impl_x86_sse2.h"
+#include "impl_x86_sse2/impl_x86_sse2.h"
 #elif GMX_SIMD_X86_SSE4_1
-#    include "impl_x86_sse4_1/impl_x86_sse4_1.h"
+#include "impl_x86_sse4_1/impl_x86_sse4_1.h"
 #elif GMX_SIMD_X86_AVX_128_FMA
-#    include "impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
+#include "impl_x86_avx_128_fma/impl_x86_avx_128_fma.h"
 #elif GMX_SIMD_X86_AVX_256
-#    include "impl_x86_avx_256/impl_x86_avx_256.h"
+#include "impl_x86_avx_256/impl_x86_avx_256.h"
 #elif GMX_SIMD_X86_AVX2_256
-#    include "impl_x86_avx2_256/impl_x86_avx2_256.h"
+#include "impl_x86_avx2_256/impl_x86_avx2_256.h"
 #elif GMX_SIMD_X86_MIC
-#    include "impl_x86_mic/impl_x86_mic.h"
+#include "impl_x86_mic/impl_x86_mic.h"
 #elif GMX_SIMD_X86_AVX_512
-#    include "impl_x86_avx_512/impl_x86_avx_512.h"
+#include "impl_x86_avx_512/impl_x86_avx_512.h"
 #elif GMX_SIMD_X86_AVX_512_KNL
-#    include "impl_x86_avx_512_knl/impl_x86_avx_512_knl.h"
+#include "impl_x86_avx_512_knl/impl_x86_avx_512_knl.h"
 #elif GMX_SIMD_ARM_NEON
-#    include "impl_arm_neon/impl_arm_neon.h"
+#include "impl_arm_neon/impl_arm_neon.h"
 #elif GMX_SIMD_ARM_NEON_ASIMD
-#    include "impl_arm_neon_asimd/impl_arm_neon_asimd.h"
+#include "impl_arm_neon_asimd/impl_arm_neon_asimd.h"
 #elif GMX_SIMD_IBM_QPX
-#    include "impl_ibm_qpx/impl_ibm_qpx.h"
+#include "impl_ibm_qpx/impl_ibm_qpx.h"
 #elif GMX_SIMD_IBM_VMX
-#    include "impl_ibm_vmx/impl_ibm_vmx.h"
+#include "impl_ibm_vmx/impl_ibm_vmx.h"
 #elif GMX_SIMD_IBM_VSX
-#    include "impl_ibm_vsx/impl_ibm_vsx.h"
+#include "impl_ibm_vsx/impl_ibm_vsx.h"
 #elif (GMX_SIMD_REFERENCE || defined DOXYGEN)
-#    include "impl_reference/impl_reference.h" // Includes doxygen documentation
+#include "impl_reference/impl_reference.h" // Includes doxygen documentation
 #else
-#    include "impl_none/impl_none.h"
+#include "impl_none/impl_none.h"
 #endif
 
 // The scalar SIMD-mimicking functions are always included so we can use
@@ -135,68 +135,68 @@
 
 
 #if GMX_DOUBLE
-#    define GMX_SIMD_HAVE_REAL                                     GMX_SIMD_HAVE_DOUBLE
-#    define GMX_SIMD_REAL_WIDTH                                    GMX_SIMD_DOUBLE_WIDTH
-#    define GMX_SIMD_HAVE_INT32_EXTRACT                            GMX_SIMD_HAVE_DINT32_EXTRACT
-#    define GMX_SIMD_HAVE_INT32_LOGICAL                            GMX_SIMD_HAVE_DINT32_LOGICAL
-#    define GMX_SIMD_HAVE_INT32_ARITHMETICS                        GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL    GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
-#    define GMX_SIMD_HAVE_HSIMD_UTIL_REAL                          GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE
-#    define GMX_SIMD4_HAVE_REAL                                    GMX_SIMD4_HAVE_DOUBLE
+#define GMX_SIMD_HAVE_REAL GMX_SIMD_HAVE_DOUBLE
+#define GMX_SIMD_REAL_WIDTH GMX_SIMD_DOUBLE_WIDTH
+#define GMX_SIMD_HAVE_INT32_EXTRACT GMX_SIMD_HAVE_DINT32_EXTRACT
+#define GMX_SIMD_HAVE_INT32_LOGICAL GMX_SIMD_HAVE_DINT32_LOGICAL
+#define GMX_SIMD_HAVE_INT32_ARITHMETICS GMX_SIMD_HAVE_DINT32_ARITHMETICS
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
+#define GMX_SIMD_HAVE_HSIMD_UTIL_REAL GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE
+#define GMX_SIMD4_HAVE_REAL GMX_SIMD4_HAVE_DOUBLE
 #else // GMX_DOUBLE
 
 /*! \brief 1 if SimdReal is available, otherwise 0.
  *
  *  \ref GMX_SIMD_HAVE_DOUBLE if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD_HAVE_FLOAT.
  */
-#    define GMX_SIMD_HAVE_REAL               GMX_SIMD_HAVE_FLOAT
+#define GMX_SIMD_HAVE_REAL GMX_SIMD_HAVE_FLOAT
 
 /*! \brief Width of SimdReal.
  *
  *  \ref GMX_SIMD_DOUBLE_WIDTH if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD_FLOAT_WIDTH.
  */
-#    define GMX_SIMD_REAL_WIDTH              GMX_SIMD_FLOAT_WIDTH
+#define GMX_SIMD_REAL_WIDTH GMX_SIMD_FLOAT_WIDTH
 
 /*! \brief 1 if support is available for extracting elements from SimdInt32, otherwise 0
  *
  *  \ref GMX_SIMD_HAVE_DINT32_EXTRACT if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_FINT32_EXTRACT.
  */
-#    define GMX_SIMD_HAVE_INT32_EXTRACT      GMX_SIMD_HAVE_FINT32_EXTRACT
+#define GMX_SIMD_HAVE_INT32_EXTRACT GMX_SIMD_HAVE_FINT32_EXTRACT
 
 /*! \brief 1 if logical ops are supported on SimdInt32, otherwise 0.
  *
  *  \ref GMX_SIMD_HAVE_DINT32_LOGICAL if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_FINT32_LOGICAL.
  */
-#    define GMX_SIMD_HAVE_INT32_LOGICAL      GMX_SIMD_HAVE_FINT32_LOGICAL
+#define GMX_SIMD_HAVE_INT32_LOGICAL GMX_SIMD_HAVE_FINT32_LOGICAL
 
 /*! \brief 1 if arithmetic ops are supported on SimdInt32, otherwise 0.
  *
  *  \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS.
  */
-#    define GMX_SIMD_HAVE_INT32_ARITHMETICS  GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#define GMX_SIMD_HAVE_INT32_ARITHMETICS GMX_SIMD_HAVE_FINT32_ARITHMETICS
 
 /*! \brief 1 if gmx::simdGatherLoadUBySimdIntTranspose is present, otherwise 0
  *
  *  \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT.
  */
-#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL    GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT
+#define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT
 
 /*! \brief 1 if real half-register load/store/reduce utils present, otherwise 0
  *
  *  \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT.
  */
-#    define GMX_SIMD_HAVE_HSIMD_UTIL_REAL    GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT
+#define GMX_SIMD_HAVE_HSIMD_UTIL_REAL GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT
 
 /*! \brief 1 if Simd4Real is available, otherwise 0.
  *
  *  \ref GMX_SIMD4_HAVE_DOUBLE if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD4_HAVE_FLOAT.
  */
-#    define GMX_SIMD4_HAVE_REAL              GMX_SIMD4_HAVE_FLOAT
+#define GMX_SIMD4_HAVE_REAL GMX_SIMD4_HAVE_FLOAT
 
 #endif // GMX_DOUBLE
 
@@ -226,11 +226,11 @@ namespace gmx
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    if GMX_DOUBLE
-typedef SimdDouble               SimdReal;
-#    else
-typedef SimdFloat                SimdReal;
-#    endif
+#if GMX_DOUBLE
+typedef SimdDouble SimdReal;
+#else
+typedef SimdFloat  SimdReal;
+#endif
 
 
 /*! \brief Boolean SIMD type for usage with \ref SimdReal.
@@ -250,11 +250,11 @@ typedef SimdFloat                SimdReal;
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    if GMX_DOUBLE
-typedef SimdDBool                SimdBool;
-#    else
-typedef SimdFBool                SimdBool;
-#    endif
+#if GMX_DOUBLE
+typedef SimdDBool SimdBool;
+#else
+typedef SimdFBool  SimdBool;
+#endif
 
 
 /*! \brief 32-bit integer SIMD type.
@@ -271,11 +271,11 @@ typedef SimdFBool                SimdBool;
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    if GMX_DOUBLE
-typedef SimdDInt32               SimdInt32;
-#    else
-typedef SimdFInt32               SimdInt32;
-#    endif
+#if GMX_DOUBLE
+typedef SimdDInt32 SimdInt32;
+#else
+typedef SimdFInt32 SimdInt32;
+#endif
 
 #if GMX_SIMD_HAVE_INT32_ARITHMETICS
 /*! \brief Boolean SIMD type for usage with \ref SimdInt32.
@@ -301,21 +301,21 @@ typedef SimdFInt32               SimdInt32;
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    if GMX_DOUBLE
-typedef SimdDIBool               SimdIBool;
-#    else
-typedef SimdFIBool               SimdIBool;
-#    endif
-#endif  // GMX_SIMD_HAVE_INT32_ARITHMETICS
+#if GMX_DOUBLE
+typedef SimdDIBool SimdIBool;
+#else
+typedef SimdFIBool SimdIBool;
+#endif
+#endif // GMX_SIMD_HAVE_INT32_ARITHMETICS
 
 
 #if GMX_DOUBLE
 const int c_simdBestPairAlignment = c_simdBestPairAlignmentDouble;
 #else
-const int c_simdBestPairAlignment = c_simdBestPairAlignmentFloat;
+const int          c_simdBestPairAlignment = c_simdBestPairAlignmentFloat;
 #endif
 
-#endif  // GMX_SIMD_HAVE_REAL
+#endif // GMX_SIMD_HAVE_REAL
 
 #if GMX_SIMD4_HAVE_REAL
 /*! \brief Real precision floating-point SIMD4 datatype.
@@ -329,11 +329,11 @@ const int c_simdBestPairAlignment = c_simdBestPairAlignmentFloat;
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    if GMX_DOUBLE
-typedef Simd4Double               Simd4Real;
-#    else
-typedef Simd4Float                Simd4Real;
-#    endif
+#if GMX_DOUBLE
+typedef Simd4Double Simd4Real;
+#else
+typedef Simd4Float Simd4Real;
+#endif
 
 
 /*! \brief Boolean SIMD4 type for usage with \ref SimdReal.
@@ -351,11 +351,11 @@ typedef Simd4Float                Simd4Real;
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
-#    if GMX_DOUBLE
-typedef Simd4DBool                Simd4Bool;
-#    else
-typedef Simd4FBool                Simd4Bool;
-#    endif
+#if GMX_DOUBLE
+typedef Simd4DBool Simd4Bool;
+#else
+typedef Simd4FBool Simd4Bool;
+#endif
 #endif // GMX_SIMD4_HAVE_REAL
 
 //! \}  end of name-group describing SIMD data types
@@ -393,12 +393,13 @@ public:
 #endif
 private:
     //! \brief Private constructor can only be called from load()
-    SimdLoadFProxyInternal(const float *m) : m_(m) {}
+    SimdLoadFProxyInternal(const float *m)
+        : m_(m) {}
 
     friend const SimdLoadFProxyInternal gmx_simdcall
     load(const float *m);
 
-    const float * const m_;     //!< The pointer used to load memory
+    const float *const m_; //!< The pointer used to load memory
 
     GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadFProxyInternal);
 };
@@ -412,7 +413,7 @@ private:
 static inline const SimdLoadFProxyInternal gmx_simdcall load(const float *m)
 {
     return {
-               m
+        m
     };
 }
 
@@ -446,12 +447,13 @@ public:
 #endif
 private:
     //! \brief Private constructor can only be called from load()
-    SimdLoadUFProxyInternal(const float *m) : m_(m) {}
+    SimdLoadUFProxyInternal(const float *m)
+        : m_(m) {}
 
     friend const SimdLoadUFProxyInternal gmx_simdcall
     loadU(const float *m);
 
-    const float * const m_;     //!< The pointer used to load memory
+    const float *const m_; //!< The pointer used to load memory
 
     GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadUFProxyInternal);
 };
@@ -466,7 +468,7 @@ private:
 static inline const SimdLoadUFProxyInternal gmx_simdcall loadU(const float *m)
 {
     return {
-               m
+        m
     };
 }
 
@@ -499,12 +501,13 @@ public:
 #endif
 private:
     //! \brief Private constructor can only be called from load()
-    SimdLoadDProxyInternal(const double *m) : m_(m) {}
+    SimdLoadDProxyInternal(const double *m)
+        : m_(m) {}
 
     friend const SimdLoadDProxyInternal gmx_simdcall
     load(const double *m);
 
-    const double * const m_;     //!< The pointer used to load memory
+    const double *const m_; //!< The pointer used to load memory
 
     GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadDProxyInternal);
 };
@@ -518,7 +521,7 @@ private:
 static inline const SimdLoadDProxyInternal gmx_simdcall load(const double *m)
 {
     return {
-               m
+        m
     };
 }
 
@@ -551,12 +554,13 @@ public:
 #endif
 private:
     //! \brief Private constructor can only be called from load()
-    SimdLoadUDProxyInternal(const double *m) : m_(m) {}
+    SimdLoadUDProxyInternal(const double *m)
+        : m_(m) {}
 
     friend const SimdLoadUDProxyInternal gmx_simdcall
     loadU(const double *m);
 
-    const double * const m_;     //!< The pointer used to load memory
+    const double *const m_; //!< The pointer used to load memory
 
     GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadUDProxyInternal);
 };
@@ -570,7 +574,7 @@ private:
 static inline const SimdLoadUDProxyInternal gmx_simdcall loadU(const double *m)
 {
     return {
-               m
+        m
     };
 }
 
@@ -607,12 +611,13 @@ public:
 #endif
 private:
     //! \brief Private constructor can only be called from load()
-    SimdLoadIProxyInternal(const std::int32_t *m) : m_(m) {}
+    SimdLoadIProxyInternal(const std::int32_t *m)
+        : m_(m) {}
 
     friend const SimdLoadIProxyInternal gmx_simdcall
     load(const std::int32_t *m);
 
-    const std::int32_t * const m_;     //!< The pointer used to load memory
+    const std::int32_t *const m_; //!< The pointer used to load memory
 
     GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadIProxyInternal);
 };
@@ -626,7 +631,7 @@ private:
 static inline const SimdLoadIProxyInternal gmx_simdcall load(const std::int32_t *m)
 {
     return {
-               m
+        m
     };
 }
 
@@ -655,12 +660,13 @@ public:
 #endif
 private:
     //! \brief Private constructor can only be called from loadU()
-    SimdLoadUIProxyInternal(const std::int32_t *m) : m_(m) {}
+    SimdLoadUIProxyInternal(const std::int32_t *m)
+        : m_(m) {}
 
     friend const SimdLoadUIProxyInternal gmx_simdcall
     loadU(const std::int32_t *m);
 
-    const std::int32_t * const m_;     //!< The pointer used to load memory
+    const std::int32_t *const m_; //!< The pointer used to load memory
 
     GMX_DISALLOW_COPY_AND_ASSIGN(SimdLoadUIProxyInternal);
 };
@@ -674,7 +680,7 @@ private:
 static inline const SimdLoadUIProxyInternal gmx_simdcall loadU(const std::int32_t *m)
 {
     return {
-               m
+        m
     };
 }
 
@@ -741,7 +747,7 @@ static inline const SimdSetZeroProxyInternal gmx_simdcall setZero()
 }
 //! \}  end of name-group proxy objects
 
-}      // namespace gmx
+} // namespace gmx
 
 // \}          end of module_simd
 
@@ -766,8 +772,8 @@ static inline const SimdSetZeroProxyInternal gmx_simdcall setZero()
    If there's ever other kinds of SIMD code that might have the same
    problem, we might want to add other variables here.
  */
-#    define GMX_SIMD_HAVE_FLOAT         1
-#    define GMX_SIMD_HAVE_DOUBLE        1
+#define GMX_SIMD_HAVE_FLOAT 1
+#define GMX_SIMD_HAVE_DOUBLE 1
 
 #endif // end of hack
 

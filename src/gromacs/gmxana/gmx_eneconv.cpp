@@ -58,7 +58,7 @@
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1
-#define TIME_LAST     2
+#define TIME_LAST 2
 #ifndef FLT_MAX
 #define FLT_MAX 1e36
 #endif
@@ -80,7 +80,7 @@ static int *select_it(int nre, gmx_enxnm_t *nm, int *nset)
 
     if (bVerbose)
     {
-        for (k = 0; (k < nre); )
+        for (k = 0; (k < nre);)
         {
             for (j = 0; (j < 4) && (k < nre); j++, k++)
             {
@@ -186,10 +186,12 @@ static int scan_ene_files(char **fnms, int nfiles,
             {
                 fprintf(stderr,
                         "Energy files don't match, different number of energies:\n"
-                        " %s: %d\n %s: %d\n", fnms[f - 1], nresav, fnms[f], fr->nre);
+                        " %s: %d\n %s: %d\n",
+                        fnms[f - 1], nresav, fnms[f], fr->nre);
                 fprintf(stderr,
                         "\nContinue conversion using only the first %d terms (n/y)?\n"
-                        "(you should be sure that the energy terms match)\n", nremin);
+                        "(you should be sure that the energy terms match)\n",
+                        nremin);
                 if (nullptr == fgets(inputstring, STRLEN - 1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input");
@@ -231,7 +233,8 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
         }
         else
         {
-            fprintf(stderr, "\n\nEnter the new start time for each file.\n"
+            fprintf(stderr,
+                    "\n\nEnter the new start time for each file.\n"
                     "There are two special options, both disables sorting:\n\n"
                     "c (continue) - The start time is taken from the end\n"
                     "of the previous file. Use it when your continuation run\n"
@@ -242,7 +245,8 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
                     "since this takes possible overlap into account.\n\n");
         }
 
-        fprintf(stderr, "          File             Current start       New start\n"
+        fprintf(stderr,
+                "          File             Current start       New start\n"
                 "---------------------------------------------------------\n");
 
         for (i = 0; i < nfiles; i++)
@@ -312,7 +316,8 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
 
 
     /* Write out the new order and start times */
-    fprintf(stderr, "\nSummary of files and start times used:\n\n"
+    fprintf(stderr,
+            "\nSummary of files and start times used:\n\n"
             "          File                Start time\n"
             "-----------------------------------------\n");
     for (i = 0; i < nfiles; i++)
@@ -338,11 +343,11 @@ static void edit_files(char **fnms, int nfiles, real *readtime,
 }
 
 
-static void update_ee_sum(int nre,
+static void update_ee_sum(int          nre,
                           gmx_int64_t *ee_sum_step,
                           gmx_int64_t *ee_sum_nsteps,
                           gmx_int64_t *ee_sum_nsum,
-                          t_energy *ee_sum,
+                          t_energy *   ee_sum,
                           t_enxframe *fr, int out_step)
 {
     gmx_int64_t nsteps, nsum, fr_nsum;
@@ -385,8 +390,9 @@ static void update_ee_sum(int nre,
             for (i = 0; i < nre; i++)
             {
                 ee_sum[i].eav
-                    += gmx::square(ee_sum[i].esum / nsum
-                                   - (ee_sum[i].esum + fr->ener[i].e) / (nsum + 1)) * nsum * (nsum + 1);
+                        += gmx::square(ee_sum[i].esum / nsum
+                                       - (ee_sum[i].esum + fr->ener[i].e) / (nsum + 1))
+                           * nsum * (nsum + 1);
                 ee_sum[i].esum += fr->ener[i].e;
             }
         }
@@ -395,15 +401,15 @@ static void update_ee_sum(int nre,
             for (i = 0; i < fr->nre; i++)
             {
                 ee_sum[i].eav
-                    += fr->ener[i].eav
-                        + gmx::square(ee_sum[i].esum / nsum
-                                      - (ee_sum[i].esum + fr->ener[i].esum) / (nsum + fr->nsum))
-                        * nsum * (nsum + fr->nsum) / static_cast<double>(fr->nsum);
+                        += fr->ener[i].eav
+                           + gmx::square(ee_sum[i].esum / nsum
+                                         - (ee_sum[i].esum + fr->ener[i].esum) / (nsum + fr->nsum))
+                                     * nsum * (nsum + fr->nsum) / static_cast<double>(fr->nsum);
                 ee_sum[i].esum += fr->ener[i].esum;
             }
         }
         nsteps += fr->nsteps;
-        nsum   += fr_nsum;
+        nsum += fr_nsum;
     }
     else
     {
@@ -422,7 +428,7 @@ static void update_ee_sum(int nre,
 
 int gmx_eneconv(int argc, char *argv[])
 {
-    const char * desc[] = {
+    const char *desc[] = {
         "With [IT]multiple files[it] specified for the [TT]-f[tt] option:[PAR]",
         "Concatenates several energy files in sorted order.",
         "In the case of double time frames, the one",
@@ -439,10 +445,10 @@ int gmx_eneconv(int argc, char *argv[])
         "[TT]-settime[tt] is applied first, then [TT]-dt[tt]/[TT]-offset[tt]",
         "followed by [TT]-b[tt] and [TT]-e[tt] to select which frames to write."
     };
-    const char * bugs[] = {
+    const char *bugs[] = {
         "When combining trajectories the sigma and E^2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way."
     };
-    ener_file_t  in  = nullptr, out = nullptr;
+    ener_file_t  in = nullptr, out = nullptr;
     gmx_enxnm_t *enm = nullptr;
 #if 0
     ener_file_t  in, out = NULL;
@@ -467,38 +473,29 @@ int gmx_eneconv(int argc, char *argv[])
     int               nblocks_alloc   = 0;
 
     t_filenm fnm[] = {
-        { efEDR, "-f", nullptr,    ffRDMULT },
-        { efEDR, "-o", "fixed", ffWRITE  },
+        { efEDR, "-f", nullptr, ffRDMULT },
+        { efEDR, "-o", "fixed", ffWRITE },
     };
 
 #define NFILE asize(fnm)
     gmx_bool        bWrite;
-    static real     delta_t   = 0.0, toffset = 0, scalefac = 1;
-    static gmx_bool bSetTime  = FALSE;
-    static gmx_bool bSort     = TRUE, bError = TRUE;
+    static real     delta_t = 0.0, toffset = 0, scalefac = 1;
+    static gmx_bool bSetTime = FALSE;
+    static gmx_bool bSort = TRUE, bError = TRUE;
     static real     begin     = -1;
     static real     end       = -1;
     gmx_bool        remove_dh = FALSE;
 
     t_pargs pa[] = {
-        { "-b",        FALSE, etREAL, {&begin},
-          "First time to use"},
-        { "-e",        FALSE, etREAL, {&end},
-          "Last time to use"},
-        { "-dt",       FALSE, etREAL, {&delta_t},
-          "Only write out frame when t MOD dt = offset" },
-        { "-offset",   FALSE, etREAL, {&toffset},
-          "Time offset for [TT]-dt[tt] option" },
-        { "-settime",  FALSE, etBOOL, {&bSetTime},
-          "Change starting time interactively" },
-        { "-sort",     FALSE, etBOOL, {&bSort},
-          "Sort energy files (not frames)"},
-        { "-rmdh",     FALSE, etBOOL, {&remove_dh},
-          "Remove free energy block data" },
-        { "-scalefac", FALSE, etREAL, {&scalefac},
-          "Multiply energy component by this factor" },
-        { "-error",    FALSE, etBOOL, {&bError},
-          "Stop on errors in the file" }
+        { "-b", FALSE, etREAL, { &begin }, "First time to use" },
+        { "-e", FALSE, etREAL, { &end }, "Last time to use" },
+        { "-dt", FALSE, etREAL, { &delta_t }, "Only write out frame when t MOD dt = offset" },
+        { "-offset", FALSE, etREAL, { &toffset }, "Time offset for [TT]-dt[tt] option" },
+        { "-settime", FALSE, etBOOL, { &bSetTime }, "Change starting time interactively" },
+        { "-sort", FALSE, etBOOL, { &bSort }, "Sort energy files (not frames)" },
+        { "-rmdh", FALSE, etBOOL, { &remove_dh }, "Remove free energy block data" },
+        { "-scalefac", FALSE, etREAL, { &scalefac }, "Multiply energy component by this factor" },
+        { "-error", FALSE, etBOOL, { &bError }, "Stop on errors in the file" }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa),
@@ -591,10 +588,10 @@ int gmx_eneconv(int argc, char *argv[])
             }
 
             fro->step = lastfilestep + fr->step - startstep_file;
-            fro->t    = tadjust  + fr->t;
+            fro->t    = tadjust + fr->t;
 
             bWrite = ((begin < 0 || (fro->t >= begin - GMX_REAL_EPS))
-                      && (end  < 0  || (fro->t <= end  + GMX_REAL_EPS))
+                      && (end < 0 || (fro->t <= end + GMX_REAL_EPS))
                       && (fro->t <= settime[f + 1] + 0.5 * timestep));
 
             if (debug)
@@ -674,7 +671,7 @@ int gmx_eneconv(int argc, char *argv[])
                         fro->ener[set[kkk]].e *= scalefac;
                         if (fro->nsum > 0)
                         {
-                            fro->ener[set[kkk]].eav  *= scalefac * scalefac;
+                            fro->ener[set[kkk]].eav *= scalefac * scalefac;
                             fro->ener[set[kkk]].esum *= scalefac;
                         }
                     }
@@ -704,9 +701,9 @@ int gmx_eneconv(int argc, char *argv[])
 
                         for (i = 0; i < fr->nblock; i++)
                         {
-                            if ( (fr->block[i].id != enxDHCOLL)
-                                 && (fr->block[i].id != enxDH)
-                                 && (fr->block[i].id != enxDHHIST) )
+                            if ((fr->block[i].id != enxDHCOLL)
+                                && (fr->block[i].id != enxDH)
+                                && (fr->block[i].id != enxDHHIST))
                             {
                                 /* copy everything verbatim */
                                 blocks[nblocks] = fr->block[i];

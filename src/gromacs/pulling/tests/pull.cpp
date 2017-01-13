@@ -157,41 +157,39 @@ protected:
     }
 };
 
-TEST_F (PullTest, MaxPullDistanceXyzScrewBox)
+TEST_F(PullTest, MaxPullDistanceXyzScrewBox)
 {
     matrix box = { { 10, 0, 0 }, { 0, 10, 0 }, { 0, 0, 10 } };
 
     test(epbcSCREW, box);
 }
 
-TEST_F (PullTest, MaxPullDistanceXyzCubicBox)
+TEST_F(PullTest, MaxPullDistanceXyzCubicBox)
 {
     matrix box = { { 10, 0, 0 }, { 0, 10, 0 }, { 0, 0, 10 } };
 
     test(epbcXYZ, box);
 }
 
-TEST_F (PullTest, MaxPullDistanceXyzTricBox)
+TEST_F(PullTest, MaxPullDistanceXyzTricBox)
 {
     matrix box = { { 10, 0, 0 }, { 3, 10, 0 }, { 3, 4, 10 } };
 
     test(epbcXYZ, box);
 }
 
-TEST_F (PullTest, MaxPullDistanceXyzLongBox)
+TEST_F(PullTest, MaxPullDistanceXyzLongBox)
 {
     matrix box = { { 10, 0, 0 }, { 0, 10, 0 }, { 0, 0, 30 } };
 
     test(epbcXYZ, box);
 }
 
-TEST_F (PullTest, MaxPullDistanceXySkewedBox)
+TEST_F(PullTest, MaxPullDistanceXySkewedBox)
 {
     matrix box = { { 10, 0, 0 }, { 5, 8, 0 }, { 0, 0, 0 } };
 
     test(epbcXY, box);
 }
-
 }
-
 }

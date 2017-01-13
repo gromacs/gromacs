@@ -116,7 +116,7 @@ RealType generateCanonical(Rng &g)
 
     for (gmx_uint64_t i = 1; i < k; ++i)
     {
-        s    += RealType(g() - Rng::min()) * base;
+        s += RealType(g() - Rng::min()) * base;
         base *= r;
     }
     result = s / base;
@@ -166,10 +166,10 @@ public:
     /*! \brief Uniform real distribution parameters */
     class param_type
     {
-    /*! \brief Lower end of range (inclusive) */
-    result_type a_;
-    /*! \brief Upper end of range (exclusive) */
-    result_type b_;
+        /*! \brief Lower end of range (inclusive) */
+        result_type a_;
+        /*! \brief Upper end of range (exclusive) */
+        result_type b_;
 
     public:
         /*! \brief Reference back to the distribution class */
@@ -208,7 +208,6 @@ public:
     };
 
 public:
-
     /*! \brief Construct new distribution with given floating-point parameters.
      *
      * \param a   Lower end of range (inclusive)
@@ -221,10 +220,11 @@ public:
      *
      * \param param  Parameter class as defined inside gmx::UniformRealDistribution.
      */
-    explicit UniformRealDistribution(const param_type &param) : param_(param) {}
+    explicit UniformRealDistribution(const param_type &param)
+        : param_(param) {}
 
     /*! \brief Flush all internal saved values  */
-    void reset() { }
+    void reset() {}
 
     /*! \brief Return values from uniform real distribution with internal parameters
      *
@@ -233,7 +233,10 @@ public:
      * \param  g    Random engine
      */
     template <class Rng>
-    result_type operator()(Rng &g) { return (*this)(g, param_); }
+    result_type operator()(Rng &g)
+    {
+        return (*this)(g, param_);
+    }
 
     /*! \brief Return value from uniform real distribution with given parameters
      *
@@ -246,7 +249,7 @@ public:
     result_type operator()(Rng &g, const param_type &param)
     {
         result_type r = generateCanonical<RealType, std::numeric_limits<RealType>::digits>(g);
-        return ( param.b() - param.a() ) * r + param.a();
+        return (param.b() - param.a()) * r + param.a();
     }
 
     /*! \brief Return the lower range uniform real distribution */
@@ -269,14 +272,18 @@ public:
      * \param  x     Instance to compare with.
      */
     bool operator==(const UniformRealDistribution &x) const
-    { return param_ == x.param_; }
+    {
+        return param_ == x.param_;
+    }
 
     /*! \brief True if two uniform real distributions will produce different values.
      *
      * \param  x     Instance to compare with.
      */
     bool operator!=(const UniformRealDistribution &x) const
-    { return !operator==(x); }
+    {
+        return !operator==(x);
+    }
 
 private:
     /*! \brief Internal value for parameters, can be overridden at generation time. */
@@ -285,6 +292,6 @@ private:
     GMX_DISALLOW_COPY_AND_ASSIGN(UniformRealDistribution);
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_RANDOM_UNIFORMREALDISTRIBUTION_H

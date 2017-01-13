@@ -64,7 +64,8 @@ namespace gmx
 {
 
 class AbstractOptionStorage;
-template <typename T> class OptionStorageTemplate;
+template <typename T>
+class OptionStorageTemplate;
 class OptionManagerContainer;
 class Variant;
 
@@ -95,7 +96,7 @@ class AbstractOption
 {
 public:
     // Virtual only for completeness, in normal use should not be needed.
-    virtual ~AbstractOption() { }
+    virtual ~AbstractOption() {}
 
 protected:
     /*! \cond libapi */
@@ -103,7 +104,8 @@ protected:
     explicit AbstractOption(const char *name)
         : minValueCount_(1), maxValueCount_(1),
           name_(name), descr_(nullptr), storeIsSet_(nullptr)
-    { }
+    {
+    }
 
     /*! \brief
      * Creates a default storage object for the option.
@@ -130,7 +132,7 @@ protected:
      * safety issue.
      */
     virtual AbstractOptionStorage *createStorage(
-        const OptionManagerContainer &managers) const = 0;
+            const OptionManagerContainer &managers) const = 0;
 
     //! Sets the description for the option.
     void setDescription(const char *descr) { descr_ = descr; }
@@ -240,10 +242,16 @@ public:
      * String in \p descr is copied when the option is created.
      */
     MyClass &description(const char *descr)
-    { setDescription(descr); return me(); }
+    {
+        setDescription(descr);
+        return me();
+    }
     //! Hides the option from normal help output.
     MyClass &hidden(bool bHidden = true)
-    { setFlag(efOption_Hidden, bHidden); return me(); }
+    {
+        setFlag(efOption_Hidden, bHidden);
+        return me();
+    }
     /*! \brief
      * Requires the option to be specified explicitly.
      *
@@ -252,15 +260,31 @@ public:
      * In this case, required() only affects possible help output.
      */
     MyClass &required(bool bRequired = true)
-    { setFlag(efOption_Required, bRequired); return me(); }
+    {
+        setFlag(efOption_Required, bRequired);
+        return me();
+    }
     //! Allows the option to be specified multiple times.
     MyClass &allowMultiple(bool bMulti = true)
-    { setFlag(efOption_MultipleTimes, bMulti); return me(); }
+    {
+        setFlag(efOption_MultipleTimes, bMulti);
+        return me();
+    }
     //! Requires exactly \p count values for the option.
-    MyClass &valueCount(int count) { setValueCount(count); return me(); }
+    MyClass &valueCount(int count)
+    {
+        setValueCount(count);
+        return me();
+    }
     //! Allows any number of values for the option.
     MyClass &multiValue(bool bMulti = true)
-    { if (bMulti) { maxValueCount_ = -1; } return me(); }
+    {
+        if (bMulti)
+        {
+            maxValueCount_ = -1;
+        }
+        return me();
+    }
 
     /*! \brief
      * Sets a default value for the option.
@@ -276,7 +300,10 @@ public:
      * \p defaultValue is copied when the option is created.
      */
     MyClass &defaultValue(const T &defaultValue)
-    { defaultValue_ = &defaultValue; return me(); }
+    {
+        defaultValue_ = &defaultValue;
+        return me();
+    }
     /*! \brief
      * Sets a default value for the option when it is set.
      *
@@ -289,7 +316,10 @@ public:
      * \p defaultValue is copied when the option is created.
      */
     MyClass &defaultValueIfSet(const T &defaultValue)
-    { defaultValueIfSet_ = &defaultValue; return me(); }
+    {
+        defaultValueIfSet_ = &defaultValue;
+        return me();
+    }
     /*! \brief
      * Stores value(s) in memory pointed by \p store.
      *
@@ -307,7 +337,10 @@ public:
      * Options object exists.
      */
     MyClass &store(T *store)
-    { store_ = store; return me(); }
+    {
+        store_ = store;
+        return me();
+    }
     /*! \brief
      * Stores number of values in the value pointed by \p countptr.
      *
@@ -320,7 +353,10 @@ public:
      * Options object exists.
      */
     MyClass &storeCount(int *countptr)
-    { countptr_ = countptr; return me(); }
+    {
+        countptr_ = countptr;
+        return me();
+    }
     /*! \brief
      * Stores option values in the provided vector.
      *
@@ -335,7 +371,10 @@ public:
      * Options object exists.
      */
     MyClass &storeVector(std::vector<T> *store)
-    { storeVector_ = store; return me(); }
+    {
+        storeVector_ = store;
+        return me();
+    }
     /*! \brief
      * Stores whether the option was explicitly set.
      *
@@ -350,7 +389,10 @@ public:
      * Options object exists.
      */
     MyClass &storeIsSet(bool *store)
-    { setStoreIsSet(store); return me(); }
+    {
+        setStoreIsSet(store);
+        return me();
+    }
 
 protected:
     /*! \cond libapi */
@@ -362,7 +404,8 @@ protected:
         : AbstractOption(name),
           defaultValue_(nullptr), defaultValueIfSet_(nullptr), store_(nullptr),
           countptr_(nullptr), storeVector_(nullptr)
-    { }
+    {
+    }
 
     /*! \brief
      * Returns a pointer to user-specified default value, or NULL if there

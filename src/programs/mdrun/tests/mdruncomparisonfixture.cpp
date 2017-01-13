@@ -68,89 +68,42 @@ namespace
 typedef std::map<std::string, MdrunComparisonFixture::MdpFieldValues> MdpFileValues;
 
 //! Database of .mdp strings that supports MdrunComparisonFixture::prepareSimulation()
-MdpFileValues mdpFileValueDatabase_g
-{
+MdpFileValues mdpFileValueDatabase_g{
     // Simple system with 12 argon atoms, fairly widely separated
     {
-        "argon12", { {
-                         "ref-t", "80"
-                     },
-                     {
-                         "compressibility", "5e-10"
-                     },
-                     {
-                         "tau-p", "1000"
-                     } }
-    },
+            "argon12", { { "ref-t", "80" }, { "compressibility", "5e-10" }, { "tau-p", "1000" } } },
     // Simple system with 5 water molecules, fairly widely separated
     {
-        "spc5", { {
-                      "compressibility", "5e-10"
-                  },
-                  {
-                      "tau-p", "1000"
-                  } }
-    },
+            "spc5", { { "compressibility", "5e-10" }, { "tau-p", "1000" } } },
     // Simple system with 5832 argon atoms, suitable for normal pressure coupling
     {
-        "argon5832", { {
-                           "ref-t", "80"
-                       } }
-    },
+            "argon5832", { { "ref-t", "80" } } },
     // Simple system with 216 water molecules, condensed phase
     {
-        "spc216", { }
-    },
+            "spc216", {} },
     // Capped alanine peptide in vacuo with virtual sites
     {
-        "alanine_vsite_vacuo", { {
-                                     "constraints", "all-bonds"
-                                 },
-                                 {
-                                     "compressibility", "5e-10"
-                                 },
-                                 {
-                                     "tau-p", "1000"
-                                 } }
-    },
+            "alanine_vsite_vacuo", { { "constraints", "all-bonds" }, { "compressibility", "5e-10" }, { "tau-p", "1000" } } },
     // Capped alanine peptide in aqueous condensed phase, with virtual sites
     {
-        "alanine_vsite_solvated", { {
-                                        "constraints", "all-bonds"
-                                    } }
-    },
+            "alanine_vsite_solvated", { { "constraints", "all-bonds" } } },
     // Nonanol molecule in vacuo, topology suitable for FEP testing
     {
-        "nonanol_vacuo", { {
-                               "nsteps", "16"
-                           },
-                           {
-                               "compressibility", "5e-10"
-                           },
-                           {
-                               "tau-p", "1000"
-                           },
-                           {
-                               "constraints", "h-bonds"
-                           },
-                           {
-                               "other",
-                               "free-energy       = yes\n"
-                               "sc-alpha          = 0.5\n"
-                               "sc-r-power        = 6\n"
-                               "nstdhdl           = 4\n"
-                               "init-lambda-state = 3\n"
-                               "fep_lambdas       = 0.00 0.50 1.00 1.00 1.00\n"
-                               "vdw_lambdas       = 0.00 0.00 0.00 0.50 1.00\n"
-                               "couple-moltype    = nonanol\n"
-                               "couple-lambda0    = vdw-q\n"
-                               "couple-lambda1    = none\n"
-                               "couple-intramol   = yes\n"
-                           } }
-    }
+            "nonanol_vacuo", { { "nsteps", "16" }, { "compressibility", "5e-10" }, { "tau-p", "1000" }, { "constraints", "h-bonds" }, { "other",
+                                                                                                                                        "free-energy       = yes\n"
+                                                                                                                                        "sc-alpha          = 0.5\n"
+                                                                                                                                        "sc-r-power        = 6\n"
+                                                                                                                                        "nstdhdl           = 4\n"
+                                                                                                                                        "init-lambda-state = 3\n"
+                                                                                                                                        "fep_lambdas       = 0.00 0.50 1.00 1.00 1.00\n"
+                                                                                                                                        "vdw_lambdas       = 0.00 0.00 0.00 0.50 1.00\n"
+                                                                                                                                        "couple-moltype    = nonanol\n"
+                                                                                                                                        "couple-lambda0    = vdw-q\n"
+                                                                                                                                        "couple-lambda1    = none\n"
+                                                                                                                                        "couple-intramol   = yes\n" } } }
 };
 
-}       // namespace
+} // namespace
 
 MdrunComparisonFixture::MdpFieldValues MdrunComparisonFixture::prepareMdpFieldValues(const char *simulationName)
 {
@@ -200,41 +153,42 @@ void MdrunComparisonFixture::prepareMdpFile(const MdpFieldValues &mdpFieldValues
      * energies were not computed with those from rerun on the same
      * coordinates.
      */
-    runner_.useStringAsMdpFile(formatString("rcoulomb                = 0.7\n"
-                                            "rvdw                    = 0.7\n"
-                                            "rlist                   = -1\n"
-                                            "bd-fric                 = 1000\n"
-                                            "verlet-buffer-tolerance = 0.000001\n"
-                                            "nsteps                  = %s\n"
-                                            "nstenergy               = 4\n"
-                                            "nstlist                 = 8\n"
-                                            "nstxout                 = 4\n"
-                                            "nstvout                 = 4\n"
-                                            "nstfout                 = 4\n"
-                                            "integrator              = %s\n"
-                                            "ld-seed                 = 234262\n"
-                                            "tcoupl                  = %s\n"
-                                            "ref-t                   = %s\n"
-                                            "tau-t                   = 1\n"
-                                            "tc-grps                 = System\n"
-                                            "pcoupl                  = %s\n"
-                                            "pcoupltype              = isotropic\n"
-                                            "ref-p                   = 1\n"
-                                            "tau-p                   = %s\n"
-                                            "compressibility         = %s\n"
-                                            "constraints             = %s\n"
-                                            "constraint-algorithm    = lincs\n"
-                                            "lincs-order             = 2\n"
-                                            "lincs-iter              = 5\n"
-                                            "%s",
-                                            mdpFieldValues.at("nsteps").c_str(),
-                                            integrator, tcoupl,
-                                            mdpFieldValues.at("ref-t").c_str(),
-                                            pcoupl,
-                                            mdpFieldValues.at("tau-p").c_str(),
-                                            mdpFieldValues.at("compressibility").c_str(),
-                                            mdpFieldValues.at("constraints").c_str(),
-                                            mdpFieldValues.at("other").c_str()));
+    runner_.useStringAsMdpFile(formatString(
+            "rcoulomb                = 0.7\n"
+            "rvdw                    = 0.7\n"
+            "rlist                   = -1\n"
+            "bd-fric                 = 1000\n"
+            "verlet-buffer-tolerance = 0.000001\n"
+            "nsteps                  = %s\n"
+            "nstenergy               = 4\n"
+            "nstlist                 = 8\n"
+            "nstxout                 = 4\n"
+            "nstvout                 = 4\n"
+            "nstfout                 = 4\n"
+            "integrator              = %s\n"
+            "ld-seed                 = 234262\n"
+            "tcoupl                  = %s\n"
+            "ref-t                   = %s\n"
+            "tau-t                   = 1\n"
+            "tc-grps                 = System\n"
+            "pcoupl                  = %s\n"
+            "pcoupltype              = isotropic\n"
+            "ref-p                   = 1\n"
+            "tau-p                   = %s\n"
+            "compressibility         = %s\n"
+            "constraints             = %s\n"
+            "constraint-algorithm    = lincs\n"
+            "lincs-order             = 2\n"
+            "lincs-iter              = 5\n"
+            "%s",
+            mdpFieldValues.at("nsteps").c_str(),
+            integrator, tcoupl,
+            mdpFieldValues.at("ref-t").c_str(),
+            pcoupl,
+            mdpFieldValues.at("tau-p").c_str(),
+            mdpFieldValues.at("compressibility").c_str(),
+            mdpFieldValues.at("constraints").c_str(),
+            mdpFieldValues.at("other").c_str()));
 }
 
 void MdrunComparisonFixture::runTest(const char *           simulationName,

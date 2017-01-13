@@ -39,7 +39,7 @@
 namespace gmx
 {
 
-static inline void simdPrefetch(const void * m)
+static inline void simdPrefetch(const void *m)
 {
 #if defined(__ibmxl__) || defined(__xlC__)
     __dcbt(m);
@@ -48,6 +48,6 @@ static inline void simdPrefetch(const void * m)
 #endif
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPLEMENTATION_IBM_VMX_GENERAL_H

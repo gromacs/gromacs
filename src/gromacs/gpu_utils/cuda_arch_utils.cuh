@@ -46,9 +46,9 @@
  * intended to be used instead of __CUDA_ARCH__.
  */
 #ifndef __CUDA_ARCH__
-    #define GMX_PTX_ARCH 0
+#define GMX_PTX_ARCH 0
 #else
-    #define GMX_PTX_ARCH __CUDA_ARCH__
+#define GMX_PTX_ARCH __CUDA_ARCH__
 #endif
 
 /* Until CC 5.2 and likely for the near future all NVIDIA architectures

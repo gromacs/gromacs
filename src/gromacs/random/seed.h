@@ -91,17 +91,17 @@ typedef std::random_device RandomDevice;
  */
 enum class RandomDomain
 {
-Other                 = 0x00000000,          //!< Generic - stream uniqueness is not important
-MaxwellVelocities     = 0x00001000,          //!< Veolcity assignment from Maxwell distribution
-TestParticleInsertion = 0x00002000,          //!< Test particle insertion
-UpdateCoordinates     = 0x00003000,          //!< Particle integrators
-UpdateConstraints     = 0x00004000,          //!< Second integrator step for constraints
-Thermostat            = 0x00005000,          //!< Stochastic temperature coupling
-Barostat              = 0x00006000,          //!< Stochastic pressure coupling
-ReplicaExchange       = 0x00007000,          //!< Replica exchange metropolis moves
-ExpandedEnsemble      = 0x00008000           //!< Expanded ensemble lambda moves
+    Other                 = 0x00000000, //!< Generic - stream uniqueness is not important
+    MaxwellVelocities     = 0x00001000, //!< Veolcity assignment from Maxwell distribution
+    TestParticleInsertion = 0x00002000, //!< Test particle insertion
+    UpdateCoordinates     = 0x00003000, //!< Particle integrators
+    UpdateConstraints     = 0x00004000, //!< Second integrator step for constraints
+    Thermostat            = 0x00005000, //!< Stochastic temperature coupling
+    Barostat              = 0x00006000, //!< Stochastic pressure coupling
+    ReplicaExchange       = 0x00007000, //!< Replica exchange metropolis moves
+    ExpandedEnsemble      = 0x00008000  //!< Expanded ensemble lambda moves
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_RANDOM_SEED_H

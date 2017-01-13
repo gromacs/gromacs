@@ -56,7 +56,7 @@
 #endif
 
 {
-    int            cj, ajx, ajy, ajz;
+    int cj, ajx, ajy, ajz;
     int gmx_unused aj;
 
 #ifdef ENERGY_GROUPS
@@ -102,17 +102,17 @@
 #endif
 
 #if (defined CALC_COULOMB && defined CALC_COUL_TAB) || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
-    SimdReal r_S0;
-    SimdReal r_S1;
+    SimdReal                                                                              r_S0;
+    SimdReal                                                                              r_S1;
 #if (defined CALC_COULOMB && defined CALC_COUL_TAB) || !defined HALF_LJ
-    SimdReal r_S2;
-    SimdReal r_S3;
+    SimdReal                                                    r_S2;
+    SimdReal                                                    r_S3;
 #endif
 #endif
 
 #if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
-    SimdReal rsw_S0, rsw2_S0;
-    SimdReal rsw_S1, rsw2_S1;
+    SimdReal                           rsw_S0, rsw2_S0;
+    SimdReal                           rsw_S1, rsw2_S1;
 #ifndef HALF_LJ
     SimdReal rsw_S2, rsw2_S2;
     SimdReal rsw_S3, rsw2_S3;
@@ -221,7 +221,7 @@
     int aj2;
 #endif
 
-    /* Intermediate variables for LJ calculation */
+/* Intermediate variables for LJ calculation */
 #ifndef LJ_COMB_LB
     SimdReal rinvsix_S0;
     SimdReal rinvsix_S1;
@@ -309,7 +309,7 @@
 
 #ifdef CHECK_EXCLS
 #ifdef EXCL_FORCES
-    /* Only remove the (sub-)diagonal to avoid double counting */
+/* Only remove the (sub-)diagonal to avoid double counting */
 #if UNROLLJ == UNROLLI
     if (cj == ci_sh)
     {
@@ -352,7 +352,7 @@
 #endif
 #endif
 #else /* EXCL_FORCES */
-      /* No exclusion forces: remove all excluded atom pairs from the list */
+    /* No exclusion forces: remove all excluded atom pairs from the list */
     wco_S0 = wco_S0 && interact_S0;
     wco_S1 = wco_S1 && interact_S1;
     wco_S2 = wco_S2 && interact_S2;
@@ -363,7 +363,8 @@
 #ifdef COUNT_PAIRS
     {
         int i, j;
-        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  tmp[2 * GMX_SIMD_REAL_WIDTH];
+        GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+        tmp[2 * GMX_SIMD_REAL_WIDTH];
 
         for (i = 0; i < UNROLLI; i++)
         {
@@ -386,7 +387,7 @@
     rsq_S2 = max(rsq_S2, minRsq_S);
     rsq_S3 = max(rsq_S3, minRsq_S);
 
-    /* Calculate 1/r */
+/* Calculate 1/r */
 #if !GMX_DOUBLE
     rinv_S0 = invsqrt(rsq_S0);
     rinv_S1 = invsqrt(rsq_S1);
@@ -408,7 +409,7 @@
 
 #ifdef CALC_LJ
 #if !defined LJ_COMB_GEOM && !defined LJ_COMB_LB && !defined FIX_LJ_C
-    SimdReal c6_S0, c6_S1, c12_S0, c12_S1;
+    SimdReal                                                 c6_S0, c6_S1, c12_S0, c12_S1;
     gatherLoadTranspose<c_simdBestPairAlignment>(nbfp0, type + aj, &c6_S0, &c12_S0);
     gatherLoadTranspose<c_simdBestPairAlignment>(nbfp1, type + aj, &c6_S1, &c12_S1);
 #ifndef HALF_LJ
@@ -419,8 +420,8 @@
 #endif /* not defined any LJ rule */
 
 #ifdef LJ_COMB_GEOM
-    c6s_j_S  = load(ljc + aj2 + 0);
-    c12s_j_S = load(ljc + aj2 + STRIDE);
+    c6s_j_S        = load(ljc + aj2 + 0);
+    c12s_j_S       = load(ljc + aj2 + STRIDE);
     SimdReal c6_S0 = c6s_S0 * c6s_j_S;
     SimdReal c6_S1 = c6s_S1 * c6s_j_S;
 #ifndef HALF_LJ
@@ -465,7 +466,7 @@
     rinvsq_S3 = rinv_S3 * rinv_S3;
 
 #ifdef CALC_COULOMB
-    /* Note that here we calculate force*r, not the usual force/r.
+/* Note that here we calculate force*r, not the usual force/r.
      * This allows avoiding masking the reaction-field contribution,
      * as frcoul is later multiplied by rinvsq which has been
      * masked with the cut-off check.
@@ -478,11 +479,11 @@
     rinv_ex_S2 = selectByMask(rinv_S2, interact_S2);
     rinv_ex_S3 = selectByMask(rinv_S3, interact_S3);
 #else
-    /* No exclusion forces, we always need 1/r */
-#define     rinv_ex_S0    rinv_S0
-#define     rinv_ex_S1    rinv_S1
-#define     rinv_ex_S2    rinv_S2
-#define     rinv_ex_S3    rinv_S3
+/* No exclusion forces, we always need 1/r */
+#define rinv_ex_S0 rinv_S0
+#define rinv_ex_S1 rinv_S1
+#define rinv_ex_S2 rinv_S2
+#define rinv_ex_S3 rinv_S3
 #endif
 
 #ifdef CALC_COUL_RF
@@ -553,7 +554,7 @@
     frac_S2 = rs_S2 - rf_S2;
     frac_S3 = rs_S3 - rf_S3;
 
-    /* Load and interpolate table forces and possibly energies.
+/* Load and interpolate table forces and possibly energies.
      * Force and energy can be combined in one table, stride 4: FDV0
      * or in two separate tables with stride 1: F and V
      * Currently single precision uses FDV0, double F and V.
@@ -569,10 +570,10 @@
     gatherLoadUBySimdIntTranspose<1>(tab_coul_F, ti_S1, &ctab0_S1, &ctab1_S1);
     gatherLoadUBySimdIntTranspose<1>(tab_coul_F, ti_S2, &ctab0_S2, &ctab1_S2);
     gatherLoadUBySimdIntTranspose<1>(tab_coul_F, ti_S3, &ctab0_S3, &ctab1_S3);
-    ctab1_S0 = ctab1_S0 - ctab0_S0;
-    ctab1_S1 = ctab1_S1 - ctab0_S1;
-    ctab1_S2 = ctab1_S2 - ctab0_S2;
-    ctab1_S3 = ctab1_S3 - ctab0_S3;
+    ctab1_S0       = ctab1_S0 - ctab0_S0;
+    ctab1_S1       = ctab1_S1 - ctab0_S1;
+    ctab1_S2       = ctab1_S2 - ctab0_S2;
+    ctab1_S3       = ctab1_S3 - ctab0_S3;
 #endif
 #else
 #ifdef TAB_FDV0
@@ -614,17 +615,17 @@
 
 #if defined CALC_ENERGIES && (defined CALC_COUL_EWALD || defined CALC_COUL_TAB)
 #ifndef NO_SHIFT_EWALD
-    /* Add Ewald potential shift to vc_sub for convenience */
+/* Add Ewald potential shift to vc_sub for convenience */
 #ifdef CHECK_EXCLS
     vc_sub_S0 = vc_sub_S0 + selectByMask(sh_ewald_S, interact_S0);
     vc_sub_S1 = vc_sub_S1 + selectByMask(sh_ewald_S, interact_S1);
     vc_sub_S2 = vc_sub_S2 + selectByMask(sh_ewald_S, interact_S2);
     vc_sub_S3 = vc_sub_S3 + selectByMask(sh_ewald_S, interact_S3);
 #else
-    vc_sub_S0 = vc_sub_S0 + sh_ewald_S;
-    vc_sub_S1 = vc_sub_S1 + sh_ewald_S;
-    vc_sub_S2 = vc_sub_S2 + sh_ewald_S;
-    vc_sub_S3 = vc_sub_S3 + sh_ewald_S;
+    vc_sub_S0      = vc_sub_S0 + sh_ewald_S;
+    vc_sub_S1      = vc_sub_S1 + sh_ewald_S;
+    vc_sub_S2      = vc_sub_S2 + sh_ewald_S;
+    vc_sub_S3      = vc_sub_S3 + sh_ewald_S;
 #endif
 #endif
 
@@ -646,7 +647,7 @@
 #endif /* CALC_COULOMB */
 
 #ifdef CALC_LJ
-    /* Lennard-Jones interaction */
+/* Lennard-Jones interaction */
 
 #ifdef VDW_CUTOFF_CHECK
     wco_vdw_S0 = (rsq_S0 < rcvdw2_S);
@@ -656,11 +657,11 @@
     wco_vdw_S3 = (rsq_S3 < rcvdw2_S);
 #endif
 #else
-    /* Same cut-off for Coulomb and VdW, reuse the registers */
-#define     wco_vdw_S0    wco_S0
-#define     wco_vdw_S1    wco_S1
-#define     wco_vdw_S2    wco_S2
-#define     wco_vdw_S3    wco_S3
+/* Same cut-off for Coulomb and VdW, reuse the registers */
+#define wco_vdw_S0 wco_S0
+#define wco_vdw_S1 wco_S1
+#define wco_vdw_S2 wco_S2
+#define wco_vdw_S3 wco_S3
 #endif
 
 #ifndef LJ_COMB_LB
@@ -718,13 +719,13 @@
 #define gmx_add_fr_switch(fr, rsw, rsw2_r, c2, c3) fma(fma(c3, rsw, c2), rsw2_r, (fr))
     SimdReal rsw2_r_S0 = rsw2_S0 * r_S0;
     SimdReal rsw2_r_S1 = rsw2_S1 * r_S1;
-    FrLJ6_S0 = c6_S0 * gmx_add_fr_switch(rinvsix_S0, rsw_S0, rsw2_r_S0, p6_fc2_S, p6_fc3_S);
-    FrLJ6_S1 = c6_S1 * gmx_add_fr_switch(rinvsix_S1, rsw_S1, rsw2_r_S1, p6_fc2_S, p6_fc3_S);
+    FrLJ6_S0           = c6_S0 * gmx_add_fr_switch(rinvsix_S0, rsw_S0, rsw2_r_S0, p6_fc2_S, p6_fc3_S);
+    FrLJ6_S1           = c6_S1 * gmx_add_fr_switch(rinvsix_S1, rsw_S1, rsw2_r_S1, p6_fc2_S, p6_fc3_S);
 #ifndef HALF_LJ
     SimdReal rsw2_r_S2 = rsw2_S2 * r_S2;
     SimdReal rsw2_r_S3 = rsw2_S3 * r_S3;
-    FrLJ6_S2 = c6_S2 * gmx_add_fr_switch(rinvsix_S2, rsw_S2, rsw2_r_S2, p6_fc2_S, p6_fc3_S);
-    FrLJ6_S3 = c6_S3 * gmx_add_fr_switch(rinvsix_S3, rsw_S3, rsw2_r_S3, p6_fc2_S, p6_fc3_S);
+    FrLJ6_S2           = c6_S2 * gmx_add_fr_switch(rinvsix_S2, rsw_S2, rsw2_r_S2, p6_fc2_S, p6_fc3_S);
+    FrLJ6_S3           = c6_S3 * gmx_add_fr_switch(rinvsix_S3, rsw_S3, rsw2_r_S3, p6_fc2_S, p6_fc3_S);
 #endif
     FrLJ12_S0 = c12_S0 * gmx_add_fr_switch((rinvsix_S0 * rinvsix_S0), rsw_S0, rsw2_r_S0, p12_fc2_S, p12_fc3_S);
     FrLJ12_S1 = c12_S1 * gmx_add_fr_switch((rinvsix_S1 * rinvsix_S1), rsw_S1, rsw2_r_S1, p12_fc2_S, p12_fc3_S);
@@ -979,11 +980,11 @@
         cr2_S2 = lje_c2_S * selectByMask(rsq_S2, wco_vdw_S2);
         cr2_S3 = lje_c2_S * selectByMask(rsq_S3, wco_vdw_S3);
 #endif
-        expmcr2_S0 = exp( -cr2_S0 );
-        expmcr2_S1 = exp( -cr2_S1 );
+        expmcr2_S0 = exp(-cr2_S0);
+        expmcr2_S1 = exp(-cr2_S1);
 #ifndef HALF_LJ
-        expmcr2_S2 = exp( -cr2_S2 );
-        expmcr2_S3 = exp( -cr2_S3 );
+        expmcr2_S2 = exp(-cr2_S2);
+        expmcr2_S3 = exp(-cr2_S3);
 #endif
 
         /* 1 + cr2 + 1/2*cr2^2 */
@@ -1099,7 +1100,7 @@
 #ifndef HALF_LJ
     Vvdwtot_S = Vvdwtot_S + VLJ_S0 + VLJ_S1 + VLJ_S2 + VLJ_S3;
 #else
-    Vvdwtot_S = Vvdwtot_S + VLJ_S0 + VLJ_S1;
+    Vvdwtot_S      = Vvdwtot_S + VLJ_S0 + VLJ_S1;
 #endif
 #else
     add_ener_grp(VLJ_S0, vvdwtp[0], egp_jj);
@@ -1175,16 +1176,16 @@
     store(f + ajz, load(f + ajz) - (tz_S0 + tz_S1 + tz_S2 + tz_S3));
 }
 
-#undef  rinv_ex_S0
-#undef  rinv_ex_S1
-#undef  rinv_ex_S2
-#undef  rinv_ex_S3
+#undef rinv_ex_S0
+#undef rinv_ex_S1
+#undef rinv_ex_S2
+#undef rinv_ex_S3
 
-#undef  wco_vdw_S0
-#undef  wco_vdw_S1
-#undef  wco_vdw_S2
-#undef  wco_vdw_S3
+#undef wco_vdw_S0
+#undef wco_vdw_S1
+#undef wco_vdw_S2
+#undef wco_vdw_S3
 
-#undef  EXCL_FORCES
+#undef EXCL_FORCES
 
 #endif // !DOXYGEN

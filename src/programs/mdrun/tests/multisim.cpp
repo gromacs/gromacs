@@ -101,11 +101,11 @@ TEST_P(MultiSimTest, ExitsNormallyWithDifferentNumbersOfStepsPerSimulation)
    the same way / at all, if we would try to duplicate less code. */
 #if GMX_LIB_MPI
 INSTANTIATE_TEST_CASE_P(InNvt, MultiSimTest,
-                            ::testing::Values("pcoupl = no"));
+                        ::testing::Values("pcoupl = no"));
 #else
 // Test needs real MPI to run
 INSTANTIATE_TEST_CASE_P(DISABLED_InNvt, MultiSimTest,
-                            ::testing::Values("pcoupl = no"));
+                        ::testing::Values("pcoupl = no"));
 #endif
 
 //! Convenience typedef

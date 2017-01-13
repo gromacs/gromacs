@@ -63,7 +63,8 @@ void invertBoxMatrix(const matrix src, matrix dest)
     dest[YY][YY] = 1 / src[YY][YY];
     dest[ZZ][ZZ] = 1 / src[ZZ][ZZ];
     dest[ZZ][XX] = (src[YY][XX] * src[ZZ][YY] * dest[YY][YY]
-                    - src[ZZ][XX]) * dest[XX][XX] * dest[ZZ][ZZ];
+                    - src[ZZ][XX])
+                   * dest[XX][XX] * dest[ZZ][ZZ];
     dest[YY][XX] = -src[YY][XX] * dest[XX][XX] * dest[YY][YY];
     dest[ZZ][YY] = -src[ZZ][YY] * dest[YY][YY] * dest[ZZ][ZZ];
     dest[XX][YY] = 0.0;

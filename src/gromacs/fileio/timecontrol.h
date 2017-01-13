@@ -39,8 +39,7 @@
 #include "gromacs/utility/real.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /* The code below is to facilitate controlled begin and end of
@@ -48,7 +47,10 @@ extern "C"
  */
 enum
 {
-    TBEGIN, TEND, TDELTA, TNR
+    TBEGIN,
+    TEND,
+    TDELTA,
+    TNR
 };
 
 gmx_bool bTimeSet(int tcontrol);

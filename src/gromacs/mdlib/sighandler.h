@@ -46,8 +46,7 @@
 
 /* the stop conditions. They are explicitly allowed to be compared against
    each other. */
-typedef enum
-{
+typedef enum {
     gmx_stop_cond_none = 0,
     gmx_stop_cond_next_ns, /* stop a the next neighbour searching step */
     gmx_stop_cond_next,    /* stop a the next step */

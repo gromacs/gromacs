@@ -67,8 +67,7 @@ gmx_sparsematrix_t *gmx_sparsematrix_init(int nrow)
 }
 
 
-
-void gmx_sparsematrix_destroy(gmx_sparsematrix_t * A)
+void gmx_sparsematrix_destroy(gmx_sparsematrix_t *A)
 {
     int i;
 
@@ -89,9 +88,8 @@ void gmx_sparsematrix_destroy(gmx_sparsematrix_t * A)
 }
 
 
-
-void gmx_sparsematrix_print(FILE *               stream,
-                            gmx_sparsematrix_t * A)
+void gmx_sparsematrix_print(FILE *              stream,
+                            gmx_sparsematrix_t *A)
 {
     int i, j, k;
 
@@ -122,13 +120,12 @@ void gmx_sparsematrix_print(FILE *               stream,
         }
         fprintf(stream, "\n");
     }
-
 }
 
 
-real gmx_sparsematrix_value(gmx_sparsematrix_t * A,
-                            int                  row,
-                            int                  col)
+real gmx_sparsematrix_value(gmx_sparsematrix_t *A,
+                            int                 row,
+                            int                 col)
 {
     gmx_bool found = FALSE;
     int      i;
@@ -153,11 +150,10 @@ real gmx_sparsematrix_value(gmx_sparsematrix_t * A,
 }
 
 
-
-void gmx_sparsematrix_increment_value(gmx_sparsematrix_t * A,
-                                      int                  row,
-                                      int                  col,
-                                      real                 difference)
+void gmx_sparsematrix_increment_value(gmx_sparsematrix_t *A,
+                                      int                 row,
+                                      int                 col,
+                                      real                difference)
 {
     gmx_bool found = FALSE;
     int      i;
@@ -169,7 +165,7 @@ void gmx_sparsematrix_increment_value(gmx_sparsematrix_t * A,
     {
         if (A->data[row][i].col == col)
         {
-            found                  = TRUE;
+            found = TRUE;
             A->data[row][i].value += difference;
         }
     }
@@ -223,7 +219,7 @@ static int compare_columns(const void *v1, const void *v2)
 }
 
 
-void gmx_sparsematrix_compress(gmx_sparsematrix_t * A)
+void gmx_sparsematrix_compress(gmx_sparsematrix_t *A)
 {
     int i, j;
 
@@ -257,13 +253,13 @@ void gmx_sparsematrix_compress(gmx_sparsematrix_t * A)
 }
 
 
-void gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t * A,
-                                      real *               x,
-                                      real *               y)
+void gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t *A,
+                                      real *              x,
+                                      real *              y)
 {
-    real                       s, v, xi;
-    int                        i, j, k;
-    gmx_sparsematrix_entry_t * data;  /* pointer to simplify data access */
+    real                      s, v, xi;
+    int                       i, j, k;
+    gmx_sparsematrix_entry_t *data; /* pointer to simplify data access */
 
     for (i = 0; i < A->nrow; i++)
     {
@@ -280,8 +276,8 @@ void gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t * A,
 
             for (k = 0; k < A->ndata[i]; k++)
             {
-                j  = data[k].col;
-                v  = data[k].value;
+                j = data[k].col;
+                v = data[k].value;
                 s += v * x[j];
                 if (i != j)
                 {
@@ -301,8 +297,8 @@ void gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t * A,
 
             for (k = 0; k < A->ndata[i]; k++)
             {
-                j  = data[k].col;
-                v  = data[k].value;
+                j = data[k].col;
+                v = data[k].value;
                 s += v * x[j];
             }
             y[i] += s;

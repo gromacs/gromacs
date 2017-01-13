@@ -161,8 +161,8 @@ static gmx_bool grp_cmp(t_blocka *b, int nra, int a[], int index)
 static void p_status(const char *const *restype, int nres,
                      const char *const *typenames, int ntypes)
 {
-    int   i, j;
-    int * counter;
+    int  i, j;
+    int *counter;
 
     snew(counter, ntypes);
     for (i = 0; i < ntypes; i++)
@@ -192,7 +192,7 @@ static void p_status(const char *const *restype, int nres,
 }
 
 
-static int *mk_aid(const t_atoms *atoms, const char ** restype, const char * typestring, int *nra, gmx_bool bMatch)
+static int *mk_aid(const t_atoms *atoms, const char **restype, const char *typestring, int *nra, gmx_bool bMatch)
 /* Make an array of ints for all atoms with residuetypes matching typestring, or the opposite if bMatch is false */
 {
     int *a;
@@ -224,7 +224,7 @@ typedef struct
     char *   gname;
 } restp_t;
 
-static void analyse_other(const char ** restype, const t_atoms *atoms,
+static void analyse_other(const char **restype, const t_atoms *atoms,
                           t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
     restp_t *restp = nullptr;
@@ -281,7 +281,7 @@ static void analyse_other(const char ** restype, const t_atoms *atoms,
             {
                 rname = *atoms->resinfo[atoms->atom[j].resind].name;
                 if ((strcmp(restp[i].rname, rname) == 0 && !restp[i].bNeg)
-                    || (strcmp(restp[i].rname, rname) != 0 &&  restp[i].bNeg))
+                    || (strcmp(restp[i].rname, rname) != 0 && restp[i].bNeg))
                 {
                     aid[naid++] = j;
                 }
@@ -367,13 +367,13 @@ typedef struct gmx_help_make_index_group
     int compareto;
 } t_gmx_help_make_index_group;
 
-static void analyse_prot(const char ** restype, const t_atoms *atoms,
+static void analyse_prot(const char **restype, const t_atoms *atoms,
                          t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
     /* lists of atomnames to be used in constructing index groups: */
     static const char *pnoh[]   = { "H", "HN" };
     static const char *pnodum[] = {
-        "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2",
+        "MN1", "MN2", "MCB1", "MCB2", "MCG1", "MCG2",
         "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2"
     };
     static const char *calpha[] = { "CA" };
@@ -385,17 +385,18 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
         "H1", "H2", "H3", "H", "HN"
     };
 
-    static const t_gmx_help_make_index_group constructing_data[] =
-    {{ nullptr,   0, "Protein",      TRUE,  -1, -1},
-     { pnoh,   asize(pnoh),   "Protein-H",    TRUE,  0,  -1},
-     { calpha, asize(calpha), "C-alpha",      FALSE, -1, -1},
-     { bb,     asize(bb),     "Backbone",     FALSE, -1, -1},
-     { mc,     asize(mc),     "MainChain",    FALSE, -1, -1},
-     { mcb,    asize(mcb),    "MainChain+Cb", FALSE, -1, -1},
-     { mch,    asize(mch),    "MainChain+H",  FALSE, -1, -1},
-     { mch,    asize(mch),    "SideChain",    TRUE,  -1, -1},
-     { mch,    asize(mch),    "SideChain-H",  TRUE,  11, -1},
-     { pnodum, asize(pnodum), "Prot-Masses",  TRUE,  -1, 0}, };
+    static const t_gmx_help_make_index_group constructing_data[] = {
+        { nullptr, 0, "Protein", TRUE, -1, -1 },
+        { pnoh, asize(pnoh), "Protein-H", TRUE, 0, -1 },
+        { calpha, asize(calpha), "C-alpha", FALSE, -1, -1 },
+        { bb, asize(bb), "Backbone", FALSE, -1, -1 },
+        { mc, asize(mc), "MainChain", FALSE, -1, -1 },
+        { mcb, asize(mcb), "MainChain+Cb", FALSE, -1, -1 },
+        { mch, asize(mch), "MainChain+H", FALSE, -1, -1 },
+        { mch, asize(mch), "SideChain", TRUE, -1, -1 },
+        { mch, asize(mch), "SideChain-H", TRUE, 11, -1 },
+        { pnodum, asize(pnodum), "Prot-Masses", TRUE, -1, 0 },
+    };
     const int num_index_groups = asize(constructing_data);
 
     int      n, j;
@@ -437,7 +438,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
                     {
                         atnm++;
                     }
-                    if ( (constructing_data[i].wholename == -1) || (j < constructing_data[i].wholename) )
+                    if ((constructing_data[i].wholename == -1) || (j < constructing_data[i].wholename))
                     {
                         if (0 == gmx_strcasecmp(constructing_data[i].defining_atomnames[j], atnm))
                         {
@@ -460,7 +461,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
         }
         /* if we want to add this group always or it differs from previous
            group, add it: */
-        if (-1 == constructing_data[i].compareto || !grp_cmp(gb, nra, aid, constructing_data[i].compareto - i) )
+        if (-1 == constructing_data[i].compareto || !grp_cmp(gb, nra, aid, constructing_data[i].compareto - i))
         {
             add_grp(gb, gn, nra, aid, constructing_data[i].group_name);
         }
@@ -475,7 +476,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
             {
                 int resind;
                 nra = 0;
-                for (n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr)); )
+                for (n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr));)
                 {
                     resind = atoms->atom[n].resind;
                     for (; ((atoms->atom[n].resind == resind) && (n < atoms->nr)); n++)
@@ -512,7 +513,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
             /* Make swap sidechain C=O index */
             int resind, hold;
             nra = 0;
-            for (n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr)); )
+            for (n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr));)
             {
                 resind = atoms->atom[n].resind;
                 hold   = -1;
@@ -522,7 +523,7 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
                     {
                         aid[nra++] = n;
                         hold       = nra;
-                        nra       += 2;
+                        nra += 2;
                     }
                     else if (strcmp("C", *atoms->atomname[n]) == 0)
                     {
@@ -567,17 +568,17 @@ static void analyse_prot(const char ** restype, const t_atoms *atoms,
 
 void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
 {
-    gmx_residuetype_t*rt = nullptr;
-    char *            resnm;
-    int *             aid;
-    const char **     restype;
-    int               nra;
-    int               i, k;
-    int               ntypes;
-    char **           p_typename;
-    int               iwater, iion;
-    int               nwater, nion;
-    int               found;
+    gmx_residuetype_t *rt = nullptr;
+    char *             resnm;
+    int *              aid;
+    const char **      restype;
+    int                nra;
+    int                i, k;
+    int                ntypes;
+    char **            p_typename;
+    int                iwater, iion;
+    int                nwater, nion;
+    int                found;
 
     if (bVerb)
     {
@@ -1060,8 +1061,10 @@ t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx)
         {
             if ((c->clust->a[i] < 0) || (c->clust->a[i] > c->maxframe))
             {
-                gmx_fatal(FARGS, "Range check error for c->clust->a[%d] = %d\n"
-                          "should be within 0 and %d", i, c->clust->a[i], c->maxframe + 1);
+                gmx_fatal(FARGS,
+                          "Range check error for c->clust->a[%d] = %d\n"
+                          "should be within 0 and %d",
+                          i, c->clust->a[i], c->maxframe + 1);
             }
         }
     }

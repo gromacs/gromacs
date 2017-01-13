@@ -170,7 +170,7 @@ TEST(FunctionTest, InvcbrtFloat)
     gmx::test::TestReferenceChecker checker(data.rootChecker());
     std::vector<float>              result;
 
-    for (float f : {-5, -4, -3, -2, -1, 1, 2, 3, 4})
+    for (float f : { -5, -4, -3, -2, -1, 1, 2, 3, 4 })
     {
         result.push_back(gmx::invcbrt(f));
     }
@@ -183,7 +183,7 @@ TEST(FunctionTest, InvcbrtDouble)
     gmx::test::TestReferenceChecker checker(data.rootChecker());
     std::vector<double>             result;
 
-    for (double d : {-5, -4, -3, -2, -1, 1, 2, 3, 4})
+    for (double d : { -5, -4, -3, -2, -1, 1, 2, 3, 4 })
     {
         result.push_back(gmx::invcbrt(d));
     }
@@ -196,7 +196,7 @@ TEST(FunctionTest, InvcbrtInteger)
     gmx::test::TestReferenceChecker checker(data.rootChecker());
     std::vector<double>             result;
 
-    for (int i : {-5, -4, -3, -2, -1, 1, 2, 3, 4})
+    for (int i : { -5, -4, -3, -2, -1, 1, 2, 3, 4 })
     {
         result.push_back(gmx::invcbrt(i));
     }
@@ -286,18 +286,18 @@ TEST(FunctionTest, Powers)
 {
     // These should be remarkably difficult to screw up, but test each
     // of them once anyway with integer and fp arguments to catch typos.
-    EXPECT_EQ(4,   gmx::square(2));
-    EXPECT_EQ(8,   gmx::power3(2));
-    EXPECT_EQ(16,  gmx::power4(2));
-    EXPECT_EQ(32,  gmx::power5(2));
-    EXPECT_EQ(64,  gmx::power6(2));
+    EXPECT_EQ(4, gmx::square(2));
+    EXPECT_EQ(8, gmx::power3(2));
+    EXPECT_EQ(16, gmx::power4(2));
+    EXPECT_EQ(32, gmx::power5(2));
+    EXPECT_EQ(64, gmx::power6(2));
     EXPECT_EQ(4096, gmx::power12(2));
 
-    EXPECT_EQ(6.25,               gmx::square(2.5));
-    EXPECT_EQ(15.625,             gmx::power3(2.5));
-    EXPECT_EQ(39.0625,            gmx::power4(2.5));
-    EXPECT_EQ(97.65625,           gmx::power5(2.5));
-    EXPECT_EQ(244.140625,         gmx::power6(2.5));
+    EXPECT_EQ(6.25, gmx::square(2.5));
+    EXPECT_EQ(15.625, gmx::power3(2.5));
+    EXPECT_EQ(39.0625, gmx::power4(2.5));
+    EXPECT_EQ(97.65625, gmx::power5(2.5));
+    EXPECT_EQ(244.140625, gmx::power6(2.5));
     EXPECT_EQ(59604.644775390625, gmx::power12(2.5));
 }
 

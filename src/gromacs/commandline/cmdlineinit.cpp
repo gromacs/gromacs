@@ -112,7 +112,7 @@ void broadcastArguments(int *argc, char ***argv)
 
 //! \}
 
-}   // namespace
+} // namespace
 
 CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
 {

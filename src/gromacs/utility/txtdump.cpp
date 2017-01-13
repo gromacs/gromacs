@@ -151,7 +151,7 @@ void pr_reals_of_dim(FILE *fp, int indent, const char *title, const real *vec, i
                 {
                     fprintf(fp, ", ");
                 }
-                fprintf(fp, format, vec[i * dim  + j]);
+                fprintf(fp, format, vec[i * dim + j]);
             }
             fprintf(fp, "}\n");
         }

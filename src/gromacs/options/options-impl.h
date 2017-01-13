@@ -92,7 +92,8 @@ public:
         typedef std::list<Group> SubgroupList;
 
         //! Creates a group within the given Options.
-        explicit Group(OptionSectionImpl *parent) : parent_(parent) {}
+        explicit Group(OptionSectionImpl *parent)
+            : parent_(parent) {}
 
         // From IOptionsContainer
         virtual IOptionsContainer &addGroup();
@@ -113,7 +114,7 @@ public:
 
     //! Smart pointer for managing an AbstractOptionStorage object.
     typedef std::unique_ptr<AbstractOptionStorage>
-        AbstractOptionStoragePointer;
+            AbstractOptionStoragePointer;
     //! Convenience typedef for a map that contains all the options.
     typedef std::map<std::string, AbstractOptionStoragePointer> OptionMap;
     //! Smart pointer for managing subsections.

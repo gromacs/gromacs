@@ -168,8 +168,8 @@ void nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t *   nbl,
                 ci = sci * c_numClPerSupercl + im;
                 for (ic = 0; ic < c_clSize; ic++)
                 {
-                    ia     = ci * c_clSize + ic;
-                    iq     = x[ia * nbat->xstride + 3];
+                    ia = ci * c_clSize + ic;
+                    iq = x[ia * nbat->xstride + 3];
                     vctot += iq * iq;
                 }
             }
@@ -302,33 +302,33 @@ void nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t *   nbl,
                                     rinvsix   = int_bit * rinvsq * rinvsq * rinvsq;
                                     Vvdw_disp = c6 * rinvsix;
                                     Vvdw_rep  = c12 * rinvsix * rinvsix;
-                                    fscal    += (Vvdw_rep - Vvdw_disp) * rinvsq;
+                                    fscal += (Vvdw_rep - Vvdw_disp) * rinvsq;
 
                                     if (bEner)
                                     {
                                         vctot += vcoul;
 
                                         Vvdwtot
-                                            += (Vvdw_rep - int_bit * c12 * iconst->sh_invrc6 * iconst->sh_invrc6) / 12
-                                                - (Vvdw_disp - int_bit * c6 * iconst->sh_invrc6) / 6;
+                                                += (Vvdw_rep - int_bit * c12 * iconst->sh_invrc6 * iconst->sh_invrc6) / 12
+                                                   - (Vvdw_disp - int_bit * c6 * iconst->sh_invrc6) / 6;
                                     }
                                 }
 
-                                tx          = fscal * dx;
-                                ty          = fscal * dy;
-                                tz          = fscal * dz;
-                                fix         = fix + tx;
-                                fiy         = fiy + ty;
-                                fiz         = fiz + tz;
+                                tx  = fscal * dx;
+                                ty  = fscal * dy;
+                                tz  = fscal * dz;
+                                fix = fix + tx;
+                                fiy = fiy + ty;
+                                fiz = fiz + tz;
                                 f[jfs + 0] -= tx;
                                 f[jfs + 1] -= ty;
                                 f[jfs + 2] -= tz;
                             }
 
-                            f[ifs + 0]      += fix;
-                            f[ifs + 1]      += fiy;
-                            f[ifs + 2]      += fiz;
-                            fshift[ish3]     = fshift[ish3]   + fix;
+                            f[ifs + 0] += fix;
+                            f[ifs + 1] += fiy;
+                            f[ifs + 2] += fiz;
+                            fshift[ish3]     = fshift[ish3] + fix;
                             fshift[ish3 + 1] = fshift[ish3 + 1] + fiy;
                             fshift[ish3 + 2] = fshift[ish3 + 2] + fiz;
 
@@ -357,7 +357,7 @@ void nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t *   nbl,
         if (bEner)
         {
             ggid       = 0;
-            Vc[ggid]   = Vc[ggid]   + vctot;
+            Vc[ggid]   = Vc[ggid] + vctot;
             Vvdw[ggid] = Vvdw[ggid] + Vvdwtot;
         }
     }

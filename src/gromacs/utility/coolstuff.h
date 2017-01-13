@@ -51,7 +51,6 @@ std::string bromacs();
 
 //! Return a string with a cool quote
 std::string getCoolQuote();
-
 }
 
 #endif

@@ -79,14 +79,13 @@ struct FileTypeMapping
 };
 
 //! Mappings from OptionFileType to file types in filetypes.h.
-const FileTypeMapping c_fileTypeMapping[] =
-{
-    { eftTopology,    efTPS },
-    { eftTrajectory,  efTRX },
-    { eftEnergy,      efEDR },
-    { eftPDB,         efPDB },
-    { eftIndex,       efNDX },
-    { eftPlot,        efXVG },
+const FileTypeMapping c_fileTypeMapping[] = {
+    { eftTopology, efTPS },
+    { eftTrajectory, efTRX },
+    { eftEnergy, efEDR },
+    { eftPDB, efPDB },
+    { eftIndex, efNDX },
+    { eftPlot, efXVG },
     { eftGenericData, efDAT }
 };
 
@@ -194,7 +193,7 @@ bool FileTypeHandler::isValidType(int fileType) const
 
 //! \}
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * FileNameOptionStorage
@@ -357,18 +356,20 @@ std::string FileNameOptionStorage::processValue(const std::string &value) const
     if (fileType == efNR)
     {
         std::string message
-            = formatString("File '%s' cannot be used by GROMACS because it "
-                           "does not have a recognizable extension.\n"
-                           "The following extensions are possible for this option:\n  %s",
-                           value.c_str(), joinStrings(extensions(), ", ").c_str());
+                = formatString(
+                        "File '%s' cannot be used by GROMACS because it "
+                        "does not have a recognizable extension.\n"
+                        "The following extensions are possible for this option:\n  %s",
+                        value.c_str(), joinStrings(extensions(), ", ").c_str());
         GMX_THROW(InvalidInputError(message));
     }
     else if (!isValidType(fileType))
     {
         std::string message
-            = formatString("File name '%s' cannot be used for this option.\n"
-                           "Only the following extensions are possible:\n  %s",
-                           value.c_str(), joinStrings(extensions(), ", ").c_str());
+                = formatString(
+                        "File name '%s' cannot be used for this option.\n"
+                        "Only the following extensions are possible:\n  %s",
+                        value.c_str(), joinStrings(extensions(), ", ").c_str());
         GMX_THROW(InvalidInputError(message));
     }
     return value;
@@ -387,9 +388,9 @@ void FileNameOptionStorage::processAll()
             GMX_ASSERT(endsWith(oldValue, defaultExtension()),
                        "Default value does not have the expected extension");
             const std::string prefix
-                = stripSuffixIfPresent(oldValue, defaultExtension());
+                    = stripSuffixIfPresent(oldValue, defaultExtension());
             const std::string newValue
-                = manager_->completeDefaultFileName(prefix, info_);
+                    = manager_->completeDefaultFileName(prefix, info_);
             if (!newValue.empty() && newValue != oldValue)
             {
                 GMX_ASSERT(isValidType(fn2ftp(newValue.c_str())),

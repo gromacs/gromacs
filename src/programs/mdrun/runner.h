@@ -105,6 +105,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int imdport, unsigned long Flags);
 
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDLIB_RUNNER_H

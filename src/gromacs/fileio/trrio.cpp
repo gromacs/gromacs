@@ -47,7 +47,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-#define BUFSIZE     128
+#define BUFSIZE 128
 
 static int nFloatSize(gmx_trr_header_t *sh)
 {
@@ -156,11 +156,11 @@ static gmx_bool do_trr_frame_header(t_fileio *fio, bool bRead, gmx_trr_header_t 
      * the fact that we used a default int for the step number, which
      * is typically defined to be signed and 32 bit. */
     int intStep = sh->step;
-    *bOK     = *bOK && gmx_fio_do_int(fio, intStep);
-    sh->step = intStep;
-    *bOK     = *bOK && gmx_fio_do_int(fio, sh->nre);
-    *bOK     = *bOK && gmx_fio_do_real(fio, sh->t);
-    *bOK     = *bOK && gmx_fio_do_real(fio, sh->lambda);
+    *bOK        = *bOK && gmx_fio_do_int(fio, intStep);
+    sh->step    = intStep;
+    *bOK        = *bOK && gmx_fio_do_int(fio, sh->nre);
+    *bOK        = *bOK && gmx_fio_do_real(fio, sh->t);
+    *bOK        = *bOK && gmx_fio_do_real(fio, sh->lambda);
 
     return *bOK;
 }
@@ -184,15 +184,15 @@ static gmx_bool do_trr_frame_data(t_fileio *fio, gmx_trr_header_t *sh,
     {
         bOK = bOK && gmx_fio_ndo_rvec(fio, pv, DIM);
     }
-    if (sh->x_size   != 0)
+    if (sh->x_size != 0)
     {
         bOK = bOK && gmx_fio_ndo_rvec(fio, x, sh->natoms);
     }
-    if (sh->v_size   != 0)
+    if (sh->v_size != 0)
     {
         bOK = bOK && gmx_fio_ndo_rvec(fio, v, sh->natoms);
     }
-    if (sh->f_size   != 0)
+    if (sh->f_size != 0)
     {
         bOK = bOK && gmx_fio_ndo_rvec(fio, f, sh->natoms);
     }

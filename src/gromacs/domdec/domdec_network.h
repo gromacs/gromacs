@@ -55,7 +55,8 @@ struct gmx_domdec_t;
 /* \brief */
 enum
 {
-    dddirForward, dddirBackward
+    dddirForward,
+    dddirBackward
 };
 
 /*! \brief Move integers in the communication region one cell along
@@ -64,33 +65,30 @@ enum
  * Moves in the dimension indexed by ddimind, either forward
  * (direction=dddirFoward) or backward (direction=dddirBackward).
  */
-void
-dd_sendrecv_int(const struct gmx_domdec_t *dd,
-                int ddimind, int direction,
-                int *buf_s, int n_s,
-                int *buf_r, int n_r);
+void dd_sendrecv_int(const struct gmx_domdec_t *dd,
+                     int ddimind, int direction,
+                     int *buf_s, int n_s,
+                     int *buf_r, int n_r);
 
 /*! \brief Move reals in the comm. region one cell along the domain decomposition
  *
  * Moves in the dimension indexed by ddimind, either forward
  * (direction=dddirFoward) or backward (direction=dddirBackward).
  */
-void
-dd_sendrecv_real(const struct gmx_domdec_t *dd,
-                 int ddimind, int direction,
-                 real *buf_s, int n_s,
-                 real *buf_r, int n_r);
+void dd_sendrecv_real(const struct gmx_domdec_t *dd,
+                      int ddimind, int direction,
+                      real *buf_s, int n_s,
+                      real *buf_r, int n_r);
 
 /*! \brief Move revc's in the comm. region one cell along the domain decomposition
  *
  * Moves in dimension indexed by ddimind, either forward
  * (direction=dddirFoward) or backward (direction=dddirBackward).
  */
-void
-dd_sendrecv_rvec(const struct gmx_domdec_t *dd,
-                 int ddimind, int direction,
-                 rvec *buf_s, int n_s,
-                 rvec *buf_r, int n_r);
+void dd_sendrecv_rvec(const struct gmx_domdec_t *dd,
+                      int ddimind, int direction,
+                      rvec *buf_s, int n_s,
+                      rvec *buf_r, int n_r);
 
 
 /*! \brief Move revc's in the comm. region one cell along the domain decomposition
@@ -98,13 +96,12 @@ dd_sendrecv_rvec(const struct gmx_domdec_t *dd,
  * Moves in dimension indexed by ddimind, simultaneously in the forward
  * and backward directions.
  */
-void
-dd_sendrecv2_rvec(const struct gmx_domdec_t *dd,
-                  int ddimind,
-                  rvec *buf_s_fw, int n_s_fw,
-                  rvec *buf_r_fw, int n_r_fw,
-                  rvec *buf_s_bw, int n_s_bw,
-                  rvec *buf_r_bw, int n_r_bw);
+void dd_sendrecv2_rvec(const struct gmx_domdec_t *dd,
+                       int                        ddimind,
+                       rvec *buf_s_fw, int n_s_fw,
+                       rvec *buf_r_fw, int n_r_fw,
+                       rvec *buf_s_bw, int n_s_bw,
+                       rvec *buf_r_bw, int n_r_bw);
 
 
 /* The functions below perform the same operations as the MPI functions
@@ -114,39 +111,33 @@ dd_sendrecv2_rvec(const struct gmx_domdec_t *dd,
  */
 
 /*! \brief Broadcasts \p nbytes from \p data on \p DDMASTERRANK to all PP ranks */
-void
-dd_bcast(struct gmx_domdec_t *dd, int nbytes, void *data);
+void dd_bcast(struct gmx_domdec_t *dd, int nbytes, void *data);
 
 /*! \brief Copies \p nbytes from \p src to \p dest on \p DDMASTERRANK
  * and then broadcasts to \p dest on all PP ranks */
-void
-dd_bcastc(struct gmx_domdec_t *dd, int nbytes, void *src, void *dest);
+void dd_bcastc(struct gmx_domdec_t *dd, int nbytes, void *src, void *dest);
 
 /*! \brief Scatters \p nbytes from \p src on \p DDMASTERRANK to all PP ranks, received in \p dest */
-void
-dd_scatter(struct gmx_domdec_t *dd, int nbytes, const void *src, void *dest);
+void dd_scatter(struct gmx_domdec_t *dd, int nbytes, const void *src, void *dest);
 
 /*! \brief Gathers \p nbytes from \p src on all PP ranks, received in \p dest on \p DDMASTERRANK */
-void
-dd_gather(struct gmx_domdec_t *dd, int nbytes, const void *src, void *dest);
+void dd_gather(struct gmx_domdec_t *dd, int nbytes, const void *src, void *dest);
 
 /*! \brief Scatters \p scounts bytes from \p src on \p DDMASTERRANK to all PP ranks, receiving \p rcount bytes in \p dest.
  *
  * See man MPI_Scatterv for details of how to construct scounts and disps.
  * If rcount==0, rbuf is allowed to be NULL */
-void
-dd_scatterv(struct gmx_domdec_t *dd,
-            int *scounts, int *disps, const void *sbuf,
-            int rcount, void *rbuf);
+void dd_scatterv(struct gmx_domdec_t *dd,
+                 int *scounts, int *disps, const void *sbuf,
+                 int rcount, void *rbuf);
 
 /*! \brief Gathers \p rcount bytes from \p src on all PP ranks, received in \p scounts bytes in \p dest on \p DDMASTERRANK.
  *
  * See man MPI_Gatherv for details of how to construct scounts and disps.
  *
  * If scount==0, sbuf is allowed to be NULL */
-void
-dd_gatherv(struct gmx_domdec_t *dd,
-           int scount, const void *sbuf,
-           int *rcounts, int *disps, void *rbuf);
+void dd_gatherv(struct gmx_domdec_t *dd,
+                int scount, const void *sbuf,
+                int *rcounts, int *disps, void *rbuf);
 
 #endif

@@ -48,37 +48,37 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-#define DO_FSPLINE(order)                      \
-    for (ithx = 0; (ithx < order); ithx++)              \
-    {                                              \
-        index_x = (i0 + ithx) * pny * pnz;               \
-        tx      = thx[ithx];                       \
-        dx      = dthx[ithx];                      \
-                                               \
-        for (ithy = 0; (ithy < order); ithy++)          \
-        {                                          \
-            index_xy = index_x + (j0 + ithy) * pnz;      \
-            ty       = thy[ithy];                  \
-            dy       = dthy[ithy];                 \
-            fxy1     = fz1 = 0;                    \
-                                               \
-            for (ithz = 0; (ithz < order); ithz++)      \
-            {                                      \
-                gval  = grid[index_xy + (k0 + ithz)];  \
+#define DO_FSPLINE(order)                            \
+    for (ithx = 0; (ithx < order); ithx++)           \
+    {                                                \
+        index_x = (i0 + ithx) * pny * pnz;           \
+        tx      = thx[ithx];                         \
+        dx      = dthx[ithx];                        \
+                                                     \
+        for (ithy = 0; (ithy < order); ithy++)       \
+        {                                            \
+            index_xy = index_x + (j0 + ithy) * pnz;  \
+            ty       = thy[ithy];                    \
+            dy       = dthy[ithy];                   \
+            fxy1 = fz1 = 0;                          \
+                                                     \
+            for (ithz = 0; (ithz < order); ithz++)   \
+            {                                        \
+                gval = grid[index_xy + (k0 + ithz)]; \
                 fxy1 += thz[ithz] * gval;            \
-                fz1  += dthz[ithz] * gval;           \
-            }                                      \
-            fx += dx * ty * fxy1;                      \
-            fy += tx * dy * fxy1;                      \
-            fz += tx * ty * fz1;                       \
-        }                                          \
+                fz1 += dthz[ithz] * gval;            \
+            }                                        \
+            fx += dx * ty * fxy1;                    \
+            fy += tx * dy * fxy1;                    \
+            fz += tx * ty * fz1;                     \
+        }                                            \
     }
 
 
 void gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
                        gmx_bool bClearF, pme_atomcomm_t *atc,
                        splinedata_t *spline,
-                       real scale)
+                       real          scale)
 {
     /* sum forces for local particles */
     int   nn, n, ithx, ithy, ithz, i0, j0, k0;
@@ -97,8 +97,10 @@ void gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
     // cppcheck-suppress unreadVariable cppcheck seems not to analyze code from pme-simd4.h
     struct pme_spline_work *work = pme->spline_work;
 #ifndef PME_SIMD4_UNALIGNED
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  thz_aligned[GMX_SIMD4_WIDTH * 2];
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  dthz_aligned[GMX_SIMD4_WIDTH * 2];
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)
+    thz_aligned[GMX_SIMD4_WIDTH * 2];
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)
+    dthz_aligned[GMX_SIMD4_WIDTH * 2];
 #endif
 #endif
 
@@ -176,9 +178,9 @@ void gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
                     break;
             }
 
-            atc->f[n][XX] += -coefficient * ( fx * nx * rxx );
-            atc->f[n][YY] += -coefficient * ( fx * nx * ryx + fy * ny * ryy );
-            atc->f[n][ZZ] += -coefficient * ( fx * nx * rzx + fy * ny * rzy + fz * nz * rzz );
+            atc->f[n][XX] += -coefficient * (fx * nx * rxx);
+            atc->f[n][YY] += -coefficient * (fx * nx * ryx + fy * ny * ryy);
+            atc->f[n][ZZ] += -coefficient * (fx * nx * rzx + fy * ny * rzy + fz * nz * rzz);
         }
     }
     /* Since the energy and not forces are interpolated
@@ -197,13 +199,13 @@ real gather_energy_bsplines(struct gmx_pme_t *pme, real *grid,
                             pme_atomcomm_t *atc)
 {
     splinedata_t *spline;
-    int     n, ithx, ithy, ithz, i0, j0, k0;
-    int     index_x, index_xy;
-    int *   idxptr;
-    real    energy, pot, tx, ty, coefficient, gval;
-    real    *thx, *thy, *thz;
-    int     norder;
-    int     order;
+    int           n, ithx, ithy, ithz, i0, j0, k0;
+    int           index_x, index_xy;
+    int *         idxptr;
+    real          energy, pot, tx, ty, coefficient, gval;
+    real *        thx, *thy, *thz;
+    int           norder;
+    int           order;
 
     spline = &atc->spline[0];
 
@@ -244,7 +246,6 @@ real gather_energy_bsplines(struct gmx_pme_t *pme, real *grid,
                         gval = grid[index_xy + (k0 + ithz)];
                         pot += tx * ty * thz[ithz] * gval;
                     }
-
                 }
             }
 

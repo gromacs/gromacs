@@ -85,7 +85,7 @@ void expandVector(size_t length, std::vector<ValueType> *values)
         if (values->size() != 1)
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                                                     "Expected 1 or %d values, got %d", length, values->size())));
+                    "Expected 1 or %d values, got %d", length, values->size())));
         }
         const ValueType &value = (*values)[0];
         values->resize(length, value);
@@ -606,8 +606,7 @@ std::string EnumOptionStorage::formatSingleValue(const int &value) const
 void EnumOptionStorage::initConverter(ConverterType *converter)
 {
     converter->addConverter<std::string>(
-            [this] (const std::string &value)
-            {
+            [this](const std::string &value) {
                 return findEnumValue(this->allowed_, value) - this->allowed_.begin();
             });
 }
@@ -644,7 +643,7 @@ AbstractOptionStorage *createEnumOptionStorage(const AbstractOption &option,
                                                int defaultValue, int defaultValueIfSet,
                                                IOptionValueStore<int> *store)
 {
-    std::unique_ptr<IOptionValueStore<int> > storePtr(store);
+    std::unique_ptr<IOptionValueStore<int>> storePtr(store);
     return new EnumOptionStorage(option, enumValues, count, defaultValue,
                                  defaultValueIfSet, move(storePtr));
 }

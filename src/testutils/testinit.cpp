@@ -154,7 +154,7 @@ void printHelp(const Options &options)
 // Never releases ownership.
 std::unique_ptr<TestProgramContext> g_testContext;
 
-}       // namespace
+} // namespace
 
 //! \cond internal
 void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
@@ -173,7 +173,8 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
             // continue with the master rank here.
             if (gmx_node_rank() == 0)
             {
-                fprintf(stderr, "NOTE: You are running %s on %d MPI ranks, "
+                fprintf(stderr,
+                        "NOTE: You are running %s on %d MPI ranks, "
                         "but it is does not contain MPI-enabled tests. "
                         "The test will now exit.\n",
                         context.programName(), gmx_node_num());
@@ -202,13 +203,11 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
         // TODO: A single option that accepts multiple names would be nicer.
         // Also, we recognize -help, but GTest doesn't, which leads to a bit
         // unintuitive behavior.
-        options.addOption(BooleanOption("h").store(&bHelp)
-                              .description("Print GROMACS-specific unit test options"));
+        options.addOption(BooleanOption("h").store(&bHelp).description("Print GROMACS-specific unit test options"));
         options.addOption(BooleanOption("help").store(&bHelp).hidden());
         options.addOption(BooleanOption("?").store(&bHelp).hidden());
         // TODO: Make this into a FileNameOption (or a DirectoryNameOption).
-        options.addOption(StringOption("src-root").store(&sourceRoot)
-                              .description("Override source tree location (for data files)"));
+        options.addOption(StringOption("src-root").store(&sourceRoot).description("Override source tree location (for data files)"));
         // The potential MPI test event listener must be initialized first,
         // because it should appear in the start of the event listener list,
         // before other event listeners that may generate test failures

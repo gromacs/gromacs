@@ -95,28 +95,28 @@
  */
 
 /* Kernel launch bounds, 16 blocks/multiprocessor can be kept in flight. */
-#define THREADS_PER_BLOCK   (c_clSize * c_clSize)
+#define THREADS_PER_BLOCK (c_clSize * c_clSize)
 
 __launch_bounds__(THREADS_PER_BLOCK)
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
-__global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_cuda)
+        __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_cuda)
 #else
-__global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_prune_cuda)
+        __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_prune_cuda)
 #endif /* CALC_ENERGIES */
 #else
 #ifdef CALC_ENERGIES
-__global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_cuda)
+        __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_cuda)
 #else
-__global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
+        __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif /* CALC_ENERGIES */
 #endif /* PRUNE_NBL */
-(const cu_atomdata_t atdat,
- const cu_nbparam_t nbparam,
- const cu_plist_t plist,
- bool bCalcFshift)
+                (const cu_atomdata_t atdat,
+                 const cu_nbparam_t  nbparam,
+                 const cu_plist_t    plist,
+                 bool                bCalcFshift)
 #ifdef FUNCTION_DECLARATION_ONLY
-;     /* Only do function declaration, omit the function body. */
+                        ; /* Only do function declaration, omit the function body. */
 #else
 {
     /* convenience variables */
@@ -124,49 +124,50 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifndef PRUNE_NBL
     const
 #endif
-    nbnxn_cj4_t        * pl_cj4 = plist.cj4;
-    const nbnxn_excl_t *excl = plist.excl;
+            nbnxn_cj4_t *pl_cj4
+            = plist.cj4;
+    const nbnxn_excl_t *excl        = plist.excl;
 #ifndef LJ_COMB
-    const int *atom_types = atdat.atom_types;
-    int        ntypes     = atdat.ntypes;
+    const int *         atom_types  = atdat.atom_types;
+    int                 ntypes      = atdat.ntypes;
 #else
     const float2 *lj_comb = atdat.lj_comb;
     float2        ljcp_i, ljcp_j;
 #endif
-    const float4 *xq          = atdat.xq;
-    float3 *      f           = atdat.f;
-    const float3 *shift_vec   = atdat.shift_vec;
-    float         rcoulomb_sq = nbparam.rcoulomb_sq;
+    const float4 *      xq          = atdat.xq;
+    float3 *            f           = atdat.f;
+    const float3 *      shift_vec   = atdat.shift_vec;
+    float               rcoulomb_sq = nbparam.rcoulomb_sq;
 #ifdef VDW_CUTOFF_CHECK
-    float rvdw_sq = nbparam.rvdw_sq;
-    float vdw_in_range;
+    float               rvdw_sq     = nbparam.rvdw_sq;
+    float               vdw_in_range;
 #endif
 #ifdef LJ_EWALD
-    float lje_coeff2, lje_coeff6_6;
+    float               lje_coeff2, lje_coeff6_6;
 #endif
 #ifdef EL_RF
-    float two_k_rf = nbparam.two_k_rf;
+    float               two_k_rf          = nbparam.two_k_rf;
 #endif
 #ifdef EL_EWALD_TAB
-    float coulomb_tab_scale = nbparam.coulomb_tab_scale;
+    float               coulomb_tab_scale = nbparam.coulomb_tab_scale;
 #endif
 #ifdef EL_EWALD_ANA
-    float beta2 = nbparam.ewald_beta * nbparam.ewald_beta;
-    float beta3 = nbparam.ewald_beta * nbparam.ewald_beta * nbparam.ewald_beta;
+    float               beta2             = nbparam.ewald_beta * nbparam.ewald_beta;
+    float               beta3             = nbparam.ewald_beta * nbparam.ewald_beta * nbparam.ewald_beta;
 #endif
 #ifdef PRUNE_NBL
-    float rlist_sq = nbparam.rlist_sq;
+    float               rlist_sq          = nbparam.rlist_sq;
 #endif
 
 #ifdef CALC_ENERGIES
 #ifdef EL_EWALD_ANY
-    float beta        = nbparam.ewald_beta;
-    float ewald_shift = nbparam.sh_ewald;
+    float               beta              = nbparam.ewald_beta;
+    float               ewald_shift       = nbparam.sh_ewald;
 #else
     float c_rf = nbparam.c_rf;
 #endif /* EL_EWALD_ANY */
-    float *e_lj = atdat.e_lj;
-    float *e_el = atdat.e_el;
+    float *             e_lj              = atdat.e_lj;
+    float *             e_el              = atdat.e_el;
 #endif /* CALC_ENERGIES */
 
     /* thread/block/warp id-s */
@@ -174,17 +175,17 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     unsigned int tidxj = threadIdx.y;
     unsigned int tidx  = threadIdx.y * blockDim.x + threadIdx.x;
     unsigned int bidx  = blockIdx.x;
-    unsigned int widx  = tidx / warp_size;  /* warp index */
+    unsigned int widx  = tidx / warp_size; /* warp index */
 
     int sci, ci, cj,
-        ai, aj,
-        cij4_start, cij4_end;
+            ai, aj,
+            cij4_start, cij4_end;
 #ifndef LJ_COMB
-    int typei, typej;
+    int   typei, typej;
 #endif
     int   i, jm, j4, wexcl_idx;
     float qi, qj_f,
-          r2, inv_r, inv_r2;
+            r2, inv_r, inv_r2;
 #if !defined LJ_COMB_LB || defined CALC_ENERGIES
     float inv_r6, c6, c12;
 #endif
@@ -192,12 +193,12 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     float sigma, epsilon;
 #endif
     float int_bit,
-          F_invr;
+            F_invr;
 #ifdef CALC_ENERGIES
-    float E_lj, E_el;
+    float        E_lj, E_el;
 #endif
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-    float E_lj_p;
+    float        E_lj_p;
 #endif
     unsigned int wexcl, imask, mask_ji;
     float4       xqbuf;
@@ -209,25 +210,25 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     const unsigned superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
 
     /* shmem buffer for i x+q pre-loading */
-    extern __shared__  float4 xqib[];
+    extern __shared__ float4 xqib[];
 
     /* shmem buffer for cj, for each warp separately */
     int *cjs = ((int *)(xqib + c_numClPerSupercl * c_clSize));
     /* shmem j force buffer */
     float *f_buf = (float *)(cjs + c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
 
-    nb_sci     = pl_sci[bidx];          /* my i super-cluster's index = current bidx */
-    sci        = nb_sci.sci;            /* super-cluster */
-    cij4_start = nb_sci.cj4_ind_start;  /* first ...*/
-    cij4_end   = nb_sci.cj4_ind_end;    /* and last index of j clusters */
+    nb_sci     = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
+    sci        = nb_sci.sci;           /* super-cluster */
+    cij4_start = nb_sci.cj4_ind_start; /* first ...*/
+    cij4_end   = nb_sci.cj4_ind_end;   /* and last index of j clusters */
 
     {
         /* Pre-load i-atom x and q into shared memory */
         ci = sci * c_numClPerSupercl + tidxj;
         ai = ci * c_clSize + tidxi;
 
-        xqbuf                          = xq[ai] + shift_vec[nb_sci.shift];
-        xqbuf.w                       *= nbparam.epsfac;
+        xqbuf = xq[ai] + shift_vec[nb_sci.shift];
+        xqbuf.w *= nbparam.epsfac;
         xqib[tidxj * c_clSize + tidxi] = xqbuf;
     }
     __syncthreads();
@@ -245,8 +246,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 
 #ifdef CALC_ENERGIES
-    E_lj = 0.0f;
-    E_el = 0.0f;
+    E_lj         = 0.0f;
+    E_el         = 0.0f;
 
 #ifdef EXCLUSION_FORCES /* Ewald or RF */
     if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci * c_numClPerSupercl)
@@ -255,7 +256,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
         for (i = 0; i < c_numClPerSupercl; i++)
         {
 #if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
-            qi    = xqib[i * c_clSize + tidxi].w;
+            qi = xqib[i * c_clSize + tidxi].w;
             E_el += qi * qi;
 #endif
 
@@ -264,7 +265,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #endif
         }
 
-        /* divide the self term(s) equally over the j-threads, then multiply with the coefficients. */
+/* divide the self term(s) equally over the j-threads, then multiply with the coefficients. */
 #ifdef LJ_EWALD
         E_lj /= c_clSize;
         E_lj *= 0.5f * c_oneSixth * lje_coeff6_6;
@@ -278,11 +279,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #else
         E_el *= -beta * M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
 #endif
-#endif                                    /* EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF */
+#endif /* EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF */
     }
-#endif                                    /* EXCLUSION_FORCES */
+#endif /* EXCLUSION_FORCES */
 
-#endif                                    /* CALC_ENERGIES */
+#endif /* CALC_ENERGIES */
 
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (j4 = cij4_start; j4 < cij4_end; j4++)
@@ -301,7 +302,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                 cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize / c_splitClSize] = pl_cj4[j4].cj[tidxi];
             }
 
-            /* Unrolling this loop with pruning leads to register spilling;
+/* Unrolling this loop with pruning leads to register spilling;
                Tested with up to nvcc 7.5 */
 #if !defined PRUNE_NBL
 #pragma unroll 4
@@ -334,8 +335,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                     {
                         if (imask & mask_ji)
                         {
-                            ci = sci * c_numClPerSupercl + i;      /* i cluster index */
-                            ai = ci * c_clSize + tidxi;            /* i atom index */
+                            ci = sci * c_numClPerSupercl + i; /* i cluster index */
+                            ai = ci * c_clSize + tidxi;       /* i atom index */
 
                             /* all threads load an atom from i cluster ci into shmem! */
                             xqbuf = xqib[i * c_clSize + tidxi];
@@ -357,10 +358,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
                             int_bit = (wexcl & mask_ji) ? 1.0f : 0.0f;
 
-                            /* cutoff & exclusion check */
+/* cutoff & exclusion check */
 #ifdef EXCLUSION_FORCES
                             if (r2 < rcoulomb_sq
-                                * (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
+                                             * (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
 #else
                             if (r2 < rcoulomb_sq * int_bit)
 #endif
@@ -374,10 +375,10 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 c6    = tex1Dfetch(nbfp_texref, 2 * (ntypes * typei + typej));
                                 c12   = tex1Dfetch(nbfp_texref, 2 * (ntypes * typei + typej) + 1);
 #else
-                                ljcp_i = lj_comb[ai];
+                                ljcp_i       = lj_comb[ai];
 #ifdef LJ_COMB_GEOM
-                                c6  = ljcp_i.x * ljcp_j.x;
-                                c12 = ljcp_i.y * ljcp_j.y;
+                                c6           = ljcp_i.x * ljcp_j.x;
+                                c12          = ljcp_i.y * ljcp_j.y;
 #else
                                 /* LJ 2^(1/6)*sigma and 12*epsilon */
                                 sigma   = ljcp_i.x + ljcp_j.x;
@@ -385,8 +386,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #if defined CALC_ENERGIES || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
                                 convert_sigma_epsilon_to_c6_c12(sigma, epsilon, &c6, &c12);
 #endif
-#endif                          /* LJ_COMB_GEOM */
-#endif                          /* LJ_COMB */
+#endif /* LJ_COMB_GEOM */
+#endif /* LJ_COMB */
 
                                 // Ensure distance do not become so small that r^-12 overflows
                                 r2 = max(r2, NBNXN_MIN_RSQ);
@@ -399,23 +400,23 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 /* We could mask inv_r2, but with Ewald
                                  * masking both inv_r6 and F_invr is faster */
                                 inv_r6 *= int_bit;
-#endif                          /* EXCLUSION_FORCES */
+#endif /* EXCLUSION_FORCES */
 
                                 F_invr = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
                                 E_lj_p = int_bit * (c12 * (inv_r6 * inv_r6 + nbparam.repulsion_shift.cpot) * c_oneTwelveth
                                                     - c6 * (inv_r6 + nbparam.dispersion_shift.cpot) * c_oneSixth);
 #endif
-#else                           /* !LJ_COMB_LB || CALC_ENERGIES */
+#else /* !LJ_COMB_LB || CALC_ENERGIES */
                                 float sig_r  = sigma * inv_r;
                                 float sig_r2 = sig_r * sig_r;
                                 float sig_r6 = sig_r2 * sig_r2 * sig_r2;
 #ifdef EXCLUSION_FORCES
                                 sig_r6 *= int_bit;
-#endif                          /* EXCLUSION_FORCES */
+#endif /* EXCLUSION_FORCES */
 
                                 F_invr = epsilon * sig_r6 * (sig_r6 - 1.0f) * inv_r2;
-#endif                          /* !LJ_COMB_LB || CALC_ENERGIES */
+#endif /* !LJ_COMB_LB || CALC_ENERGIES */
 
 #ifdef LJ_FORCE_SWITCH
 #ifdef CALC_ENERGIES
@@ -432,7 +433,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                 calculate_lj_ewald_comb_geom_F_E(nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, int_bit, &F_invr, &E_lj_p);
 #else
                                 calculate_lj_ewald_comb_geom_F(nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, &F_invr);
-#endif                          /* CALC_ENERGIES */
+#endif /* CALC_ENERGIES */
 #elif defined LJ_EWALD_COMB_LB
                                 calculate_lj_ewald_comb_LB_F_E(nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6,
 #ifdef CALC_ENERGIES
@@ -457,11 +458,11 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
                                  * (rvdw < rcoulomb <= rlist)
                                  */
                                 vdw_in_range = (r2 < rvdw_sq) ? 1.0f : 0.0f;
-                                F_invr      *= vdw_in_range;
+                                F_invr *= vdw_in_range;
 #ifdef CALC_ENERGIES
                                 E_lj_p *= vdw_in_range;
 #endif
-#endif                          /* VDW_CUTOFF_CHECK */
+#endif /* VDW_CUTOFF_CHECK */
 
 #ifdef CALC_ENERGIES
                                 E_lj += E_lj_p;
@@ -478,12 +479,13 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef EL_RF
                                 F_invr += qi * qj_f * (int_bit * inv_r2 * inv_r - two_k_rf);
 #endif
-#if defined EL_EWALD_ANA
+#if defined   EL_EWALD_ANA
                                 F_invr += qi * qj_f * (int_bit * inv_r2 * inv_r + pmecorrF(beta2 * r2) * beta3);
 #elif defined EL_EWALD_TAB
                                 F_invr += qi * qj_f * (int_bit * inv_r2
-                                                       - interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale)) * inv_r;
-#endif                          /* EL_EWALD_ANA/TAB */
+                                                       - interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale))
+                                          * inv_r;
+#endif /* EL_EWALD_ANA/TAB */
 
 #ifdef CALC_ENERGIES
 #ifdef EL_CUTOFF
@@ -495,7 +497,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #ifdef EL_EWALD_ANY
                                 /* 1.0f - erff is faster than erfcf */
                                 E_el += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
-#endif                          /* EL_EWALD_ANY */
+#endif /* EL_EWALD_ANY */
 #endif
                                 f_ij = rv * F_invr;
 
@@ -513,8 +515,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
                     /* reduce j forces */
                     /* store j forces in shmem */
-                    f_buf[                   tidx] = fcj_buf.x;
-                    f_buf[    c_fbufStride + tidx] = fcj_buf.y;
+                    f_buf[tidx]                    = fcj_buf.x;
+                    f_buf[c_fbufStride + tidx]     = fcj_buf.y;
                     f_buf[2 * c_fbufStride + tidx] = fcj_buf.z;
 
                     reduce_force_j_generic(f_buf, f, tidxi, tidxj, aj);
@@ -540,8 +542,8 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
     for (i = 0; i < c_numClPerSupercl; i++)
     {
         ai                             = (sci * c_numClPerSupercl + i) * c_clSize + tidxi;
-        f_buf[                   tidx] = fci_buf[i].x;
-        f_buf[    c_fbufStride + tidx] = fci_buf[i].y;
+        f_buf[tidx]                    = fci_buf[i].x;
+        f_buf[c_fbufStride + tidx]     = fci_buf[i].y;
         f_buf[2 * c_fbufStride + tidx] = fci_buf[i].z;
         __syncthreads();
         reduce_force_i(f_buf, f,
@@ -558,7 +560,7 @@ __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 
 #ifdef CALC_ENERGIES
     /* flush the energies to shmem and reduce them */
-    f_buf[               tidx] = E_lj;
+    f_buf[tidx]                = E_lj;
     f_buf[c_fbufStride + tidx] = E_el;
     reduce_energy_pow2(f_buf + (tidx & warp_size), e_lj, e_el, tidx & ~warp_size);
 #endif

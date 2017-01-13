@@ -56,22 +56,22 @@ namespace gmx
 /*! \libinternal \brief Specification for analytical table function (name, function, derivative)
  */
 struct
-AnalyticalSplineTableInput
+        AnalyticalSplineTableInput
 {
-    const std::string &           desc;                //!< \libinternal Brief description of function
-    std::function<double(double)> function;            //!< \libinternal Analytical form of function
-    std::function<double(double)> derivative;          //!< \libinternal Analytical derivative
+    const std::string &           desc;       //!< \libinternal Brief description of function
+    std::function<double(double)> function;   //!< \libinternal Analytical form of function
+    std::function<double(double)> derivative; //!< \libinternal Analytical derivative
 };
 
 /*! \libinternal \brief Specification for vector table function (name, function, derivative, spacing)
  */
 struct
-NumericalSplineTableInput
+        NumericalSplineTableInput
 {
-    const std::string &   desc;                        //!< \libinternal Brief description of function
-    ConstArrayRef<double> function;                    //!< \libinternal Vector with function values
-    ConstArrayRef<double> derivative;                  //!< \libinternal Vector with derivative values
-    double                spacing;                     //!< \libinternal Distance between data points
+    const std::string &   desc;       //!< \libinternal Brief description of function
+    ConstArrayRef<double> function;   //!< \libinternal Vector with function values
+    ConstArrayRef<double> derivative; //!< \libinternal Vector with derivative values
+    double                spacing;    //!< \libinternal Distance between data points
 };
 
 

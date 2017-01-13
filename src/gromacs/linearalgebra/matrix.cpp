@@ -146,9 +146,10 @@ int matrix_invert(FILE *fp, int n, double **a)
     snew(ipiv, n);
     lwork = n * n;
     snew(work, lwork);
-    m    = lda   = n;
-    info = 0;
-    F77_FUNC(dgetrf, DGETRF) (&n, &m, a[0], &lda, ipiv, &info);
+    m = lda = n;
+    info    = 0;
+    F77_FUNC(dgetrf, DGETRF)
+    (&n, &m, a[0], &lda, ipiv, &info);
 #ifdef DEBUG_MATRIX
     if (fp)
     {
@@ -159,7 +160,8 @@ int matrix_invert(FILE *fp, int n, double **a)
     {
         return info;
     }
-    F77_FUNC(dgetri, DGETRI) (&n, a[0], &lda, ipiv, work, &lwork, &info);
+    F77_FUNC(dgetri, DGETRI)
+    (&n, a[0], &lda, ipiv, work, &lwork, &info);
 #ifdef DEBUG_MATRIX
     if (fp)
     {

@@ -75,7 +75,8 @@ private:
     std::string str_;
 };
 
-template <typename T> class ConstArrayRef;
+template <typename T>
+class ConstArrayRef;
 
 /*! \libinternal \brief
  * Helper class to convert static string data to a stream.
@@ -112,7 +113,8 @@ public:
 
     // From TextInputStream
     virtual bool readLine(std::string *line);
-    virtual void close() {};
+    virtual void close(){};
+
 private:
     std::string input_;
     size_t      pos_;

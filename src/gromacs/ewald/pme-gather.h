@@ -39,14 +39,12 @@
 
 #include "pme-internal.h"
 
-void
-gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
-                  gmx_bool bClearF, pme_atomcomm_t *atc,
-                  splinedata_t *spline,
-                  real scale);
+void gather_f_bsplines(struct gmx_pme_t *pme, real *grid,
+                       gmx_bool bClearF, pme_atomcomm_t *atc,
+                       splinedata_t *spline,
+                       real          scale);
 
-real
-gather_energy_bsplines(struct gmx_pme_t *pme, real *grid,
-                       pme_atomcomm_t *atc);
+real gather_energy_bsplines(struct gmx_pme_t *pme, real *grid,
+                            pme_atomcomm_t *atc);
 
 #endif

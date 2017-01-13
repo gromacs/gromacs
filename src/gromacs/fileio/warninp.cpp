@@ -172,7 +172,7 @@ static gmx_noreturn void check_warning_error_impl(warninp_t wi, int f_errno, con
 
     gmx_fatal(f_errno, file, line, "There %s %d error%s in input file(s)",
               (wi->nwarn_error == 1) ? "was" : "were", wi->nwarn_error,
-              (wi->nwarn_error == 1) ? ""    : "s");
+              (wi->nwarn_error == 1) ? "" : "s");
 }
 
 void check_warning_error(warninp_t wi, int f_errno, const char *file, int line)

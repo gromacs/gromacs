@@ -66,7 +66,7 @@ typedef struct gmx_vsite_t
 } gmx_vsite_t;
 
 void construct_vsites(const gmx_vsite_t *vsite,
-                      rvec x[],
+                      rvec               x[],
                       real dt, rvec v[],
                       const t_iparams ip[], const t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC,
@@ -89,7 +89,7 @@ void construct_vsites_mtop(gmx_vsite_t *vsite,
  */
 
 void spread_vsite_f(const gmx_vsite_t *vsite,
-                    const rvec x[],
+                    const rvec         x[],
                     rvec f[], rvec *fshift,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, const t_idef *idef,

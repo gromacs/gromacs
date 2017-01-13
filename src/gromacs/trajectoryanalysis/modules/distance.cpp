@@ -156,33 +156,18 @@ void Distance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSetting
 
     settings->setHelpText(desc);
 
-    options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile()
-                           .store(&fnAverage_).defaultBasename("distave")
-                           .description("Average distances as function of time"));
-    options->addOption(FileNameOption("oall").filetype(eftPlot).outputFile()
-                           .store(&fnAll_).defaultBasename("dist")
-                           .description("All distances as function of time"));
-    options->addOption(FileNameOption("oxyz").filetype(eftPlot).outputFile()
-                           .store(&fnXYZ_).defaultBasename("distxyz")
-                           .description("Distance components as function of time"));
-    options->addOption(FileNameOption("oh").filetype(eftPlot).outputFile()
-                           .store(&fnHistogram_).defaultBasename("disthist")
-                           .description("Histogram of the distances"));
-    options->addOption(FileNameOption("oallstat").filetype(eftPlot).outputFile()
-                           .store(&fnAllStats_).defaultBasename("diststat")
-                           .description("Statistics for individual distances"));
-    options->addOption(SelectionOption("select").storeVector(&sel_)
-                           .required().dynamicMask().multiValue()
-                           .description("Position pairs to calculate distances for"));
+    options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile().store(&fnAverage_).defaultBasename("distave").description("Average distances as function of time"));
+    options->addOption(FileNameOption("oall").filetype(eftPlot).outputFile().store(&fnAll_).defaultBasename("dist").description("All distances as function of time"));
+    options->addOption(FileNameOption("oxyz").filetype(eftPlot).outputFile().store(&fnXYZ_).defaultBasename("distxyz").description("Distance components as function of time"));
+    options->addOption(FileNameOption("oh").filetype(eftPlot).outputFile().store(&fnHistogram_).defaultBasename("disthist").description("Histogram of the distances"));
+    options->addOption(FileNameOption("oallstat").filetype(eftPlot).outputFile().store(&fnAllStats_).defaultBasename("diststat").description("Statistics for individual distances"));
+    options->addOption(SelectionOption("select").storeVector(&sel_).required().dynamicMask().multiValue().description("Position pairs to calculate distances for"));
     // TODO: Extend the histogramming implementation to allow automatic
     // extension of the histograms to cover the data, removing the need for
     // the first two options.
-    options->addOption(DoubleOption("len").store(&meanLength_)
-                           .description("Mean distance for histogramming"));
-    options->addOption(DoubleOption("tol").store(&lengthDev_)
-                           .description("Width of full distribution as fraction of [TT]-len[tt]"));
-    options->addOption(DoubleOption("binw").store(&binWidth_)
-                           .description("Bin width for histogramming"));
+    options->addOption(DoubleOption("len").store(&meanLength_).description("Mean distance for histogramming"));
+    options->addOption(DoubleOption("tol").store(&lengthDev_).description("Width of full distribution as fraction of [TT]-len[tt]"));
+    options->addOption(DoubleOption("binw").store(&binWidth_).description("Bin width for histogramming"));
 }
 
 
@@ -196,9 +181,9 @@ void checkSelections(const SelectionList &sel)
         if (sel[g].posCount() % 2 != 0)
         {
             std::string message = formatString(
-                        "Selection '%s' does not evaluate into an even number of positions "
-                        "(there are %d positions)",
-                        sel[g].name(), sel[g].posCount());
+                    "Selection '%s' does not evaluate into an even number of positions "
+                    "(there are %d positions)",
+                    sel[g].name(), sel[g].posCount());
             GMX_THROW(InconsistentInputError(message));
         }
         if (sel[g].isDynamic())
@@ -208,9 +193,10 @@ void checkSelections(const SelectionList &sel)
                 if (sel[g].position(i).selected() != sel[g].position(i + 1).selected())
                 {
                     std::string message
-                        = formatString("Dynamic selection %d does not select "
-                                       "a consistent set of pairs over the frames",
-                                       static_cast<int>(g + 1));
+                            = formatString(
+                                    "Dynamic selection %d does not select "
+                                    "a consistent set of pairs over the frames",
+                                    static_cast<int>(g + 1));
                     GMX_THROW(InconsistentInputError(message));
                 }
             }
@@ -220,7 +206,7 @@ void checkSelections(const SelectionList &sel)
 
 
 void Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                            const TopologyInformation         & /*top*/)
+                            const TopologyInformation & /*top*/)
 {
     checkSelections(sel_);
 
@@ -235,7 +221,8 @@ void Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     const double histogramMin = (1.0 - lengthDev_) * meanLength_;
     const double histogramMax = (1.0 + lengthDev_) * meanLength_;
     histogramModule_->init(histogramFromRange(histogramMin, histogramMax)
-                               .binWidth(binWidth_).includeAll());
+                                   .binWidth(binWidth_)
+                                   .includeAll());
 
     if (!fnAverage_.empty())
     {
@@ -374,11 +361,11 @@ void Distance::writeOutput()
     }
 }
 
-}       // namespace
+} // namespace
 
 const char DistanceInfo::name[] = "distance";
 const char DistanceInfo::shortDescription[]
-    = "Calculate distances between pairs of positions";
+        = "Calculate distances between pairs of positions";
 
 TrajectoryAnalysisModulePointer DistanceInfo::create()
 {

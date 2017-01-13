@@ -58,10 +58,10 @@ namespace gmx
  * throughput just-so-slightly.
  */
 
-static inline void gmx_simdcall expandScalarsToTriplets(SimdFloat   scalar,
-                                                        SimdFloat * triplets0,
-                                                        SimdFloat * triplets1,
-                                                        SimdFloat * triplets2)
+static inline void gmx_simdcall expandScalarsToTriplets(SimdFloat  scalar,
+                                                        SimdFloat *triplets0,
+                                                        SimdFloat *triplets1,
+                                                        SimdFloat *triplets2)
 {
     triplets0->simdInternal_ = _mm_permute_ps(scalar.simdInternal_, _MM_SHUFFLE(1, 0, 0, 0));
     triplets1->simdInternal_ = _mm_permute_ps(scalar.simdInternal_, _MM_SHUFFLE(2, 2, 1, 1));
@@ -85,10 +85,10 @@ static inline float gmx_simdcall reduceIncr4ReturnSum(float *   m,
     _mm_store_ps(m, v2.simdInternal_);
 
     __m128 b = _mm_add_ps(v0.simdInternal_, _mm_permute_ps(v0.simdInternal_, _MM_SHUFFLE(1, 0, 3, 2)));
-    b = _mm_add_ss(b, _mm_permute_ps(b, _MM_SHUFFLE(0, 3, 2, 1)));
+    b        = _mm_add_ss(b, _mm_permute_ps(b, _MM_SHUFFLE(0, 3, 2, 1)));
     return *reinterpret_cast<float *>(&b);
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_UTIL_FLOAT_H

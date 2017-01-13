@@ -130,8 +130,8 @@ std::string findFullBinaryPath(const std::string &           invokedName,
                                const IExecutableEnvironment &env)
 {
     std::string searchName = invokedName;
-    // On Windows & Cygwin we need to add the .exe extension,
-    // or we wont be able to detect that the file exists.
+// On Windows & Cygwin we need to add the .exe extension,
+// or we wont be able to detect that the file exists.
 #if GMX_NATIVE_WINDOWS || GMX_CYGWIN
     if (!endsWith(searchName, ".exe"))
     {
@@ -248,8 +248,8 @@ std::string findInstallationPrefixPath(const std::string &binaryPath,
     {
         // Remove the executable name.
         std::string searchPath = Path::getParentPath(binaryPath);
-        // If running directly from the build tree, try to use the source
-        // directory.
+// If running directly from the build tree, try to use the source
+// directory.
 #if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
         std::string buildBinPath;
 #ifdef CMAKE_INTDIR /*In multi-configuration build systems the output subdirectory*/
@@ -287,7 +287,7 @@ std::string findInstallationPrefixPath(const std::string &binaryPath,
 
 //! \}
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * CommandLineProgramContext::Impl
@@ -399,8 +399,8 @@ const char *CommandLineProgramContext::programName() const
 const char *CommandLineProgramContext::displayName() const
 {
     return impl_->displayName_.empty()
-           ? impl_->programName_.c_str()
-           : impl_->displayName_.c_str();
+                   ? impl_->programName_.c_str()
+                   : impl_->displayName_.c_str();
 }
 
 const char *CommandLineProgramContext::commandLine() const
@@ -422,8 +422,8 @@ InstallationPrefixInfo CommandLineProgramContext::installationPrefix() const
     {
         impl_->findBinaryPath();
         impl_->installationPrefix_
-            = Path::normalize(findInstallationPrefixPath(impl_->fullBinaryPath_,
-                                                         &impl_->bSourceLayout_));
+                = Path::normalize(findInstallationPrefixPath(impl_->fullBinaryPath_,
+                                                             &impl_->bSourceLayout_));
     }
     return InstallationPrefixInfo(
             impl_->installationPrefix_.c_str(),

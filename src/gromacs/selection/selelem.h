@@ -82,8 +82,7 @@ typedef std::shared_ptr<SelectionTreeElement> SelectionTreeElementPointer;
 //!\{
 
 /** Defines the type of a gmx::SelectionTreeElement object. */
-typedef enum
-{
+typedef enum {
     /** Constant-valued expression. */
     SEL_CONST,
     /** Method expression that requires evaluation. */
@@ -105,23 +104,21 @@ typedef enum
 } e_selelem_t;
 
 /** Defines the boolean operation of gmx::SelectionTreeElement objects with type \ref SEL_BOOLEAN. */
-typedef enum
-{
-    BOOL_NOT,           /**< Not */
-    BOOL_AND,           /**< And */
-    BOOL_OR,            /**< Or */
-    BOOL_XOR            /**< Xor (not implemented). */
+typedef enum {
+    BOOL_NOT, /**< Not */
+    BOOL_AND, /**< And */
+    BOOL_OR,  /**< Or */
+    BOOL_XOR  /**< Xor (not implemented). */
 } e_boolean_t;
 
 /** Defines the arithmetic operation of gmx::SelectionTreeElement objects with type \ref SEL_ARITHMETIC. */
-typedef enum
-{
-    ARITH_PLUS,         /**< Addition (`+`) */
-    ARITH_MINUS,        /**< Subtraction (`-`) */
-    ARITH_NEG,          /**< Unary `-` */
-    ARITH_MULT,         /**< Multiplication (`*`) */
-    ARITH_DIV,          /**< Division (`/`) */
-    ARITH_EXP           /**< Power (`^`) */
+typedef enum {
+    ARITH_PLUS,  /**< Addition (`+`) */
+    ARITH_MINUS, /**< Subtraction (`-`) */
+    ARITH_NEG,   /**< Unary `-` */
+    ARITH_MULT,  /**< Multiplication (`*`) */
+    ARITH_DIV,   /**< Division (`/`) */
+    ARITH_EXP    /**< Power (`^`) */
 } e_arithmetic_t;
 
 /** Returns a string representation of the type of a gmx::SelectionTreeElement. */
@@ -148,29 +145,29 @@ _gmx_sel_value_type_str(const gmx_ana_selvalue_t *val);
  * If this flag is set, the flags covered by \ref SEL_VALFLAGMASK
  * have been set properly for the element.
  */
-#define SEL_FLAGSSET    1
+#define SEL_FLAGSSET 1
 /*! \brief
  * The element evaluates to a single value.
  *
  * This flag is always set for \ref GROUP_VALUE elements.
  */
-#define SEL_SINGLEVAL   2
+#define SEL_SINGLEVAL 2
 /*! \brief
  * The element evaluates to one value for each input atom.
  */
-#define SEL_ATOMVAL     4
+#define SEL_ATOMVAL 4
 /*! \brief
  * The element evaluates to an arbitrary number of values.
  */
-#define SEL_VARNUMVAL   8
+#define SEL_VARNUMVAL 8
 /*! \brief
  * The element (or one of its children) is dynamic.
  */
-#define SEL_DYNAMIC     16
+#define SEL_DYNAMIC 16
 /*! \brief
  * The element may contain atom indices in an unsorted order.
  */
-#define SEL_UNSORTED    32
+#define SEL_UNSORTED 32
 /*! \brief
  * Mask that covers the flags that describe the number of values.
  */
@@ -196,7 +193,7 @@ _gmx_sel_value_type_str(const gmx_ana_selvalue_t *val);
  * is changed and is used in places where this flag is not, so this would
  * require a careful investigation of the selection code.
  */
-#define SEL_ALLOCVAL    (1 << 8)
+#define SEL_ALLOCVAL (1 << 8)
 /*! \brief
  * Data has been allocated for the group/position structure.
  *
@@ -206,11 +203,11 @@ _gmx_sel_value_type_str(const gmx_ana_selvalue_t *val);
  * This field has no effect if the value type is not \ref GROUP_VALUE or
  * \ref POS_VALUE, but should not be set.
  */
-#define SEL_ALLOCDATA   (1 << 9)
+#define SEL_ALLOCDATA (1 << 9)
 /*! \brief
  * \p method->init_frame should be called for the frame.
  */
-#define SEL_INITFRAME   (1 << 10)
+#define SEL_INITFRAME (1 << 10)
 /*! \brief
  * Parameter has been evaluated for the current frame.
  *
@@ -220,17 +217,17 @@ _gmx_sel_value_type_str(const gmx_ana_selvalue_t *val);
  * It is not set for \ref SEL_ATOMVAL elements, because they may need to
  * be evaluated multiple times.
  */
-#define SEL_EVALFRAME   (1 << 11)
+#define SEL_EVALFRAME (1 << 11)
 /*! \brief
  * \p method->init has been called.
  */
-#define SEL_METHODINIT  (1 << 12)
+#define SEL_METHODINIT (1 << 12)
 /*! \brief
  * \p method->outinit has been called.
  *
  * This flag is also used for \ref SEL_SUBEXPRREF elements.
  */
-#define SEL_OUTINIT     (1 << 13)
+#define SEL_OUTINIT (1 << 13)
 //!\}
 
 
@@ -264,7 +261,7 @@ struct SelectionLocation
     //! Returns an empty location.
     static SelectionLocation createEmpty()
     {
-        SelectionLocation empty = {0, 0};
+        SelectionLocation empty = { 0, 0 };
         return empty;
     }
 
@@ -429,8 +426,7 @@ public:
      */
     int flags;
     //! Data required by the evaluation function.
-    union
-    {
+    union {
         /*! \brief Index group data for several element types.
          *
          *  - \ref SEL_CONST : if the value type is \ref GROUP_VALUE,
@@ -452,7 +448,7 @@ public:
             struct gmx_ana_pos_t *pos;
             //! Pointer to the evaluation data for \p pos.
             struct gmx_ana_poscalc_t *pc;
-        }                               expr;
+        } expr;
         //! Operation type for \ref SEL_BOOLEAN elements.
         e_boolean_t boolt;
         //! Operation type for \ref SEL_ARITHMETIC elements.
@@ -462,7 +458,7 @@ public:
             e_arithmetic_t type;
             //! String representation.
             char *opstr;
-        }                               arith;
+        } arith;
         //! Associated selection parameter for \ref SEL_SUBEXPRREF elements.
         struct gmx_ana_selparam_t *param;
         //! The string/number used to reference the group.
@@ -472,8 +468,8 @@ public:
             char *name;
             //! If \a name is NULL, the index number of the referenced group.
             int id;
-        }                               gref;
-    }                                   u;
+        } gref;
+    } u;
     //! Memory pool to use for values, or NULL if standard memory handling.
     struct gmx_sel_mempool_t *mempool;
     //! Internal data for the selection compiler.
@@ -514,47 +510,39 @@ private:
 
 /* In evaluate.c */
 /** Writes out a human-readable name for an evaluation function. */
-void
-_gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc);
+void _gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc);
 
 /** Sets the value type of a gmx::SelectionTreeElement. */
-void
-_gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
-                       e_selvalue_t                            vtype);
+void _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
+                            e_selvalue_t                            vtype);
 
 /*! \brief
  * Frees the memory allocated for a selection method parameter.
  *
  * \param[in] param Parameter to free.
  */
-void
-_gmx_selelem_free_param(struct gmx_ana_selparam_t *param);
+void _gmx_selelem_free_param(struct gmx_ana_selparam_t *param);
 /*! \brief
  * Frees the memory allocated for a selection method.
  *
  * \param[in] method Method to free.
  * \param[in] mdata  Method data to free.
  */
-void
-_gmx_selelem_free_method(struct gmx_ana_selmethod_t *method, void *mdata);
+void _gmx_selelem_free_method(struct gmx_ana_selmethod_t *method, void *mdata);
 
 /** Prints a human-readable version of a selection element subtree. */
-void
-_gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
-                        bool bValues, int level);
+void _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
+                             bool bValues, int level);
 /* In compiler.c */
 /** Prints a human-readable version of the internal compiler data structure. */
-void
-_gmx_selelem_print_compiler_info(FILE *fp, const gmx::SelectionTreeElement &sel,
-                                 int level);
+void _gmx_selelem_print_compiler_info(FILE *fp, const gmx::SelectionTreeElement &sel,
+                                      int level);
 
 /* In sm_insolidangle.c */
 /** Returns true if the covered fraction of the selection can be calculated. */
-bool
-_gmx_selelem_can_estimate_cover(const gmx::SelectionTreeElement &sel);
+bool _gmx_selelem_can_estimate_cover(const gmx::SelectionTreeElement &sel);
 /** Returns the covered fraction of the selection for the current frame. */
-real
-_gmx_selelem_estimate_coverfrac(const gmx::SelectionTreeElement &sel);
+real _gmx_selelem_estimate_coverfrac(const gmx::SelectionTreeElement &sel);
 
 //!\}
 

@@ -102,9 +102,11 @@ double doubleFromString(const char *str);
  * The main use for this function is to write `fromString<real>(value)`,
  * but it can also be used for other types for consistency.
  */
-template <typename T> static inline T fromString(const char *str);
+template <typename T>
+static inline T fromString(const char *str);
 //! \copydoc fromString(const char *)
-template <typename T> static inline T fromString(const std::string &str)
+template <typename T>
+static inline T fromString(const std::string &str)
 {
     return fromString<T>(str.c_str());
 }
@@ -113,26 +115,42 @@ template <typename T> static inline T fromString(const std::string &str)
  * Provided for situations where overload resolution cannot easily resolve the
  * desired std::string parameter.
  */
-template <typename T> static inline T fromStdString(const std::string &str)
+template <typename T>
+static inline T fromStdString(const std::string &str)
 {
     return fromString<T>(str.c_str());
 }
 
 //! Implementation for boolean values.
-template <> inline
-bool fromString<bool>(const char *str) { return boolFromString(str); }
+template <>
+inline bool fromString<bool>(const char *str)
+{
+    return boolFromString(str);
+}
 //! Implementation for integer values.
-template <> inline
-int fromString<int>(const char *str) { return intFromString(str); }
+template <>
+inline int fromString<int>(const char *str)
+{
+    return intFromString(str);
+}
 //! Implementation for 64-bit integer values.
-template <> inline
-gmx_int64_t fromString<gmx_int64_t>(const char *str) { return int64FromString(str); }
+template <>
+inline gmx_int64_t fromString<gmx_int64_t>(const char *str)
+{
+    return int64FromString(str);
+}
 //! Implementation for float values.
-template <> inline
-float fromString<float>(const char *str) { return floatFromString(str); }
+template <>
+inline float fromString<float>(const char *str)
+{
+    return floatFromString(str);
+}
 //! Implementation for double values.
-template <> inline
-double fromString<double>(const char *str) { return doubleFromString(str); }
+template <>
+inline double fromString<double>(const char *str)
+{
+    return doubleFromString(str);
+}
 
 //! \}
 //! \endcond

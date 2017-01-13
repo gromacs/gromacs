@@ -174,7 +174,7 @@ TEST_F(TreeValueSupportAdjustTest, FillsDefaultValues)
 
 TEST_F(TreeValueSupportAdjustTest, FillsDefaultVectorValues)
 {
-    int v[3] = {1, 2, 3};
+    int v[3] = { 1, 2, 3 };
     options_.addOption(gmx::IntegerOption("a").store(v).vector());
     runTest();
 }

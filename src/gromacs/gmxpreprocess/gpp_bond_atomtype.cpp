@@ -47,13 +47,13 @@
 
 typedef struct
 {
-    int     nr;                /* The number of atomtypes		*/
-    char ***atomname;          /* Names of the atomtypes		*/
+    int     nr;       /* The number of atomtypes		*/
+    char ***atomname; /* Names of the atomtypes		*/
 } gpp_bond_atomtype;
 
 int get_bond_atomtype_type(char *str, t_bond_atomtype at)
 {
-    gpp_bond_atomtype *ga = (gpp_bond_atomtype *) at;
+    gpp_bond_atomtype *ga = (gpp_bond_atomtype *)at;
 
     int i;
 
@@ -71,7 +71,7 @@ int get_bond_atomtype_type(char *str, t_bond_atomtype at)
 
 char *get_bond_atomtype_name(int nt, t_bond_atomtype at)
 {
-    gpp_bond_atomtype *ga = (gpp_bond_atomtype *) at;
+    gpp_bond_atomtype *ga = (gpp_bond_atomtype *)at;
 
     if ((nt < 0) || (nt >= ga->nr))
     {
@@ -87,13 +87,13 @@ t_bond_atomtype init_bond_atomtype(void)
 
     snew(ga, 1);
 
-    return (t_bond_atomtype ) ga;
+    return (t_bond_atomtype)ga;
 }
 
 void add_bond_atomtype(t_bond_atomtype at, t_symtab *tab,
                        char *name)
 {
-    gpp_bond_atomtype *ga = (gpp_bond_atomtype *) at;
+    gpp_bond_atomtype *ga = (gpp_bond_atomtype *)at;
 
     ga->nr++;
     srenew(ga->atomname, ga->nr);
@@ -102,7 +102,7 @@ void add_bond_atomtype(t_bond_atomtype at, t_symtab *tab,
 
 void done_bond_atomtype(t_bond_atomtype *at)
 {
-    gpp_bond_atomtype *ga = (gpp_bond_atomtype *) *at;
+    gpp_bond_atomtype *ga = (gpp_bond_atomtype *)*at;
 
     sfree(ga->atomname);
     ga->nr = 0;

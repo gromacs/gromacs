@@ -56,8 +56,10 @@ namespace
 class MpiSelfTest : public ::testing::Test
 {
 public:
-    MpiSelfTest() : reached {0, 0}
-    {}
+    MpiSelfTest()
+        : reached{ 0, 0 }
+    {
+    }
 
     int reached[2];
 };

@@ -84,8 +84,8 @@ public:
     explicit Impl(AbstractTrajectoryAnalysisModuleTestFixture *parent);
 
     TrajectoryAnalysisModule &module();
-    void ensureModuleCreated();
-    bool hasCheckedDatasets() const;
+    void                      ensureModuleCreated();
+    bool                      hasCheckedDatasets() const;
 
     AbstractTrajectoryAnalysisModuleTestFixture &parent_;
     TrajectoryAnalysisModulePointer              module_;

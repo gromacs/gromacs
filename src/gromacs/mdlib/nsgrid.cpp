@@ -61,13 +61,13 @@
  ***********************************/
 
 const char *range_warn
-    = "Explanation: During neighborsearching, we assign each particle to a grid\n"
-        "based on its coordinates. If your system contains collisions or parameter\n"
-        "errors that give particles very high velocities you might end up with some\n"
-        "coordinates being +-Infinity or NaN (not-a-number). Obviously, we cannot\n"
-        "put these on a grid, so this is usually where we detect those errors.\n"
-        "Make sure your system is properly energy-minimized and that the potential\n"
-        "energy seems reasonable before trying again.";
+        = "Explanation: During neighborsearching, we assign each particle to a grid\n"
+          "based on its coordinates. If your system contains collisions or parameter\n"
+          "errors that give particles very high velocities you might end up with some\n"
+          "coordinates being +-Infinity or NaN (not-a-number). Obviously, we cannot\n"
+          "put these on a grid, so this is usually where we detect those errors.\n"
+          "Make sure your system is properly energy-minimized and that the potential\n"
+          "energy seems reasonable before trying again.";
 
 static void calc_x_av_stddev(int n, rvec *x, rvec av, rvec stddev)
 {
@@ -150,7 +150,7 @@ void get_nsgrid_boundaries(int nboundeddim, matrix box,
         {
             grid_x0[d] = (gr0 != nullptr ? (*gr0)[d] : 0);
             grid_x1[d] = (gr1 != nullptr ? (*gr1)[d] : box[d][d]);
-            vol       *= (grid_x1[d] - grid_x0[d]);
+            vol *= (grid_x1[d] - grid_x0[d]);
         }
         else
         {
@@ -200,7 +200,7 @@ void get_nsgrid_boundaries(int nboundeddim, matrix box,
 static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlist,
                            const gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
                            t_grid *grid,
-                           real grid_density)
+                           real    grid_density)
 {
     int      i, j;
     gmx_bool bDD, bDDRect;
@@ -305,7 +305,7 @@ static void set_grid_sizes(matrix box, rvec izones_x0, rvec izones_x1, real rlis
                     if (box[j][i] < 0)
                     {
                         grid->cell_offset[i] += add_tric;
-                        size                 -= add_tric;
+                        size -= add_tric;
                     }
                     else
                     {
@@ -440,12 +440,12 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
 
     range_check_mesg(i, 0, grid->nr, range_warn);
 
-    ci  = grid->cell_index[i];
-    *x  = ci / (grid->n[YY] * grid->n[ZZ]);
+    ci = grid->cell_index[i];
+    *x = ci / (grid->n[YY] * grid->n[ZZ]);
     ci -= (*x) * grid->n[YY] * grid->n[ZZ];
-    *y  = ci / grid->n[ZZ];
+    *y = ci / grid->n[ZZ];
     ci -= (*y) * grid->n[ZZ];
-    *z  = ci;
+    *z = ci;
 }
 
 static int ci_not_used(ivec n)
@@ -487,7 +487,7 @@ void grid_first(FILE *fplog, t_grid *grid,
     {
         /* Allocate double the size so we have some headroom */
         grid->cells_nalloc = 2 * grid->ncells;
-        srenew(grid->nra,  grid->cells_nalloc + 1);
+        srenew(grid->nra, grid->cells_nalloc + 1);
         srenew(grid->index, grid->cells_nalloc + 1);
 
         if (fplog)
@@ -540,7 +540,6 @@ static void calc_bor(int cg0, int cg1, int ncg, int CG0[2], int CG1[2])
             fprintf(debug, "CG0[%d]=%d, CG1[%d]=%d\n", m, CG0[m], m, CG1[m]);
         }
     }
-
 }
 
 void calc_elemnr(t_grid *grid, int cg0, int cg1, int ncg)
@@ -597,8 +596,8 @@ void calc_ptrs(t_grid *grid)
                 range_check_mesg(ci, 0, ncells, range_warn);
                 index[ci] = nr;
                 nnra      = nra[ci];
-                nr       += nnra;
-                nra[ci]   = 0;
+                nr += nnra;
+                nra[ci] = 0;
             }
         }
     }
@@ -808,7 +807,6 @@ void fill_grid(gmx_domdec_zones_t *dd_zones,
             }
         }
     }
-
 }
 
 void check_grid(t_grid *grid)

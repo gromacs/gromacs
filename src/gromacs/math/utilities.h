@@ -48,15 +48,15 @@ extern "C" {
 #endif
 
 #ifndef M_PI
-#define M_PI        3.14159265358979323846
+#define M_PI 3.14159265358979323846
 #endif
 
 #ifndef M_PI_2
-#define M_PI_2      1.57079632679489661923
+#define M_PI_2 1.57079632679489661923
 #endif
 
 #ifndef M_2PI
-#define M_2PI       6.28318530717958647692
+#define M_2PI 6.28318530717958647692
 #endif
 
 #ifndef M_SQRT2
@@ -64,7 +64,7 @@ extern "C" {
 #endif
 
 #ifndef M_1_PI
-#define M_1_PI      0.31830988618379067154
+#define M_1_PI 0.31830988618379067154
 #endif
 
 #ifndef M_FLOAT_1_SQRTPI /* used in GPU kernels */
@@ -79,7 +79,7 @@ extern "C" {
 
 #ifndef M_2_SQRTPI
 /* 2.0 / sqrt(M_PI) */
-#define M_2_SQRTPI  1.128379167095513
+#define M_2_SQRTPI 1.128379167095513
 #endif
 
 /*! \brief Check if two numbers are within a tolerance
@@ -102,10 +102,9 @@ extern "C" {
  *
  *  \return 1 if the relative difference is within tolerance, 0 if not.
  */
-int
-gmx_within_tol(double f1,
-               double f2,
-               double tol);
+int gmx_within_tol(double f1,
+                   double f2,
+                   double tol);
 
 /*!
  * \brief Check if a number is smaller than some preset safe minimum
@@ -116,8 +115,7 @@ gmx_within_tol(double f1,
  *
  * \return 1  if 'almost' numerically zero, 0 otherwise.
  */
-int
-gmx_numzero(double a);
+int gmx_numzero(double a);
 
 /*! \brief Multiply two large ints
  *
@@ -132,8 +130,7 @@ check_int_multiply_for_overflow(gmx_int64_t  a,
  *
  * \return GCD of the two inputs
  */
-int
-gmx_greatest_common_divisor(int p, int q);
+int gmx_greatest_common_divisor(int p, int q);
 
 
 /*! \brief Enable floating-point exceptions if supported on OS

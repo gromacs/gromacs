@@ -286,6 +286,6 @@ static inline Simd4Double gmx_simdcall norm2(Simd4Double ax, Simd4Double ay, Sim
 
 #endif // GMX_SIMD
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_VECTOR_OPERATIONS_H

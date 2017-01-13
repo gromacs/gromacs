@@ -62,4 +62,4 @@ extern void map_legw(t_x11 *x11, t_legendwin *lw);
 
 extern void done_legw(t_x11 *x11, t_legendwin *lw);
 
-#endif  /* _nleg_h */
+#endif /* _nleg_h */

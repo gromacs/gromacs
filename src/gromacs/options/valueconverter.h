@@ -102,10 +102,9 @@ public:
     void addConverter(std::function<OutType(const InType &)> func)
     {
         converters_[std::type_index(typeid(InType))]
-            = [func] (const Variant &value)
-                {
-                    return func(value.cast<InType>());
-                };
+                = [func](const Variant &value) {
+                      return func(value.cast<InType>());
+                  };
     }
     /*! \brief
      * Adds a supported conversion from a type that can be directly cast.
@@ -116,10 +115,9 @@ public:
     void addCastConversion()
     {
         converters_[std::type_index(typeid(InType))]
-            = [] (const Variant &value)
-                {
-                    return static_cast<OutType>(value.cast<InType>());
-                };
+                = [](const Variant &value) {
+                      return static_cast<OutType>(value.cast<InType>());
+                  };
     }
 
 private:

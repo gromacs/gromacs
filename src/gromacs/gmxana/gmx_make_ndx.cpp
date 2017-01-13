@@ -286,8 +286,8 @@ static gmx_bool parse_string(char **string, int *nr, int ngrps, char **grpname)
         if (sp != nullptr)
         {
             (*string) += sp - s + 1;
-            sp[0]      = '\0';
-            (*nr)      = find_group(s, ngrps, grpname);
+            sp[0] = '\0';
+            (*nr) = find_group(s, ngrps, grpname);
         }
     }
 
@@ -1023,7 +1023,7 @@ static gmx_bool parse_entry(char **string, int natoms, const t_atoms *atoms,
         (*string) += 3;
         if (check_have_atoms(atoms, ostring)
             && parse_int(string, &sel_nr1)
-            && (sel_nr1 >= 0) && (sel_nr1 < block->nr) )
+            && (sel_nr1 >= 0) && (sel_nr1 < block->nr))
         {
             bRet = atoms_from_residuenumbers(atoms,
                                              sel_nr1, block, nr, index, (*gn)[sel_nr1]);
@@ -1348,7 +1348,7 @@ static void edit_index(int natoms, const t_atoms *atoms, const rvec *x, t_blocka
         }
         else if (string[0] == 'l')
         {
-            if (check_have_atoms(atoms, ostring) )
+            if (check_have_atoms(atoms, ostring))
             {
                 list_residues(atoms);
             }
@@ -1481,8 +1481,8 @@ void merge_blocks(t_blocka *dest, t_blocka *source)
     int i, nra0, i0;
 
     /* count groups, srenew and fill */
-    i0        = dest->nr;
-    nra0      = dest->nra;
+    i0   = dest->nr;
+    nra0 = dest->nra;
     dest->nr += source->nr;
     srenew(dest->index, dest->nr + 1);
     for (i = 0; i < source->nr; i++)
@@ -1499,7 +1499,6 @@ void merge_blocks(t_blocka *dest, t_blocka *source)
 
     /* terminate list */
     dest->index[dest->nr] = dest->nra;
-
 }
 
 int gmx_make_ndx(int argc, char *argv[])
@@ -1536,12 +1535,9 @@ int gmx_make_ndx(int argc, char *argv[])
     static gmx_bool bVerbose   = FALSE;
     static gmx_bool bDuplicate = FALSE;
     t_pargs         pa[]       = {
-        { "-natoms",  FALSE, etINT, {&natoms},
-          "set number of atoms (default: read from coordinate or index file)" },
-        { "-twin",     FALSE, etBOOL, {&bDuplicate},
-          "Duplicate all index groups with an offset of -natoms" },
-        { "-verbose", FALSE, etBOOL, {&bVerbose},
-          "HIDDENVerbose output" }
+        { "-natoms", FALSE, etINT, { &natoms }, "set number of atoms (default: read from coordinate or index file)" },
+        { "-twin", FALSE, etBOOL, { &bDuplicate }, "Duplicate all index groups with an offset of -natoms" },
+        { "-verbose", FALSE, etBOOL, { &bVerbose }, "HIDDENVerbose output" }
     };
 #define NPA asize(pa)
 
@@ -1559,9 +1555,9 @@ int gmx_make_ndx(int argc, char *argv[])
     t_blocka *        block, *block2;
     char **           gnames, **gnames2;
     t_filenm          fnm[] = {
-        { efSTX, "-f", nullptr,     ffOPTRD  },
-        { efNDX, "-n", nullptr,     ffOPTRDMULT },
-        { efNDX, "-o", nullptr,     ffWRITE }
+        { efSTX, "-f", nullptr, ffOPTRD },
+        { efNDX, "-n", nullptr, ffOPTRDMULT },
+        { efNDX, "-o", nullptr, ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -1626,7 +1622,7 @@ int gmx_make_ndx(int argc, char *argv[])
             merge_blocks(block, block2);
             sfree(block2->a);
             sfree(block2->index);
-/*       done_block(block2); */
+            /*       done_block(block2); */
             sfree(block2);
         }
     }

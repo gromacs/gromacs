@@ -60,7 +60,7 @@
 
 int gmx_helix(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes all kinds of helix properties. First, the peptide",
         "is checked to find the longest helical part, as determined by",
         "hydrogen bonds and [GRK]phi[grk]/[GRK]psi[grk] angles.",
@@ -92,21 +92,14 @@ int gmx_helix(int argc, char *argv[])
     };
     static gmx_bool bCheck = FALSE, bFit = TRUE, bDBG = FALSE, bEV = FALSE;
     static int      rStart = 0, rEnd = 0, r0 = 1;
-    t_pargs         pa []  = {
-        { "-r0", FALSE, etINT, {&r0},
-          "The first residue number in the sequence" },
-        { "-q",  FALSE, etBOOL, {&bCheck},
-          "Check at every step which part of the sequence is helical" },
-        { "-F",  FALSE, etBOOL, {&bFit},
-          "Toggle fit to a perfect helix" },
-        { "-db", FALSE, etBOOL, {&bDBG},
-          "Print debug info" },
-        { "-ev", FALSE, etBOOL, {&bEV},
-          "Write a new 'trajectory' file for ED" },
-        { "-ahxstart", FALSE, etINT, {&rStart},
-          "First residue in helix" },
-        { "-ahxend", FALSE, etINT, {&rEnd},
-          "Last residue in helix" }
+    t_pargs         pa[] = {
+        { "-r0", FALSE, etINT, { &r0 }, "The first residue number in the sequence" },
+        { "-q", FALSE, etBOOL, { &bCheck }, "Check at every step which part of the sequence is helical" },
+        { "-F", FALSE, etBOOL, { &bFit }, "Toggle fit to a perfect helix" },
+        { "-db", FALSE, etBOOL, { &bDBG }, "Print debug info" },
+        { "-ev", FALSE, etBOOL, { &bEV }, "Write a new 'trajectory' file for ED" },
+        { "-ahxstart", FALSE, etINT, { &rStart }, "First residue in helix" },
+        { "-ahxend", FALSE, etINT, { &rEnd }, "Last residue in helix" }
     };
 
     typedef struct
@@ -121,23 +114,23 @@ int gmx_helix(int argc, char *argv[])
     } t_xvgrfile;
 
     t_xvgrfile xf[efhNR] = {
-        { nullptr, nullptr, TRUE,  "radius",  "Helix radius",               nullptr, "r (nm)", 0.0 },
-        { nullptr, nullptr, TRUE,  "twist",   "Twist per residue",          nullptr, "Angle (deg)", 0.0 },
-        { nullptr, nullptr, TRUE,  "rise",    "Rise per residue",           nullptr, "Rise (nm)", 0.0 },
-        { nullptr, nullptr, FALSE, "len-ahx", "Length of the Helix",        nullptr, "Length (nm)", 0.0 },
-        { nullptr, nullptr, FALSE, "dip-ahx", "Helix Backbone Dipole",      nullptr, "rq (nm e)", 0.0 },
-        { nullptr, nullptr, TRUE,  "rms-ahx", "RMS Deviation from Ideal Helix", nullptr, "RMS (nm)", 0.0 },
-        { nullptr, nullptr, FALSE, "rmsa-ahx", "Average RMSD per Residue",   "Residue", "RMS (nm)", 0.0 },
-        { nullptr, nullptr, FALSE,  "cd222",   "Ellipticity at 222 nm", nullptr, "nm", 0.0 },
-        { nullptr, nullptr, TRUE,  "pprms",   "RMS Distance from \\8a\\4-helix", nullptr, "deg", 0.0 },
-        { nullptr, nullptr, TRUE,  "caphi",   "Average Ca-Ca Dihedral",     nullptr, "\\8F\\4(deg)", 0.0 },
-        { nullptr, nullptr, TRUE,  "phi",     "Average \\8F\\4 angles", nullptr, "deg", 0.0 },
-        { nullptr, nullptr, TRUE,  "psi",     "Average \\8Y\\4 angles", nullptr, "deg", 0.0 },
-        { nullptr, nullptr, TRUE,  "hb3",     "Average n-n+3 hbond length", nullptr, "nm", 0.0 },
-        { nullptr, nullptr, TRUE,  "hb4",     "Average n-n+4 hbond length", nullptr, "nm", 0.0 },
-        { nullptr, nullptr, TRUE,  "hb5",     "Average n-n+5 hbond length", nullptr, "nm", 0.0 },
-        { nullptr, nullptr, FALSE,  "JCaHa",   "J-Coupling Values",        "Residue", "Hz", 0.0 },
-        { nullptr, nullptr, FALSE,  "helicity", "Helicity per Residue",     "Residue", "% of time", 0.0 }
+        { nullptr, nullptr, TRUE, "radius", "Helix radius", nullptr, "r (nm)", 0.0 },
+        { nullptr, nullptr, TRUE, "twist", "Twist per residue", nullptr, "Angle (deg)", 0.0 },
+        { nullptr, nullptr, TRUE, "rise", "Rise per residue", nullptr, "Rise (nm)", 0.0 },
+        { nullptr, nullptr, FALSE, "len-ahx", "Length of the Helix", nullptr, "Length (nm)", 0.0 },
+        { nullptr, nullptr, FALSE, "dip-ahx", "Helix Backbone Dipole", nullptr, "rq (nm e)", 0.0 },
+        { nullptr, nullptr, TRUE, "rms-ahx", "RMS Deviation from Ideal Helix", nullptr, "RMS (nm)", 0.0 },
+        { nullptr, nullptr, FALSE, "rmsa-ahx", "Average RMSD per Residue", "Residue", "RMS (nm)", 0.0 },
+        { nullptr, nullptr, FALSE, "cd222", "Ellipticity at 222 nm", nullptr, "nm", 0.0 },
+        { nullptr, nullptr, TRUE, "pprms", "RMS Distance from \\8a\\4-helix", nullptr, "deg", 0.0 },
+        { nullptr, nullptr, TRUE, "caphi", "Average Ca-Ca Dihedral", nullptr, "\\8F\\4(deg)", 0.0 },
+        { nullptr, nullptr, TRUE, "phi", "Average \\8F\\4 angles", nullptr, "deg", 0.0 },
+        { nullptr, nullptr, TRUE, "psi", "Average \\8Y\\4 angles", nullptr, "deg", 0.0 },
+        { nullptr, nullptr, TRUE, "hb3", "Average n-n+3 hbond length", nullptr, "nm", 0.0 },
+        { nullptr, nullptr, TRUE, "hb4", "Average n-n+4 hbond length", nullptr, "nm", 0.0 },
+        { nullptr, nullptr, TRUE, "hb5", "Average n-n+5 hbond length", nullptr, "nm", 0.0 },
+        { nullptr, nullptr, FALSE, "JCaHa", "J-Coupling Values", "Residue", "Hz", 0.0 },
+        { nullptr, nullptr, FALSE, "helicity", "Helicity per Residue", "Residue", "% of time", 0.0 }
     };
 
     gmx_output_env_t *oenv;
@@ -156,9 +149,9 @@ int gmx_helix(int argc, char *argv[])
     gmx_rmpbc_t       gpbc = nullptr;
     gmx_bool          bRange;
     t_filenm          fnm[] = {
-        { efTPR, nullptr,  nullptr,   ffREAD  },
-        { efNDX, nullptr,  nullptr,   ffREAD  },
-        { efTRX, "-f",  nullptr,   ffREAD  },
+        { efTPR, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffREAD },
+        { efTRX, "-f", nullptr, ffREAD },
         { efSTO, "-cz", "zconf", ffWRITE },
     };
 #define NFILE asize(fnm)
@@ -259,7 +252,7 @@ int gmx_helix(int argc, char *argv[])
 
             for (j = 0; (j <= efhCPHI); j++)
             {
-                fprintf(xf[j].fp,   "%10g  %10g\n", t, xf[j].val);
+                fprintf(xf[j].fp, "%10g  %10g\n", t, xf[j].val);
             }
 
             av_phipsi(xf[efhPHI].fp, xf[efhPSI].fp, xf[efhPHI].fp2, xf[efhPSI].fp2,

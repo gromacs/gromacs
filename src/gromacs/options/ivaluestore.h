@@ -45,7 +45,8 @@
 namespace gmx
 {
 
-template <typename T> class ArrayRef;
+template <typename T>
+class ArrayRef;
 
 /*! \internal
  * \brief

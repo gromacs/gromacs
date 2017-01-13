@@ -80,9 +80,11 @@ using gmx::RVec;
 /* enum for random rotations of inserted solutes */
 enum RotationType
 {
-    en_rotXYZ, en_rotZ, en_rotNone
+    en_rotXYZ,
+    en_rotZ,
+    en_rotNone
 };
-const char *const cRotationEnum[] = {"xyz", "z", "none"};
+const char *const cRotationEnum[] = { "xyz", "z", "none" };
 
 static void center_molecule(std::vector<RVec> *x)
 {
@@ -102,8 +104,8 @@ static void center_molecule(std::vector<RVec> *x)
 
 static void generate_trial_conf(const std::vector<RVec> &xin,
                                 const rvec offset, RotationType enum_rot,
-                                gmx::DefaultRandomEngine * rng,
-                                std::vector<RVec> *xout)
+                                gmx::DefaultRandomEngine *rng,
+                                std::vector<RVec> *       xout)
 {
     gmx::UniformRealDistribution<real> dist(0, 2.0 * M_PI);
     *xout = xin;
@@ -117,8 +119,8 @@ static void generate_trial_conf(const std::vector<RVec> &xin,
             gamma = dist(*rng);
             break;
         case en_rotZ:
-            alfa  = beta = 0.;
-            gamma = dist(*rng);
+            alfa = beta = 0.;
+            gamma       = dist(*rng);
             break;
         case en_rotNone:
             alfa = beta = gamma = 0.;
@@ -181,14 +183,14 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     gmx_atomprop_destroy(aps);
 
     const real maxInsertRadius
-        = *std::max_element(exclusionDistances_insrt.begin(),
-                            exclusionDistances_insrt.end());
+            = *std::max_element(exclusionDistances_insrt.begin(),
+                                exclusionDistances_insrt.end());
     real maxRadius = maxInsertRadius;
     if (!exclusionDistances.empty())
     {
         const real maxExistingRadius
-            = *std::max_element(exclusionDistances.begin(),
-                                exclusionDistances.end());
+                = *std::max_element(exclusionDistances.begin(),
+                                    exclusionDistances.end());
         maxRadius = std::max(maxInsertRadius, maxExistingRadius);
     }
 
@@ -246,7 +248,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     {
         // cppcheck 1.72 complains about uninitialized variables in the
         // assignments below otherwise...
-        rvec offset_x = {0};
+        rvec offset_x = { 0 };
         if (!insertAtPositions)
         {
             // Insert at random positions.
@@ -347,7 +349,7 @@ public:
 
     // From ITopologyProvider
     virtual gmx_mtop_t *getTopology(bool /*required*/) { return top_; }
-    virtual int getAtomCount() { return 0; }
+    virtual int         getAtomCount() { return 0; }
 
     // From ICommandLineOptionsModule
     virtual void init(CommandLineModuleSettings * /*settings*/)
@@ -356,7 +358,7 @@ public:
     virtual void initOptions(IOptionsContainer *                options,
                              ICommandLineOptionsModuleSettings *settings);
     virtual void optionsFinished();
-    virtual int run();
+    virtual int  run();
 
 private:
     void loadSolute();
@@ -438,73 +440,74 @@ void InsertMolecules::initOptions(IOptionsContainer *                options,
 
     // TODO: Replace use of legacyType.
     options->addOption(FileNameOption("f")
-                           .legacyType(efSTX).inputFile()
-                           .store(&inputConfFile_)
-                           .defaultBasename("protein")
-                           .description("Existing configuration to insert into"));
+                               .legacyType(efSTX)
+                               .inputFile()
+                               .store(&inputConfFile_)
+                               .defaultBasename("protein")
+                               .description("Existing configuration to insert into"));
     options->addOption(FileNameOption("ci")
-                           .legacyType(efSTX).inputFile().required()
-                           .store(&insertConfFile_)
-                           .defaultBasename("insert")
-                           .description("Configuration to insert"));
+                               .legacyType(efSTX)
+                               .inputFile()
+                               .required()
+                               .store(&insertConfFile_)
+                               .defaultBasename("insert")
+                               .description("Configuration to insert"));
     options->addOption(FileNameOption("ip")
-                           .filetype(eftGenericData).inputFile()
-                           .store(&positionFile_)
-                           .defaultBasename("positions")
-                           .description("Predefined insertion trial positions"));
+                               .filetype(eftGenericData)
+                               .inputFile()
+                               .store(&positionFile_)
+                               .defaultBasename("positions")
+                               .description("Predefined insertion trial positions"));
     options->addOption(FileNameOption("o")
-                           .legacyType(efSTO).outputFile().required()
-                           .store(&outputConfFile_)
-                           .defaultBasename("out")
-                           .description("Output configuration after insertion"));
+                               .legacyType(efSTO)
+                               .outputFile()
+                               .required()
+                               .store(&outputConfFile_)
+                               .defaultBasename("out")
+                               .description("Output configuration after insertion"));
 
-    options->addOption(SelectionOption("replace").onlyAtoms()
-                           .store(&replaceSel_)
-                           .description("Atoms that can be removed if overlapping"));
+    options->addOption(SelectionOption("replace").onlyAtoms().store(&replaceSel_).description("Atoms that can be removed if overlapping"));
     selectionOptionBehavior->initOptions(options);
 
-    options->addOption(RealOption("box").vector()
-                           .store(newBox_).storeIsSet(&bBox_)
-                           .description("Box size (in nm)"));
+    options->addOption(RealOption("box").vector().store(newBox_).storeIsSet(&bBox_).description("Box size (in nm)"));
     options->addOption(IntegerOption("nmol")
-                           .store(&nmolIns_)
-                           .description("Number of extra molecules to insert"));
+                               .store(&nmolIns_)
+                               .description("Number of extra molecules to insert"));
     options->addOption(IntegerOption("try")
-                           .store(&nmolTry_)
-                           .description("Try inserting [TT]-nmol[tt] times [TT]-try[tt] times"));
+                               .store(&nmolTry_)
+                               .description("Try inserting [TT]-nmol[tt] times [TT]-try[tt] times"));
     options->addOption(IntegerOption("seed")
-                           .store(&seed_)
-                           .description("Random generator seed (0 means generate)"));
+                               .store(&seed_)
+                               .description("Random generator seed (0 means generate)"));
     options->addOption(RealOption("radius")
-                           .store(&defaultDistance_)
-                           .description("Default van der Waals distance"));
+                               .store(&defaultDistance_)
+                               .description("Default van der Waals distance"));
     options->addOption(RealOption("scale")
-                           .store(&scaleFactor_)
-                           .description("Scale factor to multiply Van der Waals radii from the database in share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 g/l for proteins in water."));
-    options->addOption(RealOption("dr").vector()
-                           .store(deltaR_)
-                           .description("Allowed displacement in x/y/z from positions in [TT]-ip[tt] file"));
-    options->addOption(EnumOption<RotationType>("rot").enumValue(cRotationEnum)
-                           .store(&enumRot_)
-                           .description("Rotate inserted molecules randomly"));
+                               .store(&scaleFactor_)
+                               .description("Scale factor to multiply Van der Waals radii from the database in share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 g/l for proteins in water."));
+    options->addOption(RealOption("dr").vector().store(deltaR_).description("Allowed displacement in x/y/z from positions in [TT]-ip[tt] file"));
+    options->addOption(EnumOption<RotationType>("rot").enumValue(cRotationEnum).store(&enumRot_).description("Rotate inserted molecules randomly"));
 }
 
 void InsertMolecules::optionsFinished()
 {
     if (nmolIns_ <= 0 && positionFile_.empty())
     {
-        GMX_THROW(InconsistentInputError("Either -nmol must be larger than 0, "
-                                         "or positions must be given with -ip."));
+        GMX_THROW(InconsistentInputError(
+                "Either -nmol must be larger than 0, "
+                "or positions must be given with -ip."));
     }
     if (inputConfFile_.empty() && !bBox_)
     {
-        GMX_THROW(InconsistentInputError("When no solute (-f) is specified, "
-                                         "a box size (-box) must be specified."));
+        GMX_THROW(InconsistentInputError(
+                "When no solute (-f) is specified, "
+                "a box size (-box) must be specified."));
     }
     if (replaceSel_.isValid() && inputConfFile_.empty())
     {
-        GMX_THROW(InconsistentInputError("Replacement (-replace) only makes sense "
-                                         "together with an existing configuration (-f)."));
+        GMX_THROW(InconsistentInputError(
+                "Replacement (-replace) only makes sense "
+                "together with an existing configuration (-f)."));
     }
 
     snew(top_, 1);
@@ -550,7 +553,8 @@ int InsertMolecules::run()
     }
     if (det(box_) == 0)
     {
-        gmx_fatal(FARGS, "Undefined solute box.\nCreate one with gmx editconf "
+        gmx_fatal(FARGS,
+                  "Undefined solute box.\nCreate one with gmx editconf "
                   "or give explicit -box command line option");
     }
 
@@ -603,11 +607,11 @@ int InsertMolecules::run()
     return 0;
 }
 
-}   // namespace
+} // namespace
 
 const char InsertMoleculesInfo::name[] = "insert-molecules";
 const char InsertMoleculesInfo::shortDescription[]
-    = "Insert molecules into existing vacancies";
+        = "Insert molecules into existing vacancies";
 ICommandLineOptionsModulePointer InsertMoleculesInfo::create()
 {
     return ICommandLineOptionsModulePointer(new InsertMolecules());

@@ -83,7 +83,8 @@ namespace
 class ElectricFieldData
 {
 public:
-    ElectricFieldData() : a_(0), omega_(0), t0_(0), sigma_(0)
+    ElectricFieldData()
+        : a_(0), omega_(0), t0_(0), sigma_(0)
     {
     }
 
@@ -133,11 +134,11 @@ public:
     }
 
     //! Return the amplitude
-    real a()     const { return a_; }
+    real a() const { return a_; }
     //! Return the frequency
     real omega() const { return omega_; }
     //! Return the time for the peak of the pulse
-    real t0()    const { return t0_; }
+    real t0() const { return t0_; }
     //! Return the width of the pulse (0 means inifinite)
     real sigma() const { return sigma_; }
 
@@ -162,7 +163,8 @@ private:
 class ElectricField : public IInputRecExtension, public IForceProvider
 {
 public:
-    ElectricField() : fpField_(nullptr) {}
+    ElectricField()
+        : fpField_(nullptr) {}
 
     // From IInputRecExtension
     virtual void doTpxIO(t_fileio *fio, bool bRead);
@@ -214,7 +216,7 @@ private:
      * \param[in] dim Direction of the field (XX, YY, ZZ)
      * \return Amplitude of the field
      */
-    real a(int dim)     const { return efield_[dim].a(); }
+    real a(int dim) const { return efield_[dim].a(); }
     /*! \brief Return frequency of field (1/ps)
      *
      * \param[in] dim Direction of the field (XX, YY, ZZ)
@@ -280,9 +282,9 @@ void ElectricField::doTpxIO(t_fileio *fio, bool bRead)
             at.resize(nt + 1);
             phit.resize(nt + 1);
         }
-        gmx_fio_ndo_real(fio, aa.data(),  n);
+        gmx_fio_ndo_real(fio, aa.data(), n);
         gmx_fio_ndo_real(fio, phi.data(), n);
-        gmx_fio_ndo_real(fio, at.data(),  nt);
+        gmx_fio_ndo_real(fio, at.data(), nt);
         gmx_fio_ndo_real(fio, phit.data(), nt);
         if (bRead && n > 0)
         {
@@ -356,18 +358,12 @@ void convertDynamicParameters(gmx::KeyValueTreeObjectBuilder *builder,
 
 void ElectricField::initMdpTransform(IKeyValueTreeTransformRules *rules)
 {
-    rules->addRule().from<std::string>("/E-x").to<real>("/electric-field/x/E0")
-        .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-xt").toObject("/electric-field/x")
-        .transformWith(&convertDynamicParameters);
-    rules->addRule().from<std::string>("/E-y").to<real>("/electric-field/y/E0")
-        .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-yt").toObject("/electric-field/y")
-        .transformWith(&convertDynamicParameters);
-    rules->addRule().from<std::string>("/E-z").to<real>("/electric-field/z/E0")
-        .transformWith(&convertStaticParameters);
-    rules->addRule().from<std::string>("/E-zt").toObject("/electric-field/z")
-        .transformWith(&convertDynamicParameters);
+    rules->addRule().from<std::string>("/E-x").to<real>("/electric-field/x/E0").transformWith(&convertStaticParameters);
+    rules->addRule().from<std::string>("/E-xt").toObject("/electric-field/x").transformWith(&convertDynamicParameters);
+    rules->addRule().from<std::string>("/E-y").to<real>("/electric-field/y/E0").transformWith(&convertStaticParameters);
+    rules->addRule().from<std::string>("/E-yt").toObject("/electric-field/y").transformWith(&convertDynamicParameters);
+    rules->addRule().from<std::string>("/E-z").to<real>("/electric-field/z/E0").transformWith(&convertStaticParameters);
+    rules->addRule().from<std::string>("/E-zt").toObject("/electric-field/z").transformWith(&convertDynamicParameters);
 }
 
 void ElectricField::initMdpOptions(IOptionsContainerWithSections *options)
@@ -457,7 +453,7 @@ void ElectricField::initForcerec(t_forcerec *fr)
 void ElectricField::printParameters(FILE *fp, int indent)
 {
     const char *const dimension[DIM] = { "X", "Y", "Z" };
-    indent = pr_title(fp, indent, "ElectricField");
+    indent                           = pr_title(fp, indent, "ElectricField");
     for (int m = 0; m < DIM; m++)
     {
         pr_indent(fp, indent);
@@ -540,7 +536,7 @@ void ElectricField::calculateForces(const t_commrec * cr,
     }
 }
 
-}   // namespace
+} // namespace
 
 std::unique_ptr<IInputRecExtension> createElectricFieldModule()
 {

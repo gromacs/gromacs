@@ -56,16 +56,16 @@ typedef struct
 } t_atomcolor;
 
 static t_atomcolor ac[] = {
-    { "O",  &LIGHTRED,     { 1,  0,  0   } },
-    { "N",  &LIGHTCYAN,    { 0,  0,  1   } },
-    { "NA", &LIGHTGREY,    { 0.6, 0.6, 0.6 } },
-    { "S",  &YELLOW,       { 1,  1,  0   } },
-    { "C",  &LIGHTGREEN,   { 0,  1,  0   } },
-    { "CL", &VIOLET,       { 1,  0,  1   } },
-    { "F",  &LIGHTGREY,    { 0.6, 0.6, 0.6 } },
-    { "Z",  &LIGHTGREY,    { 0.6, 0.6, 0.6 } },
-    { "P",  &LIGHTBLUE,    { 0.4, 0.4, 1.0 } },
-    { "H",  &WHITE,        { 0.8, 0.8, 0.8 } }
+    { "O", &LIGHTRED, { 1, 0, 0 } },
+    { "N", &LIGHTCYAN, { 0, 0, 1 } },
+    { "NA", &LIGHTGREY, { 0.6, 0.6, 0.6 } },
+    { "S", &YELLOW, { 1, 1, 0 } },
+    { "C", &LIGHTGREEN, { 0, 1, 0 } },
+    { "CL", &VIOLET, { 1, 0, 1 } },
+    { "F", &LIGHTGREY, { 0.6, 0.6, 0.6 } },
+    { "Z", &LIGHTGREY, { 0.6, 0.6, 0.6 } },
+    { "P", &LIGHTBLUE, { 0.4, 0.4, 1.0 } },
+    { "H", &WHITE, { 0.8, 0.8, 0.8 } }
 };
 #define NAC asize(ac)
 
@@ -138,7 +138,7 @@ void DrawLegend(t_x11 *x11, t_windata *Win)
         cind = Type2Color(lab[i]);
         XSetForeground(x11->disp, x11->gc, cind);
         y = ((2 * i0 + 1) * h_2);
-        XFillRectangle (x11->disp, Win->self, x11->gc, x0, y - dh, 2 * dw, 2 * dh);
+        XFillRectangle(x11->disp, Win->self, x11->gc, x0, y - dh, 2 * dw, 2 * dh);
         XSetForeground(x11->disp, x11->gc, WHITE);
         TextInRect(x11, Win->self, lab[i], x1, y - dh, w - x1, 2 * dh,
                    eXLeft, eYCenter);

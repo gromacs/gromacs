@@ -63,20 +63,21 @@ const Simd4Real rSimd4_2p25     = setSimd4RealFrom1R(2.25);
 const Simd4Real rSimd4_3p75     = setSimd4RealFrom1R(3.75);
 const Simd4Real rSimd4_m2p25    = setSimd4RealFrom1R(-2.25);
 const Simd4Real rSimd4_m3p75    = setSimd4RealFrom1R(-3.75);
-const Simd4Real rSimd4_Exp      = setSimd4RealFrom3R( 1.4055235171027452623914516e+18,
-                                                      5.3057102734253445623914516e-13,
-                                                      -2.1057102745623934534514516e+16);
-#    if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
+const Simd4Real rSimd4_Exp      = setSimd4RealFrom3R(1.4055235171027452623914516e+18,
+                                                5.3057102734253445623914516e-13,
+                                                -2.1057102745623934534514516e+16);
+#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
-const Simd4Real rSimd_ExpDouble = setSimd4RealFrom3R( 6.287393598732017379054414e+176,
-                                                      8.794495252903116023030553e-140,
-                                                      -3.637060701570496477655022e+202);
-#    endif
+const Simd4Real rSimd_ExpDouble = setSimd4RealFrom3R(6.287393598732017379054414e+176,
+                                                     8.794495252903116023030553e-140,
+                                                     -3.637060701570496477655022e+202);
+#endif
 
 ::std::vector<real>
 simd4Real2Vector(const Simd4Real simd4)
 {
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)
+    mem[GMX_SIMD4_WIDTH];
 
     store4(mem, simd4);
     std::vector<real> v(mem, mem + GMX_SIMD4_WIDTH);
@@ -86,11 +87,12 @@ simd4Real2Vector(const Simd4Real simd4)
 
 Simd4Real vector2Simd4Real(const std::vector<real> &v)
 {
-    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)  mem[GMX_SIMD4_WIDTH];
+    GMX_ALIGNED(real, GMX_SIMD4_WIDTH)
+    mem[GMX_SIMD4_WIDTH];
 
     for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
     {
-        mem[i] = v[i % v.size()];  // repeat vector contents to fill simd width
+        mem[i] = v[i % v.size()]; // repeat vector contents to fill simd width
     }
     return load4(mem);
 }
@@ -114,24 +116,24 @@ Simd4Real setSimd4RealFrom1R(real value)
     return vector2Simd4Real(v);
 }
 
-testing::AssertionResult Simd4Test::compareSimd4RealUlp(const char * refExpr,     const char *  tstExpr,
+testing::AssertionResult Simd4Test::compareSimd4RealUlp(const char *refExpr, const char *tstExpr,
                                                         const Simd4Real ref, const Simd4Real tst)
 {
     return compareVectorRealUlp(refExpr, tstExpr, simd4Real2Vector(ref), simd4Real2Vector(tst));
 }
 
-testing::AssertionResult Simd4Test::compareSimd4RealEq(const char * refExpr, const char * tstExpr,
+testing::AssertionResult Simd4Test::compareSimd4RealEq(const char *refExpr, const char *tstExpr,
                                                        const Simd4Real ref, const Simd4Real tst)
 {
     return compareVectorEq(refExpr, tstExpr, simd4Real2Vector(ref), simd4Real2Vector(tst));
 }
 
-#endif  // GMX_SIMD4_HAVE_REAL
+#endif // GMX_SIMD4_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace
 
 #endif // GMX_SIMD

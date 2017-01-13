@@ -59,8 +59,8 @@ void replace_atom(t_topology *top, int inr, char *anm, char *resnm,
         fprintf(debug, "Replacing atom %d ... ", inr);
     }
     /* Charge, mass and type */
-    atoms->atom[inr].q    = atoms->atom[inr].qB    = q;
-    atoms->atom[inr].m    = atoms->atom[inr].mB    = m;
+    atoms->atom[inr].q = atoms->atom[inr].qB = q;
+    atoms->atom[inr].m = atoms->atom[inr].mB = m;
     atoms->atom[inr].type = atoms->atom[inr].typeB = type;
 
     /* Residue name */

@@ -47,8 +47,8 @@
 #include "gromacs/utility/smalloc.h"
 
 /* Use bitflag ... */
-#define IS_SET(fn) ((fn.flag &ffSET) != 0)
-#define IS_OPT(fn) ((fn.flag &ffOPT) != 0)
+#define IS_SET(fn) ((fn.flag & ffSET) != 0)
+#define IS_OPT(fn) ((fn.flag & ffOPT) != 0)
 
 const t_filenm *getFilenm(const char *opt, int nfile, const t_filenm fnm[])
 {
@@ -140,7 +140,7 @@ gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[])
     {
         if (ftp == fnm[i].ftp)
         {
-            return (gmx_bool) IS_SET(fnm[i]);
+            return (gmx_bool)IS_SET(fnm[i]);
         }
     }
 
@@ -157,7 +157,7 @@ gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[])
     {
         if (std::strcmp(opt, fnm[i].opt) == 0)
         {
-            return (gmx_bool) IS_SET(fnm[i]);
+            return (gmx_bool)IS_SET(fnm[i]);
         }
     }
 

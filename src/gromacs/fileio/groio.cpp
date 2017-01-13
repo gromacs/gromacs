@@ -110,10 +110,12 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         gmx_fatal(FARGS, "gro file contains more atoms (%d) than expected (%d)",
                   natoms, atoms->nr);
     }
-    else if (natoms <  atoms->nr)
+    else if (natoms < atoms->nr)
     {
-        fprintf(stderr, "Warning: gro file contains less atoms (%d) than expected"
-                " (%d)\n", natoms, atoms->nr);
+        fprintf(stderr,
+                "Warning: gro file contains less atoms (%d) than expected"
+                " (%d)\n",
+                natoms, atoms->nr);
     }
 
     atoms->haveMass    = FALSE;
@@ -291,8 +293,9 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         box[XX][XX] = x1;
         box[YY][YY] = y1;
         box[ZZ][ZZ] = z1;
-        if (sscanf (line, "%*f%*f%*f%lf%lf%lf%lf%lf%lf",
-                    &x1, &y1, &z1, &x2, &y2, &z2) != 6)
+        if (sscanf(line, "%*f%*f%*f%lf%lf%lf%lf%lf%lf",
+                   &x1, &y1, &z1, &x2, &y2, &z2)
+            != 6)
         {
             x1 = y1 = z1 = x2 = y2 = z2 = 0.0;
         }
@@ -425,7 +428,6 @@ static const char *get_hconf_format(bool haveVelocities)
     {
         return "%8.3f%8.3f%8.3f\n";
     }
-
 }
 
 static void write_hconf_box(FILE *out, const matrix box)

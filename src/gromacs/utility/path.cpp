@@ -140,7 +140,7 @@ struct handle_wrapper
 {
     HANDLE handle;
     handle_wrapper(HANDLE h)
-        : handle(h){}
+        : handle(h) {}
     ~handle_wrapper()
     {
         if (handle != INVALID_HANDLE_VALUE)
@@ -154,7 +154,7 @@ struct handle_wrapper
 
 bool Path::isEquivalent(const std::string &path1, const std::string &path2)
 {
-    //based on boost_1_56_0/libs/filesystem/src/operations.cpp under BSL
+//based on boost_1_56_0/libs/filesystem/src/operations.cpp under BSL
 #if GMX_NATIVE_WINDOWS
     // Note well: Physical location on external media is part of the
     // equivalence criteria. If there are no open handles, physical location
@@ -215,16 +215,15 @@ bool Path::isEquivalent(const std::string &path1, const std::string &path2)
     // In theory, volume serial numbers are sufficient to distinguish between
     // devices, but in practice VSN's are sometimes duplicated, so last write
     // time and file size are also checked.
-    return
-        info1.dwVolumeSerialNumber == info2.dwVolumeSerialNumber
-        && info1.nFileIndexHigh == info2.nFileIndexHigh
-        && info1.nFileIndexLow == info2.nFileIndexLow
-        && info1.nFileSizeHigh == info2.nFileSizeHigh
-        && info1.nFileSizeLow == info2.nFileSizeLow
-        && info1.ftLastWriteTime.dwLowDateTime
-        == info2.ftLastWriteTime.dwLowDateTime
-        && info1.ftLastWriteTime.dwHighDateTime
-        == info2.ftLastWriteTime.dwHighDateTime;
+    return info1.dwVolumeSerialNumber == info2.dwVolumeSerialNumber
+           && info1.nFileIndexHigh == info2.nFileIndexHigh
+           && info1.nFileIndexLow == info2.nFileIndexLow
+           && info1.nFileSizeHigh == info2.nFileSizeHigh
+           && info1.nFileSizeLow == info2.nFileSizeLow
+           && info1.ftLastWriteTime.dwLowDateTime
+                      == info2.ftLastWriteTime.dwLowDateTime
+           && info1.ftLastWriteTime.dwHighDateTime
+                      == info2.ftLastWriteTime.dwHighDateTime;
 #else
     struct stat s1, s2;
     int         e2 = stat(path2.c_str(), &s2);
@@ -325,7 +324,7 @@ std::string Path::concatenateBeforeExtension(const std::string &input, const std
     }
     else
     {
-        output  = input.substr(0, extSeparatorPosition);
+        output = input.substr(0, extSeparatorPosition);
         output += stringToAdd;
         output += std::string(input, extSeparatorPosition);
     }
@@ -462,8 +461,8 @@ void File::throwOnError(const NotFoundInfo &info)
     if (info.wasError)
     {
         const std::string message
-            = formatString("Failed to access file '%s'.\n%s",
-                           info.filename, info.message);
+                = formatString("Failed to access file '%s'.\n%s",
+                               info.filename, info.message);
         GMX_THROW_WITH_ERRNO(FileIOError(message), info.call, info.err);
     }
 }
@@ -472,8 +471,8 @@ void File::throwOnNotFound(const NotFoundInfo &info)
 {
     throwOnError(info);
     const std::string message
-        = formatString("File '%s' does not exist or is not accessible.\n%s",
-                       info.filename, info.message);
+            = formatString("File '%s' does not exist or is not accessible.\n%s",
+                           info.filename, info.message);
     GMX_THROW_WITH_ERRNO(InvalidInputError(message), info.call, info.err);
 }
 
@@ -496,8 +495,8 @@ bool File::exists(const char *filename, NotFoundHandler onNotFound)
     else
     {
         std::fclose(test);
-        // Windows doesn't allow fopen of directory, so we don't need to check
-        // this separately.
+// Windows doesn't allow fopen of directory, so we don't need to check
+// this separately.
 #if !GMX_NATIVE_WINDOWS
         struct stat st_buf;
         int         status = stat(filename, &st_buf);

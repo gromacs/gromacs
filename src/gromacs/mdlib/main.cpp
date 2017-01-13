@@ -69,7 +69,7 @@
 // TODO move this to multi-sim module
 void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
                      const char *name,
-                     gmx_bool bQuiet)
+                     gmx_bool    bQuiet)
 {
     int *    ibuf, p;
     gmx_bool bCompatible;
@@ -179,7 +179,7 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
 
 
 void gmx_log_open(const char *lognm, const t_commrec *cr,
-                  gmx_bool bAppendFiles, FILE** fplog)
+                  gmx_bool bAppendFiles, FILE **fplog)
 {
     int   pid;
     char  host[256];
@@ -188,7 +188,7 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
 
     if (!bAppendFiles)
     {
-        fp = gmx_fio_fopen(lognm, bAppendFiles ? "a+" : "w+" );
+        fp = gmx_fio_fopen(lognm, bAppendFiles ? "a+" : "w+");
     }
 
     gmx_fatal_set_log_file(fp);
@@ -205,8 +205,7 @@ void gmx_log_open(const char *lognm, const t_commrec *cr,
                 "\n"
                 "-----------------------------------------------------------\n"
                 "Restarting from checkpoint, appending to previous log file.\n"
-                "\n"
-                );
+                "\n");
     }
 
     fprintf(fp,

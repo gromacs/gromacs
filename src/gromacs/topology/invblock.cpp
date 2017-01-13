@@ -64,7 +64,8 @@ int *make_invblock(const t_block *block, int nr)
             }
             else
             {
-                gmx_fatal(FARGS, "Double entries in block structure. Item %d is in blocks %d and %d\n"
+                gmx_fatal(FARGS,
+                          "Double entries in block structure. Item %d is in blocks %d and %d\n"
                           " Cannot make an unambiguous inverse block.",
                           j, i, invblock[j]);
             }
@@ -94,7 +95,8 @@ int *make_invblocka(const t_blocka *block, int nr)
             }
             else
             {
-                gmx_fatal(FARGS, "Double entries in block structure. Item %d is in blocks %d and %d\n"
+                gmx_fatal(FARGS,
+                          "Double entries in block structure. Item %d is in blocks %d and %d\n"
                           " Cannot make an unambiguous inverse block.",
                           j, i, invblock[block->a[j]]);
             }

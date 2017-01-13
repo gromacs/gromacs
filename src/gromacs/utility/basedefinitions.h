@@ -63,11 +63,11 @@ typedef int gmx_bool;
 
 #ifndef FALSE
 /** False value for ::gmx_bool. */
-#  define FALSE   0
+#define FALSE 0
 #endif
 #ifndef TRUE
 /** True value for ::gmx_bool. */
-#  define TRUE    1
+#define TRUE 1
 #endif
 /** Number of gmx_bool values. */
 #define BOOL_NR 2
@@ -82,8 +82,8 @@ typedef int gmx_bool;
  * (MSVC 2015 still doesn't support the format strings.)
  */
 /*! \{ */
-typedef int32_t gmx_int32_t;
-typedef int64_t gmx_int64_t;
+typedef int32_t  gmx_int32_t;
+typedef int64_t  gmx_int64_t;
 typedef uint32_t gmx_uint32_t;
 typedef uint64_t gmx_uint64_t;
 
@@ -170,9 +170,9 @@ typedef uint64_t gmx_uint64_t;
  * header; e.g., static_asserts or additional helper methods.
  */
 #if defined __cplusplus && __cplusplus >= 201103L
-#    define GMX_CXX11_COMPILATION 1
+#define GMX_CXX11_COMPILATION 1
 #else
-#    define GMX_CXX11_COMPILATION 0
+#define GMX_CXX11_COMPILATION 0
 #endif
 
 /*! \def gmx_unused
@@ -189,21 +189,21 @@ typedef uint64_t gmx_uint64_t;
 #ifndef gmx_unused
 #ifdef __GNUC__
 /* GCC, clang, and some ICC pretending to be GCC */
-#  define gmx_unused __attribute__ ((unused))
+#define gmx_unused __attribute__((unused))
 #elif (defined(__INTEL_COMPILER) || defined(__ECC)) && !defined(_MSC_VER)
 /* ICC on *nix */
-#  define gmx_unused __attribute__ ((unused))
+#define gmx_unused __attribute__((unused))
 #elif defined(__PGI)
 /* Portland group compilers */
-#  define gmx_unused __attribute__ ((unused))
+#define gmx_unused __attribute__((unused))
 #elif defined _MSC_VER
 /* MSVC */
-#  define gmx_unused /*@unused@*/
+#define gmx_unused /*@unused@*/
 #elif defined(__xlC__)
 /* IBM */
-#  define gmx_unused __attribute__ ((unused))
+#define gmx_unused __attribute__((unused))
 #else
-#  define gmx_unused
+#define gmx_unused
 #endif
 #endif
 
@@ -219,7 +219,7 @@ typedef uint64_t gmx_uint64_t;
 #ifndef gmx_noreturn
 #if defined(__GNUC__) || __has_feature(attribute_analyzer_noreturn)
 #define gmx_noreturn __attribute__((noreturn))
-#elif defined (_MSC_VER)
+#elif defined(_MSC_VER)
 #define gmx_noreturn __declspec(noreturn)
 #else
 #define gmx_noreturn
@@ -236,9 +236,9 @@ typedef uint64_t gmx_uint64_t;
  */
 #ifndef gmx_constexpr
 #if !defined(_MSC_VER)
-#    define gmx_constexpr constexpr
+#define gmx_constexpr constexpr
 #else
-#    define gmx_constexpr
+#define gmx_constexpr
 #endif
 #endif
 
@@ -283,8 +283,8 @@ static inline void ignoreValueHelper(const T &)
 {
 }
 //! \endcond
-}   // namespace internal
-}   // namespace gmx
+} // namespace internal
+} // namespace gmx
 
 /*! \brief
  * Macro to explicitly ignore a return value of a call.
@@ -300,7 +300,7 @@ static inline void ignoreValueHelper(const T &)
  * \ingroup module_utility
  */
 #define GMX_IGNORE_RETURN_VALUE(call) \
-        ::gmx::internal::ignoreValueHelper(call)
+    ::gmx::internal::ignoreValueHelper(call)
 #endif
 
 #endif

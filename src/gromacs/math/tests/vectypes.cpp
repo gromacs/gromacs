@@ -93,7 +93,7 @@ TEST(RVecTest, WorksAsMutable_rvec)
 {
     std::vector<RVec> v;
     v.emplace_back(1, 2, 3);
-    rvec x = {2, 3, 4};
+    rvec x = { 2, 3, 4 };
     copy_rvec(x, v[0]);
     EXPECT_EQ(2, v[0][XX]);
     EXPECT_EQ(3, v[0][YY]);

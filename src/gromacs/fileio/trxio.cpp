@@ -75,24 +75,24 @@
 #endif
 
 /* defines for frame counter output */
-#define SKIP1   10
-#define SKIP2  100
+#define SKIP1 10
+#define SKIP2 100
 #define SKIP3 1000
 
 struct t_trxstatus
 {
-    int  flags;                               /* flags for read_first/next_frame  */
-    int  __frame;
-    real t0;                                  /* time of the first frame, needed  *
+    int              flags; /* flags for read_first/next_frame  */
+    int              __frame;
+    real             t0; /* time of the first frame, needed  *
                                                * for skipping frames with -dt     */
-    real             tf;                      /* internal frame time              */
+    real             tf; /* internal frame time              */
     t_trxframe *     xframe;
     t_fileio *       fio;
     tng_trajectory_t tng;
     int              natoms;
     double           DT, BOX[3];
     gmx_bool         bReadBox;
-    char *           persistent_line;        /* Persistent line for reading g96 trajectories */
+    char *           persistent_line; /* Persistent line for reading g96 trajectories */
 #if GMX_USE_PLUGINS
     gmx_vmdplugin_t *vmdplugin;
 #endif
@@ -120,7 +120,6 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
 }
 
 
-
 int check_times2(real t, real t0, gmx_bool bDouble)
 {
     int r;
@@ -132,7 +131,7 @@ int check_times2(real t, real t0, gmx_bool bDouble)
 
     r = -1;
     if ((!bTimeSet(TBEGIN) || (t >= rTimeValue(TBEGIN)))
-        && (!bTimeSet(TEND)   || (t <= rTimeValue(TEND))))
+        && (!bTimeSet(TEND) || (t <= rTimeValue(TEND))))
     {
         if (bTimeSet(TDELTA) && !bRmod_fd(t, t0, rTimeValue(TDELTA), bDouble))
         {
@@ -255,12 +254,12 @@ float trx_get_time_of_final_frame(t_trxstatus *status)
     if (filetype == efXTC)
     {
         lasttime
-            = xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
-                                          gmx_fio_getxdr(stfio),
-                                          status->natoms, &bOK);
+                = xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
+                                              gmx_fio_getxdr(stfio),
+                                              status->natoms, &bOK);
         if (!bOK)
         {
-            gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported." );
+            gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported.");
         }
     }
     else if (filetype == efTNG)
@@ -699,8 +698,7 @@ static gmx_bool gmx_next_frame(t_trxstatus *status, t_trxframe *fr)
             fr->not_ok = DATA_NOT_OK;
         }
     }
-    else
-    if (!bOK)
+    else if (!bOK)
     {
         fr->not_ok = HEADER_NOT_OK;
     }
@@ -940,7 +938,7 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
 
     snew((*status), 1);
 
-    status_init( *status );
+    status_init(*status);
     initcount(*status);
     (*status)->flags = flags;
 
@@ -989,7 +987,8 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
         }
         case efXTC:
             if (read_first_xtc(fio, &fr->natoms, &fr->step, &fr->time, fr->box, &fr->x,
-                               &fr->prec, &bOK) == 0)
+                               &fr->prec, &bOK)
+                == 0)
             {
                 GMX_RELEASE_ASSERT(!bOK, "Inconsistent results - OK status from read_first_xtc, but 0 atom coords read");
                 fr->not_ok = DATA_NOT_OK;
@@ -1041,19 +1040,23 @@ int read_first_frame(const gmx_output_env_t *oenv, t_trxstatus **status,
             break;
         default:
 #if GMX_USE_PLUGINS
-            fprintf(stderr, "The file format of %s is not a known trajectory format to GROMACS.\n"
+            fprintf(stderr,
+                    "The file format of %s is not a known trajectory format to GROMACS.\n"
                     "Please make sure that the file is a trajectory!\n"
                     "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"
-                    "This will only work in case the VMD plugins are found and it is a trajectory format supported by VMD.\n", fn);
+                    "This will only work in case the VMD plugins are found and it is a trajectory format supported by VMD.\n",
+                    fn);
             gmx_fio_fp_close(fio); /*only close the file without removing FIO entry*/
             if (!read_first_vmd_frame(fn, &(*status)->vmdplugin, fr))
             {
                 gmx_fatal(FARGS, "Not supported in read_first_frame: %s", fn);
             }
 #else
-            gmx_fatal(FARGS, "Not supported in read_first_frame: %s. Please make sure that the file is a trajectory.\n"
+            gmx_fatal(FARGS,
+                      "Not supported in read_first_frame: %s. Please make sure that the file is a trajectory.\n"
                       "GROMACS is not compiled with plug-in support. Thus it cannot read non-GROMACS trajectory formats using the VMD plug-ins.\n"
-                      "Please compile with plug-in support if you want to read non-GROMACS trajectory formats.\n", fn);
+                      "Please compile with plug-in support if you want to read non-GROMACS trajectory formats.\n",
+                      fn);
 #endif
             break;
     }

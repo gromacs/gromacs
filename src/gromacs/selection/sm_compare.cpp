@@ -52,27 +52,26 @@
 #include "selmethod.h"
 
 /** Defines the comparison operator for comparison expressions. */
-typedef enum
-{
-    CMP_INVALID,        /**< Indicates an error */
-    CMP_LESS,           /**< '<' */
-    CMP_LEQ,            /**< '<=' */
-    CMP_GTR,            /**< '>' */
-    CMP_GEQ,            /**< '>=' */
-    CMP_EQUAL,          /**< '==' */
-    CMP_NEQ             /**< '!=' */
+typedef enum {
+    CMP_INVALID, /**< Indicates an error */
+    CMP_LESS,    /**< '<' */
+    CMP_LEQ,     /**< '<=' */
+    CMP_GTR,     /**< '>' */
+    CMP_GEQ,     /**< '>=' */
+    CMP_EQUAL,   /**< '==' */
+    CMP_NEQ      /**< '!=' */
 } e_comparison_t;
 
 /** The operand has a single value. */
-#define CMP_SINGLEVAL  1
+#define CMP_SINGLEVAL 1
 /** The operand value is dynamic. */
 #define CMP_DYNAMICVAL 2
 /** The value is real. */
-#define CMP_REALVAL    4
+#define CMP_REALVAL 4
 /** The integer array is allocated. */
-#define CMP_ALLOCINT   16
+#define CMP_ALLOCINT 16
 /** The real array is allocated. */
-#define CMP_ALLOCREAL  32
+#define CMP_ALLOCREAL 32
 
 /*! \internal \brief
  * Data structure for comparison expression operand values.
@@ -142,30 +141,16 @@ evaluate_compare(const gmx::SelMethodEvalContext &context,
 
 /** Parameters for comparison expression evaluation. */
 static gmx_ana_selparam_t smparams_compare[] = {
-    {"int1",  {INT_VALUE,  -1, {nullptr}}, nullptr,
-     SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL},
-    {"real1", {REAL_VALUE, -1, {nullptr}}, nullptr,
-     SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL},
-    {"op",    {STR_VALUE,   1, {nullptr}}, nullptr, 0},
-    {"int2",  {INT_VALUE,  -1, {nullptr}}, nullptr,
-     SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL},
-    {"real2", {REAL_VALUE, -1, {nullptr}}, nullptr,
-     SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL},
+    { "int1", { INT_VALUE, -1, { nullptr } }, nullptr, SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL },
+    { "real1", { REAL_VALUE, -1, { nullptr } }, nullptr, SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL },
+    { "op", { STR_VALUE, 1, { nullptr } }, nullptr, 0 },
+    { "int2", { INT_VALUE, -1, { nullptr } }, nullptr, SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL },
+    { "real2", { REAL_VALUE, -1, { nullptr } }, nullptr, SPAR_OPTIONAL | SPAR_DYNAMIC | SPAR_ATOMVAL },
 };
 
 /** \internal Selection method data for comparison expression evaluation. */
 gmx_ana_selmethod_t sm_compare = {
-    "cmp", GROUP_VALUE, SMETH_SINGLEVAL,
-    asize(smparams_compare), smparams_compare,
-    &init_data_compare,
-    nullptr,
-    &init_compare,
-    nullptr,
-    &free_data_compare,
-    nullptr,
-    &evaluate_compare,
-    nullptr,
-    {nullptr, nullptr, 0, nullptr},
+    "cmp", GROUP_VALUE, SMETH_SINGLEVAL, asize(smparams_compare), smparams_compare, &init_data_compare, nullptr, &init_compare, nullptr, &free_data_compare, nullptr, &evaluate_compare, nullptr, { nullptr, nullptr, 0, nullptr },
 };
 
 /*! \brief
@@ -184,10 +169,14 @@ static e_comparison_t comparison_type(char *str)
 {
     switch (str[0])
     {
-        case '<': return (str[1] == '=') ? CMP_LEQ   : CMP_LESS;
-        case '>': return (str[1] == '=') ? CMP_GEQ   : CMP_GTR;
-        case '=': return (str[1] == '=') ? CMP_EQUAL : CMP_INVALID;
-        case '!': return (str[1] == '=') ? CMP_NEQ   : CMP_INVALID;
+        case '<':
+            return (str[1] == '=') ? CMP_LEQ : CMP_LESS;
+        case '>':
+            return (str[1] == '=') ? CMP_GEQ : CMP_GTR;
+        case '=':
+            return (str[1] == '=') ? CMP_EQUAL : CMP_INVALID;
+        case '!':
+            return (str[1] == '=') ? CMP_NEQ : CMP_INVALID;
     }
     return CMP_INVALID;
 }
@@ -207,13 +196,27 @@ static const char *comparison_type_str(e_comparison_t cmpt)
     const char *p = nullptr;
     switch (cmpt)
     {
-        case CMP_INVALID: p = "INVALID"; break;
-        case CMP_LESS:    p = "<";       break;
-        case CMP_LEQ:     p = "<=";      break;
-        case CMP_GTR:     p = ">";       break;
-        case CMP_GEQ:     p = ">=";      break;
-        case CMP_EQUAL:   p = "==";      break;
-        case CMP_NEQ:     p = "!=";      break;
+        case CMP_INVALID:
+            p = "INVALID";
+            break;
+        case CMP_LESS:
+            p = "<";
+            break;
+        case CMP_LEQ:
+            p = "<=";
+            break;
+        case CMP_GTR:
+            p = ">";
+            break;
+        case CMP_GEQ:
+            p = ">=";
+            break;
+        case CMP_EQUAL:
+            p = "==";
+            break;
+        case CMP_NEQ:
+            p = "!=";
+            break;
             // No default clause so we intentionally get compiler errors
             // if new selection choices are added later.
     }
@@ -285,11 +288,16 @@ static e_comparison_t reverse_comparison_type(e_comparison_t type)
 {
     switch (type)
     {
-        case CMP_LESS: return CMP_GTR;
-        case CMP_LEQ:  return CMP_GEQ;
-        case CMP_GTR:  return CMP_LESS;
-        case CMP_GEQ:  return CMP_LEQ;
-        default:       break;
+        case CMP_LESS:
+            return CMP_GTR;
+        case CMP_LEQ:
+            return CMP_GEQ;
+        case CMP_GTR:
+            return CMP_LESS;
+        case CMP_GEQ:
+            return CMP_LEQ;
+        default:
+            break;
     }
     return type;
 }
@@ -308,18 +316,18 @@ static int init_comparison_value(t_compare_value *val, gmx_ana_selparam_t param[
     val->flags = 0;
     if (param[0].flags & SPAR_SET)
     {
-        val->flags |=  (param[0].flags & SPAR_DYNAMIC) ? CMP_DYNAMICVAL : 0;
-        val->flags |= !(param[0].flags & SPAR_ATOMVAL) ? CMP_SINGLEVAL  : 0;
-        n           = param[0].val.nr;
-        val->i      = param[0].val.u.i;
+        val->flags |= (param[0].flags & SPAR_DYNAMIC) ? CMP_DYNAMICVAL : 0;
+        val->flags |= !(param[0].flags & SPAR_ATOMVAL) ? CMP_SINGLEVAL : 0;
+        n      = param[0].val.nr;
+        val->i = param[0].val.u.i;
     }
     else if (param[1].flags & SPAR_SET)
     {
-        val->flags |=  (param[1].flags & SPAR_DYNAMIC) ? CMP_DYNAMICVAL : 0;
-        val->flags |= !(param[1].flags & SPAR_ATOMVAL) ? CMP_SINGLEVAL  : 0;
+        val->flags |= (param[1].flags & SPAR_DYNAMIC) ? CMP_DYNAMICVAL : 0;
+        val->flags |= !(param[1].flags & SPAR_ATOMVAL) ? CMP_SINGLEVAL : 0;
         val->flags |= CMP_REALVAL;
-        n           = param[1].val.nr;
-        val->r      = param[1].val.u.r;
+        n      = param[1].val.nr;
+        val->r = param[1].val.u.r;
     }
     else
     {
@@ -348,7 +356,7 @@ static void convert_int_real(int n, t_compare_value *val)
     }
     /* Free the previous value if one is present. */
     sfree(val->r);
-    val->r      = rv;
+    val->r = rv;
     val->flags |= CMP_REALVAL | CMP_ALLOCREAL;
 }
 
@@ -402,7 +410,7 @@ static void convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, b
     }
     /* Free the previous value if one is present. */
     sfree(val->i);
-    val->i      = iv;
+    val->i = iv;
     val->flags &= ~CMP_REALVAL;
     val->flags |= CMP_ALLOCINT;
 }
@@ -518,13 +526,26 @@ static void evaluate_compare_int(gmx_ana_index_t *g, gmx_ana_selvalue_t *out, vo
         bAccept = false;
         switch (d->cmpt)
         {
-            case CMP_INVALID: break;
-            case CMP_LESS:    bAccept = a <  b; break;
-            case CMP_LEQ:     bAccept = a <= b; break;
-            case CMP_GTR:     bAccept = a >  b; break;
-            case CMP_GEQ:     bAccept = a >= b; break;
-            case CMP_EQUAL:   bAccept = a == b; break;
-            case CMP_NEQ:     bAccept = a != b; break;
+            case CMP_INVALID:
+                break;
+            case CMP_LESS:
+                bAccept = a < b;
+                break;
+            case CMP_LEQ:
+                bAccept = a <= b;
+                break;
+            case CMP_GTR:
+                bAccept = a > b;
+                break;
+            case CMP_GEQ:
+                bAccept = a >= b;
+                break;
+            case CMP_EQUAL:
+                bAccept = a == b;
+                break;
+            case CMP_NEQ:
+                bAccept = a != b;
+                break;
         }
         if (bAccept)
         {
@@ -566,13 +587,26 @@ static void evaluate_compare_real(gmx_ana_index_t *g, gmx_ana_selvalue_t *out, v
         bAccept = false;
         switch (d->cmpt)
         {
-            case CMP_INVALID: break;
-            case CMP_LESS:    bAccept = a <  b; break;
-            case CMP_LEQ:     bAccept = a <= b; break;
-            case CMP_GTR:     bAccept = a >  b; break;
-            case CMP_GEQ:     bAccept = a >= b; break;
-            case CMP_EQUAL:   bAccept =  gmx_within_tol(a, b, GMX_REAL_EPS); break;
-            case CMP_NEQ:     bAccept = !gmx_within_tol(a, b, GMX_REAL_EPS); break;
+            case CMP_INVALID:
+                break;
+            case CMP_LESS:
+                bAccept = a < b;
+                break;
+            case CMP_LEQ:
+                bAccept = a <= b;
+                break;
+            case CMP_GTR:
+                bAccept = a > b;
+                break;
+            case CMP_GEQ:
+                bAccept = a >= b;
+                break;
+            case CMP_EQUAL:
+                bAccept = gmx_within_tol(a, b, GMX_REAL_EPS);
+                break;
+            case CMP_NEQ:
+                bAccept = !gmx_within_tol(a, b, GMX_REAL_EPS);
+                break;
         }
         if (bAccept)
         {

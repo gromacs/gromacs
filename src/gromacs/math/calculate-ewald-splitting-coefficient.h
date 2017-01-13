@@ -65,8 +65,7 @@ extern "C" {
  * \return          The value of the splitting coefficient that
  *                  produces the required dtol at rc.
  */
-real
-calc_ewaldcoeff_q(real rc, real rtol);
+real calc_ewaldcoeff_q(real rc, real rtol);
 
 /*! \brief Computes the Ewald splitting coefficient for LJ
  *
@@ -80,8 +79,7 @@ calc_ewaldcoeff_q(real rc, real rtol);
  * \return          The value of the splitting coefficient that
  *                  produces the required dtol at rc.
  */
-real
-calc_ewaldcoeff_lj(real rc, real rtol);
+real calc_ewaldcoeff_lj(real rc, real rtol);
 
 #ifdef __cplusplus
 }

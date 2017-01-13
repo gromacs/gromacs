@@ -62,15 +62,15 @@ extern "C" {
  * Maximum path length, if the OS provides one, otherwise a fixed constant.
  */
 #ifdef PATH_MAX
-#  define GMX_PATH_MAX PATH_MAX
+#define GMX_PATH_MAX PATH_MAX
 #elif defined MAX_PATH
-#  define GMX_PATH_MAX MAX_PATH
+#define GMX_PATH_MAX MAX_PATH
 #else
-#  define GMX_PATH_MAX 4096
+#define GMX_PATH_MAX 4096
 #endif
 
 /** \Gromacs definition to use instead of `off_t`. */
-typedef gmx_int64_t    gmx_off_t;
+typedef gmx_int64_t gmx_off_t;
 
 /*! \brief
  * Turn off buffering for output files (which is default) for debugging

@@ -84,9 +84,7 @@ alignedMalloc(std::size_t bytes);
  *        gmx::internal::alignedMalloc(), and absolutely not any pointers obtained
  *        the system malloc().
  */
-void
-alignedFree(void *p);
-
+void alignedFree(void *p);
 }
 
 /*! \libinternal \brief Aligned memory allocator.
@@ -113,13 +111,13 @@ class AlignedAllocator
 public:
     // The standard library specification for a custom allocator
     // requires these typedefs, with this capitalization/underscoring.
-    typedef T              value_type;          //!< Type of allocated elements
-    typedef T             &reference;           //!< Reference to allocated elements
-    typedef const T       &const_reference;     //!< Constant reference to allocated elements
-    typedef T *            pointer;             //!< Pointer to allocated elements
-    typedef const T *      const_pointer;       //!< Constant pointer to allocated elements
-    typedef std::size_t    size_type;           //!< Integer type to use for size of objects
-    typedef std::ptrdiff_t difference_type;     //!< Type to hold differences between pointers
+    typedef T              value_type;      //!< Type of allocated elements
+    typedef T &            reference;       //!< Reference to allocated elements
+    typedef const T &      const_reference; //!< Constant reference to allocated elements
+    typedef T *            pointer;         //!< Pointer to allocated elements
+    typedef const T *      const_pointer;   //!< Constant pointer to allocated elements
+    typedef std::size_t    size_type;       //!< Integer type to use for size of objects
+    typedef std::ptrdiff_t difference_type; //!< Type to hold differences between pointers
 
     /*! \libinternal \brief Standard-required typedef to use allocator with different class.
      *
@@ -133,7 +131,7 @@ public:
     template <class U>
     struct rebind
     {
-        typedef AlignedAllocator<U> other;     //!< Align class U with our alignment
+        typedef AlignedAllocator<U> other; //!< Align class U with our alignment
     };
 
     /*! \brief Templated copy constructor
@@ -143,14 +141,16 @@ public:
      * it in debug mode, presumably to implement some checks.
      */
     template <class U>
-    explicit AlignedAllocator(const AlignedAllocator<U> &) {}
+    explicit AlignedAllocator(const AlignedAllocator<U> &)
+    {
+    }
 
     /*! \brief Constructor
      *
      * No constructor can be auto-generated in the presence of any
      * user-defined constructor, but we want the default constructor.
      */
-    AlignedAllocator() {};
+    AlignedAllocator(){};
 
     /*! \brief Return address of an object
      *
@@ -207,8 +207,11 @@ public:
      * \param p      Adress of memory where to construct object
      * \param args   Variable-length list of arguments to constructor
      */
-    template <class ... Args>
-    void construct(pointer p, Args && ... args) { ::new((void *)p)T(std::forward<Args>(args) ...); }
+    template <class... Args>
+    void construct(pointer p, Args &&... args)
+    {
+        ::new ((void *)p) T(std::forward<Args>(args)...);
+    }
 
     /*! \brief Call the destructor of object without releasing memory
      *
@@ -231,7 +234,11 @@ public:
      * This is a member function of the left-hand-side allocator.
      */
     template <class T2>
-    bool operator==(const AlignedAllocator<T2> &gmx_unused rhs) const { return std::is_same<T, T2>::value; GMX_UNUSED_VALUE(rhs); }
+    bool operator==(const AlignedAllocator<T2> &gmx_unused rhs) const
+    {
+        return std::is_same<T, T2>::value;
+        GMX_UNUSED_VALUE(rhs);
+    }
 
     /*! \brief Return true if two allocators are different
      *
@@ -242,6 +249,6 @@ public:
     bool operator!=(const AlignedAllocator &rhs) const { return !operator==(rhs); }
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_UTILITY_ALIGNEDALLOCATOR_H

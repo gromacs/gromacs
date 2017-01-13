@@ -216,7 +216,7 @@ void AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader 
         _impl->ci = 0;
     }
 
-/*
+    /*
     for (int i = 0; i < _impl->nmax; ++i)
     {
         _impl->p[_impl->ci + i].bPres = false;
@@ -255,7 +255,8 @@ void AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader
         if (_impl->histm)
         {
             _impl->histm->init(histogramFromBins(0, _impl->max_store / _impl->nmax,
-                                                 _impl->dt).integerBins());
+                                                 _impl->dt)
+                                       .integerBins());
         }
         moduleManager().notifyDataStart(this);
     }
@@ -280,7 +281,7 @@ void AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader
             for (int d = 0; d < _impl->ndim; ++d)
             {
                 real displ = _impl->oldval[_impl->ci + j + d]
-                    - _impl->oldval[i + j + d];
+                             - _impl->oldval[i + j + d];
                 dist2 += displ * displ;
             }
             _impl->currValues_.emplace_back(dist2);

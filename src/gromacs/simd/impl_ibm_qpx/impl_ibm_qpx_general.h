@@ -39,13 +39,13 @@
 namespace gmx
 {
 
-static inline void simdPrefetch(const void * m)
+static inline void simdPrefetch(const void *m)
 {
 #if defined __GNUC__
     __builtin_prefetch(m);
 #endif
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPLEMENTATION_IBM_QPX_GENERAL_H

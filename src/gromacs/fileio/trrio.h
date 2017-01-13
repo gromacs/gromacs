@@ -77,17 +77,17 @@ struct t_fileio;
 /* sizes of the structs in a trr file, sizes are given in bytes. */
 typedef struct gmx_trr_header_t
 {
-    gmx_bool bDouble;      /* Double precision?                   */
-    int      ir_size;      /* Backward compatibility              */
-    int      e_size;       /* Backward compatibility              */
-    int      box_size;     /* Non zero if a box is present        */
-    int      vir_size;     /* Backward compatibility              */
-    int      pres_size;    /* Backward compatibility              */
-    int      top_size;     /* Backward compatibility              */
-    int      sym_size;     /* Backward compatibility              */
-    int      x_size;       /* Non zero if coordinates are present */
-    int      v_size;       /* Non zero if velocities are present  */
-    int      f_size;       /* Non zero if forces are present      */
+    gmx_bool bDouble;   /* Double precision?                   */
+    int      ir_size;   /* Backward compatibility              */
+    int      e_size;    /* Backward compatibility              */
+    int      box_size;  /* Non zero if a box is present        */
+    int      vir_size;  /* Backward compatibility              */
+    int      pres_size; /* Backward compatibility              */
+    int      top_size;  /* Backward compatibility              */
+    int      sym_size;  /* Backward compatibility              */
+    int      x_size;    /* Non zero if coordinates are present */
+    int      v_size;    /* Non zero if velocities are present  */
+    int      f_size;    /* Non zero if forces are present      */
 
     int         natoms;    /* The total number of atoms           */
     gmx_int64_t step;      /* Current step number                 */

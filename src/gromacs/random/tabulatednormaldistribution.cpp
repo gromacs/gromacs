@@ -51,7 +51,8 @@ template <>
 const std::vector<real> TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::c_table_ = TabulatedNormalDistribution<real, c_TabulatedNormalDistributionDefaultBits>::makeTable();
 #else
 // Avoid compiler warnings about no public symbols
-void TabulatedNormalDistributionDummy(){}
+void TabulatedNormalDistributionDummy()
+{
+}
 #endif
-
 }

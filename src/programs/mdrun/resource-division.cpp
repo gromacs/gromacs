@@ -76,7 +76,7 @@ static const bool bHasOmpSupport = GMX_OPENMP;
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
  * the number of threads will get lowered.
  */
-static const int min_atoms_per_mpi_thread =  90;
+static const int min_atoms_per_mpi_thread = 90;
 static const int min_atoms_per_gpu        = 900;
 #endif /* GMX_THREAD_MPI */
 
@@ -96,7 +96,7 @@ static const int min_atoms_per_gpu        = 900;
  * Sandy/Ivy Bridge, Has/Broadwell. By checking for AVX instead of
  * model numbers we ensure also future Intel CPUs are covered.
  */
-const int nthreads_omp_faster_default   =  8;
+const int nthreads_omp_faster_default   = 8;
 const int nthreads_omp_faster_Nehalem   = 12;
 const int nthreads_omp_faster_Intel_AVX = 16;
 /* For CPU only runs the fastest options are usually MPI or OpenMP only.
@@ -105,7 +105,7 @@ const int nthreads_omp_faster_Intel_AVX = 16;
  * OpenMP threads counts can still be ok. Multiplying the numbers above
  * by a factor of 2 seems to be a good estimate.
  */
-const int nthreads_omp_faster_gpu_fac =  2;
+const int nthreads_omp_faster_gpu_fac = 2;
 
 /* This is the case with MPI (2 or more MPI PP ranks).
  * By default we will terminate with a fatal error when more than 8
@@ -116,11 +116,11 @@ const int nthreads_omp_faster_gpu_fac =  2;
  * is divisible by the number of GPUs.
  */
 #if GMX_OPENMP && GMX_MPI
-const int nthreads_omp_mpi_ok_max     =  8;
-const int nthreads_omp_mpi_ok_min_cpu =  1;
+const int nthreads_omp_mpi_ok_max     = 8;
+const int nthreads_omp_mpi_ok_min_cpu = 1;
 #endif
-const int nthreads_omp_mpi_ok_min_gpu =  2;
-const int nthreads_omp_mpi_target_max =  6;
+const int nthreads_omp_mpi_ok_min_gpu = 2;
+const int nthreads_omp_mpi_target_max = 6;
 
 
 /* Returns the maximum OpenMP thread count for which using a single MPI rank
@@ -301,7 +301,8 @@ class SingleRankChecker
 {
 public:
     //! Constructor
-    SingleRankChecker() : value_(false), reasons_() {}
+    SingleRankChecker()
+        : value_(false), reasons_() {}
     /*! \brief Call this function for each possible condition
         under which a single rank is required, along with a string
         describing the constraint when it is applied. */
@@ -325,6 +326,7 @@ public:
     {
         return formatAndJoin(reasons_, "\n", gmx::IdentityFormatter());
     }
+
 private:
     bool                     value_;
     std::vector<std::string> reasons_;
@@ -407,7 +409,7 @@ int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
     }
 
     nrank
-        = get_tmpi_omp_thread_division(hwinfo, hw_opt, nthreads_tot_max, ngpu);
+            = get_tmpi_omp_thread_division(hwinfo, hw_opt, nthreads_tot_max, ngpu);
 
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
     {
@@ -531,7 +533,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
     const char *mpi_option = "";
 #endif
 
-    /* This function should be called after thread-MPI (when configured) and
+/* This function should be called after thread-MPI (when configured) and
      * OpenMP have been initialized. Check that here.
      */
 #if GMX_THREAD_MPI
@@ -550,15 +552,15 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
         int count[3], count_max[3];
 
         count[0] = -nth_omp_min;
-        count[1] =  nth_omp_max;
-        count[2] =  ngpu;
+        count[1] = nth_omp_max;
+        count[2] = ngpu;
 
         MPI_Allreduce(count, count_max, 3, MPI_INT, MPI_MAX, cr->mpi_comm_mysim);
 
         /* In case of an inhomogeneous run setup we use the maximum counts */
         nth_omp_min = -count_max[0];
-        nth_omp_max =  count_max[1];
-        ngpu        =  count_max[2];
+        nth_omp_max = count_max[1];
+        ngpu        = count_max[2];
     }
 
     int nthreads_omp_mpi_ok_min;
@@ -645,8 +647,8 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
             }
         }
     }
-#else /* GMX_OPENMP && GMX_MPI */
-      /* No OpenMP and/or MPI: it doesn't make much sense to check */
+#else  /* GMX_OPENMP && GMX_MPI */
+    /* No OpenMP and/or MPI: it doesn't make much sense to check */
     GMX_UNUSED_VALUE(hw_opt);
     GMX_UNUSED_VALUE(bNtOmpOptionSet);
     GMX_UNUSED_VALUE(cr);
@@ -689,7 +691,7 @@ void check_and_update_hw_opt_1(gmx_hw_opt_t *   hw_opt,
      */
     gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp, SIMMASTER(cr));
 
-    /* Check restrictions on the user supplied options before modifying them.
+/* Check restrictions on the user supplied options before modifying them.
      * TODO: Put the user values in a const struct and preserve them.
      */
 #if !GMX_THREAD_MPI

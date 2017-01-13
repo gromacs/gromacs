@@ -82,11 +82,11 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
 
     /* read rotation parameters */
     CTYPE("Output frequency for angle, torque and rotation potential energy for the whole group");
-    ITYPE("rot-nstrout",     rot->nstrout, 100);
+    ITYPE("rot-nstrout", rot->nstrout, 100);
     CTYPE("Output frequency for per-slab data (angles, torques and slab centers)");
-    ITYPE("rot-nstsout",     rot->nstsout, 1000);
+    ITYPE("rot-nstsout", rot->nstsout, 1000);
     CTYPE("Number of rotation groups");
-    ITYPE("rot-ngroups",     rot->ngrp, 1);
+    ITYPE("rot-ngroups", rot->ngrp, 1);
 
     if (rot->ngrp < 1)
     {
@@ -138,7 +138,7 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
         sprintf(buf, "rot-pivot%d", g);
         STYPE(buf, s_vec, "0.0 0.0 0.0");
         clear_dvec(vec);
-        if ( (rotg->eType == erotgISO) || (rotg->eType == erotgPM) || (rotg->eType == erotgRM) || (rotg->eType == erotgRM2) )
+        if ((rotg->eType == erotgISO) || (rotg->eType == erotgPM) || (rotg->eType == erotgRM) || (rotg->eType == erotgRM2))
         {
             string2dvec(s_vec, vec);
         }
@@ -180,7 +180,7 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
         CTYPE("Value of additive constant epsilon' (nm^2) for rm2* and flex2* potentials");
         sprintf(buf, "rot-eps%d", g);
         RTYPE(buf, rotg->eps, 1e-4);
-        if ( (rotg->eps <= 0.0) && (rotg->eType == erotgRM2 || rotg->eType == erotgFLEX2) )
+        if ((rotg->eps <= 0.0) && (rotg->eType == erotgRM2 || rotg->eType == erotgFLEX2))
         {
             sprintf(warn_buf, "rot-eps%d <= 0", g);
             warning_error(wi, warn_buf);
@@ -192,7 +192,7 @@ extern char **read_rotparams(int *ninp_p, t_inpfile **inp_p, t_rot *rot,
         CTYPE("For fit type 'potential', nr. of angles around the reference for which the pot. is evaluated");
         sprintf(buf, "rot-potfit-nsteps%d", g);
         ITYPE(buf, rotg->PotAngle_nstep, 21);
-        if ( (rotg->eFittype == erotgFitPOT) && (rotg->PotAngle_nstep < 1) )
+        if ((rotg->eFittype == erotgFitPOT) && (rotg->PotAngle_nstep < 1))
         {
             sprintf(warn_buf, "rot-potfit-nsteps%d < 1", g);
             warning_error(wi, warn_buf);
@@ -245,7 +245,7 @@ extern void set_reference_positions(
 {
     int              g, i, ii;
     t_rotgrp *       rotg;
-    gmx_trr_header_t header;    /* Header information of reference file */
+    gmx_trr_header_t header; /* Header information of reference file */
     char             base[STRLEN], extension[STRLEN], reffile[STRLEN];
     char *           extpos;
     rvec             f_box[3]; /* Box from reference file */
@@ -272,7 +272,8 @@ extern void set_reference_positions(
          * the user, we issue a fatal error if the group file can not be found */
         if (bSet && !gmx_fexist(reffile))
         {
-            gmx_fatal(FARGS, "%s The file containing the reference positions was not found.\n"
+            gmx_fatal(FARGS,
+                      "%s The file containing the reference positions was not found.\n"
                       "Expected the file '%s' for group %d.\n",
                       RotStr, reffile, g);
         }

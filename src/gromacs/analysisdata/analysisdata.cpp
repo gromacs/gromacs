@@ -81,7 +81,7 @@ public:
     AnalysisDataStorageFrame *currentFrame_;
 };
 
-}   // namespace internal
+} // namespace internal
 
 /********************************************************************
  * AnalysisData::Impl
@@ -97,7 +97,7 @@ class AnalysisData::Impl
 public:
     //! Smart pointer type to manage a data handle implementation.
     typedef std::unique_ptr<internal::AnalysisDataHandleImpl>
-        HandlePointer;
+            HandlePointer;
     //! Shorthand for a list of data handles.
     typedef std::vector<HandlePointer> HandleList;
 
@@ -235,7 +235,7 @@ void AnalysisDataHandle::startFrame(int index, real x, real dx)
     GMX_RELEASE_ASSERT(impl_->currentFrame_ == nullptr,
                        "startFrame() called twice without calling finishFrame()");
     impl_->currentFrame_
-        = &impl_->data_.impl_->storage_.startFrame(index, x, dx);
+            = &impl_->data_.impl_->storage_.startFrame(index, x, dx);
 }
 
 
@@ -296,7 +296,7 @@ void AnalysisDataHandle::finishFrame()
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
                        "finishFrame() called without calling startFrame()");
     AnalysisDataStorageFrame *frame = impl_->currentFrame_;
-    impl_->currentFrame_ = nullptr;
+    impl_->currentFrame_            = nullptr;
     frame->finishFrame();
 }
 

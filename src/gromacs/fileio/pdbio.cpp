@@ -168,7 +168,6 @@ void gmx_write_pdb_box(FILE *out, int ePBC, const matrix box)
         fprintf(out, "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11s%4d\n",
                 20 * norm(box[XX]), 10 * norm(box[YY]), 10 * norm(box[ZZ]),
                 alpha, beta, gamma, "P 21 1 1", 1);
-
     }
 }
 
@@ -192,7 +191,7 @@ static void read_cryst1(char *line, int *ePBC, matrix box)
         symb        = 0;
         symc        = 0;
         sscanf(sg, "%c %d %d %d", &ident, &syma, &symb, &symc);
-        if (ident == 'P' && syma ==  1 && symb <= 1 && symc <= 1)
+        if (ident == 'P' && syma == 1 && symb <= 1 && symc <= 1)
         {
             fc        = strtod(sc, nullptr) * 0.1;
             ePBC_file = (fc > 0 ? epbcXYZ : epbcXY);
@@ -267,24 +266,24 @@ void write_pdbfile_indexed(FILE *out, const char *title,
                            int model_nr, int nindex, const int index[],
                            gmx_conect conect, gmx_bool bTerSepChains)
 {
-    gmx_conect_t *    gc = (gmx_conect_t *)conect;
-    char              resnm[6], nm[6];
-    int               i, ii;
-    int               resind, resnr;
-    enum PDB_record   type;
-    unsigned char     resic, ch;
-    char              altloc;
-    real              occup, bfac;
-    gmx_bool          bOccup;
-    int               chainnum, lastchainnum;
-    gmx_residuetype_t*rt;
-    const char *      p_restype;
-    const char *      p_lastrestype;
+    gmx_conect_t *     gc = (gmx_conect_t *)conect;
+    char               resnm[6], nm[6];
+    int                i, ii;
+    int                resind, resnr;
+    enum PDB_record    type;
+    unsigned char      resic, ch;
+    char               altloc;
+    real               occup, bfac;
+    gmx_bool           bOccup;
+    int                chainnum, lastchainnum;
+    gmx_residuetype_t *rt;
+    const char *       p_restype;
+    const char *       p_lastrestype;
 
     gmx_residuetype_init(&rt);
 
     fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
-    if (box && ( norm2(box[XX]) || norm2(box[YY]) || norm2(box[ZZ]) ) )
+    if (box && (norm2(box[XX]) || norm2(box[YY]) || norm2(box[ZZ])))
     {
         gmx_write_pdb_box(out, ePBC, box);
     }
@@ -524,7 +523,7 @@ void get_pdb_atomnumber(const t_atoms *atoms, gmx_atomprop_t aps)
         std::strcpy(anm, atoms->pdbinfo[i].atomnm);
         std::strcpy(anm_copy, atoms->pdbinfo[i].atomnm);
         bool atomNumberSet = false;
-        len = strlen(anm);
+        len                = strlen(anm);
         if ((anm[0] != ' ') && ((len <= 2) || !std::isdigit(anm[2])))
         {
             anm_copy[2] = nc;
@@ -633,7 +632,7 @@ static int read_atom(t_symtab *symtab,
     trim(rnr);
     resnr = std::strtol(rnr, nullptr, 10);
     resic = line[j];
-    j    += 4;
+    j += 4;
 
     /* X,Y,Z Coordinate */
     for (k = 0; (k < 8); k++, j++)
@@ -933,7 +932,7 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
             case epdbCOMPND:
                 if ((!std::strstr(line, ": ")) || (std::strstr(line + 6, "MOLECULE:")))
                 {
-                    if (!(c = std::strstr(line + 6, "MOLECULE:")) )
+                    if (!(c = std::strstr(line + 6, "MOLECULE:")))
                     {
                         c = line;
                     }
@@ -950,7 +949,7 @@ int read_pdbfile(FILE *in, char *title, int *model_nr,
                     d = strstr(c, "   ");
                     if (d)
                     {
-                        while ( (d[-1] == ';') && d > c)
+                        while ((d[-1] == ';') && d > c)
                         {
                             d--;
                         }
@@ -1088,7 +1087,7 @@ int gmx_fprintf_pdb_atomline(FILE *          fp,
         /* If the atom name is an element name with two chars, it should start already in column 13.
          * Otherwise it should start in column 14, unless the name length is 4 chars.
          */
-        if ( (element != nullptr) && (std::strlen(element) >= 2) && (gmx_strncasecmp(atom_name, element, 2) == 0) )
+        if ((element != nullptr) && (std::strlen(element) >= 2) && (gmx_strncasecmp(atom_name, element, 2) == 0))
         {
             start_name_in_col13 = TRUE;
         }

@@ -49,7 +49,7 @@
 
 static const char *type[] = {
     "button", "radiobuttons", "groupbox", "checkbox",
-    "pixmap", "statictext",   "edittext", "defbutton"
+    "pixmap", "statictext", "edittext", "defbutton"
 };
 
 void ReadDlgError(const char *infile, eDLGERR err, const char *s,

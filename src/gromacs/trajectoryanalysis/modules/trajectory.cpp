@@ -125,32 +125,16 @@ void Trajectory::initOptions(IOptionsContainer *options, TrajectoryAnalysisSetti
 
     settings->setHelpText(desc);
 
-    options->addOption(FileNameOption("ox").filetype(eftPlot).outputFile()
-                           .store(&fnX_).defaultBasename("coord")
-                           .description("Coordinates for each position as a function of time"));
-    options->addOption(FileNameOption("ov").filetype(eftPlot).outputFile()
-                           .store(&fnV_).defaultBasename("veloc")
-                           .description("Velocities for each position as a function of time"));
-    options->addOption(FileNameOption("of").filetype(eftPlot).outputFile()
-                           .store(&fnF_).defaultBasename("force")
-                           .description("Forces for each position as a function of time"));
+    options->addOption(FileNameOption("ox").filetype(eftPlot).outputFile().store(&fnX_).defaultBasename("coord").description("Coordinates for each position as a function of time"));
+    options->addOption(FileNameOption("ov").filetype(eftPlot).outputFile().store(&fnV_).defaultBasename("veloc").description("Velocities for each position as a function of time"));
+    options->addOption(FileNameOption("of").filetype(eftPlot).outputFile().store(&fnF_).defaultBasename("force").description("Forces for each position as a function of time"));
 
-    options->addOption(SelectionOption("select").storeVector(&sel_)
-                           .required().dynamicMask().multiValue()
-                           .description("Selections to analyze"));
+    options->addOption(SelectionOption("select").storeVector(&sel_).required().dynamicMask().multiValue().description("Selections to analyze"));
 
-    options->addOption(BooleanOption("x").store(&dimMask_[XX])
-                           .storeIsSet(&maskSet_[XX])
-                           .description("Plot X component"));
-    options->addOption(BooleanOption("y").store(&dimMask_[YY])
-                           .storeIsSet(&maskSet_[YY])
-                           .description("Plot Y component"));
-    options->addOption(BooleanOption("z").store(&dimMask_[ZZ])
-                           .storeIsSet(&maskSet_[ZZ])
-                           .description("Plot Z component"));
-    options->addOption(BooleanOption("len").store(&dimMask_[DIM])
-                           .storeIsSet(&maskSet_[DIM])
-                           .description("Plot vector length"));
+    options->addOption(BooleanOption("x").store(&dimMask_[XX]).storeIsSet(&maskSet_[XX]).description("Plot X component"));
+    options->addOption(BooleanOption("y").store(&dimMask_[YY]).storeIsSet(&maskSet_[YY]).description("Plot Y component"));
+    options->addOption(BooleanOption("z").store(&dimMask_[ZZ]).storeIsSet(&maskSet_[ZZ]).description("Plot Z component"));
+    options->addOption(BooleanOption("len").store(&dimMask_[DIM]).storeIsSet(&maskSet_[DIM]).description("Plot vector length"));
 }
 
 
@@ -180,7 +164,7 @@ void Trajectory::optionsFinished(TrajectoryAnalysisSettings *settings)
 
 
 void Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                              const TopologyInformation         & /*top*/)
+                              const TopologyInformation & /*top*/)
 {
     if (!fnX_.empty())
     {
@@ -308,11 +292,11 @@ void Trajectory::writeOutput()
 {
 }
 
-}       // namespace
+} // namespace
 
 const char TrajectoryInfo::name[] = "trajectory";
 const char TrajectoryInfo::shortDescription[]
-    = "Print coordinates, velocities, and/or forces for selections";
+        = "Print coordinates, velocities, and/or forces for selections";
 
 TrajectoryAnalysisModulePointer TrajectoryInfo::create()
 {

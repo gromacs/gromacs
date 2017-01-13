@@ -135,12 +135,12 @@ static void tabulateStructureFactors(int natom, rvec x[], int kmax, cvec **eir, 
 }
 
 real do_ewald(t_inputrec *ir,
-              rvec x[],        rvec f[],
-              real chargeA[],  real chargeB[],
-              rvec box,
-              t_commrec *cr,   int natoms,
-              matrix lrvir,    real ewaldcoeff,
-              real lambda,     real *dvdlambda,
+              rvec x[], rvec f[],
+              real chargeA[], real chargeB[],
+              rvec       box,
+              t_commrec *cr, int natoms,
+              matrix lrvir, real ewaldcoeff,
+              real lambda, real *dvdlambda,
               struct gmx_ewald_tab_t *et)
 {
     real     factor     = -1.0 / (4 * ewaldcoeff * ewaldcoeff);
@@ -247,8 +247,8 @@ real do_ewald(t_inputrec *ir,
                         cs += et->tab_qxyz[n].re;
                         ss += et->tab_qxyz[n].im;
                     }
-                    energy_AB[q]  += ak * (cs * cs + ss * ss);
-                    tmp            = scale * akv * (cs * cs + ss * ss);
+                    energy_AB[q] += ak * (cs * cs + ss * ss);
+                    tmp = scale * akv * (cs * cs + ss * ss);
                     lrvir[XX][XX] -= tmp * mx * mx;
                     lrvir[XX][YY] -= tmp * mx * my;
                     lrvir[XX][ZZ] -= tmp * mx * mz;
@@ -258,7 +258,7 @@ real do_ewald(t_inputrec *ir,
                     for (n = 0; n < natoms; n++)
                     {
                         /*tmp=scale*ak*(cs*tab_qxyz[n].im-ss*tab_qxyz[n].re);*/
-                        tmp       = scale * ak * (cs * et->tab_qxyz[n].im - ss * et->tab_qxyz[n].re);
+                        tmp = scale * ak * (cs * et->tab_qxyz[n].im - ss * et->tab_qxyz[n].re);
                         f[n][XX] += tmp * mx * 2 * scaleRecip;
                         f[n][YY] += tmp * my * 2 * scaleRecip;
                         f[n][ZZ] += tmp * mz * 2 * scaleRecip;
@@ -281,7 +281,7 @@ real do_ewald(t_inputrec *ir,
     }
     else
     {
-        energy      = (1.0 - lambda) * energy_AB[0] + lambda * energy_AB[1];
+        energy = (1.0 - lambda) * energy_AB[0] + lambda * energy_AB[1];
         *dvdlambda += scaleRecip * (energy_AB[1] - energy_AB[0]);
     }
 

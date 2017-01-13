@@ -74,10 +74,17 @@ typedef struct
     t_fsimple **fsimple;
 } t_fgrid;
 
-typedef enum
-{
-    eGRIDEXP, eACCOEXP, eACCCEXP, eGRPEXP, eITEMEXP, eSAMEPOINT,
-    eTOOWIDE, eTOOHIGH, eQUOTE,   eNOVALS
+typedef enum {
+    eGRIDEXP,
+    eACCOEXP,
+    eACCCEXP,
+    eGRPEXP,
+    eITEMEXP,
+    eSAMEPOINT,
+    eTOOWIDE,
+    eTOOHIGH,
+    eQUOTE,
+    eNOVALS
 } eDLGERR;
 
 void ReadDlgErr(const char *infile, eDLGERR err, const char *s);
@@ -90,4 +97,4 @@ void DumpFGrid(t_fgrid *fgrid);
 
 void ReadQuoteString(const char *infile, FILE *in, char *buf);
 
-#endif  /* _fgrid_h */
+#endif /* _fgrid_h */

@@ -49,10 +49,10 @@ extern "C" {
 
 /* check kernel/toppush.c when you change these numbers */
 #define MAXATOMLIST 6
-#define MAXFORCEPARAM   12
-#define NR_RBDIHS   6
-#define NR_CBTDIHS   6
-#define NR_FOURDIHS     4
+#define MAXFORCEPARAM 12
+#define NR_RBDIHS 6
+#define NR_CBTDIHS 6
+#define NR_FOURDIHS 4
 
 typedef int t_iatom;
 
@@ -156,8 +156,7 @@ enum
 
 #define IS_RESTRAINT_TYPE(ifunc) (((ifunc == F_POSRES) || (ifunc == F_FBPOSRES) || (ifunc == F_DISRES) || (ifunc == F_RESTRBONDS) || (ifunc == F_DISRESVIOL) || (ifunc == F_ORIRES) || (ifunc == F_ORIRESDEV) || (ifunc == F_ANGRES) || (ifunc == F_ANGRESZ) || (ifunc == F_DIHRES)))
 
-typedef union t_iparams
-{
+typedef union t_iparams {
     /* Some parameters have A and B values for free energy calculations.
      * The B values are not used for regular simulations of course.
      * Free Energy for nonbondeds can be computed by changing the atom type.
@@ -243,7 +242,9 @@ typedef union t_iparams
      */
     struct
     {
-        real phiA, cpA; int mult; real phiB, cpB;
+        real phiA, cpA;
+        int  mult;
+        real phiB, cpB;
     } pdihs;
     struct
     {
@@ -266,7 +267,8 @@ typedef union t_iparams
     } posres;
     struct
     {
-        real pos0[DIM], r, k; int geom;
+        real pos0[DIM], r, k;
+        int  geom;
     } fbposres;
     struct
     {
@@ -282,12 +284,14 @@ typedef union t_iparams
     } vsite;
     struct
     {
-        int n; real a;
+        int  n;
+        real a;
     } vsiten;
     /* NOTE: npair is only set after reading the tpx file */
     struct
     {
-        real low, up1, up2, kfac; int type, label, npair;
+        real low, up1, up2, kfac;
+        int  type, label, npair;
     } disres;
     struct
     {
@@ -295,11 +299,14 @@ typedef union t_iparams
     } dihres;
     struct
     {
-        int ex, power, label; real c, obs, kfac;
+        int  ex, power, label;
+        real c, obs, kfac;
     } orires;
     struct
     {
-        int table; real kA; real kB;
+        int  table;
+        real kA;
+        real kB;
     } tab;
     struct
     {
@@ -312,7 +319,7 @@ typedef union t_iparams
     struct
     {
         real buf[MAXFORCEPARAM];
-    } generic;                                               /* Conversion */
+    } generic; /* Conversion */
 } t_iparams;
 
 typedef int t_functype;
@@ -377,7 +384,10 @@ typedef struct gmx_ffparams_t
 
 enum
 {
-    ilsortUNKNOWN, ilsortNO_FE, ilsortFE_UNSORTED, ilsortFE_SORTED
+    ilsortUNKNOWN,
+    ilsortNO_FE,
+    ilsortFE_UNSORTED,
+    ilsortFE_SORTED
 };
 
 typedef struct t_idef

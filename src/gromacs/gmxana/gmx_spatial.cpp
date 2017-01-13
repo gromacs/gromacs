@@ -52,7 +52,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static const double bohr = 0.529177249;  /* conversion factor to compensate for VMD plugin conversion... */
+static const double bohr = 0.529177249; /* conversion factor to compensate for VMD plugin conversion... */
 
 int gmx_spatial(int argc, char *argv[])
 {
@@ -107,25 +107,20 @@ int gmx_spatial(int argc, char *argv[])
     };
 
     static gmx_bool bPBC         = FALSE;
-    static int      iIGNOREOUTER = -1;     /*Positive values may help if the surface is spikey */
+    static int      iIGNOREOUTER = -1; /*Positive values may help if the surface is spikey */
     static gmx_bool bCUTDOWN     = TRUE;
-    static real     rBINWIDTH    = 0.05;   /* nm */
+    static real     rBINWIDTH    = 0.05; /* nm */
     static gmx_bool bCALCDIV     = TRUE;
     static int      iNAB         = 4;
 
     t_pargs pa[] = {
-        { "-pbc",      FALSE, etBOOL, {&bPBC},
-          "Use periodic boundary conditions for computing distances" },
-        { "-div",      FALSE, etBOOL, {&bCALCDIV},
-          "Calculate and apply the divisor for bin occupancies based on atoms/minimal cube size. Set as TRUE for visualization and as FALSE ([TT]-nodiv[tt]) to get accurate counts per frame" },
-        { "-ign",      FALSE, etINT, {&iIGNOREOUTER},
-          "Do not display this number of outer cubes (positive values may reduce boundary speckles; -1 ensures outer surface is visible)" },
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "Use periodic boundary conditions for computing distances" },
+        { "-div", FALSE, etBOOL, { &bCALCDIV }, "Calculate and apply the divisor for bin occupancies based on atoms/minimal cube size. Set as TRUE for visualization and as FALSE ([TT]-nodiv[tt]) to get accurate counts per frame" },
+        { "-ign", FALSE, etINT, { &iIGNOREOUTER }, "Do not display this number of outer cubes (positive values may reduce boundary speckles; -1 ensures outer surface is visible)" },
         /*    { "-cut",      bCUTDOWN, etBOOL, {&bCUTDOWN},*/
         /*      "Display a total cube that is of minimal size" }, */
-        { "-bin",      FALSE, etREAL, {&rBINWIDTH},
-          "Width of the bins (nm)" },
-        { "-nab",      FALSE, etINT, {&iNAB},
-          "Number of additional bins to ensure proper memory allocation" }
+        { "-bin", FALSE, etREAL, { &rBINWIDTH }, "Width of the bins (nm)" },
+        { "-nab", FALSE, etINT, { &iNAB }, "Number of additional bins to ensure proper memory allocation" }
     };
 
     double            MINBIN[3];
@@ -156,8 +151,8 @@ int gmx_spatial(int argc, char *argv[])
     gmx_rmpbc_t       gpbc = nullptr;
 
     t_filenm fnm[] = {
-        { efTPS,  nullptr,  nullptr, ffREAD }, /* this is for the topology */
-        { efTRX, "-f", nullptr, ffREAD },      /* and this for the trajectory */
+        { efTPS, nullptr, nullptr, ffREAD }, /* this is for the topology */
+        { efTRX, "-f", nullptr, ffREAD },    /* and this for the trajectory */
         { efNDX, nullptr, nullptr, ffOPTRD }
     };
 
@@ -216,9 +211,9 @@ int gmx_spatial(int argc, char *argv[])
     }
     for (i = ZZ; i >= XX; --i)
     {
-        MAXBIN[i]  = (std::ceil((MAXBIN[i] - MINBIN[i]) / rBINWIDTH) + iNAB) * rBINWIDTH + MINBIN[i];
+        MAXBIN[i] = (std::ceil((MAXBIN[i] - MINBIN[i]) / rBINWIDTH) + iNAB) * rBINWIDTH + MINBIN[i];
         MINBIN[i] -= iNAB * rBINWIDTH;
-        nbin[i]    = static_cast<int>(std::ceil((MAXBIN[i] - MINBIN[i]) / rBINWIDTH));
+        nbin[i] = static_cast<int>(std::ceil((MAXBIN[i] - MINBIN[i]) / rBINWIDTH));
     }
     snew(bin, nbin[XX]);
     for (i = 0; i < nbin[XX]; ++i)
@@ -231,8 +226,8 @@ int gmx_spatial(int argc, char *argv[])
     }
     copy_mat(box, box_pbc);
     numfr = 0;
-    minx  = miny = minz = 999;
-    maxx  = maxy = maxz = 0;
+    minx = miny = minz = 999;
+    maxx = maxy = maxz = 0;
 
     if (bPBC)
     {
@@ -303,9 +298,9 @@ int gmx_spatial(int argc, char *argv[])
     if (!bCUTDOWN)
     {
         minx = miny = minz = 0;
-        maxx = nbin[XX];
-        maxy = nbin[YY];
-        maxz = nbin[ZZ];
+        maxx               = nbin[XX];
+        maxy               = nbin[YY];
+        maxz               = nbin[ZZ];
     }
 
     /* OUTPUT */

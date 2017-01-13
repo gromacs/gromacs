@@ -45,7 +45,7 @@
 namespace gmx
 {
 
-template <int index>
+template <int              index>
 static inline std::int32_t gmx_simdcall extract(SimdDInt32 a)
 {
     return _mm_extract_epi32(a.simdInternal_, index);
@@ -57,7 +57,7 @@ static inline SimdDouble maskzRsqrt(SimdDouble x, SimdDBool m)
     x.simdInternal_ = _mm_blendv_pd(_mm_set1_pd(1.0), x.simdInternal_, m.simdInternal_);
 #endif
     return {
-               _mm_and_pd(_mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x.simdInternal_))), m.simdInternal_)
+        _mm_and_pd(_mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x.simdInternal_))), m.simdInternal_)
     };
 }
 
@@ -67,55 +67,55 @@ static inline SimdDouble maskzRcp(SimdDouble x, SimdDBool m)
     x.simdInternal_ = _mm_blendv_pd(_mm_set1_pd(1.0), x.simdInternal_, m.simdInternal_);
 #endif
     return {
-               _mm_and_pd(_mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x.simdInternal_))), m.simdInternal_)
+        _mm_and_pd(_mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x.simdInternal_))), m.simdInternal_)
     };
 }
 
 static inline SimdDouble gmx_simdcall round(SimdDouble x)
 {
     return {
-               _mm_round_pd(x.simdInternal_, _MM_FROUND_NINT)
+        _mm_round_pd(x.simdInternal_, _MM_FROUND_NINT)
     };
 }
 
 static inline SimdDouble gmx_simdcall trunc(SimdDouble x)
 {
     return {
-               _mm_round_pd(x.simdInternal_, _MM_FROUND_TRUNC)
+        _mm_round_pd(x.simdInternal_, _MM_FROUND_TRUNC)
     };
 }
 
 static inline SimdDBool gmx_simdcall testBits(SimdDouble a)
 {
     __m128i ia  = _mm_castpd_si128(a.simdInternal_);
-    __m128i res = _mm_andnot_si128( _mm_cmpeq_epi64(ia, _mm_setzero_si128()), _mm_cmpeq_epi64(ia, ia));
+    __m128i res = _mm_andnot_si128(_mm_cmpeq_epi64(ia, _mm_setzero_si128()), _mm_cmpeq_epi64(ia, ia));
 
     return {
-               _mm_castsi128_pd(res)
+        _mm_castsi128_pd(res)
     };
 }
 
 static inline SimdDouble gmx_simdcall blend(SimdDouble a, SimdDouble b, SimdDBool sel)
 {
     return {
-               _mm_blendv_pd(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+        _mm_blendv_pd(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
     };
 }
 
 static inline SimdDInt32 gmx_simdcall operator*(SimdDInt32 a, SimdDInt32 b)
 {
     return {
-               _mm_mullo_epi32(a.simdInternal_, b.simdInternal_)
+        _mm_mullo_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdDInt32 gmx_simdcall blend(SimdDInt32 a, SimdDInt32 b, SimdDIBool sel)
 {
     return {
-               _mm_blendv_epi8(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+        _mm_blendv_epi8(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
     };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_SSE4_1_SIMD_DOUBLE_H

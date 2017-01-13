@@ -141,7 +141,7 @@ static void mk_igraph(t_graph *g, int ftype, const t_ilist *il,
             }
         }
         ia += np + 1;
-        i  += np + 1;
+        i += np + 1;
     }
 }
 
@@ -150,7 +150,9 @@ gmx_noreturn static void g_error(int line, const char *file)
     gmx_fatal(FARGS, "Trying to print nonexistent graph (file %s, line %d)",
               file, line);
 }
-#define GCHECK(g) if (g == NULL) g_error(__LINE__, __FILE__)
+#define GCHECK(g)  \
+    if (g == NULL) \
+    g_error(__LINE__, __FILE__)
 
 void p_graph(FILE *log, const char *title, t_graph *g)
 {
@@ -202,11 +204,11 @@ static void calc_1se(t_graph *g, int ftype, const t_ilist *il,
             iaa = ia[1];
             if (iaa >= at_start && iaa < at_end)
             {
-                nbond[iaa]   += 2;
+                nbond[iaa] += 2;
                 nbond[ia[2]] += 1;
                 nbond[ia[3]] += 1;
-                g->at_start   = std::min(g->at_start, iaa);
-                g->at_end     = std::max(g->at_end, iaa + 2 + 1);
+                g->at_start = std::min(g->at_start, iaa);
+                g->at_end   = std::max(g->at_end, iaa + 2 + 1);
             }
         }
         else
@@ -217,7 +219,7 @@ static void calc_1se(t_graph *g, int ftype, const t_ilist *il,
                 if (iaa >= at_start && iaa < at_end)
                 {
                     g->at_start = std::min(g->at_start, iaa);
-                    g->at_end   = std::max(g->at_end,  iaa + 1);
+                    g->at_end   = std::max(g->at_end, iaa + 1);
                     /* When making the graph we (might) link all atoms in an interaction
                      * sequentially. Therefore the end atoms add 1 to the count,
                      * the middle atoms 2.
@@ -271,7 +273,7 @@ static int calc_start_end(FILE *fplog, t_graph *g, const t_ilist il[],
     for (i = g->at_start; (i < g->at_end); i++)
     {
         nbtot += nbond[i];
-        nnb    = std::max(nnb, nbond[i]);
+        nnb = std::max(nnb, nbond[i]);
     }
     if (fplog)
     {
@@ -280,7 +282,6 @@ static int calc_start_end(FILE *fplog, t_graph *g, const t_ilist il[],
     }
     return nbtot;
 }
-
 
 
 static void compact_graph(FILE *fplog, t_graph *g)
@@ -363,7 +364,7 @@ static gmx_bool determine_graph_parts(t_graph *g, int *part)
     return bMultiPart;
 }
 
-void mk_graph_ilist(FILE *fplog,
+void mk_graph_ilist(FILE *         fplog,
                     const t_ilist *ilist, int at_start, int at_end,
                     gmx_bool bShakeOnly, gmx_bool bSettle,
                     t_graph *g)
@@ -470,7 +471,7 @@ void mk_graph_ilist(FILE *fplog,
     }
 }
 
-t_graph *mk_graph(FILE *fplog,
+t_graph *mk_graph(FILE *        fplog,
                   const t_idef *idef, int at_start, int at_end,
                   gmx_bool bShakeOnly, gmx_bool bSettle)
 {
@@ -577,14 +578,14 @@ static void mk_1shift_screw(const matrix box, const rvec hbox,
     int  signi, m;
     rvec dx;
 
-    if ((mi[XX] > 0 &&  mi[XX] % 2 == 1)
+    if ((mi[XX] > 0 && mi[XX] % 2 == 1)
         || (mi[XX] < 0 && -mi[XX] % 2 == 1))
     {
         signi = -1;
     }
     else
     {
-        signi =  1;
+        signi = 1;
     }
 
     rvec_sub(xi, xj, dx);
@@ -605,7 +606,7 @@ static void mk_1shift_screw(const matrix box, const rvec hbox,
     {
         /* Rotate */
         dx[YY] = xi[YY] - (box[YY][YY] + box[ZZ][YY] - xj[YY]);
-        dx[ZZ] = xi[ZZ] - (box[ZZ][ZZ]               - xj[ZZ]);
+        dx[ZZ] = xi[ZZ] - (box[ZZ][ZZ] - xj[ZZ]);
     }
     for (m = 1; (m < DIM); m++)
     {
@@ -684,7 +685,8 @@ static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
             {
                 set_pbc(&pbc, -1, box);
                 pbc_dx(&pbc, x[ai], x[aj], dx);
-                fprintf(debug, "mk_grey: shifts for atom %d due to atom %d\n"
+                fprintf(debug,
+                        "mk_grey: shifts for atom %d due to atom %d\n"
                         "are (%d,%d,%d), should be (%d,%d,%d)\n"
                         "dx = (%g,%g,%g)\n",
                         aj + 1, ai + 1, is_aj[XX], is_aj[YY], is_aj[ZZ],
@@ -765,7 +767,7 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC,
 
     fW = 0;
 
-    /* We even have a loop invariant:
+/* We even have a loop invariant:
      * nW+nG+nB == g->nbound
      */
 #ifdef DEBUG2
@@ -873,7 +875,7 @@ void shift_x(const t_graph *g, const matrix box, const rvec x[], rvec x_s[])
             {
                 x_s[j][XX] = x[j][XX] + tx * box[XX][XX];
                 x_s[j][YY] = box[YY][YY] + box[ZZ][YY] - x[j][YY];
-                x_s[j][ZZ] = box[ZZ][ZZ]               - x[j][ZZ];
+                x_s[j][ZZ] = box[ZZ][ZZ] - x[j][ZZ];
             }
             else
             {

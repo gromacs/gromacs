@@ -57,8 +57,7 @@
 #include "config.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 #if 0
 } /* fixes auto-indentation problems */
@@ -80,11 +79,10 @@ extern "C"
  *                first argument is considered to be respectively less than,
  *                equal to, or greater than the second.
  */
-void
-gmx_qsort(void *base,
-          size_t nmemb,
-          size_t size,
-          int (*compar)(const void *, const void *));
+void gmx_qsort(void * base,
+               size_t nmemb,
+               size_t size,
+               int (*compar)(const void *, const void *));
 
 
 /*! \def gmx_qsort_threadsafe

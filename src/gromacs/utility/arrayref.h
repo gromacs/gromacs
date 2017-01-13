@@ -66,7 +66,9 @@ namespace gmx
  * reference explicitly would otherwise require specifying the full array
  * reference type, including the template parameter.
  */
-struct EmptyArrayRef {};
+struct EmptyArrayRef
+{
+};
 
 /*! \brief STL-like container for an interface to a C array of T (or part
  * of a std::vector<T> or std::array<T>).
@@ -105,25 +107,25 @@ class ArrayRef
 {
 public:
     //! Type of values stored in the container.
-    typedef T         value_type;
+    typedef T value_type;
     //! Type for representing size of the container.
-    typedef size_t    size_type;
+    typedef size_t size_type;
     //! Type for representing difference between two container indices.
     typedef ptrdiff_t difference_type;
     //! Const reference to a container element.
-    typedef const T  &const_reference;
+    typedef const T &const_reference;
     //! Const pointer to a container element.
-    typedef const T  *const_pointer;
+    typedef const T *const_pointer;
     //! Const iterator type for the container.
-    typedef const T  *const_iterator;
+    typedef const T *const_iterator;
     //! Reference to a container element.
-    typedef T        &reference;
+    typedef T &reference;
     //! Pointer to a container element.
-    typedef T        *pointer;
+    typedef T *pointer;
     //! Iterator type for the container.
-    typedef T        *iterator;
+    typedef T *iterator;
     //! Standard reverse iterator.
-    typedef std::reverse_iterator<iterator>       reverse_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
     //! Standard reverse iterator.
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
@@ -175,7 +177,8 @@ public:
     /*! \brief
      * Constructs an empty reference.
      */
-    ArrayRef() : begin_(NULL), end_(NULL) {}
+    ArrayRef()
+        : begin_(NULL), end_(NULL) {}
     /*! \brief
      * Constructs an empty reference.
      *
@@ -183,7 +186,8 @@ public:
      * used to initialize any ArrayRef, without specifying the template
      * type.  It is not explicit to enable that usage.
      */
-    ArrayRef(const EmptyArrayRef &) : begin_(nullptr), end_(nullptr) {}
+    ArrayRef(const EmptyArrayRef &)
+        : begin_(nullptr), end_(nullptr) {}
     /*! \brief
      * Constructs a reference to a particular range.
      *
@@ -336,7 +340,6 @@ private:
 };
 
 
-
 /*! \brief STL-like container for non-mutable interface to a C array of T
  * (or part of a std::vector<T> or std::array<T>).
  *
@@ -369,25 +372,25 @@ class ConstArrayRef
 {
 public:
     //! Type of values stored in the container.
-    typedef T         value_type;
+    typedef T value_type;
     //! Type for representing size of the container.
-    typedef size_t    size_type;
+    typedef size_t size_type;
     //! Type for representing difference between two container indices.
     typedef ptrdiff_t difference_type;
     //! Const reference to a container element.
-    typedef const T  &const_reference;
+    typedef const T &const_reference;
     //! Const pointer to a container element.
-    typedef const T  *const_pointer;
+    typedef const T *const_pointer;
     //! Const iterator type for the container.
-    typedef const T  *const_iterator;
+    typedef const T *const_iterator;
     //! Equal to \a const_reference since changes are not allowed.
     typedef const_reference reference;
     //! Equal to \a const_pointer since changes are not allowed.
-    typedef const_pointer   pointer;
+    typedef const_pointer pointer;
     //! Equal to \a const_iterator since changes are not allowed.
-    typedef const_iterator  iterator;
+    typedef const_iterator iterator;
     //! Standard reverse iterator.
-    typedef std::reverse_iterator<iterator>       reverse_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
     //! Standard reverse iterator.
     typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
@@ -416,7 +419,8 @@ public:
     /*! \brief
      * Constructs an empty reference.
      */
-    ConstArrayRef() : begin_(nullptr), end_(nullptr) {}
+    ConstArrayRef()
+        : begin_(nullptr), end_(nullptr) {}
     /*! \brief
      * Constructs an empty reference.
      *
@@ -424,11 +428,13 @@ public:
      * used to initialize any Const ArrayRef, without specifying the
      * template type.  It is not explicit to enable that usage.
      */
-    ConstArrayRef(const EmptyArrayRef &) : begin_(nullptr), end_(nullptr) {}
+    ConstArrayRef(const EmptyArrayRef &)
+        : begin_(nullptr), end_(nullptr) {}
     /*! \brief
      * Constructs a const reference from a non-const reference.
      */
-    ConstArrayRef(const ArrayRef<T> &other) : begin_(other.begin()), end_(other.end()) {}
+    ConstArrayRef(const ArrayRef<T> &other)
+        : begin_(other.begin()), end_(other.end()) {}
     /*! \brief
      * Constructs a reference to a particular range.
      *

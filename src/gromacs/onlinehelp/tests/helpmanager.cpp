@@ -100,9 +100,9 @@ TEST_F(HelpManagerTest, HandlesRootTopic)
 TEST_F(HelpManagerTest, HandlesSubTopics)
 {
     MockHelpTopic &first
-        = rootTopic_.addSubTopic("first", "First topic", nullptr);
+            = rootTopic_.addSubTopic("first", "First topic", nullptr);
     MockHelpTopic &firstSub
-        = first.addSubTopic("firstsub", "First subtopic", nullptr);
+            = first.addSubTopic("firstsub", "First subtopic", nullptr);
     rootTopic_.addSubTopic("second", "Second topic", nullptr);
 
     using ::testing::_;
@@ -115,7 +115,7 @@ TEST_F(HelpManagerTest, HandlesSubTopics)
 TEST_F(HelpManagerTest, HandlesInvalidTopics)
 {
     MockHelpTopic &first
-        = rootTopic_.addSubTopic("first", "First topic", nullptr);
+            = rootTopic_.addSubTopic("first", "First topic", nullptr);
     first.addSubTopic("firstsub", "First subtopic", nullptr);
     rootTopic_.addSubTopic("second", "Second topic", nullptr);
 
@@ -162,7 +162,7 @@ void HelpTopicFormattingTest::checkHelpFormatting()
 TEST_F(HelpTopicFormattingTest, FormatsSimpleTopic)
 {
     rootTopic_.addSubTopic(gmx::HelpTopicPointer(
-                                   new gmx::SimpleHelpTopic<TestHelpText>));
+            new gmx::SimpleHelpTopic<TestHelpText>));
     checkHelpFormatting();
 }
 

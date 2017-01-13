@@ -89,7 +89,7 @@ gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab)
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
                 a->m = m;
-                add_atomtype(at, tab, a, name, nb, 0, 0.0, 0.0, 0.0, 0, 0.0, 0.0 );
+                add_atomtype(at, tab, a, name, nb, 0, 0.0, 0.0, 0.0, 0, 0.0, 0.0);
                 fprintf(stderr, "\rAtomtype %d", ++nratt);
                 fflush(stderr);
             }
@@ -139,9 +139,9 @@ static gmx_bool read_atoms(FILE *in, char *line,
 
     /* Read Atoms */
     maxentries   = 0;
-    r0->atom     =     nullptr;
+    r0->atom     = nullptr;
     r0->atomname = nullptr;
-    r0->cgnr     =     nullptr;
+    r0->cgnr     = nullptr;
     i            = 0;
     while (get_a_line(in, line, STRLEN) && (strchr(line, '[') == nullptr))
     {
@@ -152,9 +152,9 @@ static gmx_bool read_atoms(FILE *in, char *line,
         if (i >= maxentries)
         {
             maxentries += 100;
-            srenew(r0->atom,     maxentries);
+            srenew(r0->atom, maxentries);
             srenew(r0->atomname, maxentries);
-            srenew(r0->cgnr,     maxentries);
+            srenew(r0->cgnr, maxentries);
         }
         r0->atomname[i] = put_symtab(tab, buf);
         r0->atom[i].q   = q;
@@ -162,8 +162,10 @@ static gmx_bool read_atoms(FILE *in, char *line,
         j               = get_atomtype_type(buf1, atype);
         if (j == NOTSET)
         {
-            gmx_fatal(FARGS, "Atom type %s (residue %s) not found in atomtype "
-                      "database", buf1, r0->resname);
+            gmx_fatal(FARGS,
+                      "Atom type %s (residue %s) not found in atomtype "
+                      "database",
+                      buf1, r0->resname);
         }
         r0->atom[i].type = j;
         r0->atom[i].m    = get_atomtype_massA(j, atype);
@@ -259,7 +261,7 @@ static void check_rtp(int nrtp, t_restp rtp[], char *libfn)
     }
 }
 
-int get_bt(char* header)
+int get_bt(char *header)
 {
     int i;
 
@@ -388,7 +390,8 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
         if ((nparam = sscanf(line, "%d %d %d %d %d %d %d %d",
                              &header_settings->rb[ebtsBONDS].type, &header_settings->rb[ebtsANGLES].type,
                              &header_settings->rb[ebtsPDIHS].type, &header_settings->rb[ebtsIDIHS].type,
-                             &dum1, &header_settings->nrexcl, &dum2, &dum3)) < 4)
+                             &dum1, &header_settings->nrexcl, &dum2, &dum3))
+            < 4)
         {
             gmx_fatal(FARGS, "need 4 to 8 parameters in the header of .rtp file %s at line:\n%s\n", rrdb, line);
         }
@@ -539,7 +542,7 @@ void read_resall(char *rrdb, int *nrtpptr, t_restp **rtp,
     srenew(rrtp, nrtp);
 
     fprintf(stderr, "\nSorting it all out...\n");
-    std::sort(rrtp, rrtp + nrtp, [](const t_restp &a, const t_restp &b) {return gmx_strcasecmp(a.resname, b.resname) < 0; });
+    std::sort(rrtp, rrtp + nrtp, [](const t_restp &a, const t_restp &b) { return gmx_strcasecmp(a.resname, b.resname) < 0; });
 
     check_rtp(nrtp, rrtp, rrdb);
 
@@ -586,10 +589,10 @@ char *search_rtp(const char *key, int nrtp, t_restp rtp[])
     int  i, n, nbest, best, besti;
     char bestbuf[STRLEN];
 
-    nbest =  0;
+    nbest = 0;
     besti = -1;
     /* We want to match at least one character */
-    best =  1;
+    best = 1;
     for (i = 0; (i < nrtp); i++)
     {
         if (gmx_strcasecmp(key, rtp[i].resname) == 0)
@@ -640,7 +643,8 @@ char *search_rtp(const char *key, int nrtp, t_restp rtp[])
     {
         fprintf(stderr,
                 "\nWARNING: '%s' not found in residue topology database, "
-                "trying to use '%s'\n\n", key, rtp[besti].resname);
+                "trying to use '%s'\n\n",
+                key, rtp[besti].resname);
     }
 
     return rtp[besti].resname;

@@ -53,7 +53,7 @@ ILogTarget *getTarget(ILogTarget *       targets[MDLogger::LogLevelCount],
     return targets[static_cast<int>(level)];
 }
 
-}   // namespace
+} // namespace
 
 ILogTarget::~ILogTarget()
 {

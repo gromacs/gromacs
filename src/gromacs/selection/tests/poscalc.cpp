@@ -81,9 +81,9 @@ public:
 
     void checkInitialized();
     void updateAndCheck(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
-                        const gmx::ConstArrayRef<int> &atoms,
+                        const gmx::ConstArrayRef<int> &  atoms,
                         gmx::test::TestReferenceChecker *checker,
-                        const char *name);
+                        const char *                     name);
 
     void testSingleStatic(e_poscalc_t type, int flags, bool bExpectTop,
                           const gmx::ConstArrayRef<int> &atoms,
@@ -115,7 +115,7 @@ private:
         {
         }
 
-        PositionTest &operator= (PositionTest &&o)
+        PositionTest &operator=(PositionTest &&o)
         {
             pos  = std::move(o.pos);
             pc   = o.pc;
@@ -242,8 +242,8 @@ void PositionCalculationTest::testSingleStatic(
     }
     gmx_ana_poscalc_t *pc = createCalculation(type, flags);
     const bool         requiresTopology
-        = gmx_ana_poscalc_required_topology_info(pc)
-            != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
+            = gmx_ana_poscalc_required_topology_info(pc)
+              != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
     EXPECT_EQ(bExpectTop, requiresTopology);
     setMaximumGroup(pc, atoms);
     gmx_ana_pos_t *p = initPositions(pc, nullptr);
@@ -270,8 +270,8 @@ void PositionCalculationTest::testSingleDynamic(
 {
     gmx_ana_poscalc_t *pc = createCalculation(type, flags | POS_DYNAMIC);
     const bool         requiresTopology
-        = gmx_ana_poscalc_required_topology_info(pc)
-            != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
+            = gmx_ana_poscalc_required_topology_info(pc)
+              != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
     EXPECT_EQ(bExpectTop, requiresTopology);
     setMaximumGroup(pc, initAtoms);
     gmx_ana_pos_t *p = initPositions(pc, nullptr);
@@ -300,8 +300,8 @@ void PositionCalculationTest::setTopologyIfRequired()
     for (pci = pcList_.begin(); pci != pcList_.end(); ++pci)
     {
         const bool requiresTopology
-            = gmx_ana_poscalc_required_topology_info(*pci)
-                != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
+                = gmx_ana_poscalc_required_topology_info(*pci)
+                  != gmx::PositionCalculationCollection::RequiredTopologyInfo::None;
         if (requiresTopology)
         {
             bTopSet_ = true;
@@ -321,11 +321,21 @@ void PositionCalculationTest::checkPositions(
     const char *type = "???";
     switch (p->m.type)
     {
-        case INDEX_UNKNOWN: type = "unknown";   break;
-        case INDEX_ATOM:    type = "atoms";     break;
-        case INDEX_RES:     type = "residues";  break;
-        case INDEX_MOL:     type = "molecules"; break;
-        case INDEX_ALL:     type = "single";    break;
+        case INDEX_UNKNOWN:
+            type = "unknown";
+            break;
+        case INDEX_ATOM:
+            type = "atoms";
+            break;
+        case INDEX_RES:
+            type = "residues";
+            break;
+        case INDEX_MOL:
+            type = "molecules";
+            break;
+        case INDEX_ALL:
+            type = "single";
+            break;
     }
     compound.checkString(type, "Type");
     compound.checkSequenceArray(p->count() + 1, p->m.mapb.index, "Block");

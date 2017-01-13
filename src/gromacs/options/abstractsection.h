@@ -71,7 +71,8 @@ class AbstractOptionSection
 protected:
     //! \cond libapi
     //! Initializes option properties with the given name.
-    explicit AbstractOptionSection(const char *name) : name_(name) {}
+    explicit AbstractOptionSection(const char *name)
+        : name_(name) {}
 
     /*! \brief
      * Creates a storage object corresponding to this section.
@@ -117,7 +118,7 @@ protected:
     {
         IOptionSectionStorage *storage = getStorage(section);
         StorageType *          typedStorage
-            = dynamic_cast<StorageType *>(storage);
+                = dynamic_cast<StorageType *>(storage);
         GMX_ASSERT(typedStorage != nullptr, "Mismatching section storage type");
         return typedStorage;
     }
@@ -159,7 +160,7 @@ public:
     const std::string &name() const;
 
     //! Returns the wrapped section storage object.
-    internal::OptionSectionImpl       &section() { return section_; }
+    internal::OptionSectionImpl &section() { return section_; }
     //! Returns the wrapped section storage object.
     const internal::OptionSectionImpl &section() const { return section_; }
 

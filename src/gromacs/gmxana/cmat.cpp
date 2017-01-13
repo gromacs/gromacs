@@ -129,13 +129,13 @@ void reset_index(t_mat *m)
 void set_mat_entry(t_mat *m, int i, int j, real val)
 {
     m->mat[i][j] = m->mat[j][i] = val;
-    m->maxrms    = std::max(m->maxrms, val);
+    m->maxrms                   = std::max(m->maxrms, val);
     if (j != i)
     {
         m->minrms = std::min(m->minrms, val);
     }
     m->sumrms += val;
-    m->nn      = std::max(m->nn, std::max(j + 1, i + 1));
+    m->nn = std::max(m->nn, std::max(j + 1, i + 1));
 }
 
 void done_mat(t_mat **m)

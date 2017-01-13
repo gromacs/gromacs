@@ -60,7 +60,7 @@ using gmx::test::CommandLine;
 
 //! Test fixture for the angle analysis module.
 typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::DistanceInfo>
-    DistanceModuleTest;
+        DistanceModuleTest;
 
 TEST_F(DistanceModuleTest, ComputesDistances)
 {

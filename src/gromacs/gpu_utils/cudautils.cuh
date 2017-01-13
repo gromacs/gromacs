@@ -60,50 +60,72 @@
 #ifdef CHECK_CUDA_ERRORS
 
 /*! Check for CUDA error on the return status of a CUDA RT API call. */
-#define CU_RET_ERR(status, msg) \
-    do { \
-        if (status != cudaSuccess) \
-        { \
+#define CU_RET_ERR(status, msg)                                            \
+    do                                                                     \
+    {                                                                      \
+        if (status != cudaSuccess)                                         \
+        {                                                                  \
             gmx_fatal(FARGS, "%s: %s\n", msg, cudaGetErrorString(status)); \
-        } \
+        }                                                                  \
     } while (0)
 
 /*! Check for any previously occurred uncaught CUDA error. */
-#define CU_CHECK_PREV_ERR() \
-    do { \
-        cudaError_t _CU_CHECK_PREV_ERR_status = cudaGetLastError(); \
-        if (_CU_CHECK_PREV_ERR_status != cudaSuccess) { \
+#define CU_CHECK_PREV_ERR()                                                                                                                         \
+    do                                                                                                                                              \
+    {                                                                                                                                               \
+        cudaError_t _CU_CHECK_PREV_ERR_status = cudaGetLastError();                                                                                 \
+        if (_CU_CHECK_PREV_ERR_status != cudaSuccess)                                                                                               \
+        {                                                                                                                                           \
             gmx_warning("Just caught a previously occurred CUDA error (%s), will try to continue.", cudaGetErrorString(_CU_CHECK_PREV_ERR_status)); \
-        } \
+        }                                                                                                                                           \
     } while (0)
 
 /*! Check for any previously occurred uncaught CUDA error
    -- aimed at use after kernel calls. */
-#define CU_LAUNCH_ERR(msg) \
-    do { \
-        cudaError_t _CU_LAUNCH_ERR_status = cudaGetLastError(); \
-        if (_CU_LAUNCH_ERR_status != cudaSuccess) { \
+#define CU_LAUNCH_ERR(msg)                                                                                             \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        cudaError_t _CU_LAUNCH_ERR_status = cudaGetLastError();                                                        \
+        if (_CU_LAUNCH_ERR_status != cudaSuccess)                                                                      \
+        {                                                                                                              \
             gmx_fatal(FARGS, "Error while launching kernel %s: %s\n", msg, cudaGetErrorString(_CU_LAUNCH_ERR_status)); \
-        } \
+        }                                                                                                              \
     } while (0)
 
 /*! Synchronize with GPU and check for any previously occurred uncaught CUDA error
    -- aimed at use after kernel calls. */
-#define CU_LAUNCH_ERR_SYNC(msg) \
-    do { \
-        cudaError_t _CU_SYNC_LAUNCH_ERR_status = cudaThreadSynchronize(); \
-        if (_CU_SYNC_LAUNCH_ERR_status != cudaSuccess) { \
+#define CU_LAUNCH_ERR_SYNC(msg)                                                                                             \
+    do                                                                                                                      \
+    {                                                                                                                       \
+        cudaError_t _CU_SYNC_LAUNCH_ERR_status = cudaThreadSynchronize();                                                   \
+        if (_CU_SYNC_LAUNCH_ERR_status != cudaSuccess)                                                                      \
+        {                                                                                                                   \
             gmx_fatal(FARGS, "Error while launching kernel %s: %s\n", msg, cudaGetErrorString(_CU_SYNC_LAUNCH_ERR_status)); \
-        } \
+        }                                                                                                                   \
     } while (0)
 
 #else /* CHECK_CUDA_ERRORS */
 
-#define CU_RET_ERR(status, msg) do { } while (0)
-#define CU_CHECK_PREV_ERR()     do { } while (0)
-#define CU_LAUNCH_ERR(msg)      do { } while (0)
-#define CU_LAUNCH_ERR_SYNC(msg) do { } while (0)
-#define HANDLE_NVML_RET_ERR(status, msg) do { } while (0)
+#define CU_RET_ERR(status, msg) \
+    do                          \
+    {                           \
+    } while (0)
+#define CU_CHECK_PREV_ERR() \
+    do                      \
+    {                       \
+    } while (0)
+#define CU_LAUNCH_ERR(msg) \
+    do                     \
+    {                      \
+    } while (0)
+#define CU_LAUNCH_ERR_SYNC(msg) \
+    do                          \
+    {                           \
+    } while (0)
+#define HANDLE_NVML_RET_ERR(status, msg) \
+    do                                   \
+    {                                    \
+    } while (0)
 
 #endif /* CHECK_CUDA_ERRORS */
 
@@ -117,19 +139,19 @@
  */
 struct gmx_device_info_t
 {
-    int            id;                           /* id of the CUDA device */
-    cudaDeviceProp prop;                         /* CUDA device properties */
-    int            stat;                         /* result of the device check */
-    unsigned int   nvml_orig_app_sm_clock;       /* The original SM clock before we changed it */
-    unsigned int   nvml_orig_app_mem_clock;      /* The original memory clock before we changed it */
-    gmx_bool       nvml_app_clocks_changed;      /* If application clocks have been changed */
-    unsigned int   nvml_set_app_sm_clock;        /* The SM clock we set */
-    unsigned int   nvml_set_app_mem_clock;       /* The memory clock we set */
+    int            id;                      /* id of the CUDA device */
+    cudaDeviceProp prop;                    /* CUDA device properties */
+    int            stat;                    /* result of the device check */
+    unsigned int   nvml_orig_app_sm_clock;  /* The original SM clock before we changed it */
+    unsigned int   nvml_orig_app_mem_clock; /* The original memory clock before we changed it */
+    gmx_bool       nvml_app_clocks_changed; /* If application clocks have been changed */
+    unsigned int   nvml_set_app_sm_clock;   /* The SM clock we set */
+    unsigned int   nvml_set_app_mem_clock;  /* The memory clock we set */
 #if HAVE_NVML
-    nvmlDevice_t nvml_device_id;                 /* NVML device id */
+    nvmlDevice_t nvml_device_id; /* NVML device id */
     // TODO This can become a bool with a more useful name
-    nvmlEnableState_t nvml_is_restricted;        /* Status of application clocks permission */
-#endif                                           /* HAVE_NVML */
+    nvmlEnableState_t nvml_is_restricted; /* Status of application clocks permission */
+#endif                                    /* HAVE_NVML */
 };
 
 
@@ -153,9 +175,9 @@ void cu_free_buffered(void *d_ptr, int *n = NULL, int *nalloc = NULL);
 void cu_realloc_buffered(void **d_dest, void *h_src,
                          size_t type_size,
                          int *curr_size, int *curr_alloc_size,
-                         int req_size,
+                         int          req_size,
                          cudaStream_t s,
-                         bool bAsync);
+                         bool         bAsync);
 
 /*! Waits for event e to complete, */
 int cu_wait_event(cudaEvent_t /*e*/);

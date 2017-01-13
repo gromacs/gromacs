@@ -45,19 +45,19 @@
 
 
 /* Static data structures to find kernels */
-static nb_kernel_info_t * kernel_list           = nullptr;
-static unsigned int       kernel_list_size      = 0;
-static int *              kernel_list_hash      = nullptr;
-static unsigned int       kernel_list_hash_size = 0;
+static nb_kernel_info_t *kernel_list           = nullptr;
+static unsigned int      kernel_list_size      = 0;
+static int *             kernel_list_hash      = nullptr;
+static unsigned int      kernel_list_hash_size = 0;
 
-static unsigned int nb_kernel_hash_func(const char * arch,
-                                        const char * elec,
-                                        const char * elec_mod,
-                                        const char * vdw,
-                                        const char * vdw_mod,
-                                        const char * geom,
-                                        const char * other,
-                                        const char * vf)
+static unsigned int nb_kernel_hash_func(const char *arch,
+                                        const char *elec,
+                                        const char *elec_mod,
+                                        const char *vdw,
+                                        const char *vdw_mod,
+                                        const char *geom,
+                                        const char *other,
+                                        const char *vf)
 {
     unsigned int hash;
 
@@ -73,8 +73,8 @@ static unsigned int nb_kernel_hash_func(const char * arch,
     return hash;
 }
 
-void nb_kernel_list_add_kernels(nb_kernel_info_t * new_kernel_list,
-                                int                new_kernel_list_size)
+void nb_kernel_list_add_kernels(nb_kernel_info_t *new_kernel_list,
+                                int               new_kernel_list_size)
 {
     srenew(kernel_list, kernel_list_size + new_kernel_list_size);
     memcpy(kernel_list + kernel_list_size, new_kernel_list, new_kernel_list_size * sizeof(nb_kernel_info_t));
@@ -103,7 +103,8 @@ int nb_kernel_list_hash_init(void)
                                     kernel_list[i].vdw_modifier,
                                     kernel_list[i].geometry,
                                     kernel_list[i].other,
-                                    kernel_list[i].vf) % kernel_list_hash_size;
+                                    kernel_list[i].vf)
+                % kernel_list_hash_size;
 
         /* Check for collisions and advance if necessary */
         while (kernel_list_hash[index] != -1)
@@ -124,19 +125,19 @@ void nb_kernel_list_hash_destroy()
 }
 
 
-nb_kernel_t *nb_kernel_list_findkernel(FILE gmx_unused * log,
-                                       const char *      arch,
-                                       const char *      electrostatics,
-                                       const char *      electrostatics_modifier,
-                                       const char *      vdw,
-                                       const char *      vdw_modifier,
-                                       const char *      geometry,
-                                       const char *      other,
-                                       const char *      vf)
+nb_kernel_t *nb_kernel_list_findkernel(FILE gmx_unused *log,
+                                       const char *     arch,
+                                       const char *     electrostatics,
+                                       const char *     electrostatics_modifier,
+                                       const char *     vdw,
+                                       const char *     vdw_modifier,
+                                       const char *     geometry,
+                                       const char *     other,
+                                       const char *     vf)
 {
-    int                i;
-    unsigned int       index;
-    nb_kernel_info_t * kernelinfo_ptr;
+    int               i;
+    unsigned int      index;
+    nb_kernel_info_t *kernelinfo_ptr;
 
     if (kernel_list_hash_size == 0)
     {
@@ -150,10 +151,11 @@ nb_kernel_t *nb_kernel_list_findkernel(FILE gmx_unused * log,
                                 vdw_modifier,
                                 geometry,
                                 other,
-                                vf) % kernel_list_hash_size;
+                                vf)
+            % kernel_list_hash_size;
 
     kernelinfo_ptr = nullptr;
-    while ( (i = kernel_list_hash[index]) != -1)
+    while ((i = kernel_list_hash[index]) != -1)
     {
         if (!gmx_strcasecmp_min(kernel_list[i].architecture, arch)
             && !gmx_strcasecmp_min(kernel_list[i].electrostatics, electrostatics)

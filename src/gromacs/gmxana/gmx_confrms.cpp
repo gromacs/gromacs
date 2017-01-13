@@ -177,7 +177,7 @@ int find_next_match_atoms_in_res(int *i1, int index1[],
     {
         if (debug)
         {
-            fprintf(debug, "{%d %d}", *i1 + (bFW ? dx : dy), *i2 + (bFW ? dy : dx) );
+            fprintf(debug, "{%d %d}", *i1 + (bFW ? dx : dy), *i2 + (bFW ? dy : dx));
         }
         if (bFW)
         {
@@ -291,8 +291,7 @@ static int find_next_match_res(int *rnr1, int isize1,
             rr1 += dx;
             rr2 += dx;
         }
-        else
-        if (bFW)
+        else if (bFW)
         {
             rr1 += dx;
             rr2 += dy;
@@ -352,8 +351,8 @@ void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1,
     snew(rindex2, atoms2->nres);
     rsize2 = build_res_index(*isize2, index2, atoms2->atom, rindex2);
 
-    i1    = i2 = 0;
-    ii1   = ii2 = 0;
+    i1 = i2 = 0;
+    ii1 = ii2 = 0;
     atcmp = rescmp = 0;
     prnr1 = prnr2 = NOTSET;
     if (debug)
@@ -396,7 +395,6 @@ void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1,
                 fprintf(debug, " -> %d %d %s-%s", i1, i2,
                         *atnms1[index1[i1]], *atnms2[index2[i2]]);
             }
-
         }
         if (atcmp != 0) /* still no match -> next residue(s) */
         {
@@ -484,7 +482,7 @@ void find_matching_names(int *isize1, int index1[], const t_atoms *atoms1,
 
 int gmx_confrms(int argc, char *argv[])
 {
-    const char *    desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes the root mean square deviation (RMSD) of two",
         "structures after least-squares fitting the second structure on the first one.",
         "The two structures do NOT need to have the same number of atoms,",
@@ -498,29 +496,25 @@ int gmx_confrms(int argc, char *argv[])
         "(use [TT]rasmol -nmrpdb[tt]). Also in a [REF].pdb[ref] file, B-factors",
         "calculated from the atomic MSD values can be written with [TT]-bfac[tt].",
     };
-    static gmx_bool bOne  = FALSE, bRmpbc = FALSE, bMW = TRUE, bName = FALSE,
+    static gmx_bool bOne = FALSE, bRmpbc = FALSE, bMW = TRUE, bName = FALSE,
                     bBfac = FALSE, bFit = TRUE, bLabel = FALSE;
 
-    t_pargs  pa[] = {
-        { "-one", FALSE, etBOOL, {&bOne},   "Only write the fitted structure to file" },
-        { "-mw",  FALSE, etBOOL, {&bMW},    "Mass-weighted fitting and RMSD" },
-        { "-pbc", FALSE, etBOOL, {&bRmpbc}, "Try to make molecules whole again" },
-        { "-fit", FALSE, etBOOL, {&bFit},
-          "Do least squares superposition of the target structure to the reference" },
-        { "-name", FALSE, etBOOL, {&bName},
-          "Only compare matching atom names" },
-        { "-label", FALSE, etBOOL, {&bLabel},
-          "Added chain labels A for first and B for second structure"},
-        { "-bfac", FALSE, etBOOL, {&bBfac},
-          "Output B-factors from atomic MSD values" }
+    t_pargs pa[] = {
+        { "-one", FALSE, etBOOL, { &bOne }, "Only write the fitted structure to file" },
+        { "-mw", FALSE, etBOOL, { &bMW }, "Mass-weighted fitting and RMSD" },
+        { "-pbc", FALSE, etBOOL, { &bRmpbc }, "Try to make molecules whole again" },
+        { "-fit", FALSE, etBOOL, { &bFit }, "Do least squares superposition of the target structure to the reference" },
+        { "-name", FALSE, etBOOL, { &bName }, "Only compare matching atom names" },
+        { "-label", FALSE, etBOOL, { &bLabel }, "Added chain labels A for first and B for second structure" },
+        { "-bfac", FALSE, etBOOL, { &bBfac }, "Output B-factors from atomic MSD values" }
     };
     t_filenm fnm[] = {
-        { efTPS, "-f1",  "conf1.gro", ffREAD  },
-        { efSTX, "-f2",  "conf2",     ffREAD  },
-        { efSTO, "-o",   "fit.pdb",   ffWRITE },
-        { efNDX, "-n1",  "fit1",      ffOPTRD },
-        { efNDX, "-n2",  "fit2",      ffOPTRD },
-        { efNDX, "-no",  "match",     ffOPTWR }
+        { efTPS, "-f1", "conf1.gro", ffREAD },
+        { efSTX, "-f2", "conf2", ffREAD },
+        { efSTO, "-o", "fit.pdb", ffWRITE },
+        { efNDX, "-n1", "fit1", ffOPTRD },
+        { efNDX, "-n2", "fit2", ffOPTRD },
+        { efNDX, "-no", "match", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -686,19 +680,19 @@ int gmx_confrms(int argc, char *argv[])
     rms     = 0;
     totmass = 0;
     maxmsd  = -1e18;
-    minmsd  =  1e18;
+    minmsd  = 1e18;
     snew(msds, isize1);
     for (at = 0; at < isize1; at++)
     {
         mass = atoms1->atom[index1[at]].m;
         for (m = 0; m < DIM; m++)
         {
-            msd       = gmx::square(x1[index1[at]][m] - x2[index2[at]][m]);
-            rms      += msd * mass;
+            msd = gmx::square(x1[index1[at]][m] - x2[index2[at]][m]);
+            rms += msd * mass;
             msds[at] += msd;
         }
-        maxmsd   = std::max(maxmsd, msds[at]);
-        minmsd   = std::min(minmsd, msds[at]);
+        maxmsd = std::max(maxmsd, msds[at]);
+        minmsd = std::min(minmsd, msds[at]);
         totmass += mass;
     }
     rms = std::sqrt(rms / totmass);
@@ -760,13 +754,13 @@ int gmx_confrms(int argc, char *argv[])
                 for (i = 0; i < isize1; i++)
                 {
                     /* atoms1->pdbinfo[index1[i]].type = eptAtom; */
-/*  atoms1->pdbinfo[index1[i]].bAnisotropic = FALSE; */
+                    /*  atoms1->pdbinfo[index1[i]].bAnisotropic = FALSE; */
                     if (bBfac)
                     {
                         atoms1->pdbinfo[index1[i]].bfac = (800 * M_PI * M_PI / 3.0) * msds[i];
                     }
-/*  if (bLabel) */
-/*    atoms1->resinfo[atoms1->atom[index1[i]].resind].chain = 'A'; */
+                    /*  if (bLabel) */
+                    /*    atoms1->resinfo[atoms1->atom[index1[i]].resind].chain = 'A'; */
                 }
                 srenew(atoms2->pdbinfo, atoms2->nr);
                 srenew(atoms2->atom, atoms2->nr); /* Why renew atom? */
@@ -789,13 +783,13 @@ int gmx_confrms(int argc, char *argv[])
                 for (i = 0; i < isize2; i++)
                 {
                     /* atoms2->pdbinfo[index2[i]].type = eptAtom; */
-/*  atoms2->pdbinfo[index2[i]].bAnisotropic = FALSE; */
+                    /*  atoms2->pdbinfo[index2[i]].bAnisotropic = FALSE; */
                     if (bBfac)
                     {
                         atoms2->pdbinfo[index2[i]].bfac = (800 * M_PI * M_PI / 3.0) * msds[i];
                     }
-/*  if (bLabel) */
-/*    atoms2->resinfo[atoms2->atom[index2[i]].resind].chain = 'B'; */
+                    /*  if (bLabel) */
+                    /*    atoms2->resinfo[atoms2->atom[index2[i]].resind].chain = 'B'; */
                 }
             }
             fp = gmx_ffopen(outfile, "w");

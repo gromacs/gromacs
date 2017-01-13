@@ -102,7 +102,7 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
     }
     if (!bFont)
     {
-        fprintf (err, "Cannot load any suitable font\n");
+        fprintf(err, "Cannot load any suitable font\n");
     }
     return font;
 }
@@ -152,7 +152,7 @@ static void MainLoop(t_x11 *x11)
     t_wlist *curs;
     Window   w;
 
-    for (bReturn = false; (!bReturn); )
+    for (bReturn = false; (!bReturn);)
     {
         if (x11->wlist)
         {
@@ -305,7 +305,7 @@ t_x11 *GetX11(int *argc, char *argv[])
         "DirectColor", "TrueColor", "PseudoColor",
         "StaticColor", "GrayScale", "StaticGray"
     };
-    static int         v_class[] = {
+    static int v_class[] = {
         DirectColor, TrueColor, PseudoColor,
         StaticColor, GrayScale, StaticGray
     };
@@ -388,8 +388,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     {
         x11->console = stderr;
     }
-    else
-    if ((x11->console = std::fopen("/dev/null", "w")) == nullptr)
+    else if ((x11->console = std::fopen("/dev/null", "w")) == nullptr)
     {
         x11->console = stderr;
     }
@@ -418,13 +417,13 @@ t_x11 *GetX11(int *argc, char *argv[])
     x11->cmap   = DefaultColormap(x11->disp, x11->screen);
 
     /* These colours will be mapped to black on a monochrome screen */
-    x11->fg                             = BLACK = BLUE = GREEN = CYAN = RED = BROWN = GREY = DARKGREY
-                                        = BlackPixel(x11->disp, x11->screen);
+    x11->fg = BLACK = BLUE = GREEN = CYAN = RED = BROWN = GREY = DARKGREY
+            = BlackPixel(x11->disp, x11->screen);
 
     /* These colours will be mapped to white on a monochrome screen */
     x11->bg
-                                            = LIGHTBLUE = LIGHTGREY = LIGHTGREEN = LIGHTCYAN = LIGHTRED = VIOLET = YELLOW = WHITE
-                                            = WhitePixel(x11->disp, x11->screen);
+            = LIGHTBLUE = LIGHTGREY = LIGHTGREEN = LIGHTCYAN = LIGHTRED = VIOLET = YELLOW = WHITE
+            = WhitePixel(x11->disp, x11->screen);
 
     if (x11->depth > 1)
     {

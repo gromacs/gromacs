@@ -64,15 +64,14 @@
 
 
 void
-    F77_FUNC(inigms, IMIGMS) (void);
+        F77_FUNC(inigms, IMIGMS)(void);
 
 void
-    F77_FUNC(endgms, ENDGMS) (void);
+        F77_FUNC(endgms, ENDGMS)(void);
 
 void
-    F77_FUNC(grads, GRADS) (int *nrqmat, real * qmcrd, int *nrmmat, real * mmchrg,
-                            real * mmcrd, real * qmgrad, real * mmgrad, real * energy);
-
+        F77_FUNC(grads, GRADS)(int *nrqmat, real *qmcrd, int *nrmmat, real *mmchrg,
+                               real *mmcrd, real *qmgrad, real *mmgrad, real *energy);
 
 
 void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
@@ -86,17 +85,19 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
      * dynamics simulations. 7-6-2002 (London)
      */
     int
-        i, j;
+            i,
+            j;
     FILE
-    * out;
+            *out;
     char
-        periodic_system[37][3] = {
-        "XX", "H ", "He", "Li", "Be", "B ", "C ", "N ",
-        "O ", "F ", "Ne", "Na", "Mg", "Al", "Si", "P ",
-        "S ", "Cl", "Ar", "K ", "Ca", "Sc", "Ti", "V ",
-        "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga",
-        "Ge", "As", "Se", "Br", "Kr"
-    };
+            periodic_system[37][3]
+            = {
+                "XX", "H ", "He", "Li", "Be", "B ", "C ", "N ",
+                "O ", "F ", "Ne", "Na", "Mg", "Al", "Si", "P ",
+                "S ", "Cl", "Ar", "K ", "Ca", "Sc", "Ti", "V ",
+                "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga",
+                "Ge", "As", "Se", "Br", "Kr"
+              };
 
     if (PAR(cr))
     {
@@ -162,7 +163,8 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
             fclose(out);
         }
         gmx_barrier(cr);
-        F77_FUNC(inigms, IMIGMS) ();
+        F77_FUNC(inigms, IMIGMS)
+        ();
     }
     else /* normal serial run */
 
@@ -222,7 +224,8 @@ void init_gamess(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
                     eQMbasis_names[qm->QMbasis],
                     eQMmethod_names[qm->QMmethod]); /* see enum.h */
         }
-        F77_FUNC(inigms, IMIGMS) ();
+        F77_FUNC(inigms, IMIGMS)
+        ();
     }
 }
 
@@ -235,11 +238,14 @@ real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
      * gradient routines linked directly
      */
     int
-        i, j;
+            i,
+            j;
     real
-        QMener = 0.0, *qmgrad, *mmgrad, *mmcrd, *qmcrd, energy;
+            QMener
+            = 0.0,
+            *qmgrad, *mmgrad, *mmcrd, *qmcrd, energy;
     t_QMMMrec
-    * qr;
+            *qr;
 
     /* copy the QMMMrec pointer */
     qr = fr->qr;
@@ -273,8 +279,9 @@ real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
                 qmcrd[i + 2]);
     }
 
-    F77_FUNC(grads, GRADS) (&qm->nrQMatoms, qmcrd, &mm->nrMMatoms, mm->MMcharges,
-                            mmcrd, qmgrad, mmgrad, &energy);
+    F77_FUNC(grads, GRADS)
+    (&qm->nrQMatoms, qmcrd, &mm->nrMMatoms, mm->MMcharges,
+     mmcrd, qmgrad, mmgrad, &energy);
 
     for (i = 0; i < qm->nrQMatoms; i++)
     {
@@ -294,10 +301,10 @@ real call_gamess(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm,
     }
     /* convert a.u to kJ/mol */
     QMener = energy * HARTREE2KJ * AVOGADRO;
-    return(QMener);
+    return (QMener);
 }
 
 #else
 int
-    gmx_qmmm_gamess_empty;
+        gmx_qmmm_gamess_empty;
 #endif

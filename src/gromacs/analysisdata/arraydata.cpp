@@ -72,7 +72,7 @@ AnalysisDataFrameRef AbstractAnalysisArrayData::tryGetDataFrameInternal(int inde
         return AnalysisDataFrameRef();
     }
     std::vector<AnalysisDataValue>::const_iterator begin
-        = value_.begin() + index * columnCount();
+            = value_.begin() + index * columnCount();
     return AnalysisDataFrameRef(
             AnalysisDataFrameHeader(index, xvalue(index), 0.0),
             constArrayRefFromVector<AnalysisDataValue>(begin, begin + columnCount()),
@@ -101,7 +101,7 @@ void AbstractAnalysisArrayData::setRowCount(int rowCount)
     GMX_RELEASE_ASSERT(!isAllocated(),
                        "Cannot change row count after data has been allocated");
     GMX_RELEASE_ASSERT(bUniformX_ || xvalue_.empty()
-                       || rowCount == static_cast<int>(xvalue_.size()),
+                               || rowCount == static_cast<int>(xvalue_.size()),
                        "X axis set with setXAxisValue() does not match the row count");
     xvalue_.resize(rowCount);
     if (bUniformX_ && rowCount > rowCount_)

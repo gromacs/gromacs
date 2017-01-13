@@ -71,8 +71,8 @@
 #if UNROLLI == UNROLLJ
     SimdBool diagonal_mask_S0, diagonal_mask_S1, diagonal_mask_S2, diagonal_mask_S3;
 #else
-    SimdBool diagonal_mask0_S0, diagonal_mask0_S1, diagonal_mask0_S2, diagonal_mask0_S3;
-    SimdBool diagonal_mask1_S0, diagonal_mask1_S1, diagonal_mask1_S2, diagonal_mask1_S3;
+    SimdBool       diagonal_mask0_S0, diagonal_mask0_S1, diagonal_mask0_S2, diagonal_mask0_S3;
+    SimdBool       diagonal_mask1_S0, diagonal_mask1_S1, diagonal_mask1_S2, diagonal_mask1_S3;
 #endif
 
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
@@ -99,8 +99,8 @@
 
 #ifdef CALC_COUL_TAB
     /* Coulomb table variables */
-    SimdReal     invtsp_S;
-    const real * tab_coul_F;
+    SimdReal    invtsp_S;
+    const real *tab_coul_F;
 #ifndef TAB_FDV0
     const real gmx_unused *tab_coul_V;
 #endif
@@ -118,7 +118,7 @@
 #endif
 
 #if defined LJ_CUT && defined CALC_ENERGIES
-    SimdReal p6_cpot_S, p12_cpot_S;
+    SimdReal                  p6_cpot_S, p12_cpot_S;
 #endif
 #ifdef LJ_POT_SWITCH
     SimdReal rswitch_S;
@@ -150,7 +150,7 @@
 #else
 
 #if defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
-    const real *ljc;
+    const real *   ljc;
 #endif
 #endif /* LJ_COMB_LB */
 
@@ -177,7 +177,7 @@
 
     /* Load j-i for the first i */
     diagonal_jmi_S = load(nbat->simd_4xn_diagonal_j_minus_i);
-    /* Generate all the diagonal masks as comparison results */
+/* Generate all the diagonal masks as comparison results */
 #if UNROLLI == UNROLLJ
     diagonal_mask_S0 = (zero_S < diagonal_jmi_S);
     diagonal_jmi_S   = diagonal_jmi_S - one_S;
@@ -215,10 +215,10 @@
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
     exclusion_filter = nbat->simd_exclusion_filter64;
 #else
-    exclusion_filter = nbat->simd_exclusion_filter;
+    exclusion_filter  = nbat->simd_exclusion_filter;
 #endif
 
-    /* Here we cast the exclusion filters from unsigned * to int * or real *.
+/* Here we cast the exclusion filters from unsigned * to int * or real *.
      * Since we only check bits, the actual value they represent does not
      * matter, as long as both filter and mask data are treated the same way.
      */
@@ -228,10 +228,10 @@
     filter_S2 = load(reinterpret_cast<const int *>(exclusion_filter + 2 * UNROLLJ));
     filter_S3 = load(reinterpret_cast<const int *>(exclusion_filter + 3 * UNROLLJ));
 #else
-    filter_S0 = load(reinterpret_cast<const real *>(exclusion_filter + 0 * UNROLLJ));
-    filter_S1 = load(reinterpret_cast<const real *>(exclusion_filter + 1 * UNROLLJ));
-    filter_S2 = load(reinterpret_cast<const real *>(exclusion_filter + 2 * UNROLLJ));
-    filter_S3 = load(reinterpret_cast<const real *>(exclusion_filter + 3 * UNROLLJ));
+    filter_S0         = load(reinterpret_cast<const real *>(exclusion_filter + 0 * UNROLLJ));
+    filter_S1         = load(reinterpret_cast<const real *>(exclusion_filter + 1 * UNROLLJ));
+    filter_S2         = load(reinterpret_cast<const real *>(exclusion_filter + 2 * UNROLLJ));
+    filter_S3         = load(reinterpret_cast<const real *>(exclusion_filter + 3 * UNROLLJ));
 #endif
 
 #ifdef CALC_COUL_RF
@@ -253,8 +253,8 @@
 #ifdef TAB_FDV0
     tab_coul_F = ic->tabq_coul_FDV0;
 #else
-    tab_coul_F = ic->tabq_coul_F;
-    tab_coul_V = ic->tabq_coul_V;
+    tab_coul_F           = ic->tabq_coul_F;
+    tab_coul_V           = ic->tabq_coul_V;
 #endif
 #endif /* CALC_COUL_TAB */
 
@@ -267,10 +267,10 @@
     sh_ewald_S = SimdReal(ic->sh_ewald);
 #endif
 
-    /* LJ function constants */
+/* LJ function constants */
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-    SimdReal sixth_S(1.0 / 6.0);
-    SimdReal twelveth_S(1.0 / 12.0);
+    SimdReal                         sixth_S(1.0 / 6.0);
+    SimdReal                         twelveth_S(1.0 / 12.0);
 #endif
 
 #if defined LJ_CUT && defined CALC_ENERGIES
@@ -321,9 +321,9 @@
 #endif
 
     /* The kernel either supports rcoulomb = rvdw or rcoulomb >= rvdw */
-    rc2_S =  SimdReal(ic->rcoulomb * ic->rcoulomb);
+    rc2_S = SimdReal(ic->rcoulomb * ic->rcoulomb);
 #ifdef VDW_CUTOFF_CHECK
-    rcvdw2_S =  SimdReal(ic->rvdw * ic->rvdw);
+    rcvdw2_S = SimdReal(ic->rvdw * ic->rvdw);
 #endif
 
     minRsq_S = SimdReal(NBNXN_MIN_RSQ);
@@ -334,15 +334,16 @@
     x        = nbat->x;
 
 #ifdef FIX_LJ_C
-    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)  pvdw_c6[2 * UNROLLI * UNROLLJ];
+    GMX_ALIGNED(real, GMX_SIMD_REAL_WIDTH)
+    pvdw_c6[2 * UNROLLI * UNROLLJ];
     real *pvdw_c12 = pvdw_c6 + UNROLLI * UNROLLJ;
 
     for (int jp = 0; jp < UNROLLJ; jp++)
     {
-        pvdw_c6 [0 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
-        pvdw_c6 [1 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
-        pvdw_c6 [2 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
-        pvdw_c6 [3 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
+        pvdw_c6[0 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
+        pvdw_c6[1 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
+        pvdw_c6[2 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
+        pvdw_c6[3 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
 
         pvdw_c12[0 * UNROLLJ + jp] = nbat->nbfp[0 * 2 + 1];
         pvdw_c12[1 * UNROLLJ + jp] = nbat->nbfp[0 * 2 + 1];
@@ -393,13 +394,13 @@
         int sci  = ci * STRIDE;
         int scix = sci * DIM;
 #if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
-        int sci2 = sci * 2;
+        int                                               sci2 = sci * 2;
 #endif
 #else
-        int sci  = (ci >> 1) * STRIDE;
-        int scix = sci * DIM + (ci & 1) * (STRIDE >> 1);
+        int sci       = (ci >> 1) * STRIDE;
+        int scix      = sci * DIM + (ci & 1) * (STRIDE >> 1);
 #if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
-        int sci2 = sci * 2 + (ci & 1) * (STRIDE >> 1);
+        int sci2      = sci * 2 + (ci & 1) * (STRIDE >> 1);
 #endif
         sci += (ci & 1) * (STRIDE >> 1);
 #endif
@@ -423,7 +424,7 @@
             {
                 egp_ia     = (egps_i >> (ia * egps_ishift)) & egps_imask;
                 vvdwtp[ia] = Vvdw + egp_ia * Vstride_i;
-                vctp[ia]   = Vc   + egp_ia * Vstride_i;
+                vctp[ia]   = Vc + egp_ia * Vstride_i;
             }
         }
 #endif
@@ -438,82 +439,82 @@
         if (do_self && l_cj[nbln->cj_ind_start].cj == ci_sh)
 #endif
 #if UNROLLJ == 2
-        if (do_self && l_cj[nbln->cj_ind_start].cj == (ci_sh << 1))
+            if (do_self && l_cj[nbln->cj_ind_start].cj == (ci_sh << 1))
 #endif
 #if UNROLLJ == 8
-        if (do_self && l_cj[nbln->cj_ind_start].cj == (ci_sh >> 1))
+                if (do_self && l_cj[nbln->cj_ind_start].cj == (ci_sh >> 1))
 #endif
-        {
-            if (do_coul)
-            {
-                real Vc_sub_self;
-                int  ia;
+                {
+                    if (do_coul)
+                    {
+                        real Vc_sub_self;
+                        int  ia;
 
 #ifdef CALC_COUL_RF
-                Vc_sub_self = 0.5 * ic->c_rf;
+                        Vc_sub_self = 0.5 * ic->c_rf;
 #endif
 #ifdef CALC_COUL_TAB
 #ifdef TAB_FDV0
-                Vc_sub_self = 0.5 * tab_coul_F[2];
+                        Vc_sub_self = 0.5 * tab_coul_F[2];
 #else
-                Vc_sub_self = 0.5 * tab_coul_V[0];
+                        Vc_sub_self = 0.5 * tab_coul_V[0];
 #endif
 #endif
 #ifdef CALC_COUL_EWALD
-                /* beta/sqrt(pi) */
-                Vc_sub_self = 0.5 * ic->ewaldcoeff_q * M_2_SQRTPI;
+                        /* beta/sqrt(pi) */
+                        Vc_sub_self = 0.5 * ic->ewaldcoeff_q * M_2_SQRTPI;
 #endif
 
-                for (ia = 0; ia < UNROLLI; ia++)
-                {
-                    real qi;
+                        for (ia = 0; ia < UNROLLI; ia++)
+                        {
+                            real qi;
 
-                    qi = q[sci + ia];
+                            qi = q[sci + ia];
 #ifdef ENERGY_GROUPS
-                    vctp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride]
+                            vctp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride]
 #else
                     Vc[0]
 #endif
-                        -= facel * qi * qi * Vc_sub_self;
-                }
-            }
+                                    -= facel * qi * qi * Vc_sub_self;
+                        }
+                    }
 
 #ifdef LJ_EWALD_GEOM
-            {
-                int ia;
+                    {
+                        int ia;
 
-                for (ia = 0; ia < UNROLLI; ia++)
-                {
-                    real c6_i;
+                        for (ia = 0; ia < UNROLLI; ia++)
+                        {
+                            real c6_i;
 
-                    c6_i = nbat->nbfp[nbat->type[sci + ia] * (nbat->ntype + 1) * 2] / 6;
+                            c6_i = nbat->nbfp[nbat->type[sci + ia] * (nbat->ntype + 1) * 2] / 6;
 #ifdef ENERGY_GROUPS
-                    vvdwtp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride]
+                            vvdwtp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride]
 #else
-                    Vvdw[0]
+                            Vvdw[0]
 #endif
-                        += 0.5 * c6_i * lj_ewaldcoeff6_6;
+                                    += 0.5 * c6_i * lj_ewaldcoeff6_6;
+                        }
+                    }
+#endif /* LJ_EWALD_GEOM */
                 }
-            }
-#endif      /* LJ_EWALD_GEOM */
-        }
 #endif
 
         /* Load i atom data */
         int sciy = scix + STRIDE;
         int sciz = sciy + STRIDE;
-        ix_S0 = SimdReal(x[scix]) + shX_S;
-        ix_S1 = SimdReal(x[scix + 1]) + shX_S;
-        ix_S2 = SimdReal(x[scix + 2]) + shX_S;
-        ix_S3 = SimdReal(x[scix + 3]) + shX_S;
-        iy_S0 = SimdReal(x[sciy]) + shY_S;
-        iy_S1 = SimdReal(x[sciy + 1]) + shY_S;
-        iy_S2 = SimdReal(x[sciy + 2]) + shY_S;
-        iy_S3 = SimdReal(x[sciy + 3]) + shY_S;
-        iz_S0 = SimdReal(x[sciz]) + shZ_S;
-        iz_S1 = SimdReal(x[sciz + 1]) + shZ_S;
-        iz_S2 = SimdReal(x[sciz + 2]) + shZ_S;
-        iz_S3 = SimdReal(x[sciz + 3]) + shZ_S;
+        ix_S0    = SimdReal(x[scix]) + shX_S;
+        ix_S1    = SimdReal(x[scix + 1]) + shX_S;
+        ix_S2    = SimdReal(x[scix + 2]) + shX_S;
+        ix_S3    = SimdReal(x[scix + 3]) + shX_S;
+        iy_S0    = SimdReal(x[sciy]) + shY_S;
+        iy_S1    = SimdReal(x[sciy + 1]) + shY_S;
+        iy_S2    = SimdReal(x[sciy + 2]) + shY_S;
+        iy_S3    = SimdReal(x[sciy + 3]) + shY_S;
+        iz_S0    = SimdReal(x[sciz]) + shZ_S;
+        iz_S1    = SimdReal(x[sciz + 1]) + shZ_S;
+        iz_S2    = SimdReal(x[sciz + 2]) + shZ_S;
+        iz_S3    = SimdReal(x[sciz + 3]) + shZ_S;
 
         if (do_coul)
         {
@@ -561,7 +562,7 @@
             c12s_S3 = setZero();
         }
 #else
-        const real *nbfp0 = nbfp_ptr + type[sci  ] * nbat->ntype * c_simdBestPairAlignment;
+        const real *nbfp0 = nbfp_ptr + type[sci] * nbat->ntype * c_simdBestPairAlignment;
         const real *nbfp1 = nbfp_ptr + type[sci + 1] * nbat->ntype * c_simdBestPairAlignment;
         const real *nbfp2 = nullptr, *nbfp3 = nullptr;
         if (!half_LJ)
@@ -583,7 +584,7 @@
         }
 #endif
 
-        /* Zero the potential energy for this list */
+/* Zero the potential energy for this list */
 #ifdef CALC_ENERGIES
         SimdReal Vvdwtot_S = setZero();
         SimdReal vctot_S   = setZero();
@@ -605,11 +606,11 @@
 
         cjind = cjind0;
 
-        /* Currently all kernels use (at least half) LJ */
+/* Currently all kernels use (at least half) LJ */
 #define CALC_LJ
         if (half_LJ)
         {
-            /* Coulomb: all i-atoms, LJ: first half i-atoms */
+/* Coulomb: all i-atoms, LJ: first half i-atoms */
 #define CALC_COULOMB
 #define HALF_LJ
 #define CHECK_EXCLS
@@ -628,7 +629,7 @@
         }
         else if (do_coul)
         {
-            /* Coulomb: all i-atoms, LJ: all i-atoms */
+/* Coulomb: all i-atoms, LJ: all i-atoms */
 #define CALC_COULOMB
 #define CHECK_EXCLS
             while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
@@ -645,7 +646,7 @@
         }
         else
         {
-            /* Coulomb: none, LJ: all i-atoms */
+/* Coulomb: none, LJ: all i-atoms */
 #define CHECK_EXCLS
             while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
             {

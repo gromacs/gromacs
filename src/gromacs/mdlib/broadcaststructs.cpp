@@ -296,30 +296,67 @@ void bcast_state(const t_commrec *cr, t_state *state)
         {
             switch (i)
             {
-                case estLAMBDA:  nblock_bc(cr, efptNR, state->lambda.data()); break;
-                case estFEPSTATE: block_bc(cr, state->fep_state); break;
-                case estBOX:     block_bc(cr, state->box); break;
-                case estBOX_REL: block_bc(cr, state->box_rel); break;
-                case estBOXV:    block_bc(cr, state->boxv); break;
-                case estPRES_PREV: block_bc(cr, state->pres_prev); break;
-                case estSVIR_PREV: block_bc(cr, state->svir_prev); break;
-                case estFVIR_PREV: block_bc(cr, state->fvir_prev); break;
-                case estNH_XI:   nblock_abc(cr, nnht, &state->nosehoover_xi); break;
-                case estNH_VXI:  nblock_abc(cr, nnht, &state->nosehoover_vxi); break;
-                case estNHPRES_XI:   nblock_abc(cr, nnhtp, &state->nhpres_xi); break;
-                case estNHPRES_VXI:  nblock_abc(cr, nnhtp, &state->nhpres_vxi); break;
-                case estTC_INT:  nblock_abc(cr, state->ngtc, &state->therm_integral); break;
-                case estVETA:    block_bc(cr, state->veta); break;
-                case estVOL0:    block_bc(cr, state->vol0); break;
-                case estX:       bcastPaddedRVecVector(cr, &state->x, state->natoms);
-                case estV:       bcastPaddedRVecVector(cr, &state->v, state->natoms);
-                case estCGP:     bcastPaddedRVecVector(cr, &state->cg_p, state->natoms);
-                case estDISRE_INITF: block_bc(cr, state->hist.disre_initf); break;
+                case estLAMBDA:
+                    nblock_bc(cr, efptNR, state->lambda.data());
+                    break;
+                case estFEPSTATE:
+                    block_bc(cr, state->fep_state);
+                    break;
+                case estBOX:
+                    block_bc(cr, state->box);
+                    break;
+                case estBOX_REL:
+                    block_bc(cr, state->box_rel);
+                    break;
+                case estBOXV:
+                    block_bc(cr, state->boxv);
+                    break;
+                case estPRES_PREV:
+                    block_bc(cr, state->pres_prev);
+                    break;
+                case estSVIR_PREV:
+                    block_bc(cr, state->svir_prev);
+                    break;
+                case estFVIR_PREV:
+                    block_bc(cr, state->fvir_prev);
+                    break;
+                case estNH_XI:
+                    nblock_abc(cr, nnht, &state->nosehoover_xi);
+                    break;
+                case estNH_VXI:
+                    nblock_abc(cr, nnht, &state->nosehoover_vxi);
+                    break;
+                case estNHPRES_XI:
+                    nblock_abc(cr, nnhtp, &state->nhpres_xi);
+                    break;
+                case estNHPRES_VXI:
+                    nblock_abc(cr, nnhtp, &state->nhpres_vxi);
+                    break;
+                case estTC_INT:
+                    nblock_abc(cr, state->ngtc, &state->therm_integral);
+                    break;
+                case estVETA:
+                    block_bc(cr, state->veta);
+                    break;
+                case estVOL0:
+                    block_bc(cr, state->vol0);
+                    break;
+                case estX:
+                    bcastPaddedRVecVector(cr, &state->x, state->natoms);
+                case estV:
+                    bcastPaddedRVecVector(cr, &state->v, state->natoms);
+                case estCGP:
+                    bcastPaddedRVecVector(cr, &state->cg_p, state->natoms);
+                case estDISRE_INITF:
+                    block_bc(cr, state->hist.disre_initf);
+                    break;
                 case estDISRE_RM3TAV:
                     block_bc(cr, state->hist.ndisrepairs);
                     nblock_abc(cr, state->hist.ndisrepairs, &state->hist.disre_rm3tav);
                     break;
-                case estORIRE_INITF: block_bc(cr, state->hist.orire_initf); break;
+                case estORIRE_INITF:
+                    block_bc(cr, state->hist.orire_initf);
+                    break;
                 case estORIRE_DTAV:
                     block_bc(cr, state->hist.norire_Dtav);
                     nblock_abc(cr, state->hist.norire_Dtav, &state->hist.orire_Dtav);
@@ -770,8 +807,7 @@ static void bc_atomtypes(const t_commrec *cr, t_atomtypes *atomtypes)
 
 /*! \brief Broadcasts ir and mtop from the master to all nodes in
  * cr->mpi_comm_mygroup. */
-static
-void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
+static void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
 {
     int i;
     if (debug)

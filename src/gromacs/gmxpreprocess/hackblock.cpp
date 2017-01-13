@@ -49,8 +49,8 @@
 #include "gromacs/utility/smalloc.h"
 
 /* these MUST correspond to the enum in hackblock.h */
-const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
-const int   btsNiatoms[ebtsNR] = { 2,       3,        4,           4,           2,             5 };
+const char *btsNames[ebtsNR]   = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
+const int   btsNiatoms[ebtsNR] = { 2, 3, 4, 4, 2, 5 };
 
 static void free_t_bonded(t_rbonded *rb)
 {
@@ -299,7 +299,7 @@ gmx_bool merge_t_bondeds(t_rbondeds s[], t_rbondeds d[], gmx_bool bMin, gmx_bool
                     if (!(bMin && contains_char(&s[i].b[j], '-'))
                         && !(bPlus && contains_char(&s[i].b[j], '+')))
                     {
-                        copy_t_rbonded(&s[i].b[j], &d[i].b[ d[i].nb ]);
+                        copy_t_rbonded(&s[i].b[j], &d[i].b[d[i].nb]);
                         d[i].nb++;
                     }
                     else if (i == ebtsBONDS)
@@ -437,7 +437,7 @@ void dump_hb(FILE *out, int nres, t_hackblock hb[])
                         SS(hb[i].hack[j].oname), SS(hb[i].hack[j].nname),
                         SA(hb[i].hack[j].atom), hb[i].hack[j].tp, hb[i].hack[j].cgnr,
                         SS(hb[i].hack[j].ai()), SS(hb[i].hack[j].aj()),
-                        SS(hb[i].hack[j].ak()), SS(hb[i].hack[j].al()) );
+                        SS(hb[i].hack[j].ak()), SS(hb[i].hack[j].al()));
             }
         }
         for (j = 0; j < ebtsNR; j++)

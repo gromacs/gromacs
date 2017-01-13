@@ -42,13 +42,13 @@
 
 typedef struct
 {
-    int nr;     /* nr atoms (0 <= i < nr) (atoms->nr)	        */
-    int nrex;   /* with nrex lists of neighbours		*/
+    int nr;   /* nr atoms (0 <= i < nr) (atoms->nr)	        */
+    int nrex; /* with nrex lists of neighbours		*/
     /* respectively containing zeroth, first	*/
     /* second etc. neigbours (0 <= nre < nrex)	*/
-    int **nrexcl;  /* with (0 <= nrx < nrexcl[i][nre]) neigbours    */
+    int **nrexcl; /* with (0 <= nrx < nrexcl[i][nre]) neigbours    */
     /* per list stored in one 2d array of lists	*/
-    int ***a;      /* like this: a[i][nre][nrx]			*/
+    int ***a; /* like this: a[i][nre][nrx]			*/
 } t_nextnb;
 
 void init_nnb(t_nextnb *nnb, int nr, int nrex);
@@ -72,8 +72,8 @@ void gen_nnb(t_nextnb *nnb, t_params plist[]);
  * initiated using init_nnb.
  */
 
-void generate_excl (int nrexcl, int nratoms,
-                    t_params plist[], t_nextnb *nnb, t_blocka *excl);
+void generate_excl(int nrexcl, int nratoms,
+                   t_params plist[], t_nextnb *nnb, t_blocka *excl);
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */

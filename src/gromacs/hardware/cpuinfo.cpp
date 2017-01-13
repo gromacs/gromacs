@@ -57,30 +57,30 @@
  */
 
 #ifndef GMX_CPUINFO_STANDALONE
-#    include "gmxpre.h"
+#include "gmxpre.h"
 #endif
 
 #include "cpuinfo.h"
 
 #ifndef GMX_CPUINFO_STANDALONE
-#    include "config.h"
+#include "config.h"
 #else
-#    define GMX_NATIVE_WINDOWS 0
+#define GMX_NATIVE_WINDOWS 0
 #endif
 
 #if defined _MSC_VER
-#    include <intrin.h> // __cpuid()
+#include <intrin.h> // __cpuid()
 #endif
 
 #if GMX_NATIVE_WINDOWS
-#    include <windows.h>    // sysinfo(), necessary for topology stuff
+#include <windows.h> // sysinfo(), necessary for topology stuff
 #endif
 
 #ifdef HAVE_SCHED_H
-#    include <sched.h>      // sched_getaffinity(), sched_setaffinity()
+#include <sched.h> // sched_getaffinity(), sched_setaffinity()
 #endif
 #ifdef HAVE_UNISTD_H
-#    include <unistd.h>     // sysconf()
+#include <unistd.h> // sysconf()
 #endif
 
 #include <cctype>
@@ -94,9 +94,9 @@
 #include <string>
 
 #ifdef GMX_CPUINFO_STANDALONE
-#    define gmx_unused
+#define gmx_unused
 #else
-#    include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/basedefinitions.h"
 #endif
 
 namespace gmx
@@ -117,7 +117,7 @@ namespace
  *
  *  \param s  Pointer to string where whitespace will be removed
  */
-void trimString(std::string * s)
+void trimString(std::string *s)
 {
     // heading
     s->erase(s->begin(), std::find_if(s->begin(), s->end(), [](char &c) -> bool { return !std::isspace(c); }));
@@ -143,17 +143,17 @@ void trimString(std::string * s)
  *
  *  \return 0 on success, or non-zero if the instruction could not execute.
  */
-int executeX86CpuID(unsigned int     gmx_unused level,
-                    unsigned int     gmx_unused ecxval,
-                    unsigned int *              eax,
-                    unsigned int *              ebx,
-                    unsigned int *              ecx,
-                    unsigned int *              edx)
+int executeX86CpuID(unsigned int gmx_unused level,
+                    unsigned int gmx_unused ecxval,
+                    unsigned int *          eax,
+                    unsigned int *          ebx,
+                    unsigned int *          ecx,
+                    unsigned int *          edx)
 {
-#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86    \
-    || defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
+#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86 \
+        || defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
 
-#    if defined __GNUC__ || GMX_X86_GCC_INLINE_ASM
+#if defined __GNUC__ || GMX_X86_GCC_INLINE_ASM
 
     // any compiler that understands gcc inline assembly
     *eax = level;
@@ -161,20 +161,21 @@ int executeX86CpuID(unsigned int     gmx_unused level,
     *ebx = 0;
     *edx = 0;
 
-#        if (defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86) && defined(__PIC__)
+#if (defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86) && defined(__PIC__)
     // Avoid clobbering the global offset table in 32-bit pic code (ebx register)
-    __asm__ __volatile__ ("xchgl %%ebx, %1  \n\t"
-                          "cpuid            \n\t"
-                          "xchgl %%ebx, %1  \n\t"
-                          : "+a" (*eax), "+r" (*ebx), "+c" (*ecx), "+d" (*edx));
-#        else
+    __asm__ __volatile__(
+            "xchgl %%ebx, %1  \n\t"
+            "cpuid            \n\t"
+            "xchgl %%ebx, %1  \n\t"
+            : "+a"(*eax), "+r"(*ebx), "+c"(*ecx), "+d"(*edx));
+#else
     // i386 without PIC, or x86-64. Things are easy and we can clobber any reg we want
-    __asm__ __volatile__ ("cpuid            \n\t"
-                          : "+a" (*eax), "+b" (*ebx), "+c" (*ecx), "+d" (*edx));
-#        endif
+    __asm__ __volatile__("cpuid            \n\t"
+                         : "+a"(*eax), "+b"(*ebx), "+c"(*ecx), "+d"(*edx));
+#endif
     return 0;
 
-#    elif defined _MSC_VER
+#elif defined _MSC_VER
 
     // MSVC (and icc on windows) on ia32 or x86-64
     int cpuInfo[4];
@@ -185,7 +186,7 @@ int executeX86CpuID(unsigned int     gmx_unused level,
     *edx = static_cast<unsigned int>(cpuInfo[3]);
     return 0;
 
-#    else
+#else
 
     // We are on x86, but without compiler support for cpuid if we get here
     *eax = 0;
@@ -194,7 +195,7 @@ int executeX86CpuID(unsigned int     gmx_unused level,
     *edx = 0;
     return 1;
 
-#    endif  // check for inline asm on x86
+#endif // check for inline asm on x86
 
 #else
 
@@ -205,7 +206,7 @@ int executeX86CpuID(unsigned int     gmx_unused level,
     *edx = 0;
     return 1;
 
-#endif      // x86
+#endif // x86
 }
 
 
@@ -248,10 +249,10 @@ CpuInfo::Vendor detectX86Vendor()
  *  \note Nothing is done if the bit is not set. In particular, this will not
  *        erase anything if the feature already exists in the set.
  */
-void setFeatureFromBit(std::set<CpuInfo::Feature> * featureSet,
-                       CpuInfo::Feature             feature,
-                       unsigned int                 registerValue,
-                       unsigned char                bit)
+void setFeatureFromBit(std::set<CpuInfo::Feature> *featureSet,
+                       CpuInfo::Feature            feature,
+                       unsigned int                registerValue,
+                       unsigned char               bit)
 {
     if (registerValue & (1 << bit))
     {
@@ -267,11 +268,11 @@ void setFeatureFromBit(std::set<CpuInfo::Feature> * featureSet,
  *  \param[out] stepping   Minor version of processor
  *  \param[out] features   Feature set where supported features are inserted
  */
-void detectX86Features(std::string *                brand,
-                       int *                        family,
-                       int *                        model,
-                       int *                        stepping,
-                       std::set<CpuInfo::Feature> * features)
+void detectX86Features(std::string *               brand,
+                       int *                       family,
+                       int *                       model,
+                       int *                       stepping,
+                       std::set<CpuInfo::Feature> *features)
 {
     unsigned int eax, ebx, ecx, edx;
 
@@ -290,48 +291,48 @@ void detectX86Features(std::string *                brand,
         *model    = ((eax & 0x000f0000) >> 12) + ((eax & 0x000000f0) >> 4);
         *stepping = (eax & 0x0000000f);
 
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Sse3,     ecx,  0 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Pclmuldq, ecx,  1 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Ssse3,    ecx,  9 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Fma,      ecx, 12 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Cx16,     ecx, 13 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Pdcm,     ecx, 15 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Pcid,     ecx, 17 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Sse4_1,   ecx, 19 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Sse4_2,   ecx, 20 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_X2Apic,   ecx, 21 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Popcnt,   ecx, 23 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Tdt,      ecx, 24 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Aes,      ecx, 25 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx,      ecx, 28 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_F16C,     ecx, 29 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Rdrnd,    ecx, 30 );
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Sse3, ecx, 0);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Pclmuldq, ecx, 1);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Ssse3, ecx, 9);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Fma, ecx, 12);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Cx16, ecx, 13);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Pdcm, ecx, 15);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Pcid, ecx, 17);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Sse4_1, ecx, 19);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Sse4_2, ecx, 20);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_X2Apic, ecx, 21);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Popcnt, ecx, 23);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Tdt, ecx, 24);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Aes, ecx, 25);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx, ecx, 28);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_F16C, ecx, 29);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Rdrnd, ecx, 30);
 
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Pse,      edx,  3 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Msr,      edx,  5 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Cx8,      edx,  8 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Apic,     edx,  9 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Cmov,     edx, 15 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Clfsh,    edx, 19 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Mmx,      edx, 23 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Sse2,     edx, 26 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Htt,      edx, 28 );
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Pse, edx, 3);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Msr, edx, 5);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Cx8, edx, 8);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Apic, edx, 9);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Cmov, edx, 15);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Clfsh, edx, 19);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Mmx, edx, 23);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Sse2, edx, 26);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Htt, edx, 28);
     }
 
     if (maxStdLevel >= 0x7)
     {
         executeX86CpuID(0x7, 0, &eax, &ebx, &ecx, &edx);
 
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Hle,      ebx,  4 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx2,     ebx,  5 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Rtm,      ebx, 11 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512F,  ebx, 16 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512PF, ebx, 26 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512ER, ebx, 27 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512CD, ebx, 28 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Sha,      ebx, 29 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512BW, ebx, 30 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512VL, ebx, 31 );
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Hle, ebx, 4);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx2, ebx, 5);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Rtm, ebx, 11);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512F, ebx, 16);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512PF, ebx, 26);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512ER, ebx, 27);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512CD, ebx, 28);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Sha, ebx, 29);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512BW, ebx, 30);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512VL, ebx, 31);
     }
 
     // Check whether Hyper-threading is really possible to enable in the hardware,
@@ -359,13 +360,13 @@ void detectX86Features(std::string *                brand,
     {
         executeX86CpuID(0x80000001, 0, &eax, &ebx, &ecx, &edx);
 
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Lahf,        ecx,  0 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Sse4A,       ecx,  6 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_MisalignSse, ecx,  7 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Xop,         ecx, 11 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Fma4,        ecx, 16 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_PDPE1GB,     edx, 26 );
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Rdtscp,      edx, 27 );
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Lahf, ecx, 0);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Sse4A, ecx, 6);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_MisalignSse, ecx, 7);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Xop, ecx, 11);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Fma4, ecx, 16);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_PDPE1GB, edx, 26);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Rdtscp, edx, 27);
     }
 
     if (maxExtLevel >= 0x80000005)
@@ -388,7 +389,7 @@ void detectX86Features(std::string *                brand,
     {
         executeX86CpuID(0x80000007, 0, &eax, &ebx, &ecx, &edx);
 
-        setFeatureFromBit(features, CpuInfo::Feature::X86_NonstopTsc, edx,  8 );
+        setFeatureFromBit(features, CpuInfo::Feature::X86_NonstopTsc, edx, 8);
     }
 }
 
@@ -405,13 +406,13 @@ detectX86ApicIDs(bool gmx_unused haveX2Apic)
 {
     std::vector<unsigned int> apicID;
 
-    // We cannot just ask for all APIC IDs, but must force execution on each
-    // hardware thread and extract the APIC id there.
+// We cannot just ask for all APIC IDs, but must force execution on each
+// hardware thread and extract the APIC id there.
 #if HAVE_SCHED_AFFINITY && defined HAVE_SYSCONF
-    unsigned int eax, ebx, ecx, edx;
-    unsigned int nApic = sysconf(_SC_NPROCESSORS_ONLN);
-    cpu_set_t    saveCpuSet;
-    cpu_set_t    cpuSet;
+    unsigned int                   eax, ebx, ecx, edx;
+    unsigned int                   nApic = sysconf(_SC_NPROCESSORS_ONLN);
+    cpu_set_t                      saveCpuSet;
+    cpu_set_t                      cpuSet;
     sched_getaffinity(0, sizeof(cpu_set_t), &saveCpuSet);
     CPU_ZERO(&cpuSet);
     for (unsigned int i = 0; i < nApic; i++)
@@ -434,7 +435,7 @@ detectX86ApicIDs(bool gmx_unused haveX2Apic)
 #elif GMX_NATIVE_WINDOWS
     unsigned int eax, ebx, ecx, edx;
     SYSTEM_INFO  sysinfo;
-    GetSystemInfo( &sysinfo );
+    GetSystemInfo(&sysinfo);
     unsigned int nApic        = sysinfo.dwNumberOfProcessors;
     unsigned int saveAffinity = SetThreadAffinityMask(GetCurrentThread(), 1);
     for (DWORD_PTR i = 0; i < nApic; i++)
@@ -467,14 +468,14 @@ detectX86ApicIDs(bool gmx_unused haveX2Apic)
  * will be rewritten to {0,1,2,3,4,5,3,4,5,0,1,2}, and it returns 6 for the
  * number of unique elements.
  */
-void renumberIndex(std::vector<unsigned int> * v)
+void renumberIndex(std::vector<unsigned int> *v)
 {
-    std::vector<unsigned int> sortedV (*v);
+    std::vector<unsigned int> sortedV(*v);
     std::sort(sortedV.begin(), sortedV.end());
 
-    std::vector<unsigned int> uniqueSortedV (sortedV);
+    std::vector<unsigned int> uniqueSortedV(sortedV);
     auto                      it = std::unique(uniqueSortedV.begin(), uniqueSortedV.end());
-    uniqueSortedV.resize( std::distance(uniqueSortedV.begin(), it) );
+    uniqueSortedV.resize(std::distance(uniqueSortedV.begin(), it));
 
     for (std::size_t i = 0; i < uniqueSortedV.size(); i++)
     {
@@ -516,7 +517,7 @@ detectX86LogicalProcessors()
     {
         executeX86CpuID(0x1, 0, &eax, &ebx, &ecx, &edx);
         haveX2Apic = (ecx & (1 << 21)) && maxStdLevel >= 0xb;
-        haveApic   = (edx & (1 <<  9)) && maxExtLevel >= 0x80000008;
+        haveApic   = (edx & (1 << 9)) && maxExtLevel >= 0x80000008;
     }
     else
     {
@@ -536,7 +537,7 @@ detectX86LogicalProcessors()
             executeX86CpuID(0xb, 1, &eax, &ebx, &ecx, &edx);
             coreBits = (eax & 0x1f) - hwThreadBits;
         }
-        else    // haveApic
+        else // haveApic
         {
             // AMD without x2APIC does not support SMT - there are no hwthread bits in apic ID
             hwThreadBits = 0;
@@ -569,9 +570,9 @@ detectX86LogicalProcessors()
 
             for (auto a : apicID)
             {
-                hwThreadRanks.push_back( static_cast<int>( a & hwThreadMask ) );
-                coreRanks.push_back( static_cast<int>( ( a >> hwThreadBits ) & coreMask ) );
-                socketRanks.push_back( static_cast<int>( a >> ( coreBits + hwThreadBits ) ) );
+                hwThreadRanks.push_back(static_cast<int>(a & hwThreadMask));
+                coreRanks.push_back(static_cast<int>((a >> hwThreadBits) & coreMask));
+                socketRanks.push_back(static_cast<int>(a >> (coreBits + hwThreadBits)));
             }
 
             renumberIndex(&hwThreadRanks);
@@ -582,7 +583,7 @@ detectX86LogicalProcessors()
             unsigned int coreRankSize     = 1 + *std::max_element(coreRanks.begin(), coreRanks.end());
             unsigned int socketRankSize   = 1 + *std::max_element(socketRanks.begin(), socketRanks.end());
 
-            if (socketRankSize * coreRankSize * hwThreadRankSize == apicID.size() )
+            if (socketRankSize * coreRankSize * hwThreadRankSize == apicID.size())
             {
                 // Alright, everything looks consistent, so put it in the result
                 for (std::size_t i = 0; i < apicID.size(); i++)
@@ -590,7 +591,7 @@ detectX86LogicalProcessors()
                     // While the internal APIC IDs are always unsigned integers, we also cast to
                     // plain integers for the externally exposed vectors, since that will make
                     // it possible to use '-1' for invalid entries in the future.
-                    logicalProcessors.push_back( { int(socketRanks[i]), int(coreRanks[i]), int(hwThreadRanks[i]) } );
+                    logicalProcessors.push_back({ int(socketRanks[i]), int(coreRanks[i]), int(hwThreadRanks[i]) });
                 }
             }
         }
@@ -619,8 +620,8 @@ detectX86LogicalProcessors()
 const std::map<std::string, std::string>
 parseProcCpuInfo()
 {
-    std::ifstream                      procCpuInfo("/proc/cpuinfo");
-    std::string                        line;
+    std::ifstream procCpuInfo("/proc/cpuinfo");
+    std::string   line;
     std::map<std::string, std::string> cpuInfo;
 
     while (std::getline(procCpuInfo, line))
@@ -630,8 +631,8 @@ parseProcCpuInfo()
             std::stringstream iss(line);
             std::string       key;
             std::string       val;
-            std::getline(iss, key, ':');  // part before colon
-            std::getline(iss, val);       // part after colon
+            std::getline(iss, key, ':'); // part before colon
+            std::getline(iss, val);      // part after colon
             trimString(&key);
             trimString(&val);
             // put it in the map. This will overwrite previous processors, but we don't care.
@@ -652,17 +653,16 @@ parseProcCpuInfo()
  */
 CpuInfo::Vendor detectProcCpuInfoVendor(const std::map<std::string, std::string> &cpuInfo)
 {
-    const std::map<std::string, CpuInfo::Vendor> testVendors =
-    {
-        { "GenuineIntel", CpuInfo::Vendor::Intel   },
-        { "Intel",        CpuInfo::Vendor::Intel   },
-        { "AuthenticAmd", CpuInfo::Vendor::Amd     },
-        { "AMD",          CpuInfo::Vendor::Amd     },
-        { "ARM",          CpuInfo::Vendor::Arm     },
-        { "AArch64",      CpuInfo::Vendor::Arm     },
-        { "Fujitsu",      CpuInfo::Vendor::Fujitsu },
-        { "IBM",          CpuInfo::Vendor::Ibm     },
-        { "POWER",        CpuInfo::Vendor::Ibm     }
+    const std::map<std::string, CpuInfo::Vendor> testVendors = {
+        { "GenuineIntel", CpuInfo::Vendor::Intel },
+        { "Intel", CpuInfo::Vendor::Intel },
+        { "AuthenticAmd", CpuInfo::Vendor::Amd },
+        { "AMD", CpuInfo::Vendor::Amd },
+        { "ARM", CpuInfo::Vendor::Arm },
+        { "AArch64", CpuInfo::Vendor::Arm },
+        { "Fujitsu", CpuInfo::Vendor::Fujitsu },
+        { "IBM", CpuInfo::Vendor::Ibm },
+        { "POWER", CpuInfo::Vendor::Ibm }
     };
 
     // For each label in /proc/cpuinfo, compare the value to the name in the
@@ -702,8 +702,8 @@ CpuInfo::Vendor detectProcCpuInfoVendor(const std::map<std::string, std::string>
  *  we can find the processor name and features. It is likely fragile.
  */
 void detectProcCpuInfoIbm(const std::map<std::string, std::string> &cpuInfo,
-                          std::string *                             brand,
-                          std::set<CpuInfo::Feature> *              features)
+                          std::string *               brand,
+                          std::set<CpuInfo::Feature> *features)
 {
     // Get brand string from 'cpu' label if present, otherwise 'Processor'
     if (cpuInfo.count("cpu"))
@@ -754,12 +754,12 @@ void detectProcCpuInfoIbm(const std::map<std::string, std::string> &cpuInfo,
  *  This routine tries to match a few common labels in /proc/cpuinfo to see if
  *  we can find the processor name and features. It is likely fragile.
  */
-void detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
-                          std::string *                               brand,
-                          int *                                       family,
-                          int *                                       model,
-                          int *                                       stepping,
-                          std::set<CpuInfo::Feature> *                features)
+void detectProcCpuInfoArm(const std::map<std::string, std::string> &cpuInfo,
+                          std::string *               brand,
+                          int *                       family,
+                          int *                       model,
+                          int *                       stepping,
+                          std::set<CpuInfo::Feature> *features)
 {
     if (cpuInfo.count("Processor"))
     {
@@ -771,7 +771,7 @@ void detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
         // For some 64-bit CPUs it appears to say 'AArch64' instead
         if (*family == 0 && cpuInfo.at("CPU architecture").find("AArch64") != std::string::npos)
         {
-            *family = 8;  // fragile - no idea how a future ARMv9 will be represented in this case
+            *family = 8; // fragile - no idea how a future ARMv9 will be represented in this case
         }
     }
     if (cpuInfo.count("CPU variant"))
@@ -818,12 +818,12 @@ void detectProcCpuInfoArm(const std::map<std::string, std::string>   &cpuInfo,
  *  much more fragile than our x86 detection, but it does not depend on
  *  specific system calls, intrinsics or assembly instructions.
  */
-void detectProcCpuInfo(CpuInfo::Vendor *            vendor,
-                       std::string *                brand,
-                       int *                        family,
-                       int *                        model,
-                       int *                        stepping,
-                       std::set<CpuInfo::Feature> * features)
+void detectProcCpuInfo(CpuInfo::Vendor *           vendor,
+                       std::string *               brand,
+                       int *                       family,
+                       int *                       model,
+                       int *                       stepping,
+                       std::set<CpuInfo::Feature> *features)
 {
     std::map<std::string, std::string> cpuInfo = parseProcCpuInfo();
 
@@ -846,7 +846,7 @@ void detectProcCpuInfo(CpuInfo::Vendor *            vendor,
             break;
 
         default:
-            // We only have a single check for fujitsu for now
+// We only have a single check for fujitsu for now
 #ifdef __HPC_ACE__
             features->insert(CpuInfo::Feature::Fujitsu_HpcAce);
 #endif
@@ -854,7 +854,7 @@ void detectProcCpuInfo(CpuInfo::Vendor *            vendor,
     }
 }
 /*! \endcond */
-}   // namespace anonymous
+} // namespace anonymous
 
 
 // static
@@ -862,32 +862,32 @@ CpuInfo CpuInfo::detect()
 {
     CpuInfo result;
 
-#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86    \
-    || defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
+#if defined __i386__ || defined __i386 || defined _X86_ || defined _M_IX86 \
+        || defined __x86_64__ || defined __amd64__ || defined _M_X64 || defined _M_AMD64
 
     result.vendor_ = detectX86Vendor();
     detectX86Features(&result.brandString_, &result.family_, &result.model_,
                       &result.stepping_, &result.features_);
     result.logicalProcessors_ = detectX86LogicalProcessors();
-#else   // not x86
+#else // not x86
 
-#    if defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64__
+#if defined __arm__ || defined __arm || defined _M_ARM || defined __aarch64__
     result.vendor_ = CpuInfo::Vendor::Arm;
-#    elif defined __powerpc__ || defined __ppc__ || defined __PPC__
+#elif defined __powerpc__ || defined __ppc__ || defined __PPC__
     result.vendor_ = CpuInfo::Vendor::Ibm;
-#    endif
+#endif
 
-#    if defined __aarch64__ || ( defined _M_ARM && _M_ARM >= 8 )
+#if defined __aarch64__ || (defined _M_ARM && _M_ARM >= 8)
     result.features_.insert(Feature::Arm_Neon);      // ARMv8 always has Neon
     result.features_.insert(Feature::Arm_NeonAsimd); // ARMv8 always has Neon-asimd
-#    endif
+#endif
 
     // On Linux we might be able to find information in /proc/cpuinfo. If vendor or brand
     // is set to a known value this routine will not overwrite it.
     detectProcCpuInfo(&result.vendor_, &result.brandString_, &result.family_,
                       &result.model_, &result.stepping_, &result.features_);
 
-#endif  // x86 or not
+#endif // x86 or not
 
     if (!result.logicalProcessors_.empty())
     {
@@ -919,70 +919,68 @@ CpuInfo::CpuInfo()
 
 
 const std::map<CpuInfo::Vendor, std::string>
-CpuInfo::s_vendorStrings_ =
-{
-    { CpuInfo::Vendor::Unknown, "Unknown vendor"                  },
-    { CpuInfo::Vendor::Intel, "Intel"                             },
-    { CpuInfo::Vendor::Amd, "AMD"                                 },
-    { CpuInfo::Vendor::Fujitsu, "Fujitsu"                         },
-    { CpuInfo::Vendor::Ibm, "IBM"                                 },
-    { CpuInfo::Vendor::Arm, "ARM"                                 }
-};
+        CpuInfo::s_vendorStrings_ = {
+            { CpuInfo::Vendor::Unknown, "Unknown vendor" },
+            { CpuInfo::Vendor::Intel, "Intel" },
+            { CpuInfo::Vendor::Amd, "AMD" },
+            { CpuInfo::Vendor::Fujitsu, "Fujitsu" },
+            { CpuInfo::Vendor::Ibm, "IBM" },
+            { CpuInfo::Vendor::Arm, "ARM" }
+        };
 
 
 const std::map<CpuInfo::Feature, std::string>
-CpuInfo::s_featureStrings_ =
-{
-    { CpuInfo::Feature::X86_Aes, "aes"                            },
-    { CpuInfo::Feature::X86_Apic, "apic"                          },
-    { CpuInfo::Feature::X86_Avx, "avx"                            },
-    { CpuInfo::Feature::X86_Avx2, "avx2"                          },
-    { CpuInfo::Feature::X86_Avx512F, "avx512f"                    },
-    { CpuInfo::Feature::X86_Avx512PF, "avx512pf"                  },
-    { CpuInfo::Feature::X86_Avx512ER, "avx512er"                  },
-    { CpuInfo::Feature::X86_Avx512CD, "avx512cd"                  },
-    { CpuInfo::Feature::X86_Avx512BW, "avx512bw"                  },
-    { CpuInfo::Feature::X86_Avx512VL, "avx512vl"                  },
-    { CpuInfo::Feature::X86_Clfsh, "clfsh"                        },
-    { CpuInfo::Feature::X86_Cmov, "cmov"                          },
-    { CpuInfo::Feature::X86_Cx8, "cx8"                            },
-    { CpuInfo::Feature::X86_Cx16, "cx16"                          },
-    { CpuInfo::Feature::X86_F16C, "f16c"                          },
-    { CpuInfo::Feature::X86_Fma, "fma"                            },
-    { CpuInfo::Feature::X86_Fma4, "fma4"                          },
-    { CpuInfo::Feature::X86_Hle, "hle"                            },
-    { CpuInfo::Feature::X86_Htt, "htt"                            },
-    { CpuInfo::Feature::X86_Lahf, "lahf"                          },
-    { CpuInfo::Feature::X86_MisalignSse, "misalignsse"            },
-    { CpuInfo::Feature::X86_Mmx, "mmx"                            },
-    { CpuInfo::Feature::X86_Msr, "msr"                            },
-    { CpuInfo::Feature::X86_NonstopTsc, "nonstop_tsc"             },
-    { CpuInfo::Feature::X86_Pcid, "pcid"                          },
-    { CpuInfo::Feature::X86_Pclmuldq, "pclmuldq"                  },
-    { CpuInfo::Feature::X86_Pdcm, "pdcm"                          },
-    { CpuInfo::Feature::X86_PDPE1GB, "pdpe1gb"                    },
-    { CpuInfo::Feature::X86_Popcnt, "popcnt"                      },
-    { CpuInfo::Feature::X86_Pse, "pse"                            },
-    { CpuInfo::Feature::X86_Rdrnd, "rdrnd"                        },
-    { CpuInfo::Feature::X86_Rdtscp, "rdtscp"                      },
-    { CpuInfo::Feature::X86_Rtm, "rtm"                            },
-    { CpuInfo::Feature::X86_Sha, "sha"                            },
-    { CpuInfo::Feature::X86_Sse2, "sse2"                          },
-    { CpuInfo::Feature::X86_Sse3, "sse3"                          },
-    { CpuInfo::Feature::X86_Sse4A, "sse4a"                        },
-    { CpuInfo::Feature::X86_Sse4_1, "sse4.1"                      },
-    { CpuInfo::Feature::X86_Sse4_2, "sse4.2"                      },
-    { CpuInfo::Feature::X86_Ssse3, "ssse3"                        },
-    { CpuInfo::Feature::X86_Tdt, "tdt"                            },
-    { CpuInfo::Feature::X86_X2Apic, "x2apic"                      },
-    { CpuInfo::Feature::X86_Xop, "xop"                            },
-    { CpuInfo::Feature::Arm_Neon, "neon"                          },
-    { CpuInfo::Feature::Arm_NeonAsimd, "neon_asimd"               },
-    { CpuInfo::Feature::Ibm_Qpx, "qpx"                            },
-    { CpuInfo::Feature::Ibm_Vmx, "vmx"                            },
-    { CpuInfo::Feature::Ibm_Vsx, "vsx"                            },
-    { CpuInfo::Feature::Fujitsu_HpcAce, "hpc-ace"                 }
-};
+        CpuInfo::s_featureStrings_ = {
+            { CpuInfo::Feature::X86_Aes, "aes" },
+            { CpuInfo::Feature::X86_Apic, "apic" },
+            { CpuInfo::Feature::X86_Avx, "avx" },
+            { CpuInfo::Feature::X86_Avx2, "avx2" },
+            { CpuInfo::Feature::X86_Avx512F, "avx512f" },
+            { CpuInfo::Feature::X86_Avx512PF, "avx512pf" },
+            { CpuInfo::Feature::X86_Avx512ER, "avx512er" },
+            { CpuInfo::Feature::X86_Avx512CD, "avx512cd" },
+            { CpuInfo::Feature::X86_Avx512BW, "avx512bw" },
+            { CpuInfo::Feature::X86_Avx512VL, "avx512vl" },
+            { CpuInfo::Feature::X86_Clfsh, "clfsh" },
+            { CpuInfo::Feature::X86_Cmov, "cmov" },
+            { CpuInfo::Feature::X86_Cx8, "cx8" },
+            { CpuInfo::Feature::X86_Cx16, "cx16" },
+            { CpuInfo::Feature::X86_F16C, "f16c" },
+            { CpuInfo::Feature::X86_Fma, "fma" },
+            { CpuInfo::Feature::X86_Fma4, "fma4" },
+            { CpuInfo::Feature::X86_Hle, "hle" },
+            { CpuInfo::Feature::X86_Htt, "htt" },
+            { CpuInfo::Feature::X86_Lahf, "lahf" },
+            { CpuInfo::Feature::X86_MisalignSse, "misalignsse" },
+            { CpuInfo::Feature::X86_Mmx, "mmx" },
+            { CpuInfo::Feature::X86_Msr, "msr" },
+            { CpuInfo::Feature::X86_NonstopTsc, "nonstop_tsc" },
+            { CpuInfo::Feature::X86_Pcid, "pcid" },
+            { CpuInfo::Feature::X86_Pclmuldq, "pclmuldq" },
+            { CpuInfo::Feature::X86_Pdcm, "pdcm" },
+            { CpuInfo::Feature::X86_PDPE1GB, "pdpe1gb" },
+            { CpuInfo::Feature::X86_Popcnt, "popcnt" },
+            { CpuInfo::Feature::X86_Pse, "pse" },
+            { CpuInfo::Feature::X86_Rdrnd, "rdrnd" },
+            { CpuInfo::Feature::X86_Rdtscp, "rdtscp" },
+            { CpuInfo::Feature::X86_Rtm, "rtm" },
+            { CpuInfo::Feature::X86_Sha, "sha" },
+            { CpuInfo::Feature::X86_Sse2, "sse2" },
+            { CpuInfo::Feature::X86_Sse3, "sse3" },
+            { CpuInfo::Feature::X86_Sse4A, "sse4a" },
+            { CpuInfo::Feature::X86_Sse4_1, "sse4.1" },
+            { CpuInfo::Feature::X86_Sse4_2, "sse4.2" },
+            { CpuInfo::Feature::X86_Ssse3, "ssse3" },
+            { CpuInfo::Feature::X86_Tdt, "tdt" },
+            { CpuInfo::Feature::X86_X2Apic, "x2apic" },
+            { CpuInfo::Feature::X86_Xop, "xop" },
+            { CpuInfo::Feature::Arm_Neon, "neon" },
+            { CpuInfo::Feature::Arm_NeonAsimd, "neon_asimd" },
+            { CpuInfo::Feature::Ibm_Qpx, "qpx" },
+            { CpuInfo::Feature::Ibm_Vmx, "vmx" },
+            { CpuInfo::Feature::Ibm_Vsx, "vsx" },
+            { CpuInfo::Feature::Fujitsu_HpcAce, "hpc-ace" }
+        };
 
 
 bool cpuIsX86Nehalem(const CpuInfo &cpuInfo)
@@ -991,10 +989,10 @@ bool cpuIsX86Nehalem(const CpuInfo &cpuInfo)
             && cpuInfo.family() == 6
             && (cpuInfo.model() == 0x2E || cpuInfo.model() == 0x1A
                 || cpuInfo.model() == 0x1E || cpuInfo.model() == 0x2F
-                || cpuInfo.model() == 0x2C || cpuInfo.model() == 0x25) );
+                || cpuInfo.model() == 0x2C || cpuInfo.model() == 0x25));
 }
 
-}  // namespace gmx
+} // namespace gmx
 
 #ifdef GMX_CPUINFO_STANDALONE
 int main(int argc, char **argv)
@@ -1039,7 +1037,7 @@ int main(int argc, char **argv)
     }
     else if (arg == "-features")
     {
-        for (auto &f : cpuInfo.featureSet() )
+        for (auto &f : cpuInfo.featureSet())
         {
             printf(" %s", cpuInfo.featureString(f).c_str());
         }
@@ -1048,7 +1046,7 @@ int main(int argc, char **argv)
     else if (arg == "-topology")
     {
         // Undocumented debug option, usually not present in standalone version
-        for (auto &t : cpuInfo.logicalProcessors() )
+        for (auto &t : cpuInfo.logicalProcessors())
         {
             printf("%3u %3u %3u\n", t.socketRankInMachine, t.coreRankInSocket, t.hwThreadRankInCore);
         }

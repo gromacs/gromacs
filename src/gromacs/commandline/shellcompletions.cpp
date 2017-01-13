@@ -93,7 +93,7 @@ public:
         }
         optionList_.append("-");
         const BooleanOptionInfo *booleanOption
-            = option.toType<BooleanOptionInfo>();
+                = option.toType<BooleanOptionInfo>();
         if (booleanOption != nullptr && booleanOption->defaultValue())
         {
             optionList_.append("no");
@@ -108,7 +108,8 @@ private:
 class OptionCompletionWriter : public OptionsVisitor
 {
 public:
-    explicit OptionCompletionWriter(TextWriter *out) : out_(*out) {}
+    explicit OptionCompletionWriter(TextWriter *out)
+        : out_(*out) {}
 
     virtual void visitSection(const OptionSectionInfo &section)
     {
@@ -181,7 +182,7 @@ void OptionCompletionWriter::writeOptionCompletion(
     out_.writeLine(result);
 }
 
-}   // namespace
+} // namespace
 
 class ShellCompletionWriter::Impl
 {
@@ -194,7 +195,7 @@ public:
     std::string completionFunctionName(const char *moduleName) const
     {
         std::string result
-            = formatString("_%s_%s_compl", binaryName_.c_str(), moduleName);
+                = formatString("_%s_%s_compl", binaryName_.c_str(), moduleName);
         std::replace(result.begin(), result.end(), '-', '_');
         return result;
     }

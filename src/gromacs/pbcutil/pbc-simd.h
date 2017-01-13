@@ -101,7 +101,6 @@ static gmx_inline void gmx_simdcall pbc_correct_dx_simd(SimdReal *  dx,
 
     shx = round(*dx * load(pbc_simd + 7 * GMX_SIMD_REAL_WIDTH)); // load inv_bxx
     *dx = *dx - shx * load(pbc_simd + 8 * GMX_SIMD_REAL_WIDTH);  // load bxx
-
 }
 
 /*! \brief Calculates the PBC corrected distance between SIMD coordinates.

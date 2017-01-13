@@ -70,14 +70,13 @@ protected:
 /*! \brief
  * Sets the thread affinity using the requested setting stored in hw_opt.
  */
-void
-gmx_set_thread_affinity(FILE *                       fplog,
-                        const gmx::MDLogger &        mdlog,
-                        const t_commrec *            cr,
-                        const gmx_hw_opt_t *         hw_opt,
-                        const gmx::HardwareTopology &hwTop,
-                        int                          nthread_local,
-                        gmx::IThreadAffinityAccess * affinityAccess);
+void gmx_set_thread_affinity(FILE *                       fplog,
+                             const gmx::MDLogger &        mdlog,
+                             const t_commrec *            cr,
+                             const gmx_hw_opt_t *         hw_opt,
+                             const gmx::HardwareTopology &hwTop,
+                             int                          nthread_local,
+                             gmx::IThreadAffinityAccess * affinityAccess);
 
 /*! \brief
  * Checks the process affinity mask and if it is found to be non-zero,
@@ -93,9 +92,8 @@ gmx_set_thread_affinity(FILE *                       fplog,
  * With bAfterOpenmpInit false, it will also detect whether OpenMP environment
  * variables for setting the affinity are set.
  */
-void
-gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog, const t_commrec *cr,
-                              gmx_hw_opt_t *hw_opt, int ncpus,
-                              gmx_bool bAfterOpenmpInit);
+void gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog, const t_commrec *cr,
+                                   gmx_hw_opt_t *hw_opt, int ncpus,
+                                   gmx_bool bAfterOpenmpInit);
 
 #endif

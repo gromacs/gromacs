@@ -50,15 +50,15 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/gmxassert.h"
 
-#define XXXX    0
-#define XXYY    1
-#define XXZZ    2
-#define YYXX    3
-#define YYYY    4
-#define YYZZ    5
-#define ZZXX    6
-#define ZZYY    7
-#define ZZZZ    8
+#define XXXX 0
+#define XXYY 1
+#define XXZZ 2
+#define YYXX 3
+#define YYYY 4
+#define YYZZ 5
+#define ZZXX 6
+#define ZZYY 7
+#define ZZZZ 8
 
 static void upd_vir(rvec vir, real dvx, real dvy, real dvz)
 {
@@ -163,17 +163,17 @@ static void lo_fcv(int i0, int i1,
             ty = is[i3 + YY];
             tz = is[i3 + ZZ];
 
-            xx    = x[i3 + XX] - tx * box[XXXX] - ty * box[YYXX] - tz * box[ZZXX];
+            xx = x[i3 + XX] - tx * box[XXXX] - ty * box[YYXX] - tz * box[ZZXX];
             dvxx += xx * f[i3 + XX];
             dvxy += xx * f[i3 + YY];
             dvxz += xx * f[i3 + ZZ];
 
-            yy    = x[i3 + YY] - ty * box[YYYY] - tz * box[ZZYY];
+            yy = x[i3 + YY] - ty * box[YYYY] - tz * box[ZZYY];
             dvyx += yy * f[i3 + XX];
             dvyy += yy * f[i3 + YY];
             dvyz += yy * f[i3 + ZZ];
 
-            zz    = x[i3 + ZZ] - tz * box[ZZZZ];
+            zz = x[i3 + ZZ] - tz * box[ZZZZ];
             dvzx += zz * f[i3 + XX];
             dvzy += zz * f[i3 + YY];
             dvzz += zz * f[i3 + ZZ];
@@ -188,17 +188,17 @@ static void lo_fcv(int i0, int i1,
             ty = is[i3 + YY];
             tz = is[i3 + ZZ];
 
-            xx    = x[i3 + XX] - tx * box[XXXX];
+            xx = x[i3 + XX] - tx * box[XXXX];
             dvxx += xx * f[i3 + XX];
             dvxy += xx * f[i3 + YY];
             dvxz += xx * f[i3 + ZZ];
 
-            yy    = x[i3 + YY] - ty * box[YYYY];
+            yy = x[i3 + YY] - ty * box[YYYY];
             dvyx += yy * f[i3 + XX];
             dvyy += yy * f[i3 + YY];
             dvyz += yy * f[i3 + ZZ];
 
-            zz    = x[i3 + ZZ] - tz * box[ZZZZ];
+            zz = x[i3 + ZZ] - tz * box[ZZZZ];
             dvzx += zz * f[i3 + XX];
             dvzy += zz * f[i3 + YY];
             dvzz += zz * f[i3 + ZZ];

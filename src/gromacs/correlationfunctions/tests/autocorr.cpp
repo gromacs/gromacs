@@ -72,17 +72,16 @@ typedef std::unique_ptr<CorrelationDataSet> CorrelationDataSetPointer;
 class AutocorrTest : public ::testing::Test
 {
 protected:
-
     static int                       nrFrames_;
     static CorrelationDataSetPointer data_;
     // Need raw pointer for passing this to C routines
-    static t_pargs * tempArgs_;
+    static t_pargs *tempArgs_;
 
     test::TestReferenceData    refData_;
     test::TestReferenceChecker checker_;
 
     // Use erefdataCreateMissing for creating new files
-    AutocorrTest( )
+    AutocorrTest()
         : checker_(refData_.rootChecker())
     {
 #if GMX_DOUBLE
@@ -97,9 +96,9 @@ protected:
     {
         int         n        = 0;
         std::string fileName = "testCOS3.xvg";
-        data_     = CorrelationDataSetPointer(new CorrelationDataSet(fileName));
-        nrFrames_ = data_->getNrLines();
-        tempArgs_ = add_acf_pargs(&n, nullptr);
+        data_                = CorrelationDataSetPointer(new CorrelationDataSet(fileName));
+        nrFrames_            = data_->getNrLines();
+        tempArgs_            = add_acf_pargs(&n, nullptr);
     }
 
     static void TearDownTestCase()
@@ -125,7 +124,7 @@ protected:
             }
         }
         real *ptr = result.data();
-        low_do_autocorr(nullptr, nullptr, nullptr,   nrFrames_, 1,
+        low_do_autocorr(nullptr, nullptr, nullptr, nrFrames_, 1,
                         get_acfnout(), &ptr, data_->getDt(), mode,
                         nrRestart, bAverage, bNormalize,
                         bVerbose, data_->getStartTime(), data_->getEndTime(),
@@ -169,66 +168,61 @@ protected:
                 GMX_RELEASE_ASSERT(false, "Invalid auto correlation option");
                 return -1;
         }
-
     }
-
 };
 
 int                       AutocorrTest::nrFrames_;
 CorrelationDataSetPointer AutocorrTest::data_;
 t_pargs *                 AutocorrTest::tempArgs_;
 
-TEST_F (AutocorrTest, EacNormal)
+TEST_F(AutocorrTest, EacNormal)
 {
     test(eacNormal, true);
 }
 
-TEST_F (AutocorrTest, EacNoNormalize)
+TEST_F(AutocorrTest, EacNoNormalize)
 {
     test(eacNormal, false);
 }
 
-TEST_F (AutocorrTest, EacCos)
+TEST_F(AutocorrTest, EacCos)
 {
     test(eacCos, true);
 }
 
-TEST_F (AutocorrTest, EacVector)
+TEST_F(AutocorrTest, EacVector)
 {
     test(eacVector, true);
 }
 
-TEST_F (AutocorrTest, EacRcross)
+TEST_F(AutocorrTest, EacRcross)
 {
     test(eacRcross, true);
 }
 
-TEST_F (AutocorrTest, EacP0)
+TEST_F(AutocorrTest, EacP0)
 {
     test(eacP0, true);
 }
 
-TEST_F (AutocorrTest, EacP1)
+TEST_F(AutocorrTest, EacP1)
 {
     test(eacP1, true);
 }
 
-TEST_F (AutocorrTest, EacP2)
+TEST_F(AutocorrTest, EacP2)
 {
     test(eacP2, true);
 }
 
-TEST_F (AutocorrTest, EacP3)
+TEST_F(AutocorrTest, EacP3)
 {
     test(eacP3, true);
 }
 
-TEST_F (AutocorrTest, EacP4)
+TEST_F(AutocorrTest, EacP4)
 {
     test(eacP4, true);
 }
-
-
 }
-
 }

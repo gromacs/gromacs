@@ -181,19 +181,19 @@ void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
                 {
                     /* The next line solves equation 5.6 (neglecting
                        the term in g^2), for g */
-                    scaled_lagrange_multiplier_ll   = omega * diff * half_of_reduced_mass[ll] / r_dot_r_prime;
+                    scaled_lagrange_multiplier_ll = omega * diff * half_of_reduced_mass[ll] / r_dot_r_prime;
                     scaled_lagrange_multiplier[ll] += scaled_lagrange_multiplier_ll;
-                    xh                              = rijx * scaled_lagrange_multiplier_ll;
-                    yh                              = rijy * scaled_lagrange_multiplier_ll;
-                    zh                              = rijz * scaled_lagrange_multiplier_ll;
-                    im                              = invmass[i];
-                    jm                              = invmass[j];
-                    positions[ix]                  += xh * im;
-                    positions[iy]                  += yh * im;
-                    positions[iz]                  += zh * im;
-                    positions[jx]                  -= xh * jm;
-                    positions[jy]                  -= yh * jm;
-                    positions[jz]                  -= zh * jm;
+                    xh = rijx * scaled_lagrange_multiplier_ll;
+                    yh = rijy * scaled_lagrange_multiplier_ll;
+                    zh = rijz * scaled_lagrange_multiplier_ll;
+                    im = invmass[i];
+                    jm = invmass[j];
+                    positions[ix] += xh * im;
+                    positions[iy] += yh * im;
+                    positions[iz] += zh * im;
+                    positions[jx] -= xh * jm;
+                    positions[jy] -= yh * jm;
+                    positions[jz] -= zh * jm;
                 }
             }
         }
@@ -281,11 +281,13 @@ int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
     {
         if (fplog)
         {
-            fprintf(fplog, "Inner product between old and new vector <= 0.0!\n"
+            fprintf(fplog,
+                    "Inner product between old and new vector <= 0.0!\n"
                     "constraint #%d atoms %d and %d\n",
                     error - 1, iatom[3 * (error - 1) + 1] + 1, iatom[3 * (error - 1) + 2] + 1);
         }
-        fprintf(stderr, "Inner product between old and new vector <= 0.0!\n"
+        fprintf(stderr,
+                "Inner product between old and new vector <= 0.0!\n"
                 "constraint #%d atoms %d and %d\n",
                 error - 1, iatom[3 * (error - 1) + 1] + 1, iatom[3 * (error - 1) + 2] + 1);
         nit = 0;
@@ -414,14 +416,14 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     }
 
     iatoms = &(idef->il[F_CONSTR].iatoms[sblock[0]]);
-    for (i = 0; (i < nblocks); )
+    for (i = 0; (i < nblocks);)
     {
-        blen  = (sblock[i + 1] - sblock[i]);
+        blen = (sblock[i + 1] - sblock[i]);
         blen /= 3;
-        n0    = vec_shakef(log, shaked, invmass, blen, idef->iparams,
-                           iatoms, ir->shake_tol, x_s, prime, shaked->omega,
-                           ir->efep != efepNO, lambda, scaled_lagrange_multiplier, invdt, v, bCalcVir, vir_r_m_dr,
-                           econq);
+        n0 = vec_shakef(log, shaked, invmass, blen, idef->iparams,
+                        iatoms, ir->shake_tol, x_s, prime, shaked->omega,
+                        ir->efep != efepNO, lambda, scaled_lagrange_multiplier, invdt, v, bCalcVir, vir_r_m_dr,
+                        econq);
 
 #ifdef DEBUGSHAKE
         check_cons(log, blen, x_s, prime, v, idef->iparams, iatoms, invmass, econq);
@@ -437,9 +439,9 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
             }
             return FALSE;
         }
-        tnit                       += n0 * blen;
-        trij                       += blen;
-        iatoms                     += 3 * blen; /* Increment pointer! */
+        tnit += n0 * blen;
+        trij += blen;
+        iatoms += 3 * blen; /* Increment pointer! */
         scaled_lagrange_multiplier += blen;
         i++;
     }
@@ -477,7 +479,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
             shaked->delta *= -0.5;
         }
         shaked->omega += shaked->delta;
-        shaked->gamma  = tnit;
+        shaked->gamma = tnit;
     }
     inc_nrnb(nrnb, eNR_SHAKE, tnit);
     inc_nrnb(nrnb, eNR_SHAKE_RIJ, trij);
@@ -550,13 +552,13 @@ void crattle(int iatom[], int ncon, int *nnit, int maxnit,
 
             if (iconvf > 1)
             {
-                nconv                           = static_cast<int>(iconvf);
-                fac                             = omega * 2.0 * m2[ll] / constraint_distance_squared_ll;
-                acor                            = -fac * vpijd;
+                nconv = static_cast<int>(iconvf);
+                fac   = omega * 2.0 * m2[ll] / constraint_distance_squared_ll;
+                acor  = -fac * vpijd;
                 scaled_lagrange_multiplier[ll] += acor;
-                xh                              = rijx * acor;
-                yh                              = rijy * acor;
-                zh                              = rijz * acor;
+                xh = rijx * acor;
+                yh = rijy * acor;
+                zh = rijz * acor;
 
                 im = invmass[i];
                 jm = invmass[j];

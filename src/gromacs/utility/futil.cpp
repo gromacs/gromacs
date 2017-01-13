@@ -53,7 +53,7 @@
 #include <unistd.h>
 #endif
 #if GMX_NATIVE_WINDOWS
-#include <direct.h>   // For _chdir() and _getcwd()
+#include <direct.h> // For _chdir() and _getcwd()
 #include <io.h>
 #include <windows.h>
 #endif
@@ -96,7 +96,7 @@ namespace
 const DataFileFinder *g_libFileFinder;
 //! Default library file finder if nothing is set.
 const DataFileFinder g_defaultLibFileFinder;
-}   // namespace
+} // namespace
 
 const DataFileFinder &getLibraryFileFinder()
 {
@@ -354,13 +354,13 @@ gmx_bool gmx_fexist(const char *fname)
     test = fopen(fname, "r");
     if (test == nullptr)
     {
-        /*Windows doesn't allow fopen of directory - so we need to check this seperately */
-        #if GMX_NATIVE_WINDOWS
+/*Windows doesn't allow fopen of directory - so we need to check this seperately */
+#if GMX_NATIVE_WINDOWS
         DWORD attr = GetFileAttributes(fname);
         return (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY);
-        #else
+#else
         return FALSE;
-        #endif
+#endif
     }
     else
     {
@@ -407,7 +407,8 @@ static char *backup_fn(const char *file)
     {
         /* TODO: The error message is only accurate for code that starts with
          * Gromacs command-line interface. */
-        gmx_fatal(FARGS, "Won't make more than %d backups of %s for you.\n"
+        gmx_fatal(FARGS,
+                  "Won't make more than %d backups of %s for you.\n"
                   "The env.var. GMX_MAXBACKUP controls this maximum, -1 disables backups.",
                   s_maxBackupCount, fn);
     }
@@ -530,9 +531,9 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
     {
         const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
         std::string                result
-            = finder.findFile(gmx::DataFileOptions(file)
-                                  .includeCurrentDir(bAddCWD)
-                                  .throwIfNotFound(bFatal));
+                = finder.findFile(gmx::DataFileOptions(file)
+                                          .includeCurrentDir(bAddCWD)
+                                          .throwIfNotFound(bFatal));
         if (!result.empty())
         {
             return gmx_strdup(result.c_str());
@@ -548,9 +549,9 @@ FILE *low_libopen(const char *file, gmx_bool bFatal)
     {
         const gmx::DataFileFinder &finder = gmx::getLibraryFileFinder();
         FILE *                     fp
-            = finder.openFile(gmx::DataFileOptions(file)
-                                  .includeCurrentDir(true)
-                                  .throwIfNotFound(bFatal));
+                = finder.openFile(gmx::DataFileOptions(file)
+                                          .includeCurrentDir(true)
+                                          .throwIfNotFound(bFatal));
         return fp;
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -579,7 +580,7 @@ void gmx_tmpnam(char *buf)
     {
         buf[i] = 'X';
     }
-    /* mktemp is dangerous and we should use mkstemp instead, but
+/* mktemp is dangerous and we should use mkstemp instead, but
      * since windows doesnt support it we have to separate the cases.
      * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
      */
@@ -620,7 +621,7 @@ FILE *gmx_fopen_temporary(char *buf)
     {
         buf[i] = 'X';
     }
-    /* mktemp is dangerous and we should use mkstemp instead, but
+/* mktemp is dangerous and we should use mkstemp instead, but
      * since windows doesnt support it we have to separate the cases.
      * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
      */
@@ -756,11 +757,11 @@ int gmx_fsync(FILE *fp)
     {
         int fn;
 
-        /* get the file number */
+/* get the file number */
 #if HAVE_FILENO
         fn = fileno(fp);
 #elif HAVE__FILENO
-        fn = _fileno(fp);
+        fn     = _fileno(fp);
 #else
         fn = -1;
 #endif
@@ -777,7 +778,7 @@ int gmx_fsync(FILE *fp)
     }
 #endif /* GMX_FAHCORE */
 
-    /* We check for these error codes this way because POSIX requires them
+/* We check for these error codes this way because POSIX requires them
        to be defined, and using anything other than macros is unlikely: */
 #ifdef EINTR
     /* we don't want to report an error just because fsync() caught a signal.
@@ -803,7 +804,7 @@ void gmx_chdir(const char *directory)
 #if GMX_NATIVE_WINDOWS
     int rc = _chdir(directory);
 #else
-    int rc = chdir(directory);
+    int   rc   = chdir(directory);
 #endif
     if (rc != 0)
     {

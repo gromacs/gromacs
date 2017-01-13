@@ -98,8 +98,7 @@ public:
                                         gmx::formatString("3 %g 0 %g 0 %g 0", omega, t0, sigma));
 
         gmx::KeyValueTreeTransformer transform;
-        transform.rules()->addRule()
-            .keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
+        transform.rules()->addRule().keyMatchType("/", gmx::StringCompareType::CaseAndDashInsensitive);
         inputrec->efield->initMdpTransform(transform.rules());
         gmx::Options options;
         inputrec->efield->initMdpOptions(&options);
@@ -108,7 +107,7 @@ public:
 
         t_mdatoms        md;
         PaddedRVecVector f = { { 0, 0, 0 } };
-        md.homenr = 1;
+        md.homenr          = 1;
         snew(md.chargeA, md.homenr);
         md.chargeA[0] = 1;
 

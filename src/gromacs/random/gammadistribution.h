@@ -125,10 +125,10 @@ public:
     /*! \brief Gamma distribution parameters */
     class param_type
     {
-    /*! \brief First parameter of gamma distribution */
-    result_type alpha_;
-    /*! \brief Second parameter of gamma distribution */
-    result_type beta_;
+        /*! \brief First parameter of gamma distribution */
+        result_type alpha_;
+        /*! \brief Second parameter of gamma distribution */
+        result_type beta_;
 
     public:
         /*! \brief Reference back to the distribution class */
@@ -145,7 +145,7 @@ public:
         /*! \brief Return first parameter */
         result_type alpha() const { return alpha_; }
         /*! \brief Return second parameter */
-        result_type beta()  const { return beta_; }
+        result_type beta() const { return beta_; }
 
         /*! \brief True if two parameter sets will return the same distribution.
          *
@@ -164,7 +164,6 @@ public:
     };
 
 public:
-
     /*! \brief Construct new distribution with given floating-point parameters.
      *
      * \param alpha  First parameter of gamma distribution
@@ -177,7 +176,8 @@ public:
      *
      * \param param  Parameter class as defined inside gmx::GammaDistribution.
      */
-    explicit GammaDistribution(const param_type &param) : param_(param) {}
+    explicit GammaDistribution(const param_type &param)
+        : param_(param) {}
 
     /*! \brief Flush all internal saved values  */
     void reset() {}
@@ -189,7 +189,10 @@ public:
      *  \param  g     Random engine
      */
     template <class Rng>
-    result_type operator()(Rng &g) { return (*this)(g, param_); }
+    result_type operator()(Rng &g)
+    {
+        return (*this)(g, param_);
+    }
 
     /*! \brief Return value from gamma distribution with given parameters
      *
@@ -225,7 +228,7 @@ public:
                 if (w != 0)
                 {
                     const result_type y = std::sqrt(c / w)
-                        * (u - result_type(0.5));
+                                          * (u - result_type(0.5));
                     x = b + y;
 
                     if (x >= 0)
@@ -244,7 +247,7 @@ public:
                 }
             }
         }
-        else      // __a < 1
+        else // __a < 1
         {
             while (true)
             {
@@ -263,7 +266,7 @@ public:
                 else
                 {
                     const result_type e = -std::log((1.0 - u) / alpha);
-                    x = std::pow(1.0 - alpha + alpha * e, 1.0 / alpha);
+                    x                   = std::pow(1.0 - alpha + alpha * e, 1.0 / alpha);
 
                     if (x <= e + es)
                     {
@@ -295,14 +298,18 @@ public:
      * \param  x     Instance to compare with.
      */
     bool operator==(const GammaDistribution &x) const
-    { return param_ == x.param_; }
+    {
+        return param_ == x.param_;
+    }
 
     /*! \brief True if two gamma distributions will produce different values.
      *
      * \param  x     Instance to compare with.
      */
     bool operator!=(const GammaDistribution &x) const
-    { return !operator==(x); }
+    {
+        return !operator==(x);
+    }
 
 private:
     /*! \brief Internal value for parameters, can be overridden at generation time. */
@@ -311,6 +318,6 @@ private:
     GMX_DISALLOW_COPY_AND_ASSIGN(GammaDistribution);
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_RANDOM_GAMMADISTRIBUTION_H

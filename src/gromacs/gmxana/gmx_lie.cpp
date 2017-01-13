@@ -138,7 +138,7 @@ real calc_lie(t_liedata *ld, t_energy ee[], real lie_lj, real lie_qq,
 
 int gmx_lie(int argc, char *argv[])
 {
-    const char *       desc[] = {
+    const char *desc[] = {
         "[THISMODULE] computes a free energy estimate based on an energy analysis",
         "from nonbonded energies. One needs an energy file with the following components:",
         "Coul-(A-B) LJ-SR (A-B) etc.[PAR]",
@@ -151,16 +151,11 @@ int gmx_lie(int argc, char *argv[])
     static real        lie_lj = 0, lie_qq = 0, fac_lj = 0.181, fac_qq = 0.5;
     static const char *ligand = "none";
     t_pargs            pa[]   = {
-        { "-Elj",  FALSE, etREAL, {&lie_lj},
-          "Lennard-Jones interaction between ligand and solvent" },
-        { "-Eqq",  FALSE, etREAL, {&lie_qq},
-          "Coulomb interaction between ligand and solvent" },
-        { "-Clj",  FALSE, etREAL, {&fac_lj},
-          "Factor in the LIE equation for Lennard-Jones component of energy" },
-        { "-Cqq",  FALSE, etREAL, {&fac_qq},
-          "Factor in the LIE equation for Coulomb component of energy" },
-        { "-ligand",  FALSE, etSTR, {&ligand},
-          "Name of the ligand in the energy file" }
+        { "-Elj", FALSE, etREAL, { &lie_lj }, "Lennard-Jones interaction between ligand and solvent" },
+        { "-Eqq", FALSE, etREAL, { &lie_qq }, "Coulomb interaction between ligand and solvent" },
+        { "-Clj", FALSE, etREAL, { &fac_lj }, "Factor in the LIE equation for Lennard-Jones component of energy" },
+        { "-Cqq", FALSE, etREAL, { &fac_qq }, "Factor in the LIE equation for Coulomb component of energy" },
+        { "-ligand", FALSE, etSTR, { &ligand }, "Name of the ligand in the energy file" }
     };
 #define NPA asize(pa)
 
@@ -175,8 +170,8 @@ int gmx_lie(int argc, char *argv[])
     gmx_output_env_t *oenv;
 
     t_filenm fnm[] = {
-        { efEDR, "-f",    "ener",     ffREAD   },
-        { efXVG, "-o",    "lie",      ffWRITE  }
+        { efEDR, "-f", "ener", ffREAD },
+        { efXVG, "-o", "lie", ffWRITE }
     };
 #define NFILE asize(fnm)
 
@@ -199,9 +194,9 @@ int gmx_lie(int argc, char *argv[])
         ct = check_times(fr->t);
         if (ct == 0)
         {
-            lie      = calc_lie(ld, fr->ener, lie_lj, lie_qq, fac_lj, fac_qq);
+            lie = calc_lie(ld, fr->ener, lie_lj, lie_qq, fac_lj, fac_qq);
             lieaver += lie;
-            lieav2  += lie * lie;
+            lieav2 += lie * lie;
             nframes++;
             fprintf(out, "%10g  %10g\n", fr->t, lie);
         }

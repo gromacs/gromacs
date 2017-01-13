@@ -64,7 +64,6 @@
 /* This is the new improved and thread safe version of gmxfio. */
 
 
-
 /* the list of open files is a linked list, with a dummy element at its head;
        it is initialized when the first file is opened. */
 static t_fileio *open_files = nullptr;
@@ -87,7 +86,7 @@ static tMPI_Thread_mutex_t open_file_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
  *
  ******************************************************************/
 
-static int gmx_fio_int_flush(t_fileio* fio)
+static int gmx_fio_int_flush(t_fileio *fio)
 {
     int rc = 0;
 
@@ -124,11 +123,6 @@ static void gmx_fio_make_dummy(void)
         tMPI_Lock_init(&(open_files->mtx));
     }
 }
-
-
-
-
-
 
 
 /***********************************************************************
@@ -259,8 +253,6 @@ static void gmx_fio_stop_getting_next(t_fileio *fio)
 }
 
 
-
-
 /*****************************************************************
  *
  *                     EXPORTED SECTION
@@ -374,7 +366,6 @@ static int gmx_fio_close_locked(t_fileio *fio)
     if (fio->fp != nullptr)
     {
         rc = gmx_ffclose(fio->fp); /* fclose returns 0 if happy */
-
     }
 
     return rc;
@@ -417,7 +408,7 @@ int gmx_fio_fp_close(t_fileio *fio)
     return rc;
 }
 
-FILE * gmx_fio_fopen(const char *fn, const char *mode)
+FILE *gmx_fio_fopen(const char *fn, const char *mode)
 {
     FILE *    ret;
     t_fileio *fio;
@@ -457,8 +448,8 @@ int gmx_fio_fclose(FILE *fp)
 static int gmx_fio_int_get_file_md5(t_fileio *fio, gmx_off_t offset,
                                     unsigned char digest[])
 {
-    /*1MB: large size important to catch almost identical files */
-#define CPT_CHK_LEN  1048576
+/*1MB: large size important to catch almost identical files */
+#define CPT_CHK_LEN 1048576
     md5_state_t    state;
     unsigned char *buf;
     gmx_off_t      read_len;
@@ -587,9 +578,9 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
 int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
                                       int *                 p_nfiles)
 {
-    int                   nfiles, nalloc;
-    gmx_file_position_t * outputfiles;
-    t_fileio *            cur;
+    int                  nfiles, nalloc;
+    gmx_file_position_t *outputfiles;
+    t_fileio *           cur;
 
     nfiles = 0;
 
@@ -617,9 +608,9 @@ int gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles,
             gmx_fio_int_get_file_position(cur, &outputfiles[nfiles].offset);
 #ifndef GMX_FAHCORE
             outputfiles[nfiles].chksum_size
-                = gmx_fio_int_get_file_md5(cur,
-                                           outputfiles[nfiles].offset,
-                                           outputfiles[nfiles].chksum);
+                    = gmx_fio_int_get_file_md5(cur,
+                                               outputfiles[nfiles].offset,
+                                               outputfiles[nfiles].chksum);
 #endif
             nfiles++;
         }
@@ -643,7 +634,7 @@ char *gmx_fio_getname(t_fileio *fio)
     return ret;
 }
 
-int gmx_fio_getftp(t_fileio* fio)
+int gmx_fio_getftp(t_fileio *fio)
 {
     int ret;
 
@@ -654,7 +645,7 @@ int gmx_fio_getftp(t_fileio* fio)
     return ret;
 }
 
-void gmx_fio_rewind(t_fileio* fio)
+void gmx_fio_rewind(t_fileio *fio)
 {
     gmx_fio_lock(fio);
 
@@ -672,7 +663,7 @@ void gmx_fio_rewind(t_fileio* fio)
 }
 
 
-int gmx_fio_flush(t_fileio* fio)
+int gmx_fio_flush(t_fileio *fio)
 {
     int ret;
 
@@ -682,7 +673,6 @@ int gmx_fio_flush(t_fileio* fio)
 
     return ret;
 }
-
 
 
 static int gmx_fio_int_fsync(t_fileio *fio)
@@ -707,7 +697,6 @@ int gmx_fio_fsync(t_fileio *fio)
 
     return rc;
 }
-
 
 
 t_fileio *gmx_fio_all_output_fsync(void)
@@ -745,7 +734,7 @@ t_fileio *gmx_fio_all_output_fsync(void)
 }
 
 
-gmx_off_t gmx_fio_ftell(t_fileio* fio)
+gmx_off_t gmx_fio_ftell(t_fileio *fio)
 {
     gmx_off_t ret = 0;
 
@@ -758,7 +747,7 @@ gmx_off_t gmx_fio_ftell(t_fileio* fio)
     return ret;
 }
 
-int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos)
+int gmx_fio_seek(t_fileio *fio, gmx_off_t fpos)
 {
     int rc;
 
@@ -789,7 +778,7 @@ FILE *gmx_fio_getfp(t_fileio *fio)
     return ret;
 }
 
-gmx_bool gmx_fio_getread(t_fileio* fio)
+gmx_bool gmx_fio_getread(t_fileio *fio)
 {
     gmx_bool ret;
 

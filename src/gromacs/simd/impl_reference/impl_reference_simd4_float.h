@@ -200,12 +200,10 @@ static inline Simd4Float gmx_simdcall operator&(Simd4Float a, Simd4Float b)
 {
     Simd4Float res;
 
-    union
-    {
+    union {
         float        r;
         std::int32_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -230,12 +228,10 @@ static inline Simd4Float gmx_simdcall andNot(Simd4Float a, Simd4Float b)
 {
     Simd4Float res;
 
-    union
-    {
+    union {
         float        r;
         std::int32_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -260,12 +256,10 @@ static inline Simd4Float gmx_simdcall operator|(Simd4Float a, Simd4Float b)
 {
     Simd4Float res;
 
-    union
-    {
+    union {
         float        r;
         std::int32_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -289,12 +283,10 @@ static inline Simd4Float gmx_simdcall operator^(Simd4Float a, Simd4Float b)
 {
     Simd4Float res;
 
-    union
-    {
+    union {
         float        r;
         std::int32_t i;
-    }
-    conv1, conv2;
+    } conv1, conv2;
 
     for (std::size_t i = 0; i < res.simdInternal_.size(); i++)
     {
@@ -541,10 +533,9 @@ static inline Simd4Float gmx_simdcall trunc(Simd4Float a)
  */
 static inline float gmx_simdcall dotProduct(Simd4Float a, Simd4Float b)
 {
-    return
-        (a.simdInternal_[0] * b.simdInternal_[0]
-         + a.simdInternal_[1] * b.simdInternal_[1]
-         + a.simdInternal_[2] * b.simdInternal_[2]);
+    return (a.simdInternal_[0] * b.simdInternal_[0]
+            + a.simdInternal_[1] * b.simdInternal_[1]
+            + a.simdInternal_[2] * b.simdInternal_[2]);
 }
 
 /*! \brief SIMD4 float transpose
@@ -554,13 +545,13 @@ static inline float gmx_simdcall dotProduct(Simd4Float a, Simd4Float b)
  * \param[in,out] v2  Row 2 on input, column 2 on output
  * \param[in,out] v3  Row 3 on input, column 3 on output
  */
-static inline void gmx_simdcall transpose(Simd4Float * v0, Simd4Float * v1,
-                                          Simd4Float * v2, Simd4Float * v3)
+static inline void gmx_simdcall transpose(Simd4Float *v0, Simd4Float *v1,
+                                          Simd4Float *v2, Simd4Float *v3)
 {
-    Simd4Float t0 = *v0;
-    Simd4Float t1 = *v1;
-    Simd4Float t2 = *v2;
-    Simd4Float t3 = *v3;
+    Simd4Float t0        = *v0;
+    Simd4Float t1        = *v1;
+    Simd4Float t2        = *v2;
+    Simd4Float t3        = *v3;
     v0->simdInternal_[0] = t0.simdInternal_[0];
     v0->simdInternal_[1] = t1.simdInternal_[0];
     v0->simdInternal_[2] = t2.simdInternal_[0];
@@ -783,6 +774,6 @@ static inline float gmx_simdcall reduce(Simd4Float a)
 /*! \} */
 /*! \endcond */
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_REFERENCE_SIMD4_FLOAT_H

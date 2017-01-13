@@ -44,9 +44,9 @@ extern "C" {
 /* With CPU kernels the i-cluster size is always 4 atoms.
  * With x86 SIMD the j-cluster size can be 2, 4 or 8, otherwise 4.
  */
-#define NBNXN_CPU_CLUSTER_I_SIZE       4
+#define NBNXN_CPU_CLUSTER_I_SIZE 4
 
-#define NBNXN_CPU_CLUSTER_I_SIZE_2LOG  2
+#define NBNXN_CPU_CLUSTER_I_SIZE_2LOG 2
 
 // Lower limit for square interaction distances in nonbonded kernels.
 // For smaller values we will overflow when calculating r^-1 or r^-12, but
@@ -55,11 +55,11 @@ extern "C" {
 // Some double precision SIMD architectures use single precision in the first
 // step, so although the double precision criterion would allow smaller rsq,
 // we need to stay in single precision with some margin for the N-R iterations.
-#define NBNXN_MIN_RSQ         1.0e-36
+#define NBNXN_MIN_RSQ 1.0e-36
 #else
 // The worst intermediate value we might evaluate is r^-12, which
 // means we should ensure r^2 stays above pow(GMX_FLOAT_MAX,-1.0/6.0)*1.01 (some margin)
-#define NBNXN_MIN_RSQ         3.82e-07f  // r > 6.2e-4
+#define NBNXN_MIN_RSQ 3.82e-07f // r > 6.2e-4
 #endif
 
 
@@ -67,15 +67,15 @@ extern "C" {
  * Bit i*CJ_SIZE + j tells if atom i and j interact.
  */
 /* All interaction mask is the same for all kernels */
-#define NBNXN_INTERACTION_MASK_ALL        0xffffffffU
+#define NBNXN_INTERACTION_MASK_ALL 0xffffffffU
 /* 4x4 kernel diagonal mask */
-#define NBNXN_INTERACTION_MASK_DIAG       0x08ceU
+#define NBNXN_INTERACTION_MASK_DIAG 0x08ceU
 /* 4x2 kernel diagonal masks */
-#define NBNXN_INTERACTION_MASK_DIAG_J2_0  0x0002U
-#define NBNXN_INTERACTION_MASK_DIAG_J2_1  0x002fU
+#define NBNXN_INTERACTION_MASK_DIAG_J2_0 0x0002U
+#define NBNXN_INTERACTION_MASK_DIAG_J2_1 0x002fU
 /* 4x8 kernel diagonal masks */
-#define NBNXN_INTERACTION_MASK_DIAG_J8_0  0xf0f8fcfeU
-#define NBNXN_INTERACTION_MASK_DIAG_J8_1  0x0080c0e0U
+#define NBNXN_INTERACTION_MASK_DIAG_J8_0 0xf0f8fcfeU
+#define NBNXN_INTERACTION_MASK_DIAG_J8_1 0x0080c0e0U
 
 
 #ifdef __cplusplus

@@ -47,7 +47,6 @@ void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
 {
     settings->setDefaultNiceLevel(0);
 }
-
 }
 
 int main(int argc, char *argv[])

@@ -110,10 +110,10 @@ public:
     /*! \brief Normal distribution parameters */
     class param_type
     {
-    /*! \brief Mean of normal distribution */
-    result_type mean_;
-    /*! \brief Standard deviation of distribution */
-    result_type stddev_;
+        /*! \brief Mean of normal distribution */
+        result_type mean_;
+        /*! \brief Standard deviation of distribution */
+        result_type stddev_;
 
     public:
         /*! \brief Reference back to the distribution class */
@@ -130,7 +130,7 @@ public:
         /*! \brief Return first parameter */
         result_type mean() const { return mean_; }
         /*! \brief Return second parameter */
-        result_type stddev()  const { return stddev_; }
+        result_type stddev() const { return stddev_; }
 
         /*! \brief True if two parameter sets will return the same normal distribution.
          *
@@ -149,7 +149,6 @@ public:
     };
 
 public:
-
     /*! \brief Construct new distribution with given floating-point parameters.
      *
      * \param mean     Mean of normal distribution
@@ -175,7 +174,10 @@ public:
      *  \param  g     Random engine
      */
     template <class Rng>
-    result_type operator()(Rng &g) { return (*this)(g, param_); }
+    result_type operator()(Rng &g)
+    {
+        return (*this)(g, param_);
+    }
 
     /*! \brief Return value from normal distribution with given parameters
      *
@@ -248,7 +250,9 @@ public:
      * \param  x     Instance to compare with.
      */
     bool operator!=(const NormalDistribution &x) const
-    { return !operator==(x); }
+    {
+        return !operator==(x);
+    }
 
 private:
     /*! \brief Internal value for parameters, can be overridden at generation time. */
@@ -262,6 +266,6 @@ private:
 };
 
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_RANDOM_NORMALDISTRIBUTION_H

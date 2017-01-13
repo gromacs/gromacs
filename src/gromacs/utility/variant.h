@@ -86,7 +86,10 @@ public:
      * contrary to the templated constructor.
      */
     template <typename T>
-    static Variant create(const T &value) { return Variant(value); }
+    static Variant create(const T &value)
+    {
+        return Variant(value);
+    }
     /*! \brief
      * Creates a variant that holds the given value.
      *
@@ -96,7 +99,10 @@ public:
      * method avoids copying when move-construction is possible.
      */
     template <typename T>
-    static Variant create(T &&value) { return Variant(std::move(value)); }
+    static Variant create(T &&value)
+    {
+        return Variant(std::move(value));
+    }
 
     //! Creates an empty variant value.
     Variant() {}
@@ -125,9 +131,11 @@ public:
      *
      * \throws std::bad_alloc if out of memory.
      */
-    Variant(const Variant &other) : content_(other.cloneContent()) {}
+    Variant(const Variant &other)
+        : content_(other.cloneContent()) {}
     //! Move-constructs a variant.
-    Variant(Variant &&other) noexcept : content_(std::move(other.content_)) {}
+    Variant(Variant &&other) noexcept
+        : content_(std::move(other.content_)) {}
     /*! \brief
      * Assigns the variant.
      *
@@ -151,7 +159,7 @@ public:
     std::type_index type() const
     {
         const std::type_info &info
-            = !isEmpty() ? content_->typeInfo() : typeid(void);
+                = !isEmpty() ? content_->typeInfo() : typeid(void);
         return std::type_index(info);
     }
     //! Returns whether the type stored matches the template parameter.
@@ -223,18 +231,20 @@ private:
     public:
         virtual ~IContent() {}
         virtual const std::type_info &typeInfo() const = 0;
-        virtual IContent *clone() const                = 0;
+        virtual IContent *            clone() const    = 0;
     };
 
     template <typename T>
     class Content : public IContent
     {
     public:
-        explicit Content(const T &value) : value_(value) {}
-        explicit Content(T &&value) : value_(std::move(value)) {}
+        explicit Content(const T &value)
+            : value_(value) {}
+        explicit Content(T &&value)
+            : value_(std::move(value)) {}
 
         virtual const std::type_info &typeInfo() const { return typeid(T); }
-        virtual IContent *clone() const { return new Content(value_); }
+        virtual IContent *            clone() const { return new Content(value_); }
 
         T value_;
     };

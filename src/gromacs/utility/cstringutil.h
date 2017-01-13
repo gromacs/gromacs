@@ -55,7 +55,7 @@ extern "C" {
 #endif
 
 /** Continuation character. */
-#define CONTINUE    '\\'
+#define CONTINUE '\\'
 /** Comment sign to use. */
 #define COMMENTSIGN ';'
 /** Standard size for char* string buffers. */
@@ -128,7 +128,7 @@ int gmx_wcmatch(const char *pattern, const char *str);
 
 /** Magic hash initialization number from Dan J. Bernstein. */
 extern const unsigned int
-    gmx_string_hash_init;
+        gmx_string_hash_init;
 
 /*! \brief
  * Return a hash of the string according to Dan J. Bernsteins algorithm.

@@ -235,7 +235,7 @@ void rm_gropbc(const t_atoms *atoms, rvec x[], const matrix box)
             dist = x[n][m] - x[n - 1][m];
             if (std::abs(dist) > 0.9 * box[m][m])
             {
-                if (dist >  0)
+                if (dist > 0)
                 {
                     for (d = 0; d <= m; d++)
                     {

@@ -78,27 +78,24 @@ struct t_inputrec;
 struct gmx_ewald_tab_t;
 
 /*! \brief Initialize the tables used in the Ewald long-ranged part */
-void
-init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir,
-               FILE *fp);
+void init_ewald_tab(struct gmx_ewald_tab_t **et, const t_inputrec *ir,
+                    FILE *fp);
 
 /*! \brief Do the long-ranged part of an Ewald calculation */
-real
-do_ewald(t_inputrec *ir,
-         rvec x[],        rvec f[],
-         real chargeA[],  real chargeB[],
-         rvec box,
-         t_commrec *cr,  int natoms,
-         matrix lrvir,   real ewaldcoeff,
-         real lambda,    real *dvdlambda,
-         struct gmx_ewald_tab_t *et);
+real do_ewald(t_inputrec *ir,
+              rvec x[], rvec f[],
+              real chargeA[], real chargeB[],
+              rvec       box,
+              t_commrec *cr, int natoms,
+              matrix lrvir, real ewaldcoeff,
+              real lambda, real *dvdlambda,
+              struct gmx_ewald_tab_t *et);
 
 /*! \brief Calculate the correction to the Ewald sum, due to a net system
  * charge.
  *
  * Should only be called on one thread. */
-real
-ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
-                        real *dvdlambda, tensor vir);
+real ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
+                             real *dvdlambda, tensor vir);
 
 #endif

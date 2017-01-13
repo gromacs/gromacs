@@ -84,7 +84,7 @@ typedef struct t_mdebin
     gmx_bool bNHC_trotter;
     gmx_bool bPrintNHChains;
     gmx_bool bMTTK;
-    gmx_bool bMu;            /* true if dipole is calculated */
+    gmx_bool bMu; /* true if dipole is calculated */
     gmx_bool bDiagPres;
     int      f_nre;
     int      epc;
@@ -112,7 +112,6 @@ enum
     dhbtEXPANDED, /* expanded ensemble statistics */
     dhbtNR
 };
-
 
 
 t_mdebin *init_mdebin(ener_file_t       fp_ene,
@@ -151,12 +150,11 @@ void upd_mdebin_step(t_mdebin *md);
 void print_ebin_header(FILE *log, gmx_int64_t steps, double time);
 
 void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
-                FILE *log,
+                FILE *      log,
                 gmx_int64_t step, double time,
-                int mode,
+                int       mode,
                 t_mdebin *md, t_fcdata *fcd,
                 gmx_groups_t *groups, t_grpopts *opts);
-
 
 
 /* Between .edr writes, the averages are history dependent,
@@ -165,10 +163,10 @@ void print_ebin(ener_file_t fp_ene, gmx_bool bEne, gmx_bool bDR, gmx_bool bOR,
    that is written to checkpoints in checkpoint.c */
 
 /* Set the energyhistory_t data from a mdebin structure */
-void update_energyhistory(energyhistory_t * enerhist, t_mdebin * mdebin);
+void update_energyhistory(energyhistory_t *enerhist, t_mdebin *mdebin);
 
 /* Read the energyhistory_t data to a mdebin structure*/
-void restore_energyhistory_from_state(t_mdebin *        mdebin,
-                                      energyhistory_t * enerhist);
+void restore_energyhistory_from_state(t_mdebin *       mdebin,
+                                      energyhistory_t *enerhist);
 
 #endif

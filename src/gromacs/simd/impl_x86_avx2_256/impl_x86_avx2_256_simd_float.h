@@ -50,10 +50,12 @@ class SimdFIBool
 public:
     SimdFIBool() {}
 
-    SimdFIBool(bool b) : simdInternal_(_mm256_set1_epi32( b ? 0xFFFFFFFF : 0)) {}
+    SimdFIBool(bool b)
+        : simdInternal_(_mm256_set1_epi32(b ? 0xFFFFFFFF : 0)) {}
 
     // Internal utility constructor to simplify return statements
-    SimdFIBool(__m256i simd) : simdInternal_(simd) {}
+    SimdFIBool(__m256i simd)
+        : simdInternal_(simd) {}
 
     __m256i simdInternal_;
 };
@@ -61,42 +63,42 @@ public:
 static inline SimdFloat gmx_simdcall fma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               _mm256_fmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               _mm256_fmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fnma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               _mm256_fnmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fnmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdFloat gmx_simdcall fnms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
     return {
-               _mm256_fnmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
+        _mm256_fnmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
     };
 }
 
 static inline SimdFBool gmx_simdcall testBits(SimdFloat a)
 {
     __m256i ia  = _mm256_castps_si256(a.simdInternal_);
-    __m256i res = _mm256_andnot_si256( _mm256_cmpeq_epi32(ia, _mm256_setzero_si256()), _mm256_cmpeq_epi32(ia, ia));
+    __m256i res = _mm256_andnot_si256(_mm256_cmpeq_epi32(ia, _mm256_setzero_si256()), _mm256_cmpeq_epi32(ia, ia));
 
     return {
-               _mm256_castsi256_ps(res)
+        _mm256_castsi256_ps(res)
     };
 }
 
-static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32 * exponent)
+static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32 *exponent)
 {
     const __m256  exponentMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7F800000));
     const __m256  mantissaMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x807FFFFF));
@@ -108,7 +110,7 @@ static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32 * exponen
     exponent->simdInternal_ = _mm256_sub_epi32(_mm256_srli_epi32(iExponent, 23), exponentBias);
 
     return {
-               _mm256_or_ps(_mm256_and_ps(value.simdInternal_, mantissaMask), half)
+        _mm256_or_ps(_mm256_and_ps(value.simdInternal_, mantissaMask), half)
     };
 }
 
@@ -119,146 +121,149 @@ static inline SimdFloat gmx_simdcall ldexp(SimdFloat value, SimdFInt32 exponent)
 
     iExponent = _mm256_slli_epi32(_mm256_add_epi32(exponent.simdInternal_, exponentBias), 23);
     return {
-               _mm256_mul_ps(value.simdInternal_, _mm256_castsi256_ps(iExponent))
+        _mm256_mul_ps(value.simdInternal_, _mm256_castsi256_ps(iExponent))
     };
 }
 
 static inline SimdFInt32 gmx_simdcall operator<<(SimdFInt32 a, int n)
 {
     return {
-               _mm256_slli_epi32(a.simdInternal_, n)
+        _mm256_slli_epi32(a.simdInternal_, n)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall operator>>(SimdFInt32 a, int n)
 {
     return {
-               _mm256_srli_epi32(a.simdInternal_, n)
+        _mm256_srli_epi32(a.simdInternal_, n)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall operator&(SimdFInt32 a, SimdFInt32 b)
 {
     return {
-               _mm256_and_si256(a.simdInternal_, b.simdInternal_)
+        _mm256_and_si256(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall andNot(SimdFInt32 a, SimdFInt32 b)
 {
     return {
-               _mm256_andnot_si256(a.simdInternal_, b.simdInternal_)
+        _mm256_andnot_si256(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall operator|(SimdFInt32 a, SimdFInt32 b)
 {
     return {
-               _mm256_or_si256(a.simdInternal_, b.simdInternal_)
+        _mm256_or_si256(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall operator^(SimdFInt32 a, SimdFInt32 b)
 {
     return {
-               _mm256_xor_si256(a.simdInternal_, b.simdInternal_)
+        _mm256_xor_si256(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall operator+(SimdFInt32 a, SimdFInt32 b)
 {
     return {
-               _mm256_add_epi32(a.simdInternal_, b.simdInternal_)
+        _mm256_add_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall operator-(SimdFInt32 a, SimdFInt32 b)
 {
     return {
-               _mm256_sub_epi32(a.simdInternal_, b.simdInternal_)
+        _mm256_sub_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall operator*(SimdFInt32 a, SimdFInt32 b)
 {
     return {
-               _mm256_mullo_epi32(a.simdInternal_, b.simdInternal_)
+        _mm256_mullo_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFIBool gmx_simdcall operator==(SimdFInt32 a, SimdFInt32 b)
 {
     return {
-               _mm256_cmpeq_epi32(a.simdInternal_, b.simdInternal_)
+        _mm256_cmpeq_epi32(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFIBool gmx_simdcall testBits(SimdFInt32 a)
 {
     return {
-               _mm256_andnot_si256(_mm256_cmpeq_epi32(a.simdInternal_, _mm256_setzero_si256()),
-                                   _mm256_cmpeq_epi32(a.simdInternal_, a.simdInternal_))
+        _mm256_andnot_si256(_mm256_cmpeq_epi32(a.simdInternal_, _mm256_setzero_si256()),
+                            _mm256_cmpeq_epi32(a.simdInternal_, a.simdInternal_))
     };
 }
 
 static inline SimdFIBool gmx_simdcall operator<(SimdFInt32 a, SimdFInt32 b)
 {
     return {
-               _mm256_cmpgt_epi32(b.simdInternal_, a.simdInternal_)
+        _mm256_cmpgt_epi32(b.simdInternal_, a.simdInternal_)
     };
 }
 
 static inline SimdFIBool gmx_simdcall operator&&(SimdFIBool a, SimdFIBool b)
 {
     return {
-               _mm256_and_si256(a.simdInternal_, b.simdInternal_)
+        _mm256_and_si256(a.simdInternal_, b.simdInternal_)
     };
 }
 
 static inline SimdFIBool gmx_simdcall operator||(SimdFIBool a, SimdFIBool b)
 {
     return {
-               _mm256_or_si256(a.simdInternal_, b.simdInternal_)
+        _mm256_or_si256(a.simdInternal_, b.simdInternal_)
     };
 }
 
-static inline bool gmx_simdcall anyTrue(SimdFIBool a) { return _mm256_movemask_epi8(a.simdInternal_) != 0; }
+static inline bool gmx_simdcall anyTrue(SimdFIBool a)
+{
+    return _mm256_movemask_epi8(a.simdInternal_) != 0;
+}
 
 static inline SimdFInt32 gmx_simdcall selectByMask(SimdFInt32 a, SimdFIBool mask)
 {
     return {
-               _mm256_and_si256(a.simdInternal_, mask.simdInternal_)
+        _mm256_and_si256(a.simdInternal_, mask.simdInternal_)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall selectByNotMask(SimdFInt32 a, SimdFIBool mask)
 {
     return {
-               _mm256_andnot_si256(mask.simdInternal_, a.simdInternal_)
+        _mm256_andnot_si256(mask.simdInternal_, a.simdInternal_)
     };
 }
 
 static inline SimdFInt32 gmx_simdcall blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
 {
     return {
-               _mm256_blendv_epi8(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
+        _mm256_blendv_epi8(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
     };
 }
 
 static inline SimdFIBool gmx_simdcall cvtB2IB(SimdFBool a)
 {
     return {
-               _mm256_castps_si256(a.simdInternal_)
+        _mm256_castps_si256(a.simdInternal_)
     };
 }
 
 static inline SimdFBool gmx_simdcall cvtIB2B(SimdFIBool a)
 {
     return {
-               _mm256_castsi256_ps(a.simdInternal_)
+        _mm256_castsi256_ps(a.simdInternal_)
     };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX2_256_SIMD_FLOAT_H

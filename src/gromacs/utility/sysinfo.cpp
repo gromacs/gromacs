@@ -113,8 +113,8 @@ int gmx_getuid()
 int gmx_getusername(char *buf, size_t len)
 {
     GMX_RELEASE_ASSERT(len >= 8, "Input buffer is too short");
-    // TODO: nice_header() used getpwuid() instead; consider using getpwuid_r()
-    // here.  If not, get rid of HAVE_PWD_H completely.
+// TODO: nice_header() used getpwuid() instead; consider using getpwuid_r()
+// here.  If not, get rid of HAVE_PWD_H completely.
 #if GMX_NATIVE_WINDOWS
     DWORD dlen = len;
     if (GetUserName(buf, &dlen))

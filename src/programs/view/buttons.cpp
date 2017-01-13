@@ -64,7 +64,7 @@ static void move_bbox(t_x11 *x11, t_butbox *bbox)
     idb = bbox->nbut;
     bh  = (bbox->wd.height - AIR * (bbox->nbut + 1));
     bh /= idb;
-    bh  = std::max(bh, one);
+    bh = std::max(bh, one);
 
     x0 = AIR;
     y0 = AIR;
@@ -221,8 +221,8 @@ t_butbox *init_vbox(t_x11 *x11, Window Parent, Window SendTo, unsigned long fg, 
         vb->b[i].ID        = ID;
         vb->b[i].wd.Parent = SendTo;
         vb->b[i].wd.self
-            = XCreateSimpleWindow(x11->disp, vb->wd.self,
-                                  x, y0 + AIR, play_width, play_height, 0, WHITE, BLACK);
+                = XCreateSimpleWindow(x11->disp, vb->wd.self,
+                                      x, y0 + AIR, play_width, play_height, 0, WHITE, BLACK);
         XSetWindowBackgroundPixmap(x11->disp, vb->b[i].wd.self, pm);
 
         x11->RegisterCallback(x11, vb->b[i].wd.self, vb->wd.self,
@@ -255,9 +255,9 @@ t_butbox *init_bbox(t_x11 *x11, Window Parent, Window SendTo,
         "< X-Rotate >", "< Y-Rotate >", "< Z-Rotate >",
         "< X-Move >", "< Y-Move >", "< Z-Move >", "< Scale >",
     };
-    int                i, y0, h0;
-    t_mwbut *          but;
-    Window             DrawOn;
+    int      i, y0, h0;
+    t_mwbut *but;
+    Window   DrawOn;
 
     snew(bbox, 1);
     bbox->nbut = IDBUTNR;
@@ -266,7 +266,7 @@ t_butbox *init_bbox(t_x11 *x11, Window Parent, Window SendTo,
 
     InitWin(&(bbox->wd), 0, 0, /*width,(y0+AIR)*IDBUTNR+AIR+2*BORDER,*/ 1, 1,
             1, "Button Box");
-    width        -= 2 * AIR + 2 * BORDER;
+    width -= 2 * AIR + 2 * BORDER;
     bbox->wd.self = XCreateSimpleWindow(x11->disp, Parent,
                                         bbox->wd.x, bbox->wd.y, bbox->wd.width,
                                         bbox->wd.height, bbox->wd.bwidth,
@@ -280,16 +280,16 @@ t_butbox *init_bbox(t_x11 *x11, Window Parent, Window SendTo,
     {
         but = &(bbox->b[i]);
         InitWin(&but->wd, AIR, h0, width, y0, 1, lbut[i]);
-        h0            += y0 + AIR;
+        h0 += y0 + AIR;
         but->wd.Parent = SendTo;
         but->ID        = i;
         but->wd.self   = XCreateSimpleWindow(x11->disp, DrawOn,
-                                             but->wd.x, but->wd.y,
-                                             but->wd.width, but->wd.height,
-                                             but->wd.bwidth, bg, bg);
+                                           but->wd.x, but->wd.y,
+                                           but->wd.width, but->wd.height,
+                                           but->wd.bwidth, bg, bg);
         x11->RegisterCallback(x11, but->wd.self, DrawOn, ButtonCallBack, but);
         x11->SetInputMask(x11, but->wd.self, ExposureMask | ButtonPressMask
-                          | EnterLeave);
+                                                     | EnterLeave);
     }
     return bbox;
 }

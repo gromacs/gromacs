@@ -56,8 +56,7 @@ namespace
  *
  * \ingroup module_utility
  */
-const char *const error_names[] =
-{
+const char *const error_names[] = {
     "No error",
     "Out of memory",
     "File not found",
@@ -78,7 +77,7 @@ const char *const error_names[] =
     "Unknown error",
 };
 
-}   // namespace
+} // namespace
 
 const char *getErrorCodeString(int errorcode)
 {

@@ -66,8 +66,8 @@ class SimdMathTest : public SimdTest
 {
 public:
     ::testing::AssertionResult
-                            compareSimdMathFunction(const char * refFuncExpr, const char *simdFuncExpr,
-                                                    real refFunc(real x),     SimdReal gmx_simdcall simdFunc(SimdReal x));
+    compareSimdMathFunction(const char *refFuncExpr, const char *simdFuncExpr,
+                            real refFunc(real x), SimdReal gmx_simdcall simdFunc(SimdReal x));
 };
 
 /*! \brief Test approximate equality of SIMD vs reference version of a function.
@@ -89,8 +89,8 @@ public:
  * the SimdBaseTest class. You should not never call this function directly,
  * but use the macro GMX_EXPECT_SIMD_FUNC_NEAR(refFunc,tstFunc) instead.
  */
-::testing::AssertionResult SimdMathTest::compareSimdMathFunction(const char * refFuncExpr, const char *simdFuncExpr,
-                                                                 real refFunc(real x),     SimdReal gmx_simdcall simdFunc(SimdReal x))
+::testing::AssertionResult SimdMathTest::compareSimdMathFunction(const char *refFuncExpr, const char *simdFuncExpr,
+                                                                 real refFunc(real x), SimdReal gmx_simdcall simdFunc(SimdReal x))
 {
     std::vector<real> vx(GMX_SIMD_REAL_WIDTH);
     std::vector<real> vref(GMX_SIMD_REAL_WIDTH);
@@ -103,17 +103,17 @@ public:
     int               i, iter;
     int               niter   = s_nPoints / GMX_SIMD_REAL_WIDTH;
     int               npoints = niter * GMX_SIMD_REAL_WIDTH;
-#    if GMX_DOUBLE
-    union
-    {
-        double r; std::int64_t i;
+#if GMX_DOUBLE
+    union {
+        double       r;
+        std::int64_t i;
     } conv0, conv1;
-#    else
-    union
-    {
-        float r; std::int32_t i;
+#else
+    union {
+        float        r;
+        std::int32_t i;
     } conv0, conv1;
-#    endif
+#endif
 
     maxUlpDiff = 0;
     dx         = (range_.second - range_.first) / npoints;
@@ -130,9 +130,9 @@ public:
         for (i = 0, signOk = true, absOk = true; i < GMX_SIMD_REAL_WIDTH; i++)
         {
             absDiff = fabs(vref[i] - vtst[i]);
-            absOk   = absOk  && ( absDiff < absTol_ );
-            signOk  = signOk && ( (vref[i] >= 0 && vtst[i] >= 0)
-                                  || (vref[i] <= 0 && vtst[i] <= 0));
+            absOk   = absOk && (absDiff < absTol_);
+            signOk  = signOk && ((vref[i] >= 0 && vtst[i] >= 0)
+                                || (vref[i] <= 0 && vtst[i] <= 0));
 
             if (absDiff >= absTol_)
             {
@@ -153,7 +153,7 @@ public:
                 }
             }
         }
-        if ( (absOk == false) && (signOk == false) )
+        if ((absOk == false) && (signOk == false))
         {
             return ::testing::AssertionFailure()
                    << "Failing SIMD math function comparison due to sign differences." << std::endl
@@ -456,7 +456,7 @@ real refPmeForceCorrection(real x)
 // The PME corrections will be added to ~1/r2, so absolute tolerance of EPS is fine.
 TEST_F(SimdMathTest, pmeForceCorrection)
 {
-    // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
+// Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #if GMX_DOUBLE
     setUlpTol(std::int64_t(5e-10 / GMX_REAL_EPS));
 #else
@@ -478,7 +478,7 @@ real refPmePotentialCorrection(real x)
 // The PME corrections will be added to ~1/r, so absolute tolerance of EPS is fine.
 TEST_F(SimdMathTest, pmePotentialCorrection)
 {
-    // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
+// Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #if GMX_DOUBLE
     setUlpTol(std::int64_t(5e-10 / GMX_REAL_EPS));
 #else
@@ -692,7 +692,7 @@ TEST_F(SimdMathTest, pmeForceCorrectionSingleAccuracy)
     // The PME corrections will be added to ~1/r2, so absolute tolerance of EPS is fine.
     // Pme correction only needs to be ~1e-6 accuracy single.
     // Then increase the allowed error by the difference between the actual precision and single.
-    setUlpTol( (std::int64_t(5e-6 / GMX_FLOAT_EPS)) * (1LL << (std::numeric_limits<real>::digits - std::numeric_limits<float>::digits)));
+    setUlpTol((std::int64_t(5e-6 / GMX_FLOAT_EPS)) * (1LL << (std::numeric_limits<real>::digits - std::numeric_limits<float>::digits)));
 
     setRange(0.15, 4);
     setAbsTol(GMX_FLOAT_EPS);
@@ -704,21 +704,21 @@ TEST_F(SimdMathTest, pmePotentialCorrectionSingleAccuracy)
     // The PME corrections will be added to ~1/r, so absolute tolerance of EPS is fine.
     // Pme correction only needs to be ~1e-6 accuracy single.
     // Then increase the allowed error by the difference between the actual precision and single.
-    setUlpTol( (std::int64_t(5e-6 / GMX_FLOAT_EPS)) * (1LL << (std::numeric_limits<real>::digits - std::numeric_limits<float>::digits)));
+    setUlpTol((std::int64_t(5e-6 / GMX_FLOAT_EPS)) * (1LL << (std::numeric_limits<real>::digits - std::numeric_limits<float>::digits)));
 
     setRange(0.15, 4);
     setAbsTol(GMX_FLOAT_EPS);
     GMX_EXPECT_SIMD_FUNC_NEAR(refPmePotentialCorrection, pmePotentialCorrectionSingleAccuracy);
 }
 
-}      // namespace
+} // namespace
 
 #endif // GMX_SIMD_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace
+} // namespace
+} // namespace
 
 #endif // GMX_SIMD

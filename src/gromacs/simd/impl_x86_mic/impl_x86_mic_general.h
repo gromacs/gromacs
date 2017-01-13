@@ -41,11 +41,11 @@
 namespace gmx
 {
 
-static inline void simdPrefetch(const void * m)
+static inline void simdPrefetch(const void *m)
 {
     _mm_prefetch((const char *)m, _MM_HINT_T0);
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_MIC_OTHER_H

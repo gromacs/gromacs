@@ -62,8 +62,8 @@ namespace gmx
  */
 #define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName)
 #else
-#define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName) \
-    ClassName &operator=(const ClassName &) = delete;   \
+#define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName)       \
+    ClassName &operator=(const ClassName &) = delete; \
     ClassName(const ClassName &)            = delete
 #endif
 /*! \brief
@@ -74,7 +74,7 @@ namespace gmx
  * \ingroup module_utility
  */
 #define GMX_DISALLOW_ASSIGN(ClassName) \
-    ClassName & operator=(const ClassName &) = delete
+    ClassName &operator=(const ClassName &) = delete
 
 #ifdef DOXYGEN
 /*! \brief
@@ -87,12 +87,12 @@ namespace gmx
  */
 #define GMX_DEFAULT_CONSTRUCTORS(ClassName)
 #else
-#define GMX_DEFAULT_CONSTRUCTORS(ClassName) \
-    ClassName()                                             = default;    \
-    ClassName &                operator=(const ClassName &) = default;    \
-    ClassName(const ClassName &)                            = default;    \
-    ClassName &                operator=(ClassName &&)      = default;    \
-    ClassName(ClassName &&)                                 = default
+#define GMX_DEFAULT_CONSTRUCTORS(ClassName)            \
+    ClassName()        = default;                      \
+    ClassName &operator=(const ClassName &) = default; \
+    ClassName(const ClassName &)            = default; \
+    ClassName &operator=(ClassName &&) = default;      \
+    ClassName(ClassName &&)            = default
 #endif
 
 /*! \brief
@@ -154,12 +154,15 @@ class PrivateImplPointer
 {
 public:
     //! Allow implicit initialization from nullptr to support comparison.
-    PrivateImplPointer(std::nullptr_t) : ptr_(nullptr) {}
+    PrivateImplPointer(std::nullptr_t)
+        : ptr_(nullptr) {}
     //! Initialize with the given implementation class.
-    explicit PrivateImplPointer(Impl *ptr) : ptr_(ptr) {}
+    explicit PrivateImplPointer(Impl *ptr)
+        : ptr_(ptr) {}
     //! \cond
     // Explicitly declared to work around MSVC problems.
-    PrivateImplPointer(PrivateImplPointer &&other) : ptr_(std::move(other.ptr_)) {}
+    PrivateImplPointer(PrivateImplPointer &&other)
+        : ptr_(std::move(other.ptr_)) {}
     PrivateImplPointer &operator=(PrivateImplPointer &&other)
     {
         ptr_ = std::move(other.ptr_);

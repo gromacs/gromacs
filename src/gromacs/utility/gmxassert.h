@@ -63,10 +63,10 @@
 #ifdef GMX_DISABLE_ASSERTS
 #define GMX_RELEASE_ASSERT(condition, msg)
 #else
-#define GMX_RELEASE_ASSERT(condition, msg) \
-    ((void) ((condition) ? (void)0   \
-             : ::gmx::internal::assertHandler(#condition, msg, \
-                                              GMX_CURRENT_FUNCTION, __FILE__, __LINE__)))
+#define GMX_RELEASE_ASSERT(condition, msg)                                \
+    ((void)((condition) ? (void)0                                         \
+                        : ::gmx::internal::assertHandler(#condition, msg, \
+                                                         GMX_CURRENT_FUNCTION, __FILE__, __LINE__)))
 #endif
 /*! \def GMX_ASSERT
  * \brief
@@ -100,11 +100,10 @@ namespace internal
  *
  * \ingroup module_utility
  */
-gmx_noreturn
-void assertHandler(const char *condition, const char *msg,
-                   const char *func, const char *file, int line);
+gmx_noreturn void assertHandler(const char *condition, const char *msg,
+                                const char *func, const char *file, int line);
 
-}   // namespace internal
+} // namespace internal
 //! \endcond
 
 } // namespace gmx

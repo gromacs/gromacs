@@ -84,6 +84,7 @@ public:
     void runFirstMdrun(const std::string &expectedCptFileName);
     //! Check that the restart works, but don't do any more MD steps.
     void runSecondMdrun();
+
 protected:
     //! Object to help call mdrun
     CommandLine *mdrunCaller_;

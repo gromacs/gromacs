@@ -119,6 +119,7 @@ public:
 private:
     //! Provides access to the test fixture, e.g. for the TestFileManager
     IntegrationTestFixture *fixture_;
+
 public:
     //@{
     /*! \name Names for frequently used grompp and mdrun output files

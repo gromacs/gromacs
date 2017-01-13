@@ -48,13 +48,13 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 
-void gmx_nb_generic_kernel(t_nblist *         nlist,
-                           rvec *             xx,
-                           rvec *             ff,
-                           t_forcerec *       fr,
-                           t_mdatoms *        mdatoms,
-                           nb_kernel_data_t * kernel_data,
-                           t_nrnb *           nrnb)
+void gmx_nb_generic_kernel(t_nblist *        nlist,
+                           rvec *            xx,
+                           rvec *            ff,
+                           t_forcerec *      fr,
+                           t_mdatoms *       mdatoms,
+                           nb_kernel_data_t *kernel_data,
+                           t_nrnb *          nrnb)
 {
     int      ntype, table_nelements, ielec, ivdw;
     real     facel;
@@ -137,10 +137,10 @@ void gmx_nb_generic_kernel(t_nblist *         nlist,
     {
         d         = fr->rcoulomb - fr->rcoulomb_switch;
         elec_swV3 = -10.0 / (d * d * d);
-        elec_swV4 =  15.0 / (d * d * d * d);
-        elec_swV5 =  -6.0 / (d * d * d * d * d);
+        elec_swV4 = 15.0 / (d * d * d * d);
+        elec_swV5 = -6.0 / (d * d * d * d * d);
         elec_swF2 = -30.0 / (d * d * d);
-        elec_swF3 =  60.0 / (d * d * d * d);
+        elec_swF3 = 60.0 / (d * d * d * d);
         elec_swF4 = -30.0 / (d * d * d * d * d);
     }
     else
@@ -152,10 +152,10 @@ void gmx_nb_generic_kernel(t_nblist *         nlist,
     {
         d        = fr->rvdw - fr->rvdw_switch;
         vdw_swV3 = -10.0 / (d * d * d);
-        vdw_swV4 =  15.0 / (d * d * d * d);
-        vdw_swV5 =  -6.0 / (d * d * d * d * d);
+        vdw_swV4 = 15.0 / (d * d * d * d);
+        vdw_swV5 = -6.0 / (d * d * d * d * d);
         vdw_swF2 = -30.0 / (d * d * d);
-        vdw_swF3 =  60.0 / (d * d * d * d);
+        vdw_swF3 = 60.0 / (d * d * d * d);
         vdw_swF4 = -30.0 / (d * d * d * d * d);
     }
     else
@@ -170,7 +170,7 @@ void gmx_nb_generic_kernel(t_nblist *         nlist,
 
     if (bExactCutoff)
     {
-        rcutoff  = ( fr->rcoulomb > fr->rvdw ) ? fr->rcoulomb : fr->rvdw;
+        rcutoff  = (fr->rcoulomb > fr->rvdw) ? fr->rcoulomb : fr->rvdw;
         rcutoff2 = rcutoff * rcutoff;
     }
     else
@@ -443,7 +443,7 @@ void gmx_nb_generic_kernel(t_nblist *         nlist,
                     sw  = 1.0 + d2 * d * (vdw_swV3 + d * (vdw_swV4 + d * vdw_swV5));
                     dsw = d2 * (vdw_swF2 + d * (vdw_swF3 + d * vdw_swF4));
                     /* See coulomb interaction for the force-switch formula */
-                    fvdw  = fvdw * sw - rinv * vvdw * dsw;
+                    fvdw = fvdw * sw - rinv * vvdw * dsw;
                     vvdw *= sw;
                 }
                 if (bExactVdwCutoff)
@@ -475,7 +475,7 @@ void gmx_nb_generic_kernel(t_nblist *         nlist,
         fshift[is3 + 2] = fshift[is3 + 2] + fiz;
         ggid            = nlist->gid[n];
         velecgrp[ggid] += vctot;
-        vvdwgrp[ggid]  += vvdwtot;
+        vvdwgrp[ggid] += vvdwtot;
     }
     /* Estimate flops, average for generic kernel:
      * 12 flops per outer iteration

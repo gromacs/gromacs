@@ -43,19 +43,19 @@
 
 #define _GMX_MM_BLEND256D(b3, b2, b1, b0) (((b3) << 3) | ((b2) << 2) | ((b1) << 1) | ((b0)))
 #define _GMX_MM_PERMUTE(fp3, fp2, fp1, fp0) (((fp3) << 6) | ((fp2) << 4) | ((fp1) << 2) | ((fp0)))
-#define _GMX_MM_PERMUTE128D(fp1, fp0)         (((fp1) << 1) | ((fp0)))
+#define _GMX_MM_PERMUTE128D(fp1, fp0) (((fp1) << 1) | ((fp0)))
 #define _GMX_MM_PERMUTE256D(fp3, fp2, fp1, fp0) (((fp3) << 3) | ((fp2) << 2) | ((fp1) << 1) | ((fp0)))
 #define GMX_MM256_FULLTRANSPOSE4_PD(row0, row1, row2, row3) \
-    {                                                        \
-        __m256d _t0, _t1, _t2, _t3;                          \
-        _t0  = _mm256_unpacklo_pd((row0), (row1));           \
-        _t1  = _mm256_unpackhi_pd((row0), (row1));           \
-        _t2  = _mm256_unpacklo_pd((row2), (row3));           \
-        _t3  = _mm256_unpackhi_pd((row2), (row3));           \
-        row0 = _mm256_permute2f128_pd(_t0, _t2, 0x20);       \
-        row1 = _mm256_permute2f128_pd(_t1, _t3, 0x20);       \
-        row2 = _mm256_permute2f128_pd(_t0, _t2, 0x31);       \
-        row3 = _mm256_permute2f128_pd(_t1, _t3, 0x31);       \
+    {                                                       \
+        __m256d _t0, _t1, _t2, _t3;                         \
+        _t0  = _mm256_unpacklo_pd((row0), (row1));          \
+        _t1  = _mm256_unpackhi_pd((row0), (row1));          \
+        _t2  = _mm256_unpacklo_pd((row2), (row3));          \
+        _t3  = _mm256_unpackhi_pd((row2), (row3));          \
+        row0 = _mm256_permute2f128_pd(_t0, _t2, 0x20);      \
+        row1 = _mm256_permute2f128_pd(_t1, _t3, 0x20);      \
+        row2 = _mm256_permute2f128_pd(_t0, _t2, 0x31);      \
+        row3 = _mm256_permute2f128_pd(_t1, _t3, 0x31);      \
     }
 
 #define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32((x), (imm))
@@ -87,21 +87,21 @@ static gmx_inline int gmx_simdcall gmx_mm256_any_lt(__m256d a, __m256d b)
 
 static gmx_inline __m256d gmx_simdcall gmx_mm256_calc_rsq_pd(__m256d dx, __m256d dy, __m256d dz)
 {
-    return _mm256_add_pd( _mm256_add_pd( _mm256_mul_pd(dx, dx), _mm256_mul_pd(dy, dy) ), _mm256_mul_pd(dz, dz) );
+    return _mm256_add_pd(_mm256_add_pd(_mm256_mul_pd(dx, dx), _mm256_mul_pd(dy, dy)), _mm256_mul_pd(dz, dz));
 }
 
 /* Normal sum of four ymm registers */
-#define gmx_mm256_sum4_pd(t0, t1, t2, t3)  _mm256_add_pd(_mm256_add_pd(t0, t1), _mm256_add_pd(t2, t3))
+#define gmx_mm256_sum4_pd(t0, t1, t2, t3) _mm256_add_pd(_mm256_add_pd(t0, t1), _mm256_add_pd(t2, t3))
 
 
 /* Load a single value from 1-4 places, merge into xmm register */
-static gmx_inline __m256d gmx_simdcall gmx_mm256_load_1real_pd(const double * gmx_restrict ptrA)
+static gmx_inline __m256d gmx_simdcall gmx_mm256_load_1real_pd(const double *gmx_restrict ptrA)
 {
     return _mm256_castpd128_pd256(_mm_load_sd(ptrA));
 }
 
-static gmx_inline __m256d gmx_simdcall gmx_mm256_load_2real_swizzle_pd(const double * gmx_restrict ptrA,
-                                                                       const double * gmx_restrict ptrB)
+static gmx_inline __m256d gmx_simdcall gmx_mm256_load_2real_swizzle_pd(const double *gmx_restrict ptrA,
+                                                                       const double *gmx_restrict ptrB)
 {
     __m128d tA, tB;
 
@@ -112,8 +112,8 @@ static gmx_inline __m256d gmx_simdcall gmx_mm256_load_2real_swizzle_pd(const dou
 }
 
 
-static gmx_inline __m256d gmx_simdcall gmx_mm256_load_4real_swizzle_pd(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
-                                                                       const double * gmx_restrict ptrC, const double * gmx_restrict ptrD)
+static gmx_inline __m256d gmx_simdcall gmx_mm256_load_4real_swizzle_pd(const double *gmx_restrict ptrA, const double *gmx_restrict ptrB,
+                                                                       const double *gmx_restrict ptrC, const double *gmx_restrict ptrD)
 {
     __m128d t1, t2;
 
@@ -123,14 +123,13 @@ static gmx_inline __m256d gmx_simdcall gmx_mm256_load_4real_swizzle_pd(const dou
 }
 
 
-
-static gmx_inline void gmx_simdcall gmx_mm256_store_1real_pd(double * gmx_restrict ptrA, __m256d xmm1)
+static gmx_inline void gmx_simdcall gmx_mm256_store_1real_pd(double *gmx_restrict ptrA, __m256d xmm1)
 {
     _mm_store_sd(ptrA, _mm256_castpd256_pd128(xmm1));
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_store_2real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB, __m256d xmm1)
+static gmx_inline void gmx_simdcall gmx_mm256_store_2real_swizzle_pd(double *gmx_restrict ptrA, double *gmx_restrict ptrB, __m256d xmm1)
 {
     __m256d t2;
 
@@ -140,10 +139,8 @@ static gmx_inline void gmx_simdcall gmx_mm256_store_2real_swizzle_pd(double * gm
 }
 
 
-
-
-static gmx_inline void gmx_simdcall gmx_mm256_store_4real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
-                                                                     double * gmx_restrict ptrC, double * gmx_restrict ptrD, __m256d xmm1)
+static gmx_inline void gmx_simdcall gmx_mm256_store_4real_swizzle_pd(double *gmx_restrict ptrA, double *gmx_restrict ptrB,
+                                                                     double *gmx_restrict ptrC, double *gmx_restrict ptrD, __m256d xmm1)
 {
     __m256d t2;
     __m128d t3, t4;
@@ -158,9 +155,7 @@ static gmx_inline void gmx_simdcall gmx_mm256_store_4real_swizzle_pd(double * gm
 }
 
 
-
-
-static gmx_inline void gmx_simdcall gmx_mm256_increment_1real_pd(double * gmx_restrict ptrA, __m256d xmm1)
+static gmx_inline void gmx_simdcall gmx_mm256_increment_1real_pd(double *gmx_restrict ptrA, __m256d xmm1)
 {
     __m128d t1;
 
@@ -171,7 +166,7 @@ static gmx_inline void gmx_simdcall gmx_mm256_increment_1real_pd(double * gmx_re
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_increment_2real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB, __m256d xmm1)
+static gmx_inline void gmx_simdcall gmx_mm256_increment_2real_swizzle_pd(double *gmx_restrict ptrA, double *gmx_restrict ptrB, __m256d xmm1)
 {
     __m128d t1, t2;
 
@@ -186,8 +181,8 @@ static gmx_inline void gmx_simdcall gmx_mm256_increment_2real_swizzle_pd(double 
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_increment_4real_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
-                                                                         double * gmx_restrict ptrC, double * gmx_restrict ptrD, __m256d xmm1)
+static gmx_inline void gmx_simdcall gmx_mm256_increment_4real_swizzle_pd(double *gmx_restrict ptrA, double *gmx_restrict ptrB,
+                                                                         double *gmx_restrict ptrC, double *gmx_restrict ptrD, __m256d xmm1)
 {
     __m128d t1, t2, t3, t4;
 
@@ -208,15 +203,14 @@ static gmx_inline void gmx_simdcall gmx_mm256_increment_4real_swizzle_pd(double 
 }
 
 
-
-static gmx_inline void gmx_simdcall gmx_mm256_load_1pair_swizzle_pd(const double * gmx_restrict p1, __m256d *c6, __m256d *c12)
+static gmx_inline void gmx_simdcall gmx_mm256_load_1pair_swizzle_pd(const double *gmx_restrict p1, __m256d *c6, __m256d *c12)
 {
     *c6  = _mm256_castpd128_pd256(_mm_load_sd(p1));
     *c12 = _mm256_castpd128_pd256(_mm_load_sd(p1 + 1));
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_load_2pair_swizzle_pd(const double * gmx_restrict p1, const double * gmx_restrict p2, __m256d *c6, __m256d *c12)
+static gmx_inline void gmx_simdcall gmx_mm256_load_2pair_swizzle_pd(const double *gmx_restrict p1, const double *gmx_restrict p2, __m256d *c6, __m256d *c12)
 {
     __m128d t1, t2, t3;
 
@@ -227,26 +221,25 @@ static gmx_inline void gmx_simdcall gmx_mm256_load_2pair_swizzle_pd(const double
 }
 
 
-
-static gmx_inline void gmx_simdcall gmx_mm256_load_4pair_swizzle_pd(const double * gmx_restrict p1, const double * gmx_restrict p2,
-                                                                    const double * gmx_restrict p3, const double * gmx_restrict p4,
-                                                                    __m256d * gmx_restrict c6, __m256d * gmx_restrict c12)
+static gmx_inline void gmx_simdcall gmx_mm256_load_4pair_swizzle_pd(const double *gmx_restrict p1, const double *gmx_restrict p2,
+                                                                    const double *gmx_restrict p3, const double *gmx_restrict p4,
+                                                                    __m256d *gmx_restrict c6, __m256d *gmx_restrict c12)
 {
     __m256d t1, t2;
 
-    t1 = gmx_mm256_set_m128d(_mm_loadu_pd(p3), _mm_loadu_pd(p1));   /* c12c  c6c | c12a  c6a */
-    t2 = gmx_mm256_set_m128d(_mm_loadu_pd(p4), _mm_loadu_pd(p2));   /* c12d  c6d | c12b  c6b */
+    t1 = gmx_mm256_set_m128d(_mm_loadu_pd(p3), _mm_loadu_pd(p1)); /* c12c  c6c | c12a  c6a */
+    t2 = gmx_mm256_set_m128d(_mm_loadu_pd(p4), _mm_loadu_pd(p2)); /* c12d  c6d | c12b  c6b */
 
-    *c6  = _mm256_unpacklo_pd(t1, t2);                              /* c6d c6c | c6b c6a */
-    *c12 = _mm256_unpackhi_pd(t1, t2);                              /* c12d c12c | c12b c12a */
+    *c6  = _mm256_unpacklo_pd(t1, t2); /* c6d c6c | c6b c6a */
+    *c12 = _mm256_unpackhi_pd(t1, t2); /* c12d c12c | c12b c12a */
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_load_shift_and_1rvec_broadcast_pd(const double * gmx_restrict xyz_shift,
-                                                                                const double * gmx_restrict xyz,
-                                                                                __m256d * gmx_restrict      x1,
-                                                                                __m256d * gmx_restrict      y1,
-                                                                                __m256d * gmx_restrict      z1)
+static gmx_inline void gmx_simdcall gmx_mm256_load_shift_and_1rvec_broadcast_pd(const double *gmx_restrict xyz_shift,
+                                                                                const double *gmx_restrict xyz,
+                                                                                __m256d *gmx_restrict x1,
+                                                                                __m256d *gmx_restrict y1,
+                                                                                __m256d *gmx_restrict z1)
 {
     __m128d mem_xy, mem_z, mem_sxy, mem_sz, tx, ty, tz;
 
@@ -268,11 +261,11 @@ static gmx_inline void gmx_simdcall gmx_mm256_load_shift_and_1rvec_broadcast_pd(
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_load_shift_and_3rvec_broadcast_pd(const double * gmx_restrict xyz_shift,
-                                                                                const double * gmx_restrict xyz,
-                                                                                __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
-                                                                                __m256d * gmx_restrict x2, __m256d * gmx_restrict y2, __m256d * gmx_restrict z2,
-                                                                                __m256d * gmx_restrict x3, __m256d * gmx_restrict y3, __m256d * gmx_restrict z3)
+static gmx_inline void gmx_simdcall gmx_mm256_load_shift_and_3rvec_broadcast_pd(const double *gmx_restrict xyz_shift,
+                                                                                const double *gmx_restrict xyz,
+                                                                                __m256d *gmx_restrict x1, __m256d *gmx_restrict y1, __m256d *gmx_restrict z1,
+                                                                                __m256d *gmx_restrict x2, __m256d *gmx_restrict y2, __m256d *gmx_restrict z2,
+                                                                                __m256d *gmx_restrict x3, __m256d *gmx_restrict y3, __m256d *gmx_restrict z3)
 {
     __m128d t1, t2, t3, t4, t5, sxy, sz, szx, syz, tx, ty, tz;
 
@@ -314,12 +307,12 @@ static gmx_inline void gmx_simdcall gmx_mm256_load_shift_and_3rvec_broadcast_pd(
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_load_shift_and_4rvec_broadcast_pd(const double * gmx_restrict xyz_shift,
-                                                                                const double * gmx_restrict xyz,
-                                                                                __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
-                                                                                __m256d * gmx_restrict x2, __m256d * gmx_restrict y2, __m256d * gmx_restrict z2,
-                                                                                __m256d * gmx_restrict x3, __m256d * gmx_restrict y3, __m256d * gmx_restrict z3,
-                                                                                __m256d * gmx_restrict x4, __m256d * gmx_restrict y4, __m256d * gmx_restrict z4)
+static gmx_inline void gmx_simdcall gmx_mm256_load_shift_and_4rvec_broadcast_pd(const double *gmx_restrict xyz_shift,
+                                                                                const double *gmx_restrict xyz,
+                                                                                __m256d *gmx_restrict x1, __m256d *gmx_restrict y1, __m256d *gmx_restrict z1,
+                                                                                __m256d *gmx_restrict x2, __m256d *gmx_restrict y2, __m256d *gmx_restrict z2,
+                                                                                __m256d *gmx_restrict x3, __m256d *gmx_restrict y3, __m256d *gmx_restrict z3,
+                                                                                __m256d *gmx_restrict x4, __m256d *gmx_restrict y4, __m256d *gmx_restrict z4)
 {
     __m128d t1, t2, t3, t4, t5, t6, sxy, sz, szx, syz, tx, ty, tz;
 
@@ -369,8 +362,8 @@ static gmx_inline void gmx_simdcall gmx_mm256_load_shift_and_4rvec_broadcast_pd(
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_load_1rvec_1ptr_swizzle_pd(const double * gmx_restrict p1,
-                                                                         __m256d * gmx_restrict x, __m256d * gmx_restrict y, __m256d * gmx_restrict z)
+static gmx_inline void gmx_simdcall gmx_mm256_load_1rvec_1ptr_swizzle_pd(const double *gmx_restrict p1,
+                                                                         __m256d *gmx_restrict x, __m256d *gmx_restrict y, __m256d *gmx_restrict z)
 {
     __m256d t1;
 
@@ -381,10 +374,10 @@ static gmx_inline void gmx_simdcall gmx_mm256_load_1rvec_1ptr_swizzle_pd(const d
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_load_3rvec_1ptr_swizzle_pd(const double * gmx_restrict p1,
-                                                                         __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
-                                                                         __m256d * gmx_restrict x2, __m256d * gmx_restrict y2, __m256d * gmx_restrict z2,
-                                                                         __m256d * gmx_restrict x3, __m256d * gmx_restrict y3, __m256d * gmx_restrict z3)
+static gmx_inline void gmx_simdcall gmx_mm256_load_3rvec_1ptr_swizzle_pd(const double *gmx_restrict p1,
+                                                                         __m256d *gmx_restrict x1, __m256d *gmx_restrict y1, __m256d *gmx_restrict z1,
+                                                                         __m256d *gmx_restrict x2, __m256d *gmx_restrict y2, __m256d *gmx_restrict z2,
+                                                                         __m256d *gmx_restrict x3, __m256d *gmx_restrict y3, __m256d *gmx_restrict z3)
 {
     __m256d t1, t2, t3, t4;
 
@@ -403,11 +396,11 @@ static gmx_inline void gmx_simdcall gmx_mm256_load_3rvec_1ptr_swizzle_pd(const d
     *z3 = _mm256_castpd128_pd256(_mm_load_sd(p1 + 8));
 }
 
-static gmx_inline void gmx_simdcall gmx_mm256_load_4rvec_1ptr_swizzle_pd(const double * gmx_restrict p1,
-                                                                         __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
-                                                                         __m256d * gmx_restrict x2, __m256d * gmx_restrict y2, __m256d * gmx_restrict z2,
-                                                                         __m256d * gmx_restrict x3, __m256d * gmx_restrict y3, __m256d * gmx_restrict z3,
-                                                                         __m256d * gmx_restrict x4, __m256d * gmx_restrict y4, __m256d * gmx_restrict z4)
+static gmx_inline void gmx_simdcall gmx_mm256_load_4rvec_1ptr_swizzle_pd(const double *gmx_restrict p1,
+                                                                         __m256d *gmx_restrict x1, __m256d *gmx_restrict y1, __m256d *gmx_restrict z1,
+                                                                         __m256d *gmx_restrict x2, __m256d *gmx_restrict y2, __m256d *gmx_restrict z2,
+                                                                         __m256d *gmx_restrict x3, __m256d *gmx_restrict y3, __m256d *gmx_restrict z3,
+                                                                         __m256d *gmx_restrict x4, __m256d *gmx_restrict y4, __m256d *gmx_restrict z4)
 {
     __m256d t1, t2, t3, t4, t5, t6;
 
@@ -435,21 +428,21 @@ static gmx_inline void gmx_simdcall gmx_mm256_load_4rvec_1ptr_swizzle_pd(const d
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_load_1rvec_4ptr_swizzle_pd(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
-                                                                         const double * gmx_restrict ptrC, const double * gmx_restrict ptrD,
-                                                                         __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1)
+static gmx_inline void gmx_simdcall gmx_mm256_load_1rvec_4ptr_swizzle_pd(const double *gmx_restrict ptrA, const double *gmx_restrict ptrB,
+                                                                         const double *gmx_restrict ptrC, const double *gmx_restrict ptrD,
+                                                                         __m256d *gmx_restrict x1, __m256d *gmx_restrict y1, __m256d *gmx_restrict z1)
 {
     __m256d t1, t2, t3, t4, t5, t6;
 
-    t1 = _mm256_loadu_pd(ptrA);                  /*   -  z1a | y1a x1a */
-    t2 = _mm256_loadu_pd(ptrB);                  /*   -  z1b | y1b x1b */
-    t3 = _mm256_loadu_pd(ptrC);                  /*   -  z1c | y1c x1c */
-    t4 = _mm256_loadu_pd(ptrD);                  /*   -  z1d | y1d x1d */
+    t1 = _mm256_loadu_pd(ptrA); /*   -  z1a | y1a x1a */
+    t2 = _mm256_loadu_pd(ptrB); /*   -  z1b | y1b x1b */
+    t3 = _mm256_loadu_pd(ptrC); /*   -  z1c | y1c x1c */
+    t4 = _mm256_loadu_pd(ptrD); /*   -  z1d | y1d x1d */
 
-    t5 = _mm256_unpacklo_pd(t1, t2);             /*  z1b z1a | x1b x1a */
-    t6 = _mm256_unpackhi_pd(t1, t2);             /*   -   -  | y1b y1a */
-    t1 = _mm256_unpacklo_pd(t3, t4);             /*  z1c z1c | x1d x1c */
-    t2 = _mm256_unpackhi_pd(t3, t4);             /*   -   -  | y1d y1c */
+    t5 = _mm256_unpacklo_pd(t1, t2); /*  z1b z1a | x1b x1a */
+    t6 = _mm256_unpackhi_pd(t1, t2); /*   -   -  | y1b y1a */
+    t1 = _mm256_unpacklo_pd(t3, t4); /*  z1c z1c | x1d x1c */
+    t2 = _mm256_unpackhi_pd(t3, t4); /*   -   -  | y1d y1c */
 
     *x1 = gmx_mm256_unpack128lo_pd(t5, t1);
     *y1 = gmx_mm256_unpack128lo_pd(t6, t2);
@@ -457,40 +450,39 @@ static gmx_inline void gmx_simdcall gmx_mm256_load_1rvec_4ptr_swizzle_pd(const d
 }
 
 
-
-static gmx_inline void gmx_simdcall gmx_mm256_load_3rvec_4ptr_swizzle_pd(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
-                                                                         const double * gmx_restrict ptrC, const double * gmx_restrict ptrD,
-                                                                         __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
-                                                                         __m256d * gmx_restrict x2, __m256d * gmx_restrict y2, __m256d * gmx_restrict z2,
-                                                                         __m256d * gmx_restrict x3, __m256d * gmx_restrict y3, __m256d * gmx_restrict z3)
+static gmx_inline void gmx_simdcall gmx_mm256_load_3rvec_4ptr_swizzle_pd(const double *gmx_restrict ptrA, const double *gmx_restrict ptrB,
+                                                                         const double *gmx_restrict ptrC, const double *gmx_restrict ptrD,
+                                                                         __m256d *gmx_restrict x1, __m256d *gmx_restrict y1, __m256d *gmx_restrict z1,
+                                                                         __m256d *gmx_restrict x2, __m256d *gmx_restrict y2, __m256d *gmx_restrict z2,
+                                                                         __m256d *gmx_restrict x3, __m256d *gmx_restrict y3, __m256d *gmx_restrict z3)
 {
     __m256d t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14;
 
-    t1  = _mm256_loadu_pd(ptrA);                                /*  x2a z1a | y1a x1a */
-    t2  = _mm256_loadu_pd(ptrB);                                /*  x2b z1b | y1b x1b */
-    t3  = _mm256_loadu_pd(ptrC);                                /*  x2c z1c | y1c x1c */
-    t4  = _mm256_loadu_pd(ptrD);                                /*  x2d z1d | y1d x1d */
-    t5  = _mm256_loadu_pd(ptrA + 4);                            /*  y3a x3a | z2a y2a */
-    t6  = _mm256_loadu_pd(ptrB + 4);                            /*  y3b x3b | z2b y2b */
-    t7  = _mm256_loadu_pd(ptrC + 4);                            /*  y3c x3c | z2c y2c */
-    t8  = _mm256_loadu_pd(ptrD + 4);                            /*  y3d x3d | z2d y2d */
-    t9  = _mm256_castpd128_pd256(_mm_load_sd(ptrA + 8));        /*   -   -  |  -  z3a */
-    t10 = _mm256_castpd128_pd256(_mm_load_sd(ptrB + 8));        /*   -   -  |  -  z3b */
-    t11 = _mm256_castpd128_pd256(_mm_load_sd(ptrC + 8));        /*   -   -  |  -  z3c */
-    t12 = _mm256_castpd128_pd256(_mm_load_sd(ptrD + 8));        /*   -   -  |  -  z3d */
+    t1  = _mm256_loadu_pd(ptrA);                         /*  x2a z1a | y1a x1a */
+    t2  = _mm256_loadu_pd(ptrB);                         /*  x2b z1b | y1b x1b */
+    t3  = _mm256_loadu_pd(ptrC);                         /*  x2c z1c | y1c x1c */
+    t4  = _mm256_loadu_pd(ptrD);                         /*  x2d z1d | y1d x1d */
+    t5  = _mm256_loadu_pd(ptrA + 4);                     /*  y3a x3a | z2a y2a */
+    t6  = _mm256_loadu_pd(ptrB + 4);                     /*  y3b x3b | z2b y2b */
+    t7  = _mm256_loadu_pd(ptrC + 4);                     /*  y3c x3c | z2c y2c */
+    t8  = _mm256_loadu_pd(ptrD + 4);                     /*  y3d x3d | z2d y2d */
+    t9  = _mm256_castpd128_pd256(_mm_load_sd(ptrA + 8)); /*   -   -  |  -  z3a */
+    t10 = _mm256_castpd128_pd256(_mm_load_sd(ptrB + 8)); /*   -   -  |  -  z3b */
+    t11 = _mm256_castpd128_pd256(_mm_load_sd(ptrC + 8)); /*   -   -  |  -  z3c */
+    t12 = _mm256_castpd128_pd256(_mm_load_sd(ptrD + 8)); /*   -   -  |  -  z3d */
 
-    t13 = _mm256_unpacklo_pd(t1, t2);                           /*  z1b z1a | x1b x1a */
-    t14 = _mm256_unpackhi_pd(t1, t2);                           /*  x2b x2a | y1b y1a */
-    t1  = _mm256_unpacklo_pd(t3, t4);                           /*  z1d z1c | x1d x1c */
-    t2  = _mm256_unpackhi_pd(t3, t4);                           /*  x2d x2c | y1d y1c */
+    t13 = _mm256_unpacklo_pd(t1, t2); /*  z1b z1a | x1b x1a */
+    t14 = _mm256_unpackhi_pd(t1, t2); /*  x2b x2a | y1b y1a */
+    t1  = _mm256_unpacklo_pd(t3, t4); /*  z1d z1c | x1d x1c */
+    t2  = _mm256_unpackhi_pd(t3, t4); /*  x2d x2c | y1d y1c */
 
-    t3 = _mm256_unpacklo_pd(t5, t6);                            /*  x3b x3a | y2b y2a */
-    t4 = _mm256_unpackhi_pd(t5, t6);                            /*  y3b y3a | z2b z2a */
-    t5 = _mm256_unpacklo_pd(t7, t8);                            /*  x3d x3c | y2d y2c */
-    t6 = _mm256_unpackhi_pd(t7, t8);                            /*  y3d y3c | z2d z2c */
+    t3 = _mm256_unpacklo_pd(t5, t6); /*  x3b x3a | y2b y2a */
+    t4 = _mm256_unpackhi_pd(t5, t6); /*  y3b y3a | z2b z2a */
+    t5 = _mm256_unpacklo_pd(t7, t8); /*  x3d x3c | y2d y2c */
+    t6 = _mm256_unpackhi_pd(t7, t8); /*  y3d y3c | z2d z2c */
 
-    t9  = _mm256_unpacklo_pd(t9, t10);                          /*   -   -  | z3b z3a */
-    t11 = _mm256_unpacklo_pd(t11, t12);                         /*   -   -  | z3d z3c */
+    t9  = _mm256_unpacklo_pd(t9, t10);  /*   -   -  | z3b z3a */
+    t11 = _mm256_unpacklo_pd(t11, t12); /*   -   -  | z3d z3c */
 
     *x1 = gmx_mm256_unpack128lo_pd(t13, t1);
     *y1 = gmx_mm256_unpack128lo_pd(t14, t2);
@@ -504,43 +496,42 @@ static gmx_inline void gmx_simdcall gmx_mm256_load_3rvec_4ptr_swizzle_pd(const d
 }
 
 
-
-static gmx_inline void gmx_simdcall gmx_mm256_load_4rvec_4ptr_swizzle_pd(const double * gmx_restrict ptrA, const double * gmx_restrict ptrB,
-                                                                         const double * gmx_restrict ptrC, const double * gmx_restrict ptrD,
-                                                                         __m256d * gmx_restrict x1, __m256d * gmx_restrict y1, __m256d * gmx_restrict z1,
-                                                                         __m256d * gmx_restrict x2, __m256d * gmx_restrict y2, __m256d * gmx_restrict z2,
-                                                                         __m256d * gmx_restrict x3, __m256d * gmx_restrict y3, __m256d * gmx_restrict z3,
-                                                                         __m256d * gmx_restrict x4, __m256d * gmx_restrict y4, __m256d * gmx_restrict z4)
+static gmx_inline void gmx_simdcall gmx_mm256_load_4rvec_4ptr_swizzle_pd(const double *gmx_restrict ptrA, const double *gmx_restrict ptrB,
+                                                                         const double *gmx_restrict ptrC, const double *gmx_restrict ptrD,
+                                                                         __m256d *gmx_restrict x1, __m256d *gmx_restrict y1, __m256d *gmx_restrict z1,
+                                                                         __m256d *gmx_restrict x2, __m256d *gmx_restrict y2, __m256d *gmx_restrict z2,
+                                                                         __m256d *gmx_restrict x3, __m256d *gmx_restrict y3, __m256d *gmx_restrict z3,
+                                                                         __m256d *gmx_restrict x4, __m256d *gmx_restrict y4, __m256d *gmx_restrict z4)
 {
     __m256d t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14;
 
-    t1  = _mm256_loadu_pd(ptrA);                 /*  x2a z1a | y1a x1a */
-    t2  = _mm256_loadu_pd(ptrB);                 /*  x2b z1b | y1b x1b */
-    t3  = _mm256_loadu_pd(ptrC);                 /*  x2c z1c | y1c x1c */
-    t4  = _mm256_loadu_pd(ptrD);                 /*  x2d z1d | y1d x1d */
-    t5  = _mm256_loadu_pd(ptrA + 4);             /*  y3a x3a | z2a y2a */
-    t6  = _mm256_loadu_pd(ptrB + 4);             /*  y3b x3b | z2b y2b */
-    t7  = _mm256_loadu_pd(ptrC + 4);             /*  y3c x3c | z2c y2c */
-    t8  = _mm256_loadu_pd(ptrD + 4);             /*  y3d x3d | z2d y2d */
-    t9  = _mm256_loadu_pd(ptrA + 8);             /*  z4a y4a | x4a z3a */
-    t10 = _mm256_loadu_pd(ptrB + 8);             /*  z4b y4b | x4b z3b */
-    t11 = _mm256_loadu_pd(ptrC + 8);             /*  z4c y4c | x4c z3c */
-    t12 = _mm256_loadu_pd(ptrD + 8);             /*  z4d y4d | x4d z3d */
+    t1  = _mm256_loadu_pd(ptrA);     /*  x2a z1a | y1a x1a */
+    t2  = _mm256_loadu_pd(ptrB);     /*  x2b z1b | y1b x1b */
+    t3  = _mm256_loadu_pd(ptrC);     /*  x2c z1c | y1c x1c */
+    t4  = _mm256_loadu_pd(ptrD);     /*  x2d z1d | y1d x1d */
+    t5  = _mm256_loadu_pd(ptrA + 4); /*  y3a x3a | z2a y2a */
+    t6  = _mm256_loadu_pd(ptrB + 4); /*  y3b x3b | z2b y2b */
+    t7  = _mm256_loadu_pd(ptrC + 4); /*  y3c x3c | z2c y2c */
+    t8  = _mm256_loadu_pd(ptrD + 4); /*  y3d x3d | z2d y2d */
+    t9  = _mm256_loadu_pd(ptrA + 8); /*  z4a y4a | x4a z3a */
+    t10 = _mm256_loadu_pd(ptrB + 8); /*  z4b y4b | x4b z3b */
+    t11 = _mm256_loadu_pd(ptrC + 8); /*  z4c y4c | x4c z3c */
+    t12 = _mm256_loadu_pd(ptrD + 8); /*  z4d y4d | x4d z3d */
 
-    t13 = _mm256_unpacklo_pd(t1, t2);            /*  z1b z1a | x1b x1a */
-    t14 = _mm256_unpackhi_pd(t1, t2);            /*  x2b x2a | y1b y1a */
-    t1  = _mm256_unpacklo_pd(t3, t4);            /*  z1d z1c | x1d x1c */
-    t2  = _mm256_unpackhi_pd(t3, t4);            /*  x2d x2c | y1d y1c */
+    t13 = _mm256_unpacklo_pd(t1, t2); /*  z1b z1a | x1b x1a */
+    t14 = _mm256_unpackhi_pd(t1, t2); /*  x2b x2a | y1b y1a */
+    t1  = _mm256_unpacklo_pd(t3, t4); /*  z1d z1c | x1d x1c */
+    t2  = _mm256_unpackhi_pd(t3, t4); /*  x2d x2c | y1d y1c */
 
-    t3 = _mm256_unpacklo_pd(t5, t6);             /*  x3b x3a | y2b y2a */
-    t4 = _mm256_unpackhi_pd(t5, t6);             /*  y3b y3a | z2b z2a */
-    t5 = _mm256_unpacklo_pd(t7, t8);             /*  x3d x3c | y2d y2c */
-    t6 = _mm256_unpackhi_pd(t7, t8);             /*  y3d y3c | z2d z2c */
+    t3 = _mm256_unpacklo_pd(t5, t6); /*  x3b x3a | y2b y2a */
+    t4 = _mm256_unpackhi_pd(t5, t6); /*  y3b y3a | z2b z2a */
+    t5 = _mm256_unpacklo_pd(t7, t8); /*  x3d x3c | y2d y2c */
+    t6 = _mm256_unpackhi_pd(t7, t8); /*  y3d y3c | z2d z2c */
 
-    t7  = _mm256_unpacklo_pd(t9, t10);           /*  y4b y4a | z3b z3a */
-    t8  = _mm256_unpackhi_pd(t9, t10);           /*  z4b z4a | x4b x4a */
-    t9  = _mm256_unpacklo_pd(t11, t12);          /*  y4d y4c | z3d z3c */
-    t10 = _mm256_unpackhi_pd(t11, t12);          /*  z4d z4c | x4d x4c */
+    t7  = _mm256_unpacklo_pd(t9, t10);  /*  y4b y4a | z3b z3a */
+    t8  = _mm256_unpackhi_pd(t9, t10);  /*  z4b z4a | x4b x4a */
+    t9  = _mm256_unpacklo_pd(t11, t12); /*  y4d y4c | z3d z3c */
+    t10 = _mm256_unpackhi_pd(t11, t12); /*  z4d z4c | x4d x4c */
 
     *x1 = gmx_mm256_unpack128lo_pd(t13, t1);
     *y1 = gmx_mm256_unpack128lo_pd(t14, t2);
@@ -557,21 +548,20 @@ static gmx_inline void gmx_simdcall gmx_mm256_load_4rvec_4ptr_swizzle_pd(const d
 }
 
 
-
-static gmx_inline void gmx_simdcall gmx_mm256_decrement_1rvec_4ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
-                                                                              double * gmx_restrict ptrC, double * gmx_restrict ptrD,
+static gmx_inline void gmx_simdcall gmx_mm256_decrement_1rvec_4ptr_swizzle_pd(double *gmx_restrict ptrA, double *gmx_restrict ptrB,
+                                                                              double *gmx_restrict ptrC, double *gmx_restrict ptrD,
                                                                               __m256d x1, __m256d y1, __m256d z1)
 {
     __m256d t1, t2, tA, tB, tC, tD;
     __m256i mask;
 
-    t1 = _mm256_unpacklo_pd(x1, y1);                /*  y1c x1c | y1a x1a */
-    t2 = _mm256_unpackhi_pd(x1, y1);                /*  y1d x1d | y1b x1b */
-    x1 = gmx_mm256_unpack128lo_pd(t1, z1);          /*  -  z1a | y1a x1a */
-    y1 = gmx_mm256_unpack128hi_pd(t1, z1);          /*  -  z1c | y1c x1c */
+    t1 = _mm256_unpacklo_pd(x1, y1);       /*  y1c x1c | y1a x1a */
+    t2 = _mm256_unpackhi_pd(x1, y1);       /*  y1d x1d | y1b x1b */
+    x1 = gmx_mm256_unpack128lo_pd(t1, z1); /*  -  z1a | y1a x1a */
+    y1 = gmx_mm256_unpack128hi_pd(t1, z1); /*  -  z1c | y1c x1c */
     z1 = _mm256_permute_pd(z1, _GMX_MM_PERMUTE256D(0, 1, 0, 1));
-    t1 = gmx_mm256_unpack128lo_pd(t2, z1);          /*  -  z1b | y1b x1b */
-    z1 = gmx_mm256_unpack128hi_pd(t2, z1);          /*  -  z1d | y1d x1d */
+    t1 = gmx_mm256_unpack128lo_pd(t2, z1); /*  -  z1b | y1b x1b */
+    z1 = gmx_mm256_unpack128hi_pd(t2, z1); /*  -  z1d | y1d x1d */
 
     /* Construct a mask without executing any data loads */
     mask = _mm256_castpd_si256(_mm256_blend_pd(_mm256_setzero_pd(),
@@ -594,10 +584,8 @@ static gmx_inline void gmx_simdcall gmx_mm256_decrement_1rvec_4ptr_swizzle_pd(do
 }
 
 
-
-
-static gmx_inline void gmx_simdcall gmx_mm256_decrement_3rvec_4ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
-                                                                              double * gmx_restrict ptrC, double * gmx_restrict ptrD,
+static gmx_inline void gmx_simdcall gmx_mm256_decrement_3rvec_4ptr_swizzle_pd(double *gmx_restrict ptrA, double *gmx_restrict ptrB,
+                                                                              double *gmx_restrict ptrC, double *gmx_restrict ptrD,
                                                                               __m256d x1, __m256d y1, __m256d z1,
                                                                               __m256d x2, __m256d y2, __m256d z2,
                                                                               __m256d x3, __m256d y3, __m256d z3)
@@ -618,29 +606,29 @@ static gmx_inline void gmx_simdcall gmx_mm256_decrement_3rvec_4ptr_swizzle_pd(do
     tC = _mm_load_sd(ptrC + 8);
     tD = _mm_load_sd(ptrD + 8);
 
-    t9 = _mm256_unpacklo_pd(x1, y1);                /* y1c x1c | y1a x1a */
-    x1 = _mm256_unpackhi_pd(x1, y1);                /* y1d x1d | y1b x1b */
+    t9 = _mm256_unpacklo_pd(x1, y1); /* y1c x1c | y1a x1a */
+    x1 = _mm256_unpackhi_pd(x1, y1); /* y1d x1d | y1b x1b */
 
-    y1 = _mm256_unpacklo_pd(z1, x2);                /* x2c z1c | x2a z1a */
-    z1 = _mm256_unpackhi_pd(z1, x2);                /* x2d z1d | x2b z1b */
+    y1 = _mm256_unpacklo_pd(z1, x2); /* x2c z1c | x2a z1a */
+    z1 = _mm256_unpackhi_pd(z1, x2); /* x2d z1d | x2b z1b */
 
-    x2 = _mm256_unpacklo_pd(y2, z2);                /* z2c y2c | z2a y2a */
-    y2 = _mm256_unpackhi_pd(y2, z2);                /* z2d y2d | z2b y2b */
+    x2 = _mm256_unpacklo_pd(y2, z2); /* z2c y2c | z2a y2a */
+    y2 = _mm256_unpackhi_pd(y2, z2); /* z2d y2d | z2b y2b */
 
-    z2 = _mm256_unpacklo_pd(x3, y3);                /* y3c x3c | y3a x3a */
-    x3 = _mm256_unpackhi_pd(x3, y3);                /* y3d x3d | y3b x3b */
+    z2 = _mm256_unpacklo_pd(x3, y3); /* y3c x3c | y3a x3a */
+    x3 = _mm256_unpackhi_pd(x3, y3); /* y3d x3d | y3b x3b */
 
-    t10 = gmx_mm256_unpack128lo_pd(t9, y1);         /* x2a z1a | y1a x1a */
-    y3  = gmx_mm256_unpack128hi_pd(t9, y1);         /* x2c z1c | y1c x1c */
+    t10 = gmx_mm256_unpack128lo_pd(t9, y1); /* x2a z1a | y1a x1a */
+    y3  = gmx_mm256_unpack128hi_pd(t9, y1); /* x2c z1c | y1c x1c */
 
-    t9 = gmx_mm256_unpack128lo_pd(x1, z1);          /* x2b z1b | y1b x1b */
-    y1 = gmx_mm256_unpack128hi_pd(x1, z1);          /* x2d z1d | y1d x1d */
+    t9 = gmx_mm256_unpack128lo_pd(x1, z1); /* x2b z1b | y1b x1b */
+    y1 = gmx_mm256_unpack128hi_pd(x1, z1); /* x2d z1d | y1d x1d */
 
-    x1 = gmx_mm256_unpack128lo_pd(x2, z2);          /* y3a x3a | z2a y2a */
-    z1 = gmx_mm256_unpack128hi_pd(x2, z2);          /* y3c x3c | z2c y2c */
+    x1 = gmx_mm256_unpack128lo_pd(x2, z2); /* y3a x3a | z2a y2a */
+    z1 = gmx_mm256_unpack128hi_pd(x2, z2); /* y3c x3c | z2c y2c */
 
-    x2 = gmx_mm256_unpack128lo_pd(y2, x3);          /* y3b x3b | z2b y2b */
-    z2 = gmx_mm256_unpack128hi_pd(y2, x3);          /* y3d x3d | z2d y2d */
+    x2 = gmx_mm256_unpack128lo_pd(y2, x3); /* y3b x3b | z2b y2b */
+    z2 = gmx_mm256_unpack128hi_pd(y2, x3); /* y3d x3d | z2d y2d */
 
     t1 = _mm256_sub_pd(t1, t10);
     t2 = _mm256_sub_pd(t2, t9);
@@ -673,8 +661,8 @@ static gmx_inline void gmx_simdcall gmx_mm256_decrement_3rvec_4ptr_swizzle_pd(do
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_decrement_4rvec_4ptr_swizzle_pd(double * gmx_restrict ptrA, double * gmx_restrict ptrB,
-                                                                              double * gmx_restrict ptrC, double * gmx_restrict ptrD,
+static gmx_inline void gmx_simdcall gmx_mm256_decrement_4rvec_4ptr_swizzle_pd(double *gmx_restrict ptrA, double *gmx_restrict ptrB,
+                                                                              double *gmx_restrict ptrC, double *gmx_restrict ptrD,
                                                                               __m256d x1, __m256d y1, __m256d z1,
                                                                               __m256d x2, __m256d y2, __m256d z2,
                                                                               __m256d x3, __m256d y3, __m256d z3,
@@ -696,31 +684,31 @@ static gmx_inline void gmx_simdcall gmx_mm256_decrement_4rvec_4ptr_swizzle_pd(do
     t11 = _mm256_loadu_pd(ptrC + 8);
     t12 = _mm256_loadu_pd(ptrD + 8);
 
-    t13 = _mm256_unpacklo_pd(x1, y1);                /* y1c x1c | y1a x1a */
-    x1  = _mm256_unpackhi_pd(x1, y1);                /* y1d x1d | y1b x1b */
-    y1  = _mm256_unpacklo_pd(z1, x2);                /* x2c z1c | x2a z1a */
-    z1  = _mm256_unpackhi_pd(z1, x2);                /* x2d z1d | x2b z1b */
-    x2  = _mm256_unpacklo_pd(y2, z2);                /* z2c y2c | z2a y2a */
-    y2  = _mm256_unpackhi_pd(y2, z2);                /* z2d y2d | z2b y2b */
-    z2  = _mm256_unpacklo_pd(x3, y3);                /* y3c x3c | y3a x3a */
-    x3  = _mm256_unpackhi_pd(x3, y3);                /* y3d x3d | y3b x3b */
-    y3  = _mm256_unpacklo_pd(z3, x4);                /* x4c z3c | x4a z3a */
-    z3  = _mm256_unpackhi_pd(z3, x4);                /* x4d z3d | x4b z3b */
-    x4  = _mm256_unpacklo_pd(y4, z4);                /* z4c y4c | z4a y4a */
-    y4  = _mm256_unpackhi_pd(y4, z4);                /* z4d y4d | z4b y4b */
+    t13 = _mm256_unpacklo_pd(x1, y1); /* y1c x1c | y1a x1a */
+    x1  = _mm256_unpackhi_pd(x1, y1); /* y1d x1d | y1b x1b */
+    y1  = _mm256_unpacklo_pd(z1, x2); /* x2c z1c | x2a z1a */
+    z1  = _mm256_unpackhi_pd(z1, x2); /* x2d z1d | x2b z1b */
+    x2  = _mm256_unpacklo_pd(y2, z2); /* z2c y2c | z2a y2a */
+    y2  = _mm256_unpackhi_pd(y2, z2); /* z2d y2d | z2b y2b */
+    z2  = _mm256_unpacklo_pd(x3, y3); /* y3c x3c | y3a x3a */
+    x3  = _mm256_unpackhi_pd(x3, y3); /* y3d x3d | y3b x3b */
+    y3  = _mm256_unpacklo_pd(z3, x4); /* x4c z3c | x4a z3a */
+    z3  = _mm256_unpackhi_pd(z3, x4); /* x4d z3d | x4b z3b */
+    x4  = _mm256_unpacklo_pd(y4, z4); /* z4c y4c | z4a y4a */
+    y4  = _mm256_unpackhi_pd(y4, z4); /* z4d y4d | z4b y4b */
 
-    z4  = gmx_mm256_unpack128lo_pd(t13, y1);         /* x2a z1a | y1a x1a */
-    t13 = gmx_mm256_unpack128hi_pd(t13, y1);         /* x2c z1c | y1c x1c */
-    y1  = gmx_mm256_unpack128lo_pd(x1, z1);          /* x2b z1b | y1b x1b */
-    x1  = gmx_mm256_unpack128hi_pd(x1, z1);          /* x2d z1d | y1d x1d */
-    z1  = gmx_mm256_unpack128lo_pd(x2, z2);          /* y3a x3a | z2a y2a */
-    x2  = gmx_mm256_unpack128hi_pd(x2, z2);          /* y3c x3c | z2c y2c */
-    z2  = gmx_mm256_unpack128lo_pd(y2, x3);          /* y3b x3b | z2b y2b */
-    y2  = gmx_mm256_unpack128hi_pd(y2, x3);          /* y3d x3d | z2d y2d */
-    x3  = gmx_mm256_unpack128lo_pd(y3, x4);          /* z4a y4a | x4a z3a */
-    y3  = gmx_mm256_unpack128hi_pd(y3, x4);          /* z4c y4c | x4c z3c */
-    x4  = gmx_mm256_unpack128lo_pd(z3, y4);          /* z4b y4b | x4b z3b */
-    z3  = gmx_mm256_unpack128hi_pd(z3, y4);          /* z4d y4d | x4d z3d */
+    z4  = gmx_mm256_unpack128lo_pd(t13, y1); /* x2a z1a | y1a x1a */
+    t13 = gmx_mm256_unpack128hi_pd(t13, y1); /* x2c z1c | y1c x1c */
+    y1  = gmx_mm256_unpack128lo_pd(x1, z1);  /* x2b z1b | y1b x1b */
+    x1  = gmx_mm256_unpack128hi_pd(x1, z1);  /* x2d z1d | y1d x1d */
+    z1  = gmx_mm256_unpack128lo_pd(x2, z2);  /* y3a x3a | z2a y2a */
+    x2  = gmx_mm256_unpack128hi_pd(x2, z2);  /* y3c x3c | z2c y2c */
+    z2  = gmx_mm256_unpack128lo_pd(y2, x3);  /* y3b x3b | z2b y2b */
+    y2  = gmx_mm256_unpack128hi_pd(y2, x3);  /* y3d x3d | z2d y2d */
+    x3  = gmx_mm256_unpack128lo_pd(y3, x4);  /* z4a y4a | x4a z3a */
+    y3  = gmx_mm256_unpack128hi_pd(y3, x4);  /* z4c y4c | x4c z3c */
+    x4  = gmx_mm256_unpack128lo_pd(z3, y4);  /* z4b y4b | x4b z3b */
+    z3  = gmx_mm256_unpack128hi_pd(z3, y4);  /* z4d y4d | x4d z3d */
 
     t1  = _mm256_sub_pd(t1, z4);
     t2  = _mm256_sub_pd(t2, y1);
@@ -751,10 +739,9 @@ static gmx_inline void gmx_simdcall gmx_mm256_decrement_4rvec_4ptr_swizzle_pd(do
 }
 
 
-
 static gmx_inline void gmx_simdcall gmx_mm256_update_iforce_1atom_swizzle_pd(__m256d fix1, __m256d fiy1, __m256d fiz1,
-                                                                             double * gmx_restrict fptr,
-                                                                             double * gmx_restrict fshiftptr)
+                                                                             double *gmx_restrict fptr,
+                                                                             double *gmx_restrict fshiftptr)
 {
     __m256d t1, t2;
     __m128d tA, tB;
@@ -778,13 +765,11 @@ static gmx_inline void gmx_simdcall gmx_mm256_update_iforce_1atom_swizzle_pd(__m
 }
 
 
-
-
 static gmx_inline void gmx_simdcall gmx_mm256_update_iforce_3atom_swizzle_pd(__m256d fix1, __m256d fiy1, __m256d fiz1,
                                                                              __m256d fix2, __m256d fiy2, __m256d fiz2,
                                                                              __m256d fix3, __m256d fiy3, __m256d fiz3,
-                                                                             double * gmx_restrict fptr,
-                                                                             double * gmx_restrict fshiftptr)
+                                                                             double *gmx_restrict fptr,
+                                                                             double *gmx_restrict fshiftptr)
 {
     __m256d t1, t2, t3, t4;
     __m128d tz3, tA, tB, tC, tD;
@@ -796,15 +781,15 @@ static gmx_inline void gmx_simdcall gmx_mm256_update_iforce_3atom_swizzle_pd(__m
     fiz3 = _mm256_hadd_pd(fiz3, _mm256_setzero_pd()); /*  0     Z3c-d | 0     Z3a-b */
 
     /* Add across the two lanes by swapping and adding back */
-    t1 = gmx_mm256_unpack128lo_pd(fix1, fiz1);                                         /* X2a-b Z1a-b | Y1a-b X1a-b */
-    t2 = gmx_mm256_unpack128hi_pd(fix1, fiz1);                                         /* X2c-d Z1c-d | Y1c-d X1c-d */
-    t1 = _mm256_add_pd(t1, t2);                                                        /* x2 z1 | y1 x1 */
+    t1 = gmx_mm256_unpack128lo_pd(fix1, fiz1); /* X2a-b Z1a-b | Y1a-b X1a-b */
+    t2 = gmx_mm256_unpack128hi_pd(fix1, fiz1); /* X2c-d Z1c-d | Y1c-d X1c-d */
+    t1 = _mm256_add_pd(t1, t2);                /* x2 z1 | y1 x1 */
 
-    t3 = gmx_mm256_unpack128lo_pd(fiy2, fix3);                                         /* Y3a-b X3a-b | Z2a-b Y2a-b */
-    t4 = gmx_mm256_unpack128hi_pd(fiy2, fix3);                                         /* Y3c-d X3c-d | Z2c-d Y2c-d */
-    t3 = _mm256_add_pd(t3, t4);                                                        /* y3 x3 | z2 y2 */
+    t3 = gmx_mm256_unpack128lo_pd(fiy2, fix3); /* Y3a-b X3a-b | Z2a-b Y2a-b */
+    t4 = gmx_mm256_unpack128hi_pd(fiy2, fix3); /* Y3c-d X3c-d | Z2c-d Y2c-d */
+    t3 = _mm256_add_pd(t3, t4);                /* y3 x3 | z2 y2 */
 
-    tz3 = _mm_add_pd(_mm256_castpd256_pd128(fiz3), _mm256_extractf128_pd(fiz3, 0x1));  /* 0 z3 */
+    tz3 = _mm_add_pd(_mm256_castpd256_pd128(fiz3), _mm256_extractf128_pd(fiz3, 0x1)); /* 0 z3 */
 
     t2 = _mm256_loadu_pd(fptr);
     t4 = _mm256_loadu_pd(fptr + 4);
@@ -824,16 +809,16 @@ static gmx_inline void gmx_simdcall gmx_mm256_update_iforce_3atom_swizzle_pd(__m
     /* tz3:           0 z3 */
 
     /* z component */
-    tB  = _mm256_extractf128_pd(t1, 0x1);                                      /* x2 z1 */
-    tC  = _mm256_extractf128_pd(t3, 0x1);                                      /* y3 x3 */
-    tz3 = _mm_add_sd(tz3, tB);                                                 /* 0  z1+z3 */
+    tB  = _mm256_extractf128_pd(t1, 0x1); /* x2 z1 */
+    tC  = _mm256_extractf128_pd(t3, 0x1); /* y3 x3 */
+    tz3 = _mm_add_sd(tz3, tB);            /* 0  z1+z3 */
     tD  = _mm_permute_pd(_mm256_castpd256_pd128(t3), _GMX_MM_PERMUTE128D(1, 1));
-    tz3 = _mm_add_sd(tz3, tD);                                                 /* - z */
+    tz3 = _mm_add_sd(tz3, tD); /* - z */
 
-    tC = _mm_add_pd(tC, _mm256_castpd256_pd128(t1));                           /* y1+y3 x1+x3 */
+    tC = _mm_add_pd(tC, _mm256_castpd256_pd128(t1)); /* y1+y3 x1+x3 */
 
-    tD = _mm_shuffle_pd(tB, _mm256_castpd256_pd128(t3), _MM_SHUFFLE2(0, 1));   /* y2 x2 */
-    tC = _mm_add_pd(tC, tD);                                                   /* y x */
+    tD = _mm_shuffle_pd(tB, _mm256_castpd256_pd128(t3), _MM_SHUFFLE2(0, 1)); /* y2 x2 */
+    tC = _mm_add_pd(tC, tD);                                                 /* y x */
 
     tA = _mm_loadu_pd(fshiftptr);
     tB = _mm_load_sd(fshiftptr + 2);
@@ -848,31 +833,31 @@ static gmx_inline void gmx_simdcall gmx_mm256_update_iforce_4atom_swizzle_pd(__m
                                                                              __m256d fix2, __m256d fiy2, __m256d fiz2,
                                                                              __m256d fix3, __m256d fiy3, __m256d fiz3,
                                                                              __m256d fix4, __m256d fiy4, __m256d fiz4,
-                                                                             double * gmx_restrict fptr,
-                                                                             double * gmx_restrict fshiftptr)
+                                                                             double *gmx_restrict fptr,
+                                                                             double *gmx_restrict fshiftptr)
 {
     __m256d t1, t2, t3, t4, t5, t6;
     __m128d tA, tB, tC, tD;
 
-    fix1 = _mm256_hadd_pd(fix1, fiy1);                /*  Y1c-d X1c-d | Y1a-b X1a-b */
-    fiz1 = _mm256_hadd_pd(fiz1, fix2);                /*  X2c-d Z1c-d | X2a-b Z1a-b */
-    fiy2 = _mm256_hadd_pd(fiy2, fiz2);                /*  Z2c-d Y2c-d | Z2a-b Y2a-b */
-    fix3 = _mm256_hadd_pd(fix3, fiy3);                /*  Y3c-d X3c-d | Y3a-b X3a-b */
-    fiz3 = _mm256_hadd_pd(fiz3, fix4);                /*  X4c-d Z3c-d | X4a-b Z3a-b */
-    fiy4 = _mm256_hadd_pd(fiy4, fiz4);                /*  Z4c-d Y4c-d | Z4a-b Y4a-b */
+    fix1 = _mm256_hadd_pd(fix1, fiy1); /*  Y1c-d X1c-d | Y1a-b X1a-b */
+    fiz1 = _mm256_hadd_pd(fiz1, fix2); /*  X2c-d Z1c-d | X2a-b Z1a-b */
+    fiy2 = _mm256_hadd_pd(fiy2, fiz2); /*  Z2c-d Y2c-d | Z2a-b Y2a-b */
+    fix3 = _mm256_hadd_pd(fix3, fiy3); /*  Y3c-d X3c-d | Y3a-b X3a-b */
+    fiz3 = _mm256_hadd_pd(fiz3, fix4); /*  X4c-d Z3c-d | X4a-b Z3a-b */
+    fiy4 = _mm256_hadd_pd(fiy4, fiz4); /*  Z4c-d Y4c-d | Z4a-b Y4a-b */
 
     /* Add across the two lanes by swapping and adding back */
-    t1 = gmx_mm256_unpack128lo_pd(fix1, fiz1);   /* X2a-b Z1a-b | Y1a-b X1a-b */
-    t2 = gmx_mm256_unpack128hi_pd(fix1, fiz1);   /* X2c-d Z1c-d | Y1c-d X1c-d */
-    t1 = _mm256_add_pd(t1, t2);                  /* x2 z1 | y1 x1 */
+    t1 = gmx_mm256_unpack128lo_pd(fix1, fiz1); /* X2a-b Z1a-b | Y1a-b X1a-b */
+    t2 = gmx_mm256_unpack128hi_pd(fix1, fiz1); /* X2c-d Z1c-d | Y1c-d X1c-d */
+    t1 = _mm256_add_pd(t1, t2);                /* x2 z1 | y1 x1 */
 
-    t3 = gmx_mm256_unpack128lo_pd(fiy2, fix3);   /* Y3a-b X3a-b | Z2a-b Y2a-b */
-    t4 = gmx_mm256_unpack128hi_pd(fiy2, fix3);   /* Y3c-d X3c-d | Z2c-d Y2c-d */
-    t3 = _mm256_add_pd(t3, t4);                  /* y3 x3 | z2 y2 */
+    t3 = gmx_mm256_unpack128lo_pd(fiy2, fix3); /* Y3a-b X3a-b | Z2a-b Y2a-b */
+    t4 = gmx_mm256_unpack128hi_pd(fiy2, fix3); /* Y3c-d X3c-d | Z2c-d Y2c-d */
+    t3 = _mm256_add_pd(t3, t4);                /* y3 x3 | z2 y2 */
 
-    t5 = gmx_mm256_unpack128lo_pd(fiz3, fiy4);   /* Z4a-b Y4a-b | X4a-b Z3a-b */
-    t6 = gmx_mm256_unpack128hi_pd(fiz3, fiy4);   /* Z4c-d Y4c-d | X4c-d Z3c-d */
-    t5 = _mm256_add_pd(t5, t6);                  /* z4 y4 | x4 z3 */
+    t5 = gmx_mm256_unpack128lo_pd(fiz3, fiy4); /* Z4a-b Y4a-b | X4a-b Z3a-b */
+    t6 = gmx_mm256_unpack128hi_pd(fiz3, fiy4); /* Z4c-d Y4c-d | X4c-d Z3c-d */
+    t5 = _mm256_add_pd(t5, t6);                /* z4 y4 | x4 z3 */
 
     t2 = _mm256_loadu_pd(fptr);
     t4 = _mm256_loadu_pd(fptr + 4);
@@ -892,18 +877,18 @@ static gmx_inline void gmx_simdcall gmx_mm256_update_iforce_4atom_swizzle_pd(__m
     /* t5:   z4 y4 | x4. z3. */
 
     /* z component */
-    tA = _mm256_extractf128_pd(t1, 0x1);                  /* x2 z1 */
-    tB = _mm256_extractf128_pd(t3, 0x1);                  /* y3 x3 */
-    tC = _mm256_extractf128_pd(t5, 0x1);                  /* z4 y4 */
+    tA = _mm256_extractf128_pd(t1, 0x1); /* x2 z1 */
+    tB = _mm256_extractf128_pd(t3, 0x1); /* y3 x3 */
+    tC = _mm256_extractf128_pd(t5, 0x1); /* z4 y4 */
 
-    tB = _mm_add_pd(tB, _mm256_castpd256_pd128(t1));      /*  y1+y3  x1+x3 */
-    tA = _mm_add_pd(tA, _mm256_castpd256_pd128(t5));      /*  x2+x4  z1+z3 */
-    tC = _mm_add_pd(tC, _mm256_castpd256_pd128(t3));      /*  z4+z2  y4+y2 */
+    tB = _mm_add_pd(tB, _mm256_castpd256_pd128(t1)); /*  y1+y3  x1+x3 */
+    tA = _mm_add_pd(tA, _mm256_castpd256_pd128(t5)); /*  x2+x4  z1+z3 */
+    tC = _mm_add_pd(tC, _mm256_castpd256_pd128(t3)); /*  z4+z2  y4+y2 */
 
-    tD = _mm_shuffle_pd(tA, tC, _MM_SHUFFLE2(0, 1));      /* y4+y2 x2+x4 */
-    tB = _mm_add_pd(tB, tD);                              /* y x */
-    tC = _mm_permute_pd(tC, _GMX_MM_PERMUTE128D(1, 1));   /*    - z4+z2 */
-    tC = _mm_add_sd(tC, tA);                              /* - z */
+    tD = _mm_shuffle_pd(tA, tC, _MM_SHUFFLE2(0, 1));    /* y4+y2 x2+x4 */
+    tB = _mm_add_pd(tB, tD);                            /* y x */
+    tC = _mm_permute_pd(tC, _GMX_MM_PERMUTE128D(1, 1)); /*    - z4+z2 */
+    tC = _mm_add_sd(tC, tA);                            /* - z */
 
     tA = _mm_loadu_pd(fshiftptr);
     tD = _mm_load_sd(fshiftptr + 2);
@@ -914,7 +899,7 @@ static gmx_inline void gmx_simdcall gmx_mm256_update_iforce_4atom_swizzle_pd(__m
 }
 
 
-static gmx_inline void gmx_simdcall gmx_mm256_update_1pot_pd(__m256d pot1, double * gmx_restrict ptrA)
+static gmx_inline void gmx_simdcall gmx_mm256_update_1pot_pd(__m256d pot1, double *gmx_restrict ptrA)
 {
     __m128d t1;
 
@@ -925,8 +910,8 @@ static gmx_inline void gmx_simdcall gmx_mm256_update_1pot_pd(__m256d pot1, doubl
     _mm_store_sd(ptrA, _mm_add_sd(_mm_load_sd(ptrA), t1));
 }
 
-static gmx_inline void gmx_simdcall gmx_mm256_update_2pot_pd(__m256d pot1, double * gmx_restrict ptrA,
-                                                             __m256d pot2, double * gmx_restrict ptrB)
+static gmx_inline void gmx_simdcall gmx_mm256_update_2pot_pd(__m256d pot1, double *gmx_restrict ptrA,
+                                                             __m256d pot2, double *gmx_restrict ptrB)
 {
     __m128d t1, t2;
 
@@ -941,23 +926,22 @@ static gmx_inline void gmx_simdcall gmx_mm256_update_2pot_pd(__m256d pot1, doubl
 
 
 #ifdef __PGI
-#    define AVX256_DOUBLE_NEGZERO  ({ const union { int  di[2]; double d; } _gmx_dzero = {0, -2147483648}; _gmx_dzero.d; })
+#define AVX256_DOUBLE_NEGZERO ({ const union { int  di[2]; double d; } _gmx_dzero = {0, -2147483648}; _gmx_dzero.d; })
 #else
-#    define AVX256_DOUBLE_NEGZERO  (-0.0)
+#define AVX256_DOUBLE_NEGZERO (-0.0)
 #endif
 
 static gmx_inline __m256d gmx_simdcall avx256_invsqrt_d(__m256d x)
 {
     __m256d lu = _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x)));
-    lu = _mm256_mul_pd(_mm256_set1_pd(0.5), _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(_mm256_mul_pd(lu, lu), x)), lu));
+    lu         = _mm256_mul_pd(_mm256_set1_pd(0.5), _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(_mm256_mul_pd(lu, lu), x)), lu));
     return _mm256_mul_pd(_mm256_set1_pd(0.5), _mm256_mul_pd(_mm256_sub_pd(_mm256_set1_pd(3.0), _mm256_mul_pd(_mm256_mul_pd(lu, lu), x)), lu));
-
 }
 
 static gmx_inline __m256d gmx_simdcall avx256_inv_d(__m256d x)
 {
     __m256d lu = _mm256_cvtps_pd(_mm_rcp_ps(_mm256_cvtpd_ps(x)));
-    lu = _mm256_mul_pd(lu, _mm256_sub_pd(_mm256_set1_pd(2.0), _mm256_mul_pd(lu, x)));
+    lu         = _mm256_mul_pd(lu, _mm256_sub_pd(_mm256_set1_pd(2.0), _mm256_mul_pd(lu, x)));
     return _mm256_mul_pd(lu, _mm256_sub_pd(_mm256_set1_pd(2.0), _mm256_mul_pd(lu, x)));
 }
 
@@ -999,7 +983,7 @@ static gmx_inline __m256d gmx_simdcall avx256_exp_d(__m256d x)
     __m256d       valuemask;
 
     y        = _mm256_mul_pd(x, argscale);
-    fexppart = avx256_set_exponent_d(y);                   /* rounds to nearest int internally */
+    fexppart = avx256_set_exponent_d(y); /* rounds to nearest int internally */
 
     intpart   = _mm256_cvtepi32_pd(_mm256_cvtpd_epi32(y)); /* use same rounding mode here */
     valuemask = _mm256_cmp_pd(_mm256_andnot_pd(_mm256_set1_pd(AVX256_DOUBLE_NEGZERO), y), arglimit, _CMP_LE_OQ);

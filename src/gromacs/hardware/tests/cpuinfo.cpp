@@ -59,18 +59,18 @@ TEST(CpuInfoTest, SupportLevel)
     gmx::CpuInfo c(gmx::CpuInfo::detect());
 
     std::string commonMsg
-        = "\nGROMACS might still work, but it will likely hurt your performance."
-            "\nPlease mail gmx-developers@gromacs.org so we can try to fix it.";
+            = "\nGROMACS might still work, but it will likely hurt your performance."
+              "\nPlease mail gmx-developers@gromacs.org so we can try to fix it.";
 
     // It is not the end of the world if any of these tests fail (Gromacs will
     // work fine without cpuinfo), but we might as well flag it so we add it to
     // our detection code
     EXPECT_GT(c.supportLevel(), gmx::CpuInfo::SupportLevel::None)
-    << "No CPU information at all could be detected. " << commonMsg << std::endl;
+            << "No CPU information at all could be detected. " << commonMsg << std::endl;
 
 #if GMX_TARGET_X86
     EXPECT_GE(c.supportLevel(), gmx::CpuInfo::SupportLevel::Features)
-    << "No CPU features could be detected. " << commonMsg << std::endl;
+            << "No CPU features could be detected. " << commonMsg << std::endl;
 #endif
 
     if (c.supportLevel() >= gmx::CpuInfo::SupportLevel::LogicalProcessorInfo)
@@ -79,8 +79,8 @@ TEST(CpuInfoTest, SupportLevel)
         for (auto &l : c.logicalProcessors())
         {
             EXPECT_GE(l.socketRankInMachine, 0) << "Impossible socket index for logical processor. " << commonMsg << std::endl;
-            EXPECT_GE(l.coreRankInSocket,    0) << "Impossible core index for logical processor. " << commonMsg << std::endl;
-            EXPECT_GE(l.hwThreadRankInCore,  0) << "Impossible hwthread index for logical processor. " << commonMsg << std::endl;
+            EXPECT_GE(l.coreRankInSocket, 0) << "Impossible core index for logical processor. " << commonMsg << std::endl;
+            EXPECT_GE(l.hwThreadRankInCore, 0) << "Impossible hwthread index for logical processor. " << commonMsg << std::endl;
         }
     }
 }

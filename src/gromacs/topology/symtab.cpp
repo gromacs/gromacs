@@ -49,8 +49,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
-#define BUFSIZE         1024
-#define TABLESIZE       5
+#define BUFSIZE 1024
+#define TABLESIZE 5
 
 static char *trim_string(const char *s, char *out, int maxlen)
 /*
@@ -103,13 +103,13 @@ int lookup_symtab(t_symtab *symtab, char **name)
     while (symbuf != nullptr)
     {
         const int index = name - symbuf->buf;
-        if ( ( index >= 0 ) && ( index < symbuf->bufsize ) )
+        if ((index >= 0) && (index < symbuf->bufsize))
         {
             return index + base;
         }
         else
         {
-            base  += symbuf->bufsize;
+            base += symbuf->bufsize;
             symbuf = symbuf->next;
         }
     }
@@ -130,7 +130,7 @@ char **get_symtab_handle(t_symtab *symtab, int name)
         }
         else
         {
-            name  -= symbuf->bufsize;
+            name -= symbuf->bufsize;
             symbuf = symbuf->next;
         }
     }
@@ -248,8 +248,8 @@ void free_symtab(t_symtab *symtab)
     while (symbuf != nullptr)
     {
         symtab->nr -= std::min(symbuf->bufsize, symtab->nr);
-        freeptr     = symbuf;
-        symbuf      = symbuf->next;
+        freeptr = symbuf;
+        symbuf  = symbuf->next;
         sfree(freeptr);
     }
     symtab->symbuf = nullptr;
@@ -275,9 +275,9 @@ void pr_symtab(FILE *fp, int indent, const char *title, t_symtab *symtab)
             for (j = 0; (j < symbuf->bufsize) && (j < nr); j++)
             {
                 pr_indent(fp, indent);
-                (void) fprintf(fp, "%s[%d]=\"%s\"\n", title, i++, symbuf->buf[j]);
+                (void)fprintf(fp, "%s[%d]=\"%s\"\n", title, i++, symbuf->buf[j]);
             }
-            nr    -= j;
+            nr -= j;
             symbuf = symbuf->next;
         }
         if (nr != 0)

@@ -38,13 +38,13 @@
 namespace gmx
 {
 
-static inline void simdPrefetch(void * m)
+static inline void simdPrefetch(void *m)
 {
 #ifdef __GNUC__
     __builtin_prefetch(m);
 #endif
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_ARM_NEON_GENERAL_H

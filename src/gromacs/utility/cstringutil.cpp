@@ -75,7 +75,6 @@ int continuing(char *s)
 }
 
 
-
 char *fgets2(char *line, int n, FILE *stream)
 {
     char *c;
@@ -106,7 +105,7 @@ char *fgets2(char *line, int n, FILE *stream)
     return line;
 }
 
-void strip_comment (char *line)
+void strip_comment(char *line)
 {
     char *c;
 
@@ -122,7 +121,7 @@ void strip_comment (char *line)
     }
 }
 
-void upstring (char *str)
+void upstring(char *str)
 {
     int i;
 
@@ -132,7 +131,7 @@ void upstring (char *str)
     }
 }
 
-void ltrim (char *str)
+void ltrim(char *str)
 {
     int i, c;
 
@@ -156,7 +155,7 @@ void ltrim (char *str)
     }
 }
 
-void rtrim (char *str)
+void rtrim(char *str)
 {
     int nul;
 
@@ -166,17 +165,17 @@ void rtrim (char *str)
     }
 
     nul = strlen(str) - 1;
-    while ((nul > 0) && ((str[nul] == ' ') || (str[nul] == '\t')) )
+    while ((nul > 0) && ((str[nul] == ' ') || (str[nul] == '\t')))
     {
         str[nul] = '\0';
         nul--;
     }
 }
 
-void trim (char *str)
+void trim(char *str)
 {
-    ltrim (str);
-    rtrim (str);
+    ltrim(str);
+    rtrim(str);
 }
 
 void nice_header(FILE *out, const char *fn)
@@ -318,7 +317,8 @@ char *gmx_strndup(const char *src, int n)
  * Do NOT use any other value unless you really know what you are doing.
  */
 const unsigned int
-    gmx_string_hash_init = 5381;
+        gmx_string_hash_init
+        = 5381;
 
 
 unsigned int gmx_string_fullhash_func(const char *s, unsigned int hash_init)
@@ -340,7 +340,7 @@ unsigned int gmx_string_hash_func(const char *s, unsigned int hash_init)
     {
         if (isalnum(c))
         {
-            hash_init = ((hash_init << 5) + hash_init) ^ c;            /* (hash * 33) xor c */
+            hash_init = ((hash_init << 5) + hash_init) ^ c; /* (hash * 33) xor c */
         }
     }
     return hash_init;
@@ -456,7 +456,7 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
             /* if we have a newline before the line is full, reset counters */
             if (buf[i] == '\n' && buf[i + 1])
             {
-                i0     = i + 1;
+                i0 = i + 1;
                 b2len += indent;
                 srenew(b2, b2len);
                 /* add indentation after the newline */
@@ -480,7 +480,7 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
             i0 = lspace + 1;
             i2 = l2space + 1;
             /* if the words fit on the line, and we're beyond the indentation part */
-            if ( (bFitsOnLine) && (l2space >= indent) )
+            if ((bFitsOnLine) && (l2space >= indent))
             {
                 /* start a new line */
                 b2[l2space] = '\n';
@@ -490,7 +490,7 @@ char *wrap_lines(const char *buf, int line_width, int indent, gmx_bool bIndentFi
                     if (bFirst)
                     {
                         line_width -= indent;
-                        bFirst      = FALSE;
+                        bFirst = FALSE;
                     }
                     b2len += indent;
                     srenew(b2, b2len);

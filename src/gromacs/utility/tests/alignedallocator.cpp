@@ -71,7 +71,7 @@ TEST(AlignedAllocator, Vector)
     // Mask for 128-byte alignment is 128-1 - these bits should be zero in pointers
     std::size_t mask = static_cast<std::size_t>(128 - 1);
 
-    std::vector<real, AlignedAllocator<real> > v(10);
+    std::vector<real, AlignedAllocator<real>> v(10);
     EXPECT_EQ(0, reinterpret_cast<std::size_t>(v.data()) & mask);
 
     for (std::size_t i = 10000; i <= 100000; i += 10000)
@@ -80,6 +80,4 @@ TEST(AlignedAllocator, Vector)
         EXPECT_EQ(0, reinterpret_cast<std::size_t>(v.data()) & mask);
     }
 }
-
-
 }

@@ -51,13 +51,16 @@ struct gmx_device_info_t;
  * The egpuInsane value means that during the sanity checks an error
  * occurred that indicates malfunctioning of the device, driver, or
  * incompatible driver/runtime. */
-typedef enum
-{
-    egpuCompatible = 0,  egpuNonexistent,  egpuIncompatible, egpuInsane, egpuNR
+typedef enum {
+    egpuCompatible = 0,
+    egpuNonexistent,
+    egpuIncompatible,
+    egpuInsane,
+    egpuNR
 } e_gpu_detect_res_t;
 
 /* Names of the GPU detection/check results */
-extern const char * const gpu_detect_res_str[egpuNR];
+extern const char *const gpu_detect_res_str[egpuNR];
 
 /* GPU device information -- includes either CUDA or OpenCL devices.
  * The gmx_hardware_detect module initializes it. */
@@ -72,13 +75,13 @@ struct gmx_gpu_info_t
 /* GPU device selection information -- includes either CUDA or OpenCL devices */
 typedef struct gmx_gpu_opt_t
 {
-    char *   gpu_id;            /* GPU id's to use, each specified as chars */
-    gmx_bool bUserSet;          /* true if the GPUs in dev_use are manually provided by the user */
+    char *   gpu_id;   /* GPU id's to use, each specified as chars */
+    gmx_bool bUserSet; /* true if the GPUs in dev_use are manually provided by the user */
 
-    int  n_dev_compatible;      /* number of compatible GPU devices that could be used */
-    int *dev_compatible;        /* array of compatible GPU device IDs, from which automatic selection occurs */
-    int  n_dev_use;             /* number of GPU devices selected to be used, either by the user or automatically */
-    int *dev_use;               /* array mapping from PP rank index to GPU device ID; GPU IDs can be listed multiple times when ranks share them */
+    int  n_dev_compatible; /* number of compatible GPU devices that could be used */
+    int *dev_compatible;   /* array of compatible GPU device IDs, from which automatic selection occurs */
+    int  n_dev_use;        /* number of GPU devices selected to be used, either by the user or automatically */
+    int *dev_use;          /* array mapping from PP rank index to GPU device ID; GPU IDs can be listed multiple times when ranks share them */
 } gmx_gpu_opt_t;
 
 #ifdef __cplusplus
