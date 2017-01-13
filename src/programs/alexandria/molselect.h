@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
 
 enum iMolSelect {
     imsTrain, imsTest, imsIgnore, imsUnknown, imsNR
