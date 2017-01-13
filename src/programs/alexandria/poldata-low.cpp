@@ -43,8 +43,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-
 #include <vector>
+#include <algorithm>
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/cstringutil.h"
